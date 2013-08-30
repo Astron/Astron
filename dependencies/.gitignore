@@ -1,3 +1,4 @@
 *
 !.gitignore
 !readme.txt
+!./panda3d/dtool/src/dtoolbase/dtool_config.h

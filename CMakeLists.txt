@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 set_property ( GLOBAL PROPERTY USE_FOLDERS ON)
 project (OOTP)
 
-set (P3D_DCPARSER_DIR "dependencies/panda3d/built/direct/dcparser" CACHE PATH "Path to dcparser source")
+set (P3D_DCPARSER_DIR "dependencies/panda3d/direct/src/dcparser" CACHE PATH "Path to dcparser source")
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DCPARSER_DIR})
 set (P3D_DTOOLBASE_DIR "dependencies/panda3d/dtool/src/dtoolbase" CACHE PATH "Path to dtoolbase source")
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DTOOLBASE_DIR})
