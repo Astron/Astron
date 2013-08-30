@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 2.6)
 set_property ( GLOBAL PROPERTY USE_FOLDERS ON)
 project (OOTP)
 
+if (WIN32)
+	add_definitions(-D_WIN32_WINDOWS)
+endif()
+
 set (P3D_DIR "dependencies/panda3d" CACHE PATH "Path to Panda3D source")
 
 set (P3D_DCPARSER_DIR ${P3D_DIR}/direct/src/dcparser CACHE PATH "Path to dcparser source")
@@ -25,6 +29,8 @@ link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 #fucking yamlcpp needs boost
 set (BOOST_INCLUDES "FILLME" CACHE PATH "Path to boost includes folder")
 include_directories (${BOOST_INCLUDES})
+set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
+link_directories (${BOOST_LIBS})
 
 add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp src/core/config.h src/core/global.h src/core/logger.h)
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h)

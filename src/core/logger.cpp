@@ -8,25 +8,25 @@ void Logger::log(LogSeverity sev, const char *format, va_list va)
 	const char *sevtext;
 
 	switch(sev) {
-	case SEVERITY_SPAM:
+	case LSEVERITY_SPAM:
 		sevtext = "SPAM";
 		break;
-	case SEVERITY_DEBUG:
+	case LSEVERITY_DEBUG:
 		sevtext = "DEBUG";
 		break;
-	case SEVERITY_INFO:
+	case LSEVERITY_INFO:
 		sevtext = "INFO";
 		break;
-	case SEVERITY_WARNING:
+	case LSEVERITY_WARNING:
 		sevtext = "WARNING";
 		break;
-	case SEVERITY_SECURITY:
+	case LSEVERITY_SECURITY:
 		sevtext = "SECURITY";
 		break;
-	case SEVERITY_ERROR:
+	case LSEVERITY_ERROR:
 		sevtext = "ERROR";
 		break;
-	case SEVERITY_FATAL:
+	case LSEVERITY_FATAL:
 		sevtext = "FATAL";
 		break;
 	}
@@ -50,10 +50,10 @@ void Logger::log(LogSeverity sev, const char *format, va_list va)
 		va_end(args); \
 	}
 
-LOG_LEVEL(spam, SEVERITY_SPAM)
-LOG_LEVEL(debug, SEVERITY_DEBUG)
-LOG_LEVEL(info, SEVERITY_INFO)
-LOG_LEVEL(warning, SEVERITY_WARNING)
-LOG_LEVEL(security, SEVERITY_SECURITY)
-LOG_LEVEL(error, SEVERITY_ERROR)
-LOG_LEVEL(fatal, SEVERITY_FATAL)
+LOG_LEVEL(spam, LSEVERITY_SPAM)
+LOG_LEVEL(debug, LSEVERITY_DEBUG)
+LOG_LEVEL(info, LSEVERITY_INFO)
+LOG_LEVEL(warning, LSEVERITY_WARNING)
+LOG_LEVEL(security, LSEVERITY_SECURITY)
+LOG_LEVEL(error, LSEVERITY_ERROR)
+LOG_LEVEL(fatal, LSEVERITY_FATAL)

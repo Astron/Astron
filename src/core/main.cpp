@@ -36,6 +36,19 @@ int main(int argc, char *argv[])
 	}
 	file.close();
 
+	try
+	{
+		if(!io_service)
+		{
+			io_service = new boost::asio::io_service;
+		}
+		io_service->run();
+	}
+	catch(std::exception &e)
+	{
+		gLogger->fatal("Exception from the network io service %s", e.what());
+	}
+
 	//gDCF->read("filename.dc");
 
 	// TODO: Load DC, bind/connect MD, and instantiate components.
