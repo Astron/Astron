@@ -1,6 +1,7 @@
 #include "config.h"
 
-bool ConfigFile::load(std::string filename)
+bool ConfigFile::load(std::istream &is)
 {
-	return false; // TBD
+	m_node = YAML::Load(is);
+	return !m_node.IsNull(); // TBD
 }

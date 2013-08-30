@@ -1,7 +1,11 @@
 #pragma once
-#include <string>
+#include <istream>
+#include <yaml-cpp/yaml.h>
 
-class ConfigFile {
-public:
-	bool load(std::string filename);
+class ConfigFile
+{
+	public:
+		bool load(std::istream &is);
+	private:
+		YAML::Node m_node;
 };

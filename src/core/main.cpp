@@ -1,4 +1,5 @@
 #include <string>
+#include <fstream>
 
 #include "global.h"
 
@@ -20,12 +21,20 @@ int main(int argc, char *argv[])
 		cfg_file = "openotpd.yml";
 	else
 		cfg_file = argv[1];
+
+	std::ifstream file(cfg_file);
+	if(!file.is_open())
+	{
+		gLogger->fatal("Failed to open configuration file.");
+		return 1;
+	}
 	
-	if (!gConfig->load(cfg_file))
+	if (!gConfig->load(file))
 	{
 		gLogger->fatal("Could not parse configuration file!");
 		return 1;
 	}
+	file.close();
 
 	//gDCF->read("filename.dc");
 
