@@ -1,3 +1,4 @@
+#pragma once
 #include "../messagedirector/messagedirector.h"
 #include "logger.h"
 #include "config.h"

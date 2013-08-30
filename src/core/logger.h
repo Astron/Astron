@@ -1,3 +1,4 @@
+#pragma once
 #include <stdarg.h>
 
 enum LogSeverity {
