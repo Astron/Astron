@@ -1,3 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (core)
-add_executable (core src/core/main.cpp)
+add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp)
+add_library (MessageDirector src/messagedirector/messagedirector.cpp)
+add_dependencies (core MessageDirector)
+target_link_libraries (core MessageDirector)
