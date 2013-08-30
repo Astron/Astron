@@ -10,12 +10,12 @@ The game server suite consists of many components, which handle separate tasks i
 The core concept in an OpenOTP environment is a DistributedObject. These represent individual game objects that clients may know of and/or control. Every DistributedObject (or "DO" for short) contains one or more "fields" - simple properties, like the position or appearance of an object - which may be "updated" periodically. DOs are hierarchical: Each DO contains many "zones" (unsigned 32-bit integers) which can contain child DOs. This makes up the basis of the visibility system.
 
 ## Visibility system
-As stated before, every DO lives beneath a parent, with the exception of the root object. If a client can see a DO, it may request to be informed of objects beneath that object within a zone. It will continue to be informed of objects (and their updates) as long as the request remains active. Such a request is called *interest*.
+As stated before, every DO lives beneath a parent, with the exception of the root object. If a client can see a DO, it may request to be informed of objects beneath that object within a zone. It will continue to be informed of objects (and their updates) as long as the request remains active. Such a request is called **interest**.
 
 ## DC files
 DC files (short for "distributed class" files) are the core protocol description for a game built upon OpenOTP. A DC file is a pre-agreed list of dclasses (object types which may be created) and fields for each one. The ordering in a DC file is used to convert the human-readable dclass/field names to 16-bit numbers which may be efficiently sent on the network. Because all components in the OpenOTP server use the same DC file, the 16-bit IDs can be converted back to the original fields as requested.
 
-In addition, every field in a DC file may contain one or more *keywords*. These describe the proper routing/behavior of a field update as it passes through the OpenOTP cluster.
+In addition, every field in a DC file may contain one or more **keywords**. These describe the proper routing/behavior of a field update as it passes through the OpenOTP cluster.
 Some keywords are listed below:
 
 * broadcast: Any updates on this field should be sent to all clients that can see the object.
@@ -32,15 +32,15 @@ Some keywords are listed below:
 
 The OpenOTP server is only an environment for keeping track of clients and game objects. The behavior of most of these game objects is not the concern of OpenOTP. Rather, there are game-specific components that a developer wishing to use OpenOTP must implement in order to update game behavior.
 
-The first, and most obvious, component that a developer must provide is a *client*. Clients are participants in an OpenOTP world. The client can connect to the server and create an object (usually an avatar) and has limited control over that object.
+The first, and most obvious, component that a developer must provide is a **client**. Clients are participants in an OpenOTP world. The client can connect to the server and create an object (usually an avatar) and has limited control over that object.
 The client can then use that object to interact with the rest of the game world.
 
-The second component is an implementation of a game's sharding logic. In OpenOTP terminology, this is known as an *AI server*. An AI server has complete control over all objects in its shard. It may create objects and perform privileged updates on them.
+The second component is an implementation of a game's sharding logic. In OpenOTP terminology, this is known as an **AI server**. An AI server has complete control over all objects in its shard. It may create objects and perform privileged updates on them.
 
-The third component is similar to an AI, but manages game-global objects. We call this an *UberDOG*, or UD for short. An UberDOG is allowed to create and manage DistributedObjectGlobals, which are unique in that they have no defined place within the visibility graph.
+The third component is similar to an AI, but manages game-global objects. We call this an **UberDOG**, or UD for short. An UberDOG is allowed to create and manage DistributedObjectGlobals, which are unique in that they have no defined place within the visibility graph.
 Instead, a DistributedObjectGlobal's existence is hard-coded into all clients. There is no dynamic discovery mechanism for DOGs, nor can they have any persistent fields on them.
 
-Each component may have its own *perspective* onto a DO. This allows different logic to exist, for the same object, for the client, AI, and UD. The perspectives are distinguished by a conventional notation:
+Each component may have its own **perspective** onto a DO. This allows different logic to exist, for the same object, for the client, AI, and UD. The perspectives are distinguished by a conventional notation:
 If the perspective is intended to represent a DO on a client, no suffix is used.
 If the perspective is intended to represent the DO on an AI or UD, the object's name is suffixed with "AI" or "UD", respectively.
 For example, if a developer wished to create an object called a DistributedMonkey, the following classes may exist in the game code:
@@ -60,7 +60,7 @@ ScratchCardManager: The client-side representation of the same. The client would
 Within the OpenOTP cluster, there are many components that manage individual parts of the game. Each piece is focused on doing one thing, and doing it well. Here we describe some of them in loose detail:
 
 ## Message Director
-The message director receives messages from other servers, and routes them. A "message" is just an atomic blob, with a maximum size of approximately 64kB, sent from one component to another. The routing is performed by means of routing identifiers called *channels*, where a message contains any number of destination channels, and most messages include a source channel. Each component tells the MD which channels it would like to subscribe to, and receives messages sent to its subscribed channels. In this manner, the messaging architecture of OpenOTP is actually a very simple publish-subscribe system. The message director is the simplest component of OpenOTP.
+The message director receives messages from other servers, and routes them. A "message" is just an atomic blob, with a maximum size of approximately 64kB, sent from one component to another. The routing is performed by means of routing identifiers called **channels**, where a message contains any number of destination channels, and most messages include a source channel. Each component tells the MD which channels it would like to subscribe to, and receives messages sent to its subscribed channels. In this manner, the messaging architecture of OpenOTP is actually a very simple publish-subscribe system. The message director is the simplest component of OpenOTP.
 
 ## Client Agent
 The client agent handles communication with the game client. Game clients do not directly communicate with OpenOTP. Rather, they communicate with the client agent, which in turn communicates with OpenOTP. Most of the security is implemented in the client agent, which enforces the clsend and ownsend keyword restrictions. For example, if a client tries to update a field that is not marked clsend, or ownsend on an object it controls, the client agent will automatically disconnect the client and log a security violation. Since the client agent may have game-specific code, OpenOTP provides a very simple reference implementation. You may want to subclass this base implementation to implement certain game-specific logic, such as allowing clients to create their own avatars directly, without relying on an UberDOG.
@@ -78,8 +78,8 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 # Development
 
 ## The team
-* *CFSworks* is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.
-* *MMavipc* is pretty great too.
+* **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.
+* **MMavipc** is pretty great too.
 
 ## License
 The OpenOTP project is currently available under the GPL license. The terms of this license are available in the "LICENSE" file of this archive.
