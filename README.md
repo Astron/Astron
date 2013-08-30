@@ -15,7 +15,7 @@ As stated before, every DO lives beneath a parent, with the exception of the roo
 ## DC files
 DC files (short for "distributed class" files) are the core protocol description for a game built upon OpenOTP. A DC file is a pre-agreed list of dclasses (object types which may be created) and fields for each one. The ordering in a DC file is used to convert the human-readable dclass/field names to 16-bit numbers which may be efficiently sent on the network. Because all components in the OpenOTP server use the same DC file, the 16-bit IDs can be converted back to the original fields as requested.
 
-In addition, every field in a DC file may contain one or more **keywords**. These describe the proper routing/behavior of a field update as it passes through the OpenOTP cluster.
+In addition, every field in a DC file may contain one or more **keywords**. These describe the proper routing/behavior of a field update as it passes through the OpenOTP cluster.  
 Some keywords are listed below:
 
 * broadcast: Any updates on this field should be sent to all clients that can see the object.
@@ -37,23 +37,23 @@ The client can then use that object to interact with the rest of the game world.
 
 The second component is an implementation of a game's sharding logic. In OpenOTP terminology, this is known as an **AI server**. An AI server has complete control over all objects in its shard. It may create objects and perform privileged updates on them.
 
-The third component is similar to an AI, but manages game-global objects. We call this an **UberDOG**, or UD for short. An UberDOG is allowed to create and manage DistributedObjectGlobals, which are unique in that they have no defined place within the visibility graph.
+The third component is similar to an AI, but manages game-global objects. We call this an **UberDOG**, or UD for short. An UberDOG is allowed to create and manage DistributedObjectGlobals, which are unique in that they have no defined place within the visibility graph.  
 Instead, a DistributedObjectGlobal's existence is hard-coded into all clients. There is no dynamic discovery mechanism for DOGs, nor can they have any persistent fields on them.
 
-Each component may have its own **perspective** onto a DO. This allows different logic to exist, for the same object, for the client, AI, and UD. The perspectives are distinguished by a conventional notation:
-If the perspective is intended to represent a DO on a client, no suffix is used.
-If the perspective is intended to represent the DO on an AI or UD, the object's name is suffixed with "AI" or "UD", respectively.
-For example, if a developer wished to create an object called a DistributedMonkey, the following classes may exist in the game code:
-DistributedMonkey: The client-side representation of the object, which handles rendering and sound output.
-DistributedMoneyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.
-DistributedMonkeyAI: The AI-side representation of the object. This contains all server-side logic. For example, the monkey's movement and feeding behaviors.
+Each component may have its own **perspective** onto a DO. This allows different logic to exist, for the same object, for the client, AI, and UD. The perspectives are distinguished by a conventional notation:  
+If the perspective is intended to represent a DO on a client, no suffix is used.  
+If the perspective is intended to represent the DO on an AI or UD, the object's name is suffixed with "AI" or "UD", respectively.  
+For example, if a developer wished to create an object called a DistributedMonkey, the following classes may exist in the game code:  
+DistributedMonkey: The client-side representation of the object, which handles rendering and sound output.  
+DistributedMoneyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.  
+DistributedMonkeyAI: The AI-side representation of the object. This contains all server-side logic. For example, the monkey's movement and feeding behaviors.  
 DistributedMonkeyUD: An UD-side representation of the object. For game objects like this, an UD representation is rarely needed, but can be useful if an UberDOG needs to know of certain events that happen on this game object.
 
-For DistributedObjectGlobals, the scheme works slightly differently. A DOG is used in cases where some RPC functionality is needed from the gameserver.
+For DistributedObjectGlobals, the scheme works slightly differently. A DOG is used in cases where some RPC functionality is needed from the gameserver.  
 For example, if you wanted to create a mechanism where players could redeem scratch code cards for in-game currency, you might create a ScratchCardManager, which would inherit from DistributedObjectGlobal.
 
-The ScratchCardManager would have the following two representations:
-ScratchCardManagerUD: The UD-side representation of the object. The object's doId is hard coded.
+The ScratchCardManager would have the following two representations:  
+ScratchCardManagerUD: The UD-side representation of the object. The object's doId is hard coded.  
 ScratchCardManager: The client-side representation of the same. The client would be aware of this object because the object type and ID would be hard-coded into the code. The client can send updates on this object to request to redeem codes.
 
 # OpenOTP components
@@ -72,13 +72,13 @@ The state server manages the short-term state of all DistributedObjects. It stor
 The database server handles long term persistance of "db" fields. It stores these fields in a database of some sort, and can update them, or retreive their value.
 
 ## Database-State Server
-This is a specialized State Server for tracking the short-term state of objects that exist in the database. A DB-SS behaves exactly the same as a State Server, however, it also listens for updates to "db"-keyworded fields and informs the database of the change.
+This is a specialized State Server for tracking the short-term state of objects that exist in the database. A DB-SS behaves exactly the same as a State Server, however, it also listens for updates to "db"-keyworded fields and informs the database of the change.  
 In addition, a DB-SS listens on the entire range of object IDs that it manages. If it sees a location update for an object in its range, it will automatically fetch the object out of the database and convert it into a state-server-object.
 
 # Development
 
 ## The team
-* **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.
+* **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
 * **MMavipc** is pretty great too.
 
 ## License
