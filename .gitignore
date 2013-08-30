@@ -1,2 +1,10 @@
 #built cmake files/built project files
 build/
+#shit that macs crap out
+.DS_Store
+#cmake stuff
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
