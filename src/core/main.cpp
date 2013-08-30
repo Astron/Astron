@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
 	gMD = new MessageDirector;
 	gLogger = new Logger;
 	gConfig = new ConfigFile;
+	gDCF = new DCFile;
 
 	// TODO: Perhaps logging should go to a file specified via command-line switch?
 	// And perhaps verbosity should be specified via command-line switch as well?
@@ -25,6 +26,8 @@ int main(int argc, char *argv[])
 		gLogger->fatal("Could not parse configuration file!");
 		return 1;
 	}
+
+	//gDCF->read("filename.dc");
 
 	// TODO: Load DC, bind/connect MD, and instantiate components.
 

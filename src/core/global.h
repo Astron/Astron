@@ -1,8 +1,9 @@
 #include "../messagedirector/messagedirector.h"
 #include "logger.h"
 #include "config.h"
+#include <dcFile.h>
 
 MessageDirector *gMD = NULL;
 Logger *gLogger = NULL;
 ConfigFile *gConfig = NULL;
-//DCFile *dc;
+DCFile *gDCF = NULL;
