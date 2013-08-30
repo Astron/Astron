@@ -19,8 +19,8 @@ web:
     #    method: file
     #    filename: foo.yml
 
-components:
-    # This section allows specifying components that we would like to activate in this daemon.
+roles:
+    # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
