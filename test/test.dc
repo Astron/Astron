@@ -1,0 +1,19 @@
+dclass DistributedTestObject1 {
+	setRequired1(uint32 r = 78) required broadcast ram;
+	setB1(uint8 x) broadcast;
+	setBA1(uint16 y) broadcast airecv;
+	setBR1(string z) broadcast ram;
+	setBRA1(uint32 BRA) broadcast ram airecv;
+	setBRO1(uint32 BRO) broadcast ram ownrecv;
+};
+
+dclass DistributedTestObject2 {
+	setB2(uint32 test) broadcast;
+	setBRam2(uint32 test) broadcast ram;
+};
+
+dclass DistributedTestObject3 : DistributedTestObject1 {
+	setDb3(string data) ram db;
+	setRDB3(uint32 rdb) required broadcast db;
+};
+
