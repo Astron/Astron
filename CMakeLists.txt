@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 set_property ( GLOBAL PROPERTY USE_FOLDERS ON)
-project (core)
+project (OOTP)
 add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp src/core/config.h src/core/global.h src/core/logger.h)
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h)
 add_library (MessageDirector src/messagedirector/messagedirector.cpp src/messagedirector/messagedirector.h)
