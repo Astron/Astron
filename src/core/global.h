@@ -5,7 +5,6 @@
 #include <dcFile.h>
 #include <boost/asio.hpp>
 
-MessageDirector *gMD = NULL;
 Logger *gLogger = NULL;
 ConfigFile *gConfig = NULL;
 DCFile *gDCF = NULL;

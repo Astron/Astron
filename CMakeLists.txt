@@ -32,11 +32,9 @@ include_directories (${BOOST_INCLUDES})
 set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
 link_directories (${BOOST_LIBS})
 
-add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp src/core/config.h src/core/global.h src/core/logger.h)
-source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h)
-
-add_library (MessageDirector src/messagedirector/messagedirector.cpp src/messagedirector/messagedirector.h)
-source_group ("Header Files" FILES src/messagedirector/messagedirector.h)
+add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp src/core/config.h src/core/global.h src/core/logger.h
+ src/messagedirector/messagedirector.cpp src/messagedirector/messagedirector.h)
+source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
 
 add_library (dcparser 
 	${P3D_DCPARSER_DIR}/p3dcparser_composite1.cxx 
@@ -61,5 +59,5 @@ add_library (pandaexpress
 
 add_dependencies (dcparser dtoolbase)
 target_link_libraries (dcparser dtoolbase)
-add_dependencies (core MessageDirector dcparser)
-target_link_libraries (core MessageDirector dcparser libyaml-cppmdd)
+add_dependencies (core dcparser)
+target_link_libraries (core dcparser libyaml-cppmdd)

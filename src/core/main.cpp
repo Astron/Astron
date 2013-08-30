@@ -7,7 +7,6 @@ int main(int argc, char *argv[])
 {
 	std::string cfg_file;
 
-	gMD = new MessageDirector;
 	gLogger = new Logger;
 	gConfig = new ConfigFile;
 	gDCF = new DCFile;
