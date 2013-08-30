@@ -26,7 +26,6 @@ Some keywords are listed below:
 * db: The field contains some information that should persist long-term. If the object exists in a database, the database will automatically remember this update and reapply it when the object is loaded next.
 * ram: The field contains some information that should persis short term. If the object is disabled, the information will be lost. When this object enters a client's interest, it will automatically receive the last update sent for this field.
 * required: This field must be present at all times. The server will interpret this to mean that the field's value is fundamental to the existence of the object. It is therefore incorporated into all most(it needs broadcast for some) object snapshots, sent when the object is created or visible.
-* monkey: Updates on this field will cause the server's sound hardware to emit a monkey screech, configurable by the "MONKEY_SOUND_CLIP" configuration variable. 
 
 ## Game-specific components
 
