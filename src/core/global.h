@@ -2,7 +2,7 @@
 #include "logger.h"
 #include "config.h"
 
-MessageDirector *md = NULL;
-Logger *logger = NULL;
-ConfigFile *config = NULL;
+MessageDirector *gMD = NULL;
+Logger *gLogger = NULL;
+ConfigFile *gConfig = NULL;
 //DCFile *dc;
