@@ -1,19 +1,19 @@
 #include <string>
 
-#include "core/global.h"
+#include "global.h"
 
 int main(int argc, char *argv[])
 {
 	std::string cfg_file;
 
-	md = new MessageDirector;
-	log = new Logger;
-	config = new ConfigFile;
+	MessageDirector *md = new MessageDirector;
+	Logger *logger = new Logger;
+	ConfigFile *config = new ConfigFile;
 
 	// TODO: Perhaps logging should go to a file specified via command-line switch?
 	// And perhaps verbosity should be specified via command-line switch as well?
 
-	log->info("Loading configuration file...");
+	logger->info("Loading configuration file...");
 
 	if (argc < 2)
 		cfg_file = "openotpd.yml";
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	
 	if (!config->load(cfg_file))
 	{
-		log->fatal("Could not parse configuration file!");
+		logger->fatal("Could not parse configuration file!");
 		return 1;
 	}
 

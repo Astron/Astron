@@ -1,8 +1,8 @@
-#include "messagedirector/messagedirector.h"
-#include "core/logger.h"
-#include "core/config.h"
+#include "../messagedirector/messagedirector.h"
+#include "logger.h"
+#include "config.h"
 
-MessageDirector *md;
-Logger *log;
-ConfigFile *config;
+MessageDirector *md = NULL;
+Logger *logger = NULL;
+ConfigFile *config = NULL;
 //DCFile *dc;
