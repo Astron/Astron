@@ -13,10 +13,16 @@ include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
 #fucking yamlcpp needs boost
-set (BOOST_INCLUDES "FILLME" CACHE PATH "Path to boost includes folder")
-include_directories (${BOOST_INCLUDES})
-set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
-link_directories (${BOOST_LIBS})
+find_package (Boost)
+if (BOOST_FOUND)
+	include_directories(${BOOST_INCLUDE_DIRS})
+	link_directories(${Boost_LIBRARY_DIRS})
+	target_link_libraries(core ${BOOST_LIBRARIES})
+endif()
+#set (BOOST_INCLUDES "FILLME" CACHE PATH "Path to boost includes folder")
+#include_directories (${BOOST_INCLUDES})
+#set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
+#link_directories (${BOOST_LIBS})
 
 add_executable (core 
 	src/core/main.cpp 
