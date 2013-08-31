@@ -54,4 +54,9 @@ class Datagram
 		{
 			return buf_end;
 		}
+
+		const char* get_data()
+		{
+			return buf;
+		}
 };
