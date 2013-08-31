@@ -1,6 +1,7 @@
 #pragma once
 #include "datagram.h"
 #include <exception>
+#include <stdexcept>
 
 class DatagramIterator
 {
