@@ -23,6 +23,12 @@ else ()
 endif()
 add_definitions(-DBOOST_ALL_NO_LIB)
 
+set (BUILD_TESTS CACHE BOOL "If set to true, test files will be compiled in")
+
+if(BUILD_TESTS)
+	set (TEST_FILES src/tests/participant_test.cpp)
+endif()
+
 add_executable (openotpd
 	src/core/main.cpp 
 	src/core/config.cpp 
@@ -35,7 +41,9 @@ add_executable (openotpd
 	src/messagedirector/messagedirector.h
 	src/core/datagram.h
 	src/core/datagramIterator.h
+	${TEST_FILES}
 )
+
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
 
 add_library (dcparser 
