@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 	else
 		cfg_file = argv[1];
 
-	std::ifstream file(cfg_file, std::ios_base::in);
+	std::ifstream file(cfg_file.c_str());
 	if(!file.is_open())
 	{
 		gLogger->fatal("Failed to open configuration file.");
