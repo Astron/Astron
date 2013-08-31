@@ -32,8 +32,17 @@ include_directories (${BOOST_INCLUDES})
 set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
 link_directories (${BOOST_LIBS})
 
-add_executable (core src/core/main.cpp src/core/config.cpp src/core/logger.cpp src/core/config.h src/core/global.h src/core/logger.h
- src/messagedirector/messagedirector.cpp src/messagedirector/messagedirector.h)
+add_executable (core 
+	src/core/main.cpp 
+	src/core/config.cpp 
+	src/core/logger.cpp 
+	src/core/config.h 
+	src/core/global.h 
+	src/core/logger.h
+	src/messagedirector/messagedirector.cpp 
+	src/messagedirector/messagedirector.h
+	src/core/datagram.h
+)
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
 
 add_library (dcparser 
