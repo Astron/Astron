@@ -10,6 +10,10 @@ messagedirector:
     connect: 127.0.0.1:57124
 """
 
+CONTROL_CHANNEL = 4001
+CONTROL_ADD_CHANNEL = 2001
+CONTROL_REMOVE_CHANNEL = 2002
+
 class TestMessageDirector(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -62,8 +66,8 @@ class TestMessageDirector(unittest.TestCase):
         # Subscribe to a channel...
         dg = Datagram()
         dg.add_uint8(1)
-        dg.add_uint64(4001)
-        dg.add_uint16(2001)
+        dg.add_uint64(CONTROL_CHANNEL)
+        dg.add_uint16(CONTROL_ADD_CHANNEL)
         dg.add_uint64(12345654321)
         self.c1.send(dg)
         self.assertTrue(self.c1.expect_none())
@@ -85,8 +89,8 @@ class TestMessageDirector(unittest.TestCase):
         # Subscribe on the second connection...
         dg = Datagram()
         dg.add_uint8(1)
-        dg.add_uint64(4001)
-        dg.add_uint16(2001)
+        dg.add_uint64(CONTROL_CHANNEL)
+        dg.add_uint16(CONTROL_ADD_CHANNEL)
         dg.add_uint64(12345654321)
         self.c2.send(dg)
         self.assertTrue(self.c2.expect_none())
@@ -108,8 +112,8 @@ class TestMessageDirector(unittest.TestCase):
         # Unsubscribe on the first connection...
         dg = Datagram()
         dg.add_uint8(1)
-        dg.add_uint64(4001)
-        dg.add_uint16(2002)
+        dg.add_uint64(CONTROL_CHANNEL)
+        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
         dg.add_uint64(12345654321)
         self.c1.send(dg)
         self.assertTrue(self.c1.expect_none())
@@ -132,8 +136,8 @@ class TestMessageDirector(unittest.TestCase):
         # Unsubscribe on the second connection...
         dg = Datagram()
         dg.add_uint8(1)
-        dg.add_uint64(4001)
-        dg.add_uint16(2002)
+        dg.add_uint64(CONTROL_CHANNEL)
+        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
         dg.add_uint64(12345654321)
         self.c2.send(dg)
         self.assertTrue(self.c1.expect_none())
