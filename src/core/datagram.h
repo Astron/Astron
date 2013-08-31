@@ -7,6 +7,7 @@ class Datagram
 		char* buf;
 		unsigned int p;
 		unsigned int buf_size;
+		unsigned int buf_end;
 
 		void CheckAddLength(unsigned int len)
 		{
@@ -32,6 +33,7 @@ class Datagram
 			CheckAddLength(2);
 			memcpy(buf+p, &v, 2);
 			p += 2;
+			buf_end += 2;
 		}
 
 		void AddData(const std::string &data)
@@ -39,11 +41,17 @@ class Datagram
 			CheckAddLength(data.length());
 			memcpy(buf+p, data.c_str(), data.length());
 			p += data.length();
+			buf_end += data.length();
 		}
 
 		void AddString(const std::string &str)
 		{
 			AddUint16(str.length());
 			AddData(str);
+		}
+
+		unsigned int GetBufEnd()
+		{
+			return buf_end;
 		}
 };

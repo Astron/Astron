@@ -42,6 +42,7 @@ add_executable (core
 	src/messagedirector/messagedirector.cpp 
 	src/messagedirector/messagedirector.h
 	src/core/datagram.h
+	src/core/datagramIterator.h
 )
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <list>
 #include "../core/datagram.h"
-class DatagramIterator;
+#include "../core/datagramIterator.h"
 
 class MDParticipantInterface;
 class MessageDirector
