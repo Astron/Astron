@@ -14,10 +14,9 @@ link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
 #fucking yamlcpp needs boost
 find_package (Boost)
-if (BOOST_FOUND)
-	include_directories(${Boost_INCLUDE_DIRS})
+if (Boost_FOUND)
+	include_directories(${Boost_INCLUDE_DIR})
 	link_directories(${Boost_LIBRARY_DIRS})
-	target_link_libraries(core ${Boost_LIBRARIES})
 endif()
 #set (BOOST_INCLUDES "FILLME" CACHE PATH "Path to boost includes folder")
 #include_directories (${BOOST_INCLUDES})
@@ -46,4 +45,4 @@ add_library (dcparser
 )
 
 add_dependencies (core dcparser)
-target_link_libraries (core dcparser ${YAMLCPP_LIBNAME})
+target_link_libraries (core dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
