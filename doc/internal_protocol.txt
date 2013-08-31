@@ -196,7 +196,7 @@ STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066):
 	(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)
 This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
 the new zone about the object's entry. The message is ordered slightly
-differently, but is otherwise identical to the beahvior of
+differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
 
 STATESERVER_OBJECT_LOCATE(2022):
@@ -232,15 +232,15 @@ Sent to the old AI Server to notify it of the object's departure or deletion.
 
 STATESERVER_OBJECT_DELETE_DISK(2060): Handled by DBSS, not SS.
 
-STATESERVER_SET_OWNER_RECV(2069):
+STATESERVER_OBJECT_SET_OWNER_RECV(2069):
 	(uint64 owner_channel)
 Set the channel of the object owner. This is the channel of the Client Agent
 connection object where ownrecv messages will be forwarded. Similar to
 changing zone, this will generate some traffic:
-STATESERVER_CHANGE_OWNER_RECV(2069):
+STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069):
 	(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)
 Sent to the old owner.
-STATESERVER_ENTER_OWNER_RECV(2068):
+STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):
 	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
 The new owner is told of the object's arrival. The ... is as in REQUIRED_OTHER.
 

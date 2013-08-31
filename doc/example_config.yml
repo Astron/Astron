@@ -21,7 +21,6 @@ web:
 
 messagedirector:
     bind: 0.0.0.0:6660
-	
 
 roles:
     # This section allows specifying roles that we would like this daemon to perform.
