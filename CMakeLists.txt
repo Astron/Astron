@@ -13,10 +13,11 @@ include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
 #fucking yamlcpp needs boost
-find_package (Boost)
+find_package (Boost COMPONENTS system)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
 	link_directories(${Boost_LIBRARY_DIRS})
+	message("${Boost_LIBRARIES}")
 else ()
 	message (FATAL_ERROR "You need boost to build this, set the BOOST_ROOT or BOOSTROOT env variables, or pass them to cmake")
 endif()
