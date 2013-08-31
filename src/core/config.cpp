@@ -58,7 +58,7 @@ T ConfigVariable<T>::get_val(YAML::Node node)
 template<class T>
 T ConfigVariable<T>::get_val()
 {
-	return get_val(gConfig->m_node)
+	return get_val(gConfig->m_node);
 }
 
 template<class T>
