@@ -23,7 +23,7 @@ else ()
 endif()
 add_definitions(-DBOOST_ALL_NO_LIB)
 
-add_executable (core 
+add_executable (openotpd
 	src/core/main.cpp 
 	src/core/config.cpp 
 	src/core/logger.cpp 
@@ -44,5 +44,5 @@ add_library (dcparser
 	src/dcparser/dcParser.cxx
 )
 
-add_dependencies (core dcparser)
-target_link_libraries (core dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+add_dependencies (openotpd dcparser)
+target_link_libraries (openotpd dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
