@@ -9,7 +9,7 @@ class Datagram
 		unsigned int buf_size;
 		unsigned int buf_end;
 
-		void CheckAddLength(unsigned int len)
+		void check_add_length(unsigned int len)
 		{
 			if(p+len > buf_size)
 			{
@@ -28,29 +28,29 @@ class Datagram
 			memcpy(buf, data.c_str(), data.length());
 		}
 
-		void AddUint16(const unsigned short &v)
+		void add_uint16(const unsigned short &v)
 		{
-			CheckAddLength(2);
+			check_add_length(2);
 			memcpy(buf+p, &v, 2);
 			p += 2;
 			buf_end += 2;
 		}
 
-		void AddData(const std::string &data)
+		void add_data(const std::string &data)
 		{
-			CheckAddLength(data.length());
+			check_add_length(data.length());
 			memcpy(buf+p, data.c_str(), data.length());
 			p += data.length();
 			buf_end += data.length();
 		}
 
-		void AddString(const std::string &str)
+		void add_string(const std::string &str)
 		{
-			AddUint16(str.length());
-			AddData(str);
+			add_uint16(str.length());
+			add_data(str);
 		}
 
-		unsigned int GetBufEnd()
+		unsigned int get_buf_end()
 		{
 			return buf_end;
 		}
