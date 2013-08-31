@@ -8,6 +8,7 @@ endif()
 
 set (YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
 set (YAMLCPP_LIBRARIES "dependencies/yaml-cpp-0.5.1/lib" CACHE PATH "Path to yamlcpp libs")
+set (YAMLCPP_LIBNAME "libyaml-cppmdd" CACHE STRING "name of yaml lib")
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
@@ -39,4 +40,4 @@ add_library (dcparser
 )
 
 add_dependencies (core dcparser)
-target_link_libraries (core dcparser libyaml-cppmdd)
+target_link_libraries (core dcparser ${YAMLCPP_LIBNAME})
