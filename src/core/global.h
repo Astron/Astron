@@ -5,7 +5,7 @@
 #include "config.h"
 #include <boost/asio.hpp>
 
-Logger *gLogger = NULL;
-ConfigFile *gConfig = NULL;
-DCFile *gDCF = NULL;
-boost::asio::io_service *io_service = NULL;
+extern Logger *gLogger;
+extern ConfigFile *gConfig;
+extern DCFile *gDCF;
+extern boost::asio::io_service *io_service;

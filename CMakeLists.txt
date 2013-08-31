@@ -28,7 +28,8 @@ add_executable (openotpd
 	src/core/config.cpp 
 	src/core/logger.cpp 
 	src/core/config.h 
-	src/core/global.h 
+	src/core/global.h
+	src/core/global.cpp
 	src/core/logger.h
 	src/messagedirector/messagedirector.cpp 
 	src/messagedirector/messagedirector.h
