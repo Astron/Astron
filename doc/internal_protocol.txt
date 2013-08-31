@@ -130,7 +130,7 @@ STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER(2003):
 	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
 Create an object on the state server, specifying its initial location
 as (parent_id, zone_id) and its object type and ID. The ... is an in-order
-serialization of all object fields with the "required" and "broadcast" keywords.
+serialization of all object fields with the "required" keyword.
 In the case of *_OTHER, the required fields are followed by a uint16, which
 specifies how many additional fields the message contains. Each field is then
 a uint16 (representing the field number) followed by the serialized field.
