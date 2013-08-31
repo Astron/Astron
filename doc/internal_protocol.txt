@@ -124,7 +124,28 @@ Section 3.1: State Server control messages
 These messages are to be sent directly to the State Server's configured
 control channel:
 
--- TBD --
+STATESERVER_OBJECT_GENERATE_WITH_REQUIRED(2001):
+	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
+STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER(2003):
+	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
+Create an object on the state server, specifying its initial location
+as (parent_id, zone_id) and its object type and ID. The ... is an in-order
+serialization of all object fields with the "required" keyword.
+In the case of *_OTHER, the required fields are followed by a uint16, which
+specifies how many additional fields the message contains. Each field is then
+a uint16 (representing the field number) followed by the serialized field.
+
+STATESERVER_QUERY_OBJECT_ALL(2020):
+	(uint32 context)
+This message can be sent to request a list of all objects present on the State
+Server. The context is a value chosen by the sender that will be referenced in
+all replies to this message; it may be used to disambiguate the replies from
+that of another query.
+Response:
+STATESERVER_QUERY_OBJECT_ALL_RESP(2030):
+	(uint32 context, uint32 parent_id, uint32 zone_id, uint16 dclass_id,
+	 uint32 do_id)
+One of these is sent for every object matching the query.
 
 Section 3.2: Object control messages
 
@@ -132,4 +153,55 @@ These messages are to be sent to the objects themselves. Objects subscribe to
 a channel with their own object ID, and therefore can be reached directly by
 using their ID as the channel.
 
--- TBD --
+STATESERVER_OBJECT_UPDATE_FIELD(2004):
+	(uint32 do_id, uint16 field, FIELD)
+Handle a field update on this object. Note that the object MAY ALSO SEND this
+message to inform others of an update. If the field is ownrecv, the message
+will get sent to the owning-client's channel. If airecv, the message will get
+sent to the owning AI server's channel. If broadcast, the message will get
+sent to the location-channel (i.e. (parent_id<<32)|zone_id) so all clients
+with interest on that location may see the update.
+
+STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE(2005):
+	(uint32 do_id, uint16 num_fields, [uint16 field, FIELD]*num_fields)
+As above, but this contains multiple field updates in one message, with the
+intention that the updates will be processed atomically.
+
+STATESERVER_OBJECT_DELETE_RAM(2007):
+	(uint32 do_id)
+Remove the object from the State Server. This message does not affect a stored
+copy on the database, if one exists. The object will duly broadcast its
+deletion to any AIs, owners, or zones.
+
+STATESERVER_OBJECT_SET_ZONE(2008):
+	(uint32 parent_id, uint32 zone_id)
+Moves the object to a new location (specified by parent_id, zone_id).
+The object will inform any AIs and owners of this change, as well as broadcast
+its presence in the new zone and its absence in the old zone.
+
+STATESERVER_OBJECT_CHANGE_ZONE(2009):
+	(uint32 do_id, uint32 new_parent, uint32 new_zone, uint32 old_parent,
+	 uint32 old_zone)
+This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
+everything that can see the object where the object is going.
+
+STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066):
+	(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)
+This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
+the new zone about the object's entry. The message is ordered slightly
+differently, but is otherwise identical to the beahvior of
+STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
+
+STATESERVER_OBJECT_LOCATE(2022):
+	(uint32 context)
+This message may be used to ask an object for its location. The reply is:
+STATESERVER_OBJECT_LOCATE_RESP(2023):
+	(uint32 context, uint32 do_id, uint32 parent_id, uint32 zone_id)
+
+STATESERVER_OBJECT_QUERY_FIELD(2024):
+	(uint32 do_id, uint16 field_id, uint32 context)
+This message may be used to ask an object for the value of a field. Reply:
+STATESERVER_OBJECT_QUERY_FIELD_RESP(2062):
+	(uint32 do_id, uint16 field_id, uint32 context, uint8 ok, [FIELD])
+"ok" is 1 if the field is present, 0 if the field is nonpresent.
+FIELD is the serialized field, but is only present if ok=1.
