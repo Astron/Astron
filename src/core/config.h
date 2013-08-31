@@ -21,6 +21,8 @@ class ConfigVariable
 		ConfigVariable(const std::string &name, const T& def_val);
 		T get_val(YAML::Node node);
 		T get_val();
+		bool is_specified(YAML::Node node);
+		bool is_specified();
 	private:
 		T m_def_val;
 		std::string m_name;

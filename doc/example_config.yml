@@ -19,6 +19,10 @@ web:
     #    method: file
     #    filename: foo.yml
 
+messagedirector:
+    bind: 0.0.0.0:6660
+	
+
 roles:
     # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
