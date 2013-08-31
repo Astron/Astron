@@ -12,14 +12,6 @@ set (P3D_DCPARSER_DIR ${P3D_DIR}/direct/src/dcparser CACHE PATH "Path to dcparse
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DCPARSER_DIR})
 set (P3D_DTOOLBASE_DIR ${P3D_DIR}/dtool/src/dtoolbase CACHE PATH "Path to dtoolbase source")
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DTOOLBASE_DIR})
-set (P3D_PANDAEXPRESS_DIR ${P3D_DIR}/panda/src/express CACHE PATH "Path to pandaexpress source")
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_PANDAEXPRESS_DIR})
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/panda/src/pandabase)
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/panda/src/express)
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/dtool/src/prc)
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/dtool/src/dtoolutil)
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/dtool/src/dconfig)
-include_directories (${CMAKE_CURRENT_LIST_DIR}/${P3D_DIR}/dtool/src/interrogatedb)
 
 set (YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
 set (YAMLCPP_LIBRARIES "dependencies/yaml-cpp-0.5.1/lib" CACHE PATH "Path to yamlcpp libs")
@@ -61,11 +53,6 @@ add_library (dtoolbase
 	${P3D_DTOOLBASE_DIR}/dtool_config.h
 )
 add_definitions (-DLINK_ALL_STATIC)
-
-add_library (pandaexpress
-	${P3D_PANDAEXPRESS_DIR}/p3express_composite1.cxx
-	${P3D_PANDAEXPRESS_DIR}/p3express_composite2.cxx
-)
 
 add_dependencies (dcparser dtoolbase)
 target_link_libraries (dcparser dtoolbase)
