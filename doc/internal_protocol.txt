@@ -128,7 +128,7 @@ STATESERVER_OBJECT_GENERATE_WITH_REQUIRED(2001):
 	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER(2003):
 	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
-Create an object on the state server, specifying its initial location
+Create an object on the State Server, specifying its initial location
 as (parent_id, zone_id) and its object type and ID. The ... is an in-order
 serialization of all object fields with the "required" keyword.
 In the case of *_OTHER, the required fields are followed by a uint16, which
@@ -144,8 +144,17 @@ that of another query.
 Response:
 STATESERVER_QUERY_OBJECT_ALL_RESP(2030):
 	(uint32 context, uint32 parent_id, uint32 zone_id, uint16 dclass_id,
-	 uint32 do_id)
-One of these is sent for every object matching the query.
+	 uint32 do_id, ...)
+One of these is sent for every object matching the query. The ... is like that
+of REQUIRED_OTHER, above.
+
+STATESERVER_SHARD_RESET(2061):
+	(uint64 ai_channel)
+Used by an AI Server to inform the State Server that it is going down. The
+State Server will then delete all objects matching the ai_channel.
+The AI will typically hang this on its connected MD using ADD_POST_REMOVE, so
+that the message goes out automatically if the AI loses connection
+unexpectedly.
 
 Section 3.2: Object control messages
 
@@ -158,7 +167,7 @@ STATESERVER_OBJECT_UPDATE_FIELD(2004):
 Handle a field update on this object. Note that the object MAY ALSO SEND this
 message to inform others of an update. If the field is ownrecv, the message
 will get sent to the owning-client's channel. If airecv, the message will get
-sent to the owning AI server's channel. If broadcast, the message will get
+sent to the owning AI Server's channel. If broadcast, the message will get
 sent to the location-channel (i.e. (parent_id<<32)|zone_id) so all clients
 with interest on that location may see the update.
 
@@ -178,13 +187,11 @@ STATESERVER_OBJECT_SET_ZONE(2008):
 Moves the object to a new location (specified by parent_id, zone_id).
 The object will inform any AIs and owners of this change, as well as broadcast
 its presence in the new zone and its absence in the old zone.
-
 STATESERVER_OBJECT_CHANGE_ZONE(2009):
 	(uint32 do_id, uint32 new_parent, uint32 new_zone, uint32 old_parent,
 	 uint32 old_zone)
 This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
 everything that can see the object where the object is going.
-
 STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066):
 	(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)
 This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
@@ -202,6 +209,58 @@ STATESERVER_OBJECT_QUERY_FIELD(2024):
 	(uint32 do_id, uint16 field_id, uint32 context)
 This message may be used to ask an object for the value of a field. Reply:
 STATESERVER_OBJECT_QUERY_FIELD_RESP(2062):
-	(uint32 do_id, uint16 field_id, uint32 context, uint8 ok, [FIELD])
-"ok" is 1 if the field is present, 0 if the field is nonpresent.
-FIELD is the serialized field, but is only present if ok=1.
+	(uint32 do_id, uint16 field_id, uint32 context, uint8 success, [FIELD])
+"success" is 1 if the field is present, 0 if the field is nonpresent.
+FIELD is the serialized field, but is only present if success=1.
+
+STATESERVER_ADD_AI_RECV(2045):
+	(uint32 do_id, uint64 ai_channel)
+MISNOMER: Should probably be called SET_AI_RECV, because the AI channels are
+not cumulative.
+Sets the channel for the managing AI. All airecv updates are automatically
+forwarded to this channel.
+Note: The managing AI channel can also be set implicitly. If it isn't set
+explicitly, it defaults to the AI channel (implicit or explicit) of the
+parent.
+STATESERVER_OBJECT_ENTER_AI_RECV(2067):
+	(uint32 parent_id, uint32 zone_id, uint16 class_id, uint32 do_id, ...)
+The new AI Server is told of the object's arrival.
+The ... is as in REQUIRED_OTHER.
+STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033):
+	(uint32 do_id)
+Sent to the old AI Server to notify it of the object's departure or deletion.
+
+STATESERVER_OBJECT_DELETE_DISK(2060): Handled by DBSS, not SS.
+
+STATESERVER_SET_OWNER_RECV(2069):
+	(uint64 owner_channel)
+Set the channel of the object owner. This is the channel of the Client Agent
+connection object where ownrecv messages will be forwarded. Similar to
+changing zone, this will generate some traffic:
+STATESERVER_CHANGE_OWNER_RECV(2069):
+	(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)
+Sent to the old owner.
+STATESERVER_ENTER_OWNER_RECV(2068):
+	(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)
+The new owner is told of the object's arrival. The ... is as in REQUIRED_OTHER.
+
+STATESERVER_OBJECT_QUERY_FIELDS(2080):
+	(uint32 do_id, uint32 context, uint16 field_ids[...])
+Ask the object for all of its fields.
+N.B. there is no length tag on field_ids; the end of the message signifies the
+end of the field ID list.
+STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081):
+	(uint32 do_id, uint32 context, uint8 success, [uint16 field_id, FIELD])
+The reply sent back to the requester. Again, there is no length tag.
+
+STATESERVER_OBJECT_QUERY_MANAGING_AI(2083):
+	()
+Internally used: The object has just changed parents. It wants to know if its
+new parent has a different AI Server channel. This message is sent to the new
+parent to request that it resend its AI Server channel.
+
+STATESERVER_OBJECT_NOTIFY_MANAGING_AI(2047):
+	(uint32 parent_id, uint64 ai_channel)
+Internally used: Broadcast by a parent_id to all of its children (the channel
+for this is given by (4030<<32)|parent_id) when its airecv channel changes.
+Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
