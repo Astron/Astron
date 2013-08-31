@@ -1,8 +1,8 @@
 #pragma once
 #include "../messagedirector/messagedirector.h"
+#include "../dcparser/dcFile.h"
 #include "logger.h"
 #include "config.h"
-#include <dcFile.h>
 #include <boost/asio.hpp>
 
 Logger *gLogger = NULL;
