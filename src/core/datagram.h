@@ -19,11 +19,11 @@ class Datagram
 			}
 		}
 	public:
-		Datagram() : buf(new char[64]), p(0), buf_size(64)
+		Datagram() : buf(new char[64]), p(0), buf_size(64), buf_end(0)
 		{
 		}
 
-		Datagram(const std::string &data) : buf(new char[data.length()]), p(0), buf_size(data.length())
+		Datagram(const std::string &data) : buf(new char[data.length()]), p(0), buf_size(data.length()), buf_end(data.length())
 		{
 			memcpy(buf, data.c_str(), data.length());
 		}
