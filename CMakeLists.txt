@@ -21,10 +21,7 @@ if (Boost_FOUND)
 else ()
 	message (FATAL_ERROR "You need boost to build this, set the BOOST_ROOT or BOOSTROOT env variables, or pass them to cmake")
 endif()
-#set (BOOST_INCLUDES "FILLME" CACHE PATH "Path to boost includes folder")
-#include_directories (${BOOST_INCLUDES})
-#set (BOOST_LIBS "FILLME" CACHE PATH "Path to boost includes folder")
-#link_directories (${BOOST_LIBS})
+add_definitions(-DBOOST_ALL_NO_LIB)
 
 add_executable (core 
 	src/core/main.cpp 
