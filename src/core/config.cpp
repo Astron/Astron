@@ -38,9 +38,7 @@ T ConfigVariable<T>::get_val(YAML::Node node)
 			cnode = cnode[m_name.substr(offset, noffset-offset)];
 			if(cnode.IsNull())
 			{
-				std::stringstream ss;
-				ss << "Config node " << m_name << "does not exist.";
-				throw std::logic_error(ss.str());
+				return m_def_val;
 			}
 		}
 		offset = noffset+1;
