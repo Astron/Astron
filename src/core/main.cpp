@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
 	}
 	file.close();
 
+	MessageDirector::singleton.InitializeMD();
+
 	try
 	{
 		if(!io_service)

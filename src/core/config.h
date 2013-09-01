@@ -12,18 +12,54 @@ class ConfigFile
 		YAML::Node m_node;
 };
 
+extern ConfigFile *gConfig;
+
 typedef YAML::Node RoleConfig;
 
 template<class T>
 class ConfigVariable
 {
-	public:
-		ConfigVariable(const std::string &name, const T& def_val);
-		T get_val(YAML::Node node);
-		T get_val();
-		bool is_specified(YAML::Node node);
-		bool is_specified();
 	private:
 		T m_def_val;
 		std::string m_name;
+	public:
+		ConfigVariable<T>::ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
+		{
+		}
+
+		T ConfigVariable::get_rval(YAML::Node node)
+		{
+			size_t offset = 0;
+			YAML::Node cnode = node;
+			bool going = true;
+			while(going)
+			{
+				size_t noffset = m_name.find("/", offset);
+				if(noffset == std::string::npos)
+				{
+					going = false;
+					break;
+				}
+				else
+				{
+					cnode = cnode[m_name.substr(offset, noffset-offset)];
+					if(!cnode.IsDefined())
+					{
+						return m_def_val;
+					}
+				}
+				offset = noffset+1;
+			}
+			cnode = cnode[m_name.substr(offset, m_name.length()-offset)];
+			if(!cnode.IsDefined())
+			{
+				return m_def_val;
+			}
+			return cnode.as<T>();
+		}
+
+		T ConfigVariable::get_val()
+		{
+			return get_rval(gConfig->m_node);
+		}
 };

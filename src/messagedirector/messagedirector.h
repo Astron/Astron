@@ -2,11 +2,13 @@
 #include <list>
 #include "../core/datagram.h"
 #include "../core/datagramIterator.h"
+#include <boost/asio.hpp>
 
 class MDParticipantInterface;
 class MessageDirector
 {
 	public:
+		void InitializeMD();
 		static MessageDirector singleton;
 	private:
 		MessageDirector();
@@ -22,6 +24,9 @@ class MessageDirector
 		{
 			m_participants.remove(participant);
 		}
+
+		boost::asio::ip::tcp::acceptor *m_acceptor;
+		bool m_initialized;
 };
 
 class MDParticipantInterface
