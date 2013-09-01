@@ -1,6 +1,6 @@
-#include "../core/global.h"
+#include "core/global.h"
 #include "MessageDirector.h"
-#include "../core/config.h"
+#include "core/config.h"
 #include "MDNetworkParticipant.h"
 #include <boost/bind.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit

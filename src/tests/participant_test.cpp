@@ -1,4 +1,4 @@
-#include "../messagedirector/messagedirector.h"
+#include "messagedirector/messagedirector.h"
 
 class ParticipantTest : public MDParticipantInterface
 {

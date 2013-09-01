@@ -29,6 +29,7 @@ if(BUILD_TESTS)
 	set (TEST_FILES src/tests/participant_test.cpp)
 endif()
 
+include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
 	src/core/config.cpp 

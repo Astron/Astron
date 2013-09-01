@@ -1,7 +1,7 @@
 #pragma once
 #include <list>
-#include "../util/Datagram.h"
-#include "../util/DatagramIterator.h"
+#include "util/Datagram.h"
+#include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
 
 class MDParticipantInterface;
