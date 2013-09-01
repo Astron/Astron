@@ -16,4 +16,5 @@ class MDNetworkParticipant : public MDParticipantInterface
 		char* m_buffer;
 		short m_bytes_to_go;
 		short m_bufsize;
+		bool m_is_data;
 };
