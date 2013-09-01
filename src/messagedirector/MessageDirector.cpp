@@ -189,12 +189,13 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		}
 		dgi.seek(1);
 	}
+	std::map<MDParticipantInterface*, bool> sent_to_participant;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		unsigned long long channel = dgi.read_uint64();
 		for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
 		{
-			if(*it == participant)
+			if(*it == participant || sent_to_participant[*it])
 			{
 				continue;
 			}
@@ -205,6 +206,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				{
 					DatagramIterator msg_dgi(dg, 1+(channels*8));
 					bool should_continue = participant->handle_datagram(dg, msg_dgi);
+					sent_to_participant[participant] = true;
 					if(!should_continue)
 					{
 						return;

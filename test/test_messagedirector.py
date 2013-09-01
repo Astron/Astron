@@ -150,7 +150,7 @@ class TestMessageDirector(unittest.TestCase):
         # MD should unsubscribe from parent.
         self.assertTrue(self.l1.expect(dg))
 
-    '''def test_multi(self):
+    def test_multi(self):
         self.l1.flush()
         self.c1.flush()
         self.c2.flush()
@@ -251,7 +251,7 @@ class TestMessageDirector(unittest.TestCase):
             self.c1.send(dg)
             self.c2.send(dg)
 
-    def test_post_remove(self):
+    '''def test_post_remove(self):
         self.l1.flush()
         self.c1.flush()
         self.c2.flush()
