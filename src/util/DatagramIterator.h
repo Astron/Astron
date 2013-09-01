@@ -2,6 +2,7 @@
 #include "Datagram.h"
 #include <exception>
 #include <stdexcept>
+#include <sstream>
 
 class DatagramIterator
 {
@@ -13,7 +14,9 @@ class DatagramIterator
 		{
 			if(p+l > m_dg->get_buf_end())
 			{
-				throw std::runtime_error("dgi tried to read past dg end");
+				std::stringstream error;
+				error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg->get_buf_end() << std::endl;
+				throw std::runtime_error(error.str());
 			};
 		}
 	public:
