@@ -40,7 +40,7 @@ void MessageDirector::start_accept()
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
-	gLogger->info("Got a client connection");
+	gLogger->info() << "Got a client connection" << std::endl;
 	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
 	start_accept();
 }

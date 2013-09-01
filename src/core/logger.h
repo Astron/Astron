@@ -16,14 +16,14 @@ class Logger {
 public:
 	Logger(std::string log_file);
 	Logger();
-	void log(LogSeverity sev, const char *format, va_list va);
-	void spam(const char *format, ...);
-	void debug(const char *format, ...);
-	void info(const char *format, ...);
-	void warning(const char *format, ...);
-	void security(const char *format, ...);
-	void error(const char *format, ...);
-	void fatal(const char *format, ...);
+	std::ostream &log(LogSeverity sev);
+	std::ostream &spam();
+	std::ostream &debug();
+	std::ostream &info();
+	std::ostream &warning();
+	std::ostream &security();
+	std::ostream &error();
+	std::ostream &fatal();
 private:
-	std::string log_file;
+	std::ostream *m_output;
 };

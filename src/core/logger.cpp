@@ -1,17 +1,20 @@
-#include <stdio.h>
 #include <time.h>
+#include <iostream>
+#include <fstream>
 
 #include "logger.h"
 
-Logger::Logger(std::string log_name) : log_file(log_name)
+Logger::Logger(std::string log_name)
 {
+	m_output = new std::ofstream(log_name.c_str());
 }
 
-Logger::Logger() : log_file("none")
+Logger::Logger()
 {
+	m_output = &std::cerr;
 }
 
-void Logger::log(LogSeverity sev, const char *format, va_list va)
+std::ostream &Logger::log(LogSeverity sev)
 {
 	const char *sevtext;
 
@@ -44,27 +47,14 @@ void Logger::log(LogSeverity sev, const char *format, va_list va)
 	char timetext[1024];
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
-	if (log_file != "none")
-	{
-		FILE* log_handler = fopen(log_file.c_str(), "a");
-		fprintf(log_handler, "[%s] %s: ", timetext, sevtext);
-		vfprintf(log_handler, format, va);
-		fprintf(log_handler, "\n");
-		fclose(log_handler);
-	}
-
-	printf("[%s] %s: ", timetext, sevtext);
-	vprintf(format, va);
-	printf("\n");
+	*m_output << "[" << timetext << "] " << sevtext << ": ";
+	return *m_output;
 }
 
 #define LOG_LEVEL(name, severity) \
-	void Logger::name(const char *format, ...) \
+	std::ostream &Logger::name() \
 	{ \
-		va_list args; \
-		va_start(args, format); \
-		log(severity, format, args); \
-		va_end(args); \
+		return log(severity); \
 	}
 
 LOG_LEVEL(spam, LSEVERITY_SPAM)

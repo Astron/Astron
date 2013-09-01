@@ -36,19 +36,19 @@ int main(int argc, char *argv[])
 		gLogger = new Logger(log_file);
 	}
 
-	gLogger->info("Loading configuration file...");
+	gLogger->info() << "Loading configuration file..." << std::endl;
 
 
 	std::ifstream file(cfg_file.c_str());
 	if(!file.is_open())
 	{
-		gLogger->fatal("Failed to open configuration file.");
+		gLogger->fatal() << "Failed to open configuration file." << std::endl;
 		return 1;
 	}
 	
 	if (!gConfig->load(file))
 	{
-		gLogger->fatal("Could not parse configuration file!");
+		gLogger->fatal() << "Could not parse configuration file!" << std::endl;
 		return 1;
 	}
 	file.close();
@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
 	}
 	catch(std::exception &e)
 	{
-		gLogger->fatal("Exception from the network io service %s", e.what());
+		gLogger->fatal() << "Exception from the network io service: "
+		                 << e.what() << std::endl;
 	}
 
 	//gDCF->read("filename.dc");
