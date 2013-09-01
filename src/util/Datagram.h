@@ -29,12 +29,28 @@ class Datagram
 			memcpy(buf, data.c_str(), data.length());
 		}
 
+		void add_uint8(const unsigned char &v)
+		{
+			check_add_length(1);
+			memcpy(buf+p, &v, 1);
+			p += 1;
+			buf_end += 1;
+		}
+
 		void add_uint16(const unsigned short &v)
 		{
 			check_add_length(2);
 			memcpy(buf+p, &v, 2);
 			p += 2;
 			buf_end += 2;
+		}
+
+		void add_uint64(const unsigned long long &v)
+		{
+			check_add_length(8);
+			memcpy(buf+p, &v, 8);
+			p += 8;
+			buf_end += 8;
 		}
 
 		void add_data(const std::string &data)
