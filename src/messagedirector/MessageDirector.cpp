@@ -40,7 +40,9 @@ void MessageDirector::start_accept()
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
-	gLogger->info() << "Got a client connection" << std::endl;
+	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
+	gLogger->info() << "Got a Message Director connection from "
+	                << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
 	start_accept();
 }
