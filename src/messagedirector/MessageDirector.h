@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <map>
+#include <string>
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
@@ -36,6 +37,7 @@ class MessageDirector
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
 		std::map<MDParticipantInterface*, std::list<ChannelList> > m_participant_channels;
+		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
 		friend class MDParticipantInterface;
 		
@@ -45,6 +47,12 @@ class MessageDirector
 		}
 		void remove_participant(MDParticipantInterface* participant)
 		{
+			if(m_post_removes.find(participant) != m_post_removes.end())
+			{
+				Datagram dg(m_post_removes[participant]);
+				handle_datagram(&dg, participant);
+				m_post_removes.erase(m_post_removes.find(participant));
+			}
 			m_participants.remove(participant);
 		}
 

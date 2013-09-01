@@ -251,7 +251,7 @@ class TestMessageDirector(unittest.TestCase):
             self.c1.send(dg)
             self.c2.send(dg)
 
-    '''def test_post_remove(self):
+    def test_post_remove(self):
         self.l1.flush()
         self.c1.flush()
         self.c2.flush()
@@ -295,7 +295,7 @@ class TestMessageDirector(unittest.TestCase):
         # Did the cancellation work?
         self.c2.close()
         self.__class__.c2 = self.new_connection()
-        self.assertTrue(self.l1.expect_none())'''
+        self.assertTrue(self.l1.expect_none())
 
 if __name__ == '__main__':
     unittest.main()

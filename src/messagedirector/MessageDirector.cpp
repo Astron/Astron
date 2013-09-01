@@ -163,6 +163,19 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 					}
 				}
 				break;
+				case CONTROL_ADD_POST_REMOVE:
+				{
+					send_upstream = false;
+					std::string data = dgi.read_string();
+					m_post_removes[participant] = data;
+				}
+				break;
+				case CONTROL_CLEAR_POST_REMOVE:
+				{
+					send_upstream = false;
+					m_post_removes.erase(m_post_removes.find(participant));
+				}
+				break;
 				default:
 					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
 			}
