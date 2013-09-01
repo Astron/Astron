@@ -1,0 +1,5 @@
+[2013-09-01 13:13:34] INFO: Loading configuration file...
+[2013-09-01 13:13:34] INFO: Got a Message Director connection from 127.0.0.1:36446
+[2013-09-01 13:13:34] INFO: Got a Message Director connection from 127.0.0.1:36447
+[2013-09-01 13:13:35] FATAL: Exception from the network io service: dgi tried to read past dg end, p+l(9) buf_end(2
+

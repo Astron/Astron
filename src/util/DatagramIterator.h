@@ -15,7 +15,7 @@ class DatagramIterator
 			if(p+l > m_dg->get_buf_end())
 			{
 				std::stringstream error;
-				error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg->get_buf_end() << std::endl;
+				error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg->get_buf_end() << ")" << std::endl;
 				throw std::runtime_error(error.str());
 			};
 		}
