@@ -8,6 +8,19 @@ using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
 ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
+bool ChannelList::qualifies(unsigned long long channel)
+{
+	if(is_range)
+	{
+		//TODO: implement
+		return false;
+	}
+	else
+	{
+		return channel == a;
+	}
+}
+
 MessageDirector MessageDirector::singleton;
 
 void MessageDirector::InitializeMD()
@@ -75,7 +88,22 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		}
 		dgi.seek(1);
 	}
-	//TODO: loop through channels & route crap.
+	for(unsigned char i = 0; i < channels; ++i)
+	{
+		unsigned long long channel = dgi.read_uint64();
+		for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
+		{
+			MDParticipantInterface *participant = *it;
+			for(auto it2 = m_participant_channels[participant].begin(); it2 != m_participant_channels[participant].end(); ++it2)
+			{
+				if(it2->qualifies(channel))
+				{
+					participant->handle_datagram(dg, DatagramIterator(dg, 1+(channels*8)));
+					break;
+				}
+			}
+		}
+	}
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL)

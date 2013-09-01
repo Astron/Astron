@@ -7,7 +7,7 @@ class MDNetworkParticipant : public MDParticipantInterface
 	public:
 		MDNetworkParticipant(boost::asio::ip::tcp::socket *socket);
 		virtual ~MDNetworkParticipant();
-		virtual bool handle_datagram(Datagram *dg, DatagramIterator *dgi);
+		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi);
 	private:
 		void start_receive();
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);

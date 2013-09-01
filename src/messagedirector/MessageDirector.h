@@ -20,6 +20,7 @@ struct ChannelList
 	unsigned long long a;
 	unsigned long long b;
 	bool is_range;
+	bool qualifies(unsigned long long channel);
 };
 
 class MDParticipantInterface;
@@ -65,5 +66,5 @@ class MDParticipantInterface
 		{
 			MessageDirector::singleton.remove_participant(this);
 		}
-		virtual bool handle_datagram(Datagram *dg, DatagramIterator *dgi) = 0;
+		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
 };

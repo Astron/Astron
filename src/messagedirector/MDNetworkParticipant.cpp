@@ -16,7 +16,7 @@ MDNetworkParticipant::~MDNetworkParticipant()
 	delete m_buffer;
 }
 
-bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator *dgi)
+bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
 {
 	//TODO: make this asynch
 	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
