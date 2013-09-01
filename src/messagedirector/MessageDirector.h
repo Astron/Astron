@@ -33,7 +33,7 @@ class MessageDirector
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
-		std::map<MDParticipantInterface*, std::list<ChannelList>> m_participant_channels;
+		std::map<MDParticipantInterface*, std::list<ChannelList> > m_participant_channels;
 		
 		friend class MDParticipantInterface;
 		
