@@ -1,5 +1,5 @@
 #pragma once
-#include "../messagedirector/messagedirector.h"
+#include "../messagedirector/MessageDirector.h"
 #include "../dcparser/dcFile.h"
 #include "logger.h"
 #include "config.h"

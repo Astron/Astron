@@ -1,5 +1,5 @@
 #pragma once
-#include "messagedirector.h"
+#include "MessageDirector.h"
 
 class MDNetworkParticipant : public MDParticipantInterface
 {

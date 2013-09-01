@@ -1,5 +1,5 @@
 #include "../core/global.h"
-#include "messagedirector.h"
+#include "MessageDirector.h"
 #include "../core/config.h"
 #include "MDNetworkParticipant.h"
 #include <boost/bind.hpp>
