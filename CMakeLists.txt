@@ -13,6 +13,7 @@ include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
 #fucking yamlcpp needs boost
+set(Boost_USE_STATIC_LIBS ON CACHE BOOL "Test")
 find_package (Boost COMPONENTS system)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
