@@ -12,8 +12,7 @@ bool ChannelList::qualifies(unsigned long long channel)
 {
 	if(is_range)
 	{
-		//TODO: implement
-		return false;
+		return (channel >= a && channel <= b)s;
 	}
 	else
 	{
@@ -82,6 +81,15 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 					ChannelList c;
 					c.is_range = false;
 					c.a = dgi.read_uint64();
+					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
+				}
+				break;
+				case CONTROL_ADD_RANGE:
+				{
+					ChannelList c;
+					c.is_range = true;
+					c.a = dgi.read_uint64();
+					c.b = dgi.read_uint64();
 					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
 				}
 				break;
