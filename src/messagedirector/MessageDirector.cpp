@@ -20,6 +20,19 @@ bool ChannelList::qualifies(unsigned long long channel)
 	}
 }
 
+bool ChannelList::operator==(ChannelList &rhs)
+{
+	if(is_range && rhs.is_range)
+	{
+		return (a == rhs.a && b == rhs.b);
+	}
+	else if(!is_range && !rhs.is_range)
+	{
+		return a == rhs.a;
+	}
+	return false;
+}
+
 MessageDirector MessageDirector::singleton;
 
 void MessageDirector::InitializeMD()
@@ -28,6 +41,7 @@ void MessageDirector::InitializeMD()
 	{
 		if(bind_addr.get_val() != "unspecified")
 		{
+			gLogger->debug() << "binding" << std::endl;
 			std::string str_ip = bind_addr.get_val();
 			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
@@ -39,6 +53,7 @@ void MessageDirector::InitializeMD()
 		}
 		if(connect_addr.get_val() != "unspecified")
 		{
+			gLogger->debug() << "connecting" << std::endl;
 			std::string str_ip = connect_addr.get_val();
 			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
@@ -66,6 +81,7 @@ void MessageDirector::InitializeMD()
 
 void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
 {
+	gLogger->debug() << "MD Handling datagram" << std::endl;
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
 	if(channels == 1)
@@ -74,6 +90,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		if(channel == CONTROL_MESSAGE && participant)
 		{
 			unsigned int msg_type = dgi.read_uint16();
+			bool send_upstream = true;
 			switch(msg_type)
 			{
 				case CONTROL_SET_CHANNEL:
@@ -81,6 +98,21 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 					ChannelList c;
 					c.is_range = false;
 					c.a = dgi.read_uint64();
+					for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+					{
+						for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+						{
+							if(*it2 == c)
+							{
+								send_upstream = false;
+								break;
+							}
+						}
+						if(!send_upstream)
+						{
+							break;
+						}
+					}
 					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
 				}
 				break;
@@ -95,6 +127,25 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				default:
 					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
+			}
+			if(participant && m_remote_md && send_upstream)
+			{
+				gLogger->debug() << "Sending control message to upstream md" << std::endl;
+				unsigned short len = dg->get_buf_end();
+				m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+				m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
+			}
+			else if(!send_upstream)
+			{
+				gLogger->debug() << "not sending upstream because of flag" << std::endl;
+			}
+			else if(participant)
+			{
+				gLogger->debug() << "no upstream md for ctrl msg" << std::endl;
+			}
+			else
+			{
+				gLogger->debug() << "not redirecting upstream MD's own control message to itsself" << std::endl;
 			}
 			return;
 		}
@@ -124,7 +175,18 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	
 	if(participant && m_remote_md)//if there is no participant, then it came from the upstream
 	{
-		m_remote_md->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
+		unsigned short len = dg->get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
+		gLogger->debug() << "sending to upstream md" << std::endl;
+	}
+	else if(!participant)
+	{
+		gLogger->debug() << "not sending to upstream because it came from upstream" << std::endl;
+	}
+	else
+	{
+		gLogger->debug() << "no upstream md" << std::endl;
 	}
 }
 

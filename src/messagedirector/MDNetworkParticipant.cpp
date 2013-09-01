@@ -19,6 +19,9 @@ MDNetworkParticipant::~MDNetworkParticipant()
 bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
 {
 	//TODO: make this asynch
+	gLogger->debug() << "Sending to downstream md" << std::endl;
+	unsigned short len = dg->get_buf_end();
+	m_socket->send(boost::asio::buffer((char*)&len, 2));
 	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
 	return true;
 }

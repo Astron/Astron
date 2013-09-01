@@ -21,6 +21,7 @@ struct ChannelList
 	unsigned long long b;
 	bool is_range;
 	bool qualifies(unsigned long long channel);
+	bool operator==(ChannelList &rhs);
 };
 
 class MDParticipantInterface;

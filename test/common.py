@@ -64,7 +64,7 @@ class Datagram(object):
 class MDConnection(object):
     def __init__(self, sock):
         self.s = sock
-        self.s.settimeout(0.1)
+        self.s.settimeout(0.5)
 
     def send(self, datagram):
         data = datagram.get_data()
