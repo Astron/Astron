@@ -40,6 +40,10 @@ if(BUILD_TESTS)
 	set (TEST_FILES src/tests/participant_test.cpp)
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	add_definitions(-std=c++11) #for the fucking 'auto' keyword
+endif()
+
 include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
