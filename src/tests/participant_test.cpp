@@ -20,6 +20,14 @@ class ParticipantTest : public MDParticipantInterface
 			dg2.add_string("test");
 
 			MessageDirector::singleton.handle_datagram(&dg2, this);
+
+			Datagram dg3;
+			dg3.add_uint8(1);
+			dg3.add_uint64(CONTROL_MESSAGE);
+			dg3.add_uint16(CONTROL_REMOVE_CHANNEL);
+			dg3.add_uint64(100);
+
+			MessageDirector::singleton.handle_datagram(&dg3, this);
 		}
 
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)

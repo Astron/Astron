@@ -110,11 +110,9 @@ class TestMessageDirector(unittest.TestCase):
         dg.add_uint16(1234)
         dg.add_uint32(0xDEADBEEF)
         self.c1.send(dg)
-        self.assertTrue(self.c1.expect(dg)) # Should be relayed to first.
         self.assertTrue(self.c2.expect(dg)) # Should be relayed to second.
         self.assertTrue(self.l1.expect(dg)) # Should be sent upward.
         #self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
-        #from my understanding it SHOULD be echoed back. If you send something on a channel that you're subscribed to.
 
         # Unsubscribe on the first connection...
         dg = Datagram()

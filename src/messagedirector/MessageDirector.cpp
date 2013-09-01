@@ -20,7 +20,7 @@ bool ChannelList::qualifies(unsigned long long channel)
 	}
 }
 
-bool ChannelList::operator==(ChannelList &rhs)
+bool ChannelList::operator==(const ChannelList &rhs)
 {
 	if(is_range && rhs.is_range)
 	{
@@ -140,6 +140,29 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
 				}
 				break;
+				case CONTROL_REMOVE_CHANNEL:
+				{
+					ChannelList c;
+					c.is_range = false;
+					c.a = dgi.read_uint64();
+					m_participant_channels[participant].remove(c);
+					for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+					{
+						for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+						{
+							if(*it2 == c)
+							{
+								send_upstream = false;
+								break;
+							}
+						}
+						if(!send_upstream)
+						{
+							break;
+						}
+					}
+				}
+				break;
 				default:
 					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
 			}
@@ -171,6 +194,10 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		unsigned long long channel = dgi.read_uint64();
 		for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
 		{
+			if(*it == participant)
+			{
+				continue;
+			}
 			MDParticipantInterface *participant = *it;
 			for(auto it2 = m_participant_channels[participant].begin(); it2 != m_participant_channels[participant].end(); ++it2)
 			{
