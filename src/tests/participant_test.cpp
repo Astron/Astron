@@ -9,7 +9,7 @@ class ParticipantTest : public MDParticipantInterface
 			Datagram dg;
 			dg.add_uint8(1);
 			dg.add_uint64(CONTROL_MESSAGE);
-			dg.add_uint16(CONTROL_SET_CHANNEL);
+			dg.add_uint16(CONTROL_ADD_CHANNEL);
 			dg.add_uint64(100);
 
 			MessageDirector::singleton.handle_datagram(&dg, this);
@@ -17,7 +17,7 @@ class ParticipantTest : public MDParticipantInterface
 			Datagram dg4;
 			dg4.add_uint8(1);
 			dg4.add_uint64(CONTROL_MESSAGE);
-			dg4.add_uint16(CONTROL_SET_CHANNEL);
+			dg4.add_uint16(CONTROL_ADD_CHANNEL);
 			dg4.add_uint64(200);
 
 			MessageDirector::singleton.handle_datagram(&dg4, this);

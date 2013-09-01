@@ -93,7 +93,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			bool send_upstream = true;
 			switch(msg_type)
 			{
-				case CONTROL_SET_CHANNEL:
+				case CONTROL_ADD_CHANNEL:
 				{
 					ChannelList c;
 					c.is_range = false;
