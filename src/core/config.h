@@ -23,7 +23,7 @@ class ConfigVariable
 		T m_def_val;
 		std::string m_name;
 	public:
-		ConfigVariable<T>::ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
+		ConfigVariable::ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
 		{
 		}
 
