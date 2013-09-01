@@ -50,6 +50,14 @@ class MessageDirector
 		void start_accept();
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
+		void start_receive();
+		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
+
+		char *m_buffer;
+		unsigned short m_bufsize;
+		unsigned short m_bytes_to_go;
+		bool m_is_data;
+
 		boost::asio::ip::tcp::acceptor *m_acceptor;
 		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;

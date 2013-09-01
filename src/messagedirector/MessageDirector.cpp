@@ -57,6 +57,10 @@ void MessageDirector::InitializeMD()
 					<< std::endl;
 				exit(1);
 			}
+			m_buffer = new char[2];
+			m_bufsize = 2;
+			m_bytes_to_go = 2;
+			start_receive();
 		}
 	}
 }
@@ -115,7 +119,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	}
 }
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL)
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
+	m_buffer(NULL), m_bufsize(0), m_bytes_to_go(0), m_is_data(false)
 {
 }
 
@@ -134,4 +139,46 @@ void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::er
 	                << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
 	start_accept();
+}
+
+void MessageDirector::start_receive()
+{
+	unsigned short offset = m_bufsize - m_bytes_to_go;
+	m_remote_md->async_receive(boost::asio::buffer(m_buffer+offset, m_bufsize-offset), boost::bind(&MessageDirector::read_handler,
+		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+}
+
+void MessageDirector::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
+{
+	if(ec.value() != 0)
+	{
+		gLogger->fatal() << "Lost connection to remote MD error: " << ec.category().message(ec.value()) << std::endl;
+		exit(1);
+	}
+	else
+	{
+		m_bytes_to_go -= bytes_transferred;
+		if(m_bytes_to_go == 0)
+		{
+			if(!m_is_data)
+			{
+				m_bufsize = *(unsigned short*)m_buffer;
+				delete [] m_buffer;
+				m_buffer = new char[m_bufsize];
+				m_bytes_to_go = m_bufsize;
+				m_is_data = true;
+			}
+			else
+			{
+				Datagram dg(std::string(m_buffer, m_bufsize));
+				delete [] m_buffer;//dg makes a copy
+				m_bufsize = 2;
+				m_buffer = new char[m_bufsize];
+				m_bytes_to_go = m_bufsize;
+				handle_datagram(&dg, NULL);
+			}
+		}
+
+		start_receive();
+	}
 }
