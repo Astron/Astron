@@ -13,6 +13,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 MDNetworkParticipant::~MDNetworkParticipant()
 {
 	m_socket->close();
+	delete m_socket;
 	delete m_buffer;
 }
 
