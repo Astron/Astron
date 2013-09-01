@@ -20,7 +20,8 @@ class Daemon(object):
         os.write(cfg, self.config)
         os.close(cfg)
 
-        self.daemon = subprocess.Popen([self.DAEMON_PATH, self.config_file])
+        self.daemon = subprocess.Popen([self.DAEMON_PATH,
+                                        '-config', self.config_file])
 
     def stop(self):
         self.daemon.kill()
