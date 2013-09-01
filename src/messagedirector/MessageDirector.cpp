@@ -63,6 +63,10 @@ void MessageDirector::InitializeMD()
 
 void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
 {
+	if(participant && m_remote_md)//if there is no participant, then it came from the upstream
+	{
+		m_remote_md->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
+	}
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
 	if(channels == 1)
