@@ -3,6 +3,9 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#ifdef _DEBUG
+#include <fstream>
+#endif
 
 class DatagramIterator
 {
@@ -16,6 +19,11 @@ class DatagramIterator
 			{
 				std::stringstream error;
 				error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg->get_buf_end() << ")" << std::endl;
+				#ifdef _DEBUG
+					std::fstream test("test", std::ios_base::out | std::ios_base::binary);
+					test.write(m_dg->get_data(), m_dg->get_buf_end());
+					test.close();
+				#endif
 				throw std::runtime_error(error.str());
 			};
 		}
