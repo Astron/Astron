@@ -6,13 +6,23 @@ if (WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
-set (YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
-set (YAMLCPP_LIBRARIES "dependencies/yaml-cpp-0.5.1/lib" CACHE PATH "Path to yamlcpp libs")
-set (YAMLCPP_LIBNAME "libyaml-cppmdd" CACHE STRING "name of yaml lib")
+### YAML Depedency -- required by config ###
+set(YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
+if(EXISTS "${PROJECT_SOURCE_DIR}/dependencies/yaml-cpp-0.5.1/lib")
+	set(YAMLCPP_LIBRARIES "dependencies/yaml-cpp-0.5.1/lib" CACHE PATH "Path to yamlcpp libs")
+else()
+	set(YAMLCPP_LIBRARIES "dependencies/yaml-cpp-0.5.1" CACHE PATH "Path to yamlcpp libs")
+endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
+	set (CMAKE_CXX_FLAGS "-pthread")
+else ()
+	set (YAMLCPP_LIBNAME "libyaml-cppmdd" CACHE STRING "Name of YAML library")
+endif()
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 
-#fucking yamlcpp needs boost
+### BOOST Dependency -- required by yaml-cpp ###
 find_package (Boost COMPONENTS system)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIR})
