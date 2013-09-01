@@ -1,10 +1,12 @@
 #include "core/global.h"
 #include "MessageDirector.h"
 #include "core/config.h"
+#include "core/global.h"
 #include "MDNetworkParticipant.h"
 #include <boost/bind.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
+ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
 MessageDirector MessageDirector::singleton;
 
@@ -22,6 +24,26 @@ void MessageDirector::InitializeMD()
 			tcp::resolver::iterator it = resolver.resolve(query);
 			m_acceptor = new tcp::acceptor(io_service, *it, true);
 			start_accept();
+		}
+		if(connect_addr.get_val() != "unspecified")
+		{
+			std::string str_ip = connect_addr.get_val();
+			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+			str_ip = str_ip.substr(0, str_ip.find(':', 0));
+			tcp::resolver resolver(io_service);
+			tcp::resolver::query query(str_ip, str_port);
+			tcp::resolver::iterator it = resolver.resolve(query);
+			m_remote_md = new tcp::socket(io_service);
+			boost::system::error_code ec;
+			m_remote_md->connect(*it, ec);
+			if(ec.value() != 0)
+			{
+				gLogger->fatal() << "Could not connect to remote MD at IP: "
+					<< connect_addr.get_val() << " With error code: "
+					<< ec.value() << "(" << ec.category().message(ec.value()) << ")"
+					<< std::endl;
+				exit(1);
+			}
 		}
 	}
 }

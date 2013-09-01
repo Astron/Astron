@@ -50,6 +50,7 @@ class MessageDirector
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
 		boost::asio::ip::tcp::acceptor *m_acceptor;
+		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;
 };
 
