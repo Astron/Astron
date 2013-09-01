@@ -39,11 +39,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		if(!io_service)
-		{
-			io_service = new boost::asio::io_service;
-		}
-		io_service->run();
+		io_service.run();
 	}
 	catch(std::exception &e)
 	{

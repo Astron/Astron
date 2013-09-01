@@ -8,4 +8,4 @@
 extern Logger *gLogger;
 extern ConfigFile *gConfig;
 extern DCFile *gDCF;
-extern boost::asio::io_service *io_service;
+extern boost::asio::io_service io_service;
