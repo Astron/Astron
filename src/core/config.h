@@ -23,11 +23,11 @@ class ConfigVariable
 		T m_def_val;
 		std::string m_name;
 	public:
-		ConfigVariable::ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
+		ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
 		{
 		}
 
-		T ConfigVariable::get_rval(YAML::Node node)
+		T get_rval(YAML::Node node)
 		{
 			size_t offset = 0;
 			YAML::Node cnode = node;
@@ -58,7 +58,7 @@ class ConfigVariable
 			return cnode.as<T>();
 		}
 
-		T ConfigVariable::get_val()
+		T get_val()
 		{
 			return get_rval(gConfig->m_node);
 		}
