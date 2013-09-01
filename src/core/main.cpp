@@ -1,4 +1,5 @@
 #include <string>
+#include <cstring>
 #include <fstream>
 
 #include "global.h"
@@ -11,15 +12,32 @@ int main(int argc, char *argv[])
 	gConfig = new ConfigFile;
 	gDCF = new DCFile;
 
-	// TODO: Perhaps logging should go to a file specified via command-line switch?
-	// And perhaps verbosity should be specified via command-line switch as well?
+
+	//TODO: Perhaps verbosity should be specified via command-line switch?
+	if (argc < 2)
+	{
+		cfg_file = "openotpd.yml";
+	}
+	else
+	{
+		cfg_file = "openotpd.yml";
+		std::string log_file = "none";
+		for (int i = 1; i < argc; i++)
+		{
+			if (strcmp(argv[i],  "-config") == 0 && i + 1 < argc) 
+			{
+				cfg_file = argv[++i];
+			}
+			else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc)
+			{
+				log_file = argv[++i];
+			}
+		}
+		gLogger = new Logger(log_file);
+	}
 
 	gLogger->info("Loading configuration file...");
 
-	if (argc < 2)
-		cfg_file = "openotpd.yml";
-	else
-		cfg_file = argv[1];
 
 	std::ifstream file(cfg_file.c_str());
 	if(!file.is_open())

@@ -3,6 +3,14 @@
 
 #include "logger.h"
 
+Logger::Logger(std::string log_name) : log_file(log_name)
+{
+}
+
+Logger::Logger() : log_file("none")
+{
+}
+
 void Logger::log(LogSeverity sev, const char *format, va_list va)
 {
 	const char *sevtext;
@@ -35,6 +43,15 @@ void Logger::log(LogSeverity sev, const char *format, va_list va)
 	time(&rawtime);
 	char timetext[1024];
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
+
+	if (log_file != "none")
+	{
+		FILE* log_handler = fopen(log_file.c_str(), "a");
+		fprintf(log_handler, "[%s] %s: ", timetext, sevtext);
+		vfprintf(log_handler, format, va);
+		fprintf(log_handler, "\n");
+		fclose(log_handler);
+	}
 
 	printf("[%s] %s: ", timetext, sevtext);
 	vprintf(format, va);
