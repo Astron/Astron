@@ -30,7 +30,7 @@ class ConfigVariable
 		T get_rval(YAML::Node node)
 		{
 			size_t offset = 0;
-			YAML::Node cnode = node;
+			YAML::Node cnode = YAML::Clone(node);
 			bool going = true;
 			while(going)
 			{
