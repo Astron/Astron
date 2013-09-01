@@ -71,7 +71,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	//TODO: loop through channels & route crap.
 }
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false)
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL)
 {
 }
 
