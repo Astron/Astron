@@ -26,10 +26,9 @@ class MessageDirector
 		}
 
 		void start_accept();
-		static void handle_accept(const boost::system::error_code &ec);
+		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
 		boost::asio::ip::tcp::acceptor *m_acceptor;
-		boost::asio::ip::tcp::socket *m_client_socket;
 		bool m_initialized;
 };
 

@@ -1,6 +1,8 @@
 #include "../core/global.h"
 #include "messagedirector.h"
 #include "../core/config.h"
+#include "MDNetworkParticipant.h"
+#include <boost/bind.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
 
@@ -30,13 +32,15 @@ MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false)
 
 void MessageDirector::start_accept()
 {
-	m_client_socket = new tcp::socket(io_service);
+	tcp::socket *socket = new tcp::socket(io_service);
 	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*m_client_socket, &MessageDirector::handle_accept);
+	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept, 
+		this, socket, boost::asio::placeholders::error));
 }
 
-void MessageDirector::handle_accept(const boost::system::error_code &ec)
+void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
 	gLogger->info("Got a client connection");
-	MessageDirector::singleton.start_accept();
+	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
+	start_accept();
 }

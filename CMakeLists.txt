@@ -39,6 +39,8 @@ add_executable (openotpd
 	src/core/logger.h
 	src/messagedirector/messagedirector.cpp 
 	src/messagedirector/messagedirector.h
+	src/messagedirector/MDNetworkParticipant.cpp
+	src/messagedirector/MDNetworkParticipant.h
 	src/core/datagram.h
 	src/core/datagramIterator.h
 	${TEST_FILES}
