@@ -38,7 +38,7 @@ class DatagramIterator
 			return r;
 		}
 
-		unsigned short read_uint64()
+		unsigned long long read_uint64()
 		{
 			check_read_length(8);
 			unsigned long long r = *(unsigned long long*)(m_dg->get_data()+p);
