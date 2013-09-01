@@ -46,7 +46,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	string(REGEX MATCHALL "[0-9]+" GCC_VERSION_COMPONENTS ${GCC_VERSION})
     list(GET GCC_VERSION_COMPONENTS 0 GCC_MAJOR)
     list(GET GCC_VERSION_COMPONENTS 1 GCC_MINOR)
-	if(GCC_MINOR >= 7)
+	if(${GCC_MINOR} >= 7)
 		add_definitions(-std=c++11) #for the fucking 'auto' keyword
 	else()
 		add_definitions(-std=c++0x) #for the fucking 'auto' keyword
