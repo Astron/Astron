@@ -73,7 +73,9 @@ class MDConnection(object):
 
     def _read(self):
         try:
-            length = struct.unpack('<H', self.s.recv(2))[0]
+			str = self.s.recv(2)
+			print " ".join("{0:X}".format(ord(c)) for c in str)
+            length = struct.unpack('<H', str)[0]
         except socket.error:
             return None
 
