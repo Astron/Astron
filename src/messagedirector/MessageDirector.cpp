@@ -12,7 +12,7 @@ bool ChannelList::qualifies(unsigned long long channel)
 {
 	if(is_range)
 	{
-		return (channel >= a && channel <= b)s;
+		return (channel >= a && channel <= b);
 	}
 	else
 	{
