@@ -18,7 +18,8 @@ MDNetworkParticipant::~MDNetworkParticipant()
 
 bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator *dgi)
 {
-	//TODO: send the datagram onto the client
+	//TODO: make this asynch
+	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end());
 	return true;
 }
 
