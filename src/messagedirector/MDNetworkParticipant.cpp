@@ -58,6 +58,7 @@ void MDNetworkParticipant::read_handler(const boost::system::error_code &ec, siz
 				m_bytes_to_go = m_bufsize;
 				//TODO: implement below
 				//MessageDirector::singleton.route_datagram(dg);
+			}
 		}
 
 		start_receive();
