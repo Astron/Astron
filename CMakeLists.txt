@@ -32,7 +32,7 @@ if (Boost_FOUND)
 else ()
 	message (FATAL_ERROR "You need boost to build this, set the BOOST_ROOT or BOOSTROOT env variables, or pass them to cmake")
 endif()
-add_definitions(-DBOOST_ALL_NO_LIB)
+add_definitions(-DBOOST_ALL_NO_LIB -D_SCL_SECURE_NO_WARNINGS)
 
 set (BUILD_TESTS CACHE BOOL "If set to true, test files will be compiled in")
 
