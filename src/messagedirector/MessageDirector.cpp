@@ -55,18 +55,25 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	if(channels == 1)
 	{
 		unsigned long long channel = dgi.read_uint64();
-		if(channel == CONTROL_MESSAGE)
+		if(channel == CONTROL_MESSAGE && participant)
 		{
 			unsigned int msg_type = dgi.read_uint16();
 			switch(msg_type)
 			{
+				case CONTROL_SET_CHANNEL:
+				{
+					ChannelList c;
+					c.is_range = false;
+					c.a = dgi.read_uint64();
+					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
+				}
+				break;
+				default:
+					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
 			}
 			return;
 		}
-		else
-		{
-			dgi.seek(1);
-		}
+		dgi.seek(1);
 	}
 	//TODO: loop through channels & route crap.
 }
