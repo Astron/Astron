@@ -102,7 +102,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			{
 				if(it2->qualifies(channel))
 				{
-					bool should_continue = participant->handle_datagram(dg, DatagramIterator(dg, 1+(channels*8)));
+					DatagramIterator msg_dgi(dg, 1+(channels*8));
+					bool should_continue = participant->handle_datagram(dg, msg_dgi);
 					if(!should_continue)
 					{
 						return;
