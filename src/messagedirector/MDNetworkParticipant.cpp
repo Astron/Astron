@@ -57,6 +57,7 @@ void MDNetworkParticipant::read_handler(const boost::system::error_code &ec, siz
 				m_bufsize = 2;
 				m_buffer = new char[m_bufsize];
 				m_bytes_to_go = m_bufsize;
+				m_is_data = false;
 				MessageDirector::singleton.handle_datagram(&dg, this);
 			}
 		}

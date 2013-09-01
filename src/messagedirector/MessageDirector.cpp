@@ -184,6 +184,7 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 				m_bufsize = 2;
 				m_buffer = new char[m_bufsize];
 				m_bytes_to_go = m_bufsize;
+				m_is_data = false;
 				handle_datagram(&dg, NULL);
 			}
 		}
