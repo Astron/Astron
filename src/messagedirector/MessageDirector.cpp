@@ -122,6 +122,21 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 					c.is_range = true;
 					c.a = dgi.read_uint64();
 					c.b = dgi.read_uint64();
+					for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+					{
+						for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+						{
+							if(*it2 == c)
+							{
+								send_upstream = false;
+								break;
+							}
+						}
+						if(!send_upstream)
+						{
+							break;
+						}
+					}
 					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
 				}
 				break;
