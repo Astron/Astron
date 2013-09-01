@@ -42,6 +42,8 @@ endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	add_definitions(-std=c++11) #for the fucking 'auto' keyword
+	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	message("${GCC_VERSION}")
 endif()
 
 include_directories (src)
