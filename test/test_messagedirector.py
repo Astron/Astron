@@ -48,7 +48,7 @@ class TestMessageDirector(unittest.TestCase):
         cls.c2.close()
         cls.daemon.stop()
 
-    '''def test_single(self):
+    def test_single(self):
         self.l1.flush()
 
         # Send a datagram...
@@ -61,7 +61,7 @@ class TestMessageDirector(unittest.TestCase):
         self.c1.send(dg)
 
         # Make sure the MD passes it upward.
-        self.assertTrue(self.l1.expect(dg))'''
+        self.assertTrue(self.l1.expect(dg))
 
     def test_subscribe(self):
         self.l1.flush()
