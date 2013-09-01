@@ -8,7 +8,6 @@ int main(int argc, char *argv[])
 {
 	std::string cfg_file;
 
-	gLogger = new Logger;
 	gConfig = new ConfigFile;
 	gDCF = new DCFile;
 
@@ -21,7 +20,6 @@ int main(int argc, char *argv[])
 	else
 	{
 		cfg_file = "openotpd.yml";
-		std::string log_file = "none";
 		for (int i = 1; i < argc; i++)
 		{
 			if (strcmp(argv[i],  "-config") == 0 && i + 1 < argc) 
@@ -30,11 +28,13 @@ int main(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc)
 			{
-				log_file = argv[++i];
+				gLogger = new Logger(argv[++i]);
 			}
 		}
-		gLogger = new Logger(log_file);
 	}
+
+	if(!gLogger)
+		gLogger = new Logger;
 
 	gLogger->info() << "Loading configuration file..." << std::endl;
 
