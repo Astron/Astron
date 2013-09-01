@@ -39,7 +39,7 @@ class MDParticipantInterface
 		{
 			MessageDirector::singleton.add_participant(this);
 		}
-		~MDParticipantInterface()
+		virtual ~MDParticipantInterface()
 		{
 			MessageDirector::singleton.remove_participant(this);
 		}
