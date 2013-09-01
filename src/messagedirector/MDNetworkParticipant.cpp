@@ -19,7 +19,7 @@ MDNetworkParticipant::~MDNetworkParticipant()
 bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator *dgi)
 {
 	//TODO: make this asynch
-	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end());
+	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
 	return true;
 }
 
@@ -57,8 +57,7 @@ void MDNetworkParticipant::read_handler(const boost::system::error_code &ec, siz
 				m_bufsize = 2;
 				m_buffer = new char[m_bufsize];
 				m_bytes_to_go = m_bufsize;
-				//TODO: implement below
-				//MessageDirector::singleton.route_datagram(dg);
+				MessageDirector::singleton.handle_datagram(&dg, this);
 			}
 		}
 

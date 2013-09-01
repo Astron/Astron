@@ -1,8 +1,26 @@
 #pragma once
 #include <list>
+#include <map>
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
+
+#define CONTROL_MESSAGE 4001
+#define CONTROL_SET_CHANNEL 2001
+#define CONTROL_REMOVE_CHANNEL 2002
+#define CONTROL_SET_CON_NAME 2004
+#define CONTROL_SET_CON_URL 2005
+#define CONTROL_ADD_RANGE 2008
+#define CONTROL_REMOVE_RANGE 2009
+#define CONTROL_ADD_POST_REMOVE 2010
+#define CONTROL_CLEAR_POST_REMOVE 2011
+
+struct ChannelList
+{
+	unsigned long long a;
+	unsigned long long b;
+	bool is_range;
+};
 
 class MDParticipantInterface;
 class MessageDirector
@@ -10,9 +28,12 @@ class MessageDirector
 	public:
 		void InitializeMD();
 		static MessageDirector singleton;
+
+		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
+		std::map<MDParticipantInterface*, std::list<ChannelList>> m_participant_channels;
 		
 		friend class MDParticipantInterface;
 		

@@ -26,6 +26,29 @@ void MessageDirector::InitializeMD()
 	}
 }
 
+void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
+{
+	DatagramIterator dgi(dg);
+	unsigned char channels = dgi.read_uint8();
+	if(channels == 1)
+	{
+		unsigned long long channel = dgi.read_uint64();
+		if(channel == CONTROL_MESSAGE)
+		{
+			unsigned int msg_type = dgi.read_uint16();
+			switch(msg_type)
+			{
+			}
+			return;
+		}
+		else
+		{
+			dgi.seek(1);
+		}
+	}
+	//TODO: loop through channels & route crap.
+}
+
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false)
 {
 }
