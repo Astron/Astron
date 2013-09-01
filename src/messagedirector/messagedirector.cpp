@@ -19,13 +19,24 @@ void MessageDirector::InitializeMD()
 			tcp::resolver::query query(str_ip, str_port);
 			tcp::resolver::iterator it = resolver.resolve(query);
 			m_acceptor = new tcp::acceptor(io_service, *it, true);
-			tcp::socket socket(io_service);
-			tcp::endpoint peerEndpoint;
-			m_acceptor->accept(socket);
+			start_accept();
 		}
 	}
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false)
 {
+}
+
+void MessageDirector::start_accept()
+{
+	m_client_socket = new tcp::socket(io_service);
+	tcp::endpoint peerEndpoint;
+	m_acceptor->async_accept(*m_client_socket, &MessageDirector::handle_accept);
+}
+
+void MessageDirector::handle_accept(const boost::system::error_code &ec)
+{
+	gLogger->info("Got a client connection");
+	MessageDirector::singleton.start_accept();
 }
