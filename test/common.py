@@ -38,6 +38,13 @@ DATATYPES = {
     'uint64': '<Q',
 }
 
+CONTROL_CHANNEL = 4001
+CONTROL_ADD_CHANNEL = 2001
+CONTROL_REMOVE_CHANNEL = 2002
+
+CONTROL_ADD_POST_REMOVE = 2010
+CONTROL_CLEAR_POST_REMOVE = 2011
+
 class Datagram(object):
     def __init__(self, data=b''):
         self._data = data
@@ -60,6 +67,50 @@ class Datagram(object):
 
     def get_data(self):
         return self._data
+
+    # Common datagram type helpers:
+    @classmethod
+    def create(cls, recipients, sender, msgtype):
+        dg = cls()
+        dg.add_uint8(len(recipients))
+        for recipient in recipients: dg.add_uint64(recipient)
+        dg.add_uint64(sender)
+        dg.add_uint16(msgtype)
+        return dg
+
+    @classmethod
+    def create_control(cls):
+        dg = cls()
+        dg.add_uint8(1)
+        dg.add_uint64(CONTROL_CHANNEL)
+        return dg
+
+    @classmethod
+    def create_add_channel(cls, channel):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_ADD_CHANNEL)
+        dg.add_uint64(channel)
+        return dg
+
+    @classmethod
+    def create_remove_channel(cls, channel):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
+        dg.add_uint64(channel)
+        return dg
+
+    @classmethod
+    def create_add_post_remove(cls, datagram):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_ADD_POST_REMOVE)
+        dg.add_string(datagram.get_data())
+        return dg
+
+    @classmethod
+    def create_clear_post_remove(cls):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        return dg
 
 class MDConnection(object):
     def __init__(self, sock):

@@ -10,13 +10,6 @@ messagedirector:
     connect: 127.0.0.1:57124
 """
 
-CONTROL_CHANNEL = 4001
-CONTROL_ADD_CHANNEL = 2001
-CONTROL_REMOVE_CHANNEL = 2002
-
-CONTROL_ADD_POST_REMOVE = 2010
-CONTROL_CLEAR_POST_REMOVE = 2011
-
 class TestMessageDirector(unittest.TestCase):
     @classmethod
     def new_connection(cls):
@@ -52,11 +45,7 @@ class TestMessageDirector(unittest.TestCase):
         self.l1.flush()
 
         # Send a datagram...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(1234)
-        dg.add_uint64(4321)
-        dg.add_uint16(1337)
+        dg = Datagram.create([1234], 4321, 1337)
         dg.add_string('HELLO')
         self.c1.send(dg)
 
@@ -69,11 +58,7 @@ class TestMessageDirector(unittest.TestCase):
         self.c2.flush()
 
         # Subscribe to a channel...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
-        dg.add_uint16(CONTROL_ADD_CHANNEL)
-        dg.add_uint64(12345654321)
+        dg = Datagram.create_add_channel(12345654321)
         self.c1.send(dg)
         self.assertTrue(self.c1.expect_none())
         # Make sure the MD subscribes to its parent.
@@ -81,10 +66,7 @@ class TestMessageDirector(unittest.TestCase):
 
         # Send a test datagram on second connection...
         dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(12345654321)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c2.send(dg)
         self.assertTrue(self.c1.expect(dg))
@@ -92,22 +74,14 @@ class TestMessageDirector(unittest.TestCase):
         self.assertTrue(self.l1.expect(dg))
 
         # Subscribe on the second connection...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
-        dg.add_uint16(CONTROL_ADD_CHANNEL)
-        dg.add_uint64(12345654321)
+        dg = Datagram.create_add_channel(12345654321)
         self.c2.send(dg)
         self.assertTrue(self.c2.expect_none())
         # MD should not ask for the channel a second time.
         self.assertTrue(self.l1.expect_none())
 
         # Send a test datagram on first connection...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(12345654321)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c1.send(dg)
         self.assertTrue(self.c2.expect(dg)) # Should be relayed to second.
@@ -115,11 +89,7 @@ class TestMessageDirector(unittest.TestCase):
         #self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
 
         # Unsubscribe on the first connection...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
-        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-        dg.add_uint64(12345654321)
+        dg = Datagram.create_remove_channel(12345654321)
         self.c1.send(dg)
         self.assertTrue(self.c1.expect_none())
         self.assertTrue(self.c2.expect_none())
@@ -127,11 +97,7 @@ class TestMessageDirector(unittest.TestCase):
         self.assertTrue(self.l1.expect_none())
 
         # Send another test datagram on second connection...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(12345654321)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c2.send(dg)
         self.assertTrue(self.l1.expect(dg)) # Should be sent upward.
@@ -139,11 +105,7 @@ class TestMessageDirector(unittest.TestCase):
         self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
 
         # Unsubscribe on the second connection...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
-        dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-        dg.add_uint64(12345654321)
+        dg = Datagram.create_remove_channel(12345654321)
         self.c2.send(dg)
         self.assertTrue(self.c1.expect_none())
         self.assertTrue(self.c2.expect_none())
@@ -157,54 +119,32 @@ class TestMessageDirector(unittest.TestCase):
 
         # Subscribe to a pair of channels on c1.
         for channel in [1111, 2222]:
-            dg = Datagram()
-            dg.add_uint8(1)
-            dg.add_uint64(CONTROL_CHANNEL)
-            dg.add_uint16(CONTROL_ADD_CHANNEL)
-            dg.add_uint64(channel)
+            dg = Datagram.create_add_channel(channel)
             self.c1.send(dg)
 
         # Subscribe to another pair of channels on c2.
         for channel in [2222, 3333]:
-            dg = Datagram()
-            dg.add_uint8(1)
-            dg.add_uint64(CONTROL_CHANNEL)
-            dg.add_uint16(CONTROL_ADD_CHANNEL)
-            dg.add_uint64(channel)
+            dg = Datagram.create_add_channel(channel)
             self.c2.send(dg)
 
         self.l1.flush() # Don't care about the subscribe messages.
 
         # Sanity check: A datagram on channel 2222 should be delivered to both.
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(2222)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
         self.assertTrue(self.c1.expect(dg))
         self.assertTrue(self.c2.expect(dg))
 
         # A datagram to channels 1111 and 3333 should be delievered to both.
-        dg = Datagram()
-        dg.add_uint8(2)
-        dg.add_uint64(1111)
-        dg.add_uint64(3333)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([1111, 3333], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
         self.assertTrue(self.c1.expect(dg))
         self.assertTrue(self.c2.expect(dg))
 
         # A datagram should only be delivered once if multiple channels match.
-        dg = Datagram()
-        dg.add_uint8(2)
-        dg.add_uint64(1111)
-        dg.add_uint64(2222)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([1111, 2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
         self.assertTrue(self.c1.expect(dg))
@@ -212,19 +152,8 @@ class TestMessageDirector(unittest.TestCase):
         self.assertTrue(self.c2.expect(dg))
 
         # Let's try something really absurd:
-        dg = Datagram()
-        dg.add_uint8(9)
-        dg.add_uint64(1111)
-        dg.add_uint64(2222)
-        dg.add_uint64(3333)
-        dg.add_uint64(1111)
-        dg.add_uint64(1111)
-        dg.add_uint64(2222)
-        dg.add_uint64(3333)
-        dg.add_uint64(3333)
-        dg.add_uint64(2222)
-        dg.add_uint64(0)
-        dg.add_uint16(1234)
+        dg = Datagram.create([1111, 2222, 3333, 1111, 1111,
+                              2222, 3333, 3333, 2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
         self.assertTrue(self.c1.expect(dg))
@@ -243,11 +172,7 @@ class TestMessageDirector(unittest.TestCase):
 
         # Unsubscribe the channels...
         for channel in [1111, 2222, 3333]:
-            dg = Datagram()
-            dg.add_uint8(1)
-            dg.add_uint64(CONTROL_CHANNEL)
-            dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-            dg.add_uint64(channel)
+            dg = Datagram.create_remove_channel(channel)
             self.c1.send(dg)
             self.c2.send(dg)
 
@@ -258,18 +183,11 @@ class TestMessageDirector(unittest.TestCase):
 
         # Create a datagram to be sent post-remove...
         dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(555444333)
-        dg.add_uint64(0)
-        dg.add_uint16(4321)
+        dg = Datagram.create([555444333], 0, 4321)
         dg.add_string('Testing...')
 
         # Hang it on c1...
-        dg2 = Datagram()
-        dg2.add_uint8(1)
-        dg2.add_uint64(CONTROL_CHANNEL)
-        dg2.add_uint16(CONTROL_ADD_POST_REMOVE)
-        dg2.add_string(dg.get_data())
+        dg2 = Datagram.create_add_post_remove(dg)
         self.c1.send(dg2)
 
         # Verify nothing's happening yet...
@@ -286,11 +204,7 @@ class TestMessageDirector(unittest.TestCase):
         self.c2.send(dg2)
 
         # Wait, nevermind...
-        dg = Datagram()
-        dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
-        dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
-        self.c2.send(dg)
+        self.c2.send(Datagram.create_clear_post_remove())
 
         # Did the cancellation work?
         self.c2.close()
