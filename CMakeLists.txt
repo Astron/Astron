@@ -25,7 +25,7 @@ link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
 ### BOOST Dependency -- required by yaml-cpp, and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "Test")
 find_package (Boost COMPONENTS system)
-if (!Boost_FOUND)
+if (NOT Boost_FOUND)
 	set(Boost_USE_STATIC_LIBS OFF CACHE BOOL "Test")
 	find_package (Boost COMPONENTS system)
 	if (Boost_FOUND)
