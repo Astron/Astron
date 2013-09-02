@@ -33,6 +33,11 @@ class MessageDirector
 		static MessageDirector singleton;
 
 		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
+
+		void subscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		void unsubscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		void subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
