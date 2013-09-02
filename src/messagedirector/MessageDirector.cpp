@@ -200,29 +200,15 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	ChannelList c;
 	c.is_range = false;
 	c.a = a;
-	bool send_upstream = true;
-	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
-	{
-		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-		{
-			if(*it2 == c)
-			{
-				send_upstream = false;
-				break;
-			}
-		}
-		if(!send_upstream)
-		{
-			break;
-		}
-	}
+
 	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
-	if(send_upstream && m_remote_md)
+
+	if(should_send_upstream(c))
 	{
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_CHANNEL);
+		dg.add_uint16(CONTROL_ADD_RANGE);
 		dg.add_uint64(a);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -232,33 +218,18 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 
 void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned long long a)
 {
-	bool send_upstream = true;
 	ChannelList c;
 	c.is_range = false;
 	c.a = a;
-	m_participant_channels[p].remove(c);
-	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
-	{
-		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-		{
-			if(*it2 == c)
-			{
-				send_upstream = false;
-				break;
-			}
-		}
-		if(!send_upstream)
-		{
-			break;
-		}
-	}
 
-	if(send_upstream && m_remote_md)
+	m_participant_channels[p].remove(c);
+
+	if(should_send_upstream(c))
 	{
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+		dg.add_uint16(CONTROL_ADD_RANGE);
 		dg.add_uint64(a);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -268,29 +239,14 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 
 void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
 {
-	bool send_upstream = true;
 	ChannelList c;
 	c.is_range = true;
 	c.a = a;
 	c.b = b;
-	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
-	{
-		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-		{
-			if(*it2 == c)
-			{
-				send_upstream = false;
-				break;
-			}
-		}
-		if(!send_upstream)
-		{
-			break;
-		}
-	}
+
 	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
 
-	if(send_upstream && m_remote_md)
+	if(should_send_upstream(c))
 	{
 		Datagram dg;
 		dg.add_uint8(1);
@@ -302,6 +258,28 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 	}
+}
+
+inline bool MessageDirector::should_send_upstream(ChannelList c)
+{
+	bool should_upstream = true;
+	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+	{
+		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+		{
+			if(*it2 == c)
+			{
+				should_upstream = false;
+				break;
+			}
+		}
+		if(!should_upstream)
+		{
+			break;
+		}
+	}
+
+	return should_upstream && m_remote_md;
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
