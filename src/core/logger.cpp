@@ -33,11 +33,11 @@ std::streamsize LoggerBuf::xsputn (const char* s, std::streamsize n)
 {
 	if(m_output_to_console)
 	{
-		std::cout << std::string(s, n);
+		std::cout.write(s, n);
 	}
 	if(m_has_file)
 	{
-		m_file << std::string(s, n);
+		m_file.write(s, n);
 	}
 	return n;
 }
