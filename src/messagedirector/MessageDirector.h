@@ -85,6 +85,8 @@ class MessageDirector
 		void start_receive();
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
+		bool should_send_upstream(ChannelList);
+
 		char *m_buffer;
 		unsigned short m_bufsize;
 		unsigned short m_bytes_to_go;
