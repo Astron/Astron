@@ -108,10 +108,10 @@ class MessageDirector
 			m_participants.remove(participant);
 		}
 
-		void start_accept();
+		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
-		void start_receive();
+		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
 		bool should_send_upstream(ChannelList);

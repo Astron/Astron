@@ -39,6 +39,7 @@ void MessageDirector::InitializeMD()
 {
 	if(!m_initialized)
 	{
+		// Bind to port and listen for downstream servers
 		if(bind_addr.get_val() != "unspecified")
 		{
 			gLogger->debug() << "binding" << std::endl;
@@ -51,6 +52,8 @@ void MessageDirector::InitializeMD()
 			m_acceptor = new tcp::acceptor(io_service, *it, true);
 			start_accept();
 		}
+
+		// Connect to upstream server and start handling recieved messages
 		if(connect_addr.get_val() != "unspecified")
 		{
 			gLogger->debug() << "connecting" << std::endl;
@@ -84,6 +87,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	gLogger->debug() << "MD Handling datagram" << std::endl;
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
+
+	// Check for control messages
 	if(channels == 1)
 	{
 		unsigned long long channel = dgi.read_uint64();
@@ -148,8 +153,12 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			}
 			return;
 		}
+
+		// return offset to beginning of recipients if not a CONTROL_MESSAGE
 		dgi.seek(1);
 	}
+
+	// Route messages to participants
 	std::map<MDParticipantInterface*, bool> sent_to_participant;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
@@ -177,19 +186,19 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			}
 		}
 	}
-	
-	if(participant && m_remote_md)//if there is no participant, then it came from the upstream
+
+	if(participant && m_remote_md)  // Send message upstream
 	{
 		unsigned short len = dg->get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
 		gLogger->debug() << "sending to upstream md" << std::endl;
 	}
-	else if(!participant)
+	else if(!participant) // If there is no participant, then it came from the upstream
 	{
 		gLogger->debug() << "not sending to upstream because it came from upstream" << std::endl;
 	}
-	else
+	else // Otherwise is root node
 	{
 		gLogger->debug() << "no upstream md" << std::endl;
 	}
