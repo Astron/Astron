@@ -2,6 +2,7 @@ import subprocess
 import tempfile
 import struct
 import socket
+import time
 import os
 
 __all__ = ['Daemon', 'Datagram', 'MDConnection']
@@ -22,6 +23,8 @@ class Daemon(object):
 
         self.daemon = subprocess.Popen([self.DAEMON_PATH,
                                         '-config', self.config_file])
+
+        time.sleep(1.0) # Allow some time for daemon to initialize...
 
     def stop(self):
         self.daemon.kill()
