@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import unittest, time
+import unittest
 from socket import *
 
 from common import *
