@@ -210,5 +210,129 @@ class TestMessageDirector(unittest.TestCase):
         self.__class__.c2 = self.new_connection()
         self.assertTrue(self.l1.expect_none())
 
+    def test_ranges(self):
+        self.l1.flush()
+        self.c1.flush()
+        self.c2.flush()
+
+        # Subscribe to range 1000-1999...
+        dg = Datagram.create_add_range(1000, 1999)
+        self.c1.send(dg)
+        # Verify that l1 asks for the range as well...
+        self.assertTrue(self.l1.expect(dg))
+
+        # Send messages on a few channels on c2, see which ones c1 gets.
+        def check_channels(channels):
+            for channel, should_receive in channels:
+                dg = Datagram.create([channel], 123456789, 5858)
+                dg.add_uint16(channel) # For some semblance of uniqueness
+                self.c2.send(dg)
+                if should_receive:
+                    self.assertTrue(self.c1.expect(dg))
+                    self.assertTrue(self.c1.expect_none()) # No repeats!
+                else:
+                    self.assertTrue(self.c1.expect_none())
+                # And, of course, l1 receives all of these:
+                self.assertTrue(self.l1.expect(dg))
+        check_channels([
+            (500, False),
+            (999, False),
+            (1000, True),
+            (1001, True),
+            (1299, True),
+            (1300, True),
+            (1500, True),
+            (1699, True),
+            (1700, True),
+            (1701, True),
+            (1900, True),
+            (1999, True),
+            (2000, False),
+            (2050, False),
+            (2500, False)])
+
+        # Ranged-subscriptions should still receive messages only once, even if
+        # multiple channels are in the range.
+        dg = Datagram.create([500, 1001, 1500], 0, 34)
+        dg.add_string('test')
+        self.c2.send(dg)
+        self.assertTrue(self.c1.expect(dg))
+        self.assertTrue(self.c1.expect_none()) # No repeats!
+        self.assertTrue(self.l1.expect(dg))
+
+        # Now let's "slice" the range.
+        dg = Datagram.create_remove_range(1300, 1700)
+        self.c1.send(dg)
+        # l1 should request the slice upward
+        self.assertTrue(self.l1.expect(dg))
+
+        # And the slice should be gone:
+        check_channels([
+            (500, False),
+            (999, False),
+            (1000, True),
+            (1001, True),
+            (1299, True),
+            (1300, False),
+            (1500, False),
+            (1699, False),
+            (1700, False),
+            (1701, True),
+            (1900, True),
+            (1999, True),
+            (2000, False),
+            (2050, False),
+            (2500, False)])
+
+        # How about adding a second range that overlaps?
+        dg = Datagram.create_add_range(1900, 2100)
+        self.c1.send(dg)
+        # Verify that l1 asks for the range difference only...
+        self.assertTrue(self.l1.expect(Datagram.create_add_range(2000, 2100)))
+
+        # Now the subscriptions should be updated:
+        check_channels([
+            (500, False),
+            (999, False),
+            (1000, True),
+            (1001, True),
+            (1299, True),
+            (1300, False),
+            (1500, False),
+            (1699, False),
+            (1700, False),
+            (1701, True),
+            (1900, True),
+            (1999, True),
+            (2000, True),
+            (2050, True),
+            (2500, False)])
+
+        # Drop that first range...
+        dg = Datagram.create_remove_range(1000, 1999)
+        self.c1.send(dg)
+        # And again, l1 should ask for difference only...
+        # Difference #1: Drop 1000-1299
+        self.l1.expect(Datagram.create_remove_range(1000, 1299))
+        # Difference #2: Drop 1701-1999
+        self.l1.expect(Datagram.create_remove_range(1701, 1999))
+
+        # Now see if only the second range is active...
+        check_channels([
+            (500, False),
+            (999, False),
+            (1000, False),
+            (1001, False),
+            (1999, False),
+            (2000, True),
+            (2050, True),
+            (2500, False)])
+
+        # Grand finale: Cut c1 and see if the remaining range dies.
+        self.c1.close()
+        self.__class__.c1 = self.new_connection()
+        self.assertTrue(self.l1.expect(Datagram.create_remove_range(2000, 2100)))
+        self.assertTrue(self.l1.expect_none())
+
 if __name__ == '__main__':
     unittest.main()

@@ -42,6 +42,9 @@ CONTROL_CHANNEL = 4001
 CONTROL_ADD_CHANNEL = 2001
 CONTROL_REMOVE_CHANNEL = 2002
 
+CONTROL_ADD_RANGE = 2008
+CONTROL_REMOVE_RANGE = 2009
+
 CONTROL_ADD_POST_REMOVE = 2010
 CONTROL_CLEAR_POST_REMOVE = 2011
 
@@ -97,6 +100,22 @@ class Datagram(object):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_REMOVE_CHANNEL)
         dg.add_uint64(channel)
+        return dg
+
+    @classmethod
+    def create_add_range(cls, upper, lower):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_ADD_RANGE)
+        dg.add_uint64(upper)
+        dg.add_uint64(lower)
+        return dg
+
+    @classmethod
+    def create_remove_range(cls, upper, lower):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_REMOVE_RANGE)
+        dg.add_uint64(upper)
+        dg.add_uint64(lower)
         return dg
 
     @classmethod
