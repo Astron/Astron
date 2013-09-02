@@ -79,6 +79,17 @@ class Datagram(object):
     def get_data(self):
         return self._data
 
+    def get_payload(self):
+        return self._data[8*ord(self._data[0])+1:]
+
+    def get_channels(self):
+        return set(struct.unpack('<x' + 'Q'*ord(self._data[0]),
+                                 self._data[:8*ord(self._data[0])+1]))
+
+    def is_subset_of(self, other):
+        return self.get_payload() == other.get_payload() and \
+               self.get_channels() <= other.get_channels()
+
     # Common datagram type helpers:
     @classmethod
     def create(cls, recipients, sender, msgtype):
@@ -172,7 +183,20 @@ class MDConnection(object):
         while self._read(): pass
 
     def expect(self, datagram):
-        return self._read() == datagram.get_data()
+        return self.expect_multi([datagram])
+
+    def expect_multi(self, datagrams):
+        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
+
+        while datagrams:
+            dg = self._read()
+            if dg is None: return False # Augh, we didn't see all the dgs yet!
+
+            datagrams = [datagram for datagram in datagrams if
+                         not datagram.is_subset_of(Datagram(dg))]
+
+        return True
+
 
     def expect_none(self):
         return self._read() == None
