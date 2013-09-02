@@ -6,7 +6,10 @@
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
 
+// Message-channel constants
 #define CONTROL_MESSAGE 4001
+
+// Message-type constants
 #define CONTROL_ADD_CHANNEL 2001
 #define CONTROL_REMOVE_CHANNEL 2002
 #define CONTROL_SET_CON_NAME 2004
@@ -16,6 +19,8 @@
 #define CONTROL_ADD_POST_REMOVE 2010
 #define CONTROL_CLEAR_POST_REMOVE 2011
 
+// A ChannelList represents a single channel, or range of channels
+//     that a MDParticipant can be subscribed to.
 struct ChannelList
 {
 	unsigned long long a;
@@ -26,17 +31,41 @@ struct ChannelList
 };
 
 class MDParticipantInterface;
+
+// A MessageDirector is the internal networking object for an OpenOTP server-node.
+// The MessageDirector recieves message from other servers and routes them to the
+//     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
 class MessageDirector
 {
 	public:
+		// InitializeMD causes the MessageDirector to start listening for
+		//     messages if it hasn't already been initialized.
 		void InitializeMD();
 		static MessageDirector singleton;
 
+		// handle_datagram accepts any OpenOTP message (a Datagram), and
+		//     properly routes it to any subscribed listeners.
+		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
 		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
 
+		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
+		// (Args) "a": the channel to be added.
 		void subscribe_channel(MDParticipantInterface* p, unsigned long long a);
+
+		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
+		// (Args) "a": the channel to be removed.
 		void unsubscribe_channel(MDParticipantInterface* p, unsigned long long a);
+
+		// subscribe_range handles a CONTROL_ADD_RANGE control message.
+		// (Args) "a": the lowest channel to be removed.
+		//        "b": the highest channel to be removed.
+		// The range is inclusive.
 		void subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+
+		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
+		// (Args) "a": the lowest channel to be removed.
+		//        "b": the highest channel to be removed.
+		// The range is inclusive.
 		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
 	private:
 		MessageDirector();
@@ -97,6 +126,12 @@ class MessageDirector
 		bool m_initialized;
 };
 
+// A MDParticipantInterface is the interface that must be implemented to
+//     recieve messages from the MessageDirector.
+// MDParticipants might be a StateServer, a single StateServer object, the
+//     DB-server, or etc. which are on the node and will be transferred
+//     internally.  Another server with its own MessageDirector also would
+//     be an MDParticipant.
 class MDParticipantInterface
 {
 	public:
