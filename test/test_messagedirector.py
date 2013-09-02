@@ -104,13 +104,12 @@ class TestMessageDirector(unittest.TestCase):
         self.assertTrue(self.c2.expect_none()) # Should NOT be relayed.
         self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
 
-        # Unsubscribe on the second connection...
-        dg = Datagram.create_remove_channel(12345654321)
-        self.c2.send(dg)
+        # Abandon the second connection, which should auto-unsubscribe it.
+        self.c2.close()
+        self.__class__.c2 = self.new_connection()
         self.assertTrue(self.c1.expect_none())
-        self.assertTrue(self.c2.expect_none())
         # MD should unsubscribe from parent.
-        self.assertTrue(self.l1.expect(dg))
+        self.assertTrue(self.l1.expect(Datagram.create_remove_channel(12345654321)))
 
     def test_multi(self):
         self.l1.flush()
