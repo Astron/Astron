@@ -33,6 +33,11 @@ class MessageDirector
 		static MessageDirector singleton;
 
 		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
+
+		void subscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		void unsubscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		void subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
@@ -55,11 +60,6 @@ class MessageDirector
 			}
 			for(auto it = m_participant_channels[participant].begin(); it != m_participant_channels[participant].end(); ++it)
 			{
-<<<<<<< HEAD
-=======
-				//doesn't matter that this is inefficient
-				//how often is a participant going to go away anyways?
->>>>>>> Fixed disconnect logic for participants
 				Datagram dg;
 				dg.add_uint8(1);
 				dg.add_uint64(CONTROL_MESSAGE);
