@@ -198,6 +198,9 @@ This message is SENT BY THE OBJECT when processing a SET_ZONE. It tells
 the new zone about the object's entry. The message is ordered slightly
 differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
+STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065):
+    (uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)
+Analogous to above, but includes REQUIRED fields only.
 
 STATESERVER_OBJECT_LOCATE(2022):
 	(uint32 context)
