@@ -53,6 +53,26 @@ class MessageDirector
 				handle_datagram(&dg, participant);
 				m_post_removes.erase(m_post_removes.find(participant));
 			}
+			for(auto it = m_participant_channels[participant].begin(); it != m_participant_channels[participant].end(); ++it)
+			{
+				//doesn't matter that this is inefficient
+				//how often is a participant going to go away anyways?
+				Datagram dg;
+				dg.add_uint8(1);
+				dg.add_uint64(CONTROL_MESSAGE);
+				if(it->is_range)
+				{
+					dg.add_uint16(CONTROL_REMOVE_RANGE);
+					dg.add_uint64(it->a);
+					dg.add_uint64(it->b);
+				}
+				else
+				{
+					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+					dg.add_uint64(it->a);
+				}
+				handle_datagram(&dg, participant);
+			}
 			m_participants.remove(participant);
 		}
 
