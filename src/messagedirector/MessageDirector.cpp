@@ -149,7 +149,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			}
 			else
 			{
-				gLogger->debug() << "not redirecting upstream MD's own control message to itsself" << std::endl;
+				gLogger->debug() << "not redirecting upstream MD's own control message to itself" << std::endl;
 			}
 			return;
 		}
