@@ -1,5 +1,6 @@
 #pragma once
 #include <list>
+#include <set>
 #include <map>
 #include <string>
 #include "util/Datagram.h"
@@ -70,7 +71,8 @@ class MessageDirector
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
-		std::map<MDParticipantInterface*, std::list<ChannelList> > m_participant_channels;
+		std::map<MDParticipantInterface*, std::list<ChannelList>> m_participant_channels;
+		std::map<unsigned long long, std::set<MDParticipantInterface*>> m_channel_participants;
 		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
 		friend class MDParticipantInterface;
@@ -94,17 +96,22 @@ class MessageDirector
 				dg.add_uint64(CONTROL_MESSAGE);
 				if(it->is_range)
 				{
+					// TODO: Remove participant from channel range
+
 					dg.add_uint16(CONTROL_REMOVE_RANGE);
 					dg.add_uint64(it->a);
 					dg.add_uint64(it->b);
 				}
 				else
 				{
+					m_channel_participants[it->a].erase(participant);
+
 					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
 					dg.add_uint64(it->a);
 				}
 				handle_datagram(&dg, participant);
 			}
+			m_participant_channels.erase(participant);
 			m_participants.remove(participant);
 		}
 
@@ -114,7 +121,9 @@ class MessageDirector
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
-		bool should_send_upstream(ChannelList);
+		void insert_channel_participants(unsigned long long, std::set<MDParticipantInterface*>);
+
+		bool should_send_upstream(unsigned long long);
 
 		char *m_buffer;
 		unsigned short m_bufsize;

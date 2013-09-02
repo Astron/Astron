@@ -107,7 +107,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				case CONTROL_ADD_RANGE:
 				{
 					send_upstream = false;//handled by function
-					subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
+					//subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
 				}
 				break;
 				case CONTROL_REMOVE_CHANNEL:
@@ -132,6 +132,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				default:
 					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
 			}
+
+			// TODO: Since send_upstream logic for many control actions was moved, check how much of this is necessary
 			if(participant && m_remote_md && send_upstream)
 			{
 				gLogger->debug() << "Sending control message to upstream md" << std::endl;
@@ -159,32 +161,16 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	}
 
 	// Route messages to participants
-	std::map<MDParticipantInterface*, bool> sent_to_participant;
+	std::set<MDParticipantInterface*> receiving_participants;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		unsigned long long channel = dgi.read_uint64();
-		for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
-		{
-			if(*it == participant || sent_to_participant[*it])
-			{
-				continue;
-			}
-			MDParticipantInterface *participant = *it;
-			for(auto it2 = m_participant_channels[participant].begin(); it2 != m_participant_channels[participant].end(); ++it2)
-			{
-				if(it2->qualifies(channel))
-				{
-					DatagramIterator msg_dgi(dg, 1+(channels*8));
-					bool should_continue = participant->handle_datagram(dg, msg_dgi);
-					sent_to_participant[participant] = true;
-					if(!should_continue)
-					{
-						return;
-					}
-					break;
-				}
-			}
-		}
+		insert_channel_participants(channel, receiving_participants);
+	}
+	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
+	{
+		DatagramIterator msg_dgi(dg, 1+channels*8);
+		participant->handle_datagram(dg, msg_dgi);
 	}
 
 	if(participant && m_remote_md)  // Send message upstream
@@ -211,8 +197,9 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.a = a;
 
 	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+	m_channel_participants[a].insert(m_channel_participants[a].end(), p);
 
-	if(should_send_upstream(c))
+	if(should_send_upstream(a))
 	{
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
@@ -229,8 +216,9 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	c.a = a;
 
 	m_participant_channels[p].remove(c);
+	m_channel_participants[a].erase(p);
 
-	if(should_send_upstream(c))
+	if(should_send_upstream(a))
 	{
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
@@ -240,7 +228,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	}
 }
 
-void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
+/*void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
 {
 	ChannelList c;
 	c.is_range = true;
@@ -258,10 +246,29 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 	}
+}*/
+
+void MessageDirector::insert_channel_participants(unsigned long long c, std::set<MDParticipantInterface*> p) {
+	for(auto it = m_channel_participants[c].begin(); it != m_channel_participants[c].end(); ++it)
+	{
+		p.insert(*it);
+	}
+
+	// TODO: Insert participants subscribed to ranges
 }
 
-inline bool MessageDirector::should_send_upstream(ChannelList c)
+
+// note: keep around for future changes to send_upstream behavior
+inline bool MessageDirector::should_send_upstream(unsigned long long c)
 {
+	bool should_upstream;
+	try {
+		should_upstream = m_channel_participants.at(c).size() == 0;
+	} catch (const std::out_of_range& e) {
+		should_upstream = false;
+	}
+
+/*
 	bool should_upstream = true;
 	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
 	{
@@ -278,6 +285,7 @@ inline bool MessageDirector::should_send_upstream(ChannelList c)
 			break;
 		}
 	}
+*/
 
 	return should_upstream && m_remote_md;
 }
