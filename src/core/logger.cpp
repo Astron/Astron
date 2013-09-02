@@ -4,14 +4,12 @@
 
 #include "logger.h"
 
-Logger::Logger(std::string log_name)
+Logger::Logger(std::string log_name) : m_output(new std::ofstream(log_name))
 {
-	m_output = new std::ofstream(log_name.c_str());
 }
 
-Logger::Logger()
+Logger::Logger() : m_output(&std::cout)
 {
-	m_output = &std::cerr;
 }
 
 std::ostream &Logger::log(LogSeverity sev)
