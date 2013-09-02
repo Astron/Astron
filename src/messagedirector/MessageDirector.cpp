@@ -101,26 +101,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				case CONTROL_ADD_RANGE:
 				{
-					ChannelList c;
-					c.is_range = true;
-					c.a = dgi.read_uint64();
-					c.b = dgi.read_uint64();
-					for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
-					{
-						for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-						{
-							if(*it2 == c)
-							{
-								send_upstream = false;
-								break;
-							}
-						}
-						if(!send_upstream)
-						{
-							break;
-						}
-					}
-					m_participant_channels[participant].insert(m_participant_channels[participant].end(), c);
+					send_upstream = false;//handled by function
+					subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
 				}
 				break;
 				case CONTROL_REMOVE_CHANNEL:
@@ -278,6 +260,44 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 		dg.add_uint64(CONTROL_MESSAGE);
 		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+	}
+}
+
+void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
+{
+	bool send_upstream = true;
+	ChannelList c;
+	c.is_range = true;
+	c.a = a;
+	c.b = b;
+	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+	{
+		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+		{
+			if(*it2 == c)
+			{
+				send_upstream = false;
+				break;
+			}
+		}
+		if(!send_upstream)
+		{
+			break;
+		}
+	}
+	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+
+	if(send_upstream && m_remote_md)
+	{
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_ADD_RANGE);
+		dg.add_uint64(a);
+		dg.add_uint64(b);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
