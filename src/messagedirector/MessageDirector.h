@@ -143,5 +143,8 @@ class MDParticipantInterface
 		{
 			MessageDirector::singleton.remove_participant(this);
 		}
+
+		// handle_datagram should handle a message recieved from the MessageDirector.
+		// Implementations of handle_datagram should be non-blocking operations.
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
 };
