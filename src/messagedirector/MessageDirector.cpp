@@ -7,6 +7,9 @@ using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
 ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
+// Define convenience type
+typedef boost::icl::discrete_interval<channel_t> interval_t; 
+
 bool ChannelList::qualifies(channel_t channel)
 {
 	if(is_range)
@@ -82,8 +85,7 @@ void MessageDirector::InitializeMD()
 		// Initialize m_range_susbcriptions with empty range
 		auto empty_set = std::set<MDParticipantInterface*>();
 		m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>>();
-		m_range_subscriptions += std::make_pair(
-			boost::icl::discrete_interval<channel_t>::closed(0, ULLONG_MAX), empty_set);
+		m_range_subscriptions += std::make_pair(interval_t::closed(0, ULLONG_MAX), empty_set);
 	}
 }
 
@@ -205,17 +207,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t a)
 		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
 	}
 
-	if(should_add_upstream(c))
-	{
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_CHANNEL);
-		dg.add_uint64(a);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
-	}
+	subscribe_channel_upstream(a);
 }
 
 void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t a)
@@ -248,9 +240,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t a, ch
 	c.b = b;
 
 	p->channels().insert(p->channels().end(), c);
-	m_range_subscriptions += std::make_pair(
-								boost::icl::discrete_interval<channel_t>::closed(a, b),
-								participant_set);
+	m_range_subscriptions += std::make_pair(interval_t::closed(a, b), participant_set);
 
 	std::list<ChannelList> channels = p->channels();
 	std::list<ChannelList>::iterator it = channels.begin();
@@ -264,15 +254,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t a, ch
 		}
 	}
 
-	if(should_add_upstream(c))
-	{
-		Datagram dg(CONTROL_ADD_RANGE);
-		dg.add_uint64(a);
-		dg.add_uint64(b);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
-	}
+	subscribe_range_upstream(a, b);
 }
 
 void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t a, channel_t b)
@@ -286,9 +268,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t a, 
 	c.b = b;
 
 	p->channels().remove(c);
-	m_range_subscriptions -= std::make_pair(
-								boost::icl::discrete_interval<channel_t>::closed(a, b),
-								participant_set);
+	m_range_subscriptions -= std::make_pair(interval_t::closed(a, b), participant_set);
 
 	if(should_remove_upstream(c))
 	{
@@ -305,15 +285,37 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t a, 
 
 }
 
-// should_add_upstream should be called after processing control messages internally
-inline bool MessageDirector::should_add_upstream(ChannelList c)
+void MessageDirector::subscribe_channel_upstream(channel_t c)
 {
-	if(c.is_range)
-	{
+	if(m_remote_md) {
+		// If is not a range, than a new channel_subscription was made.
+		// Check if there were any extra subscriptions on that channel.
+		if(m_channel_subscriptions[c].size() > 1) {
+			return;
+		}
+
+		// Check if we are already subscribing upstream via a range
+		auto range = boost::icl::find(m_range_subscriptions, c);
+		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
+			return;
+		}
+
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_ADD_CHANNEL);
+		dg.add_uint64(c);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+	}
+}
+
+void MessageDirector::subscribe_range_upstream(channel_t lo, channel_t hi) {
+	if(m_remote_md) {
 		// Check if there were any other subscriptions along that entire range
-		int new_intervals = 0;
-		int premade_intervals = 0;
-		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<channel_t>::closed(c.a, c.b));
+		int new_intervals = 0, premade_intervals = 0;
+		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			++new_intervals;
@@ -324,26 +326,21 @@ inline bool MessageDirector::should_add_upstream(ChannelList c)
 
 		// If all existing intervals are already subscribed, don't upstream;
 		if(new_intervals == premade_intervals) {
-			return false;
-		}
-	}
-	else
-	{
-		// If is not a range, than a new channel_subscription was made.
-		// Check if there were any extra subscriptions on that channel.
-		if(m_channel_subscriptions[c.a].size() > 1) {
-			return false;
+			return;
 		}
 
-		// Check if we are already subscribing via a range
-		auto range = boost::icl::find(m_range_subscriptions, c.a);
-		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
-			return false;
-		}
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_ADD_RANGE);
+		dg.add_uint64(lo);
+		dg.add_uint64(hi);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 	}
-	// Return true if not root
-	return m_remote_md;
 }
+
 
 // should_remove_upstream should be called after processing control messages internally
 inline bool MessageDirector::should_remove_upstream(ChannelList c)
@@ -355,7 +352,7 @@ inline bool MessageDirector::should_remove_upstream(ChannelList c)
 
 	// Don't route upstream if any more subscriptions exist
 	if(c.is_range) {
-		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<channel_t>::closed(c.a, c.b));
+		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(c.a, c.b));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			if (it->second.size() > 0) {
@@ -463,8 +460,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* participant)
 			std::set<MDParticipantInterface*> participant_set;
 			participant_set.insert(participant);
 
-			m_range_subscriptions -= std::make_pair(
-				boost::icl::discrete_interval<channel_t>::closed(it->a, it->b), participant_set);
+			m_range_subscriptions -= std::make_pair(interval_t::closed(it->a, it->b), participant_set);
 
 			dg.add_uint16(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->a);

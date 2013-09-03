@@ -74,33 +74,22 @@ class MessageDirector
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 	private:
 		MessageDirector();
-
-		// All participants associated with the MD
-		std::list<MDParticipantInterface*> m_participants;
-
-		// All single channel susbcriptions
-		std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
-
-		// All range channel subscriptions
-		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
 		
 		friend class MDParticipantInterface;
-		
 		void add_participant(MDParticipantInterface* participant);
 		void remove_participant(MDParticipantInterface* participant);
 
+		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
-		// should_add_upstream determines whether CONTROL_ADD_XXX messages should be routed upstream
-		// Must be called BEFORE adding to MD
-		bool should_add_upstream(ChannelList);
-
-		// should_remove_upstream determines whether CONTROL_REMOVE_XXX should be routed upstream
-		// Must be called AFTER removing from MD
+		// UPSTREAM OPERATIONS
+		// Upstream operations should be called AFTER processing control messages internally.
+		void subscribe_channel_upstream(channel_t c);
+		void subscribe_range_upstream(channel_t lo, channel_t hi);
 		bool should_remove_upstream(ChannelList);
 
 		char *m_buffer;
@@ -111,6 +100,16 @@ class MessageDirector
 		boost::asio::ip::tcp::acceptor *m_acceptor;
 		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;
+
+		// Connected participants
+		std::list<MDParticipantInterface*> m_participants;
+
+		// Single channel subscriptions
+		std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+
+		// Range channel subscriptions
+		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
+
 };
 
 
