@@ -138,6 +138,7 @@ class StateServer : public Role
 						}
 					}
 					distObjs[doId] = obj;
+					MessageDirector::singleton.subscribe_channel(this, doId);
 
 					Datagram resp;
 					resp.add_uint8(1);
@@ -154,6 +155,25 @@ class StateServer : public Role
 					}
 
 					MessageDirector::singleton.handle_datagram(&resp, this);
+				}
+				break;
+				case STATESERVER_OBJECT_DELETE_RAM:
+				{
+					unsigned int doId = dgi.read_uint32();
+					DistributedObject *obj = distObjs[doId];
+					if(obj)
+					{
+						unsigned long long loc = LOCATION2CHANNEL(obj->parentId, obj->zoneId);
+						Datagram resp;
+						resp.add_uint8(1);
+						resp.add_uint64(loc);
+						resp.add_uint64(doId);
+						resp.add_uint16(STATESERVER_OBJECT_DELETE_RAM);
+						resp.add_uint32(doId);
+						MessageDirector::singleton.handle_datagram(&resp, this);
+						distObjs[doId] = NULL;
+						delete obj;
+					}
 				}
 				break;
 				default:
