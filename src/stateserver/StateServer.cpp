@@ -129,12 +129,21 @@ class StateServer : public Role
 					obj->zoneId = zoneId;
 					obj->owner = sender;
 					obj->dcc = gDCF->get_class(dcId);
+
+					std::string reqData;
+
 					for(int i = 0; i < obj->dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = obj->dcc->get_inherited_field(i);
 						if(field->is_required() && !field->as_molecular_field())
 						{
-							UnpackFieldFromDG(field, dgi, obj->fields[field]);
+							std::string data;
+							UnpackFieldFromDG(field, dgi, data);
+							reqData += data;
+							if(field->is_ram())
+							{
+								obj->fields[field] = data;
+							}
 						}
 					}
 					distObjs[doId] = obj;
