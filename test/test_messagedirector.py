@@ -20,6 +20,7 @@ class TestMessageDirector(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         listener = socket(AF_INET, SOCK_STREAM)
+        listener.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         listener.bind(('127.0.0.1', 57124))
         listener.listen(1)
         listener.settimeout(0.3)
