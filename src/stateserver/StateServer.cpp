@@ -124,7 +124,7 @@ public:
 		resp.add_uint64(LOCATION2CHANNEL(parent_id, zone_id));
 		resp.add_uint64(do_id);
 		resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-		resp.add_data(generate_required_data());
+		append_required_data(resp);
 
 		MessageDirector::singleton.handle_datagram(&resp, this);
 
@@ -138,9 +138,8 @@ public:
 		MessageDirector::singleton.handle_datagram(&resp2, this);
 	}
 
-	std::string generate_required_data()
+	void append_required_data(Datagram &dg)
 	{
-		Datagram dg;
 		dg.add_uint32(m_parent_id);
 		dg.add_uint32(m_zone_id);
 		dg.add_uint16(m_dclass->get_number());
@@ -154,26 +153,23 @@ public:
 				dg.add_data(m_fields[field]);
 			}
 		}
-		return std::string(dg.get_data(), dg.get_buf_end());
 	}
 
-	std::string generate_other_data()
+	void append_other_data(Datagram &dg)
 	{
 		unsigned int field_count = 0;
-		Datagram dg;
+		Datagram raw_fields;
 		for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 		{
 			if(it->first->is_ram() && !it->first->is_required())
 			{
 				field_count++;
-				dg.add_uint16(it->first->get_number());
-				dg.add_data(it->second);
+				raw_fields.add_uint16(it->first->get_number());
+				raw_fields.add_data(it->second);
 			}
 		}
-		Datagram dg2;
-		dg2.add_uint16(field_count);
-		dg2.add_data(std::string(dg.get_data(), dg.get_buf_end()));
-		return std::string(dg2.get_data(), dg2.get_buf_end());
+		dg.add_uint16(field_count);
+		dg.add_data(std::string(raw_fields.get_data(), raw_fields.get_buf_end()));
 	}
 
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -284,8 +280,8 @@ public:
 					resp.add_uint64(m_ai_channel);
 					resp.add_uint64(m_do_id);
 					resp.add_uint16(STATESERVER_OBJECT_ENTER_AI_RECV);
-					resp.add_data(generate_required_data());
-					resp.add_data(generate_other_data());
+					append_required_data(resp);
+					append_other_data(resp);
 					MessageDirector::singleton.handle_datagram(&resp, this);
 					gLogger->debug() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << m_ai_channel
 						<< " from " << m_do_id << std::endl;
@@ -356,10 +352,10 @@ public:
 				{
 					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 				}
-				resp.add_data(generate_required_data());
+				append_required_data(resp);
 				if(m_has_ram_fields)
 				{
-					resp.add_data(generate_other_data());
+					append_other_data(resp);
 				}
 				MessageDirector::singleton.handle_datagram(&resp, this);
 
