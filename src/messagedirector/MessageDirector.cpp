@@ -218,6 +218,8 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.is_range = false;
 	c.a = a;
 
+	gLogger->debug() << "Subscribe A-" << a << endl;
+
 	bool should_upstream = should_add_upstream(c);
 
 	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
@@ -228,7 +230,11 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 
 	if(should_upstream)
 	{
-		Datagram dg(CONTROL_ADD_CHANNEL);
+		gLogger->debug() << "Sent upstream - " << a << endl;
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -343,7 +349,8 @@ inline bool MessageDirector::should_add_upstream(ChannelList c)
 			}
 		}
 	} else {
-		if(boost::icl::find(m_range_subscriptions, c.a)->second.size() > 0) {
+		auto participants = boost::icl::find(m_range_subscriptions, c.a)->second;
+		if(!participants.empty()) {
 			return false;
 		}
 	}
@@ -352,7 +359,7 @@ inline bool MessageDirector::should_add_upstream(ChannelList c)
 	return m_remote_md;
 }
 
-// should_remove_upstream should be called before after processing control messages internally
+// should_remove_upstream should be called after processing control messages internally
 inline bool MessageDirector::should_remove_upstream(ChannelList c)
 {
 	// Don't route upstream if any more subscriptions exist
@@ -370,7 +377,8 @@ inline bool MessageDirector::should_remove_upstream(ChannelList c)
 			}
 		}
 	} else {
-		if(boost::icl::find(m_range_subscriptions, c.a)->second.size() > 0) {
+		auto participants = boost::icl::find(m_range_subscriptions, c.a)->second;
+		if(!participants.empty()) {
 			return false;
 		}
 	}
