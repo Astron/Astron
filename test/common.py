@@ -189,9 +189,9 @@ class MDConnection(object):
         while self._read(): pass
 
     def expect(self, datagram):
-        return self.expect_multi([datagram])
+        return self.expect_multi([datagram], only=True)
 
-    def expect_multi(self, datagrams):
+    def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
         while datagrams:
@@ -203,6 +203,9 @@ class MDConnection(object):
                 if datagram.is_subset_of(dg):
                     datagrams.remove(datagram)
                     break
+            else:
+                if only:
+                    return False
 
         return True
 
