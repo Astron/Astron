@@ -46,7 +46,7 @@
 #define STATESERVER_QUERY_OBJECT_CHILDREN_LOCAL_DONE  2089
 #define STATESERVER_QUERY_OBJECT_CHILDREN_RESP  2087
 
-#define LOCATION2CHANNEL(p, z) unsigned long long(p)<<32|unsigned long long(z)
+#define LOCATION2CHANNEL(p, z) ((unsigned long long)(p)<<32|(unsigned long long)(z))
 #pragma endregion
 
 void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
