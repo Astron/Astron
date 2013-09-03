@@ -2,7 +2,7 @@
 #include "messagedirector/MessageDirector.h"
 #include "core/config.h"
 
-class Role : MDParticipantInterface
+class Role : public MDParticipantInterface
 {
 	protected:
 		Role(RoleConfig roleconfig) : m_roleconfig(roleconfig)

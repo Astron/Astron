@@ -49,6 +49,14 @@ class DatagramIterator
 			return r;
 		}
 
+		unsigned int read_uint32()
+		{
+			check_read_length(4);
+			unsigned int r = *(unsigned int*)(m_dg->get_data()+p);
+			p += 4;
+			return r;
+		}
+
 		unsigned long long read_uint64()
 		{
 			check_read_length(8);
@@ -60,6 +68,14 @@ class DatagramIterator
 		std::string read_string()
 		{
 			unsigned int length = read_uint16();
+			check_read_length(length);
+			std::string r(m_dg->get_data()+p, length);
+			p += length;
+			return r;
+		}
+
+		std::string read_data(unsigned int length)
+		{
 			check_read_length(length);
 			std::string r(m_dg->get_data()+p, length);
 			p += length;

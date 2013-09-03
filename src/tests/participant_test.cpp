@@ -10,9 +10,8 @@ class ParticipantTest : public MDParticipantInterface
 			MessageDirector::singleton.subscribe_channel(this, 200);
 
 			Datagram dg2;
-			dg2.add_uint8(2);
+			dg2.add_uint8(1);
 			dg2.add_uint64(100);
-			dg2.add_uint64(200);
 			dg2.add_string("test");
 
 			MessageDirector::singleton.handle_datagram(&dg2, NULL);
