@@ -165,14 +165,20 @@ class MDConnection(object):
             length = 2
             result = ''
             while len(result) < length:
-                result += self.s.recv(length - len(result))
+                data = self.s.recv(length - len(result))
+                if data == '':
+                    raise EOFError('Remote socket closed connection')
+                result += data
             length = struct.unpack('<H', result)[0]
         except socket.error:
             return None
 
         result = ''
         while len(result) < length:
-            result += self.s.recv(length - len(result))
+            data = self.s.recv(length - len(result))
+            if data == '':
+                    raise EOFError('Remote socket closed connection')
+            result += data
 
         return result
 
@@ -183,17 +189,23 @@ class MDConnection(object):
         while self._read(): pass
 
     def expect(self, datagram):
-        return self.expect_multi([datagram])
+        return self.expect_multi([datagram], only=True)
 
-    def expect_multi(self, datagrams):
+    def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
         while datagrams:
             dg = self._read()
             if dg is None: return False # Augh, we didn't see all the dgs yet!
+            dg = Datagram(dg)
 
-            datagrams = [datagram for datagram in datagrams if
-                         not datagram.is_subset_of(Datagram(dg))]
+            for datagram in datagrams:
+                if datagram.is_subset_of(dg):
+                    datagrams.remove(datagram)
+                    break
+            else:
+                if only:
+                    return False
 
         return True
 
