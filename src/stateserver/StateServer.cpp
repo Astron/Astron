@@ -119,20 +119,11 @@ public:
 		}
 		MessageDirector::singleton.subscribe_channel(this, do_id);
 
-		Datagram resp;
-		resp.add_uint8(1);
-		resp.add_uint64(LOCATION2CHANNEL(parent_id, zone_id));
-		resp.add_uint64(do_id);
-		resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+		Datagram resp(LOCATION2CHANNEL(parent_id, zone_id), do_id, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 		append_required_data(resp);
-
 		MessageDirector::singleton.handle_datagram(&resp, this);
 
-		Datagram resp2;
-		resp2.add_uint8(1);
-		resp2.add_uint64(parent_id);
-		resp2.add_uint64(do_id);
-		resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+		Datagram resp2(parent_id, do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
 		gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
 			<< parent_id << " from " << do_id << std::endl;
 		MessageDirector::singleton.handle_datagram(&resp2, this);
@@ -169,7 +160,7 @@ public:
 			}
 		}
 		dg.add_uint16(field_count);
-		dg.add_data(std::string(raw_fields.get_data(), raw_fields.get_buf_end()));
+		dg.add_datagram(raw_fields);
 	}
 
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -184,11 +175,7 @@ public:
 				if(p_do_id == m_do_id)
 				{
 					unsigned long long loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
-					Datagram resp;
-					resp.add_uint8(1);
-					resp.add_uint64(loc);
-					resp.add_uint64(m_do_id);
-					resp.add_uint16(STATESERVER_OBJECT_DELETE_RAM);
+					Datagram resp(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 					resp.add_uint32(m_do_id);
 					MessageDirector::singleton.handle_datagram(&resp, this);
 					distObjs[m_do_id] = NULL;
@@ -216,27 +203,15 @@ public:
 						{
 							m_fields[field] = data;
 						}
-						Datagram resp;
-						if(field->is_broadcast() && field->is_airecv())
+
+						std::set <unsigned long long int> targets;
+						if(field->is_broadcast())
+							targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+						if(field->is_airecv())
+							targets.insert(m_ai_channel);
+						if(targets.size()) // TODO: Review this for efficiency?
 						{
-							resp.add_uint8(2);
-							resp.add_uint64(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-							resp.add_uint64(m_ai_channel);
-						}
-						else if(field->is_broadcast())
-						{
-							resp.add_uint8(1);
-							resp.add_uint64(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-						}
-						else if(field->is_airecv())
-						{
-							resp.add_uint8(1);
-							resp.add_uint64(m_ai_channel);
-						}
-						if(field->is_broadcast() | field->is_airecv())
-						{
-							resp.add_uint64(sender);
-							resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
+							Datagram resp(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
 							resp.add_uint32(m_do_id);
 							resp.add_uint16(field_id);
 							resp.add_data(data);
@@ -262,11 +237,7 @@ public:
 				{
 					if(m_ai_channel)
 					{
-						Datagram resp;
-						resp.add_uint8(1);
-						resp.add_uint64(m_ai_channel);
-						resp.add_uint64(m_do_id);
-						resp.add_uint16(STATESERVER_OBJECT_LEAVING_AI_INTEREST);
+						Datagram resp(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
 						resp.add_uint32(m_do_id);
 						gLogger->debug() << m_do_id << " LEAVING AI INTEREST" << std::endl;
 						MessageDirector::singleton.handle_datagram(&resp, this);
@@ -275,22 +246,14 @@ public:
 					m_ai_channel = r_ai_channel;
 					m_ai_explicitly_set = msgtype == STATESERVER_OBJECT_SET_AI_CHANNEL;
 
-					Datagram resp;
-					resp.add_uint8(1);
-					resp.add_uint64(m_ai_channel);
-					resp.add_uint64(m_do_id);
-					resp.add_uint16(STATESERVER_OBJECT_ENTER_AI_RECV);
+					Datagram resp(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
 					append_required_data(resp);
 					append_other_data(resp);
 					MessageDirector::singleton.handle_datagram(&resp, this);
 					gLogger->debug() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << m_ai_channel
 						<< " from " << m_do_id << std::endl;
 
-					Datagram resp2;
-					resp2.add_uint8(1);
-					resp2.add_uint64(LOCATION2CHANNEL(4030, m_do_id));
-					resp2.add_uint64(m_do_id);
-					resp2.add_uint16(STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+					Datagram resp2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 					resp2.add_uint32(m_do_id);
 					resp2.add_uint64(m_ai_channel);
 					MessageDirector::singleton.handle_datagram(&resp2, this);
@@ -300,11 +263,7 @@ public:
 			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
 			{
 				gLogger->debug() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
-				Datagram resp;
-				resp.add_uint8(1);
-				resp.add_uint64(sender);
-				resp.add_uint64(m_do_id);
-				resp.add_uint16(STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+				Datagram resp(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 				resp.add_uint32(m_do_id);
 				resp.add_uint64(m_ai_channel);
 				MessageDirector::singleton.handle_datagram(&resp, this);
@@ -319,20 +278,11 @@ public:
 				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, oParent_id));
 				MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
 
-				Datagram resp3;
+				std::set <unsigned long long int> targets;
+				targets.insert(LOCATION2CHANNEL(oParent_id, oZone_id));
 				if(m_ai_channel)
-				{
-					resp3.add_uint8(2);
-					resp3.add_uint64(m_ai_channel);
-					resp3.add_uint64(LOCATION2CHANNEL(oParent_id, oZone_id));
-				}
-				else
-				{
-					resp3.add_uint8(1);
-					resp3.add_uint64(LOCATION2CHANNEL(oParent_id, oZone_id));
-				}
-				resp3.add_uint64(sender);
-				resp3.add_uint16(STATESERVER_OBJECT_CHANGE_ZONE);
+					targets.insert(m_ai_channel);
+				Datagram resp3(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
 				resp3.add_uint32(m_do_id);
 				resp3.add_uint32(m_parent_id);
 				resp3.add_uint32(m_zone_id);
@@ -340,30 +290,16 @@ public:
 				resp3.add_uint32(oZone_id);
 				MessageDirector::singleton.handle_datagram(&resp3, this);
 
-				Datagram resp;
-				resp.add_uint8(1);
-				resp.add_uint64(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-				resp.add_uint64(m_do_id);
-				if(m_has_ram_fields)
-				{
-					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER);
-				}
-				else
-				{
-					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-				}
+				Datagram resp(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
+				              m_has_ram_fields ?
+				              STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
+				              STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 				append_required_data(resp);
 				if(m_has_ram_fields)
-				{
 					append_other_data(resp);
-				}
 				MessageDirector::singleton.handle_datagram(&resp, this);
 
-				Datagram resp2;
-				resp2.add_uint8(1);
-				resp2.add_uint64(m_parent_id);
-				resp2.add_uint64(m_do_id);
-				resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+				Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
 				MessageDirector::singleton.handle_datagram(&resp2, this);
 			}
 			break;
