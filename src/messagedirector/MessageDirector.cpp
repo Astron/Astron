@@ -92,6 +92,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	if(channels == 1)
 	{
 		unsigned long long channel = dgi.read_uint64();
+
 		if(channel == CONTROL_MESSAGE && participant)
 		{
 			unsigned int msg_type = dgi.read_uint16();
@@ -396,6 +397,8 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 				m_buffer = new char[m_bufsize];
 				m_bytes_to_go = m_bufsize;
 				m_is_data = false;
+
+				gLogger->debug() << "Reader handle datagram" << endl;
 				handle_datagram(&dg, NULL);
 			}
 		}
@@ -416,7 +419,8 @@ void MessageDirector::remove_participant(MDParticipantInterface* participant)
 		Datagram dg(participant->post_remove());
 		handle_datagram(&dg, participant);
 	}
-	for(auto it = participant->channels().begin(); it != participant->channels().end();)
+	std::list<ChannelList> channels = participant->channels();
+	for(auto it = channels.begin(); it != channels.end();)
 	{
 		Datagram dg;
 		dg.add_uint8(1);
@@ -442,6 +446,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* participant)
 		}
 
 		handle_datagram(&dg, participant);
+		it++;
 	}
 	m_participants.remove(participant);
 }
