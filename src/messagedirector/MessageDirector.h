@@ -70,6 +70,7 @@ class MessageDirector
 	private:
 		MessageDirector();
 		std::list<MDParticipantInterface*> m_participants;
+		std::list<MDParticipantInterface*> m_participant_removal_queue;
 		std::map<MDParticipantInterface*, std::list<ChannelList> > m_participant_channels;
 		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
@@ -87,25 +88,20 @@ class MessageDirector
 				handle_datagram(&dg, participant);
 				m_post_removes.erase(m_post_removes.find(participant));
 			}
-			for(auto it = m_participant_channels[participant].begin(); it != m_participant_channels[participant].end(); ++it)
+
+			std::list<ChannelList> cListCopy(m_participant_channels[participant]);
+			for(auto it = cListCopy.begin(); it != cListCopy.end(); ++it)
 			{
-				Datagram dg;
-				dg.add_uint8(1);
-				dg.add_uint64(CONTROL_MESSAGE);
 				if(it->is_range)
 				{
-					dg.add_uint16(CONTROL_REMOVE_RANGE);
-					dg.add_uint64(it->a);
-					dg.add_uint64(it->b);
+					//unsubscribe_range(participant, it->a, it->b);
 				}
 				else
 				{
-					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
-					dg.add_uint64(it->a);
+					unsubscribe_channel(participant, it->a);
 				}
-				handle_datagram(&dg, participant);
 			}
-			m_participants.remove(participant);
+			m_participant_removal_queue.insert(m_participant_removal_queue.end(), participant);
 		}
 
 		void start_accept(); // Accept new connections from downstream

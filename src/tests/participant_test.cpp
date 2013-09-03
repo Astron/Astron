@@ -16,8 +16,7 @@ class ParticipantTest : public MDParticipantInterface
 
 			MessageDirector::singleton.handle_datagram(&dg2, NULL);
 
-			MessageDirector::singleton.unsubscribe_channel(this, 100);
-			MessageDirector::singleton.unsubscribe_channel(this, 200);
+			delete this;
 		}
 
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -27,4 +26,4 @@ class ParticipantTest : public MDParticipantInterface
 		}
 };
 
-ParticipantTest participant_test;
+ParticipantTest* Participant_Test = new ParticipantTest();

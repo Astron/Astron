@@ -160,6 +160,7 @@ struct DistributedObject : public MDParticipantInterface
 					resp.add_uint32(doId);
 					MessageDirector::singleton.handle_datagram(&resp, this);
 					distObjs[doId] = NULL;
+					gLogger->debug() << "DELETING THIS " << doId << std::endl;
 					delete this;
 				}
 			}

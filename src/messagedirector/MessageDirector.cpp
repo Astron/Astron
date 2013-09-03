@@ -84,6 +84,12 @@ void MessageDirector::InitializeMD()
 
 void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
 {
+	std::list<MDParticipantInterface *> temp_queue(m_participant_removal_queue);
+	for(auto it = temp_queue.begin(); it != temp_queue.end(); ++it)
+	{
+		m_participants.remove(*it);
+		m_participant_removal_queue.remove(*it);
+	}
 	gLogger->debug() << "MD Handling datagram" << std::endl;
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
