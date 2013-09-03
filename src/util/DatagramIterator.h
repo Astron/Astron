@@ -65,6 +65,9 @@ class DatagramIterator
 			return r;
 		}
 
+		// read_string reads a string from the datagram in format [len][<string-bytes>].
+		// OTP messages are prefixed with a length, so this can be used to read the entire
+		//     datagram, primarily useful to archive a datagram for later processing.
 		std::string read_string()
 		{
 			unsigned int length = read_uint16();
@@ -82,11 +85,13 @@ class DatagramIterator
 			return r;
 		}
 
+		// tell returns the current message offset in bytes
 		unsigned int tell()
 		{
 			return p;
 		}
 
+		// seek sets the current message offset in bytes
 		void seek(unsigned int to)
 		{
 			p = to;

@@ -51,6 +51,22 @@ CONSTANTS = {
 
     'CONTROL_ADD_POST_REMOVE': 2010,
     'CONTROL_CLEAR_POST_REMOVE': 2011,
+
+
+    # State Server
+    'STATESERVER_OBJECT_GENERATE_WITH_REQUIRED': 2001,
+    'STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER': 2003,
+    'STATESERVER_OBJECT_UPDATE_FIELD': 2004,
+    'STATESERVER_OBJECT_DELETE_RAM': 2007,
+    'STATESERVER_OBJECT_SET_ZONE': 2008,
+    'STATESERVER_OBJECT_CHANGE_ZONE': 2009,
+    'STATESERVER_OBJECT_SET_AI_CHANNEL': 2045,
+    'STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED': 2065,
+    'STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER': 2066,
+    'STATESERVER_OBJECT_ENTER_AI_RECV': 2067,
+    'STATESERVER_OBJECT_LEAVING_AI_INTEREST': 2033,
+    'STATESERVER_OBJECT_QUERY_MANAGING_AI': 2083,
+    'STATESERVER_OBJECT_NOTIFY_MANAGING_AI': 2047,
 }
 
 locals().update(CONSTANTS)
@@ -165,14 +181,20 @@ class MDConnection(object):
             length = 2
             result = ''
             while len(result) < length:
-                result += self.s.recv(length - len(result))
+                data = self.s.recv(length - len(result))
+                if data == '':
+                    raise EOFError('Remote socket closed connection')
+                result += data
             length = struct.unpack('<H', result)[0]
         except socket.error:
             return None
 
         result = ''
         while len(result) < length:
-            result += self.s.recv(length - len(result))
+            data = self.s.recv(length - len(result))
+            if data == '':
+                    raise EOFError('Remote socket closed connection')
+            result += data
 
         return result
 
@@ -183,17 +205,23 @@ class MDConnection(object):
         while self._read(): pass
 
     def expect(self, datagram):
-        return self.expect_multi([datagram])
+        return self.expect_multi([datagram], only=True)
 
-    def expect_multi(self, datagrams):
+    def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
         while datagrams:
             dg = self._read()
             if dg is None: return False # Augh, we didn't see all the dgs yet!
+            dg = Datagram(dg)
 
-            datagrams = [datagram for datagram in datagrams if
-                         not datagram.is_subset_of(Datagram(dg))]
+            for datagram in datagrams:
+                if datagram.is_subset_of(dg):
+                    datagrams.remove(datagram)
+                    break
+            else:
+                if only:
+                    return False
 
         return True
 
