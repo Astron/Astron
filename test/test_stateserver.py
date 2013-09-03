@@ -354,5 +354,63 @@ class TestStateServer(unittest.TestCase):
             dg.add_uint32(obj)
             self.c.send(dg)
 
+    def test_ram(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(13000<<32|6800))
+        self.c.send(Datagram.create_add_channel(13000<<32|4800))
+
+        # Create an object...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(13000) # Parent
+        dg.add_uint32(6800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(102000000) # ID
+        dg.add_uint32(12341234) # setRequired1
+        self.c.send(dg)
+
+        # See if it shows up...
+        dg = Datagram.create([13000<<32|6800], 102000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(13000) # Parent
+        dg.add_uint32(6800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(102000000) # ID
+        dg.add_uint32(12341234) # setRequired1
+        self.assertTrue(self.c.expect(dg))
+
+        # At this point we don't care about zone 6800.
+        self.c.send(Datagram.create_remove_channel(13000<<32|6800))
+
+        # Hit it with a RAM update.
+        dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(102000000)
+        dg.add_uint16(setBR1)
+        dg.add_string("Boots of Coolness (+20%)")
+        self.c.send(dg)
+
+        # Now move it over into zone 4800...
+        dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg.add_uint32(13000) # Parent
+        dg.add_uint32(4800) # Zone
+        self.c.send(dg)
+
+        # Verify that it announces its entry with the RAM message included.
+        dg = Datagram.create([13000<<32|4800], 102000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(13000) # Parent
+        dg.add_uint32(4800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(102000000) # ID
+        dg.add_uint32(12341234) # setRequired1
+        dg.add_uint16(1) # Other fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("Boots of Coolness (+20%)")
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(13000<<32|4800))
+        dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(102000000)
+        self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
