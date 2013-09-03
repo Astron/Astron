@@ -7,7 +7,7 @@ using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
 ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
-bool ChannelList::qualifies(unsigned long long channel)
+bool ChannelList::qualifies(channel_t channel)
 {
 	if(is_range)
 	{
@@ -81,9 +81,9 @@ void MessageDirector::InitializeMD()
 
 		// Initialize m_range_susbcriptions with empty range
 		auto empty_set = std::set<MDParticipantInterface*>();
-		m_range_subscriptions = boost::icl::interval_map<unsigned long long, std::set<MDParticipantInterface*>>();
+		m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>>();
 		m_range_subscriptions += std::make_pair(
-			boost::icl::discrete_interval<unsigned long long>::closed(0, ULLONG_MAX), empty_set);
+			boost::icl::discrete_interval<channel_t>::closed(0, ULLONG_MAX), empty_set);
 	}
 }
 
@@ -96,7 +96,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	// Check for control messages
 	if(channels == 1)
 	{
-		unsigned long long channel = dgi.read_uint64();
+		channel_t channel = dgi.read_uint64();
 
 		if(channel == CONTROL_MESSAGE && participant)
 		{
@@ -110,8 +110,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				case CONTROL_ADD_RANGE:
 				{
-					unsigned long long lo = dgi.read_uint64();
-					unsigned long long hi = dgi.read_uint64();
+					channel_t lo = dgi.read_uint64();
+					channel_t hi = dgi.read_uint64();
 					subscribe_range(participant, lo, hi);
 				}
 				break;
@@ -122,8 +122,8 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				case CONTROL_REMOVE_RANGE:
 				{
-					unsigned long long lo = dgi.read_uint64();
-					unsigned long long hi = dgi.read_uint64();
+					channel_t lo = dgi.read_uint64();
+					channel_t hi = dgi.read_uint64();
 					unsubscribe_range(participant, lo, hi);
 				}
 				break;
@@ -152,7 +152,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	std::set<MDParticipantInterface*> receiving_participants;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
-		unsigned long long channel = dgi.read_uint64();
+		channel_t channel = dgi.read_uint64();
 		for(auto it = m_channel_subscriptions[channel].begin(); it != m_channel_subscriptions[channel].end(); ++it)
 		{
 			receiving_participants.insert(receiving_participants.end(), *it);
@@ -193,7 +193,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	}
 }
 
-void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long long a)
+void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t a)
 {
 	ChannelList c;
 	c.is_range = false;
@@ -218,7 +218,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	}
 }
 
-void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned long long a)
+void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t a)
 {
 	ChannelList c;
 	c.is_range = false;
@@ -237,7 +237,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	}
 }
 
-void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
+void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t a, channel_t b)
 {
 	std::set<MDParticipantInterface*> participant_set;
 	participant_set.insert(p);
@@ -249,7 +249,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 
 	p->channels().insert(p->channels().end(), c);
 	m_range_subscriptions += std::make_pair(
-								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
+								boost::icl::discrete_interval<channel_t>::closed(a, b),
 								participant_set);
 
 	std::list<ChannelList> channels = p->channels();
@@ -275,7 +275,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 	}
 }
 
-void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long long a, unsigned long long b)
+void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t a, channel_t b)
 {
 	std::set<MDParticipantInterface*> participant_set;
 	participant_set.insert(p);
@@ -287,7 +287,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 
 	p->channels().remove(c);
 	m_range_subscriptions -= std::make_pair(
-								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
+								boost::icl::discrete_interval<channel_t>::closed(a, b),
 								participant_set);
 
 	if(should_remove_upstream(c))
@@ -313,7 +313,7 @@ inline bool MessageDirector::should_add_upstream(ChannelList c)
 		// Check if there were any other subscriptions along that entire range
 		int new_intervals = 0;
 		int premade_intervals = 0;
-		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<unsigned long long>::closed(c.a, c.b));
+		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<channel_t>::closed(c.a, c.b));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			++new_intervals;
@@ -355,7 +355,7 @@ inline bool MessageDirector::should_remove_upstream(ChannelList c)
 
 	// Don't route upstream if any more subscriptions exist
 	if(c.is_range) {
-		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<unsigned long long>::closed(c.a, c.b));
+		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<channel_t>::closed(c.a, c.b));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			if (it->second.size() > 0) {
@@ -464,7 +464,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* participant)
 			participant_set.insert(participant);
 
 			m_range_subscriptions -= std::make_pair(
-				boost::icl::discrete_interval<unsigned long long>::closed(it->a, it->b), participant_set);
+				boost::icl::discrete_interval<channel_t>::closed(it->a, it->b), participant_set);
 
 			dg.add_uint16(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->a);

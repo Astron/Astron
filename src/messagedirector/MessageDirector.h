@@ -21,14 +21,17 @@
 #define CONTROL_ADD_POST_REMOVE 2010
 #define CONTROL_CLEAR_POST_REMOVE 2011
 
+// Standard type defines
+typedef unsigned long long channel_t;
+
 // A ChannelList represents a single channel, or range of channels
 //     that a MDParticipant can be subscribed to.
 struct ChannelList
 {
-	unsigned long long a;
-	unsigned long long b;
+	channel_t a;
+	channel_t b;
 	bool is_range;
-	bool qualifies(unsigned long long channel);
+	bool qualifies(channel_t channel);
 	bool operator==(const ChannelList &rhs);
 };
 
@@ -51,24 +54,24 @@ class MessageDirector
 		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
 
 		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
-		// (Args) "a": the channel to be added.
-		void subscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		// (Args) "c": the channel to be added.
+		void subscribe_channel(MDParticipantInterface* p, channel_t c);
 
 		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
-		// (Args) "a": the channel to be removed.
-		void unsubscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		// (Args) "c": the channel to be removed.
+		void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
 
 		// subscribe_range handles a CONTROL_ADD_RANGE control message.
-		// (Args) "a": the lowest channel to be removed.
-		//        "b": the highest channel to be removed.
+		// (Args) "lo": the lowest channel to be removed.
+		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
-		void subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 
 		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
-		// (Args) "a": the lowest channel to be removed.
-		//        "b": the highest channel to be removed.
+		// (Args) "lo": the lowest channel to be removed.
+		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
-		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 	private:
 		MessageDirector();
 
@@ -76,10 +79,10 @@ class MessageDirector
 		std::list<MDParticipantInterface*> m_participants;
 
 		// All single channel susbcriptions
-		std::map<unsigned long long, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+		std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
 
 		// All range channel subscriptions
-		boost::icl::interval_map<unsigned long long, std::set<MDParticipantInterface*>> m_range_subscriptions;
+		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
 		
 		friend class MDParticipantInterface;
 		
