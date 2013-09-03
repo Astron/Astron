@@ -6,6 +6,7 @@
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
+#include <boost/icl/interval_map.hpp>
 
 // Message-channel constants
 #define CONTROL_MESSAGE 4001
@@ -70,9 +71,20 @@ class MessageDirector
 		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
 	private:
 		MessageDirector();
+
+		// All participants associated with the MD
 		std::list<MDParticipantInterface*> m_participants;
+
+		// A reverse-record of channels a participant has subscribed to
 		std::map<MDParticipantInterface*, std::list<ChannelList>> m_participant_channels;
-		std::map<unsigned long long, std::set<MDParticipantInterface*>> m_channel_participants;
+
+		// All single channel susbcriptions
+		std::map<unsigned long long, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+
+		// All range channel subscriptions
+		boost::icl::interval_map<unsigned long long, std::set<MDParticipantInterface*>> m_range_subscriptions;
+
+		// The post_remove messages sent out for each participant on improper disconnect
 		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
 		friend class MDParticipantInterface;
@@ -104,7 +116,7 @@ class MessageDirector
 				}
 				else
 				{
-					m_channel_participants[it->a].erase(participant);
+					m_channel_subscriptions[it->a].erase(participant);
 
 					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
 					dg.add_uint64(it->a);
@@ -123,7 +135,8 @@ class MessageDirector
 
 		void insert_channel_participants(unsigned long long, std::set<MDParticipantInterface*>);
 
-		bool should_send_upstream(unsigned long long);
+		// should_send_upstream determines whether CONTROL_MESSAGES should be routed upstream
+		bool should_send_upstream(ChannelList);
 
 		char *m_buffer;
 		unsigned short m_bufsize;

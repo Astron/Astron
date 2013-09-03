@@ -107,13 +107,19 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				case CONTROL_ADD_RANGE:
 				{
 					send_upstream = false;//handled by function
-					//subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
+					subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
 				}
 				break;
 				case CONTROL_REMOVE_CHANNEL:
 				{
 					send_upstream = false;//handled by function
 					unsubscribe_channel(participant, dgi.read_uint64());
+				}
+				break;
+				case CONTROL_REMOVE_RANGE:
+				{
+					send_upstream = false;//handled by function
+					unsubscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
 				}
 				break;
 				case CONTROL_ADD_POST_REMOVE:
@@ -196,10 +202,12 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.is_range = false;
 	c.a = a;
 
-	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
-	m_channel_participants[a].insert(m_channel_participants[a].end(), p);
-
-	if(should_send_upstream(a))
+	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
+	if (range.find(p) == range.end()) {
+		m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
+	}
+	if(should_send_upstream(c))
 	{
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
@@ -216,9 +224,9 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	c.a = a;
 
 	m_participant_channels[p].remove(c);
-	m_channel_participants[a].erase(p);
+	m_channel_subscriptions[a].erase(p);
 
-	if(should_send_upstream(a))
+	if(should_send_upstream(c))
 	{
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
@@ -228,14 +236,32 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	}
 }
 
-/*void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
+void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b)
 {
+	std::set<MDParticipantInterface*> participant_set;
+	participant_set.insert(p);
+
 	ChannelList c;
 	c.is_range = true;
 	c.a = a;
 	c.b = b;
 
 	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+	m_range_subscriptions += std::make_pair(
+								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
+								participant_set);
+
+	std::list<ChannelList>::iterator it = 	m_participant_channels[p].begin();
+	while (it != m_participant_channels[p].end())
+	{
+		if (!(*it).is_range && (*it).a >= a && (*it).a <= b) {
+			std::list<ChannelList>::iterator prev = it++;
+			m_participant_channels[p].erase(prev);
+			m_channel_subscriptions[a].erase(p);
+		} else {
+			++it;
+		}
+	}
 
 	if(should_send_upstream(c))
 	{
@@ -246,29 +272,52 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 	}
-}*/
+}
+
+void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long long a, unsigned long long b)
+{
+	std::set<MDParticipantInterface*> participant_set;
+	participant_set.insert(p);
+
+	ChannelList c;
+	c.is_range = true;
+	c.a = a;
+	c.b = b;
+
+	m_participant_channels[p].remove(c);
+	m_range_subscriptions -= std::make_pair(
+								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
+								participant_set);
+
+	if(should_send_upstream(c))
+	{
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_REMOVE_RANGE);
+		dg.add_uint64(a);
+		dg.add_uint64(b);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+	}
+
+}
 
 void MessageDirector::insert_channel_participants(unsigned long long c, std::set<MDParticipantInterface*> p) {
-	for(auto it = m_channel_participants[c].begin(); it != m_channel_participants[c].end(); ++it)
+	for(auto it = m_channel_subscriptions[c].begin(); it != m_channel_subscriptions[c].end(); ++it)
 	{
 		p.insert(*it);
 	}
+
 
 	// TODO: Insert participants subscribed to ranges
 }
 
 
 // note: keep around for future changes to send_upstream behavior
-inline bool MessageDirector::should_send_upstream(unsigned long long c)
+inline bool MessageDirector::should_send_upstream(ChannelList c)
 {
-	bool should_upstream;
-	try {
-		should_upstream = m_channel_participants.at(c).size() == 0;
-	} catch (const std::out_of_range& e) {
-		should_upstream = false;
-	}
-
-/*
 	bool should_upstream = true;
 	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
 	{
@@ -285,7 +334,6 @@ inline bool MessageDirector::should_send_upstream(unsigned long long c)
 			break;
 		}
 	}
-*/
 
 	return should_upstream && m_remote_md;
 }
