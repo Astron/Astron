@@ -68,6 +68,42 @@ class TestStateServer(unittest.TestCase):
         # We're done here...
         self.c.send(Datagram.create_remove_channel(5000<<32|1500))
 
+    def test_broadcast(self):
+        self.c.flush()
+        self.c.send(Datagram.create_add_channel(5000<<32|1500))
+
+        # Create a DistributedTestObject2...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(5000) # Parent
+        dg.add_uint32(1500) # Zone
+        dg.add_uint16(DistributedTestObject2)
+        dg.add_uint32(101000005) # ID
+        self.c.send(dg)
+
+        # Ignore the entry message, we aren't testing that here.
+        self.c.flush()
+
+        # Hit it with an update on setB2.
+        dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(101000005)
+        dg.add_uint16(setB2)
+        dg.add_uint32(0x31415927)
+        self.c.send(dg)
+
+        # Object should broadcast that update.
+        # N.B. the who field is not a mistake. This is so AI servers can see
+        # who the update ultimately comes from for e.g. an airecv/clsend.
+        dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(101000005)
+        dg.add_uint16(setB2)
+        dg.add_uint32(0x31415927)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(101000005)
+        self.c.send(dg)
+        self.c.send(Datagram.create_remove_channel(5000<<32|1500))
 
 if __name__ == '__main__':
     unittest.main()
