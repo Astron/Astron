@@ -74,7 +74,7 @@ class Datagram
 			buf_end += data.length();
 		}
 
-		void add_datagram(Datagram &dg)
+		void add_datagram(const Datagram &dg)
 		{
 			check_add_length(dg.buf_end);
 			memcpy(buf+buf_end, dg.buf, dg.buf_end);
