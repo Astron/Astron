@@ -197,9 +197,12 @@ class MDConnection(object):
         while datagrams:
             dg = self._read()
             if dg is None: return False # Augh, we didn't see all the dgs yet!
+            dg = Datagram(dg)
 
-            datagrams = [datagram for datagram in datagrams if
-                         not datagram.is_subset_of(Datagram(dg))]
+            for datagram in datagrams:
+                if datagram.is_subset_of(dg):
+                    datagrams.remove(datagram)
+                    break
 
         return True
 
