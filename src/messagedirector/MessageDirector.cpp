@@ -214,10 +214,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 
 	if(should_send_upstream(c))
 	{
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_CHANNEL);
+		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -235,10 +232,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 
 	if(should_send_upstream(c))
 	{
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -257,10 +251,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 
 	if(should_send_upstream(c))
 	{
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_RANGE);
+		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(a);
 		dg.add_uint64(b);
 		unsigned short len = dg.get_buf_end();
