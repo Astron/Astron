@@ -96,18 +96,15 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		if(channel == CONTROL_MESSAGE && participant)
 		{
 			unsigned int msg_type = dgi.read_uint16();
-			bool send_upstream = true;
 			switch(msg_type)
 			{
 				case CONTROL_ADD_CHANNEL:
 				{
-					send_upstream = false;//handled by function
 					subscribe_channel(participant, dgi.read_uint64());
 				}
 				break;
 				case CONTROL_ADD_RANGE:
 				{
-					send_upstream = false;//handled by function
 					unsigned long long lo = dgi.read_uint64();
 					unsigned long long hi = dgi.read_uint64();
 					subscribe_range(participant, lo, hi);
@@ -115,13 +112,11 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				case CONTROL_REMOVE_CHANNEL:
 				{
-					send_upstream = false;//handled by function
 					unsubscribe_channel(participant, dgi.read_uint64());
 				}
 				break;
 				case CONTROL_REMOVE_RANGE:
 				{
-					send_upstream = false;//handled by function
 					unsigned long long lo = dgi.read_uint64();
 					unsigned long long hi = dgi.read_uint64();
 					unsubscribe_range(participant, lo, hi);
@@ -129,40 +124,17 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				break;
 				case CONTROL_ADD_POST_REMOVE:
 				{
-					send_upstream = false;
 					std::string data = dgi.read_string();
 					participant->set_post_remove(data);
 				}
 				break;
 				case CONTROL_CLEAR_POST_REMOVE:
 				{
-					send_upstream = false;
 					participant->set_post_remove("");
 				}
 				break;
 				default:
 					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
-			}
-
-			// TODO: Since send_upstream logic for many control actions was moved, check how much of this is necessary
-			if(participant && m_remote_md && send_upstream)
-			{
-				gLogger->debug() << "Sending control message to upstream md" << std::endl;
-				unsigned short len = dg->get_buf_end();
-				m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-				m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
-			}
-			else if(!send_upstream)
-			{
-				gLogger->debug() << "not sending upstream because of flag" << std::endl;
-			}
-			else if(participant)
-			{
-				gLogger->debug() << "no upstream md for ctrl msg" << std::endl;
-			}
-			else
-			{
-				gLogger->debug() << "not redirecting upstream MD's own control message to itself" << std::endl;
 			}
 			return;
 		}
