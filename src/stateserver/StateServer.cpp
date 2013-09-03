@@ -271,23 +271,23 @@ public:
 			break;
 			case STATESERVER_OBJECT_SET_ZONE:
 			{
-				unsigned int oParent_id = m_parent_id, oZone_id = m_zone_id;
+				unsigned int old_parent_id = m_parent_id, old_zone_id = m_zone_id;
 				m_parent_id = dgi.read_uint32();
 				m_zone_id = dgi.read_uint32();
 
-				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, oParent_id));
+				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, old_parent_id));
 				MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
 
 				std::set <unsigned long long int> targets;
-				targets.insert(LOCATION2CHANNEL(oParent_id, oZone_id));
+				targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
 				if(m_ai_channel)
 					targets.insert(m_ai_channel);
 				Datagram resp3(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
 				resp3.add_uint32(m_do_id);
 				resp3.add_uint32(m_parent_id);
 				resp3.add_uint32(m_zone_id);
-				resp3.add_uint32(oParent_id);
-				resp3.add_uint32(oZone_id);
+				resp3.add_uint32(old_parent_id);
+				resp3.add_uint32(old_zone_id);
 				MessageDirector::singleton.handle_datagram(&resp3, this);
 
 				Datagram resp(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
