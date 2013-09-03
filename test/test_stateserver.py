@@ -338,5 +338,21 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.assertTrue(self.c.expect_none())
 
+        # Cleanup time:
+        self.c.send(Datagram.create_remove_channel(ai1))
+        self.c.send(Datagram.create_remove_channel(ai2))
+        self.c.send(Datagram.create_remove_channel(obj1))
+        self.c.send(Datagram.create_remove_channel(4030<<32|obj1))
+        self.c.send(Datagram.create_remove_channel(obj2))
+        self.c.send(Datagram.create_remove_channel(4030<<32|obj2))
+        self.c.send(Datagram.create_remove_channel(obj3))
+        self.c.send(Datagram.create_remove_channel(4030<<32|obj3))
+        self.c.send(Datagram.create_remove_channel(obj4))
+        # Clean up objects:
+        for obj in [obj1, obj2, obj3, obj4]:
+            dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
+            dg.add_uint32(obj)
+            self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
