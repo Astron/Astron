@@ -412,5 +412,62 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(102000000)
         self.c.send(dg)
 
+    def test_set_zone(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(14000<<32|9800))
+        self.c.send(Datagram.create_add_channel(14000<<32|9900))
+
+        # Create an object...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(14000) # Parent
+        dg.add_uint32(9800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(105000000) # ID
+        dg.add_uint32(43214321) # setRequired1
+        self.c.send(dg)
+
+        # See if it shows up...
+        dg = Datagram.create([14000<<32|9800], 105000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(14000) # Parent
+        dg.add_uint32(9800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(105000000) # ID
+        dg.add_uint32(43214321) # setRequired1
+        self.assertTrue(self.c.expect(dg))
+
+        # Now move it over into zone 9900...
+        dg = Datagram.create([105000000], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg.add_uint32(14000) # Parent
+        dg.add_uint32(9900) # Zone
+        self.c.send(dg)
+
+        # See if it announces its departure from 9800...
+        expected = []
+        dg = Datagram.create([14000<<32|9800], 5, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg.add_uint32(105000000)
+        dg.add_uint32(14000)
+        dg.add_uint32(9900)
+        dg.add_uint32(14000)
+        dg.add_uint32(9800)
+        expected.append(dg)
+        # ...and its entry into 9900.
+        dg = Datagram.create([14000<<32|9900], 105000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(14000) # Parent
+        dg.add_uint32(9900) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(105000000) # ID
+        dg.add_uint32(43214321) # setRequired1
+        expected.append(dg)
+
+        self.assertTrue(self.c.expect_multi(expected, only=True))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(14000<<32|9800))
+        self.c.send(Datagram.create_remove_channel(14000<<32|9900))
+        dg = Datagram.create([105000000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(105000000)
+        self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
