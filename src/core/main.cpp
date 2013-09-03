@@ -1,8 +1,11 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 #include "global.h"
+
+ConfigVariable<std::vector<std::string>> dc_files("general/dc_files", std::vector<std::string>());
 
 int main(int argc, char *argv[])
 {
@@ -46,6 +49,16 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	file.close();
+
+	std::vector<std::string> dc_file_names = dc_files.get_val();
+	for(auto it = dc_file_names.begin(); it != dc_file_names.end(); ++it)
+	{
+		if(!gDCF->read(*it))
+		{
+			gLogger->fatal() << "Could not read DC file " << *it << std::endl;
+			return 1;
+		}
+	}
 
 	MessageDirector::singleton.InitializeMD();
 
