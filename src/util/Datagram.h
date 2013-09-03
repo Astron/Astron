@@ -2,6 +2,8 @@
 #include <string>
 #include <string.h>
 
+#define CONTROL_MESSAGE 4001
+
 class Datagram
 {
 	private:
@@ -88,7 +90,7 @@ class Datagram
 		void add_control_header(const unsigned short &message_type)
 		{
 			add_uint8(1);
-			add_uint64(4001);
+			add_uint64(CONTROL_MESSAGE);
 			add_uint16(message_type);
 		}
 
