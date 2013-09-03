@@ -105,10 +105,37 @@ public:
 	bool m_ai_explicitly_set;
 	bool m_has_ram_fields;
 
-	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id) :
+	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi) :
 	m_do_id(do_id), m_dclass(dclass), m_parent_id(parent_id), m_zone_id(zone_id),
 	m_ai_channel(0), m_ai_explicitly_set(false), m_has_ram_fields(false)
 	{
+		for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
+		{
+			DCField *field = m_dclass->get_inherited_field(i);
+			if(field->is_required() && !field->as_molecular_field())
+			{
+				UnpackFieldFromDG(field, dgi, m_fields[field]);
+			}
+		}
+		MessageDirector::singleton.subscribe_channel(this, do_id);
+
+		Datagram resp;
+		resp.add_uint8(1);
+		resp.add_uint64(LOCATION2CHANNEL(parent_id, zone_id));
+		resp.add_uint64(do_id);
+		resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+		resp.add_data(generate_required_data());
+
+		MessageDirector::singleton.handle_datagram(&resp, this);
+
+		Datagram resp2;
+		resp2.add_uint8(1);
+		resp2.add_uint64(parent_id);
+		resp2.add_uint64(do_id);
+		resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+		gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
+			<< parent_id << " from " << do_id << std::endl;
+		MessageDirector::singleton.handle_datagram(&resp2, this);
 	}
 
 	std::string generate_required_data()
@@ -374,36 +401,7 @@ class StateServer : public Role
 					unsigned short dc_id = dgi.read_uint16();
 					unsigned int do_id = dgi.read_uint32();
 
-					DistributedObject *obj = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id);
-
-					for(int i = 0; i < obj->m_dclass->get_num_inherited_fields(); ++i)
-					{
-						DCField *field = obj->m_dclass->get_inherited_field(i);
-						if(field->is_required() && !field->as_molecular_field())
-						{
-							UnpackFieldFromDG(field, dgi, obj->m_fields[field]);
-						}
-					}
-					distObjs[do_id] = obj;
-					MessageDirector::singleton.subscribe_channel(obj, do_id);
-
-					Datagram resp;
-					resp.add_uint8(1);
-					resp.add_uint64(LOCATION2CHANNEL(parent_id, zone_id));
-					resp.add_uint64(do_id);
-					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-					resp.add_data(obj->generate_required_data());
-
-					MessageDirector::singleton.handle_datagram(&resp, this);
-
-					Datagram resp2;
-					resp2.add_uint8(1);
-					resp2.add_uint64(parent_id);
-					resp2.add_uint64(do_id);
-					resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
-					gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
-						<< parent_id << " from " << do_id << std::endl;
-					MessageDirector::singleton.handle_datagram(&resp2, this);
+					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi);
 				}
 				break;
 				default:
