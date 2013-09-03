@@ -5,6 +5,8 @@
 
 class BaseRoleFactoryItem
 {
+	public:
+		virtual Role* instantiate(RoleConfig roleconfig) = 0;
 	protected:
 		BaseRoleFactoryItem(const std::string &name);
 };
@@ -13,8 +15,14 @@ template<class T>
 class RoleFactoryItem : public BaseRoleFactoryItem
 {
 	public:
-		RoleFactoryItem(const std::string &name);
-		T* instantiate();
+		RoleFactoryItem(const std::string &name) : BaseRoleFactoryItem(name)
+		{
+		}
+
+		virtual Role* instantiate(RoleConfig roleconfig)
+		{
+			return new T(roleconfig);
+		}
 };
 
 class RoleFactory
