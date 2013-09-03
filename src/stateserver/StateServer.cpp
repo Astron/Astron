@@ -22,8 +22,9 @@
 #define STATESERVER_OBJECT_QUERY_FIELD  2024
 #define STATESERVER_QUERY_OBJECT_ALL_RESP  2030
 #define STATESERVER_OBJECT_LEAVING_AI_INTEREST  2033
-#define STATESERVER_ADD_AI_RECV  2045
+#define STATESERVER_OBJECT_SET_AI_CHANNEL  2045
 #define STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE  2046
+#define STATESERVER_OBJECT_NOTIFY_MANAGING_AI 2047
 #define STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT  2050
 #define STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT  2051
 #define STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT_RESP  2052
@@ -88,7 +89,11 @@ void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::str
 	}
 }
 
-struct DistributedObject
+struct DistributedObject;
+
+std::map<unsigned int, DistributedObject*> distObjs;
+
+struct DistributedObject : public MDParticipantInterface
 {
 	unsigned long long owner;
 	unsigned int parentId;
@@ -96,9 +101,178 @@ struct DistributedObject
 	unsigned int doId;
 	DCClass *dcc;
 	std::map<DCField*, std::string> fields;
-};
+	unsigned long long aiChannel;
+	bool aiExplicitlySet;
 
-std::map<unsigned int, DistributedObject*> distObjs;
+	std::string generate_required_data()
+	{
+		Datagram dg;
+		dg.add_uint32(parentId);
+		dg.add_uint32(zoneId);
+		dg.add_uint16(dcc->get_number());
+		dg.add_uint32(doId);
+		for(auto it = fields.begin(); it != fields.end(); ++it)
+		{
+			if(it->first->is_required())
+			{
+				dg.add_data(it->second);
+			}
+		}
+		return std::string(dg.get_data(), dg.get_buf_end());
+	}
+
+	std::string generate_other_data()
+	{
+		unsigned int nFields = 0;
+		Datagram fieldData;
+		for(auto it = fields.begin(); it != fields.end(); ++it)
+		{
+			if(it->first->is_ram() && !it->first->is_required())
+			{
+				nFields++;
+				fieldData.add_string(it->first->get_name());
+				fieldData.add_data(it->second);
+			}
+		}
+		Datagram dg;
+		dg.add_uint16(nFields);
+		dg.add_data(std::string(fieldData.get_data(), fieldData.get_buf_end()));
+		return std::string(dg.get_data(), dg.get_buf_end());
+	}
+
+	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+	{
+		unsigned long long sender = dgi.read_uint64();
+		unsigned short MsgType = dgi.read_uint16();
+		switch(MsgType)
+		{
+			case STATESERVER_OBJECT_DELETE_RAM:
+			{
+				unsigned int p_doId = dgi.read_uint32();
+				if(p_doId == doId)
+				{
+					unsigned long long loc = LOCATION2CHANNEL(parentId, zoneId);
+					Datagram resp;
+					resp.add_uint8(1);
+					resp.add_uint64(loc);
+					resp.add_uint64(doId);
+					resp.add_uint16(STATESERVER_OBJECT_DELETE_RAM);
+					resp.add_uint32(doId);
+					MessageDirector::singleton.handle_datagram(&resp, this);
+					distObjs[doId] = NULL;
+					delete this;
+				}
+			}
+			break;
+			case STATESERVER_OBJECT_UPDATE_FIELD:
+			{
+				unsigned int r_doId = dgi.read_uint32();
+				unsigned int fieldId = dgi.read_uint16();
+				if(doId == r_doId)
+				{
+					std::string data;
+					DCField *field = dcc->get_field_by_index(fieldId);
+					UnpackFieldFromDG(field, dgi, data);
+					if(field->is_required() || field->is_ram())
+					{
+						fields[field] = data;
+					}
+					Datagram resp;
+					if(field->is_broadcast() && field->is_airecv())
+					{
+						resp.add_uint8(2);
+						resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
+						resp.add_uint64(aiChannel);
+					}
+					else if(field->is_broadcast())
+					{
+						resp.add_uint8(1);
+						resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
+					}
+					else if(field->is_airecv())
+					{
+						resp.add_uint8(1);
+						resp.add_uint64(aiChannel);
+					}
+					if(field->is_broadcast() | field->is_airecv())
+					{
+						resp.add_uint64(sender);
+						resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
+						resp.add_uint32(doId);
+						resp.add_uint16(fieldId);
+						resp.add_data(data);
+						MessageDirector::singleton.handle_datagram(&resp, this);
+					}
+				}
+			}
+			break;
+			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
+				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI" << std::endl;
+				if(aiExplicitlySet)
+					break;
+			case STATESERVER_OBJECT_SET_AI_CHANNEL:
+			{
+				gLogger->debug() << "STATESERVER_OBJECT_SET_AI_CHANNEL" << std::endl;
+				unsigned int r_doId = dgi.read_uint32();
+				unsigned long long r_aiChannel = dgi.read_uint64();
+				if(MsgType == STATESERVER_OBJECT_NOTIFY_MANAGING_AI || doId == r_doId)
+				{
+					aiChannel = r_aiChannel;
+					aiExplicitlySet = MsgType == STATESERVER_OBJECT_SET_AI_CHANNEL;
+
+					Datagram resp;
+					resp.add_uint8(1);
+					resp.add_uint64(aiChannel);
+					resp.add_uint64(doId);
+					resp.add_uint16(STATESERVER_OBJECT_ENTER_AI_RECV);
+					resp.add_data(generate_required_data());
+					resp.add_data(generate_other_data());
+					MessageDirector::singleton.handle_datagram(&resp, this);
+					std::cout << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << aiChannel << std::endl;
+
+					Datagram resp2;
+					resp2.add_uint8(1);
+					resp2.add_uint64(LOCATION2CHANNEL(4030, doId));
+					resp2.add_uint64(doId);
+					resp2.add_uint16(STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+					resp2.add_uint32(doId);
+					resp2.add_uint64(aiChannel);
+					MessageDirector::singleton.handle_datagram(&resp2, this);
+				}
+			}
+			break;
+			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
+			{
+				gLogger->debug() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
+				Datagram resp;
+				resp.add_uint8(1);
+				resp.add_uint64(sender);
+				resp.add_uint64(doId);
+				resp.add_uint16(STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+				resp.add_uint32(doId);
+				resp.add_uint64(aiChannel);
+				MessageDirector::singleton.handle_datagram(&resp, this);
+			}
+			break;
+			case STATESERVER_OBJECT_SET_ZONE:
+			{
+				parentId = dgi.read_uint32();
+				zoneId = dgi.read_uint32();
+
+				Datagram resp;
+				resp.add_uint8(1);
+				resp.add_uint64(parentId);
+				resp.add_uint64(doId);
+				resp.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+				MessageDirector::singleton.handle_datagram(&resp, this);
+			}
+			break;
+			default:
+				gLogger->warning() << "DistributedObject recv'd unkonw MsgType " << MsgType << std::endl;
+		}
+		return true;
+	}
+};
 
 ConfigVariable<unsigned long long> cfg_channel("control", 0);
 
@@ -129,88 +303,35 @@ class StateServer : public Role
 					obj->zoneId = zoneId;
 					obj->owner = sender;
 					obj->dcc = gDCF->get_class(dcId);
-
-					std::string reqData;
+					obj->aiChannel = 0;
+					obj->aiExplicitlySet = false;
 
 					for(int i = 0; i < obj->dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = obj->dcc->get_inherited_field(i);
 						if(field->is_required() && !field->as_molecular_field())
 						{
-							std::string data;
-							UnpackFieldFromDG(field, dgi, data);
-							reqData += data;
-							if(field->is_ram())
-							{
-								obj->fields[field] = data;
-							}
+							UnpackFieldFromDG(field, dgi, obj->fields[field]);
 						}
 					}
 					distObjs[doId] = obj;
-					MessageDirector::singleton.subscribe_channel(this, doId);
+					MessageDirector::singleton.subscribe_channel(obj, doId);
 
 					Datagram resp;
 					resp.add_uint8(1);
 					resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
 					resp.add_uint64(doId);
 					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-					resp.add_uint32(parentId);
-					resp.add_uint32(zoneId);
-					resp.add_uint16(dcId);
-					resp.add_uint32(doId);
-					for(auto it = obj->fields.begin(); it != obj->fields.end(); ++it)
-					{
-						resp.add_data(it->second);
-					}
+					resp.add_data(obj->generate_required_data());
 
 					MessageDirector::singleton.handle_datagram(&resp, this);
-				}
-				break;
-				case STATESERVER_OBJECT_DELETE_RAM:
-				{
-					unsigned int doId = dgi.read_uint32();
-					DistributedObject *obj = distObjs[doId];
-					if(obj)
-					{
-						unsigned long long loc = LOCATION2CHANNEL(obj->parentId, obj->zoneId);
-						Datagram resp;
-						resp.add_uint8(1);
-						resp.add_uint64(loc);
-						resp.add_uint64(doId);
-						resp.add_uint16(STATESERVER_OBJECT_DELETE_RAM);
-						resp.add_uint32(doId);
-						MessageDirector::singleton.handle_datagram(&resp, this);
-						distObjs[doId] = NULL;
-						delete obj;
-					}
-				}
-				break;
-				case STATESERVER_OBJECT_UPDATE_FIELD:
-				{
-					unsigned int doId = dgi.read_uint32();
-					unsigned int fieldId = dgi.read_uint16();
-					if(distObjs[doId])
-					{
-						std::string data;
-						DCField *field = distObjs[doId]->dcc->get_field_by_index(fieldId);
-						UnpackFieldFromDG(field, dgi, data);
-						if(field->is_required())
-						{
-							distObjs[doId]->fields[field] = data;
-						}
-						if(field->is_broadcast())
-						{
-							Datagram resp;
-							resp.add_uint8(1);
-							resp.add_uint64(LOCATION2CHANNEL(distObjs[doId]->parentId, distObjs[doId]->zoneId));
-							resp.add_uint64(sender);
-							resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
-							resp.add_uint32(doId);
-							resp.add_uint16(fieldId);
-							resp.add_data(data);
-							MessageDirector::singleton.handle_datagram(&resp, this);
-						}
-					}
+
+					Datagram resp2;
+					resp2.add_uint8(1);
+					resp2.add_uint64(parentId);
+					resp2.add_uint64(doId);
+					resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+					MessageDirector::singleton.handle_datagram(&resp2, this);
 				}
 				break;
 				default:
