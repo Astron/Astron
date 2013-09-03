@@ -207,16 +207,31 @@ struct DistributedObject : public MDParticipantInterface
 			}
 			break;
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
-				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI" << std::endl;
+				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI " << parentId << std::endl;
 				if(aiExplicitlySet)
 					break;
 			case STATESERVER_OBJECT_SET_AI_CHANNEL:
 			{
-				gLogger->debug() << "STATESERVER_OBJECT_SET_AI_CHANNEL" << std::endl;
+				gLogger->debug() << "STATESERVER_OBJECT_SET_AI_CHANNEL " << doId << std::endl;
 				unsigned int r_doId = dgi.read_uint32();
+				gLogger->debug() << "r_doId " << r_doId << std::endl;
 				unsigned long long r_aiChannel = dgi.read_uint64();
-				if(MsgType == STATESERVER_OBJECT_NOTIFY_MANAGING_AI || doId == r_doId)
+				if(aiChannel == r_aiChannel)
+					break;
+				if((MsgType == STATESERVER_OBJECT_NOTIFY_MANAGING_AI && r_doId == parentId) || doId == r_doId)
 				{
+					if(aiChannel)
+					{
+						Datagram resp;
+						resp.add_uint8(1);
+						resp.add_uint64(aiChannel);
+						resp.add_uint64(doId);
+						resp.add_uint16(STATESERVER_OBJECT_LEAVING_AI_INTEREST);
+						resp.add_uint32(doId);
+						gLogger->debug() << doId << " LEAVING AI INTEREST" << std::endl;
+						MessageDirector::singleton.handle_datagram(&resp, this);
+					}
+
 					aiChannel = r_aiChannel;
 					aiExplicitlySet = MsgType == STATESERVER_OBJECT_SET_AI_CHANNEL;
 
@@ -228,7 +243,8 @@ struct DistributedObject : public MDParticipantInterface
 					resp.add_data(generate_required_data());
 					resp.add_data(generate_other_data());
 					MessageDirector::singleton.handle_datagram(&resp, this);
-					std::cout << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << aiChannel << std::endl;
+					gLogger->debug() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << aiChannel
+						<< " from " << doId << std::endl;
 
 					Datagram resp2;
 					resp2.add_uint8(1);
@@ -256,8 +272,29 @@ struct DistributedObject : public MDParticipantInterface
 			break;
 			case STATESERVER_OBJECT_SET_ZONE:
 			{
+				unsigned int oParentId = parentId, oZoneId = zoneId;
 				parentId = dgi.read_uint32();
 				zoneId = dgi.read_uint32();
+
+				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, oParentId));
+				MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, parentId));
+
+				if(aiChannel)
+				{
+					Datagram resp2;
+					resp2.add_uint8(1);
+					resp2.add_uint64(aiChannel);
+					resp2.add_uint64(sender);
+					resp2.add_uint16(STATESERVER_OBJECT_CHANGE_ZONE);
+					resp2.add_uint32(doId);
+					resp2.add_uint32(parentId);
+					resp2.add_uint32(zoneId);
+					resp2.add_uint32(oParentId);
+					resp2.add_uint32(oZoneId);
+					gLogger->debug() << "Sending STATESERVER_OBJECT_CHANGE_ZONE to " << aiChannel << " "
+						<< doId << std::endl;
+					MessageDirector::singleton.handle_datagram(&resp2, this);
+				}
 
 				Datagram resp;
 				resp.add_uint8(1);
@@ -331,6 +368,8 @@ class StateServer : public Role
 					resp2.add_uint64(parentId);
 					resp2.add_uint64(doId);
 					resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+					gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
+						<< parentId << " from " << doId << std::endl;
 					MessageDirector::singleton.handle_datagram(&resp2, this);
 				}
 				break;
