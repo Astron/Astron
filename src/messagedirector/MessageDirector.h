@@ -92,10 +92,8 @@ class MessageDirector
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
-		void insert_channel_participants(unsigned long long, std::set<MDParticipantInterface*>);
-
-		// should_send_upstream determines whether CONTROL_MESSAGES should be routed upstream
-		bool should_send_upstream(ChannelList);
+		// should_control_upstream determines whether CONTROL_MESSAGES should be routed upstream
+		bool should_control_upstream(ChannelList);
 
 		char *m_buffer;
 		unsigned short m_bufsize;

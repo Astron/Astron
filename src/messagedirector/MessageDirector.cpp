@@ -172,12 +172,17 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		unsigned long long channel = dgi.read_uint64();
-		insert_channel_participants(channel, receiving_participants);
+		for(auto it = m_channel_subscriptions[channel].begin(); it != m_channel_subscriptions[channel].end(); ++it)
+		{
+			receiving_participants.insert(receiving_participants.end(), *it);
+		}
+		std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, channel)->second;
+		receiving_participants.insert(range.begin(), range.end());
 	}
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
 		DatagramIterator msg_dgi(dg, 1+channels*8);
-		participant->handle_datagram(dg, msg_dgi);
+		(*it)->handle_datagram(dg, msg_dgi);
 	}
 
 	if(participant && m_remote_md)  // Send message upstream
@@ -208,7 +213,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
 	}
-	if(should_send_upstream(c))
+	if(should_control_upstream(c))
 	{
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
@@ -227,7 +232,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	p->channels().remove(c);
 	m_channel_subscriptions[a].erase(p);
 
-	if(should_send_upstream(c))
+	if(should_control_upstream(c))
 	{
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
@@ -264,7 +269,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 		}
 	}
 
-	if(should_send_upstream(c))
+	if(should_control_upstream(c))
 	{
 		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(a);
@@ -290,7 +295,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
 
-	if(should_send_upstream(c))
+	if(should_control_upstream(c))
 	{
 		Datagram dg;
 		dg.add_uint8(1);
@@ -305,19 +310,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 
 }
 
-void MessageDirector::insert_channel_participants(unsigned long long c, std::set<MDParticipantInterface*> p) {
-	for(auto it = m_channel_subscriptions[c].begin(); it != m_channel_subscriptions[c].end(); ++it)
-	{
-		p.insert(*it);
-	}
-
-
-	// TODO: Insert participants subscribed to ranges
-}
-
-
 // note: keep around for future changes to send_upstream behavior
-inline bool MessageDirector::should_send_upstream(ChannelList c)
+inline bool MessageDirector::should_control_upstream(ChannelList c)
 {
 	bool should_upstream = true;
 
