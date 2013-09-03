@@ -103,6 +103,7 @@ struct DistributedObject : public MDParticipantInterface
 	std::map<DCField*, std::string> fields;
 	unsigned long long aiChannel;
 	bool aiExplicitlySet;
+	bool hasRamFields;
 
 	std::string generate_required_data()
 	{
@@ -111,11 +112,13 @@ struct DistributedObject : public MDParticipantInterface
 		dg.add_uint32(zoneId);
 		dg.add_uint16(dcc->get_number());
 		dg.add_uint32(doId);
-		for(auto it = fields.begin(); it != fields.end(); ++it)
+		unsigned int nFields = dcc->get_num_inherited_fields();
+		for(unsigned int i = 0; i < nFields; ++i)
 		{
-			if(it->first->is_required())
+			DCField *field = dcc->get_inherited_field(i);
+			if(field->is_required())
 			{
-				dg.add_data(it->second);
+				dg.add_data(fields[field]);
 			}
 		}
 		return std::string(dg.get_data(), dg.get_buf_end());
@@ -124,20 +127,20 @@ struct DistributedObject : public MDParticipantInterface
 	std::string generate_other_data()
 	{
 		unsigned int nFields = 0;
-		Datagram fieldData;
+		Datagram dg;
 		for(auto it = fields.begin(); it != fields.end(); ++it)
 		{
 			if(it->first->is_ram() && !it->first->is_required())
 			{
 				nFields++;
-				fieldData.add_string(it->first->get_name());
-				fieldData.add_data(it->second);
+				dg.add_uint16(it->first->get_number());
+				dg.add_data(it->second);
 			}
 		}
-		Datagram dg;
-		dg.add_uint16(nFields);
-		dg.add_data(std::string(fieldData.get_data(), fieldData.get_buf_end()));
-		return std::string(dg.get_data(), dg.get_buf_end());
+		Datagram dg2;
+		dg2.add_uint16(nFields);
+		dg2.add_data(std::string(dg.get_data(), dg.get_buf_end()));
+		return std::string(dg2.get_data(), dg2.get_buf_end());
 	}
 
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -173,36 +176,43 @@ struct DistributedObject : public MDParticipantInterface
 				{
 					std::string data;
 					DCField *field = dcc->get_field_by_index(fieldId);
-					UnpackFieldFromDG(field, dgi, data);
-					if(field->is_required() || field->is_ram())
+					if(field)
 					{
-						fields[field] = data;
-					}
-					Datagram resp;
-					if(field->is_broadcast() && field->is_airecv())
-					{
-						resp.add_uint8(2);
-						resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
-						resp.add_uint64(aiChannel);
-					}
-					else if(field->is_broadcast())
-					{
-						resp.add_uint8(1);
-						resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
-					}
-					else if(field->is_airecv())
-					{
-						resp.add_uint8(1);
-						resp.add_uint64(aiChannel);
-					}
-					if(field->is_broadcast() | field->is_airecv())
-					{
-						resp.add_uint64(sender);
-						resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
-						resp.add_uint32(doId);
-						resp.add_uint16(fieldId);
-						resp.add_data(data);
-						MessageDirector::singleton.handle_datagram(&resp, this);
+						UnpackFieldFromDG(field, dgi, data);
+						if(field->is_ram())
+						{
+							hasRamFields = true;
+						}
+						if(field->is_required() || field->is_ram())
+						{
+							fields[field] = data;
+						}
+						Datagram resp;
+						if(field->is_broadcast() && field->is_airecv())
+						{
+							resp.add_uint8(2);
+							resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
+							resp.add_uint64(aiChannel);
+						}
+						else if(field->is_broadcast())
+						{
+							resp.add_uint8(1);
+							resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
+						}
+						else if(field->is_airecv())
+						{
+							resp.add_uint8(1);
+							resp.add_uint64(aiChannel);
+						}
+						if(field->is_broadcast() | field->is_airecv())
+						{
+							resp.add_uint64(sender);
+							resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
+							resp.add_uint32(doId);
+							resp.add_uint16(fieldId);
+							resp.add_data(data);
+							MessageDirector::singleton.handle_datagram(&resp, this);
+						}
 					}
 				}
 			}
@@ -280,29 +290,52 @@ struct DistributedObject : public MDParticipantInterface
 				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, oParentId));
 				MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, parentId));
 
+				Datagram resp3;
 				if(aiChannel)
 				{
-					Datagram resp2;
-					resp2.add_uint8(1);
-					resp2.add_uint64(aiChannel);
-					resp2.add_uint64(sender);
-					resp2.add_uint16(STATESERVER_OBJECT_CHANGE_ZONE);
-					resp2.add_uint32(doId);
-					resp2.add_uint32(parentId);
-					resp2.add_uint32(zoneId);
-					resp2.add_uint32(oParentId);
-					resp2.add_uint32(oZoneId);
-					gLogger->debug() << "Sending STATESERVER_OBJECT_CHANGE_ZONE to " << aiChannel << " "
-						<< doId << std::endl;
-					MessageDirector::singleton.handle_datagram(&resp2, this);
+					resp3.add_uint8(2);
+					resp3.add_uint64(aiChannel);
+					resp3.add_uint64(LOCATION2CHANNEL(oParentId, oZoneId));
 				}
+				else
+				{
+					resp3.add_uint8(1);
+					resp3.add_uint64(LOCATION2CHANNEL(oParentId, oZoneId));
+				}
+				resp3.add_uint64(sender);
+				resp3.add_uint16(STATESERVER_OBJECT_CHANGE_ZONE);
+				resp3.add_uint32(doId);
+				resp3.add_uint32(parentId);
+				resp3.add_uint32(zoneId);
+				resp3.add_uint32(oParentId);
+				resp3.add_uint32(oZoneId);
+				MessageDirector::singleton.handle_datagram(&resp3, this);
 
 				Datagram resp;
 				resp.add_uint8(1);
-				resp.add_uint64(parentId);
+				resp.add_uint64(LOCATION2CHANNEL(parentId, zoneId));
 				resp.add_uint64(doId);
-				resp.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+				if(hasRamFields)
+				{
+					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER);
+				}
+				else
+				{
+					resp.add_uint16(STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+				}
+				resp.add_data(generate_required_data());
+				if(hasRamFields)
+				{
+					resp.add_data(generate_other_data());
+				}
 				MessageDirector::singleton.handle_datagram(&resp, this);
+
+				Datagram resp2;
+				resp2.add_uint8(1);
+				resp2.add_uint64(parentId);
+				resp2.add_uint64(doId);
+				resp2.add_uint16(STATESERVER_OBJECT_QUERY_MANAGING_AI);
+				MessageDirector::singleton.handle_datagram(&resp2, this);
 			}
 			break;
 			default:
@@ -343,6 +376,7 @@ class StateServer : public Role
 					obj->dcc = gDCF->get_class(dcId);
 					obj->aiChannel = 0;
 					obj->aiExplicitlySet = false;
+					obj->hasRamFields = false;
 
 					for(int i = 0; i < obj->dcc->get_num_inherited_fields(); ++i)
 					{
