@@ -218,7 +218,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.is_range = false;
 	c.a = a;
 
-	bool should_upstream = should_control_upstream(c);
+	bool should_upstream = should_add_upstream(c);
 
 	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
 	if (range.find(p) == range.end()) {
@@ -242,12 +242,10 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	c.is_range = false;
 	c.a = a;
 
-	bool should_upstream = should_control_upstream(c);
-
 	p->channels().remove(c);
 	m_channel_subscriptions[a].erase(p);
 
-	if(should_upstream)
+	if(should_remove_upstream(c))
 	{
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
@@ -267,7 +265,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 	c.a = a;
 	c.b = b;
 
-	bool should_upstream = should_control_upstream(c);
+	bool should_upstream = should_add_upstream(c);
 
 	p->channels().insert(p->channels().end(), c);
 	m_range_subscriptions += std::make_pair(
@@ -307,14 +305,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 	c.a = a;
 	c.b = b;
 
-	bool should_upstream = should_control_upstream(c);
-
 	p->channels().remove(c);
 	m_range_subscriptions -= std::make_pair(
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
 
-	if(should_upstream)
+	if(should_remove_upstream(c))
 	{
 		Datagram dg;
 		dg.add_uint8(1);
@@ -329,8 +325,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 
 }
 
-// should_control_upstream should be called before make processing control messages internally
-inline bool MessageDirector::should_control_upstream(ChannelList c)
+// should_add_upstream should be called before make processing control messages internally
+inline bool MessageDirector::should_add_upstream(ChannelList c)
 {
 	// Don't route upstream if a previous subscription exists, already routed
 	if(m_channel_subscriptions[c.a].size() > 0) {
@@ -338,6 +334,33 @@ inline bool MessageDirector::should_control_upstream(ChannelList c)
 	}
 
 	// Don't route upstream if a previous subscription exists, already routed
+	if(c.is_range) {
+		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<unsigned long long>::closed(c.a, c.b));
+		for(auto it = interval_range.first; it != interval_range.second; ++it)
+		{
+			if (it->second.size() > 0) {
+				return false;
+			}
+		}
+	} else {
+		if(boost::icl::find(m_range_subscriptions, c.a)->second.size() > 0) {
+			return false;
+		}
+	}
+
+	// Return true if not root
+	return m_remote_md;
+}
+
+// should_remove_upstream should be called before after processing control messages internally
+inline bool MessageDirector::should_remove_upstream(ChannelList c)
+{
+	// Don't route upstream if any more subscriptions exist
+	if(m_channel_subscriptions[c.a].size() > 0) {
+		return false;
+	}
+
+	// Don't route upstream if any more subscriptions exist
 	if(c.is_range) {
 		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<unsigned long long>::closed(c.a, c.b));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)

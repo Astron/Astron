@@ -92,8 +92,13 @@ class MessageDirector
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
-		// should_control_upstream determines whether CONTROL_MESSAGES should be routed upstream
-		bool should_control_upstream(ChannelList);
+		// should_add_upstream determines whether CONTROL_ADD_XXX messages should be routed upstream
+		// Must be called BEFORE adding to MD
+		bool should_add_upstream(ChannelList);
+
+		// should_remove_upstream determines whether CONTROL_REMOVE_XXX should be routed upstream
+		// Must be called AFTER removing from MD
+		bool should_remove_upstream(ChannelList);
 
 		char *m_buffer;
 		unsigned short m_bufsize;
