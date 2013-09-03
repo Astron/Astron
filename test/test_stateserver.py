@@ -516,6 +516,11 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.assertTrue(self.c.expect_none())
 
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(67000<<32|2000))
+        dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(110000000)
+        self.c.send(dg)
 
 if __name__ == '__main__':
     unittest.main()
