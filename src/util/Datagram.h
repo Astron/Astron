@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <set>
 #include <string.h>
 
 #define CONTROL_MESSAGE 4001
@@ -31,12 +32,17 @@ class Datagram
 			memcpy(buf, data.c_str(), data.length());
 		}
 
-		Datagram(const unsigned long long &to_channel, const unsigned long long &from_channel, const unsigned short &message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
+		Datagram(unsigned long long to_channel, unsigned long long from_channel, unsigned short message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
 		{
 			add_server_header(to_channel, from_channel, message_type);
 		}
 
-		Datagram(const unsigned short &message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
+		Datagram(const std::set<unsigned long long> &to_channels, unsigned long long from_channel, unsigned short message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
+		{
+			add_server_header(to_channels, from_channel, message_type);
+		}
+
+		Datagram(unsigned short message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
 		{
 			add_control_header(message_type);
 		}
@@ -79,7 +85,7 @@ class Datagram
 			add_data(str);
 		}
 
-		void add_server_header(const unsigned long long &to_channel, const unsigned long long &from_channel, const unsigned short &message_type)
+		void add_server_header(unsigned long long to_channel, unsigned long long from_channel, unsigned short message_type)
 		{
 			add_uint8(1);
 			add_uint64(to_channel);
@@ -87,7 +93,16 @@ class Datagram
 			add_uint16(message_type);
 		}
 
-		void add_control_header(const unsigned short &message_type)
+		void add_server_header(const std::set<unsigned long long> &to_channels, unsigned long long from_channel, unsigned short message_type)
+		{
+			add_uint8(to_channels.size());
+			for(auto it = to_channels.begin(); it != to_channels.end(); ++it)
+				add_uint64(*it);
+			add_uint64(from_channel);
+			add_uint16(message_type);
+		}
+
+		void add_control_header(unsigned short message_type)
 		{
 			add_uint8(1);
 			add_uint64(CONTROL_MESSAGE);
