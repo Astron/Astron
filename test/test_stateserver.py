@@ -469,5 +469,53 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(105000000)
         self.c.send(dg)
 
+    def test_inheritance(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(67000<<32|2000))
+
+        # Create a DTO3, which inherits from DTO1.
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(67000) # Parent
+        dg.add_uint32(2000) # Zone
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint32(110000000) # ID
+        dg.add_uint32(12123434) # setRequired1
+        dg.add_uint32(0xC0FFEE) # setRDB3
+        self.c.send(dg)
+
+        # Does it show up right?
+        dg = Datagram.create([67000<<32|2000], 110000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(67000) # Parent
+        dg.add_uint32(2000) # Zone
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint32(110000000) # ID
+        dg.add_uint32(12123434) # setRequired1
+        dg.add_uint32(0xC0FFEE) # setRDB3
+        self.assertTrue(self.c.expect(dg))
+
+        # Cool, now let's test the broadcast messages:
+        for field in [setRDB3, setRequired1]:
+            dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+            dg.add_uint32(110000000)
+            dg.add_uint16(field)
+            dg.add_uint32(0x31415927)
+            self.c.send(dg)
+            dg = Datagram.create([67000<<32|2000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+            dg.add_uint32(110000000)
+            dg.add_uint16(field)
+            dg.add_uint32(0x31415927)
+            self.assertTrue(self.c.expect(dg))
+
+        # This message is NOT part of DTO1/3 and should fail.
+        # Bonus points for logging an ERROR log.
+        dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(110000000)
+        dg.add_uint16(setB2)
+        dg.add_uint32(0x11225533)
+        self.c.send(dg)
+        self.assertTrue(self.c.expect_none())
+
+
 if __name__ == '__main__':
     unittest.main()
