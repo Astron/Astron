@@ -12,3 +12,8 @@ bool ConfigFile::load(std::istream &is)
 	}
 	return true;
 }
+
+YAML::Node ConfigFile::copy_node()
+{
+	return YAML::Clone(m_node);
+}
