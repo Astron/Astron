@@ -63,12 +63,15 @@ add_executable (openotpd
 	src/core/global.h
 	src/core/global.cpp
 	src/core/logger.h
+	src/core/RoleFactory.cpp
+	src/core/RoleFactory.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
 	src/messagedirector/MDNetworkParticipant.h
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
+	src/util/Role.h
 	${TEST_FILES}
 )
 

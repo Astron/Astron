@@ -6,6 +6,7 @@ class ConfigFile
 {
 	public:
 		bool load(std::istream &is);
+		YAML::Node copy_node();
 	private:
 		template <class T>
 		friend class ConfigVariable;
