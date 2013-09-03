@@ -29,6 +29,16 @@ class Datagram
 			memcpy(buf, data.c_str(), data.length());
 		}
 
+		Datagram(const unsigned long long &to_channel, const unsigned long long &from_channel, const unsigned short &message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
+		{
+			add_server_header(to_channel, from_channel, message_type);
+		}
+
+		Datagram(const unsigned short &message_type) : buf(new char[64]), p(0), buf_size(64), buf_end(0)
+		{
+			add_control_header(message_type);
+		}
+
 		void add_uint8(const unsigned char &v)
 		{
 			check_add_length(1);
@@ -65,6 +75,21 @@ class Datagram
 		{
 			add_uint16(str.length());
 			add_data(str);
+		}
+
+		void add_server_header(const unsigned long long &to_channel, const unsigned long long &from_channel, const unsigned short &message_type)
+		{
+			add_uint8(1);
+			add_uint64(to_channel);
+			add_uint64(from_channel);
+			add_uint16(message_type);
+		}
+
+		void add_control_header(const unsigned short &message_type)
+		{
+			add_uint8(1);
+			add_uint64(4001);
+			add_uint16(message_type);
 		}
 
 		unsigned int get_buf_end()
