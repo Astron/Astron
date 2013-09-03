@@ -176,6 +176,34 @@ class StateServer : public Role
 					}
 				}
 				break;
+				case STATESERVER_OBJECT_UPDATE_FIELD:
+				{
+					unsigned int doId = dgi.read_uint32();
+					unsigned int fieldId = dgi.read_uint16();
+					if(distObjs[doId])
+					{
+						std::string data;
+						DCField *field = distObjs[doId]->dcc->get_field_by_index(fieldId);
+						UnpackFieldFromDG(field, dgi, data);
+						if(field->is_required())
+						{
+							distObjs[doId]->fields[field] = data;
+						}
+						if(field->is_broadcast())
+						{
+							Datagram resp;
+							resp.add_uint8(1);
+							resp.add_uint64(LOCATION2CHANNEL(distObjs[doId]->parentId, distObjs[doId]->zoneId));
+							resp.add_uint64(sender);
+							resp.add_uint16(STATESERVER_OBJECT_UPDATE_FIELD);
+							resp.add_uint32(doId);
+							resp.add_uint16(fieldId);
+							resp.add_data(data);
+							MessageDirector::singleton.handle_datagram(&resp, this);
+						}
+					}
+				}
+				break;
 				default:
 					gLogger->error() << "StateServer recv'd unknown msgtype: " << MsgType << std::endl;
 			}
