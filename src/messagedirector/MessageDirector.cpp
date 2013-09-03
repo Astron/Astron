@@ -126,13 +126,13 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				{
 					send_upstream = false;
 					std::string data = dgi.read_string();
-					m_post_removes[participant] = data;
+					participant->set_post_remove(data);
 				}
 				break;
 				case CONTROL_CLEAR_POST_REMOVE:
 				{
 					send_upstream = false;
-					m_post_removes.erase(m_post_removes.find(participant));
+					participant->set_post_remove("");
 				}
 				break;
 				default:
@@ -204,7 +204,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 
 	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
 	if (range.find(p) == range.end()) {
-		m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
 	}
 	if(should_send_upstream(c))
@@ -223,7 +223,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	c.is_range = false;
 	c.a = a;
 
-	m_participant_channels[p].remove(c);
+	p->channels().remove(c);
 	m_channel_subscriptions[a].erase(p);
 
 	if(should_send_upstream(c))
@@ -246,17 +246,17 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 	c.a = a;
 	c.b = b;
 
-	m_participant_channels[p].insert(m_participant_channels[p].end(), c);
+	p->channels().insert(p->channels().end(), c);
 	m_range_subscriptions += std::make_pair(
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
 
-	std::list<ChannelList>::iterator it = 	m_participant_channels[p].begin();
-	while (it != m_participant_channels[p].end())
+	std::list<ChannelList>::iterator it = p->channels().begin();
+	while (it != p->channels().end())
 	{
 		if (!(*it).is_range && (*it).a >= a && (*it).a <= b) {
 			std::list<ChannelList>::iterator prev = it++;
-			m_participant_channels[p].erase(prev);
+			p->channels().erase(prev);
 			m_channel_subscriptions[a].erase(p);
 		} else {
 			++it;
@@ -284,7 +284,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 	c.a = a;
 	c.b = b;
 
-	m_participant_channels[p].remove(c);
+	p->channels().remove(c);
 	m_range_subscriptions -= std::make_pair(
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
@@ -319,9 +319,10 @@ void MessageDirector::insert_channel_participants(unsigned long long c, std::set
 inline bool MessageDirector::should_send_upstream(ChannelList c)
 {
 	bool should_upstream = true;
-	for(auto it = m_participant_channels.begin(); it != m_participant_channels.end(); ++it)
+
+	for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
 	{
-		for(auto it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+		for(auto it2 = (*it)->channels().begin(); it2 != (*it)->channels().end(); ++it2)
 		{
 			if(*it2 == c)
 			{
@@ -401,4 +402,46 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 
 		start_receive();
 	}
+}
+
+void MessageDirector::add_participant(MDParticipantInterface* participant)
+{
+	m_participants.insert(m_participants.end(), participant);
+}
+
+void MessageDirector::remove_participant(MDParticipantInterface* participant)
+{
+	if(participant->post_remove().length() > 0)
+	{
+		Datagram dg(participant->post_remove());
+		handle_datagram(&dg, participant);
+	}
+	for(auto it = participant->channels().begin(); it != participant->channels().end();)
+	{
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		if(it->is_range)
+		{
+			std::set<MDParticipantInterface*> participant_set;
+			participant_set.insert(participant);
+
+			m_range_subscriptions -= std::make_pair(
+				boost::icl::discrete_interval<unsigned long long>::closed(it->a, it->b), participant_set);
+
+			dg.add_uint16(CONTROL_REMOVE_RANGE);
+			dg.add_uint64(it->a);
+			dg.add_uint64(it->b);
+		}
+		else
+		{
+			m_channel_subscriptions[it->a].erase(participant);
+
+			dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+			dg.add_uint64(it->a);
+		}
+
+		handle_datagram(&dg, participant);
+	}
+	m_participants.remove(participant);
 }

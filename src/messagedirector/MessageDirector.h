@@ -75,57 +75,16 @@ class MessageDirector
 		// All participants associated with the MD
 		std::list<MDParticipantInterface*> m_participants;
 
-		// A reverse-record of channels a participant has subscribed to
-		std::map<MDParticipantInterface*, std::list<ChannelList>> m_participant_channels;
-
 		// All single channel susbcriptions
 		std::map<unsigned long long, std::set<MDParticipantInterface*>> m_channel_subscriptions;
 
 		// All range channel subscriptions
 		boost::icl::interval_map<unsigned long long, std::set<MDParticipantInterface*>> m_range_subscriptions;
-
-		// The post_remove messages sent out for each participant on improper disconnect
-		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
 		friend class MDParticipantInterface;
 		
-		void add_participant(MDParticipantInterface* participant)
-		{
-			m_participants.insert(m_participants.end(), participant);
-		}
-		void remove_participant(MDParticipantInterface* participant)
-		{
-			if(m_post_removes.find(participant) != m_post_removes.end())
-			{
-				Datagram dg(m_post_removes[participant]);
-				handle_datagram(&dg, participant);
-				m_post_removes.erase(m_post_removes.find(participant));
-			}
-			for(auto it = m_participant_channels[participant].begin(); it != m_participant_channels[participant].end(); ++it)
-			{
-				Datagram dg;
-				dg.add_uint8(1);
-				dg.add_uint64(CONTROL_MESSAGE);
-				if(it->is_range)
-				{
-					// TODO: Remove participant from channel range
-
-					dg.add_uint16(CONTROL_REMOVE_RANGE);
-					dg.add_uint64(it->a);
-					dg.add_uint64(it->b);
-				}
-				else
-				{
-					m_channel_subscriptions[it->a].erase(participant);
-
-					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
-					dg.add_uint64(it->a);
-				}
-				handle_datagram(&dg, participant);
-			}
-			m_participant_channels.erase(participant);
-			m_participants.remove(participant);
-		}
+		void add_participant(MDParticipantInterface* participant);
+		void remove_participant(MDParticipantInterface* participant);
 
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
@@ -148,6 +107,8 @@ class MessageDirector
 		bool m_initialized;
 };
 
+
+
 // A MDParticipantInterface is the interface that must be implemented to
 //     recieve messages from the MessageDirector.
 // MDParticipants might be a StateServer, a single StateServer object, the
@@ -169,4 +130,22 @@ class MDParticipantInterface
 		// handle_datagram should handle a message recieved from the MessageDirector.
 		// Implementations of handle_datagram should be non-blocking operations.
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
+
+		inline std::list<ChannelList> channels()
+		{
+			return m_channels;
+		}
+		inline std::string post_remove()
+		{
+			return m_post_remove;
+		}
+
+		inline void set_post_remove(std::string s)
+		{
+			m_post_remove = s;
+		}
+
+	private:
+		std::list<ChannelList> m_channels; // A list of all connected channels.
+		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
 };
