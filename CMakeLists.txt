@@ -71,6 +71,7 @@ add_executable (openotpd
 	src/messagedirector/MDNetworkParticipant.h
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
+	src/util/Role.h
 	${TEST_FILES}
 )
 

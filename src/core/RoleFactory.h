@@ -1,5 +1,6 @@
 #pragma once
 #include "messagedirector/MessageDirector.h"
+#include "util/Role.h"
 #include <hash_map>
 
 class BaseRoleFactoryItem
@@ -19,7 +20,7 @@ class RoleFactoryItem : public BaseRoleFactoryItem
 class RoleFactory
 {
 	public:
-		MDParticipantInterface* instantiate_role(const std::string &role_name);
+		Role* instantiate_role(const std::string &role_name, RoleConfig roleconfig);
 		static RoleFactory singleton;
 
 		void add_role(const std::string &name, BaseRoleFactoryItem *factory);
