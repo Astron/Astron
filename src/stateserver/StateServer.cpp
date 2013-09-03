@@ -2,7 +2,6 @@
 #include "core/RoleFactory.h"
 #include "core/global.h"
 #include <map>
-#include <hash_map>
 #include "dcparser/dcClass.h"
 #include "dcparser/dcField.h"
 
