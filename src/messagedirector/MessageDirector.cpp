@@ -108,7 +108,9 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				case CONTROL_ADD_RANGE:
 				{
 					send_upstream = false;//handled by function
-					subscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
+					unsigned long long lo = dgi.read_uint64();
+					unsigned long long hi = dgi.read_uint64();
+					subscribe_range(participant, lo, hi);
 				}
 				break;
 				case CONTROL_REMOVE_CHANNEL:
@@ -120,7 +122,9 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				case CONTROL_REMOVE_RANGE:
 				{
 					send_upstream = false;//handled by function
-					unsubscribe_range(participant, dgi.read_uint64(), dgi.read_uint64());
+					unsigned long long lo = dgi.read_uint64();
+					unsigned long long hi = dgi.read_uint64();
+					unsubscribe_range(participant, lo, hi);
 				}
 				break;
 				case CONTROL_ADD_POST_REMOVE:
@@ -179,6 +183,12 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, channel)->second;
 		receiving_participants.insert(range.begin(), range.end());
 	}
+
+	if (participant)
+	{
+		receiving_participants.erase(participant);
+	}
+
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
 		DatagramIterator msg_dgi(dg, 1+channels*8);
@@ -208,12 +218,15 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.is_range = false;
 	c.a = a;
 
+	bool should_upstream = should_control_upstream(c);
+
 	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
 	if (range.find(p) == range.end()) {
 		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
 	}
-	if(should_control_upstream(c))
+
+	if(should_upstream)
 	{
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(a);
@@ -229,10 +242,12 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, unsigned lo
 	c.is_range = false;
 	c.a = a;
 
+	bool should_upstream = should_control_upstream(c);
+
 	p->channels().remove(c);
 	m_channel_subscriptions[a].erase(p);
 
-	if(should_control_upstream(c))
+	if(should_upstream)
 	{
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(a);
@@ -252,24 +267,26 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, unsigned long l
 	c.a = a;
 	c.b = b;
 
+	bool should_upstream = should_control_upstream(c);
+
 	p->channels().insert(p->channels().end(), c);
 	m_range_subscriptions += std::make_pair(
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
 
-	std::list<ChannelList>::iterator it = p->channels().begin();
-	while (it != p->channels().end())
+	std::list<ChannelList> channels = p->channels();
+	std::list<ChannelList>::iterator it = channels.begin();
+	while (it != channels.end())
 	{
-		if (!(*it).is_range && (*it).a >= a && (*it).a <= b) {
-			std::list<ChannelList>::iterator prev = it++;
-			p->channels().erase(prev);
+		std::list<ChannelList>::iterator prev = it++;
+
+		if (!it->is_range && it->a >= a && it->a <= b) {
 			m_channel_subscriptions[a].erase(p);
-		} else {
-			++it;
+			p->channels().erase(prev);
 		}
 	}
 
-	if(should_control_upstream(c))
+	if(should_upstream)
 	{
 		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(a);
@@ -290,12 +307,14 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 	c.a = a;
 	c.b = b;
 
+	bool should_upstream = should_control_upstream(c);
+
 	p->channels().remove(c);
 	m_range_subscriptions -= std::make_pair(
 								boost::icl::discrete_interval<unsigned long long>::closed(a, b),
 								participant_set);
 
-	if(should_control_upstream(c))
+	if(should_upstream)
 	{
 		Datagram dg;
 		dg.add_uint8(1);
@@ -310,28 +329,31 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, unsigned long
 
 }
 
-// note: keep around for future changes to send_upstream behavior
+// should_control_upstream should be called before make processing control messages internally
 inline bool MessageDirector::should_control_upstream(ChannelList c)
 {
-	bool should_upstream = true;
+	// Don't route upstream if a previous subscription exists, already routed
+	if(m_channel_subscriptions[c.a].size() > 0) {
+		return false;
+	}
 
-	for(auto it = m_participants.begin(); it != m_participants.end(); ++it)
-	{
-		for(auto it2 = (*it)->channels().begin(); it2 != (*it)->channels().end(); ++it2)
+	// Don't route upstream if a previous subscription exists, already routed
+	if(c.is_range) {
+		auto interval_range = m_range_subscriptions.equal_range(boost::icl::discrete_interval<unsigned long long>::closed(c.a, c.b));
+		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
-			if(*it2 == c)
-			{
-				should_upstream = false;
-				break;
+			if (it->second.size() > 0) {
+				return false;
 			}
 		}
-		if(!should_upstream)
-		{
-			break;
+	} else {
+		if(boost::icl::find(m_range_subscriptions, c.a)->second.size() > 0) {
+			return false;
 		}
 	}
 
-	return should_upstream && m_remote_md;
+	// Return true if not root
+	return m_remote_md;
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
