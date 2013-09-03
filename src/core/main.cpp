@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "global.h"
+#include "RoleFactory.h"
 
 ConfigVariable<std::vector<std::string>> dc_files("general/dc_files", std::vector<std::string>());
 
@@ -61,6 +62,13 @@ int main(int argc, char *argv[])
 	}
 
 	MessageDirector::singleton.InitializeMD();
+
+	YAML::Node node = gConfig->copy_node();
+	node = node["roles"];
+	for(auto it = node.begin(); it != node.end(); ++it)
+	{
+		RoleFactory::singleton.instantiate_role((*it)["type"].as<std::string>(), *it);
+	}
 
 	try
 	{
