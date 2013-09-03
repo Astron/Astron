@@ -1,7 +1,7 @@
 #pragma once
 #include "messagedirector/MessageDirector.h"
 #include "util/Role.h"
-#include <hash_map>
+#include <unordered_map>
 
 class BaseRoleFactoryItem
 {
@@ -33,5 +33,5 @@ class RoleFactory
 
 		void add_role(const std::string &name, BaseRoleFactoryItem *factory);
 	private:
-		std::hash_map<std::string, BaseRoleFactoryItem*> m_factories;
+		std::unordered_map<std::string, BaseRoleFactoryItem*> m_factories;
 };
