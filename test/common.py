@@ -167,7 +167,7 @@ class MDConnection(object):
             while len(result) < length:
                 data = self.s.recv(length - len(result))
                 if data == '':
-                    raise socket.error('Remote socket closed connection')
+                    raise EOFError('Remote socket closed connection')
                 result += data
             length = struct.unpack('<H', result)[0]
         except socket.error:
@@ -177,7 +177,7 @@ class MDConnection(object):
         while len(result) < length:
             data = self.s.recv(length - len(result))
             if data == '':
-                    raise socket.error('Remote socket closed connection')
+                    raise EOFError('Remote socket closed connection')
             result += data
 
         return result
