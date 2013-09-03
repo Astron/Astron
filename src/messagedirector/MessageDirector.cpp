@@ -1,8 +1,7 @@
-#include "core/global.h"
 #include "MessageDirector.h"
-#include "core/config.h"
-#include "core/global.h"
 #include "MDNetworkParticipant.h"
+#include "core/global.h"
+#include "core/config.h"
 #include <boost/bind.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
@@ -79,6 +78,12 @@ void MessageDirector::InitializeMD()
 			m_bytes_to_go = 2;
 			start_receive();
 		}
+
+		// Initialize m_range_susbcriptions with empty range
+		auto empty_set = std::set<MDParticipantInterface*>();
+		m_range_subscriptions = boost::icl::interval_map<unsigned long long, std::set<MDParticipantInterface*>>();
+		m_range_subscriptions += std::make_pair(
+			boost::icl::discrete_interval<unsigned long long>::closed(0, ULLONG_MAX), empty_set);
 	}
 }
 
@@ -152,8 +157,12 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		{
 			receiving_participants.insert(receiving_participants.end(), *it);
 		}
-		std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, channel)->second;
-		receiving_participants.insert(range.begin(), range.end());
+
+		auto range = boost::icl::find(m_range_subscriptions, channel);
+		if(range != m_range_subscriptions.end())
+		{
+			receiving_participants.insert(range->second.begin(), range->second.end());
+		}
 	}
 
 	if (participant)
@@ -190,19 +199,16 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, unsigned long
 	c.is_range = false;
 	c.a = a;
 
-	gLogger->debug() << "Subscribe A-" << a << endl;
-
 	bool should_upstream = should_add_upstream(c);
 
-	std::set<MDParticipantInterface*> range = boost::icl::find(m_range_subscriptions, a)->second;
-	if (range.find(p) == range.end()) {
+	auto range = boost::icl::find(m_range_subscriptions, a);
+	if(range != m_range_subscriptions.end() && range->second.find(p) == range->second.end()) {
 		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
 	}
 
 	if(should_upstream)
 	{
-		gLogger->debug() << "Sent upstream - " << a << endl;
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
