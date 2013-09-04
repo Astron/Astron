@@ -221,31 +221,35 @@ public:
 				unsigned int field_id = dgi.read_uint16();
 				std::string data;
 				DCField *field = m_dclass->get_field_by_index(field_id);
-				if(field)
+				if(!field)
 				{
-					UnpackFieldFromDG(field, dgi, data);
-					if(field->is_ram())
-					{
-						m_has_ram_fields = true;
-					}
-					if(field->is_required() || field->is_ram())
-					{
-						m_fields[field] = data;
-					}
+					gLogger->error() << "Received update for missing field "
+					                 << field_id << std::endl;
+					break;
+				}
 
-					std::set <unsigned long long int> targets;
-					if(field->is_broadcast())
-						targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-					if(field->is_airecv())
-						targets.insert(m_ai_channel);
-					if(targets.size()) // TODO: Review this for efficiency?
-					{
-						Datagram resp(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
-						resp.add_uint32(m_do_id);
-						resp.add_uint16(field_id);
-						resp.add_data(data);
-						MessageDirector::singleton.handle_datagram(&resp, this);
-					}
+				UnpackFieldFromDG(field, dgi, data);
+				if(field->is_ram())
+				{
+					m_has_ram_fields = true;
+				}
+				if(field->is_required() || field->is_ram())
+				{
+					m_fields[field] = data;
+				}
+
+				std::set <unsigned long long int> targets;
+				if(field->is_broadcast())
+					targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+				if(field->is_airecv())
+					targets.insert(m_ai_channel);
+				if(targets.size()) // TODO: Review this for efficiency?
+				{
+					Datagram resp(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
+					resp.add_uint32(m_do_id);
+					resp.add_uint16(field_id);
+					resp.add_data(data);
+					MessageDirector::singleton.handle_datagram(&resp, this);
 				}
 			}
 			break;
