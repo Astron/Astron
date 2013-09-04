@@ -295,8 +295,14 @@ public:
 					append_other_data(resp);
 				MessageDirector::singleton.handle_datagram(&resp, this);
 
-				Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-				MessageDirector::singleton.handle_datagram(&resp2, this);
+				if(m_parent_id != old_parent_id && !m_ai_explicitly_set)
+				{
+					// We're under a new parent now, and we're inheriting our AI
+					// channel, so we'd better ask the new parent what its AI
+					// channel is.
+					Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
+					MessageDirector::singleton.handle_datagram(&resp2, this);
+				}
 			}
 			break;
 			default:
