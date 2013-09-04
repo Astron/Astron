@@ -1,10 +1,12 @@
 #pragma once
 #include <list>
+#include <set>
 #include <map>
 #include <string>
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
+#include <boost/icl/interval_map.hpp>
 
 // Message-channel constants
 #define CONTROL_MESSAGE 4001
@@ -19,14 +21,17 @@
 #define CONTROL_ADD_POST_REMOVE 2010
 #define CONTROL_CLEAR_POST_REMOVE 2011
 
+// Standard type defines
+typedef unsigned long long channel_t;
+
 // A ChannelList represents a single channel, or range of channels
 //     that a MDParticipant can be subscribed to.
 struct ChannelList
 {
-	unsigned long long a;
-	unsigned long long b;
+	channel_t a;
+	channel_t b;
 	bool is_range;
-	bool qualifies(unsigned long long channel);
+	bool qualifies(channel_t channel);
 	bool operator==(const ChannelList &rhs);
 };
 
@@ -49,72 +54,37 @@ class MessageDirector
 		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
 
 		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
-		// (Args) "a": the channel to be added.
-		void subscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		// (Args) "c": the channel to be added.
+		void subscribe_channel(MDParticipantInterface* p, channel_t c);
 
 		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
-		// (Args) "a": the channel to be removed.
-		void unsubscribe_channel(MDParticipantInterface* p, unsigned long long a);
+		// (Args) "c": the channel to be removed.
+		void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
 
 		// subscribe_range handles a CONTROL_ADD_RANGE control message.
-		// (Args) "a": the lowest channel to be removed.
-		//        "b": the highest channel to be removed.
+		// (Args) "lo": the lowest channel to be removed.
+		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
-		void subscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 
 		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
-		// (Args) "a": the lowest channel to be removed.
-		//        "b": the highest channel to be removed.
+		// (Args) "lo": the lowest channel to be removed.
+		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
-		void unsubscribe_range(MDParticipantInterface* p, unsigned long long a, unsigned long long b);
+		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 	private:
 		MessageDirector();
-		std::list<MDParticipantInterface*> m_participants;
-		std::map<MDParticipantInterface*, std::list<ChannelList> > m_participant_channels;
-		std::map<MDParticipantInterface*, std::string> m_post_removes;
 		
 		friend class MDParticipantInterface;
-		
-		void add_participant(MDParticipantInterface* participant)
-		{
-			m_participants.insert(m_participants.end(), participant);
-		}
-		void remove_participant(MDParticipantInterface* participant)
-		{
-			if(m_post_removes.find(participant) != m_post_removes.end())
-			{
-				Datagram dg(m_post_removes[participant]);
-				handle_datagram(&dg, participant);
-				m_post_removes.erase(m_post_removes.find(participant));
-			}
-			for(auto it = m_participant_channels[participant].begin(); it != m_participant_channels[participant].end(); ++it)
-			{
-				Datagram dg;
-				dg.add_uint8(1);
-				dg.add_uint64(CONTROL_MESSAGE);
-				if(it->is_range)
-				{
-					dg.add_uint16(CONTROL_REMOVE_RANGE);
-					dg.add_uint64(it->a);
-					dg.add_uint64(it->b);
-				}
-				else
-				{
-					dg.add_uint16(CONTROL_REMOVE_CHANNEL);
-					dg.add_uint64(it->a);
-				}
-				handle_datagram(&dg, participant);
-			}
-			m_participants.remove(participant);
-		}
+		void add_participant(MDParticipantInterface* participant);
+		void remove_participant(MDParticipantInterface* participant);
 
+		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
-
-		bool should_send_upstream(ChannelList);
 
 		char *m_buffer;
 		unsigned short m_bufsize;
@@ -124,7 +94,19 @@ class MessageDirector
 		boost::asio::ip::tcp::acceptor *m_acceptor;
 		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;
+
+		// Connected participants
+		std::list<MDParticipantInterface*> m_participants;
+
+		// Single channel subscriptions
+		std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+
+		// Range channel subscriptions
+		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
+
 };
+
+
 
 // A MDParticipantInterface is the interface that must be implemented to
 //     recieve messages from the MessageDirector.
@@ -147,4 +129,8 @@ class MDParticipantInterface
 		// handle_datagram should handle a message recieved from the MessageDirector.
 		// Implementations of handle_datagram should be non-blocking operations.
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
+
+		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
+		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
+		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 };
