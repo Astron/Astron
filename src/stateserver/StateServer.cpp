@@ -119,9 +119,7 @@ public:
 		}
 		MessageDirector::singleton.subscribe_channel(this, do_id);
 
-		Datagram resp(LOCATION2CHANNEL(parent_id, zone_id), do_id, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-		append_required_data(resp);
-		MessageDirector::singleton.handle_datagram(&resp, this);
+		send_zone_entry();
 
 		Datagram resp2(parent_id, do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
 		gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
@@ -161,6 +159,18 @@ public:
 		}
 		dg.add_uint16(field_count);
 		dg.add_datagram(raw_fields);
+	}
+
+	void send_zone_entry()
+	{
+		Datagram dg(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
+		            m_has_ram_fields ?
+		            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
+		            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+		append_required_data(dg);
+		if(m_has_ram_fields)
+			append_other_data(dg);
+		MessageDirector::singleton.handle_datagram(&dg, this);
 	}
 
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -287,14 +297,7 @@ public:
 				resp3.add_uint32(old_zone_id);
 				MessageDirector::singleton.handle_datagram(&resp3, this);
 
-				Datagram resp(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
-				              m_has_ram_fields ?
-				              STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
-				              STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-				append_required_data(resp);
-				if(m_has_ram_fields)
-					append_other_data(resp);
-				MessageDirector::singleton.handle_datagram(&resp, this);
+				send_zone_entry();
 
 				if(m_parent_id != old_parent_id && !m_ai_explicitly_set)
 				{
