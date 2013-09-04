@@ -390,10 +390,9 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 						if (next->first.lower() - it->first.upper() > 0) {
 							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
 						}
-
+						++next;
 					}
 				}
-				++next;
 			}
 		}
 
@@ -493,14 +492,16 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	}
 
 	// Send out unsubscribe messages for indivually subscribed channels
-	for(auto it = p->m_channels.begin(); it != p->m_channels.end(); ++it)
+	auto channels = std::set<channel_t>(p->m_channels);
+	for(auto it = channels.begin(); it != channels.end(); ++it)
 	{
 		channel_t channel = *it;
 		unsubscribe_channel(p, channel);
 	}
 
 	// Send out unsubscribe messages for subscribed channel ranges
-	for(auto it = p->m_ranges.begin(); it != p->m_ranges.end(); ++it)
+	auto ranges = boost::icl::interval_set<channel_t>(p->m_ranges);
+	for(auto it = ranges.begin(); it != ranges.end(); ++it)
 	{
 		unsubscribe_range(p, it->lower(), it->upper());
 	}
