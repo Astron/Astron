@@ -470,38 +470,13 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	for(auto it = p->m_channels.begin(); it != p->m_channels.end(); ++it)
 	{
 		channel_t channel = *it;
-
-		// Remove from channel subscriptions
-		m_channel_subscriptions[channel].erase(p);
-
-		// Handle message
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
-		dg.add_uint64(channel);
-		handle_datagram(&dg, p);
+		unsubscribe_channel(p, channel);
 	}
 
 	// Send out unsubscribe messages for subscribed channel ranges
 	for(auto it = p->m_ranges.begin(); it != p->m_ranges.end(); ++it)
 	{
-		interval_t interval = *it;
-
-		// Prepare participant as set
-		std::set<MDParticipantInterface*> participant_set;
-		participant_set.insert(p);
-
-		// Remove from range subscriptions
-		m_range_subscriptions -= std::make_pair(interval, participant_set);
-
-		// Handle message
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_RANGE);
-		dg.add_uint64(interval.lower());
-		dg.add_uint64(interval.upper());
+		unsubscribe_range(p, it->lower(), it->upper());
 	}
 
 	// Stop tracking participant
