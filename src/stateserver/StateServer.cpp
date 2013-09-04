@@ -221,6 +221,7 @@ public:
 				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI " << m_parent_id << std::endl;
 				if(m_ai_explicitly_set)
 					break;
+				// Fall through...
 			case STATESERVER_OBJECT_SET_AI_CHANNEL:
 			{
 				gLogger->debug() << "STATESERVER_OBJECT_SET_AI_CHANNEL " << m_do_id << std::endl;
