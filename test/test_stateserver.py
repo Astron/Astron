@@ -638,5 +638,57 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.c.send(Datagram.create_remove_channel(90000<<32|4321))
 
+    def test_locate(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(0x4a03))
+
+        # Throw a few objects out there...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(48000) # Parent
+        dg.add_uint32(624800) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(583312) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(223315) # Parent
+        dg.add_uint32(61444444) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(583311) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(51792) # Parent
+        dg.add_uint32(5858182) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(583310) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+
+        # Now let's go on a treasure hunt:
+        for obj, parent, zone in [
+            (583312, 48000, 624800),
+            (583311, 223315, 61444444),
+            (583310, 51792, 5858182)]:
+            context = (obj-500000)*2838
+            dg = Datagram.create([obj], 0x4a03, STATESERVER_OBJECT_LOCATE)
+            dg.add_uint32(context)
+            self.c.send(dg)
+
+            dg = Datagram.create([0x4a03], obj, STATESERVER_OBJECT_LOCATE_RESP)
+            dg.add_uint32(context)
+            dg.add_uint32(obj)
+            dg.add_uint32(parent)
+            dg.add_uint32(zone)
+            self.assertTrue(self.c.expect(dg))
+
+            # Found the object! Now clean it up.
+            dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
+            dg.add_uint32(obj)
+            self.c.send(dg)
+
+        self.c.send(Datagram.create_remove_channel(0x4a03))
+
 if __name__ == '__main__':
     unittest.main()
