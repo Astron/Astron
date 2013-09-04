@@ -522,5 +522,61 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(110000000)
         self.c.send(dg)
 
+    def test_error(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(80000<<32|1234))
+
+        # Create a regular object, this is not an error...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(1234) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(234000000) # ID
+        dg.add_uint32(819442) # setRequired1
+        self.c.send(dg)
+
+        # The object should announce its entry to the zone-channel...
+        dg = Datagram.create([80000<<32|1234], 234000000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(1234) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(234000000) # ID
+        dg.add_uint32(819442) # setRequired1
+        self.assertTrue(self.c.expect(dg))
+
+        # Let's try creating it again.
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(1234) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(234000000) # ID
+        dg.add_uint32(1234567) # setRequired1
+        self.c.send(dg)
+
+        # NOTHING SHOULD HAPPEN - additionally, the SS should log either an
+        # error or a warning
+        self.assertTrue(self.c.expect_none())
+
+        # Let's try making another one, but we'll forget the setRequired1.
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(1234) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(235000000) # ID
+        self.c.send(dg)
+
+        # Once again, nothing should happen and the SS should log an ERROR.
+        self.assertTrue(self.c.expect_none())
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(80000<<32|1234))
+        dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(234000000)
+        self.c.send(dg)
+        dg = Datagram.create([235000000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(235000000)
+        self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
