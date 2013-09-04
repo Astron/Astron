@@ -3,6 +3,7 @@
 #include "core/global.h"
 #include "core/config.h"
 #include <boost/bind.hpp>
+#include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
 ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
 ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
@@ -204,15 +205,18 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
 	}
 	// Check if should subscribe upstream...
-	if(m_remote_md) {
+	if(m_remote_md)
+	{
 		// Check if there was a previous subscription on that channel
-		if(m_channel_subscriptions[c].size() > 1) {
+		if(m_channel_subscriptions[c].size() > 1)
+		{
 			return;
 		}
 
 		// Check if we are already subscribing to that channel upstream via a range
 		auto range_it = boost::icl::find(m_range_subscriptions, c);
-		if(range_it != m_range_subscriptions.end()  && !range_it->second.empty()) {
+		if(range_it != m_range_subscriptions.end()  && !range_it->second.empty())
+		{
 			return;
 		}
 
@@ -233,9 +237,11 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 
 	// Check if unsubscribed channel in the middle of a range
 	auto range_it = boost::icl::find(m_range_subscriptions, c); // O(log n)
-	if(range_it != m_range_subscriptions.end()) {
+	if(range_it != m_range_subscriptions.end())
+	{
 		auto p_it = range_it->second.find(p);
-		if(p_it != range_it->second.end()) {
+		if(p_it != range_it->second.end())
+		{
 			// Prepare participant and range
 			std::set<MDParticipantInterface*> participant_set;
 			participant_set.insert(p);
@@ -250,13 +256,15 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	// Check if should unsubscribe upstream...
 	if(m_remote_md) {
 		// Check if there are any remaining single channel subscriptions
-		if(m_channel_subscriptions[c].size() > 0) {
+		if(m_channel_subscriptions[c].size() > 0)
+		{
 			return; // Don't unsubscribe upstream
 		}
 
 		// Check if the range containing the unsubscribed channel has subscribers
 		auto range = boost::icl::find(m_range_subscriptions, c);
-		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
+		if(range != m_range_subscriptions.end()  && !range->second.empty())
+		{
 			return; // Don't unsubscribe upstream
 		}
 
@@ -287,27 +295,31 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi) {
+		if (lo <= c && c <= hi)
+		{
 			m_channel_subscriptions[c].erase(p);
 			p->m_channels.erase(prev);
 		}
 	}
 
 	// Check if should subscribe upstream...
-	if(m_remote_md) {
+	if(m_remote_md)
+	{
 		// Check how many intervals along that range are already subscribed
 		int new_intervals = 0, premade_intervals = 0;
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			++new_intervals;
-			if (it->second.size() > 1) {
+			if (it->second.size() > 1)
+			{
 				++premade_intervals;
 			}
 		}
 
 		// If all existing intervals are already subscribed, don't upstream
-		if(new_intervals == premade_intervals) {
+		if(new_intervals == premade_intervals)
+		{
 			return;
 		}
 
@@ -339,29 +351,56 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi) {
+		if (lo <= c && c <= hi)
+		{
 			m_channel_subscriptions[c].erase(p);
 			p->m_channels.erase(prev);
 		}
 	}
 
+	gLogger->debug() << "Remove Lower: " << lo << "  Upper: " << hi << std::endl;
+
 	// Check if should unsubscribe upstream...
-	if(m_remote_md) {
+	if(m_remote_md)
+	{
 		// Declare list of intervals that are no longer subscribed too
 		std::list<interval_t> silent_intervals;
 
-		// Check each interval range
-		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
-		for(auto it = interval_range.first; it != interval_range.second; ++it)
+		// If that was the last interval in m_range_subscriptions, remove it upstream
+		if (boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
-			if (it->second.empty()) {
-				silent_intervals.insert(silent_intervals.end(), it->first);
+			silent_intervals.insert(silent_intervals.end(), interval);
+		}
+		else
+		{
+			// Check each interval range (except the last, so we can stop there)
+			auto next = ++m_range_subscriptions.begin();
+			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
+			{
+				// For the range we care about
+				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
+				if(it->first.lower() <= hi && it->first.upper() >= lo) {
+					// If an existing interval is empty it is silent
+					if (it->second.empty())
+					{
+						silent_intervals.insert(silent_intervals.end(), it->first);
+					}
+					if(next != m_range_subscriptions.end()) {
+						// If there is room between intervals, that is a silent interval
+						if (next->first.lower() - it->first.upper() > 0) {
+							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
+						}
+
+					}
+				}
+				++next;
 			}
 		}
 
-		// Sens unsubscribe messages
+		// Send unsubscribe messages
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
+			gLogger->debug() << "Upstream remove Lower: " << it->lower() << "  Upper: " << it->upper() << std::endl;
 			Datagram dg(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->lower());
 			dg.add_uint64(it->upper());
@@ -370,7 +409,6 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 		}
 	}
-
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
