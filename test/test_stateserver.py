@@ -760,5 +760,84 @@ class TestStateServer(unittest.TestCase):
         self.c.send(Datagram.create_remove_channel(45543<<32|6868))
         self.c.send(Datagram.create_remove_channel(201<<32|4444))
 
+    def test_query(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(890))
+
+        # Make a few objects...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483312) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483311) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(51792) # Parent
+        dg.add_uint32(5858182) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483310) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+
+        # Query each one out of the SS:
+        dg = Datagram.create([483310, 483311, 483312], 890, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0x600DF00D)
+        self.c.send(dg)
+
+        # The SS is a very efficient organization and will return everything
+        # promptly.
+        expected = []
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0x600DF00D)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483312) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint16(0) # No extra fields
+        expected.append(dg)
+        dg = Datagram.create([890], 483311, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0x600DF00D)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483311) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint16(0) # No extra fields
+        expected.append(dg)
+        dg = Datagram.create([890], 483310, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0x600DF00D)
+        dg.add_uint32(51792) # Parent
+        dg.add_uint32(5858182) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483310) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint16(0) # No extra fields
+        expected.append(dg)
+        self.assertTrue(self.c.expect_multi(expected, only=True))
+
+        # TODO: Test zone queries.
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(890))
+        dg = Datagram.create([483310], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(483310)
+        self.c.send(dg)
+        dg = Datagram.create([483311], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(483311)
+        self.c.send(dg)
+        dg = Datagram.create([483312], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(483312)
+        self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
