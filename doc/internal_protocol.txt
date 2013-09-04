@@ -203,7 +203,7 @@ STATESERVER_OBJECT_QUERY_FIELD_RESP(2062):
 "success" is 1 if the field is present, 0 if the field is nonpresent.
 FIELD is the serialized field, but is only present if success=1.
 
-STATESERVER_OBJECT_SET_AI_CHAANNEL(2045):
+STATESERVER_OBJECT_SET_AI_CHANNEL(2045):
 	(uint32 do_id, uint64 ai_channel)
 Sets the channel for the managing AI. All airecv updates are automatically
 forwarded to this channel.
