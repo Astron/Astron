@@ -217,10 +217,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		}
 
 		// Send upstream control message
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_CHANNEL);
+		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(c);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -264,10 +261,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		}
 
 		// Send upstream control message
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(c);
 		unsigned short len = dg.get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
@@ -318,10 +312,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		}
 
 		// Send upstream control message
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_ADD_RANGE);
+		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(lo);
 		dg.add_uint64(hi);
 		unsigned short len = dg.get_buf_end();
@@ -371,10 +362,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		// Sens unsubscribe messages
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
-			Datagram dg;
-			dg.add_uint8(1);
-			dg.add_uint64(CONTROL_MESSAGE);
-			dg.add_uint16(CONTROL_REMOVE_RANGE);
+			Datagram dg(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->lower());
 			dg.add_uint64(it->upper());
 			unsigned short len = dg.get_buf_end();
