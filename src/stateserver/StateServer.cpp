@@ -171,17 +171,15 @@ public:
 		{
 			case STATESERVER_OBJECT_DELETE_RAM:
 			{
-				unsigned int p_do_id = dgi.read_uint32();
-				if(p_do_id == m_do_id)
-				{
-					unsigned long long loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
-					Datagram resp(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
-					resp.add_uint32(m_do_id);
-					MessageDirector::singleton.handle_datagram(&resp, this);
-					distObjs[m_do_id] = NULL;
-					gLogger->debug() << "DELETING THIS " << m_do_id << std::endl;
-					delete this;
-				}
+				if(m_do_id != dgi.read_uint32())
+					break; // Not meant for me!
+				unsigned long long loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
+				Datagram resp(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
+				resp.add_uint32(m_do_id);
+				MessageDirector::singleton.handle_datagram(&resp, this);
+				distObjs[m_do_id] = NULL;
+				gLogger->debug() << "DELETING THIS " << m_do_id << std::endl;
+				delete this;
 			}
 			break;
 			case STATESERVER_OBJECT_UPDATE_FIELD:
