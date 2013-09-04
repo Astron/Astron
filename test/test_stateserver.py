@@ -690,5 +690,75 @@ class TestStateServer(unittest.TestCase):
 
         self.c.send(Datagram.create_remove_channel(0x4a03))
 
+    def test_shard_reset(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(4030<<32|201))
+        self.c.send(Datagram.create_add_channel(4030<<32|202))
+        self.c.send(Datagram.create_add_channel(45543<<32|6868))
+        self.c.send(Datagram.create_add_channel(201<<32|4444))
+
+        # Create a pair of objects...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(45543) # Parent
+        dg.add_uint32(6868) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(201) # ID
+        dg.add_uint32(6789) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(201) # Parent
+        dg.add_uint32(4444) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(202) # ID
+        dg.add_uint32(6789) # setRequired1
+        self.c.send(dg)
+
+        # Parent has an AI channel...
+        dg = Datagram.create([201], 5, STATESERVER_OBJECT_SET_AI_CHANNEL)
+        dg.add_uint32(201)
+        dg.add_uint64(31337)
+        self.c.send(dg)
+
+        # The notifications trickle down to the children; disregard.
+        self.c.flush()
+
+        # Now let's try hitting the SS with a reset for the wrong AI:
+        dg = Datagram.create([100], 5, STATESERVER_SHARD_RESET)
+        dg.add_uint64(41337)
+        self.c.send(dg)
+
+        # Nothing should happen:
+        self.assertTrue(self.c.expect_none())
+
+        # Now the right AI:
+        dg = Datagram.create([100], 5, STATESERVER_SHARD_RESET)
+        dg.add_uint64(31337)
+        self.c.send(dg)
+
+        expected = []
+        # The parent should relay down to its children:
+        dg = Datagram.create([4030<<32|201], 201, STATESERVER_SHARD_RESET)
+        dg.add_uint64(31337)
+        expected.append(dg)
+        # ...which should relay down to its children:
+        dg = Datagram.create([4030<<32|202], 202, STATESERVER_SHARD_RESET)
+        dg.add_uint64(31337)
+        expected.append(dg)
+        # Then both objects should die:
+        dg = Datagram.create([45543<<32|6868], 201, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(201)
+        expected.append(self.c.expect(dg))
+        dg = Datagram.create([201<<32|4444], 202, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(202)
+        expected.append(self.c.expect(dg))
+        self.assertTrue(self.c.expect_multi(expected, only=True))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(4030<<32|201))
+        self.c.send(Datagram.create_remove_channel(4030<<32|202))
+        self.c.send(Datagram.create_remove_channel(45543<<32|6868))
+        self.c.send(Datagram.create_remove_channel(201<<32|4444))
+
 if __name__ == '__main__':
     unittest.main()
