@@ -620,13 +620,12 @@ class TestStateServer(unittest.TestCase):
 
         # ...the object should show up, but without the non-RAM field.
         # Additionally, an ERROR should be logged.
-        dg = Datagram.create([90000<<32|4321], 545640000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([90000<<32|4321], 545640000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
         dg.add_uint32(90000) # Parent
         dg.add_uint32(4321) # Zone
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(545640000) # ID
         dg.add_uint32(2099) # setRequired1
-        dg.add_uint16(0) # Extra fields: 0
         self.assertTrue(self.c.expect(dg))
 
         # Clean up.

@@ -105,7 +105,7 @@ public:
 	bool m_ai_explicitly_set;
 	bool m_has_ram_fields;
 
-	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi) :
+	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
 	m_do_id(do_id), m_dclass(dclass), m_parent_id(parent_id), m_zone_id(zone_id),
 	m_ai_channel(0), m_ai_explicitly_set(false), m_has_ram_fields(false)
 	{
@@ -117,6 +117,28 @@ public:
 				UnpackFieldFromDG(field, dgi, m_fields[field]);
 			}
 		}
+
+		if(has_other)
+		{
+			unsigned short count = dgi.read_uint16();
+			for(int i = 0; i < count; ++i)
+			{
+				unsigned int field_id = dgi.read_uint16();
+				DCField *field = m_dclass->get_field_by_index(field_id);
+				if(field->is_ram())
+				{
+					m_has_ram_fields = true;
+					UnpackFieldFromDG(field, dgi, m_fields[field]);
+				}
+				else
+				{
+					gLogger->error() << "Received non-RAM field "
+					                 << field->get_name()
+					                 << " within an OTHER section" << std::endl;
+				}
+			}
+		}
+
 		MessageDirector::singleton.subscribe_channel(this, do_id);
 
 		send_zone_entry();
@@ -339,7 +361,17 @@ class StateServer : public Role
 					unsigned short dc_id = dgi.read_uint16();
 					unsigned int do_id = dgi.read_uint32();
 
-					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi);
+					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, false);
+				}
+				break;
+				case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
+				{
+					unsigned int parent_id = dgi.read_uint32();
+					unsigned int zone_id = dgi.read_uint32();
+					unsigned short dc_id = dgi.read_uint16();
+					unsigned int do_id = dgi.read_uint32();
+
+					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
 				}
 				break;
 				default:
