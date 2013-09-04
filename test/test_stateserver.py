@@ -578,5 +578,65 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(235000000)
         self.c.send(dg)
 
+    def test_create_with_other(self):
+        self.c.flush()
+
+        self.c.send(Datagram.create_add_channel(90000<<32|4321))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(4321) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(545630000) # ID
+        dg.add_uint32(2099) # setRequired1
+        dg.add_uint16(1) # Extra fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("Cupcakes, so sweet and tasty...")
+        self.c.send(dg)
+
+        # We should get an ENTERZONE_WITH_REQUIRED_OTHER...
+        dg = Datagram.create([90000<<32|4321], 545630000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(4321) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(545630000) # ID
+        dg.add_uint32(2099) # setRequired1
+        dg.add_uint16(1) # Extra fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("Cupcakes, so sweet and tasty...")
+        self.assertTrue(self.c.expect(dg))
+
+        # If we try to include a non-ram as OTHER...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(4321) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(545640000) # ID
+        dg.add_uint32(2099) # setRequired1
+        dg.add_uint16(1) # Extra fields: 1
+        dg.add_uint16(setB1)
+        dg.add_uint8(42)
+        self.c.send(dg)
+
+        # ...the object should show up, but without the non-RAM field.
+        # Additionally, an ERROR should be logged.
+        dg = Datagram.create([90000<<32|4321], 545640000, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(4321) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(545640000) # ID
+        dg.add_uint32(2099) # setRequired1
+        dg.add_uint16(0) # Extra fields: 0
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        dg = Datagram.create([545630000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(545630000)
+        self.c.send(dg)
+        dg = Datagram.create([545640000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(545640000)
+        self.c.send(dg)
+        self.c.send(Datagram.create_remove_channel(90000<<32|4321))
+
 if __name__ == '__main__':
     unittest.main()
