@@ -4,6 +4,8 @@ OpenOTP is an open-source, decentralized MMORPG game server suite. The design is
 
 The game server suite consists of many components, which handle separate tasks in order to distribute the workload of managing a multi-sharded game environment with many objects and clients.
 
+If you would like to contribute, please join us on irc. [#OpenOTP on irc.freenode.net](irc://irc.freenode.net/OpenOTP)
+
 # Overview
 
 ## Objects
