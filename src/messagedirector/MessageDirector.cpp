@@ -132,12 +132,12 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				case CONTROL_ADD_POST_REMOVE:
 				{
 					std::string data = dgi.read_string();
-					participant->set_post_remove(data);
+					participant->m_post_remove = data;
 				}
 				break;
 				case CONTROL_CLEAR_POST_REMOVE:
 				{
-					participant->set_post_remove("");
+					participant->m_post_remove = "";
 				}
 				break;
 				default:
@@ -195,111 +195,28 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	}
 }
 
-void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t a)
+void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 {
-	ChannelList c;
-	c.is_range = false;
-	c.a = a;
-
-	auto range = boost::icl::find(m_range_subscriptions, a);
-	if(range != m_range_subscriptions.end() && range->second.find(p) == range->second.end()) {
-		p->channels().insert(p->channels().end(), c);
-		m_channel_subscriptions[a].insert(m_channel_subscriptions[a].end(), p);
+	// Check if participant is already subscribed in a range
+	if(boost::icl::find(p->m_ranges, c) == p->m_ranges.end()) {
+		// If not, subscribe participant to channel
+		p->m_channels.insert(p->m_channels.end(), c);
+		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
 	}
-
-	subscribe_channel_upstream(a);
-}
-
-void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t a)
-{
-	ChannelList c;
-	c.is_range = false;
-	c.a = a;
-
-	p->channels().remove(c);
-	m_channel_subscriptions[a].erase(p);
-
-	if(should_remove_upstream(c))
-	{
-		Datagram dg(CONTROL_REMOVE_CHANNEL);
-		dg.add_uint64(a);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
-	}
-}
-
-void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t a, channel_t b)
-{
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	ChannelList c;
-	c.is_range = true;
-	c.a = a;
-	c.b = b;
-
-	p->channels().insert(p->channels().end(), c);
-	m_range_subscriptions += std::make_pair(interval_t::closed(a, b), participant_set);
-
-	std::list<ChannelList> channels = p->channels();
-	std::list<ChannelList>::iterator it = channels.begin();
-	while (it != channels.end())
-	{
-		std::list<ChannelList>::iterator prev = it++;
-
-		if (!it->is_range && it->a >= a && it->a <= b) {
-			m_channel_subscriptions[a].erase(p);
-			p->channels().erase(prev);
-		}
-	}
-
-	subscribe_range_upstream(a, b);
-}
-
-void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t a, channel_t b)
-{
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	ChannelList c;
-	c.is_range = true;
-	c.a = a;
-	c.b = b;
-
-	p->channels().remove(c);
-	m_range_subscriptions -= std::make_pair(interval_t::closed(a, b), participant_set);
-
-	if(should_remove_upstream(c))
-	{
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_RANGE);
-		dg.add_uint64(a);
-		dg.add_uint64(b);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
-	}
-
-}
-
-void MessageDirector::subscribe_channel_upstream(channel_t c)
-{
+	// Check if should subscribe upstream...
 	if(m_remote_md) {
-		// If is not a range, than a new channel_subscription was made.
-		// Check if there were any extra subscriptions on that channel.
+		// Check if there was a previous subscription on that channel
 		if(m_channel_subscriptions[c].size() > 1) {
 			return;
 		}
 
-		// Check if we are already subscribing upstream via a range
-		auto range = boost::icl::find(m_range_subscriptions, c);
-		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
+		// Check if we are already subscribing to that channel upstream via a range
+		auto range_it = boost::icl::find(m_range_subscriptions, c);
+		if(range_it != m_range_subscriptions.end()  && !range_it->second.empty()) {
 			return;
 		}
 
+		// Send upstream control message
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
@@ -311,9 +228,64 @@ void MessageDirector::subscribe_channel_upstream(channel_t c)
 	}
 }
 
-void MessageDirector::subscribe_range_upstream(channel_t lo, channel_t hi) {
+void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c)
+{
+	// Unsubscribe participant from channel
+	p->m_channels.erase(c);
+	m_channel_subscriptions[c].erase(p);
+
+	// Check if should unsubscribe upstream...
 	if(m_remote_md) {
-		// Check if there were any other subscriptions along that entire range
+		// Check if there are any remaining single channel subscriptions
+		if(m_channel_subscriptions[c].size() > 0) {
+			return; // Don't unsubscribe upstream
+		}
+
+		// Check if the range containing the unsubscribed channel has subscribers
+		auto range = boost::icl::find(m_range_subscriptions, c);
+		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
+			return; // Don't unsubscribe upstream
+		}
+
+		// Send upstream control message
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+		dg.add_uint64(c);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+	}
+}
+
+void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi)
+{
+	// Prepare participant and range
+	std::set<MDParticipantInterface*> participant_set;
+	participant_set.insert(p);
+
+	interval_t interval = interval_t::closed(lo, hi);
+
+	// Subscribe participant to range
+	p->m_ranges += interval;
+	m_range_subscriptions += std::make_pair(interval, participant_set);
+
+	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
+	for (auto it = p->m_channels.begin(); it != p->m_channels.end();)
+	{
+		auto prev = it++;
+		channel_t c = *prev;
+
+		if (lo <= c && c <= hi) {
+			m_channel_subscriptions[c].erase(p);
+			p->m_channels.erase(prev);
+		}
+	}
+
+	// Check if should subscribe upstream...
+	if(m_remote_md) {
+		// Check how many intervals along that range are already subscribed
 		int new_intervals = 0, premade_intervals = 0;
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
@@ -324,11 +296,12 @@ void MessageDirector::subscribe_range_upstream(channel_t lo, channel_t hi) {
 			}
 		}
 
-		// If all existing intervals are already subscribed, don't upstream;
+		// If all existing intervals are already subscribed, don't upstream
 		if(new_intervals == premade_intervals) {
 			return;
 		}
 
+		// Send upstream control message
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
@@ -341,33 +314,55 @@ void MessageDirector::subscribe_range_upstream(channel_t lo, channel_t hi) {
 	}
 }
 
-
-// should_remove_upstream should be called after processing control messages internally
-inline bool MessageDirector::should_remove_upstream(ChannelList c)
+void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo, channel_t hi)
 {
-	// Don't route upstream if any more subscriptions exist
-	if(m_channel_subscriptions[c.a].size() > 0) {
-		return false;
+	// Prepare participant and range
+	std::set<MDParticipantInterface*> participant_set;
+	participant_set.insert(p);
+
+	interval_t interval = interval_t::closed(lo, hi);
+
+	// Unsubscribe participant from range
+	p->m_ranges -= interval;
+	m_range_subscriptions -= std::make_pair(interval, participant_set);
+
+	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
+	for (auto it = p->m_channels.begin(); it != p->m_channels.end();)
+	{
+		auto prev = it++;
+		channel_t c = *prev;
+
+		if (lo <= c && c <= hi) {
+			m_channel_subscriptions[c].erase(p);
+			p->m_channels.erase(prev);
+		}
 	}
 
-	// Don't route upstream if any more subscriptions exist
-	if(c.is_range) {
-		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(c.a, c.b));
+	// Check if should subscribe upstream...
+	if(m_remote_md) {
+		// #TASK ->  Fix to unsubscribe only ranges which no longer have other listeners
+		//			 This will sometimes involve sending MULTIPLE unsubscribe messages
+
+		// Don't route upstream if any more subscriptions exist
+		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			if (it->second.size() > 0) {
-				return false;
+				return;
 			}
 		}
-	} else {
-		auto range = boost::icl::find(m_range_subscriptions, c.a);
-		if(range != m_range_subscriptions.end()  && !range->second.empty()) {
-			return false;
-		}
+
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_REMOVE_RANGE);
+		dg.add_uint64(lo);
+		dg.add_uint64(hi);
+		unsigned short len = dg.get_buf_end();
+		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
 	}
 
-	// Return true if not root
-	return m_remote_md;
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
@@ -437,45 +432,58 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 	}
 }
 
-void MessageDirector::add_participant(MDParticipantInterface* participant)
+void MessageDirector::add_participant(MDParticipantInterface* p)
 {
-	m_participants.insert(m_participants.end(), participant);
+	m_participants.insert(m_participants.end(), p);
 }
 
-void MessageDirector::remove_participant(MDParticipantInterface* participant)
+void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
-	if(participant->post_remove().length() > 0)
+	// Send out a post remove, if one exists
+	if(p->m_post_remove.length() > 0)
 	{
-		Datagram dg(participant->post_remove());
-		handle_datagram(&dg, participant);
+		Datagram dg(p->m_post_remove);
+		handle_datagram(&dg, p);
 	}
-	std::list<ChannelList> channels = participant->channels();
-	for(auto it = channels.begin(); it != channels.end();)
+
+	// Send out unsubscribe messages for indivually subscribed channels
+	for(auto it = p->m_channels.begin(); it != p->m_channels.end(); ++it)
 	{
+		channel_t channel = *it;
+
+		// Remove from channel subscriptions
+		m_channel_subscriptions[channel].erase(p);
+
+		// Handle message
 		Datagram dg;
 		dg.add_uint8(1);
 		dg.add_uint64(CONTROL_MESSAGE);
-		if(it->is_range)
-		{
-			std::set<MDParticipantInterface*> participant_set;
-			participant_set.insert(participant);
-
-			m_range_subscriptions -= std::make_pair(interval_t::closed(it->a, it->b), participant_set);
-
-			dg.add_uint16(CONTROL_REMOVE_RANGE);
-			dg.add_uint64(it->a);
-			dg.add_uint64(it->b);
-		}
-		else
-		{
-			m_channel_subscriptions[it->a].erase(participant);
-
-			dg.add_uint16(CONTROL_REMOVE_CHANNEL);
-			dg.add_uint64(it->a);
-		}
-
-		handle_datagram(&dg, participant);
-		it++;
+		dg.add_uint16(CONTROL_REMOVE_CHANNEL);
+		dg.add_uint64(channel);
+		handle_datagram(&dg, p);
 	}
-	m_participants.remove(participant);
+
+	// Send out unsubscribe messages for subscribed channel ranges
+	for(auto it = p->m_ranges.begin(); it != p->m_ranges.end(); ++it)
+	{
+		interval_t interval = *it;
+
+		// Prepare participant as set
+		std::set<MDParticipantInterface*> participant_set;
+		participant_set.insert(p);
+
+		// Remove from range subscriptions
+		m_range_subscriptions -= std::make_pair(interval, participant_set);
+
+		// Handle message
+		Datagram dg;
+		dg.add_uint8(1);
+		dg.add_uint64(CONTROL_MESSAGE);
+		dg.add_uint16(CONTROL_REMOVE_RANGE);
+		dg.add_uint64(interval.lower());
+		dg.add_uint64(interval.upper());
+	}
+
+	// Stop tracking participant
+	m_participants.remove(p);
 }

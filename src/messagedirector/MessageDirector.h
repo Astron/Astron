@@ -86,12 +86,6 @@ class MessageDirector
 		void start_receive(); // Recieve message from upstream
 		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 
-		// UPSTREAM OPERATIONS
-		// Upstream operations should be called AFTER processing control messages internally.
-		void subscribe_channel_upstream(channel_t c);
-		void subscribe_range_upstream(channel_t lo, channel_t hi);
-		bool should_remove_upstream(ChannelList);
-
 		char *m_buffer;
 		unsigned short m_bufsize;
 		unsigned short m_bytes_to_go;
@@ -136,21 +130,7 @@ class MDParticipantInterface
 		// Implementations of handle_datagram should be non-blocking operations.
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
 
-		inline std::list<ChannelList> channels()
-		{
-			return m_channels;
-		}
-		inline std::string post_remove()
-		{
-			return m_post_remove;
-		}
-
-		inline void set_post_remove(std::string s)
-		{
-			m_post_remove = s;
-		}
-
-	private:
-		std::list<ChannelList> m_channels; // A list of all connected channels.
 		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
+		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
+		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 };
