@@ -139,7 +139,7 @@ public:
 		for(unsigned int i = 0; i < field_count; ++i)
 		{
 			DCField *field = m_dclass->get_inherited_field(i);
-			if(field->is_required())
+			if(field->is_required() && !field->as_molecular_field())
 			{
 				dg.add_data(m_fields[field]);
 			}
