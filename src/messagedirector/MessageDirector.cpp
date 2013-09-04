@@ -234,6 +234,22 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	p->m_channels.erase(c);
 	m_channel_subscriptions[c].erase(p);
 
+	// Check if unsubscribed channel in the middle of a range
+	auto range_it = boost::icl::find(m_range_subscriptions, c); // O(log n)
+	if(range_it != m_range_subscriptions.end()) {
+		auto p_it = range_it->second.find(p);
+		if(p_it != range_it->second.end()) {
+			// Prepare participant and range
+			std::set<MDParticipantInterface*> participant_set;
+			participant_set.insert(p);
+
+			interval_t interval = interval_t::closed(c, c);
+
+			// Split range around channel split([a,b], n) -> [a,n) (n, b]
+			m_range_subscriptions -= std::make_pair(interval, participant_set); // O(n)
+		}
+	}
+
 	// Check if should unsubscribe upstream...
 	if(m_remote_md) {
 		// Check if there are any remaining single channel subscriptions
@@ -338,29 +354,33 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		}
 	}
 
-	// Check if should subscribe upstream...
+	// Check if should unsubscribe upstream...
 	if(m_remote_md) {
-		// #TASK ->  Fix to unsubscribe only ranges which no longer have other listeners
-		//			 This will sometimes involve sending MULTIPLE unsubscribe messages
+		// Declare list of intervals that are no longer subscribed too
+		std::list<interval_t> silent_intervals;
 
-		// Don't route upstream if any more subscriptions exist
+		// Check each interval range
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
-			if (it->second.size() > 0) {
-				return;
+			if (it->second.empty()) {
+				silent_intervals.insert(silent_intervals.end(), it->first);
 			}
 		}
 
-		Datagram dg;
-		dg.add_uint8(1);
-		dg.add_uint64(CONTROL_MESSAGE);
-		dg.add_uint16(CONTROL_REMOVE_RANGE);
-		dg.add_uint64(lo);
-		dg.add_uint64(hi);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+		// Sens unsubscribe messages
+		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
+		{
+			Datagram dg;
+			dg.add_uint8(1);
+			dg.add_uint64(CONTROL_MESSAGE);
+			dg.add_uint16(CONTROL_REMOVE_RANGE);
+			dg.add_uint64(it->lower());
+			dg.add_uint64(it->upper());
+			unsigned short len = dg.get_buf_end();
+			m_remote_md->send(boost::asio::buffer((char*)&len, 2));
+			m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+		}
 	}
 
 }
