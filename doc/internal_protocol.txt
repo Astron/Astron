@@ -135,19 +135,6 @@ In the case of *_OTHER, the required fields are followed by a uint16, which
 specifies how many additional fields the message contains. Each field is then
 a uint16 (representing the field number) followed by the serialized field.
 
-STATESERVER_QUERY_OBJECT_ALL(2020):
-	(uint32 context)
-This message can be sent to request a list of all objects present on the State
-Server. The context is a value chosen by the sender that will be referenced in
-all replies to this message; it may be used to disambiguate the replies from
-that of another query.
-Response:
-STATESERVER_QUERY_OBJECT_ALL_RESP(2030):
-	(uint32 context, uint32 parent_id, uint32 zone_id, uint16 dclass_id,
-	 uint32 do_id, ...)
-One of these is sent for every object matching the query. The ... is like that
-of REQUIRED_OTHER, above.
-
 STATESERVER_SHARD_RESET(2061):
 	(uint64 ai_channel)
 Used by an AI Server to inform the State Server that it is going down. The
@@ -216,7 +203,7 @@ STATESERVER_OBJECT_QUERY_FIELD_RESP(2062):
 "success" is 1 if the field is present, 0 if the field is nonpresent.
 FIELD is the serialized field, but is only present if success=1.
 
-STATESERVER_OBJECT_SET_AI_CHAANNEL(2045):
+STATESERVER_OBJECT_SET_AI_CHANNEL(2045):
 	(uint32 do_id, uint64 ai_channel)
 Sets the channel for the managing AI. All airecv updates are automatically
 forwarded to this channel.
@@ -253,6 +240,15 @@ end of the field ID list.
 STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081):
 	(uint32 do_id, uint32 context, uint8 success, [uint16 field_id, FIELD])
 The reply sent back to the requester. Again, there is no length tag.
+
+STATESERVER_OBJECT_QUERY_ALL(2020):
+	(uint32 context)
+This message queries all information from the object.
+Response:
+STATESERVER_OBJECT_QUERY_ALL_RESP(2030):
+	(uint32 context, uint32 parent_id, uint32 zone_id, uint16 dclass_id,
+	 uint32 do_id, ...)
+The ... is like that of REQUIRED_OTHER, above.
 
 STATESERVER_OBJECT_QUERY_MANAGING_AI(2083):
 	()
