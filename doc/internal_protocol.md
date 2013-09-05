@@ -313,7 +313,7 @@ The following is a list of database control messages:
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
     `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
-**DBSERVER_CREATE_STORED_OBJECT_RESPONSE(1004)**  
+**DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
 the given values. For required fields that are not given, the default values
@@ -341,7 +341,7 @@ All objects will duly broadcast its deletion to any AIs, owners, or zones.
 
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
     `args(uint32 context, uint32 do_id, FIELD_DATA)`  
-**DBSERVER_SELECT_STORED_OBJECT_RESPONSE(1013)**  
+**DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
     `args(uint32 context, <FIELDS>)`  
 > This message selects a number of fields from an object in the database.  
 It returns the select fields in serialized form.
@@ -357,7 +357,7 @@ The ... is like that of REQUIRED_OTHER in the STATESERVER object commands.
 
 **DBSERVER_SELECT_QUERY(1016)**  
     `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
-**DBSERVER_SELECT_QUERY_RESPONSE(1017)**  
+**DBSERVER_SELECT_QUERY_RESP(1017)**  
     `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
 > This message selects from the database all items of the given
 DistributedClass that satisfy the given comparisons.
