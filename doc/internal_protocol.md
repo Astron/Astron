@@ -347,9 +347,17 @@ All objects will duly broadcast its deletion to any AIs, owners, or zones.
 It returns the select fields in serialized form.
 
 
+**DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
+    `args(uint32 context, uint32 do_id)`  
+**DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1020)**  
+    `args(uint32 context, uint16 dclass_id, uint32 do_id, ...)`  
+> This message queries all information from the object and returns the response.  
+The ... is like that of REQUIRED_OTHER in the STATESERVER object commands.
+
+
 **DBSERVER_SELECT_QUERY(1016)**  
-**DBSERVER_SELECT_QUERY_RESPONSE(1017)**  
     `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
+**DBSERVER_SELECT_QUERY_RESPONSE(1017)**  
     `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
 > This message selects from the database all items of the given
 DistributedClass that satisfy the given comparisons.
@@ -366,3 +374,4 @@ with the new values given in FIELD_DATA.
     `args(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)`  
 > This message updates all objects of type dclass_id which satisfy the
 COMPARISON_QUERY with the fields in FIELD_DATA.
+
