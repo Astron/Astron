@@ -209,17 +209,17 @@ public:
 		if(!m_ai_explicitly_set)
 		{
 			// Ask the new parent what its AI is.
-			Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-			MessageDirector::singleton.handle_datagram(&resp2, this);
+			Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
+			MessageDirector::singleton.handle_datagram(&dg, this);
 		}
 	}
 
 	void annihilate()
 	{
 		unsigned long long loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
-		Datagram resp(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
-		resp.add_uint32(m_do_id);
-		MessageDirector::singleton.handle_datagram(&resp, this);
+		Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
+		dg.add_uint32(m_do_id);
+		MessageDirector::singleton.handle_datagram(&dg, this);
 		distObjs[m_do_id] = NULL;
 		gLogger->debug() << "DELETING THIS " << m_do_id << std::endl;
 		delete this;
@@ -235,7 +235,7 @@ public:
 		annihilate();
 	}
 
-	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
 		unsigned long long sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
@@ -289,11 +289,11 @@ public:
 					targets.insert(m_ai_channel);
 				if(targets.size()) // TODO: Review this for efficiency?
 				{
-					Datagram resp(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
-					resp.add_uint32(m_do_id);
-					resp.add_uint16(field_id);
-					resp.add_data(data);
-					MessageDirector::singleton.handle_datagram(&resp, this);
+					Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
+					dg.add_uint32(m_do_id);
+					dg.add_uint16(field_id);
+					dg.add_data(data);
+					MessageDirector::singleton.handle_datagram(&dg, this);
 				}
 				break;
 			}
@@ -314,36 +314,36 @@ public:
 				{
 					if(m_ai_channel)
 					{
-						Datagram resp(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
-						resp.add_uint32(m_do_id);
+						Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
+						dg.add_uint32(m_do_id);
 						gLogger->debug() << m_do_id << " LEAVING AI INTEREST" << std::endl;
-						MessageDirector::singleton.handle_datagram(&resp, this);
+						MessageDirector::singleton.handle_datagram(&dg, this);
 					}
 
 					m_ai_channel = r_ai_channel;
 					m_ai_explicitly_set = msgtype == STATESERVER_OBJECT_SET_AI_CHANNEL;
 
-					Datagram resp(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
-					append_required_data(resp);
-					append_other_data(resp);
-					MessageDirector::singleton.handle_datagram(&resp, this);
+					Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
+					append_required_data(dg1);
+					append_other_data(dg1);
+					MessageDirector::singleton.handle_datagram(&dg1, this);
 					gLogger->debug() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << m_ai_channel
 						<< " from " << m_do_id << std::endl;
 
-					Datagram resp2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
-					resp2.add_uint32(m_do_id);
-					resp2.add_uint64(m_ai_channel);
-					MessageDirector::singleton.handle_datagram(&resp2, this);
+					Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+					dg2.add_uint32(m_do_id);
+					dg2.add_uint64(m_ai_channel);
+					MessageDirector::singleton.handle_datagram(&dg2, this);
 				}
 				break;
 			}
 			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
 			{
 				gLogger->debug() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
-				Datagram resp(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
-				resp.add_uint32(m_do_id);
-				resp.add_uint64(m_ai_channel);
-				MessageDirector::singleton.handle_datagram(&resp, this);
+				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+				dg.add_uint32(m_do_id);
+				dg.add_uint64(m_ai_channel);
+				MessageDirector::singleton.handle_datagram(&dg, this);
 				break;
 			}
 			case STATESERVER_OBJECT_SET_ZONE:
@@ -356,13 +356,13 @@ public:
 				targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
 				if(m_ai_channel)
 					targets.insert(m_ai_channel);
-				Datagram resp3(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
-				resp3.add_uint32(m_do_id);
-				resp3.add_uint32(new_parent_id);
-				resp3.add_uint32(m_zone_id);
-				resp3.add_uint32(old_parent_id);
-				resp3.add_uint32(old_zone_id);
-				MessageDirector::singleton.handle_datagram(&resp3, this);
+				Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
+				dg.add_uint32(m_do_id);
+				dg.add_uint32(new_parent_id);
+				dg.add_uint32(m_zone_id);
+				dg.add_uint32(old_parent_id);
+				dg.add_uint32(old_zone_id);
+				MessageDirector::singleton.handle_datagram(&dg, this);
 
 				handle_parent_change(new_parent_id);
 				send_zone_entry();
@@ -406,7 +406,7 @@ public:
 		MessageDirector::singleton.subscribe_channel(this, cfg_channel.get_rval(m_roleconfig));
 	}
 
-	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
 		unsigned long long sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
