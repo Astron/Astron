@@ -747,10 +747,10 @@ class TestStateServer(unittest.TestCase):
         # Then both objects should die:
         dg = Datagram.create([45543<<32|6868], 201, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(201)
-        expected.append(self.c.expect(dg))
+        expected.append(dg)
         dg = Datagram.create([201<<32|4444], 202, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(202)
-        expected.append(self.c.expect(dg))
+        expected.append(dg)
         self.assertTrue(self.c.expect_multi(expected, only=True))
 
         # Clean up.
