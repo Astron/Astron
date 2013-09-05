@@ -1,7 +1,11 @@
 OpenOTP Internal Protocol Documentation
+<Sections 1, 2, 3>
 08-30-2013
 Sam "CFSworks" Edwards
 
+<Section 4>
+09-04-2013
+Kevin "Kestred" Stenerson
 
 Section 0: Abstract
 
@@ -284,20 +288,20 @@ Argument Notes:
 	FIELD_DATA ->			// FIELD_DATA implies the following structure
 		(uint16 field_count,	// Number of following fields
 			[uint16 field,			// The field of the DistributeClass
-			 <serialized-value>		// The serialized value of that field
+			 VALUE					// The serialized value of that field
 			]*field_count)
 
 	COMPARISON_QUERY  ->	// COMPARISON_QUERY implies the following structure
 		(uint16 compare_count,	// Number of following comparisons (think SQL WHERE field = value)
-		 	[uint8 compare_op,		// EQUALS(1), NOT_EQUALS(2), LESSER(3), LESSER-OR-EQUALS(4), GREATER(5), GREATER-OR-EQUALS(6)
-		 	 uint16 field,			// The field of the DistributeClass to compare
-		 	 <serialized-value>		// The serialized value of that field
-		 	]*compare_count)
+			[uint8 compare_op,		// EQUALS(1), NOT_EQUALS(2), LESSER(3), LESSER-OR-EQUALS(4), GREATER(5), GREATER-OR-EQUALS(6)
+			 uint16 field,			// The field of the DistributeClass to compare
+			 VALUE					// The serialized value of that field
+			]*compare_count)
 
 
 
 DBSERVER_CREATE_STORED_OBJECT(1003):
-	(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, <serialized-value>]*num_fields)
+	(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)
 This message creates a new object in the database with the given fields set to
 the given values. For required fields that are not given, the default values
 are used.  Objects with required fields that do not have default values cannot
@@ -311,7 +315,6 @@ The return code is one of the following:
 The do_id of the object created. Internally, this object is automatically
 managed by the associated DB-SS.
 /// Thoughts... Instead of a return code, the invalid do_id (0x0) could be considered failure
-
 
 DBSERVER_DELETE_STORED_OBJECT(1008):
 	(uint32 verify_code, uint32 do_id)
@@ -337,13 +340,6 @@ The return is a set of all requested fields.
 /// Thoughts... If the sender knows which and in what order it asked for fields in, we could cut out field_count and field_type
 ///             and just return serialized-values in the order they asked for it
 
-
-
-DBSERVER_UPDATE_STORED_OBJECT(1014):
-	(uint32 do_id, FIELD_DATA)
-This message replaces the current values of the given object,
-with the new values given in FIELD_DATA.
-
 DBSERVER_SELECT_QUERY(1016):
 	(uint32 context, uint32 dclass_id, COMPARISON_QUERY)
 This message selects from the database all items of the given
@@ -351,13 +347,12 @@ DistributedClass that satisfy the given comparisons.
 Return:
 DBSERVER_SELECT_QUERY_RESPONSE(1017):
 	(uint32 context, uint32 items, [uint32 do_id]*items)
-The return is a list of do_ids corresponding to the selected elements
-/// Thoughts... Do we instead want to just try to return all the objects serialized?
-///				Or instead do we want to return 1 serialized object per message, in multiple messages?
-///             This operation has the potential to instantly generate a bunch do_ids that might not be used,
-///				maybe there is a better way to get the values back, or prune which ones where used after the fact.
+The return is a list of do_ids corresponding to the selected elements.
 
-
+DBSERVER_UPDATE_STORED_OBJECT(1014):
+	(uint32 do_id, FIELD_DATA)
+This message replaces the current values of the given object,
+with the new values given in FIELD_DATA.
 
 DBSERVER_UPDATE_QUERY(1018):
 	(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)
