@@ -368,6 +368,18 @@ public:
 				send_zone_entry();
 			}
 			break;
+			case STATESERVER_OBJECT_LOCATE:
+			{
+				unsigned int context = dgi.read_uint32();
+
+				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_LOCATE_RESP);
+				dg.add_uint32(context);
+				dg.add_uint32(m_do_id);
+				dg.add_uint32(m_parent_id);
+				dg.add_uint32(m_zone_id);
+				MessageDirector::singleton.handle_datagram(&dg, this);
+			}
+			break;
 			default:
 				gLogger->warning() << "DistributedObject recv'd unkonw msgtype " << msgtype << std::endl;
 		}
