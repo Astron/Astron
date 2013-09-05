@@ -106,7 +106,7 @@ public:
 	bool m_has_ram_fields;
 
 	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
-	m_do_id(do_id), m_dclass(dclass), m_parent_id(parent_id), m_zone_id(zone_id),
+	m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
 	m_ai_channel(0), m_ai_explicitly_set(false), m_has_ram_fields(false)
 	{
 		for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
@@ -141,12 +141,9 @@ public:
 
 		MessageDirector::singleton.subscribe_channel(this, do_id);
 
+		m_parent_id = 0;
+		handle_parent_change(parent_id);
 		send_zone_entry();
-
-		Datagram resp2(parent_id, do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-		gLogger->debug() << "sending STATESERVER_OBJECT_QUERY_MANAGING_AI to "
-			<< parent_id << " from " << do_id << std::endl;
-		MessageDirector::singleton.handle_datagram(&resp2, this);
 	}
 
 	void append_required_data(Datagram &dg)
@@ -193,6 +190,28 @@ public:
 		if(m_has_ram_fields)
 			append_other_data(dg);
 		MessageDirector::singleton.handle_datagram(&dg, this);
+	}
+
+	void handle_parent_change(unsigned long long int new_parent)
+	{
+		if(new_parent == m_parent_id)
+			return; // Not actually changing parent, no need to handle.
+
+		// Unsubscribe from the old parent's child-broadcast channel.
+		if(m_parent_id)
+			MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
+
+		m_parent_id = new_parent;
+
+		// Subscribe to new one...
+		MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
+
+		if(!m_ai_explicitly_set)
+		{
+			// Ask the new parent what its AI is.
+			Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
+			MessageDirector::singleton.handle_datagram(&resp2, this);
+		}
 	}
 
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -305,11 +324,8 @@ public:
 			case STATESERVER_OBJECT_SET_ZONE:
 			{
 				unsigned int old_parent_id = m_parent_id, old_zone_id = m_zone_id;
-				m_parent_id = dgi.read_uint32();
+				unsigned int new_parent_id = dgi.read_uint32();
 				m_zone_id = dgi.read_uint32();
-
-				MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, old_parent_id));
-				MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
 
 				std::set <unsigned long long int> targets;
 				targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
@@ -317,22 +333,14 @@ public:
 					targets.insert(m_ai_channel);
 				Datagram resp3(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
 				resp3.add_uint32(m_do_id);
-				resp3.add_uint32(m_parent_id);
+				resp3.add_uint32(new_parent_id);
 				resp3.add_uint32(m_zone_id);
 				resp3.add_uint32(old_parent_id);
 				resp3.add_uint32(old_zone_id);
 				MessageDirector::singleton.handle_datagram(&resp3, this);
 
+				handle_parent_change(new_parent_id);
 				send_zone_entry();
-
-				if(m_parent_id != old_parent_id && !m_ai_explicitly_set)
-				{
-					// We're under a new parent now, and we're inheriting our AI
-					// channel, so we'd better ask the new parent what its AI
-					// channel is.
-					Datagram resp2(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-					MessageDirector::singleton.handle_datagram(&resp2, this);
-				}
 			}
 			break;
 			default:
