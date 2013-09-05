@@ -6,6 +6,14 @@ if (WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
+### Release Flags -- warnings are errors, release code should not have warnings ###
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -Werror")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Werror")
+
+### Debug Flags -- compile in spam/debug log messages ###
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
+
 ### YAML Depedency -- required by config ###
 set(YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
 if(EXISTS "${PROJECT_SOURCE_DIR}/dependencies/yaml-cpp-0.5.1/lib")
