@@ -92,6 +92,25 @@ Please come in and tell us what you'd like to do, or ask what we could use help 
 #### Join us at: [#OpenOTP on irc.freenode.net](irc://irc.freenode.net/OpenOTP)
 
 
+### Building in Development
+OpenOTP has a number of dependencies including libyaml-cpp and boost.
+
+Get the boost library from http://www.boost.org/users/download/, or install from a package on linux.  Very old versions of the boost library may not work as there are dependencies on some features of boost::asio and boost::icl.
+In some environments, you may have to set the BOOST_ROOT or BOOSTROOT environment variable to the root of your compiled boost libraries.
+
+You can download the libyaml-cpp dependency directly from https://yaml-cpp.googlecode.com/files/yaml-cpp-0.5.1.tar.gz.  This dependency should typically be compiled and placed directly underneath the OpenOTP/dependencies folder.
+
+Now that you have the depencies you can build!
+We use CMAKE to handle cross-platform compiling.
+
+On a linux system, build for development with:  
+
+    cmake -DCMAKE_BUILD_TYPE=Debug && make
+
+On other systems, make sure DCMAKE_BUILD_TYPE is included with your CMAKE flags.  
+This compiles in debug logging and adds debug flags to your compiler.
+
+
 ### OTP Architecture resources
 There are a lot of resources we use as a guide and for inspiration while building OpenOTP.  New contributors might find them to be very informative, both about how the server works and in thinking about what direction OpenOTP wants to go in.  
 **NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
