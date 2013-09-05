@@ -45,7 +45,7 @@ void MessageDirector::InitializeMD()
 		// Bind to port and listen for downstream servers
 		if(bind_addr.get_val() != "unspecified")
 		{
-			gLogger->debug() << "binding" << std::endl;
+			m_log.debug() << "binding" << std::endl;
 			std::string str_ip = bind_addr.get_val();
 			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
@@ -59,7 +59,7 @@ void MessageDirector::InitializeMD()
 		// Connect to upstream server and start handling recieved messages
 		if(connect_addr.get_val() != "unspecified")
 		{
-			gLogger->debug() << "connecting" << std::endl;
+			m_log.debug() << "connecting" << std::endl;
 			std::string str_ip = connect_addr.get_val();
 			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
@@ -71,10 +71,10 @@ void MessageDirector::InitializeMD()
 			m_remote_md->connect(*it, ec);
 			if(ec.value() != 0)
 			{
-				gLogger->fatal() << "Could not connect to remote MD at IP: "
-					<< connect_addr.get_val() << " With error code: "
-					<< ec.value() << "(" << ec.category().message(ec.value()) << ")"
-					<< std::endl;
+				m_log.fatal() << "Could not connect to remote MD at IP: "
+				              << connect_addr.get_val() << " With error code: "
+				              << ec.value() << "(" << ec.category().message(ec.value()) << ")"
+				              << std::endl;
 				exit(1);
 			}
 			m_buffer = new char[2];
@@ -92,7 +92,7 @@ void MessageDirector::InitializeMD()
 
 void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
 {
-	gLogger->debug() << "MD Handling datagram" << std::endl;
+	m_log.debug() << "MD Handling datagram" << std::endl;
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
 
@@ -142,7 +142,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 				}
 				break;
 				default:
-					gLogger->error() << "Unknown MD MsgType: " << msg_type << std::endl;
+					m_log.error() << "Unknown MD MsgType: " << msg_type << std::endl;
 			}
 			return;
 		}
@@ -184,15 +184,15 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		unsigned short len = dg->get_buf_end();
 		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
 		m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
-		gLogger->debug() << "sending to upstream md" << std::endl;
+		m_log.debug() << "sending to upstream md" << std::endl;
 	}
 	else if(!participant) // If there is no participant, then it came from the upstream
 	{
-		gLogger->debug() << "not sending to upstream because it came from upstream" << std::endl;
+		m_log.debug() << "not sending to upstream because it came from upstream" << std::endl;
 	}
 	else // Otherwise is root node
 	{
-		gLogger->debug() << "no upstream md" << std::endl;
+		m_log.debug() << "no upstream md" << std::endl;
 	}
 }
 
@@ -358,7 +358,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		}
 	}
 
-	gLogger->debug() << "Remove Lower: " << lo << "  Upper: " << hi << std::endl;
+	m_log.debug() << "Remove Lower: " << lo << "  Upper: " << hi << std::endl;
 
 	// Check if should unsubscribe upstream...
 	if(m_remote_md)
@@ -399,7 +399,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		// Send unsubscribe messages
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
-			gLogger->debug() << "Upstream remove Lower: " << it->lower() << "  Upper: " << it->upper() << std::endl;
+			m_log.debug() << "Upstream remove Lower: " << it->lower() << "  Upper: " << it->upper() << std::endl;
 			Datagram dg(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->lower());
 			dg.add_uint64(it->upper());
@@ -411,7 +411,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 }
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
-	m_buffer(NULL), m_bufsize(0), m_bytes_to_go(0), m_is_data(false)
+	m_buffer(NULL), m_bufsize(0), m_bytes_to_go(0), m_is_data(false), m_log("msgdir", "Message Director")
 {
 }
 
@@ -426,8 +426,8 @@ void MessageDirector::start_accept()
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
 	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
-	gLogger->info() << "Got a Message Director connection from "
-	                << remote.address() << ":" << remote.port() << std::endl;
+	m_log.info() << "Got a Message Director connection from "
+	             << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
 	start_accept();
 }
@@ -443,7 +443,7 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 {
 	if(ec.value() != 0)
 	{
-		gLogger->fatal() << "Lost connection to remote MD error: " << ec.category().message(ec.value()) << std::endl;
+		m_log.fatal() << "Lost connection to remote MD error: " << ec.category().message(ec.value()) << std::endl;
 		exit(1);
 	}
 	else
@@ -468,7 +468,7 @@ void MessageDirector::read_handler(const boost::system::error_code &ec, size_t b
 				m_bytes_to_go = m_bufsize;
 				m_is_data = false;
 
-				gLogger->debug() << "Reader handle datagram" << endl;
+				m_log.debug() << "Reader handle datagram" << endl;
 				handle_datagram(&dg, NULL);
 			}
 		}

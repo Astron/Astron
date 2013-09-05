@@ -3,6 +3,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include "core/logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include <boost/asio.hpp>
@@ -74,7 +75,8 @@ class MessageDirector
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 	private:
 		MessageDirector();
-		
+		LogCategory m_log;
+
 		friend class MDParticipantInterface;
 		void add_participant(MDParticipantInterface* participant);
 		void remove_participant(MDParticipantInterface* participant);
