@@ -14,12 +14,12 @@
 #define STATESERVER_OBJECT_SET_ZONE  2008
 #define STATESERVER_OBJECT_CHANGE_ZONE  2009
 #define STATESERVER_OBJECT_NOTFOUND  2015
-#define STATESERVER_QUERY_OBJECT_ALL  2020
+#define STATESERVER_OBJECT_QUERY_ALL  2020
 #define STATESERVER_QUERY_ZONE_OBJECT_ALL  2021
 #define STATESERVER_OBJECT_LOCATE  2022
 #define STATESERVER_OBJECT_LOCATE_RESP  2023
 #define STATESERVER_OBJECT_QUERY_FIELD  2024
-#define STATESERVER_QUERY_OBJECT_ALL_RESP  2030
+#define STATESERVER_OBJECT_QUERY_ALL_RESP  2030
 #define STATESERVER_OBJECT_LEAVING_AI_INTEREST  2033
 #define STATESERVER_OBJECT_SET_AI_CHANNEL  2045
 #define STATESERVER_QUERY_ZONE_OBJECT_ALL_DONE  2046
@@ -377,6 +377,15 @@ public:
 				dg.add_uint32(m_do_id);
 				dg.add_uint32(m_parent_id);
 				dg.add_uint32(m_zone_id);
+				MessageDirector::singleton.handle_datagram(&dg, this);
+			}
+			break;
+			case STATESERVER_OBJECT_QUERY_ALL:
+			{
+				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ALL_RESP);
+				dg.add_uint32(dgi.read_uint32()); // Copy context to response.
+				append_required_data(dg);
+				append_other_data(dg);
 				MessageDirector::singleton.handle_datagram(&dg, this);
 			}
 			break;
