@@ -305,7 +305,7 @@ The following is a list of database control messages:
 
     COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
         (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
-            [uint8 compare_op,      // EQUALS(1), NOT_EQUALS(2), LESSER(3), LESSER-OR-EQUALS(4), GREATER(5), GREATER-OR-EQUALS(6)
+            [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
              uint16 field,          // The field of the DistributeClass to compare
              VALUE                  // The serialized value of that field
             ]*compare_count)
@@ -314,17 +314,14 @@ The following is a list of database control messages:
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
     `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESPONSE(1004)**  
-    `args(uint32 context, uint32 do_id, uint8 return_code)`  
+    `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
 the given values. For required fields that are not given, the default values
 are used.  Objects with required fields that do not have default values cannot
 be stored in the database.  
-The return is the do_id of the object and one of the following:  
-    0 - Success  
-    1 - Failure // Add/update fail cases as necessary  
+The return is the do_id of the object. The BAD_DO_ID (0x0) is a failure.  
 When the object is queried, this object is automatically fetched and managed by
 the associated DB-SS.  
-_Thoughts... Instead of a return code, the invalid do_id (0x0) could be considered failure_
 
 
 **DBSERVER_DELETE_STORED_OBJECT(1008)**  
@@ -345,11 +342,9 @@ All objects will duly broadcast its deletion to any AIs, owners, or zones.
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
     `args(uint32 context, uint32 do_id, FIELD_DATA)`  
 **DBSERVER_SELECT_STORED_OBJECT_RESPONSE(1013)**  
-    `args(uint32 context, FIELD_DATA)`  
+    `args(uint32 context, <FIELDS>)`  
 > This message selects a number of fields from an object in the database.  
-It returns the select fields. If the sent field_count was 0, all fields are returned.
-/// Thoughts... If the sender knows which and in what order it asked for fields in, we could cut out field_count and field_type
-///             and just return serialized-values in the order they asked for it
+It returns the select fields in serialized form.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
