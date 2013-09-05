@@ -28,10 +28,19 @@ enum LogSeverity {
 	LSEVERITY_FATAL
 };
 
+class NullStream {
+public:
+	void setFile(){/* no-op */}
+	template<typename TPrintable>
+	NullStream& operator<<(TPrintable const&) {/* no-op */}
+};
+NullStream null_stream;
+
 class Logger {
 public:
 	Logger(const std::string &log_file, bool console_output = true);
 	Logger();
+
 	std::ostream &log(LogSeverity sev);
 	std::ostream &spam();
 	std::ostream &debug();
@@ -70,8 +79,13 @@ public:
 		return out; \
 	}
 
+#ifdef DEBUG_MESSAGES
 	F(spam)
 	F(debug)
+#else
+	inline NullStream &spam() { return null_stream; }
+	inline NullStream &debug() { return null_stream; }
+#endif
 	F(info)
 	F(warning)
 	F(security)
