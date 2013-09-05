@@ -256,8 +256,8 @@ public:
 				if(m_do_id != dgi.read_uint32())
 					break; // Not meant for me!
 				annihilate();
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_UPDATE_FIELD:
 			{
 				if(m_do_id != dgi.read_uint32())
@@ -295,8 +295,8 @@ public:
 					resp.add_data(data);
 					MessageDirector::singleton.handle_datagram(&resp, this);
 				}
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
 				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI " << m_parent_id << std::endl;
 				if(m_ai_explicitly_set)
@@ -335,8 +335,8 @@ public:
 					resp2.add_uint64(m_ai_channel);
 					MessageDirector::singleton.handle_datagram(&resp2, this);
 				}
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
 			{
 				gLogger->debug() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
@@ -344,8 +344,8 @@ public:
 				resp.add_uint32(m_do_id);
 				resp.add_uint64(m_ai_channel);
 				MessageDirector::singleton.handle_datagram(&resp, this);
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_SET_ZONE:
 			{
 				unsigned int old_parent_id = m_parent_id, old_zone_id = m_zone_id;
@@ -366,8 +366,8 @@ public:
 
 				handle_parent_change(new_parent_id);
 				send_zone_entry();
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_LOCATE:
 			{
 				unsigned int context = dgi.read_uint32();
@@ -378,8 +378,8 @@ public:
 				dg.add_uint32(m_parent_id);
 				dg.add_uint32(m_zone_id);
 				MessageDirector::singleton.handle_datagram(&dg, this);
+				break;
 			}
-			break;
 			case STATESERVER_OBJECT_QUERY_ALL:
 			{
 				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ALL_RESP);
@@ -387,8 +387,8 @@ public:
 				append_required_data(dg);
 				append_other_data(dg);
 				MessageDirector::singleton.handle_datagram(&dg, this);
+				break;
 			}
-			break;
 			default:
 				gLogger->warning() << "DistributedObject recv'd unkonw msgtype " << msgtype << std::endl;
 		}
@@ -420,8 +420,8 @@ class StateServer : public Role
 					unsigned int do_id = dgi.read_uint32();
 
 					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, false);
+					break;
 				}
-				break;
 				case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
 				{
 					unsigned int parent_id = dgi.read_uint32();
@@ -430,8 +430,8 @@ class StateServer : public Role
 					unsigned int do_id = dgi.read_uint32();
 
 					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
+					break;
 				}
-				break;
 				case STATESERVER_SHARD_RESET:
 				{
 					unsigned long long int ai_channel = dgi.read_uint64();
@@ -446,8 +446,8 @@ class StateServer : public Role
 						dg.add_uint64(ai_channel);
 						MessageDirector::singleton.handle_datagram(&dg, this);
 					}
+					break;
 				}
-				break;
 				default:
 					gLogger->error() << "StateServer recv'd unknown msgtype: " << msgtype << std::endl;
 			}
