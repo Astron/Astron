@@ -400,59 +400,59 @@ ConfigVariable<unsigned long long> cfg_channel("control", 0);
 
 class StateServer : public Role
 {
-	public:
-		StateServer(RoleConfig roleconfig) : Role(roleconfig)
-		{
-			MessageDirector::singleton.subscribe_channel(this, cfg_channel.get_rval(m_roleconfig));
-		}
+public:
+	StateServer(RoleConfig roleconfig) : Role(roleconfig)
+	{
+		MessageDirector::singleton.subscribe_channel(this, cfg_channel.get_rval(m_roleconfig));
+	}
 
-		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+	{
+		unsigned long long sender = dgi.read_uint64();
+		unsigned short msgtype = dgi.read_uint16();
+		switch(msgtype)
 		{
-			unsigned long long sender = dgi.read_uint64();
-			unsigned short msgtype = dgi.read_uint16();
-			switch(msgtype)
+			case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
 			{
-				case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
-				{
-					unsigned int parent_id = dgi.read_uint32();
-					unsigned int zone_id = dgi.read_uint32();
-					unsigned short dc_id = dgi.read_uint16();
-					unsigned int do_id = dgi.read_uint32();
+				unsigned int parent_id = dgi.read_uint32();
+				unsigned int zone_id = dgi.read_uint32();
+				unsigned short dc_id = dgi.read_uint16();
+				unsigned int do_id = dgi.read_uint32();
 
-					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, false);
-					break;
-				}
-				case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
-				{
-					unsigned int parent_id = dgi.read_uint32();
-					unsigned int zone_id = dgi.read_uint32();
-					unsigned short dc_id = dgi.read_uint16();
-					unsigned int do_id = dgi.read_uint32();
-
-					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
-					break;
-				}
-				case STATESERVER_SHARD_RESET:
-				{
-					unsigned long long int ai_channel = dgi.read_uint64();
-					std::set <unsigned long long int> targets;
-					for(auto it = distObjs.begin(); it != distObjs.end(); ++it)
-						if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
-							targets.insert(it->second->m_do_id);
-
-					if(targets.size())
-					{
-						Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
-						dg.add_uint64(ai_channel);
-						MessageDirector::singleton.handle_datagram(&dg, this);
-					}
-					break;
-				}
-				default:
-					gLogger->error() << "StateServer recv'd unknown msgtype: " << msgtype << std::endl;
+				distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, false);
+				break;
 			}
-			return true;
+			case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
+			{
+				unsigned int parent_id = dgi.read_uint32();
+				unsigned int zone_id = dgi.read_uint32();
+				unsigned short dc_id = dgi.read_uint16();
+				unsigned int do_id = dgi.read_uint32();
+
+				distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
+				break;
+			}
+			case STATESERVER_SHARD_RESET:
+			{
+				unsigned long long int ai_channel = dgi.read_uint64();
+				std::set <unsigned long long int> targets;
+				for(auto it = distObjs.begin(); it != distObjs.end(); ++it)
+					if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
+						targets.insert(it->second->m_do_id);
+
+				if(targets.size())
+				{
+					Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
+					dg.add_uint64(ai_channel);
+					MessageDirector::singleton.handle_datagram(&dg, this);
+				}
+				break;
+			}
+			default:
+				gLogger->error() << "StateServer recv'd unknown msgtype: " << msgtype << std::endl;
 		}
+		return true;
+	}
 };
 
 RoleFactoryItem<StateServer> ss_fact("stateserver");
