@@ -29,7 +29,7 @@
 #define STATESERVER_OBJECT_CREATE_WITH_REQUIRED_CONTEXT_RESP  2052
 #define STATESERVER_OBJECT_CREATE_WITH_REQUIR_OTHER_CONTEXT_RESP  2053
 #define STATESERVER_OBJECT_DELETE_DISK  2060
-#define STATESERVER_SHARD_REST  2061
+#define STATESERVER_SHARD_RESET  2061
 #define STATESERVER_OBJECT_QUERY_FIELD_RESP  2062
 #define STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED  2065
 #define STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER  2066
@@ -225,12 +225,32 @@ public:
 		delete this;
 	}
 
+	void handle_shard_reset()
+	{
+		// Tell my children:
+		Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_SHARD_RESET);
+		dg.add_uint64(m_ai_channel);
+		MessageDirector::singleton.handle_datagram(&dg, this);
+		// Fall over dead:
+		annihilate();
+	}
+
 	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
 	{
 		unsigned long long sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
 		switch(msgtype)
 		{
+			case STATESERVER_SHARD_RESET:
+			{
+				if(m_ai_channel != dgi.read_uint64()) {
+					gLogger->warning() << m_do_id << " received reset for wrong"
+					                   << " AI channel" << std::endl;
+					break; // Not my AI!
+				}
+				handle_shard_reset();
+				break;
+			}
 			case STATESERVER_OBJECT_DELETE_RAM:
 			{
 				if(m_do_id != dgi.read_uint32())
@@ -389,6 +409,22 @@ class StateServer : public Role
 					unsigned int do_id = dgi.read_uint32();
 
 					distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
+				}
+				break;
+				case STATESERVER_SHARD_RESET:
+				{
+					unsigned long long int ai_channel = dgi.read_uint64();
+					std::set <unsigned long long int> targets;
+					for(auto it = distObjs.begin(); it != distObjs.end(); ++it)
+						if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
+							targets.insert(it->second->m_do_id);
+
+					if(targets.size())
+					{
+						Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
+						dg.add_uint64(ai_channel);
+						MessageDirector::singleton.handle_datagram(&dg, this);
+					}
 				}
 				break;
 				default:
