@@ -92,6 +92,8 @@ Please come in and tell us what you'd like to do, or ask what we could use help 
 
 ### OTP Architecture resources
 There are a lot of resources we use as a guide and for inspiration while building OpenOTP.  New contributors might find them to be very informative, both about how the server works and in thinking about what direction OpenOTP wants to go in.  
+**NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
+
 Video lectures from Disney:
  - [DistributedObjects](http://video.google.com/videoplay?docid=59098437095671394&hl=en)
  - [DistributedObjects and the OTP Server](http://video.google.com/videoplay?docid=-4547040139284563409&hl=en)
