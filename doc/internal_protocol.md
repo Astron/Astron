@@ -278,7 +278,7 @@ for this is given by (4030<<32)|parent_id) when its airecv channel changes.
 Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
 
 
-Section 4: Database Server messages
+### Section 4: Database Server messages ###
 
 This section documents the messages involved in interacting with a Database
 Server. A Database Server is a component with a single, preconfigured channel.
@@ -293,7 +293,8 @@ object's ID) to receive object-specific updates.
 
 The following is a list of database control messages:
 
-Argument Notes:
+**Argument Notes**
+
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
 
     FIELD_DATA ->           // FIELD_DATA implies the following structure
@@ -310,62 +311,63 @@ Argument Notes:
             ]*compare_count)
 
 
-
-DBSERVER_CREATE_STORED_OBJECT(1003):
-    (uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)
-This message creates a new object in the database with the given fields set to
+**DBSERVER_CREATE_STORED_OBJECT(1003)**  
+    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+**DBSERVER_CREATE_STORED_OBJECT_RESPONSE(1004)**  
+    `args(uint32 context, uint32 do_id, uint8 return_code)`  
+> This message creates a new object in the database with the given fields set to
 the given values. For required fields that are not given, the default values
 are used.  Objects with required fields that do not have default values cannot
-be stored in the database.
-Response:
-DBSERVER_CREATE_STORED_OBJECT_RESPONSE(1004):
-    (uint32 context, uint32 do_id, uint8 return_code)
-The return code is one of the following:
-    0 - Success
-    1 - Failure # Add/update fail cases as necessary
-The do_id of the object created. Internally, this object is automatically
-managed by the associated DB-SS.
-/// Thoughts... Instead of a return code, the invalid do_id (0x0) could be considered failure
+be stored in the database.  
+The return is the do_id of the object and one of the following:  
+    0 - Success  
+    1 - Failure // Add/update fail cases as necessary  
+When the object is queried, this object is automatically fetched and managed by
+the associated DB-SS.  
+_Thoughts... Instead of a return code, the invalid do_id (0x0) could be considered failure_
 
-DBSERVER_DELETE_STORED_OBJECT(1008):
-    (uint32 verify_code, uint32 do_id)
-This message removes an object from the server with a given do_id.
-The verify_code is 0x44696521 (Ascii "Die!") and is required.
+
+**DBSERVER_DELETE_STORED_OBJECT(1008)**  
+    `args(uint32 verify_code, uint32 do_id)`  
+> This message removes an object from the server with a given do_id.  
+The verify_code is 0x44696521 (Ascii "Die!") and is required.  
 The object will duly broadcast its deletion to any AIs, owners, or zones.
 
-DBSERVER_DELETE_QUERY(1010):
-    (uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)
-This message removes all objects from the server of the given DistributedClass,
-that satisify the given comparisons.
-The verify_code is 0x4b696c6c (Ascii "Kill") and is required.
+
+**DBSERVER_DELETE_QUERY(1010)**
+    `args(uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)`  
+> This message removes all objects from the server of the given DistributedClass,
+that satisify the given comparisons.  
+The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
 All objects will duly broadcast its deletion to any AIs, owners, or zones.
 
-DBSERVER_SELECT_STORED_OBJECT(1012):
-    (uint32 context, uint32 do_id, FIELD_DATA)
-This message returns selected fields from a given object in the database.
-If field_count is 0, all fields are returned.
-Response:
-DBSERVER_SELECT_STORED_OBJECT_RESPONSE(1013):
-    (uint32 context, FIELD_DATA)
-The return is a set of all requested fields.
+
+**DBSERVER_SELECT_STORED_OBJECT(1012)**  
+    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+**DBSERVER_SELECT_STORED_OBJECT_RESPONSE(1013)**  
+    `args(uint32 context, FIELD_DATA)`  
+> This message selects a number of fields from an object in the database.  
+It returns the select fields. If the sent field_count was 0, all fields are returned.
 /// Thoughts... If the sender knows which and in what order it asked for fields in, we could cut out field_count and field_type
 ///             and just return serialized-values in the order they asked for it
 
-DBSERVER_SELECT_QUERY(1016):
-    (uint32 context, uint32 dclass_id, COMPARISON_QUERY)
-This message selects from the database all items of the given
+
+**DBSERVER_SELECT_QUERY(1016)**  
+**DBSERVER_SELECT_QUERY_RESPONSE(1017)**  
+    `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
+    `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
+> This message selects from the database all items of the given
 DistributedClass that satisfy the given comparisons.
-Return:
-DBSERVER_SELECT_QUERY_RESPONSE(1017):
-    (uint32 context, uint32 items, [uint32 do_id]*items)
 The return is a list of do_ids corresponding to the selected elements.
 
-DBSERVER_UPDATE_STORED_OBJECT(1014):
-    (uint32 do_id, FIELD_DATA)
-This message replaces the current values of the given object,
+
+**DBSERVER_UPDATE_STORED_OBJECT(1014)**  
+    `args(uint32 do_id, FIELD_DATA)`  
+> This message replaces the current values of the given object,
 with the new values given in FIELD_DATA.
 
-DBSERVER_UPDATE_QUERY(1018):
-    (uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)
-This message updates all objects of type dclass_id which satisfy the
+
+**DBSERVER_UPDATE_QUERY(1018)**  
+    `args(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)`  
+> This message updates all objects of type dclass_id which satisfy the
 COMPARISON_QUERY with the fields in FIELD_DATA.
