@@ -334,7 +334,7 @@ The verify_code is 0x44696521 (Ascii "Die!") and is required.
 The object will duly broadcast its deletion to any AIs, owners, or zones.
 
 
-**DBSERVER_DELETE_QUERY(1010)**
+**DBSERVER_DELETE_QUERY(1010)**  
     `args(uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)`  
 > This message removes all objects from the server of the given DistributedClass,
 that satisify the given comparisons.  
