@@ -88,3 +88,19 @@ We welcome any potential contributers! Don't just start coding though; we all ta
 Please come in and tell us what you'd like to do, or ask what we could use help on.
 
 #### Join us at: [#OpenOTP on irc.freenode.net](irc://irc.freenode.net/OpenOTP)
+
+
+### OTP Architecture resources
+There are a lot of resources we use as a guide and for inspiration while building OpenOTP.  New contributors might find them to be very informative, both about how the server works and in thinking about what direction OpenOTP wants to go in.  
+**NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
+
+Video lectures from Disney:
+ - [DistributedObjects](http://video.google.com/videoplay?docid=59098437095671394&hl=en)
+ - [DistributedObjects and the OTP Server](http://video.google.com/videoplay?docid=-4547040139284563409&hl=en)
+ - [OTP Server Internals](http://video.google.com/videoplay?docid=-6551816888913680536&hl=en)
+
+Presentation Slides
+ - [MMO 101 - Building Disney's Server](http://twvideo01.ubm-us.net/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
+
+Other Documentation
+ - [Building a MMG for the Million - Disney's Toontown](http://dl.acm.org/citation.cfm?id=950566.950589)
