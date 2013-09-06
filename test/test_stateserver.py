@@ -3,7 +3,7 @@ import unittest
 from socket import *
 
 from common import *
-from test_dc import *
+from testdc import *
 
 CONFIG = """\
 messagedirector:
