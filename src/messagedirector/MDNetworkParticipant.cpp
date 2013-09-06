@@ -18,6 +18,52 @@ bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
 
 void MDNetworkParticipant::network_datagram(Datagram &dg)
 {
+	DatagramIterator dgi(&dg);
+	unsigned short channels = dgi.read_uint8();
+	if(channels == 1 && dgi.read_uint64() == CONTROL_MESSAGE)
+	{
+		unsigned short msg_type = dgi.read_uint16();
+		switch(msg_type)
+		{
+			case CONTROL_ADD_CHANNEL:
+			{
+				MessageDirector::singleton.subscribe_channel(this, dgi.read_uint64());
+			}
+			break;
+			case CONTROL_REMOVE_CHANNEL:
+			{
+				MessageDirector::singleton.unsubscribe_channel(this, dgi.read_uint64());
+			}
+			break;
+			case CONTROL_ADD_RANGE:
+			{
+				channel_t lo = dgi.read_uint64();
+				channel_t hi = dgi.read_uint64();
+				MessageDirector::singleton.subscribe_range(this, lo, hi);
+			}
+			break;
+			case CONTROL_REMOVE_RANGE:
+			{
+				channel_t lo = dgi.read_uint64();
+				channel_t hi = dgi.read_uint64();
+				MessageDirector::singleton.unsubscribe_range(this, lo, hi);
+			}
+			break;
+			case CONTROL_ADD_POST_REMOVE:
+			{
+				m_post_remove = dgi.read_string();
+			}
+			break;
+			case CONTROL_CLEAR_POST_REMOVE:
+			{
+				m_post_remove = "";
+			}
+			break;
+			default:
+				gLogger->error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
+		}
+		return;
+	}
 	send(&dg);
 }
 

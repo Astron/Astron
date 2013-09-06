@@ -95,61 +95,6 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	DatagramIterator dgi(dg);
 	unsigned char channels = dgi.read_uint8();
 
-	// Check for control messages
-	if(channels == 1)
-	{
-		channel_t channel = dgi.read_uint64();
-
-		if(channel == CONTROL_MESSAGE && participant)
-		{
-			unsigned int msg_type = dgi.read_uint16();
-			switch(msg_type)
-			{
-				case CONTROL_ADD_CHANNEL:
-				{
-					subscribe_channel(participant, dgi.read_uint64());
-				}
-				break;
-				case CONTROL_ADD_RANGE:
-				{
-					channel_t lo = dgi.read_uint64();
-					channel_t hi = dgi.read_uint64();
-					subscribe_range(participant, lo, hi);
-				}
-				break;
-				case CONTROL_REMOVE_CHANNEL:
-				{
-					unsubscribe_channel(participant, dgi.read_uint64());
-				}
-				break;
-				case CONTROL_REMOVE_RANGE:
-				{
-					channel_t lo = dgi.read_uint64();
-					channel_t hi = dgi.read_uint64();
-					unsubscribe_range(participant, lo, hi);
-				}
-				break;
-				case CONTROL_ADD_POST_REMOVE:
-				{
-					std::string data = dgi.read_string();
-					participant->m_post_remove = data;
-				}
-				break;
-				case CONTROL_CLEAR_POST_REMOVE:
-				{
-					participant->m_post_remove = "";
-				}
-				break;
-				default:
-					m_log.error() << "Unknown control message; MsgType=" << msg_type << std::endl;
-			}
-			return;
-		}
-
-		// return offset to beginning of recipients if not a CONTROL_MESSAGE
-		dgi.seek(1);
-	}
-
 	// Route messages to participants
 	std::set<MDParticipantInterface*> receiving_participants;
 	for(unsigned char i = 0; i < channels; ++i)
