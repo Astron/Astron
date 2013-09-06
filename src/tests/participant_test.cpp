@@ -19,6 +19,9 @@ class ParticipantTest : public MDParticipantInterface
 
 			MessageDirector::singleton.unsubscribe_channel(this, 100);
 			MessageDirector::singleton.unsubscribe_channel(this, 200);
+
+			/*MessageDirector::singleton.subscribe_range(this, 1000, 2000);
+			MessageDirector::singleton.unsubscribe_range(this, 1500, 1700);*/
 		}
 
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
