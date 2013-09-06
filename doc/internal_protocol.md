@@ -1,8 +1,8 @@
 OpenOTP Internal Protocol Documentation
 ---------------------------------------
-**Author:** Sam "CFSworks" Edwards  
-**Editor:** Kevin "Kestred" Stenerson  
-**Date:** 08-30-2013
+**Authors**  
+Sam "CFSworks Edwards" (08-30-2013)  
+Kevin "Kestred" Stenerson (09-04-2013)
 
 
 ### Section 0: Abstract ###
@@ -68,7 +68,7 @@ control message from a downstream MD requesting to be added to a channel.
 
 Control messages are distinguished by two things:
 
-1. Control messages must be sent to only channel 4001, and no other channels. 
+1. Control messages must be sent to only channel 4001, and no other channels.
 2. Control messages OMIT the sender field; this is because the sender is
    assumed (known) to be the MD on the other end of the link.
 
@@ -189,7 +189,6 @@ its presence in the new zone and its absence in the old zone.
                         uint32 old_parent, uint32 old_zone)`  
 **STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066)**  
     `(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
-    
 > These messages are SENT BY THE OBJECT when processing a SET_ZONE.
 CHANGE_ZONE tells everything that can see the object where the object is going.
 
@@ -222,7 +221,7 @@ nonpresent. Value is not present on failure.
     `args(uint32 do_id, uint64 ai_channel)`  
 **STATESERVER_OBJECT_ENTER_AI_RECV(2067)**  
     `args(uint32 parent_id, uint32 zone_id, uint16 class_id, uint32 do_id, ...)`  
-**STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `(uint32 do_id)`  
+**STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `args(uint32 do_id)`  
 > Sets the channel for the managing AI. All airecv updates are automatically
 forwarded to this channel.  
 Note: The managing AI channel can also be set implicitly. If it isn't set
@@ -235,7 +234,7 @@ LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
 
 
-**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `(uint64 owner_channel)`  
+**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `args(uint64 owner_channel)`  
 **STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 **STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  
@@ -277,3 +276,120 @@ parent to request that it resend its AI Server channel.
 > _Internally Used_ Broadcast by a parent_id to all of its children (the channel
 for this is given by (4030<<32)|parent_id) when its airecv channel changes.
 Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
+
+
+
+### Section 4: Database Server messages ###
+
+This section documents the messages involved in interacting with a Database
+Server. A Database Server is a component with a single, preconfigured channel.
+This channel is used to request the Database Server to:
+ - Create new objects stored in the database.
+ - Update object fields stored in database.
+ - Run queries on objects stored in the database.
+
+When a stored object is created directly, the object behaves as if it were its own
+Message Director participant, and subscribes to its own channel (equal to the
+object's ID) to receive object-specific updates.
+
+The following is a list of database control messages:
+
+**Argument Notes**
+
+    uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
+
+    FIELD_DATA ->           // FIELD_DATA implies the following structure
+        (uint16 field_count,    // Number of following fields
+            [uint16 field,          // The field of the DistributeClass
+             VALUE                  // The serialized value of that field
+            ]*field_count)
+
+    COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
+        (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
+            [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
+             uint16 field,          // The field of the DistributeClass to compare
+             VALUE                  // The serialized value of that field
+            ]*compare_count)
+
+
+**DBSERVER_CREATE_STORED_OBJECT(1003)**  
+    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+**DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
+    `args(uint32 context, uint32 do_id)`  
+> This message creates a new object in the database with the given fields set to
+the given values. For required fields that are not given, the default values
+are used.  Objects with required fields that do not have default values cannot
+be stored in the database.  
+The return is the do_id of the object. The BAD_DO_ID (0x0) is a failure.  
+When the object is queried, this object is automatically fetched and managed by
+the associated DB-SS.  
+
+
+**DBSERVER_DELETE_STORED_OBJECT(1008)**  
+    `args(uint32 verify_code, uint32 do_id)`  
+> This message removes an object from the server with a given do_id.  
+The verify_code is 0x44696521 (Ascii "Die!") and is required.  
+The object will duly broadcast its deletion to any AIs, owners, or zones.
+
+
+**DBSERVER_DELETE_QUERY(1010)**  
+    `args(uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)`  
+> This message removes all objects from the server of the given DistributedClass,
+that satisify the given comparisons.  
+The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
+All objects will duly broadcast its deletion to any AIs, owners, or zones.
+
+
+**DBSERVER_SELECT_STORED_OBJECT(1012)**  
+    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+**DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
+    `args(uint32 context, <FIELDS>)`  
+> This message selects a number of fields from an object in the database.  
+It returns the select fields in serialized form, in the order requested.
+
+
+**DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
+    `args(uint32 context, uint32 do_id)`  
+**DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
+    `args(uint32 context, uint16 dclass_id, ...)`  
+> This message queries all information from the object and returns the response.  
+The ... is like that of REQUIRED_OTHER in the STATESERVER object commands.
+
+
+**DBSERVER_SELECT_QUERY(1016)**  
+    `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
+**DBSERVER_SELECT_QUERY_RESP(1017)**  
+    `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
+> This message selects from the database all items of the given
+DistributedClass that satisfy the given comparisons.
+The return is a list of do_ids corresponding to the selected elements.
+
+
+**DBSERVER_UPDATE_STORED_OBJECT(1014)**  
+    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+> This message replaces the current values of the given object,
+with the new values given in FIELD_DATA.  
+This command updates a value in the database, ignoring its initial value.
+If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
+
+
+**DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS(1024)**  
+    `args(uint32 context, uint32 do_id, uint16 field_count,
+          [uint16 field, VALUE old, VALUE new]*field_count)`
+**DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
+    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`
+> This message replaces the current values of the given object with new values,
+only if the old values match the current state of the database.  
+This method of updating the database is used to prevent race conditions,
+particularily when the new values are derived or dependent on the old values.
+
+> If any of the given _old_ values don't match then the entire transaction fails.
+If ret_code is 0, the transaction was successful.  
+If unsuccessful, the current values of all given fields will be returned in order
+in serialized form after ret_code.
+
+
+**DBSERVER_UPDATE_QUERY(1018)**  
+    `args(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)`  
+> This message updates all objects of type dclass_id which satisfy the
+COMPARISON_QUERY with the fields in FIELD_DATA.
