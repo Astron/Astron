@@ -318,7 +318,7 @@ class TestMessageDirector(unittest.TestCase):
         # Difference #1: Drop 1000-1299
         self.l1.expect(Datagram.create_remove_range(1000, 1299))
         # Difference #2: Drop 1701-1999
-        #self.l1.expect(Datagram.create_remove_range(1701, 1999))
+        self.l1.expect(Datagram.create_remove_range(1701, 1999))
 
         # Now see if only the second range is active...
         check_channels([
