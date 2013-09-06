@@ -4,10 +4,10 @@
 
 class Role : MDParticipantInterface
 {
-	protected:
-		Role(RoleConfig roleconfig) : m_roleconfig(roleconfig)
-		{
-		}
+protected:
+	Role(RoleConfig roleconfig) : m_roleconfig(roleconfig)
+	{
+	}
 
-		RoleConfig m_roleconfig;
+	RoleConfig m_roleconfig;
 };
