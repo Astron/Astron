@@ -85,7 +85,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::handle_datagram(Datagram &dg, MDParticipantInterface *participant)
+void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 {
 	m_log.spam() << "Processing datagram...." << std::endl;
 	DatagramIterator dgi(dg);
@@ -112,9 +112,9 @@ void MessageDirector::handle_datagram(Datagram &dg, MDParticipantInterface *part
 	}
 	recieve_log << std::endl;
 
-	if (participant)
+	if (p)
 	{
-		receiving_participants.erase(participant);
+		receiving_participants.erase(p);
 	}
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
@@ -123,12 +123,12 @@ void MessageDirector::handle_datagram(Datagram &dg, MDParticipantInterface *part
 		(*it)->handle_datagram(dg, msg_dgi);
 	}
 
-	if(participant && is_client)  // Send message upstream
+	if(p && is_client)  // Send message upstream
 	{
 		network_send(dg);
 		m_log.spam() << "...routing upstream." << std::endl;
 	}
-	else if(!participant) // If there is no participant, then it came from the upstream
+	else if(!p) // If there is no participant, then it came from the upstream
 	{
 		m_log.spam() << "...not routing upstream: It came from there." << std::endl;
 	}
@@ -411,7 +411,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 
  void MessageDirector::network_datagram(Datagram &dg)
  {
-	 handle_datagram(dg, NULL);
+	 handle_datagram(NULL, dg);
  }
 
  void MessageDirector::network_disconnect()

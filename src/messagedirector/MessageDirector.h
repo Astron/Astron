@@ -41,7 +41,7 @@ public:
 	// handle_datagram accepts any OpenOTP message (a Datagram), and
 	//     properly routes it to any subscribed listeners.
 	// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-	void handle_datagram(Datagram &dg, MDParticipantInterface *participant);
+	void handle_datagram(MDParticipantInterface *p, Datagram &dg);
 
 	// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
 	// (Args) "c": the channel to be added.
@@ -125,7 +125,7 @@ public:
 		for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 		{
 			Datagram dg(*it);
-			MessageDirector::singleton.handle_datagram(dg, this);
+			MessageDirector::singleton.handle_datagram(this, dg);
 		}
 	}
 
@@ -136,7 +136,7 @@ protected:
 
 	inline void send(Datagram &dg)
 	{
-		MessageDirector::singleton.handle_datagram(dg, this);
+		MessageDirector::singleton.handle_datagram(this, dg);
 	}
 	inline void subscribe_channel(channel_t c)
 	{
