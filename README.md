@@ -55,11 +55,11 @@ The ScratchCardManager would have the following two representations:
 ScratchCardManagerUD: The UD-side representation of the object. The object's doId is hard coded.  
 ScratchCardManager: The client-side representation of the same. The client would be aware of this object because the object type and ID would be hard-coded into the code. The client can send updates on this object to request to redeem codes.
 
-# OpenOTP components
-Within the OpenOTP cluster, there are many components that manage individual parts of the game. Each piece is focused on doing one thing, and doing it well. Here we describe some of them in loose detail:
+# OpenOTP roles
+Within the OpenOTP cluster, OpenOTP daemons are configured to serve certain roles in the cluster. OpenOTP daemons may serve one or more roles. Here we describe some of them in loose detail:
 
 ## Message Director
-The message director receives messages from other servers, and routes them. A "message" is just an atomic blob, with a maximum size of approximately 64kB, sent from one component to another. The routing is performed by means of routing identifiers called **channels**, where a message contains any number of destination channels, and most messages include a source channel. Each component tells the MD which channels it would like to subscribe to, and receives messages sent to its subscribed channels. In this manner, the messaging architecture of OpenOTP is actually a very simple publish-subscribe system. The message director is the simplest component of OpenOTP.
+The message director receives messages from other daemons, and routes them. A "message" is just an atomic blob, with a maximum size of approximately 64kB, sent from one daemon to another. The routing is performed by means of routing identifiers called **channels**, where a message contains any number of destination channels, and most messages include a source channel. Each component tells the MD which channels it would like to subscribe to, and receives messages sent to its subscribed channels. In this manner, the messaging architecture of OpenOTP is actually a very simple publish-subscribe system. The message director is the simplest component of OpenOTP.
 
 ## Client Agent
 The client agent handles communication with the game client. Game clients do not directly communicate with OpenOTP. Rather, they communicate with the client agent, which in turn communicates with OpenOTP. Most of the security is implemented in the client agent, which enforces the clsend and ownsend keyword restrictions. For example, if a client tries to update a field that is not marked clsend, or ownsend on an object it controls, the client agent will automatically disconnect the client and log a security violation. Since the client agent may have game-specific code, OpenOTP provides a very simple reference implementation. You may want to subclass this base implementation to implement certain game-specific logic, such as allowing clients to create their own avatars directly, without relying on an UberDOG.
@@ -82,3 +82,25 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 ## License
 The OpenOTP project is currently available under the GPL license. The terms of this license are available in the "LICENSE" file of this archive.
+
+## Contributing
+We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
+Please come in and tell us what you'd like to do, or ask what we could use help on.
+
+#### Join us at: [#OpenOTP on irc.freenode.net](irc://irc.freenode.net/OpenOTP)
+
+
+### OTP Architecture resources
+There are a lot of resources we use as a guide and for inspiration while building OpenOTP.  New contributors might find them to be very informative, both about how the server works and in thinking about what direction OpenOTP wants to go in.  
+**NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
+
+Video lectures from Disney:
+ - [DistributedObjects](http://video.google.com/videoplay?docid=59098437095671394&hl=en)
+ - [DistributedObjects and the OTP Server](http://video.google.com/videoplay?docid=-4547040139284563409&hl=en)
+ - [OTP Server Internals](http://video.google.com/videoplay?docid=-6551816888913680536&hl=en)
+
+Presentation Slides
+ - [MMO 101 - Building Disney's Server](http://twvideo01.ubm-us.net/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
+
+Other Documentation
+ - [Building a MMG for the Million - Disney's Toontown](http://dl.acm.org/citation.cfm?id=950566.950589)

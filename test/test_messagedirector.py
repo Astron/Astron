@@ -289,7 +289,9 @@ class TestMessageDirector(unittest.TestCase):
         dg = Datagram.create_add_range(1900, 2100)
         self.c1.send(dg)
         # Verify that l1 asks for the range difference only...
-        self.assertTrue(self.l1.expect(Datagram.create_add_range(2000, 2100)))
+        #self.assertTrue(self.l1.expect(Datagram.create_add_range(2000, 2100)))
+        # NOTE: We actually want to recieve the entire range upstream
+        self.assertTrue(self.l1.expect(dg))
 
         # Now the subscriptions should be updated:
         check_channels([
@@ -316,7 +318,7 @@ class TestMessageDirector(unittest.TestCase):
         # Difference #1: Drop 1000-1299
         self.l1.expect(Datagram.create_remove_range(1000, 1299))
         # Difference #2: Drop 1701-1999
-        self.l1.expect(Datagram.create_remove_range(1701, 1999))
+        #self.l1.expect(Datagram.create_remove_range(1701, 1999))
 
         # Now see if only the second range is active...
         check_channels([
