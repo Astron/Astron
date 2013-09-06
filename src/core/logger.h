@@ -28,18 +28,23 @@ enum LogSeverity {
 	LSEVERITY_FATAL
 };
 
+class NullStream;
+extern NullStream null_stream;
+
+class NullStream {
+public:
+	void setFile(){/* no-op */}
+	template<typename TPrintable>
+	inline NullStream& operator<<(TPrintable const&) { return null_stream; }
+	inline NullStream& operator<<(std::ostream &(std::ostream&)) { return null_stream; }
+};
+
 class Logger {
 public:
 	Logger(const std::string &log_file, bool console_output = true);
 	Logger();
+
 	std::ostream &log(LogSeverity sev);
-	std::ostream &spam();
-	std::ostream &debug();
-	std::ostream &info();
-	std::ostream &warning();
-	std::ostream &security();
-	std::ostream &error();
-	std::ostream &fatal();
 
 private:
 	LoggerBuf m_buf;
@@ -62,21 +67,26 @@ public:
 	{
 	}
 
-#define F(level) \
+#define F(level, severity) \
 	std::ostream &level() \
 	{ \
-		std::ostream &out = gLogger->level(); \
+		std::ostream &out = gLogger->log(severity); \
 		out << m_name << ": "; \
 		return out; \
 	}
 
-	F(spam)
-	F(debug)
-	F(info)
-	F(warning)
-	F(security)
-	F(error)
-	F(fatal)
+#ifdef DEBUG_MESSAGES
+	F(spam, LSEVERITY_SPAM)
+	F(debug, LSEVERITY_DEBUG)
+#else
+	inline NullStream &spam() { return null_stream; }
+	inline NullStream &debug() { return null_stream; }
+#endif
+	F(info, LSEVERITY_INFO)
+	F(warning, LSEVERITY_WARNING)
+	F(security, LSEVERITY_SECURITY)
+	F(error, LSEVERITY_ERROR)
+	F(fatal, LSEVERITY_FATAL)
 
 #undef F
 
