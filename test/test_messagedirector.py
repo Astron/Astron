@@ -200,6 +200,11 @@ class TestMessageDirector(unittest.TestCase):
         self.__class__.c1 = self.new_connection()
         self.assertTrue(self.l1.expect(dg))
 
+        # Reconnect c1, the message shouldn't be sent again
+        self.c1.close()
+        self.__class__.c1 = self.new_connection()
+        self.assertTrue(self.l1.expect_none())
+
         # Hang dg as a post-remove for c2...
         self.c2.send(dg2)
 
@@ -210,6 +215,23 @@ class TestMessageDirector(unittest.TestCase):
         self.c2.close()
         self.__class__.c2 = self.new_connection()
         self.assertTrue(self.l1.expect_none())
+
+        # Try hanging multiple post-removes on c1
+        dg2 = Datagram.create_add_post_remove(dg)
+        dg_pr = Datagram.create([987987987], 0, 6959)
+        dg3 = Datagram.create_add_post_remove(dg_pr)
+        self.c1.send(dg2)
+        self.c1.send(dg3)
+
+        # After adding two, we don't want to see anything "pushed" or the like
+        self.assertTrue(self.l1.expect_none())
+        self.assertTrue(self.c1.expect_none())
+        self.assertTrue(self.c2.expect_none())
+
+        # Reconnect c1 and see if both datagrams gets sent.
+        self.c1.close()
+        self.__class__.c1 = self.new_connection()
+        self.assertTrue(self.l1.expect_multi([dg, dg_pr], only=True))
 
     def test_ranges(self):
         self.l1.flush()
