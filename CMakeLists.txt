@@ -77,6 +77,8 @@ add_executable (openotpd
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
 	src/util/Role.h
+	src/util/NetworkClient.cpp
+	src/util/NetworkClient.h
 	${STATESERVER_FILES}
 	${TEST_FILES}
 )
