@@ -129,9 +129,16 @@ public:
 		}
 	}
 
+	inline std::set<channel_t> &channels() {
+		return m_channels;
+	}
+	inline boost::icl::interval_set<channel_t> &ranges() {
+		return m_ranges;
+	}
+
+protected:
 	std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 	boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-protected:
 	std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
 
 	inline void send(Datagram &dg)

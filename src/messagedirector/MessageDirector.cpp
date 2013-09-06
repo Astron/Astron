@@ -141,9 +141,9 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 {
 	// Check if participant is already subscribed in a range
-	if(boost::icl::find(p->m_ranges, c) == p->m_ranges.end()) {
+	if(boost::icl::find(p->ranges(), c) == p->ranges().end()) {
 		// If not, subscribe participant to channel
-		p->m_channels.insert(p->m_channels.end(), c);
+		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
 	}
 	// Check if should subscribe upstream...
@@ -172,7 +172,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c)
 {
 	// Unsubscribe participant from channel
-	p->m_channels.erase(c);
+	p->channels().erase(c);
 	m_channel_subscriptions[c].erase(p);
 
 	// Check if unsubscribed channel in the middle of a range
@@ -224,11 +224,11 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	interval_t interval = interval_t::closed(lo, hi);
 
 	// Subscribe participant to range
-	p->m_ranges += interval;
+	p->ranges() += interval;
 	m_range_subscriptions += std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->m_channels.begin(); it != p->m_channels.end();)
+	for (auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
@@ -236,7 +236,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		if (lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
-			p->m_channels.erase(prev);
+			p->channels().erase(prev);
 		}
 	}
 
@@ -281,12 +281,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	interval_t interval = interval_t::closed(lo, hi);
 
 	// Unsubscribe participant from range
-	p->m_ranges -= interval;
+	p->ranges() -= interval;
 	auto range_copy = m_range_subscriptions;
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->m_channels.begin(); it != p->m_channels.end();)
+	for (auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
@@ -294,7 +294,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		if (lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
-			p->m_channels.erase(prev);
+			p->channels().erase(prev);
 		}
 	}
 
@@ -391,7 +391,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 
 	// Send out unsubscribe messages for indivually subscribed channels
-	auto channels = std::set<channel_t>(p->m_channels);
+	auto channels = std::set<channel_t>(p->channels());
 	for(auto it = channels.begin(); it != channels.end(); ++it)
 	{
 		channel_t channel = *it;
@@ -399,7 +399,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	}
 
 	// Send out unsubscribe messages for subscribed channel ranges
-	auto ranges = boost::icl::interval_set<channel_t>(p->m_ranges);
+	auto ranges = boost::icl::interval_set<channel_t>(p->ranges());
 	for(auto it = ranges.begin(); it != ranges.end(); ++it)
 	{
 		unsubscribe_range(p, it->lower(), it->upper());
