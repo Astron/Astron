@@ -4,6 +4,8 @@
 #include <map>
 #include "dcparser/dcClass.h"
 #include "dcparser/dcField.h"
+#include <exception>
+#include <stdexcept>
 
 #pragma region definitions
 #define STATESERVER_OBJECT_GENERATE_WITH_REQUIRED 2001
@@ -407,6 +409,40 @@ public:
 		m_log = new LogCategory("stateserver", name.str());
 	}
 
+	void handle_generate(DatagramIterator &dgi, bool has_other)
+	{
+		unsigned int parent_id = dgi.read_uint32();
+		unsigned int zone_id = dgi.read_uint32();
+		unsigned short dc_id = dgi.read_uint16();
+		unsigned int do_id = dgi.read_uint32();
+
+		if(dc_id >= gDCF->get_num_classes())
+		{
+			m_log->error() << "Received create for unknown dclass ID=" << dc_id << std::endl;
+			return;
+		}
+
+		if(distObjs.find(do_id) != distObjs.end())
+		{
+			m_log->warning() << "Received generate for already-existing object ID=" << do_id << std::endl;
+			return;
+		}
+
+		DCClass *dclass = gDCF->get_class(dc_id);
+		DistributedObject *obj;
+		try
+		{
+			obj = new DistributedObject(do_id, dclass, parent_id, zone_id, dgi, has_other);
+		}
+		catch(std::exception &e)
+		{
+			m_log->error() << "Received truncated generate for "
+			               << dclass->get_name() << "(" << do_id << ")" << std::endl;
+			return;
+		}
+		distObjs[do_id] = obj;
+	}
+
 	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
 		unsigned long long sender = dgi.read_uint64();
@@ -415,22 +451,12 @@ public:
 		{
 			case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
 			{
-				unsigned int parent_id = dgi.read_uint32();
-				unsigned int zone_id = dgi.read_uint32();
-				unsigned short dc_id = dgi.read_uint16();
-				unsigned int do_id = dgi.read_uint32();
-
-				distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, false);
+				handle_generate(dgi, false);
 				break;
 			}
 			case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
 			{
-				unsigned int parent_id = dgi.read_uint32();
-				unsigned int zone_id = dgi.read_uint32();
-				unsigned short dc_id = dgi.read_uint16();
-				unsigned int do_id = dgi.read_uint32();
-
-				distObjs[do_id] = new DistributedObject(do_id, gDCF->get_class(dc_id), parent_id, zone_id, dgi, true);
+				handle_generate(dgi, true);
 				break;
 			}
 			case STATESERVER_SHARD_RESET:

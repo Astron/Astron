@@ -569,6 +569,17 @@ class TestStateServer(unittest.TestCase):
         # Once again, nothing should happen and the SS should log an ERROR.
         self.assertTrue(self.c.expect_none())
 
+        # Let's try making a bad object.
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(1234) # Zone
+        dg.add_uint16(0x1337)
+        dg.add_uint32(236000000) # ID
+        self.c.send(dg)
+
+        # Nothing should happen and the SS should log an ERROR.
+        self.assertTrue(self.c.expect_none())
+
         # Clean up.
         self.c.send(Datagram.create_remove_channel(80000<<32|1234))
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_DELETE_RAM)
