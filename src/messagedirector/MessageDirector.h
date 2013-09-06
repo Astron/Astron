@@ -74,6 +74,9 @@ class MessageDirector : public NetworkClient
 		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
+
+		// logger returns the MessageDirector log category.
+		inline LogCategory& logger() { return m_log; }
 	private:
 		MessageDirector();
 		LogCategory m_log;
