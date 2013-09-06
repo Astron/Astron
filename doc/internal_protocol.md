@@ -221,7 +221,7 @@ nonpresent. Value is not present on failure.
     `args(uint32 do_id, uint64 ai_channel)`  
 **STATESERVER_OBJECT_ENTER_AI_RECV(2067)**  
     `args(uint32 parent_id, uint32 zone_id, uint16 class_id, uint32 do_id, ...)`  
-**STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `(uint32 do_id)`  
+**STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `args(uint32 do_id)`  
 > Sets the channel for the managing AI. All airecv updates are automatically
 forwarded to this channel.  
 Note: The managing AI channel can also be set implicitly. If it isn't set
@@ -234,7 +234,7 @@ LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
 
 
-**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `(uint64 owner_channel)`  
+**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `args(uint64 owner_channel)`  
 **STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 **STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  
