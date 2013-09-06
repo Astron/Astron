@@ -42,6 +42,7 @@ void NetworkClient::start_receive()
 
 void NetworkClient::network_send(Datagram &dg)
 {
+	//TODO: make this asynch if necessary
 	unsigned short len = dg.get_buf_end();
 	m_socket->send(boost::asio::buffer((char*)&len, 2));
 	m_socket->send(boost::asio::buffer(dg.get_data(), dg.get_buf_end()));
