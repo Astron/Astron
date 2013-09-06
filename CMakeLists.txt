@@ -6,12 +6,17 @@ if (WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+set(CMAKE_CXX_FLAGS "-O2 -Wall")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+
 ### Release Flags -- warnings are errors, release code should not have warnings ###
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -Werror")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Werror")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
 
 ### Debug Flags -- compile in spam/debug log messages ###
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
 
 ### YAML Depedency -- required by config ###
