@@ -45,6 +45,11 @@ public:
 		add_control_header(message_type);
 	}
 
+	~Datagram()
+	{
+		delete [] buf;
+	}
+
 	void add_uint8(const unsigned char &v)
 	{
 		check_add_length(1);
