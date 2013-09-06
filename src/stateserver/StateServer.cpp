@@ -288,7 +288,7 @@ public:
 		std::set <channel_t> targets;
 		if(field->is_broadcast())
 			targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-		if(field->is_airecv())
+		if(field->is_airecv() && m_ai_channel)
 			targets.insert(m_ai_channel);
 		if(targets.size()) // TODO: Review this for efficiency?
 		{
