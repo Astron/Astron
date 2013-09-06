@@ -4,68 +4,24 @@
 
 
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
-	: MDParticipantInterface(), m_socket(socket), m_buffer(new char[2]), m_bytes_to_go(2),
-	m_bufsize(2), m_is_data(false)
+	: MDParticipantInterface(), NetworkClient(socket)
 {
-	start_receive();
-}
-
-MDNetworkParticipant::~MDNetworkParticipant()
-{
-	m_socket->close();
-	delete m_socket;
-	delete m_buffer;
 }
 
 bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
 {
 	//TODO: make this asynch
 	gLogger->debug() << "Sending to downstream md" << std::endl;
-	unsigned short len = dg->get_buf_end();
-	m_socket->send(boost::asio::buffer((char*)&len, 2));
-	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
+	network_send(dg);
 	return true;
 }
 
-void MDNetworkParticipant::start_receive()
+void MDNetworkParticipant::network_datagram(Datagram &dg)
 {
-	unsigned short offset = m_bufsize - m_bytes_to_go;
-	m_socket->async_receive(boost::asio::buffer(m_buffer+offset, m_bufsize-offset), boost::bind(&MDNetworkParticipant::read_handler,
-		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	send(&dg);
 }
 
-void MDNetworkParticipant::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
+void MDNetworkParticipant::network_disconnect()
 {
-	if(ec.value() != 0)
-	{
-		gLogger->debug() << "Dropping client because of error: " << ec.category().message(ec.value()) << std::endl;
-		delete this;
-	}
-	else
-	{
-		m_bytes_to_go -= bytes_transferred;
-		if(m_bytes_to_go == 0)
-		{
-			if(!m_is_data)
-			{
-				m_bufsize = *(unsigned short*)m_buffer;
-				delete [] m_buffer;
-				m_buffer = new char[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = true;
-			}
-			else
-			{
-				Datagram dg(std::string(m_buffer, m_bufsize));
-				delete [] m_buffer;//dg makes a copy
-				m_bufsize = 2;
-				m_buffer = new char[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = false;
-				MessageDirector::singleton.handle_datagram(&dg, this);
-			}
-		}
-
-		start_receive();
-	}
+	delete this;
 }
