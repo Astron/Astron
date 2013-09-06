@@ -2,8 +2,7 @@
 #include <string>
 #include <set>
 #include <string.h>
-
-#define CONTROL_MESSAGE 4001
+#include "core/messages.h"
 
 class Datagram
 {
