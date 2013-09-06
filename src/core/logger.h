@@ -1,6 +1,8 @@
 #pragma once
 #include <stdarg.h>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 class LoggerBuf : public std::streambuf
 {
@@ -38,7 +40,47 @@ public:
 	std::ostream &security();
 	std::ostream &error();
 	std::ostream &fatal();
+
 private:
 	LoggerBuf m_buf;
 	std::ostream m_output;
+};
+
+extern Logger *gLogger;
+
+class LogCategory {
+public:
+	LogCategory(const std::string &id, const std::string &name) : m_id(id), m_name(name)
+	{
+	}
+
+	LogCategory(const char *id, const std::string &name) : m_id(id), m_name(name)
+	{
+	}
+
+	LogCategory(const char *id, const char *name) : m_id(id), m_name(name)
+	{
+	}
+
+#define F(level) \
+	std::ostream &level() \
+	{ \
+		std::ostream &out = gLogger->level(); \
+		out << m_name << ": "; \
+		return out; \
+	}
+
+	F(spam)
+	F(debug)
+	F(info)
+	F(warning)
+	F(security)
+	F(error)
+	F(fatal)
+
+#undef F
+
+private:
+	std::string m_id;
+	std::string m_name;
 };

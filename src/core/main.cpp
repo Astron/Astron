@@ -6,6 +6,8 @@
 #include "global.h"
 #include "RoleFactory.h"
 
+LogCategory mainlog("main", "Main");
+
 ConfigVariable<std::vector<std::string>> dc_files("general/dc_files", std::vector<std::string>());
 
 int main(int argc, char *argv[])
@@ -34,19 +36,19 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	gLogger->info() << "Loading configuration file..." << std::endl;
+	mainlog.info() << "Loading configuration file..." << std::endl;
 
 
 	std::ifstream file(cfg_file.c_str());
 	if(!file.is_open())
 	{
-		gLogger->fatal() << "Failed to open configuration file." << std::endl;
+		mainlog.fatal() << "Failed to open configuration file." << std::endl;
 		return 1;
 	}
 	
 	if (!gConfig->load(file))
 	{
-		gLogger->fatal() << "Could not parse configuration file!" << std::endl;
+		mainlog.fatal() << "Could not parse configuration file!" << std::endl;
 		return 1;
 	}
 	file.close();
@@ -56,7 +58,7 @@ int main(int argc, char *argv[])
 	{
 		if(!gDCF->read(*it))
 		{
-			gLogger->fatal() << "Could not read DC file " << *it << std::endl;
+			mainlog.fatal() << "Could not read DC file " << *it << std::endl;
 			return 1;
 		}
 	}
@@ -76,8 +78,8 @@ int main(int argc, char *argv[])
 	}
 	catch(std::exception &e)
 	{
-		gLogger->fatal() << "Exception from the network io service: "
-		                 << e.what() << std::endl;
+		mainlog.fatal() << "Exception from the network io service: "
+		            << e.what() << std::endl;
 	}
 
 	//gDCF->read("filename.dc");
