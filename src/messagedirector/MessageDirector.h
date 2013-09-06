@@ -6,6 +6,7 @@
 #include "core/logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
+#include "util/NetworkClient.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
@@ -41,12 +42,12 @@ class MDParticipantInterface;
 // A MessageDirector is the internal networking object for an OpenOTP server-node.
 // The MessageDirector recieves message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector
+class MessageDirector : public NetworkClient
 {
 	public:
 		// InitializeMD causes the MessageDirector to start listening for
 		//     messages if it hasn't already been initialized.
-		void InitializeMD();
+		void init_network();
 		static MessageDirector singleton;
 
 		// handle_datagram accepts any OpenOTP message (a Datagram), and
@@ -84,17 +85,12 @@ class MessageDirector
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
+		virtual void network_datagram(Datagram &dg);
+		virtual void network_disconnect();
 
-		void start_receive(); // Recieve message from upstream
-		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
-
-		char *m_buffer;
-		unsigned short m_bufsize;
-		unsigned short m_bytes_to_go;
-		bool m_is_data;
+		bool is_client;
 
 		boost::asio::ip::tcp::acceptor *m_acceptor;
-		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;
 
 		// Connected participants
@@ -135,4 +131,9 @@ class MDParticipantInterface
 		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
+	protected:
+		inline void send(Datagram *dg)
+		{
+			MessageDirector::singleton.handle_datagram(dg, this);
+		}
 };
