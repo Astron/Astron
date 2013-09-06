@@ -48,7 +48,7 @@
 #define STATESERVER_QUERY_OBJECT_CHILDREN_LOCAL_DONE  2089
 #define STATESERVER_QUERY_OBJECT_CHILDREN_RESP  2087
 
-#define LOCATION2CHANNEL(p, z) ((unsigned long long)(p)<<32|(unsigned long long)(z))
+#define LOCATION2CHANNEL(p, z) ((channel_t)(p)<<32|(channel_t)(z))
 #pragma endregion
 
 void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
@@ -215,7 +215,7 @@ public:
 
 	void annihilate()
 	{
-		unsigned long long loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
+		channel_t loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
 		Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 		dg.add_uint32(m_do_id);
 		MessageDirector::singleton.handle_datagram(&dg, this);
@@ -236,7 +236,7 @@ public:
 
 	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
-		unsigned long long sender = dgi.read_uint64();
+		channel_t sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
 		switch(msgtype)
 		{
@@ -304,7 +304,7 @@ public:
 			case STATESERVER_OBJECT_SET_AI_CHANNEL:
 			{
 				unsigned int r_do_id = dgi.read_uint32();
-				unsigned long long r_ai_channel = dgi.read_uint64();
+				channel_t r_ai_channel = dgi.read_uint64();
 				m_log->spam() << "STATESERVER_OBJECT_SET_AI_CHANNEL: ai_channel=" << r_ai_channel << std::endl;
 				if(m_ai_channel == r_ai_channel)
 					break;
@@ -394,7 +394,7 @@ public:
 	}
 };
 
-ConfigVariable<unsigned long long> cfg_channel("control", 0);
+ConfigVariable<channel_t> cfg_channel("control", 0);
 
 class StateServer : public Role
 {
@@ -445,7 +445,7 @@ public:
 
 	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
-		unsigned long long sender = dgi.read_uint64();
+		channel_t sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
 		switch(msgtype)
 		{
