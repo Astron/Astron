@@ -95,14 +95,14 @@ std::map<unsigned int, DistributedObject*> distObjs;
 class DistributedObject : public MDParticipantInterface
 {
 public:
-	unsigned long long m_owner;
+	channel_t m_owner;
 	unsigned int m_parent_id;
 	unsigned int m_zone_id;
 	unsigned int m_do_id;
 	DCClass *m_dclass;
 	std::map<DCField*, std::string> m_ram_fields;
 	std::map<DCField*, std::string> m_required_fields;
-	unsigned long long m_ai_channel;
+	channel_t m_ai_channel;
 	bool m_ai_explicitly_set;
 
 	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
@@ -184,7 +184,7 @@ public:
 		MessageDirector::singleton.handle_datagram(&dg, this);
 	}
 
-	void handle_parent_change(unsigned long long int new_parent)
+	void handle_parent_change(channel_t new_parent)
 	{
 		if(new_parent == m_parent_id)
 			return; // Not actually changing parent, no need to handle.
@@ -274,7 +274,7 @@ public:
 					m_ram_fields[field] = data;
 				}
 
-				std::set <unsigned long long int> targets;
+				std::set <channel_t> targets;
 				if(field->is_broadcast())
 					targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 				if(field->is_airecv())
@@ -344,7 +344,7 @@ public:
 				unsigned int new_parent_id = dgi.read_uint32();
 				m_zone_id = dgi.read_uint32();
 
-				std::set <unsigned long long int> targets;
+				std::set <channel_t> targets;
 				targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
 				if(m_ai_channel)
 					targets.insert(m_ai_channel);
@@ -426,8 +426,8 @@ public:
 			}
 			case STATESERVER_SHARD_RESET:
 			{
-				unsigned long long int ai_channel = dgi.read_uint64();
-				std::set <unsigned long long int> targets;
+				channel_t ai_channel = dgi.read_uint64();
+				std::set <channel_t> targets;
 				for(auto it = distObjs.begin(); it != distObjs.end(); ++it)
 					if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
 						targets.insert(it->second->m_do_id);
