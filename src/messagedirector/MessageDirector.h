@@ -138,6 +138,22 @@ protected:
 	{
 		MessageDirector::singleton.handle_datagram(dg, this);
 	}
+	inline void subscribe_channel(channel_t c)
+	{
+		MessageDirector::singleton.subscribe_channel(this, c);
+	}
+	inline void unsubscribe_channel(channel_t c)
+	{
+		MessageDirector::singleton.unsubscribe_channel(this, c);
+	}
+	inline void subscribe_range(channel_t lo, channel_t hi)
+	{
+		MessageDirector::singleton.subscribe_range(this, lo, hi);
+	}
+	inline void unsubscribe_range(channel_t lo, channel_t hi)
+	{
+		MessageDirector::singleton.unsubscribe_range(this, lo, hi);
+	}
 	inline void add_post_remove(const std::string &post)
 	{
 		MessageDirector::singleton.logger().debug() << "MDParticipant added post remove: " << post << std::endl;
