@@ -135,4 +135,9 @@ class MDParticipantInterface
 		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
+	protected:
+		inline void send(Datagram *dg)
+		{
+			MessageDirector::singleton.handle_datagram(dg, this);
+		}
 };
