@@ -213,6 +213,35 @@ public:
 		}
 	}
 
+	void handle_ai_change(channel_t new_channel, bool channel_is_explicit)
+	{
+		if(new_channel == m_ai_channel)
+			return;
+
+		if(m_ai_channel)
+		{
+			Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
+			dg.add_uint32(m_do_id);
+			m_log->spam() << "Leaving AI interest" << std::endl;
+			send(&dg);
+		}
+
+		m_ai_channel = new_channel;
+		m_ai_explicitly_set = channel_is_explicit;
+
+		Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
+		append_required_data(dg1);
+		append_other_data(dg1);
+		send(&dg1);
+		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
+		              << m_ai_channel << std::endl;
+
+		Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+		dg2.add_uint32(m_do_id);
+		dg2.add_uint64(m_ai_channel);
+		send(&dg2);
+	}
+
 	void annihilate()
 	{
 		channel_t loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
@@ -297,42 +326,29 @@ public:
 				break;
 			}
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
-				m_log->spam() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI from " << m_parent_id << std::endl;
+			{
+				unsigned int r_parent_id = dgi.read_uint32();
+				channel_t r_ai_channel = dgi.read_uint64();
+				m_log->spam() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI from " << r_parent_id << std::endl;
+				if(r_parent_id != m_parent_id)
+				{
+					m_log->warning() << "Received AI channel from " << r_parent_id
+					                 << " but my parent_id is " << m_parent_id << std::endl;
+					break;
+				}
 				if(m_ai_explicitly_set)
 					break;
-				// Fall through...
+				handle_ai_change(r_ai_channel, false);
+				break;
+			}
 			case STATESERVER_OBJECT_SET_AI_CHANNEL:
 			{
 				unsigned int r_do_id = dgi.read_uint32();
 				channel_t r_ai_channel = dgi.read_uint64();
 				m_log->spam() << "STATESERVER_OBJECT_SET_AI_CHANNEL: ai_channel=" << r_ai_channel << std::endl;
-				if(m_ai_channel == r_ai_channel)
+				if(r_do_id != m_do_id)
 					break;
-				if((msgtype == STATESERVER_OBJECT_NOTIFY_MANAGING_AI && r_do_id == m_parent_id) || m_do_id == r_do_id)
-				{
-					if(m_ai_channel)
-					{
-						Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
-						dg.add_uint32(m_do_id);
-						m_log->spam() << "Leaving AI interest" << std::endl;
-						send(&dg);
-					}
-
-					m_ai_channel = r_ai_channel;
-					m_ai_explicitly_set = msgtype == STATESERVER_OBJECT_SET_AI_CHANNEL;
-
-					Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
-					append_required_data(dg1);
-					append_other_data(dg1);
-					send(&dg1);
-					m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
-					              << m_ai_channel << std::endl;
-
-					Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
-					dg2.add_uint32(m_do_id);
-					dg2.add_uint64(m_ai_channel);
-					send(&dg2);
-				}
+				handle_ai_change(r_ai_channel, true);
 				break;
 			}
 			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
