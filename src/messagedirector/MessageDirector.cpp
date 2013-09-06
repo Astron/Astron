@@ -409,13 +409,13 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	m_participants.remove(p);
 }
 
- void MessageDirector::network_datagram(Datagram &dg)
- {
-	 handle_datagram(NULL, dg);
- }
+void MessageDirector::network_datagram(Datagram &dg)
+{
+	handle_datagram(NULL, dg);
+}
 
- void MessageDirector::network_disconnect()
- {
-	 m_log.fatal() << "Lost connection to upstream md" << std::endl;
-	 exit(1);
- }
+void MessageDirector::network_disconnect()
+{
+	m_log.fatal() << "Lost connection to upstream md" << std::endl;
+	exit(1);
+}
