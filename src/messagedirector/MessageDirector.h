@@ -116,7 +116,7 @@ public:
 
 	// handle_datagram should handle a message recieved from the MessageDirector.
 	// Implementations of handle_datagram should be non-blocking operations.
-	virtual bool handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
+	virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
 
 	// post_remove tells the MDParticipant to handle all of its post remove packets.
 	inline void post_remove()
