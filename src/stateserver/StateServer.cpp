@@ -275,7 +275,16 @@ public:
 			return false;
 		}
 
-		UnpackFieldFromDG(field, dgi, data);
+		try
+		{
+			UnpackFieldFromDG(field, dgi, data);
+		}
+		catch(std::exception &e)
+		{
+			m_log->error() << "Received truncated update for "
+			               << field->get_name() << std::endl;
+			return false;
+		}
 		if(field->is_required())
 		{
 			m_required_fields[field] = data;
