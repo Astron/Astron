@@ -13,9 +13,9 @@ protected:
 	int overflow(int c = EOF);
 	std::streamsize xsputn (const char* s, std::streamsize n);
 private:
-	bool m_output_to_console;
-	bool m_has_file;
 	std::ofstream m_file;
+	bool m_has_file;
+	bool m_output_to_console;
 };
 
 enum LogSeverity {
