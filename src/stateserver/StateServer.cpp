@@ -188,7 +188,7 @@ public:
 		append_required_data(dg);
 		if(m_ram_fields.size())
 			append_other_data(dg);
-		MessageDirector::singleton.handle_datagram(&dg, this);
+		send(&dg);
 	}
 
 	void handle_parent_change(channel_t new_parent)
@@ -209,7 +209,7 @@ public:
 		{
 			// Ask the new parent what its AI is.
 			Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-			MessageDirector::singleton.handle_datagram(&dg, this);
+			send(&dg);
 		}
 	}
 
@@ -218,7 +218,7 @@ public:
 		channel_t loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
 		Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 		dg.add_uint32(m_do_id);
-		MessageDirector::singleton.handle_datagram(&dg, this);
+		send(&dg);
 		distObjs[m_do_id] = NULL;
 		m_log->debug() << "Deleted." << std::endl;
 		delete this;
@@ -229,7 +229,7 @@ public:
 		// Tell my children:
 		Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_SHARD_RESET);
 		dg.add_uint64(m_ai_channel);
-		MessageDirector::singleton.handle_datagram(&dg, this);
+		send(&dg);
 		// Fall over dead:
 		annihilate();
 	}
@@ -292,7 +292,7 @@ public:
 					dg.add_uint32(m_do_id);
 					dg.add_uint16(field_id);
 					dg.add_data(data);
-					MessageDirector::singleton.handle_datagram(&dg, this);
+					send(&dg);
 				}
 				break;
 			}
@@ -315,7 +315,7 @@ public:
 						Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
 						dg.add_uint32(m_do_id);
 						m_log->spam() << "Leaving AI interest" << std::endl;
-						MessageDirector::singleton.handle_datagram(&dg, this);
+						send(&dg);
 					}
 
 					m_ai_channel = r_ai_channel;
@@ -324,14 +324,14 @@ public:
 					Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
 					append_required_data(dg1);
 					append_other_data(dg1);
-					MessageDirector::singleton.handle_datagram(&dg1, this);
+					send(&dg1);
 					m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
 					              << m_ai_channel << std::endl;
 
 					Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 					dg2.add_uint32(m_do_id);
 					dg2.add_uint64(m_ai_channel);
-					MessageDirector::singleton.handle_datagram(&dg2, this);
+					send(&dg2);
 				}
 				break;
 			}
@@ -341,7 +341,7 @@ public:
 				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 				dg.add_uint32(m_do_id);
 				dg.add_uint64(m_ai_channel);
-				MessageDirector::singleton.handle_datagram(&dg, this);
+				send(&dg);
 				break;
 			}
 			case STATESERVER_OBJECT_SET_ZONE:
@@ -360,7 +360,7 @@ public:
 				dg.add_uint32(m_zone_id);
 				dg.add_uint32(old_parent_id);
 				dg.add_uint32(old_zone_id);
-				MessageDirector::singleton.handle_datagram(&dg, this);
+				send(&dg);
 
 				handle_parent_change(new_parent_id);
 				send_zone_entry();
@@ -375,7 +375,7 @@ public:
 				dg.add_uint32(m_do_id);
 				dg.add_uint32(m_parent_id);
 				dg.add_uint32(m_zone_id);
-				MessageDirector::singleton.handle_datagram(&dg, this);
+				send(&dg);
 				break;
 			}
 			case STATESERVER_OBJECT_QUERY_ALL:
@@ -384,7 +384,7 @@ public:
 				dg.add_uint32(dgi.read_uint32()); // Copy context to response.
 				append_required_data(dg);
 				append_other_data(dg);
-				MessageDirector::singleton.handle_datagram(&dg, this);
+				send(&dg);
 				break;
 			}
 			default:
@@ -471,7 +471,7 @@ public:
 				{
 					Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
 					dg.add_uint64(ai_channel);
-					MessageDirector::singleton.handle_datagram(&dg, this);
+					send(&dg);
 				}
 				break;
 			}
