@@ -337,7 +337,8 @@ public:
 					break; // Not meant for me!
 				int field_count = dgi.read_uint16();
 				for(int i = 0; i < field_count; ++i)
-					handle_one_update(dgi, sender);
+					if(!handle_one_update(dgi, sender))
+						break;
 				break;
 			}
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
