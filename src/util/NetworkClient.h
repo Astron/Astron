@@ -12,7 +12,7 @@ protected:
 
 	virtual void network_datagram(Datagram &dg) = 0;
 	virtual void network_disconnect() = 0;
-	void network_send(Datagram *dg);
+	void network_send(Datagram &dg);
 private:
 	void start_receive();
 	void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);

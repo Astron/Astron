@@ -85,7 +85,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *participant)
+void MessageDirector::handle_datagram(Datagram &dg, MDParticipantInterface *participant)
 {
 	m_log.spam() << "Processing datagram...." << std::endl;
 	DatagramIterator dgi(dg);
@@ -165,7 +165,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(c);
-		network_send(&dg);
+		network_send(dg);
 	}
 }
 
@@ -211,7 +211,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		// Send upstream control message
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(c);
-		network_send(&dg);
+		network_send(dg);
 	}
 }
 
@@ -265,7 +265,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(lo);
 		dg.add_uint64(hi);
-		network_send(&dg);
+		network_send(dg);
 	}
 }
 
@@ -350,7 +350,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 			dg.add_uint64(lo);
 			dg.add_uint64(hi);
-			network_send(&dg);
+			network_send(dg);
 		}
 	}
 }
@@ -411,7 +411,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 
  void MessageDirector::network_datagram(Datagram &dg)
  {
-	 handle_datagram(&dg, NULL);
+	 handle_datagram(dg, NULL);
  }
 
  void MessageDirector::network_disconnect()

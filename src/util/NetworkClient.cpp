@@ -40,11 +40,11 @@ void NetworkClient::start_receive()
 		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void NetworkClient::network_send(Datagram *dg)
+void NetworkClient::network_send(Datagram &dg)
 {
-	unsigned short len = dg->get_buf_end();
+	unsigned short len = dg.get_buf_end();
 	m_socket->send(boost::asio::buffer((char*)&len, 2));
-	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
+	m_socket->send(boost::asio::buffer(dg.get_data(), dg.get_buf_end()));
 }
 
 void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)

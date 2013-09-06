@@ -41,7 +41,7 @@ public:
 	// handle_datagram accepts any OpenOTP message (a Datagram), and
 	//     properly routes it to any subscribed listeners.
 	// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-	void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
+	void handle_datagram(Datagram &dg, MDParticipantInterface *participant);
 
 	// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
 	// (Args) "c": the channel to be added.
@@ -116,7 +116,7 @@ public:
 
 	// handle_datagram should handle a message recieved from the MessageDirector.
 	// Implementations of handle_datagram should be non-blocking operations.
-	virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
+	virtual bool handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
 
 	// post_remove tells the MDParticipant to handle all of its post remove packets.
 	inline void post_remove()
@@ -125,7 +125,7 @@ public:
 		for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 		{
 			Datagram dg(*it);
-			MessageDirector::singleton.handle_datagram(&dg, this);
+			MessageDirector::singleton.handle_datagram(dg, this);
 		}
 	}
 
@@ -134,7 +134,7 @@ public:
 protected:
 	std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
 
-	inline void send(Datagram *dg)
+	inline void send(Datagram &dg)
 	{
 		MessageDirector::singleton.handle_datagram(dg, this);
 	}

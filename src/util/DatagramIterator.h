@@ -10,25 +10,25 @@
 class DatagramIterator
 {
 private:
-	Datagram *m_dg;
+	Datagram &m_dg;
 	unsigned int p;
 
 	void check_read_length(unsigned int l)
 	{
-		if(p+l > m_dg->get_buf_end())
+		if(p+l > m_dg.get_buf_end())
 		{
 			std::stringstream error;
-			error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg->get_buf_end() << ")" << std::endl;
+			error << "dgi tried to read past dg end, p+l(" << p+l << ") buf_end(" << m_dg.get_buf_end() << ")" << std::endl;
 			#ifdef _DEBUG
 				std::fstream test("test", std::ios_base::out | std::ios_base::binary);
-				test.write(m_dg->get_data(), m_dg->get_buf_end());
+				test.write(m_dg.get_data(), m_dg.get_buf_end());
 				test.close();
 			#endif
 			throw std::runtime_error(error.str());
 		};
 	}
 public:
-	DatagramIterator(Datagram *dg, unsigned int offset = 0) : m_dg(dg), p(offset)
+	DatagramIterator(Datagram &dg, unsigned int offset = 0) : m_dg(dg), p(offset)
 	{
 		check_read_length(0); //shortcuts, yay
 	}
@@ -36,7 +36,7 @@ public:
 	unsigned char read_uint8()
 	{
 		check_read_length(1);
-		unsigned char r = *(unsigned char*)(m_dg->get_data()+p);
+		unsigned char r = *(unsigned char*)(m_dg.get_data()+p);
 		p += 1;
 		return r;
 	}
@@ -44,7 +44,7 @@ public:
 	unsigned short read_uint16()
 	{
 		check_read_length(2);
-		unsigned short r = *(unsigned short*)(m_dg->get_data()+p);
+		unsigned short r = *(unsigned short*)(m_dg.get_data()+p);
 		p += 2;
 		return r;
 	}
@@ -52,7 +52,7 @@ public:
 	unsigned long long read_uint64()
 	{
 		check_read_length(8);
-		unsigned long long r = *(unsigned long long*)(m_dg->get_data()+p);
+		unsigned long long r = *(unsigned long long*)(m_dg.get_data()+p);
 		p += 8;
 		return r;
 	}
@@ -64,7 +64,7 @@ public:
 	{
 		unsigned int length = read_uint16();
 		check_read_length(length);
-		std::string r(m_dg->get_data()+p, length);
+		std::string r(m_dg.get_data()+p, length);
 		p += length;
 		return r;
 	}

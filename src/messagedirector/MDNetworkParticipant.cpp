@@ -10,7 +10,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 {
 }
 
-bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
+bool MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 {
 	//TODO: make this asynch
 	MDLogger.spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
@@ -20,7 +20,7 @@ bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
 
 void MDNetworkParticipant::network_datagram(Datagram &dg)
 {
-	DatagramIterator dgi(&dg);
+	DatagramIterator dgi(dg);
 	unsigned short channels = dgi.read_uint8();
 	if(channels == 1 && dgi.read_uint64() == CONTROL_MESSAGE)
 	{
@@ -66,7 +66,7 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 		}
 		return;
 	}
-	send(&dg);
+	send(dg);
 }
 
 void MDNetworkParticipant::network_disconnect()
