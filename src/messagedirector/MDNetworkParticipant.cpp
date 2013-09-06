@@ -3,8 +3,6 @@
 #include "core/messages.h"
 #include <boost/bind.hpp>
 
-#define logger MessageDirector::singleton.logger()
-
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 	: MDParticipantInterface(), NetworkClient(socket)
 {
@@ -13,7 +11,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 bool MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 {
 	//TODO: make this asynch
-	logger.spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
+	logger().spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	network_send(dg);
 	return true;
 }
@@ -62,7 +60,7 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 			}
 			break;
 			default:
-				logger.error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
+				logger().error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
 		}
 		return;
 	}

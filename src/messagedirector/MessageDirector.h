@@ -164,4 +164,8 @@ protected:
 		MessageDirector::singleton.logger().spam() << "MDParticipant cleared post removes " << std::endl;
 		m_post_removes.clear();
 	}
+	inline LogCategory logger()
+	{
+		return MessageDirector::singleton.logger();
+	}
 };
