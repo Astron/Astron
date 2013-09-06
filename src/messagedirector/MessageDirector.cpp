@@ -81,11 +81,6 @@ void MessageDirector::init_network()
 			set_socket(remote_md);
 			is_client = true;
 		}
-
-		// Initialize m_range_susbcriptions with empty range
-		auto empty_set = std::set<MDParticipantInterface*>();
-		m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>>();
-		m_range_subscriptions += std::make_pair(interval_t::closed(0, ULLONG_MAX), empty_set);
 	}
 }
 
@@ -348,6 +343,10 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false), m_log("msgdir", "Message Director")
 {
+	// Initialize m_range_susbcriptions with empty range
+	auto empty_set = std::set<MDParticipantInterface*>();
+	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>>();
+	m_range_subscriptions += std::make_pair(interval_t::closed(0, ULLONG_MAX), empty_set);
 }
 
 void MessageDirector::start_accept()
