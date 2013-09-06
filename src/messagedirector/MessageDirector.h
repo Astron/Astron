@@ -67,7 +67,20 @@ public:
 	inline LogCategory& logger() { return m_log; }
 private:
 	MessageDirector();
+	boost::asio::ip::tcp::acceptor *m_acceptor;
+	bool m_initialized;
+	bool is_client;
 	LogCategory m_log;
+
+	// Connected participants
+	std::list<MDParticipantInterface*> m_participants;
+
+	// Single channel subscriptions
+	std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+
+	// Range channel subscriptions
+	boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
+
 
 	friend class MDParticipantInterface;
 	void add_participant(MDParticipantInterface* participant);
@@ -79,19 +92,7 @@ private:
 	virtual void network_datagram(Datagram &dg);
 	virtual void network_disconnect();
 
-	bool is_client;
 
-	boost::asio::ip::tcp::acceptor *m_acceptor;
-	bool m_initialized;
-
-	// Connected participants
-	std::list<MDParticipantInterface*> m_participants;
-
-	// Single channel subscriptions
-	std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
-
-	// Range channel subscriptions
-	boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
 };
 
 
