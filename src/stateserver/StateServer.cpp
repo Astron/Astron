@@ -331,6 +331,15 @@ public:
 				handle_one_update(dgi, sender);
 				break;
 			}
+			case STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
+			{
+				if(m_do_id != dgi.read_uint32())
+					break; // Not meant for me!
+				int field_count = dgi.read_uint16();
+				for(int i = 0; i < field_count; ++i)
+					handle_one_update(dgi, sender);
+				break;
+			}
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
 			{
 				unsigned int r_parent_id = dgi.read_uint32();

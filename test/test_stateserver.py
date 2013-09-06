@@ -849,5 +849,71 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(483312)
         self.c.send(dg)
 
+    def test_update_multiple(self):
+        self.c.send(Datagram.create_add_channel(5985858))
+        self.c.send(Datagram.create_add_channel(12512<<32|66161))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(12512) # Parent
+        dg.add_uint32(66161) # Zone
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint32(55555) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint32(0) # setRDB3
+        self.c.send(dg)
+
+        # Ignore the entry message...
+        self.c.flush()
+
+        # Send a multi-field update with two broadcast fields and one ram.
+        dg = Datagram.create([55555], 5, STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE)
+        dg.add_uint32(55555)
+        dg.add_uint16(3) # 3 fields:
+        dg.add_uint16(setDb3)
+        dg.add_string('Time is candy')
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xD00D)
+        dg.add_uint16(setB1)
+        dg.add_uint8(118)
+        self.c.send(dg)
+
+        # TODO: Reenable this test once atomic updates are implemented.
+        # Verify that the broadcasts go out, in order...
+        dg = Datagram.create([12512<<32|66161], 5, STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE)
+        dg.add_uint32(55555)
+        dg.add_uint16(2) # 3 fields:
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xD00D)
+        dg.add_uint16(setB1)
+        dg.add_uint8(118)
+        #self.assertTrue(self.c.expect(dg))
+        self.c.flush()
+
+        # Query the ram/required...
+        dg = Datagram.create([55555], 5985858, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        # See if those updates have properly gone through...
+        dg = Datagram.create([5985858], 55555, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0)
+        dg.add_uint32(12512) # Parent
+        dg.add_uint32(66161) # Zone
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint32(55555) # ID
+        dg.add_uint32(0xD00D) # setRequired1
+        dg.add_uint32(0) # setRDB3
+        dg.add_uint16(1) # 1 extra field:
+        dg.add_uint16(setDb3)
+        dg.add_string('Time is candy')
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(5985858))
+        self.c.send(Datagram.create_remove_channel(12512<<32|66161))
+        dg = Datagram.create([55555], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(55555)
+        self.c.send(dg)
+
 if __name__ == '__main__':
     unittest.main()
