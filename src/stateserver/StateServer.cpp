@@ -263,6 +263,44 @@ public:
 		annihilate();
 	}
 
+	bool handle_one_update(DatagramIterator &dgi, channel_t sender)
+	{
+		unsigned int field_id = dgi.read_uint16();
+		std::string data;
+		DCField *field = m_dclass->get_field_by_index(field_id);
+		if(!field)
+		{
+			m_log->error() << "Received update for missing field ID="
+							<< field_id << std::endl;
+			return false;
+		}
+
+		UnpackFieldFromDG(field, dgi, data);
+		if(field->is_required())
+		{
+			m_required_fields[field] = data;
+		}
+		else if(field->is_ram())
+		{
+			m_ram_fields[field] = data;
+		}
+
+		std::set <channel_t> targets;
+		if(field->is_broadcast())
+			targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+		if(field->is_airecv())
+			targets.insert(m_ai_channel);
+		if(targets.size()) // TODO: Review this for efficiency?
+		{
+			Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
+			dg.add_uint32(m_do_id);
+			dg.add_uint16(field_id);
+			dg.add_data(data);
+			send(&dg);
+		}
+		return true;
+	}
+
 	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
 	{
 		channel_t sender = dgi.read_uint64();
@@ -290,39 +328,7 @@ public:
 			{
 				if(m_do_id != dgi.read_uint32())
 					break; // Not meant for me!
-				unsigned int field_id = dgi.read_uint16();
-				std::string data;
-				DCField *field = m_dclass->get_field_by_index(field_id);
-				if(!field)
-				{
-					m_log->error() << "Received update for missing field ID="
-					               << field_id << std::endl;
-					break;
-				}
-
-				UnpackFieldFromDG(field, dgi, data);
-				if(field->is_required())
-				{
-					m_required_fields[field] = data;
-				}
-				else if(field->is_ram())
-				{
-					m_ram_fields[field] = data;
-				}
-
-				std::set <channel_t> targets;
-				if(field->is_broadcast())
-					targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
-				if(field->is_airecv())
-					targets.insert(m_ai_channel);
-				if(targets.size()) // TODO: Review this for efficiency?
-				{
-					Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
-					dg.add_uint32(m_do_id);
-					dg.add_uint16(field_id);
-					dg.add_data(data);
-					send(&dg);
-				}
+				handle_one_update(dgi, sender);
 				break;
 			}
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
