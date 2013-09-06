@@ -21,8 +21,8 @@ template<class T>
 class ConfigVariable
 {
 private:
-	T m_def_val;
 	std::string m_name;
+	T m_def_val;
 public:
 	ConfigVariable(const std::string &name, const T& def_val) : m_name(name), m_def_val(def_val)
 	{
