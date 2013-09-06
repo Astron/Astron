@@ -121,11 +121,11 @@ public:
 	// post_remove tells the MDParticipant to handle all of its post remove packets.
 	inline void post_remove()
 	{
-		MessageDirector::singleton.logger().debug() << "MDParticipant sending post removes..." << std::endl;
+		logger().debug() << "MDParticipant sending post removes..." << std::endl;
 		for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 		{
 			Datagram dg(*it);
-			MessageDirector::singleton.handle_datagram(this, dg);
+			send(dg);
 		}
 	}
 
@@ -137,10 +137,6 @@ public:
 	}
 
 protected:
-	std::set<channel_t> m_channels; // The set of all individually subscribed channels.
-	boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-	std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
-
 	inline void send(Datagram &dg)
 	{
 		MessageDirector::singleton.handle_datagram(this, dg);
@@ -163,16 +159,21 @@ protected:
 	}
 	inline void add_post_remove(const std::string &post)
 	{
-		MessageDirector::singleton.logger().debug() << "MDParticipant added post remove: " << post << std::endl;
+		logger().debug() << "MDParticipant added post remove: " << post << std::endl;
 		m_post_removes.push_back(post);
 	}
 	inline void clear_post_removes()
 	{
-		MessageDirector::singleton.logger().spam() << "MDParticipant cleared post removes " << std::endl;
+		logger().spam() << "MDParticipant cleared post removes " << std::endl;
 		m_post_removes.clear();
 	}
 	inline LogCategory logger()
 	{
 		return MessageDirector::singleton.logger();
 	}
+
+private:
+	std::set<channel_t> m_channels; // The set of all individually subscribed channels.
+	boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
+	std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
 };
