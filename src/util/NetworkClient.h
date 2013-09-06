@@ -5,8 +5,10 @@
 class NetworkClient
 {
 	protected:
+		NetworkClient();
 		NetworkClient(boost::asio::ip::tcp::socket *socket);
 		virtual ~NetworkClient();
+		void set_socket(boost::asio::ip::tcp::socket *socket);
 
 		virtual void network_datagram(Datagram &dg) = 0;
 		virtual void network_disconnect() = 0;

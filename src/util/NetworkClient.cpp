@@ -1,8 +1,14 @@
 #include "core/global.h"
 #include "NetworkClient.h"
 #include <boost/bind.hpp>
+#include <stdexcept>
 
 using boost::asio::ip::tcp;
+
+NetworkClient::NetworkClient() : m_buffer(new char[2]), m_bytes_to_go(2),
+	m_bufsize(2), m_is_data(false), m_socket(NULL)
+{
+}
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new char[2]), m_bytes_to_go(2),
 	m_bufsize(2), m_is_data(false)
@@ -15,6 +21,16 @@ NetworkClient::~NetworkClient()
 	m_socket->close();
 	delete m_socket;
 	delete m_buffer;
+}
+
+void NetworkClient::set_socket(tcp::socket *socket)
+{
+	if(m_socket)
+	{
+		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+	}
+	m_socket = socket;
+	start_receive();
 }
 
 void NetworkClient::start_receive()
@@ -35,7 +51,6 @@ void NetworkClient::read_handler(const boost::system::error_code &ec, size_t byt
 {
 	if(ec.value() != 0)
 	{
-		gLogger->debug() << "NC disconnect because of error: " << ec.category().message(ec.value()) << std::endl;
 		network_disconnect();
 	}
 	else
@@ -62,5 +77,6 @@ void NetworkClient::read_handler(const boost::system::error_code &ec, size_t byt
 				network_datagram(dg);
 			}
 		}
+		start_receive();
 	}
 }

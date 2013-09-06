@@ -66,9 +66,9 @@ void MessageDirector::init_network()
 			tcp::resolver resolver(io_service);
 			tcp::resolver::query query(str_ip, str_port);
 			tcp::resolver::iterator it = resolver.resolve(query);
-			m_remote_md = new tcp::socket(io_service);
+			tcp::socket* remote_md = new tcp::socket(io_service);
 			boost::system::error_code ec;
-			m_remote_md->connect(*it, ec);
+			remote_md->connect(*it, ec);
 			if(ec.value() != 0)
 			{
 				m_log.fatal() << "Could not connect to remote MD at IP: "
@@ -78,10 +78,8 @@ void MessageDirector::init_network()
 				              << std::endl;
 				exit(1);
 			}
-			m_buffer = new char[2];
-			m_bufsize = 2;
-			m_bytes_to_go = 2;
-			start_receive();
+			set_socket(remote_md);
+			is_client = true;
 		}
 
 		// Initialize m_range_susbcriptions with empty range
@@ -180,11 +178,9 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 		(*it)->handle_datagram(dg, msg_dgi);
 	}
 
-	if(participant && m_remote_md)  // Send message upstream
+	if(participant && is_client)  // Send message upstream
 	{
-		unsigned short len = dg->get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg->get_data(), len));
+		network_send(dg);
 		m_log.spam() << "...routing upstream." << std::endl;
 	}
 	else if(!participant) // If there is no participant, then it came from the upstream
@@ -206,7 +202,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
 	}
 	// Check if should subscribe upstream...
-	if(m_remote_md)
+	if(is_client)
 	{
 		// Check if there was a previous subscription on that channel
 		if(m_channel_subscriptions[c].size() > 1)
@@ -224,9 +220,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_uint64(c);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+		network_send(&dg);
 	}
 }
 
@@ -255,7 +249,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	}
 
 	// Check if should unsubscribe upstream...
-	if(m_remote_md) {
+	if(is_client) {
 		// Check if there are any remaining single channel subscriptions
 		if(m_channel_subscriptions[c].size() > 0)
 		{
@@ -272,9 +266,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		// Send upstream control message
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_uint64(c);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+		network_send(&dg);
 	}
 }
 
@@ -304,7 +296,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	}
 
 	// Check if should subscribe upstream...
-	if(m_remote_md)
+	if(is_client)
 	{
 		// Check how many intervals along that range are already subscribed
 		int new_intervals = 0, premade_intervals = 0;
@@ -328,9 +320,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_uint64(lo);
 		dg.add_uint64(hi);
-		unsigned short len = dg.get_buf_end();
-		m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-		m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+		network_send(&dg);
 	}
 }
 
@@ -363,7 +353,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	}
 
 	// Check if should unsubscribe upstream...
-	if(m_remote_md)
+	if(is_client)
 	{
 		// Declare list of intervals that are no longer subscribed too
 		std::list<interval_t> silent_intervals;
@@ -406,15 +396,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			Datagram dg(CONTROL_REMOVE_RANGE);
 			dg.add_uint64(it->lower());
 			dg.add_uint64(it->upper());
-			unsigned short len = dg.get_buf_end();
-			m_remote_md->send(boost::asio::buffer((char*)&len, 2));
-			m_remote_md->send(boost::asio::buffer(dg.get_data(), len));
+			network_send(&dg);
 		}
 	}
 }
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), m_remote_md(NULL),
-	m_buffer(NULL), m_bufsize(0), m_bytes_to_go(0), m_is_data(false), m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false), m_log("msgdir", "Message Director")
 {
 }
 
@@ -433,52 +420,6 @@ void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::er
 	             << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
 	start_accept();
-}
-
-void MessageDirector::start_receive()
-{
-	unsigned short offset = m_bufsize - m_bytes_to_go;
-	m_remote_md->async_receive(boost::asio::buffer(m_buffer+offset, m_bufsize-offset), boost::bind(&MessageDirector::read_handler,
-		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-}
-
-void MessageDirector::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
-{
-	if(ec.value() != 0)
-	{
-		m_log.fatal() << "Lost connection to upstream." << std::endl;
-		m_log.fatal() << "Error is: " << ec.category().message(ec.value()) << std::endl;
-		exit(1);
-	}
-	else
-	{
-		m_bytes_to_go -= bytes_transferred;
-		if(m_bytes_to_go == 0)
-		{
-			if(!m_is_data)
-			{
-				m_bufsize = *(unsigned short*)m_buffer;
-				delete [] m_buffer;
-				m_buffer = new char[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = true;
-			}
-			else
-			{
-				Datagram dg(std::string(m_buffer, m_bufsize));
-				delete [] m_buffer;//dg makes a copy
-				m_bufsize = 2;
-				m_buffer = new char[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = false;
-
-				m_log.spam() << "Received a datagram from upstream..." << endl;
-				handle_datagram(&dg, NULL);
-			}
-		}
-
-		start_receive();
-	}
 }
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
@@ -513,3 +454,14 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	// Stop tracking participant
 	m_participants.remove(p);
 }
+
+ void MessageDirector::network_datagram(Datagram &dg)
+ {
+	 handle_datagram(&dg, NULL);
+ }
+
+ void MessageDirector::network_disconnect()
+ {
+	 m_log.fatal() << "Lost connection to upstream md" << std::endl;
+	 exit(1);
+ }

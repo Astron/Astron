@@ -6,6 +6,7 @@
 #include "core/logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
+#include "util/NetworkClient.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
@@ -41,7 +42,7 @@ class MDParticipantInterface;
 // A MessageDirector is the internal networking object for an OpenOTP server-node.
 // The MessageDirector recieves message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector
+class MessageDirector : public NetworkClient
 {
 	public:
 		// InitializeMD causes the MessageDirector to start listening for
@@ -84,17 +85,12 @@ class MessageDirector
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
+		virtual void network_datagram(Datagram &dg);
+		virtual void network_disconnect();
 
-		void start_receive(); // Recieve message from upstream
-		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
-
-		char *m_buffer;
-		unsigned short m_bufsize;
-		unsigned short m_bytes_to_go;
-		bool m_is_data;
+		bool is_client;
 
 		boost::asio::ip::tcp::acceptor *m_acceptor;
-		boost::asio::ip::tcp::socket *m_remote_md;
 		bool m_initialized;
 
 		// Connected participants
