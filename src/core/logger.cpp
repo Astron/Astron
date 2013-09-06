@@ -90,17 +90,3 @@ std::ostream &Logger::log(LogSeverity sev)
 	m_output << "[" << timetext << "] " << sevtext << ": ";
 	return m_output;
 }
-
-#define LOG_LEVEL(name, severity) \
-	std::ostream &Logger::name() \
-	{ \
-		return log(severity); \
-	}
-
-LOG_LEVEL(spam, LSEVERITY_SPAM)
-LOG_LEVEL(debug, LSEVERITY_DEBUG)
-LOG_LEVEL(info, LSEVERITY_INFO)
-LOG_LEVEL(warning, LSEVERITY_WARNING)
-LOG_LEVEL(security, LSEVERITY_SECURITY)
-LOG_LEVEL(error, LSEVERITY_ERROR)
-LOG_LEVEL(fatal, LSEVERITY_FATAL)
