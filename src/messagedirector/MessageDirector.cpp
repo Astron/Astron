@@ -91,10 +91,13 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 	unsigned char channels = dgi.read_uint8();
 
 	// Route messages to participants
+	auto &recieve_log = m_log.spam();
+	recieve_log << "Recievers: ";
 	std::set<MDParticipantInterface*> receiving_participants;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		channel_t channel = dgi.read_uint64();
+		recieve_log << channel << ", ";
 		for(auto it = m_channel_subscriptions[channel].begin(); it != m_channel_subscriptions[channel].end(); ++it)
 		{
 			receiving_participants.insert(receiving_participants.end(), *it);
@@ -106,6 +109,7 @@ void MessageDirector::handle_datagram(Datagram *dg, MDParticipantInterface *part
 			receiving_participants.insert(range->second.begin(), range->second.end());
 		}
 	}
+	recieve_log << std::endl;
 
 	if (participant)
 	{
@@ -383,11 +387,7 @@ void MessageDirector::add_participant(MDParticipantInterface* p)
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
 	// Send out a post remove, if one exists
-	if(p->m_post_remove.length() > 0)
-	{
-		Datagram dg(p->m_post_remove);
-		handle_datagram(&dg, p);
-	}
+	p->post_remove();
 
 	// Send out unsubscribe messages for indivually subscribed channels
 	auto channels = std::set<channel_t>(p->m_channels);

@@ -131,12 +131,33 @@ class MDParticipantInterface
 		// Implementations of handle_datagram should be non-blocking operations.
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
 
-		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
+		// post_remove tells the MDParticipant to handle all of its post remove packets.
+		inline void post_remove()
+		{
+			MessageDirector::singleton.logger().debug() << "MDParticipant sending post removes..." << std::endl;
+			for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
+			{
+				Datagram dg(*it);
+				MessageDirector::singleton.handle_datagram(&dg, this);
+			}
+		}
+
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 	protected:
+		std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
+
 		inline void send(Datagram *dg)
 		{
 			MessageDirector::singleton.handle_datagram(dg, this);
+		}
+		inline void add_post_remove(const std::string &post)
+		{
+			MessageDirector::singleton.logger().debug() << "MDParticipant added post remove: " << post << std::endl;
+			m_post_removes.push_back(post);
+		}
+		inline void clear_post_removes()
+		{
+			m_post_removes.clear();
 		}
 };

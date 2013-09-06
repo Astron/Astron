@@ -52,12 +52,12 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 			break;
 			case CONTROL_ADD_POST_REMOVE:
 			{
-				m_post_remove = dgi.read_string();
+				add_post_remove(dgi.read_string());
 			}
 			break;
 			case CONTROL_CLEAR_POST_REMOVE:
 			{
-				m_post_remove = "";
+				clear_post_removes();
 			}
 			break;
 			default:
