@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	MessageDirector::singleton.InitializeMD();
+	MessageDirector::singleton.init_network();
 
 	YAML::Node node = gConfig->copy_node();
 	node = node["roles"];

@@ -38,7 +38,7 @@ bool ChannelList::operator==(const ChannelList &rhs)
 
 MessageDirector MessageDirector::singleton;
 
-void MessageDirector::InitializeMD()
+void MessageDirector::init_network()
 {
 	if(!m_initialized)
 	{

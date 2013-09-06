@@ -46,7 +46,7 @@ class MessageDirector
 	public:
 		// InitializeMD causes the MessageDirector to start listening for
 		//     messages if it hasn't already been initialized.
-		void InitializeMD();
+		void init_network();
 		static MessageDirector singleton;
 
 		// handle_datagram accepts any OpenOTP message (a Datagram), and
