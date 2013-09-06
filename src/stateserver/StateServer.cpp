@@ -265,13 +265,13 @@ public:
 				}
 
 				UnpackFieldFromDG(field, dgi, data);
-				if(field->is_ram())
-				{
-					m_ram_fields[field] = data;
-				}
-				else if(field->is_required())
+				if(field->is_required())
 				{
 					m_required_fields[field] = data;
+				}
+				else if(field->is_ram())
+				{
+					m_ram_fields[field] = data;
 				}
 
 				std::set <unsigned long long int> targets;
