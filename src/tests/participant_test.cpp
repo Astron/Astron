@@ -10,13 +10,18 @@ class ParticipantTest : public MDParticipantInterface
 			MessageDirector::singleton.subscribe_channel(this, 200);
 
 			Datagram dg2;
-			dg2.add_uint8(1);
+			dg2.add_uint8(2);
 			dg2.add_uint64(100);
+			dg2.add_uint64(200);
 			dg2.add_string("test");
 
 			MessageDirector::singleton.handle_datagram(&dg2, NULL);
 
-			delete this;
+			MessageDirector::singleton.unsubscribe_channel(this, 100);
+			MessageDirector::singleton.unsubscribe_channel(this, 200);
+
+			/*MessageDirector::singleton.subscribe_range(this, 1000, 2000);
+			MessageDirector::singleton.unsubscribe_range(this, 1500, 1700);*/
 		}
 
 		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
@@ -26,4 +31,4 @@ class ParticipantTest : public MDParticipantInterface
 		}
 };
 
-ParticipantTest* Participant_Test = new ParticipantTest();
+ParticipantTest participant_test;

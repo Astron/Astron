@@ -1,7 +1,8 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
-#include "core/global.h"
 #include "core/config.h"
+#include "core/global.h"
+#include "core/messages.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
@@ -277,6 +278,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 	// Unsubscribe participant from range
 	p->m_ranges -= interval;
+	auto range_copy = m_range_subscriptions;
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
@@ -301,7 +303,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		// If that was the last interval in m_range_subscriptions, remove it upstream
 		if (boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
-			silent_intervals.insert(silent_intervals.end(), interval);
+			silent_intervals.insert(silent_intervals.end(), range_copy.begin()->first);
 		}
 		else
 		{
@@ -332,10 +334,18 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-			              << it->lower() << "-" << it->upper() << std::endl;
+				<< it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
 			Datagram dg(CONTROL_REMOVE_RANGE);
-			dg.add_uint64(it->lower());
-			dg.add_uint64(it->upper());
+
+			channel_t lo = it->lower();
+			channel_t hi = it->upper();
+			if(!(it->bounds().bits() & BOOST_BINARY(10)))
+				lo += 1;
+			if(!(it->bounds().bits() & BOOST_BINARY(01)))
+				hi -= 1;
+
+			dg.add_uint64(lo);
+			dg.add_uint64(hi);
 			network_send(&dg);
 		}
 	}

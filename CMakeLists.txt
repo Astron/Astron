@@ -6,6 +6,19 @@ if (WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
+
+### Release Flags -- warnings are errors, release code should not have warnings ###
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
+
+### Debug Flags -- compile in spam/debug log messages ###
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
+
 ### YAML Depedency -- required by config ###
 set(YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
 if(EXISTS "${PROJECT_SOURCE_DIR}/dependencies/yaml-cpp-0.5.1/lib")
@@ -48,9 +61,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	message("${GCC_VERSION}")
 	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-		add_definitions(-std=c++11) #for the fucking 'auto' keyword
+		add_definitions(-std=c++11) # Enable the new C++ standard
 	else()
-		add_definitions(-std=c++0x) #for the fucking 'auto' keyword
+		add_definitions(-std=c++0x) # Enable the new C++ standard
 	endif()
 endif()
 

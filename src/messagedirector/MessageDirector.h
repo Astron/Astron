@@ -10,18 +10,6 @@
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
-// Message-channel constants
-#define CONTROL_MESSAGE 4001
-
-// Message-type constants
-#define CONTROL_ADD_CHANNEL 2001
-#define CONTROL_REMOVE_CHANNEL 2002
-#define CONTROL_SET_CON_NAME 2004
-#define CONTROL_SET_CON_URL 2005
-#define CONTROL_ADD_RANGE 2008
-#define CONTROL_REMOVE_RANGE 2009
-#define CONTROL_ADD_POST_REMOVE 2010
-#define CONTROL_CLEAR_POST_REMOVE 2011
 
 // Standard type defines
 typedef unsigned long long channel_t;
@@ -74,6 +62,9 @@ class MessageDirector : public NetworkClient
 		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
+
+		// logger returns the MessageDirector log category.
+		inline LogCategory& logger() { return m_log; }
 	private:
 		MessageDirector();
 		LogCategory m_log;
