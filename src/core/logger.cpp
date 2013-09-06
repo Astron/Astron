@@ -11,7 +11,7 @@ LoggerBuf::LoggerBuf() : std::streambuf(), m_has_file(false), m_output_to_consol
 }
 
 LoggerBuf::LoggerBuf(const std::string &file_name, bool output_to_console) :
-	m_file(file_name), m_output_to_console(output_to_console), m_has_file(true)
+	m_file(file_name), m_has_file(true), m_output_to_console(output_to_console)
 {
 	if(!m_file.is_open())
 	{

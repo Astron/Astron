@@ -3,24 +3,20 @@
 #include "core/messages.h"
 #include <boost/bind.hpp>
 
-#define MDLogger MessageDirector::singleton.logger()
-
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 	: MDParticipantInterface(), NetworkClient(socket)
 {
 }
 
-bool MDNetworkParticipant::handle_datagram(Datagram *dg, DatagramIterator &dgi)
+void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 {
-	//TODO: make this asynch
-	MDLogger.spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
+	logger().spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	network_send(dg);
-	return true;
 }
 
 void MDNetworkParticipant::network_datagram(Datagram &dg)
 {
-	DatagramIterator dgi(&dg);
+	DatagramIterator dgi(dg);
 	unsigned short channels = dgi.read_uint8();
 	if(channels == 1 && dgi.read_uint64() == CONTROL_MESSAGE)
 	{
@@ -29,26 +25,26 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 		{
 			case CONTROL_ADD_CHANNEL:
 			{
-				MessageDirector::singleton.subscribe_channel(this, dgi.read_uint64());
+				subscribe_channel(dgi.read_uint64());
 			}
 			break;
 			case CONTROL_REMOVE_CHANNEL:
 			{
-				MessageDirector::singleton.unsubscribe_channel(this, dgi.read_uint64());
+				unsubscribe_channel(dgi.read_uint64());
 			}
 			break;
 			case CONTROL_ADD_RANGE:
 			{
 				channel_t lo = dgi.read_uint64();
 				channel_t hi = dgi.read_uint64();
-				MessageDirector::singleton.subscribe_range(this, lo, hi);
+				subscribe_range(lo, hi);
 			}
 			break;
 			case CONTROL_REMOVE_RANGE:
 			{
 				channel_t lo = dgi.read_uint64();
 				channel_t hi = dgi.read_uint64();
-				MessageDirector::singleton.unsubscribe_range(this, lo, hi);
+				unsubscribe_range(lo, hi);
 			}
 			break;
 			case CONTROL_ADD_POST_REMOVE:
@@ -62,11 +58,11 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 			}
 			break;
 			default:
-				MDLogger.error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
+				logger().error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
 		}
 		return;
 	}
-	send(&dg);
+	send(dg);
 }
 
 void MDNetworkParticipant::network_disconnect()
