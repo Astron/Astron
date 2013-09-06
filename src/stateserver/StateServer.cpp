@@ -100,21 +100,21 @@ public:
 	unsigned int m_zone_id;
 	unsigned int m_do_id;
 	DCClass *m_dclass;
-	std::map<DCField*, std::string> m_fields;
+	std::map<DCField*, std::string> m_ram_fields;
+	std::map<DCField*, std::string> m_required_fields;
 	unsigned long long m_ai_channel;
 	bool m_ai_explicitly_set;
-	bool m_has_ram_fields;
 
 	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
 	m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
-	m_ai_channel(0), m_ai_explicitly_set(false), m_has_ram_fields(false)
+	m_ai_channel(0), m_ai_explicitly_set(false)
 	{
 		for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
 		{
 			DCField *field = m_dclass->get_inherited_field(i);
 			if(field->is_required() && !field->as_molecular_field())
 			{
-				UnpackFieldFromDG(field, dgi, m_fields[field]);
+				UnpackFieldFromDG(field, dgi, m_required_fields[field]);
 			}
 		}
 
@@ -127,8 +127,7 @@ public:
 				DCField *field = m_dclass->get_field_by_index(field_id);
 				if(field->is_ram())
 				{
-					m_has_ram_fields = true;
-					UnpackFieldFromDG(field, dgi, m_fields[field]);
+					UnpackFieldFromDG(field, dgi, m_ram_fields[field]);
 				}
 				else
 				{
@@ -158,36 +157,29 @@ public:
 			DCField *field = m_dclass->get_inherited_field(i);
 			if(field->is_required() && !field->as_molecular_field())
 			{
-				dg.add_data(m_fields[field]);
+				dg.add_data(m_required_fields[field]);
 			}
 		}
 	}
 
 	void append_other_data(Datagram &dg)
 	{
-		unsigned int field_count = 0;
-		Datagram raw_fields;
-		for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
+		dg.add_uint16(m_ram_fields.size());
+		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
-			if(it->first->is_ram() && !it->first->is_required())
-			{
-				field_count++;
-				raw_fields.add_uint16(it->first->get_number());
-				raw_fields.add_data(it->second);
-			}
+			dg.add_uint16(it->first->get_number());
+			dg.add_data(it->second);
 		}
-		dg.add_uint16(field_count);
-		dg.add_datagram(raw_fields);
 	}
 
 	void send_zone_entry()
 	{
 		Datagram dg(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
-		            m_has_ram_fields ?
+		            m_ram_fields.size() ?
 		            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
 		            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 		append_required_data(dg);
-		if(m_has_ram_fields)
+		if(m_ram_fields.size())
 			append_other_data(dg);
 		MessageDirector::singleton.handle_datagram(&dg, this);
 	}
@@ -275,11 +267,11 @@ public:
 				UnpackFieldFromDG(field, dgi, data);
 				if(field->is_ram())
 				{
-					m_has_ram_fields = true;
+					m_ram_fields[field] = data;
 				}
-				if(field->is_required() || field->is_ram())
+				else if(field->is_required())
 				{
-					m_fields[field] = data;
+					m_required_fields[field] = data;
 				}
 
 				std::set <unsigned long long int> targets;
