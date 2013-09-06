@@ -1,5 +1,6 @@
 #include "MDNetworkParticipant.h"
 #include "core/global.h"
+#include "core/messages.h"
 #include <boost/bind.hpp>
 
 #define MDLogger MessageDirector::singleton.logger()
