@@ -545,6 +545,26 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(819442) # setRequired1
         self.assertTrue(self.c.expect(dg))
 
+        # Send it an update on a bad field...
+        dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(234000000)
+        dg.add_uint16(0x1337)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        # Nothing should happen and the SS should log an error.
+        self.assertTrue(self.c.expect_none())
+
+        # How about a truncated update on a valid field?
+        dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(234000000)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(0) # Whoops, 16-bit instead of 32-bit!
+        self.c.send(dg)
+
+        # Nothing should happen + error.
+        self.assertTrue(self.c.expect_none())
+
         # Let's try creating it again.
         dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
         dg.add_uint32(80000) # Parent
