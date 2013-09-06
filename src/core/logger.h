@@ -33,8 +33,9 @@ public:
 	void setFile(){/* no-op */}
 	template<typename TPrintable>
 	NullStream& operator<<(TPrintable const&) {/* no-op */}
+	NullStream& operator<<(std::ostream &(std::ostream&)) {/* no-op */}
 };
-NullStream null_stream;
+extern NullStream null_stream;
 
 class Logger {
 public:

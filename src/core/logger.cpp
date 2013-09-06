@@ -3,6 +3,9 @@
 #include <fstream>
 
 #include "logger.h"
+
+NullStream null_stream;
+
 LoggerBuf::LoggerBuf() : std::streambuf(), m_has_file(false), m_output_to_console(true)
 {
 }
