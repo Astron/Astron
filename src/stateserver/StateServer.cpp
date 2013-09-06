@@ -104,11 +104,16 @@ public:
 	std::map<DCField*, std::string> m_required_fields;
 	channel_t m_ai_channel;
 	bool m_ai_explicitly_set;
+	LogCategory *m_log;
 
 	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
 	m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
 	m_ai_channel(0), m_ai_explicitly_set(false)
 	{
+		std::stringstream name;
+		name << dclass->get_name() << "(" << do_id << ")";
+		m_log = new LogCategory("object", name.str());
+
 		for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
 		{
 			DCField *field = m_dclass->get_inherited_field(i);
@@ -131,9 +136,9 @@ public:
 				}
 				else
 				{
-					gLogger->error() << "Received non-RAM field "
-					                 << field->get_name()
-					                 << " within an OTHER section" << std::endl;
+					m_log->error() << "Received non-RAM field "
+					               << field->get_name()
+					               << " within an OTHER section" << std::endl;
 				}
 			}
 		}
@@ -213,7 +218,7 @@ public:
 		dg.add_uint32(m_do_id);
 		MessageDirector::singleton.handle_datagram(&dg, this);
 		distObjs[m_do_id] = NULL;
-		gLogger->debug() << "DELETING THIS " << m_do_id << std::endl;
+		m_log->debug() << "Deleted." << std::endl;
 		delete this;
 	}
 
@@ -236,8 +241,8 @@ public:
 			case STATESERVER_SHARD_RESET:
 			{
 				if(m_ai_channel != dgi.read_uint64()) {
-					gLogger->warning() << m_do_id << " received reset for wrong"
-					                   << " AI channel" << std::endl;
+					m_log->warning() << " received reset for wrong"
+					                 << " AI channel" << std::endl;
 					break; // Not my AI!
 				}
 				handle_shard_reset();
@@ -259,8 +264,8 @@ public:
 				DCField *field = m_dclass->get_field_by_index(field_id);
 				if(!field)
 				{
-					gLogger->error() << "Received update for missing field "
-					                 << field_id << std::endl;
+					m_log->error() << "Received update for missing field ID="
+					               << field_id << std::endl;
 					break;
 				}
 
@@ -290,16 +295,15 @@ public:
 				break;
 			}
 			case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
-				gLogger->debug() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI " << m_parent_id << std::endl;
+				m_log->spam() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI from " << m_parent_id << std::endl;
 				if(m_ai_explicitly_set)
 					break;
 				// Fall through...
 			case STATESERVER_OBJECT_SET_AI_CHANNEL:
 			{
-				gLogger->debug() << "STATESERVER_OBJECT_SET_AI_CHANNEL " << m_do_id << std::endl;
 				unsigned int r_do_id = dgi.read_uint32();
-				gLogger->debug() << "r_do_id " << r_do_id << std::endl;
 				unsigned long long r_ai_channel = dgi.read_uint64();
+				m_log->spam() << "STATESERVER_OBJECT_SET_AI_CHANNEL: ai_channel=" << r_ai_channel << std::endl;
 				if(m_ai_channel == r_ai_channel)
 					break;
 				if((msgtype == STATESERVER_OBJECT_NOTIFY_MANAGING_AI && r_do_id == m_parent_id) || m_do_id == r_do_id)
@@ -308,7 +312,7 @@ public:
 					{
 						Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
 						dg.add_uint32(m_do_id);
-						gLogger->debug() << m_do_id << " LEAVING AI INTEREST" << std::endl;
+						m_log->spam() << "Leaving AI interest" << std::endl;
 						MessageDirector::singleton.handle_datagram(&dg, this);
 					}
 
@@ -319,8 +323,8 @@ public:
 					append_required_data(dg1);
 					append_other_data(dg1);
 					MessageDirector::singleton.handle_datagram(&dg1, this);
-					gLogger->debug() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to " << m_ai_channel
-						<< " from " << m_do_id << std::endl;
+					m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
+					              << m_ai_channel << std::endl;
 
 					Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 					dg2.add_uint32(m_do_id);
@@ -331,7 +335,7 @@ public:
 			}
 			case STATESERVER_OBJECT_QUERY_MANAGING_AI:
 			{
-				gLogger->debug() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
+				m_log->spam() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
 				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 				dg.add_uint32(m_do_id);
 				dg.add_uint64(m_ai_channel);
@@ -382,7 +386,7 @@ public:
 				break;
 			}
 			default:
-				gLogger->warning() << "DistributedObject recv'd unkonw msgtype " << msgtype << std::endl;
+				m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
 		}
 		return true;
 	}
@@ -395,7 +399,12 @@ class StateServer : public Role
 public:
 	StateServer(RoleConfig roleconfig) : Role(roleconfig)
 	{
-		MessageDirector::singleton.subscribe_channel(this, cfg_channel.get_rval(m_roleconfig));
+		channel_t channel = cfg_channel.get_rval(m_roleconfig);
+		MessageDirector::singleton.subscribe_channel(this, channel);
+
+		std::stringstream name;
+		name << "StateServer(" << channel << ")";
+		m_log = new LogCategory("stateserver", name.str());
 	}
 
 	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
@@ -441,10 +450,13 @@ public:
 				break;
 			}
 			default:
-				gLogger->error() << "StateServer recv'd unknown msgtype: " << msgtype << std::endl;
+				m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
 		}
 		return true;
 	}
+
+private:
+	LogCategory *m_log;
 };
 
 RoleFactoryItem<StateServer> ss_fact("stateserver");
