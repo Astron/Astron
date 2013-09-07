@@ -66,6 +66,7 @@ class TestDatabaseServer(unittest.TestCase):
         # Retrieve object from the database, we stored no DB values, so get none back
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
+        dg.add_uint8(FOUND)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
         self.assertTrue(self.conn.expect(dg))
@@ -112,12 +113,25 @@ class TestDatabaseServer(unittest.TestCase):
         # Get values back from server
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(5) # Context
+        dg.add_uint8(FOUND)
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(91849)
         dg.add_uint16(setDb3)
         dg.add_string("You monster...")
+        self.assertTrue(self.conn.expect(dg))
+
+        # Try selecting an ID that doesn't exist
+        dg = Datagram.create([777], 20, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(78787) # Non-existant ID
+        self.conn.send(dg)
+
+        # Get failure from server
+        dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(NOT_FOUND)
         self.assertTrue(self.conn.expect(dg))
 
     def test_create_collisions(self):

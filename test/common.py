@@ -47,6 +47,10 @@ CONSTANTS = {
     'INVALID_DO_ID': 0,
     'INVALID_MSG_TYPE': 0,
 
+    # Defined return codes
+    'FOUND': 1,
+    'NOT_FOUND': 0.
+
     # Control Channels
     'CONTROL_CHANNEL': 4001,
     'CONTROL_ADD_CHANNEL': 2001,

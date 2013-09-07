@@ -330,6 +330,7 @@ object's ID) to receive object-specific updates.
 The following is a list of database control messages:
 
 **Argument Notes**
+    bool success/found      // uint8 value where FAILURE or NOT_FOUND = 0x0 (typically SUCCES or FOUND = 0x1 or "TRUE")
 
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
 
@@ -378,16 +379,16 @@ All objects will duly broadcast its deletion to any AIs, owners, or zones.
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
     `args(uint32 context, uint32 do_id, FIELD_DATA)`  
 **DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, <FIELDS>)`  
+    `args(uint32 context, bool found, <FIELDS>)`  
 > This message selects a number of fields from an object in the database.  
-It returns the select fields in serialized form, in the order requested.
+It returns the select fields in serialized form, in the order requested -- if found.
 
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
-> This message queries all of the database fields from the object and returns the response.  
+    `args(uint32 context, bool found, [uint16 dclass_id], FIELD_DATA)`  
+> This message queries all of the database fields from the object and returns the response -- if found.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
@@ -411,16 +412,15 @@ If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
     `args(uint32 context, uint32 do_id, uint16 field_count,
           [uint16 field, VALUE old, VALUE new]*field_count)`
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`
+    `args(uint32 context, bool success, [VALUE]*field_count)`
 > This message replaces the current values of the given object with new values,
 only if the old values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
 particularily when the new values are derived or dependent on the old values.
 
 > If any of the given _old_ values don't match then the entire transaction fails.
-If ret_code is 0, the transaction was successful.  
 If unsuccessful, the current values of all given fields will be returned in order
-in serialized form after ret_code.
+in serialized form, after 'success'.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
