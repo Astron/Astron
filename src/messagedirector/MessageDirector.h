@@ -2,6 +2,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include "core/logger.h"
 #include "util/Datagram.h"
@@ -32,66 +33,66 @@ class MDParticipantInterface;
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
 class MessageDirector : public NetworkClient
 {
-	public:
-		// InitializeMD causes the MessageDirector to start listening for
-		//     messages if it hasn't already been initialized.
-		void init_network();
-		static MessageDirector singleton;
+public:
+	// InitializeMD causes the MessageDirector to start listening for
+	//     messages if it hasn't already been initialized.
+	void init_network();
+	static MessageDirector singleton;
 
-		// handle_datagram accepts any OpenOTP message (a Datagram), and
-		//     properly routes it to any subscribed listeners.
-		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-		void handle_datagram(Datagram *dg, MDParticipantInterface *participant);
+	// handle_datagram accepts any OpenOTP message (a Datagram), and
+	//     properly routes it to any subscribed listeners.
+	// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
+	void handle_datagram(MDParticipantInterface *p, Datagram &dg);
 
-		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
-		// (Args) "c": the channel to be added.
-		void subscribe_channel(MDParticipantInterface* p, channel_t c);
+	// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
+	// (Args) "c": the channel to be added.
+	void subscribe_channel(MDParticipantInterface* p, channel_t c);
 
-		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
-		// (Args) "c": the channel to be removed.
-		void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
+	// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
+	// (Args) "c": the channel to be removed.
+	void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
 
-		// subscribe_range handles a CONTROL_ADD_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
+	// subscribe_range handles a CONTROL_ADD_RANGE control message.
+	// (Args) "lo": the lowest channel to be removed.
+	//        "hi": the highest channel to be removed.
+	// The range is inclusive.
+	void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 
-		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
+	// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
+	// (Args) "lo": the lowest channel to be removed.
+	//        "hi": the highest channel to be removed.
+	// The range is inclusive.
+	void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 
-		// logger returns the MessageDirector log category.
-		inline LogCategory& logger() { return m_log; }
-	private:
-		MessageDirector();
-		LogCategory m_log;
+	// logger returns the MessageDirector log category.
+	inline LogCategory& logger() { return m_log; }
+private:
+	MessageDirector();
+	boost::asio::ip::tcp::acceptor *m_acceptor;
+	bool m_initialized;
+	bool is_client;
+	LogCategory m_log;
 
-		friend class MDParticipantInterface;
-		void add_participant(MDParticipantInterface* participant);
-		void remove_participant(MDParticipantInterface* participant);
+	// Connected participants
+	std::list<MDParticipantInterface*> m_participants;
 
-		// I/O OPERATIONS
-		void start_accept(); // Accept new connections from downstream
-		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void network_datagram(Datagram &dg);
-		virtual void network_disconnect();
+	// Single channel subscriptions
+	std::unordered_map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
 
-		bool is_client;
+	// Range channel subscriptions
+	boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
 
-		boost::asio::ip::tcp::acceptor *m_acceptor;
-		bool m_initialized;
 
-		// Connected participants
-		std::list<MDParticipantInterface*> m_participants;
+	friend class MDParticipantInterface;
+	void add_participant(MDParticipantInterface* participant);
+	void remove_participant(MDParticipantInterface* participant);
 
-		// Single channel subscriptions
-		std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+	// I/O OPERATIONS
+	void start_accept(); // Accept new connections from downstream
+	void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
+	virtual void network_datagram(Datagram &dg);
+	virtual void network_disconnect();
 
-		// Range channel subscriptions
-		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
 
 };
 
@@ -105,26 +106,76 @@ class MessageDirector : public NetworkClient
 //     be an MDParticipant.
 class MDParticipantInterface
 {
-	public:
-		MDParticipantInterface()
-		{
-			MessageDirector::singleton.add_participant(this);
-		}
-		virtual ~MDParticipantInterface()
-		{
-			MessageDirector::singleton.remove_participant(this);
-		}
+public:
+	MDParticipantInterface()
+	{
+		MessageDirector::singleton.add_participant(this);
+	}
+	virtual ~MDParticipantInterface()
+	{
+		MessageDirector::singleton.remove_participant(this);
+	}
 
-		// handle_datagram should handle a message recieved from the MessageDirector.
-		// Implementations of handle_datagram should be non-blocking operations.
-		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi) = 0;
+	// handle_datagram should handle a message recieved from the MessageDirector.
+	// Implementations of handle_datagram should be non-blocking operations.
+	virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
 
-		std::string m_post_remove; // The message to be distributed on unexpected disconnect.
-		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
-		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-	protected:
-		inline void send(Datagram *dg)
+	// post_remove tells the MDParticipant to handle all of its post remove packets.
+	inline void post_remove()
+	{
+		logger().debug() << "MDParticipant sending post removes..." << std::endl;
+		for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 		{
-			MessageDirector::singleton.handle_datagram(dg, this);
+			Datagram dg(*it);
+			send(dg);
 		}
+	}
+
+	inline std::set<channel_t> &channels() {
+		return m_channels;
+	}
+	inline boost::icl::interval_set<channel_t> &ranges() {
+		return m_ranges;
+	}
+
+protected:
+	inline void send(Datagram &dg)
+	{
+		MessageDirector::singleton.handle_datagram(this, dg);
+	}
+	inline void subscribe_channel(channel_t c)
+	{
+		MessageDirector::singleton.subscribe_channel(this, c);
+	}
+	inline void unsubscribe_channel(channel_t c)
+	{
+		MessageDirector::singleton.unsubscribe_channel(this, c);
+	}
+	inline void subscribe_range(channel_t lo, channel_t hi)
+	{
+		MessageDirector::singleton.subscribe_range(this, lo, hi);
+	}
+	inline void unsubscribe_range(channel_t lo, channel_t hi)
+	{
+		MessageDirector::singleton.unsubscribe_range(this, lo, hi);
+	}
+	inline void add_post_remove(const std::string &post)
+	{
+		logger().debug() << "MDParticipant added post remove: " << post << std::endl;
+		m_post_removes.push_back(post);
+	}
+	inline void clear_post_removes()
+	{
+		logger().spam() << "MDParticipant cleared post removes " << std::endl;
+		m_post_removes.clear();
+	}
+	inline LogCategory logger()
+	{
+		return MessageDirector::singleton.logger();
+	}
+
+private:
+	std::set<channel_t> m_channels; // The set of all individually subscribed channels.
+	boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
+	std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
 };

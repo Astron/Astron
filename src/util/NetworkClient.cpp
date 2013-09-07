@@ -5,13 +5,13 @@
 
 using boost::asio::ip::tcp;
 
-NetworkClient::NetworkClient() : m_buffer(new char[2]), m_bytes_to_go(2),
-	m_bufsize(2), m_is_data(false), m_socket(NULL)
+NetworkClient::NetworkClient() : m_socket(NULL), m_buffer(new char[2]),
+	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
 {
 }
 
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new char[2]), m_bytes_to_go(2),
-	m_bufsize(2), m_is_data(false)
+NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new char[2]),
+	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
 {
 	start_receive();
 }
@@ -40,11 +40,12 @@ void NetworkClient::start_receive()
 		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void NetworkClient::network_send(Datagram *dg)
+void NetworkClient::network_send(Datagram &dg)
 {
-	unsigned short len = dg->get_buf_end();
+	//TODO: make this asynch if necessary
+	unsigned short len = dg.get_buf_end();
 	m_socket->send(boost::asio::buffer((char*)&len, 2));
-	m_socket->send(boost::asio::buffer(dg->get_data(), dg->get_buf_end()));
+	m_socket->send(boost::asio::buffer(dg.get_data(), dg.get_buf_end()));
 }
 
 void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)

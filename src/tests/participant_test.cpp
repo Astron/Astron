@@ -1,5 +1,5 @@
 #include "core/global.h"
-#include "messagedirector/messagedirector.h"
+#include "messagedirector/MessageDirector.h"
 
 class ParticipantTest : public MDParticipantInterface
 {
@@ -15,7 +15,7 @@ class ParticipantTest : public MDParticipantInterface
 			dg2.add_uint64(200);
 			dg2.add_string("test");
 
-			MessageDirector::singleton.handle_datagram(&dg2, NULL);
+			MessageDirector::singleton.handle_datagram(NULL, dg2);
 
 			MessageDirector::singleton.unsubscribe_channel(this, 100);
 			MessageDirector::singleton.unsubscribe_channel(this, 200);
@@ -24,10 +24,9 @@ class ParticipantTest : public MDParticipantInterface
 			MessageDirector::singleton.unsubscribe_range(this, 1500, 1700);*/
 		}
 
-		virtual bool handle_datagram(Datagram *dg, DatagramIterator &dgi)
+		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
-			gLogger->debug() << dgi.read_string() << std::endl;
-			return true;
+			gLogger->log(LogSeverity::LSEVERITY_DEBUG) << dgi.read_string() << std::endl;
 		}
 };
 

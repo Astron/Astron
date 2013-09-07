@@ -146,7 +146,7 @@ public:
 		append_required_data(dg);
 		if(m_ram_fields.size())
 			append_other_data(dg);
-		send(&dg);
+		send(dg);
 	}
 
 	void handle_parent_change(channel_t new_parent)
@@ -167,7 +167,7 @@ public:
 		{
 			// Ask the new parent what its AI is.
 			Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
-			send(&dg);
+			send(dg);
 		}
 	}
 
@@ -181,7 +181,7 @@ public:
 			Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
 			dg.add_uint32(m_do_id);
 			m_log->spam() << "Leaving AI interest" << std::endl;
-			send(&dg);
+			send(dg);
 		}
 
 		m_ai_channel = new_channel;
@@ -190,14 +190,14 @@ public:
 		Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
 		append_required_data(dg1);
 		append_other_data(dg1);
-		send(&dg1);
+		send(dg1);
 		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
 		              << m_ai_channel << std::endl;
 
 		Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 		dg2.add_uint32(m_do_id);
 		dg2.add_uint64(m_ai_channel);
-		send(&dg2);
+		send(dg2);
 	}
 
 	void annihilate()
@@ -205,7 +205,7 @@ public:
 		channel_t loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
 		Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 		dg.add_uint32(m_do_id);
-		send(&dg);
+		send(dg);
 		distObjs[m_do_id] = NULL;
 		m_log->debug() << "Deleted." << std::endl;
 		delete this;
@@ -216,7 +216,7 @@ public:
 		// Tell my children:
 		Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_SHARD_RESET);
 		dg.add_uint64(m_ai_channel);
-		send(&dg);
+		send(dg);
 		// Fall over dead:
 		annihilate();
 	}
@@ -263,12 +263,12 @@ public:
 			dg.add_uint32(m_do_id);
 			dg.add_uint16(field_id);
 			dg.add_data(data);
-			send(&dg);
+			send(dg);
 		}
 		return true;
 	}
 
-	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
+	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	{
 		channel_t sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
@@ -340,7 +340,7 @@ public:
 				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 				dg.add_uint32(m_do_id);
 				dg.add_uint64(m_ai_channel);
-				send(&dg);
+				send(dg);
 				break;
 			}
 			case STATESERVER_OBJECT_SET_ZONE:
@@ -359,7 +359,7 @@ public:
 				dg.add_uint32(m_zone_id);
 				dg.add_uint32(old_parent_id);
 				dg.add_uint32(old_zone_id);
-				send(&dg);
+				send(dg);
 
 				handle_parent_change(new_parent_id);
 				send_zone_entry();
@@ -374,7 +374,7 @@ public:
 				dg.add_uint32(m_do_id);
 				dg.add_uint32(m_parent_id);
 				dg.add_uint32(m_zone_id);
-				send(&dg);
+				send(dg);
 				break;
 			}
 			case STATESERVER_OBJECT_QUERY_ALL:
@@ -383,13 +383,12 @@ public:
 				dg.add_uint32(dgi.read_uint32()); // Copy context to response.
 				append_required_data(dg);
 				append_other_data(dg);
-				send(&dg);
+				send(dg);
 				break;
 			}
 			default:
 				m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
 		}
-		return true;
 	}
 };
 
@@ -442,7 +441,7 @@ public:
 		distObjs[do_id] = obj;
 	}
 
-	virtual bool handle_datagram(Datagram *in_dg, DatagramIterator &dgi)
+	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	{
 		channel_t sender = dgi.read_uint64();
 		unsigned short msgtype = dgi.read_uint16();
@@ -470,14 +469,13 @@ public:
 				{
 					Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
 					dg.add_uint64(ai_channel);
-					send(&dg);
+					send(dg);
 				}
 				break;
 			}
 			default:
 				m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
 		}
-		return true;
 	}
 
 private:
