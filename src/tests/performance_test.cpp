@@ -5,8 +5,8 @@
 
 LogCategory perfLog("perftest", "perftest");
 
-#define PERF_NCHANNELS 1000
-#define PERF_NDESTCHANNELS 5
+#define PERF_NCHANNELS 100000
+#define PERF_NDESTCHANNELS 1
 #define PERF_NPARTICIPANTS 10
 #define PERF_TIME 5.0
 #define PERF_DATASIZE 70 //must be atleast 1+(PERF_NDESTCHANNELS*8)
