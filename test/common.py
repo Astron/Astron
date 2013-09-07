@@ -238,7 +238,7 @@ class DatagramIterator(object):
         if self._offset > len(self._data):
             raise EOFError('End of Datagram')
 
-        return struct.unpack("<H", self._data[self._offset-8:self._offset])
+        return struct.unpack("<Q", self._data[self._offset-8:self._offset])
 
     def seek(self, offset):
         self._offset = offset
