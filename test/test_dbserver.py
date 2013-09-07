@@ -63,12 +63,11 @@ class TestDatabaseServer(unittest.TestCase):
         dg.add_uint32(doids[0])
         self.conn.send(dg)
 
-        # Retrieve object from the database, the default value for the required field should exist...
+        # Retrieve object from the database, we stored no DB values, so get none back
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(setRequired1DefaultValue)
-        dg.add_uint16(0) # Optional field count
+        dg.add_uint16(0) # Field count
         self.assertTrue(self.conn.expect(dg))
 
         # Create a stored DistributedTestObject3 missing a required value...
@@ -114,9 +113,9 @@ class TestDatabaseServer(unittest.TestCase):
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint16(DistributedTestObject3)
-        dg.add_uint32(setRequired1DefaultValue)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
         dg.add_uint32(91849)
-        dg.add_uint16(1) # Optional field count
         dg.add_uint16(setDb3)
         dg.add_string("You monster...")
         self.assertTrue(self.conn.expect(dg))

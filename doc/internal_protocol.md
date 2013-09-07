@@ -386,9 +386,8 @@ It returns the select fields in serialized form, in the order requested.
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, uint16 dclass_id, ...)`  
-> This message queries all information from the object and returns the response.  
-The ... is like that of REQUIRED_OTHER in the STATESERVER object commands.
+    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
+> This message queries all of the database fields from the object and returns the response.  
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
