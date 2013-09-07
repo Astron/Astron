@@ -67,6 +67,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	endif()
 endif()
 
+set (BUILD_DBSERVER ON CACHE BOOL "If on, stateserver will be built into binary")
+if(BUILD_DBSERVER)
+	set (DBSERVER_FILES src/Database/DBServer.cpp)
+endif()
+
 include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
@@ -88,6 +93,7 @@ add_executable (openotpd
 	src/util/NetworkClient.cpp
 	src/util/NetworkClient.h
 	${TEST_FILES}
+	${DBSERVER_FILES}
 )
 
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
