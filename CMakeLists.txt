@@ -10,14 +10,19 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
 
-### Release Flags -- warnings are errors, release code should not have warnings ###
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
+	### Release Flags -- warnings are errors, release code should not have warnings ###
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
+	
+	### Debug flags, Wall
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+endif()
 
 ### Debug Flags -- compile in spam/debug log messages ###
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -DDEBUG_MESSAGES")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MESSAGES")
 
 ### YAML Depedency -- required by config ###
 set(YAMLCPP_INCLUDES "dependencies/yaml-cpp-0.5.1/include" CACHE PATH "Path to yamlcpp includes")
@@ -30,7 +35,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 	set (CMAKE_CXX_FLAGS "-pthread")
 else ()
-	set (YAMLCPP_LIBNAME "libyaml-cppmdd" CACHE STRING "Name of YAML library")
+	set (YAMLCPP_LIBNAME "libyaml-cppmd" CACHE STRING "Name of YAML library")
+	set (YAMLCPP_LIBNAME optimized ${YAMLCPP_LIBNAME} debug ${YAMLCPP_LIBNAME}d)
+	message("${YAMLCPP_LIBNAME}")
 endif()
 include_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_INCLUDES})
 link_directories (${CMAKE_CURRENT_LIST_DIR}/${YAMLCPP_LIBRARIES})
@@ -54,7 +61,10 @@ add_definitions(-DBOOST_ALL_NO_LIB -D_SCL_SECURE_NO_WARNINGS)
 set (BUILD_TESTS CACHE BOOL "If set to true, test files will be compiled in")
 
 if(BUILD_TESTS)
-	set (TEST_FILES src/tests/participant_test.cpp)
+	set (TEST_FILES
+		src/tests/participant_test.cpp
+		src/tests/performance_test.cpp
+	)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
