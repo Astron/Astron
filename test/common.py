@@ -172,6 +172,56 @@ class Datagram(object):
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
         return dg
 
+class DatagramIterator(object):
+    def __init__(self, datagram, offset = 0):
+        self._datagram = datagram
+        self._data = datagram.get_data()
+        self._offset = offset
+
+    def matches_header(self, recipients, sender, msgtype, remaining=-1):
+        self.seek(0)
+        if self._datagram.channels() != recipients:
+            return False
+
+        self.seek(8*ord(self._data[0])+1)
+        if sender != self.read_uint64():
+            return False
+
+        if msgtype != self.read_uint16():
+            return False
+
+        if remaining != -1 and remaining != len(self.data) - offset_:
+            return False
+
+        return True
+
+    def read_uint8(self):
+        self._offset += 2
+        if self._offset > len(self.data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<B", self._data[self._offset-2:self._offset])
+
+    def read_uint16(self):
+        self._offset += 4
+        if self._offset > len(self.data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<H", self._data[self._offset-4:self._offset])
+
+    def read_uint64(self):
+        self._offset += 8
+        if self._offset > len(self.data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<H", self._data[self._offset-8:self._offset])
+
+    def seek(self, offset):
+        self._offset = offset
+
+    def tell(self):
+        return self._offset
+
 class MDConnection(object):
     def __init__(self, sock):
         self.s = sock
@@ -181,6 +231,10 @@ class MDConnection(object):
         data = datagram.get_data()
         msg = struct.pack('<H', len(data)) + data
         self.s.send(msg)
+
+    def recv(self):
+        dg = self._read()
+        return Datagram(dg)
 
     def _read(self):
         try:
