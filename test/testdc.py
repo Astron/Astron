@@ -19,3 +19,5 @@ setB2 = 6
 setBRam2 = 7
 setDb3 = 8
 setRDB3 = 9
+
+setRequired1DefaultValue = 78
