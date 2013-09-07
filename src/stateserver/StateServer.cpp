@@ -229,7 +229,7 @@ public:
 		if(!field)
 		{
 			m_log->error() << "Received update for missing field ID="
-							<< field_id << std::endl;
+			               << field_id << std::endl;
 			return false;
 		}
 
@@ -266,6 +266,31 @@ public:
 			send(dg);
 		}
 		return true;
+	}
+
+	bool handle_query(Datagram &out, unsigned short field_id)
+	{
+		DCField *field = m_dclass->get_field_by_index(field_id);
+		if(!field)
+		{
+			m_log->error() << "Received query for missing field ID="
+			               << field_id << std::endl;
+			return false;
+		}
+
+		if(m_required_fields.count(field))
+		{
+			out.add_data(m_required_fields[field]);
+			return true;
+		}
+
+		if(m_ram_fields.count(field))
+		{
+			out.add_data(m_ram_fields[field]);
+			return true;
+		}
+
+		return false;
 	}
 
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
@@ -383,6 +408,54 @@ public:
 				dg.add_uint32(dgi.read_uint32()); // Copy context to response.
 				append_required_data(dg);
 				append_other_data(dg);
+				send(dg);
+				break;
+			}
+			case STATESERVER_OBJECT_QUERY_FIELD:
+			{
+				if(dgi.read_uint32() != m_do_id)
+					return; // Not meant for this object!
+				unsigned short field_id = dgi.read_uint16();
+				unsigned int context = dgi.read_uint32();
+
+				Datagram raw_field;
+				bool success = handle_query(raw_field, field_id);
+
+				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_FIELD_RESP);
+				dg.add_uint32(m_do_id);
+				dg.add_uint16(field_id);
+				dg.add_uint32(context);
+				dg.add_uint8(success);
+				if(success)
+					dg.add_datagram(raw_field);
+				send(dg);
+				break;
+			}
+			case STATESERVER_OBJECT_QUERY_FIELDS:
+			{
+				if(dgi.read_uint32() != m_do_id)
+					return; // Not meant for this object!
+				unsigned int context = dgi.read_uint32();
+
+				Datagram raw_fields;
+				bool success = true;
+				while(dgi.tell() != in_dg.get_buf_end())
+				{
+					unsigned short field_id = dgi.read_uint16();
+					raw_fields.add_uint16(field_id);
+					if(!handle_query(raw_fields, field_id))
+					{
+						success = false;
+						break;
+					}
+				}
+
+				Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_FIELDS_RESP);
+				dg.add_uint32(m_do_id);
+				dg.add_uint32(context);
+				dg.add_uint8(success);
+				if(success)
+					dg.add_datagram(raw_fields);
 				send(dg);
 				break;
 			}

@@ -857,6 +857,70 @@ class TestStateServer(unittest.TestCase):
 
         # TODO: Test zone queries.
 
+        # Now test field queries...
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELD)
+        dg.add_uint32(483312) # ID
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBAB55EED)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELD_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint32(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Query a field not present on the object...
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELD)
+        dg.add_uint32(483312) # ID
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(0xBAB55EED)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELD_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now let's try a QUERY_FIELDS.
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRequired1)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now a QUERY_FIELDS including a nonpresent field.
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRDB3)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(0)
+        self.assertTrue(self.c.expect(dg))
+
         # Clean up.
         self.c.send(Datagram.create_remove_channel(890))
         dg = Datagram.create([483310], 5, STATESERVER_OBJECT_DELETE_RAM)
