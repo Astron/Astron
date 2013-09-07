@@ -18,6 +18,7 @@ private:
 			char *tmp_buf = new char[buf_size+len+64];
 			memcpy(tmp_buf, buf, buf_size);
 			delete [] buf;
+			buf = tmp_buf;
 		}
 	}
 public:
@@ -62,6 +63,13 @@ public:
 		check_add_length(2);
 		memcpy(buf+buf_end, &v, 2);
 		buf_end += 2;
+	}
+
+	void add_uint32(const unsigned int &v)
+	{
+		check_add_length(4);
+		memcpy(buf+buf_end, &v, 4);
+		buf_end += 4;
 	}
 
 	void add_uint64(const unsigned long long &v)
