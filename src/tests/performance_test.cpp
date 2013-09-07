@@ -1,5 +1,5 @@
 #include "core/global.h"
-#include "messagedirector/messagedirector.h"
+#include "messagedirector/MessageDirector.h"
 #include <boost/random.hpp>
 #include <ctime>
 
