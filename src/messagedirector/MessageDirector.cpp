@@ -94,12 +94,14 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	// Route messages to participants
 	auto &recieve_log = m_log.spam();
 	recieve_log << "Recievers: ";
-	std::set<MDParticipantInterface*> receiving_participants;
+	static std::set<MDParticipantInterface*> receiving_participants;
+	receiving_participants.clear();
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		channel_t channel = dgi.read_uint64();
 		recieve_log << channel << ", ";
-		for(auto it = m_channel_subscriptions[channel].begin(); it != m_channel_subscriptions[channel].end(); ++it)
+		auto &subscriptions = m_channel_subscriptions[channel];
+		for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
 		{
 			receiving_participants.insert(receiving_participants.end(), *it);
 		}
