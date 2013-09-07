@@ -313,7 +313,7 @@ The following is a list of database control messages:
 
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
