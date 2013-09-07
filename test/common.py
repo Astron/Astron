@@ -214,28 +214,28 @@ class DatagramIterator(object):
         if msgtype != self.read_uint16():
             return False
 
-        if remaining != -1 and remaining != len(self.data) - self._offset:
+        if remaining != -1 and remaining != len(self._data) - self._offset:
             return False
 
         return True
 
     def read_uint8(self):
         self._offset += 2
-        if self._offset > len(self.data):
+        if self._offset > len(self._data):
             raise EOFError('End of Datagram')
 
         return struct.unpack("<B", self._data[self._offset-2:self._offset])
 
     def read_uint16(self):
         self._offset += 4
-        if self._offset > len(self.data):
+        if self._offset > len(self._data):
             raise EOFError('End of Datagram')
 
         return struct.unpack("<H", self._data[self._offset-4:self._offset])
 
     def read_uint64(self):
         self._offset += 8
-        if self._offset > len(self.data):
+        if self._offset > len(self._data):
             raise EOFError('End of Datagram')
 
         return struct.unpack("<H", self._data[self._offset-8:self._offset])
