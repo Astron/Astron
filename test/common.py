@@ -203,7 +203,8 @@ class DatagramIterator(object):
 
     def matches_header(self, recipients, sender, msgtype, remaining=-1):
         self.seek(0)
-        if self._datagram.get_channels() != recipients:
+        channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
+        if len(channels) != len(recipients):
             return False
 
         self.seek(8*ord(self._data[0])+1)
