@@ -94,8 +94,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	// Route messages to participants
 	auto &recieve_log = m_log.spam();
 	recieve_log << "Recievers: ";
-	static std::set<MDParticipantInterface*> receiving_participants;
-	receiving_participants.clear();
+	std::set<MDParticipantInterface*> receiving_participants;
 	for(unsigned char i = 0; i < channels; ++i)
 	{
 		channel_t channel = dgi.read_uint64();

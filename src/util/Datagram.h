@@ -18,6 +18,7 @@ private:
 			char *tmp_buf = new char[buf_size+len+64];
 			memcpy(tmp_buf, buf, buf_size);
 			delete [] buf;
+			buf = tmp_buf;
 		}
 	}
 public:
