@@ -330,6 +330,7 @@ object's ID) to receive object-specific updates.
 The following is a list of database control messages:
 
 **Argument Notes**
+
     bool success/found      // uint8 value where FAILURE or NOT_FOUND = 0x0 (typically SUCCES or FOUND = 0x1 or "TRUE")
 
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
