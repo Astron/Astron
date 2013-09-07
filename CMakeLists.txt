@@ -61,7 +61,10 @@ add_definitions(-DBOOST_ALL_NO_LIB -D_SCL_SECURE_NO_WARNINGS)
 set (BUILD_TESTS CACHE BOOL "If set to true, test files will be compiled in")
 
 if(BUILD_TESTS)
-	set (TEST_FILES src/tests/participant_test.cpp)
+	set (TEST_FILES
+		src/tests/participant_test.cpp
+		src/tests/performance_test.cpp
+	)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

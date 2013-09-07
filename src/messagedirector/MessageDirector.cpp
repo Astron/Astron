@@ -99,7 +99,8 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	{
 		channel_t channel = dgi.read_uint64();
 		recieve_log << channel << ", ";
-		for(auto it = m_channel_subscriptions[channel].begin(); it != m_channel_subscriptions[channel].end(); ++it)
+		auto &subscriptions = m_channel_subscriptions[channel];
+		for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
 		{
 			receiving_participants.insert(receiving_participants.end(), *it);
 		}

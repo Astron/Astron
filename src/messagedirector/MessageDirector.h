@@ -2,6 +2,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include "core/logger.h"
 #include "util/Datagram.h"
@@ -76,7 +77,7 @@ private:
 	std::list<MDParticipantInterface*> m_participants;
 
 	// Single channel subscriptions
-	std::map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+	std::unordered_map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
 
 	// Range channel subscriptions
 	boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
