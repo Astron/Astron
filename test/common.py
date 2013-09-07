@@ -49,7 +49,7 @@ CONSTANTS = {
 
     # Defined return codes
     'FOUND': 1,
-    'NOT_FOUND': 0.
+    'NOT_FOUND': 0,
 
     # Control Channels
     'CONTROL_CHANNEL': 4001,
