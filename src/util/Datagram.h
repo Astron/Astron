@@ -65,6 +65,13 @@ public:
 		buf_end += 2;
 	}
 
+	void add_uint32(const unsigned int &v)
+	{
+		check_add_length(4);
+		memcpy(buf+buf_end, &v, 4);
+		buf_end += 4;
+	}
+
 	void add_uint64(const unsigned long long &v)
 	{
 		check_add_length(8);

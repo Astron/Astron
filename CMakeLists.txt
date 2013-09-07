@@ -77,6 +77,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	endif()
 endif()
 
+set (BUILD_STATESERVER ON CACHE BOOL "If on, stateserver will be built into binary")
+if(BUILD_STATESERVER)
+	set (STATESERVER_FILES src/stateserver/StateServer.cpp)
+endif()
+
 include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
@@ -97,6 +102,7 @@ add_executable (openotpd
 	src/util/Role.h
 	src/util/NetworkClient.cpp
 	src/util/NetworkClient.h
+	${STATESERVER_FILES}
 	${TEST_FILES}
 )
 
