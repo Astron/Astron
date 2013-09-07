@@ -237,6 +237,13 @@ class DatagramIterator(object):
 
         return struct.unpack("<H", self._data[self._offset-2:self._offset])[0]
 
+    def read_uint32(self):
+        self._offset += 4
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<I", self._data[self._offset-4:self._offset])[0]
+
     def read_uint64(self):
         self._offset += 8
         if self._offset > len(self._data):
