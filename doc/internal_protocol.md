@@ -55,6 +55,41 @@ Therefore, consider this example message:
                                their own, hence the 05 00
 
 
+#### Section 1.1 DistributedObject Serialization ####
+Some messages contained serialized data in their payload.  
+Serialization as used in messages means sending individual
+variables as raw little-endian byte data, with one value
+immediately following the previous value. String type values
+are always prefixed with a uint16 length, which is followed
+by the raw string data.
+
+The standard format for sending the full encoding of a
+DistributedObject is to send, in low to high order of field_id,
+the serialized data of all of the required fields of the object.
+The required is followed by a uint16 which specifices how many
+optional fields exist. If any optional fields exist, this is
+followed by <uint16 field_id, [DATA]> pairs for each optional
+field. The fields may be in any order.
+
+Example DC Class:
+
+    dclass DistributedAvatar
+        name(string n) required db;  // ID = 0 | Value = "Throgdar"
+        x(uint64 x) broadcast ram;   // ID = 1 | Value = 5
+        y(uint64 y) broadcast ram;   // ID = 2 | No Value
+        z(uint64 z) broadcast ram;   // ID = 3 | Value = 0
+
+Serialized form:
+
+    08 00 // Length of "Throgdar"
+    54 68 72 6f 67 64 61 72 // Character data
+    02 00 // Count of optional fields
+    01 00 // field_id for 'x' (ID = 1)
+    05 00 00 00 00 00 00 00 // Value = 5
+    03 00 // field_id for 'z' (ID = 3)
+    00 00 00 00 00 00 00 00 // Value = 0
+
+
 
 ### Section 2: Control messages ###
 
@@ -313,7 +348,7 @@ The following is a list of database control messages:
 
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
+    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
