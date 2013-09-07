@@ -40,7 +40,7 @@ class TestDatabaseServer(unittest.TestCase):
         self.conn.flush()
         self.conn.send(Datagram.create_add_channel(20))
 
-        doids = []
+        doids = {}
 
         # Create a stored DistributedTestObject1 with no initial values...
         dg = Datagram.create([777], 20, DBSERVER_CREATE_STORED_OBJECT)
