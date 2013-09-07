@@ -88,9 +88,11 @@ class TestDatabaseServer(unittest.TestCase):
         dg = Datagram.create([777], 20, DBSERVER_CREATE_STORED_OBJECT)
         dg.add_uint32(4) # Context
         dg.add_uint16(DistributedTestObject3)
-        dg.add_uint16(1) # Field count
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(91849)
+        dg.add_uint16(setDb3)
+        dg.add_string("You monster...")
         self.conn.send(dg)
 
         # The Database should return a new do_id...
@@ -102,7 +104,6 @@ class TestDatabaseServer(unittest.TestCase):
         self.assertTrue(doids[1] >= 1000000 and doids[0] <= 1001000) # do_id in valid range
         self.assertTrue(doids[0] != doids[1]) # do_ids should be different
 
-        # TODO: Add the second DB field (a string) to this part of the test
         # Retrieve object from the database...
         dg = Datagram.create([777], 20, DBSERVER_SELECT_STORED_OBJECT_ALL)
         dg.add_uint32(5) # Context
@@ -115,7 +116,9 @@ class TestDatabaseServer(unittest.TestCase):
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint32(setRequired1DefaultValue)
         dg.add_uint32(91849)
-        dg.add_uint16(0) # Optional field count
+        dg.add_uint16(1) # Optional field count
+        dg.add_uint16(setDb3)
+        dg.add_string("You monster...")
         self.assertTrue(self.conn.expect(dg))
 
     def test_create_collisions(self):
