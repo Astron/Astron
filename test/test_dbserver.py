@@ -54,7 +54,7 @@ class TestDatabaseServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_STORED_OBJECT_RESP, remaining=4+4))
         self.assertTrue(dgi.read_uint32() == 1) # Check context
-        doids.insert(0, dgi.read_uint32())
+        doids.append(dgi.read_uint32())
         self.assertTrue(doids[0] >= 1000000 and doids[0] <= 1001000) # do_id in valid range
 
         # Select all fields from the stored object
@@ -100,7 +100,7 @@ class TestDatabaseServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_STORED_OBJECT_RESP, remaining=4+4))
         self.assertTrue(dgi.read_uint32() == 4) # Check context
-        doids.insert(1, dgi.read_uint32())
+        doids.append(dgi.read_uint32())
         self.assertTrue(doids[1] >= 1000000 and doids[0] <= 1001000) # do_id in valid range
         self.assertTrue(doids[0] != doids[1]) # do_ids should be different
 
