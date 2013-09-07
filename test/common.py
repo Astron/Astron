@@ -214,7 +214,7 @@ class DatagramIterator(object):
         if msgtype != self.read_uint16():
             return False
 
-        if remaining != -1 and remaining != len(self.data) - offset_:
+        if remaining != -1 and remaining != len(self.data) - self._offset:
             return False
 
         return True
