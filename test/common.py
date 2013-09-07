@@ -205,16 +205,20 @@ class DatagramIterator(object):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
         if len(channels) != len(recipients):
+            print "Channels don't match"
             return False
 
         self.seek(8*ord(self._data[0])+1)
         if sender != self.read_uint64():
+            print "Sender doesn't match"
             return False
 
         if msgtype != self.read_uint16():
+            print "MsgType doesn't match"
             return False
 
         if remaining != -1 and remaining != len(self._data) - self._offset:
+            print "Remaining doesn't match"
             return False
 
         return True
