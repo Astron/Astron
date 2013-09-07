@@ -5,7 +5,7 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'MDConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
 
 class Daemon(object):
     DAEMON_PATH = './openotpd'
@@ -83,7 +83,7 @@ CONSTANTS = {
 
     # Database Server
     'DBSERVER_CREATE_STORED_OBJECT': 1003,
-    'DBSERVER_CREATE_STORED_OBJECT_RESPONSE': 1004,
+    'DBSERVER_CREATE_STORED_OBJECT_RESP': 1004,
     'DBSERVER_DELETE_STORED_OBJECT': 1008,
     'DBSERVER_DELETE_QUERY': 1010,
     'DBSERVER_SELECT_STORED_OBJECT': 1012,
@@ -203,7 +203,7 @@ class DatagramIterator(object):
 
     def matches_header(self, recipients, sender, msgtype, remaining=-1):
         self.seek(0)
-        if self._datagram.channels() != recipients:
+        if self._datagram.get_channels() != recipients:
             return False
 
         self.seek(8*ord(self._data[0])+1)
@@ -257,6 +257,8 @@ class MDConnection(object):
 
     def recv(self):
         dg = self._read()
+        if dg is None:
+            raise EOFError('No message recieved')
         return Datagram(dg)
 
     def _read(self):
