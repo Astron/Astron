@@ -42,6 +42,12 @@ DATATYPES = {
 }
 
 CONSTANTS = {
+    # Reserved Values
+    'INVALID_CHANNEL': 0,
+    'INVALID_DO_ID': 0,
+    'INVALID_MSG_TYPE': 0,
+
+    # Control Channels
     'CONTROL_CHANNEL': 4001,
     'CONTROL_ADD_CHANNEL': 2001,
     'CONTROL_REMOVE_CHANNEL': 2002,
