@@ -234,7 +234,7 @@ LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
 
 
-**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `args(uint64 owner_channel)`  
+**STATESERVER_OBJECT_SET_OWNER_RECV(2070)** `args(uint64 owner_channel)`
 **STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 **STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  
