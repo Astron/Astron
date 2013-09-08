@@ -999,5 +999,63 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(55555)
         self.c.send(dg)
 
+    def test_ownrecv(self):
+        self.c.send(Datagram.create_add_channel(14253647))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(88833) # Parent
+        dg.add_uint32(99922) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(74635241) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+
+        # Set the owner channel:
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER_RECV)
+        dg.add_uint64(14253647)
+        self.c.send(dg)
+
+        # See if it enters OWNER_RECV.
+        dg = Datagram.create([14253647], 74635241, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg.add_uint32(88833) # Parent
+        dg.add_uint32(99922) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(74635241) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint16(0) # Number of OTHER fields.
+        self.assertTrue(self.c.expect(dg))
+
+        # Send an ownrecv message...
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(74635241)
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0xF005BA11)
+        self.c.send(dg)
+
+        # See if our owner channel gets it.
+        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(74635241)
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0xF005BA11)
+        self.assertTrue(self.c.expect(dg))
+
+        # Change away...
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER_RECV)
+        dg.add_uint64(197519725497)
+        self.c.send(dg)
+
+        # See if we get a CHANGE_OWNER_RECV
+        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_CHANGE_OWNER_RECV)
+        dg.add_uint32(74635241)
+        dg.add_uint64(197519725497)
+        dg.add_uint64(14253647)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(74635241)
+        self.c.send(dg)
+        self.c.send(Datagram.create_remove_channel(14253647))
+
 if __name__ == '__main__':
     unittest.main()

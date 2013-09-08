@@ -63,12 +63,13 @@ public:
 	std::map<DCField*, std::string> m_ram_fields;
 	std::map<DCField*, std::string> m_required_fields;
 	channel_t m_ai_channel;
+	channel_t m_owner_channel;
 	bool m_ai_explicitly_set;
 	LogCategory *m_log;
 
 	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
 	m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
-	m_ai_channel(0), m_ai_explicitly_set(false)
+	m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 	{
 		std::stringstream name;
 		name << dclass->get_name() << "(" << do_id << ")";
@@ -257,6 +258,8 @@ public:
 			targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 		if(field->is_airecv() && m_ai_channel)
 			targets.insert(m_ai_channel);
+		if(field->is_ownrecv() && m_owner_channel)
+			targets.insert(m_owner_channel);
 		if(targets.size()) // TODO: Review this for efficiency?
 		{
 			Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
@@ -457,6 +460,31 @@ public:
 				if(success)
 					dg.add_datagram(raw_fields);
 				send(dg);
+				break;
+			}
+			case STATESERVER_OBJECT_SET_OWNER_RECV:
+			{
+				channel_t owner_channel = dgi.read_uint64();
+
+				if(owner_channel == m_owner_channel)
+					return;
+
+				if(m_owner_channel)
+				{
+					Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGE_OWNER_RECV);
+					dg.add_uint32(m_do_id);
+					dg.add_uint64(owner_channel);
+					dg.add_uint64(m_owner_channel);
+					send(dg);
+				}
+
+				m_owner_channel = owner_channel;
+
+				Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV);
+				append_required_data(dg1);
+				append_other_data(dg1);
+				send(dg1);
+
 				break;
 			}
 			default:
