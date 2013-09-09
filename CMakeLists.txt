@@ -81,6 +81,7 @@ set (BUILD_STATESERVER ON CACHE BOOL "If on, stateserver will be built into bina
 if(BUILD_STATESERVER)
 	set (STATESERVER_FILES
 		src/stateserver/StateServer.cpp
+		src/stateserver/StateServer.h
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
