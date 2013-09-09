@@ -48,8 +48,8 @@ static void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, s
 	}
 }
 
-DistributedObject::DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
-m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
+DistributedObject::DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
+m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
 m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 {
 	std::stringstream name;

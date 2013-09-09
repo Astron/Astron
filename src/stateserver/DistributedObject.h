@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StateServer.h"
+
 class DistributedObject : public MDParticipantInterface
 {
 public:
@@ -14,8 +16,9 @@ public:
 	channel_t m_owner_channel;
 	bool m_ai_explicitly_set;
 	LogCategory *m_log;
+	StateServer *m_stateserver;
 
-	DistributedObject(unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
+	DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
 
 	void append_required_data(Datagram &dg);
 	void append_other_data(Datagram &dg);
