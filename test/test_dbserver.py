@@ -20,23 +20,11 @@ roles:
         min: 1000000
         max: 1001000
 """ % test_dc
-
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
-
 VERIFY_DELETE_OBJECT = 0x44696521
 VERIFY_DELETE_QUERY = 0x4b696c6c
 
-
-class TestDatabaseServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.daemon = Daemon(CONFIG)
-        cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
+class DatabaseBaseTests(object):
     @classmethod
     def tearDownClass(cls):
         cls.conn.close()
@@ -239,6 +227,17 @@ class TestDatabaseServer(unittest.TestCase):
 
 #    def test_ram(self):
 #        pass
+
+class TestDatabaseServer(unittest.TestCase, DatabaseBaseTests):
+    @classmethod
+    def setUpClass(cls):
+        cls.daemon = Daemon(CONFIG)
+        cls.daemon.start()
+
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.connect(('127.0.0.1', 57123))
+        cls.conn = MDConnection(sock)
+
 
 if __name__ == '__main__':
     unittest.main()
