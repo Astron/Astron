@@ -1000,6 +1000,7 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
 
     def test_ownrecv(self):
+        self.c.flush()
         self.c.send(Datagram.create_add_channel(14253647))
 
         dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
