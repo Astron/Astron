@@ -5,6 +5,8 @@
 #include <map>
 #include "dcparser/dcClass.h"
 #include "dcparser/dcField.h"
+#include "dcparser/dcAtomicField.h"
+#include "dcparser/dcMolecularField.h"
 #include <exception>
 #include <stdexcept>
 
@@ -222,6 +224,18 @@ public:
 		annihilate();
 	}
 
+	void save_field(DCField *field, const std::string &data)
+	{
+		if(field->is_required())
+		{
+			m_required_fields[field] = data;
+		}
+		else if(field->is_ram())
+		{
+			m_ram_fields[field] = data;
+		}
+	}
+
 	bool handle_one_update(DatagramIterator &dgi, channel_t sender)
 	{
 		unsigned int field_id = dgi.read_uint16();
@@ -234,6 +248,8 @@ public:
 			return false;
 		}
 
+		unsigned int field_start = dgi.tell();
+
 		try
 		{
 			UnpackFieldFromDG(field, dgi, data);
@@ -244,13 +260,22 @@ public:
 			               << field->get_name() << std::endl;
 			return false;
 		}
-		if(field->is_required())
-		{
-			m_required_fields[field] = data;
+
+		DCMolecularField *molecular = field->as_molecular_field();
+		if(molecular) {
+			dgi.seek(field_start);
+			int n = molecular->get_num_atomics();
+			for(int i = 0; i < n; ++i)
+			{
+				std::string atomic_data;
+				DCAtomicField *atomic = molecular->get_atomic(i);
+				UnpackFieldFromDG(atomic, dgi, atomic_data);
+				save_field(atomic->as_field(), atomic_data);
+			}
 		}
-		else if(field->is_ram())
+		else
 		{
-			m_ram_fields[field] = data;
+			save_field(field, data);
 		}
 
 		std::set <channel_t> targets;
@@ -279,6 +304,18 @@ public:
 			m_log->error() << "Received query for missing field ID="
 			               << field_id << std::endl;
 			return false;
+		}
+
+		DCMolecularField *molecular = field->as_molecular_field();
+		if(molecular)
+		{
+			int n = molecular->get_num_atomics();
+			for(int i = 0; i < n; ++i)
+			{
+				if(!handle_query(out, molecular->get_atomic(i)->get_number()))
+					return false;
+			}
+			return true;
 		}
 
 		if(m_required_fields.count(field))

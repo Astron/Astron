@@ -1058,5 +1058,149 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.c.send(Datagram.create_remove_channel(14253647))
 
+    def test_molecular(self):
+        self.c.flush()
+        self.c.send(Datagram.create_add_channel(13371337))
+        self.c.send(Datagram.create_add_channel(88<<32|99))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(13) # setX
+        dg.add_uint32(37) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(11) # setZ
+        self.c.send(dg)
+
+        # Verify its entry...
+        dg = Datagram.create([88<<32|99], 73317331, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(13) # setX
+        dg.add_uint32(37) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(11) # setZ
+        self.assertTrue(self.c.expect(dg))
+
+        # Send a molecular update...
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(77) # setZ
+        self.c.send(dg)
+
+        # See if the MOLECULAR (not the individual fields) is broadcast.
+        dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(77) # setZ
+        self.assertTrue(self.c.expect(dg))
+
+        # Look at the object and see if the requireds are updated...
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(77) # setZ
+        dg.add_uint16(0) # 0 extra fields.
+        self.assertTrue(self.c.expect(dg))
+
+        # Now try a RAM update...
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(set123)
+        dg.add_uint8(1) # setOne
+        dg.add_uint8(2) # setTwo
+        dg.add_uint8(3) # setThree
+        self.c.send(dg)
+
+        # See if the MOLECULAR (not the individual fields) is broadcast.
+        dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(set123)
+        dg.add_uint8(1) # setOne
+        dg.add_uint8(2) # setTwo
+        dg.add_uint8(3) # setThree
+        self.assertTrue(self.c.expect(dg))
+
+        # A query should have all of the individual fields, not the molecular.
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(77) # setZ
+        dg.add_uint16(3) # 3 extra fields:
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(setTwo)
+        dg.add_uint8(2)
+        dg.add_uint16(setThree)
+        dg.add_uint8(3)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now let's test querying individual fields...
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(73317331)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setXyz)
+        dg.add_uint16(setOne)
+        dg.add_uint16(setUnrelated)
+        dg.add_uint16(set123)
+        dg.add_uint16(setX)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(73317331)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55)
+        dg.add_uint32(66)
+        dg.add_uint32(77)
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(setUnrelated)
+        dg.add_uint32(999999)
+        dg.add_uint16(set123)
+        dg.add_uint8(1)
+        dg.add_uint8(2)
+        dg.add_uint8(3)
+        dg.add_uint16(setX)
+        dg.add_uint32(55)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(73317331)
+        self.c.send(dg)
+        self.c.send(Datagram.create_remove_channel(13371337))
+        self.c.send(Datagram.create_remove_channel(88<<32|99))
+
 if __name__ == '__main__':
     unittest.main()
