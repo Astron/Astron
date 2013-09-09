@@ -18,7 +18,7 @@ roles:
       control: 777
       generate:
         min: 1000000
-        max: 1001000
+        max: 1000010
 """ % test_dc
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
 VERIFY_DELETE_OBJECT = 0x44696521
@@ -219,11 +219,45 @@ class DatabaseBaseTests(object):
         self.deleteObject(doidB)
         self.conn.send(Datagram.create_remove_channel(30))
 
-#    def test_create_collisions(self):
-        # TODO: Test for collisions after creating the max number of objects
-        # TODO: Test that creating max+1 objects (w/o deletion) returns BAD_DO_ID
-        # TODO: Test that used ids are reused after deleting some objects
-#        pass
+    def test_create_collisions(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(40))
+
+        doids = []
+
+        # Create the maximum number of objects we can assign
+        doid = self.createEmptyObjGetId(40, len(doids))
+        while doid != 0 and len(doids) < 15:
+            doids.append(doid)
+            doid = self.createEmptyObjGetId(40, len(doids))
+
+        self.assertTrue(len(set(doids)) == len(doids)) # Check if duplicate do_ids exist
+        self.assertTrue(len(doids) == 11) # Check we recieved the max do_ids we requested
+        self.assertTrue(doid == INVALID_DO_ID) # Check the last object returned was BAD_DO_ID (0x0)
+
+        # Delete an object
+        self.deleteObject(40, doids[6])
+
+        # Get new object with the last remaining id
+        newdoid = self.createEmptyObjGetId(40, 16)
+        self.assertTrue(newdoid == doids[6])
+
+        # Delete multiple objects
+        self.deleteObject(40, doids[0])
+        self.deleteObject(40, doids[1])
+        self.deleteObject(40, doids[2])
+        doids = doids[3:]
+
+        # Create an object, it shouldn't collide
+        doid = self.createEmptyObjGetId(40, 17)
+        for do in doids:
+            self.assertTrue(do != doid)
+
+        # Cleanup
+        self.deleteObject(40, doids[0])
+        for do in doids:
+            self.deleteObject(do)
+        self.conn.send(Datagram.create_remove_channel(40))
 
 #    def test_ram(self):
 #        pass

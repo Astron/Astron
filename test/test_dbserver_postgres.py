@@ -20,7 +20,7 @@ roles:
       control: 777
       generate:
         min: 1000000
-        max: 1001000
+        max: 1000010
       storage:
         type: postgres
         user: openotp_test
