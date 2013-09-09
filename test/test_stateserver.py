@@ -338,6 +338,16 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.assertTrue(self.c.expect_none())
 
+        # Test that AIs are informed of object deletions...
+        dg = Datagram.create([obj3], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(obj3)
+        self.c.send(dg)
+
+        # See if it "leaves" the AI's interest.
+        dg = Datagram.create([ai2], obj3, STATESERVER_OBJECT_LEAVING_AI_INTEREST)
+        dg.add_uint32(obj3)
+        self.assertTrue(self.c.expect(dg))
+
         # Cleanup time:
         self.c.send(Datagram.create_remove_channel(ai1))
         self.c.send(Datagram.create_remove_channel(ai2))
@@ -349,7 +359,7 @@ class TestStateServer(unittest.TestCase):
         self.c.send(Datagram.create_remove_channel(4030<<32|obj3))
         self.c.send(Datagram.create_remove_channel(obj4))
         # Clean up objects:
-        for obj in [obj1, obj2, obj3, obj4]:
+        for obj in [obj1, obj2, obj4]:
             dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
             dg.add_uint32(obj)
             self.c.send(dg)
@@ -782,7 +792,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([201<<32|4444], 202, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(202)
         expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
+        self.assertTrue(self.c.expect_multi(expected))
 
         # Clean up.
         self.c.send(Datagram.create_remove_channel(4030<<32|201))
@@ -1052,11 +1062,22 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint64(14253647)
         self.assertTrue(self.c.expect(dg))
 
-        # Clean up.
+        # Switch our channel subscription to follow it.
+        self.c.send(Datagram.create_add_channel(197519725497))
+        self.c.send(Datagram.create_remove_channel(14253647))
+
+        # Hit it with a delete.
         dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(74635241)
         self.c.send(dg)
-        self.c.send(Datagram.create_remove_channel(14253647))
+
+        # Make sure the owner is notified.
+        dg = Datagram.create([197519725497], 74635241, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(74635241)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(197519725497))
 
     def test_molecular(self):
         self.c.flush()

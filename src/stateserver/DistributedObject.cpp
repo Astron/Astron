@@ -181,10 +181,16 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 
 void DistributedObject::annihilate()
 {
-	channel_t loc = LOCATION2CHANNEL(m_parent_id, m_zone_id);
-	Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
+	std::set<channel_t> targets;
+	targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+	if(m_owner_channel)
+		targets.insert(m_owner_channel);
+	Datagram dg(targets, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 	dg.add_uint32(m_do_id);
 	send(dg);
+
+	handle_ai_change(0, true); // Leave the AI's interest.
+
 	m_stateserver->m_objs[m_do_id] = NULL;
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
