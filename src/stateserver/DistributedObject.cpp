@@ -313,8 +313,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_SHARD_RESET:
 		{
 			if(m_ai_channel != dgi.read_uint64()) {
-				m_log->warning() << " received reset for wrong"
-									<< " AI channel" << std::endl;
+				m_log->warning() << " received reset for wrong AI channel" << std::endl;
 				break; // Not my AI!
 			}
 			handle_shard_reset();
