@@ -319,18 +319,13 @@ public:
 		}
 
 		if(m_required_fields.count(field))
-		{
 			out.add_data(m_required_fields[field]);
-			return true;
-		}
-
-		if(m_ram_fields.count(field))
-		{
+		else if(m_ram_fields.count(field))
 			out.add_data(m_ram_fields[field]);
-			return true;
-		}
+		else
+			return false;
 
-		return false;
+		return true;
 	}
 
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
