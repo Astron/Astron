@@ -48,7 +48,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	catch(std::exception &e)
 	{
 		m_log->error() << "Received truncated generate for "
-						<< dclass->get_name() << "(" << do_id << ")" << std::endl;
+		               << dclass->get_name() << "(" << do_id << ")" << std::endl;
 		return;
 	}
 	m_objs[do_id] = obj;

@@ -76,9 +76,8 @@ m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 			}
 			else
 			{
-				m_log->error() << "Received non-RAM field "
-								<< field->get_name()
-								<< " within an OTHER section" << std::endl;
+				m_log->error() << "Received non-RAM field " << field->get_name()
+				               << " within an OTHER section" << std::endl;
 			}
 		}
 	}
@@ -172,7 +171,7 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	append_other_data(dg1);
 	send(dg1);
 	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
-					<< m_ai_channel << std::endl;
+	              << m_ai_channel << std::endl;
 
 	Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
 	dg2.add_uint32(m_do_id);
@@ -221,7 +220,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	if(!field)
 	{
 		m_log->error() << "Received update for missing field ID="
-						<< field_id << std::endl;
+		               << field_id << std::endl;
 		return false;
 	}
 
@@ -234,7 +233,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	catch(std::exception &e)
 	{
 		m_log->error() << "Received truncated update for "
-						<< field->get_name() << std::endl;
+		               << field->get_name() << std::endl;
 		return false;
 	}
 
@@ -353,7 +352,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
-									<< " but my parent_id is " << m_parent_id << std::endl;
+				                 << " but my parent_id is " << m_parent_id << std::endl;
 				break;
 			}
 			if(m_ai_explicitly_set)
