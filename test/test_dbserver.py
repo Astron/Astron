@@ -21,6 +21,12 @@ roles:
         max: 1001000
 """ % test_dc
 
+CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
+
+VERIFY_DELETE_OBJECT = 0x44696521
+VERIFY_DELETE_QUERY = 0x4b696c6c
+
+
 class TestDatabaseServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -35,6 +41,25 @@ class TestDatabaseServer(unittest.TestCase):
     def tearDownClass(cls):
         cls.conn.close()
         cls.daemon.stop()
+
+    def createEmptyObjGetId(self, sender, context):
+        # Create an object
+        dg = Datagram.create([777], sender, DBSERVER_CREATE_STORED_OBJECT)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(0) # Field count
+        self.conn.send(dg)
+
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        return dgi.read_uint32()
+
+    def deleteObject(self, sender, doid):
+        dg = Datagram.create([777], sender, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(VERIFY_DELETE_OBJECT)
+        dg.add_uint32(doid)
+        self.conn.send(dg)
 
     def test_create_selectall(self):
         self.conn.flush()
@@ -133,6 +158,78 @@ class TestDatabaseServer(unittest.TestCase):
         dg.add_uint32(6) # Context
         dg.add_uint8(NOT_FOUND)
         self.assertTrue(self.conn.expect(dg))
+
+        # Cleanup
+        for doid in doids:
+            self.deleteObject(20, doid)
+        self.conn.send(Datagram.create_remove_channel(20))
+
+    def test_delete(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(30))
+
+        # Create an object, get its doid
+        doid = self.createEmptyObjGetId(30, 1)
+
+        # Delete the object
+        self.deleteObject(30, doid)
+
+        # Check to make sure the object is deleted
+        dg = Datagram.create([777], 30, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Get failure from database
+        dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(NOT_FOUND)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Create some other objects
+        doidA = self.createEmptyObjGetId(30, 3)
+        doidB = self.createEmptyObjGetId(30, 4)
+
+        # Delete object "A"
+        self.deleteObject(30, doidA)
+
+        # Check to make sure object "B" isn't affected
+        dg = Datagram.create([777], 30, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(doidB)
+        self.conn.send(dg)
+
+        # Reponse for object "B"
+        dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint8(FOUND)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(0) # Field count
+        self.assertTrue(self.conn.expect(dg))
+
+        # Try to delete object "B" with a bad verify_code
+        dg = Datagram.create([30], 777, DBSERVER_DELETE_STORED_OBJECT)
+        dg.add_uint32(1337)
+        dg.add_uint32(doidB)
+        self.conn.send(dg)
+
+        # Check to make sure object "B" isn't affected
+        dg = Datagram.create([777], 30, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(doidB)
+        self.conn.send(dg)
+
+        # Reponse for object "B"
+        dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(FOUND)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(0) # Field count
+        self.assertTrue(self.conn.expect(dg))
+
+        # Cleanup
+        self.deleteObject(doidB)
+        self.conn.send(Datagram.create_remove_channel(30))
 
     def test_create_collisions(self):
         # TODO: Test for collisions after creating the max number of objects
