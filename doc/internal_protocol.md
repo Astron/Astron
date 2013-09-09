@@ -388,7 +388,7 @@ It returns the select fields in serialized form, in the order requested -- if fo
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, bool found, [uint16 dclass_id], FIELD_DATA)`  
+    `args(uint32 context, bool found, [uint16 dclass_id, FIELD_DATA])`  
 > This message queries all of the database fields from the object and returns the response -- if found.
 
 
