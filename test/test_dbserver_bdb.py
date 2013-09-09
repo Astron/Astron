@@ -26,7 +26,7 @@ roles:
         filename: main_database.db
 """ % test_dc
 
-class TestDatabaseServerBDB(unittest.TestCase, DatabaseBaseTests):
+class TestDatabaseServerBerkeley(unittest.TestCase, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
