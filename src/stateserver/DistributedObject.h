@@ -4,7 +4,14 @@
 
 class DistributedObject : public MDParticipantInterface
 {
+	friend class StateServer;
+
 public:
+	DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
+
+	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+
+private:
 	StateServer *m_stateserver;
 	unsigned int m_do_id;
 	DCClass *m_dclass;
@@ -16,8 +23,6 @@ public:
 	channel_t m_owner_channel;
 	bool m_ai_explicitly_set;
 	LogCategory *m_log;
-
-	DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
 
 	void append_required_data(Datagram &dg);
 	void append_other_data(Datagram &dg);
@@ -33,6 +38,4 @@ public:
 	void save_field(DCField *field, const std::string &data);
 	bool handle_one_update(DatagramIterator &dgi, channel_t sender);
 	bool handle_query(Datagram &out, unsigned short field_id);
-
-	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 };

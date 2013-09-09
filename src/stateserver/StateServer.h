@@ -13,11 +13,11 @@ friend class DistributedObject;
 public:
 	StateServer(RoleConfig roleconfig);
 
-	void handle_generate(DatagramIterator &dgi, bool has_other);
-
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
 private:
+	void handle_generate(DatagramIterator &dgi, bool has_other);
+
 	LogCategory *m_log;
 	std::map<unsigned int, DistributedObject*> m_objs;
 };
