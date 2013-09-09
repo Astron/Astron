@@ -5,18 +5,17 @@
 class DistributedObject : public MDParticipantInterface
 {
 public:
-	channel_t m_owner;
-	unsigned int m_parent_id;
-	unsigned int m_zone_id;
+	StateServer *m_stateserver;
 	unsigned int m_do_id;
 	DCClass *m_dclass;
+	unsigned int m_parent_id;
+	unsigned int m_zone_id;
 	std::map<DCField*, std::string> m_ram_fields;
 	std::map<DCField*, std::string> m_required_fields;
 	channel_t m_ai_channel;
 	channel_t m_owner_channel;
 	bool m_ai_explicitly_set;
 	LogCategory *m_log;
-	StateServer *m_stateserver;
 
 	DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
 
