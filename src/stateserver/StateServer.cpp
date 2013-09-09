@@ -1,6 +1,5 @@
 #include "core/global.h"
 #include "core/messages.h"
-#include <map>
 #include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
@@ -8,8 +7,6 @@
 #include "DistributedObject.h"
 #include "StateServer.h"
 
-
-std::map<unsigned int, DistributedObject*> distObjs;
 
 ConfigVariable<channel_t> cfg_channel("control", 0);
 
@@ -36,7 +33,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 		return;
 	}
 
-	if(distObjs.find(do_id) != distObjs.end())
+	if(m_objs.find(do_id) != m_objs.end())
 	{
 		m_log->warning() << "Received generate for already-existing object ID=" << do_id << std::endl;
 		return;
@@ -54,7 +51,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 						<< dclass->get_name() << "(" << do_id << ")" << std::endl;
 		return;
 	}
-	distObjs[do_id] = obj;
+	m_objs[do_id] = obj;
 }
 
 void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
@@ -77,7 +74,7 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			channel_t ai_channel = dgi.read_uint64();
 			std::set <channel_t> targets;
-			for(auto it = distObjs.begin(); it != distObjs.end(); ++it)
+			for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
 				if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
 					targets.insert(it->second->m_do_id);
 

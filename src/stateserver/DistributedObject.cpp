@@ -7,8 +7,6 @@
 
 #include "DistributedObject.h"
 
-extern std::map<unsigned int, DistributedObject*> distObjs;
-
 static void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
 {
 	if(field->has_fixed_byte_size())
@@ -188,7 +186,7 @@ void DistributedObject::annihilate()
 	Datagram dg(loc, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 	dg.add_uint32(m_do_id);
 	send(dg);
-	distObjs[m_do_id] = NULL;
+	m_stateserver->m_objs[m_do_id] = NULL;
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
 }
