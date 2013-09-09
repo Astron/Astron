@@ -9,7 +9,7 @@
 
 extern std::map<unsigned int, DistributedObject*> distObjs;
 
-void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
+static void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
 {
 	if(field->has_fixed_byte_size())
 	{
