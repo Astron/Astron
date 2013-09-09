@@ -32,9 +32,13 @@ roles:
     - type: stateserver
       control: 402000
 
-    # Now a database, which listens on channel 402001, and uses BerkeleyDB as a backing store.
+    # Now a database, which listens on channel 402001, generates objects with ids >= 100,000,000+ and
+    # uses BerkeleyDB as a backing store.
     - type: database
       control: 402001
+      generate:
+        min: 100000000
+       #max: 200000000
       storage:
         type: bdb
         filename: main_database.db
