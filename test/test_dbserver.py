@@ -184,7 +184,7 @@ class TestDatabaseServer(unittest.TestCase):
         dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(NOT_FOUND)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg)) # object deleted
 
         # Create some other objects
         doidA = self.createEmptyObjGetId(30, 3)
@@ -205,7 +205,7 @@ class TestDatabaseServer(unittest.TestCase):
         dg.add_uint8(FOUND)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
 
         # Try to delete object "B" with a bad verify_code
         dg = Datagram.create([30], 777, DBSERVER_DELETE_STORED_OBJECT)
@@ -225,20 +225,20 @@ class TestDatabaseServer(unittest.TestCase):
         dg.add_uint8(FOUND)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
 
         # Cleanup
         self.deleteObject(doidB)
         self.conn.send(Datagram.create_remove_channel(30))
 
-    def test_create_collisions(self):
+#    def test_create_collisions(self):
         # TODO: Test for collisions after creating the max number of objects
         # TODO: Test that creating max+1 objects (w/o deletion) returns BAD_DO_ID
         # TODO: Test that used ids are reused after deleting some objects
-        pass
+#        pass
 
-    def test_ram(self):
-        pass
+#    def test_ram(self):
+#        pass
 
 if __name__ == '__main__':
     unittest.main()
