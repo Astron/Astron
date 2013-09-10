@@ -231,6 +231,16 @@ CHANGE_ZONE tells everything that can see the object where the object is going.
 slightly differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
 
+**STATESERVER_OBJECT_QUERY_ZONE_ALL(2021)**__
+    `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
+> Sent to the parent; queries zone(s) for all objects within. Each object will
+answer with a STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(_OTHER). After all
+objects have answered, the parent will send:
+
+**STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE(2046)**__
+    `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
+> This is an echo of the above message. It is sent back to the enquierer after
+all objects have announced their existence.
 
 **STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**  
     `args(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
@@ -269,7 +279,7 @@ LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
 
 
-**STATESERVER_OBJECT_SET_OWNER_RECV(2069)** `args(uint64 owner_channel)`  
+**STATESERVER_OBJECT_SET_OWNER_RECV(2070)** `args(uint64 owner_channel)`
 **STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 **STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  

@@ -338,6 +338,16 @@ class TestStateServer(unittest.TestCase):
         self.c.send(dg)
         self.assertTrue(self.c.expect_none())
 
+        # Test that AIs are informed of object deletions...
+        dg = Datagram.create([obj3], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(obj3)
+        self.c.send(dg)
+
+        # See if it "leaves" the AI's interest.
+        dg = Datagram.create([ai2], obj3, STATESERVER_OBJECT_LEAVING_AI_INTEREST)
+        dg.add_uint32(obj3)
+        self.assertTrue(self.c.expect(dg))
+
         # Cleanup time:
         self.c.send(Datagram.create_remove_channel(ai1))
         self.c.send(Datagram.create_remove_channel(ai2))
@@ -349,7 +359,7 @@ class TestStateServer(unittest.TestCase):
         self.c.send(Datagram.create_remove_channel(4030<<32|obj3))
         self.c.send(Datagram.create_remove_channel(obj4))
         # Clean up objects:
-        for obj in [obj1, obj2, obj3, obj4]:
+        for obj in [obj1, obj2, obj4]:
             dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
             dg.add_uint32(obj)
             self.c.send(dg)
@@ -782,7 +792,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([201<<32|4444], 202, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(202)
         expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
+        self.assertTrue(self.c.expect_multi(expected))
 
         # Clean up.
         self.c.send(Datagram.create_remove_channel(4030<<32|201))
@@ -796,6 +806,13 @@ class TestStateServer(unittest.TestCase):
         self.c.send(Datagram.create_add_channel(890))
 
         # Make a few objects...
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(4) # Parent
+        dg.add_uint32(2) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(15000) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
         dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
         dg.add_uint32(15000) # Parent
         dg.add_uint32(1337) # Zone
@@ -855,10 +872,109 @@ class TestStateServer(unittest.TestCase):
         expected.append(dg)
         self.assertTrue(self.c.expect_multi(expected, only=True))
 
-        # TODO: Test zone queries.
+        # Test zone queries...
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint16(1) # Only looking at one zone...
+        dg.add_uint32(1337) # Zone
+        self.c.send(dg)
+
+        # We should get ENTERZONEs for both objects in that zone...
+        expected = []
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483312) # ID
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        dg = Datagram.create([890], 483311, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483311) # ID
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        self.assertTrue(self.c.expect_multi(expected, only=True))
+
+        # Next we should get the QUERY_ZONE_ALL_DONE from the parent...
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint16(1) # Only looking at one zone...
+        dg.add_uint32(1337) # Zone
+        self.assertTrue(self.c.expect(dg))
+        # AND NOTHING MORE:
+        self.assertTrue(self.c.expect_none())
+
+        # Now test field queries...
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELD)
+        dg.add_uint32(483312) # ID
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBAB55EED)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELD_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint32(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Query a field not present on the object...
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELD)
+        dg.add_uint32(483312) # ID
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(0xBAB55EED)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELD_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now let's try a QUERY_FIELDS.
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRequired1)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now a QUERY_FIELDS including a nonpresent field.
+        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setRDB3)
+        self.c.send(dg)
+
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(483312)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(0)
+        self.assertTrue(self.c.expect(dg))
 
         # Clean up.
         self.c.send(Datagram.create_remove_channel(890))
+        dg = Datagram.create([15000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(15000)
+        self.c.send(dg)
         dg = Datagram.create([483310], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(483310)
         self.c.send(dg)
@@ -934,6 +1050,220 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([55555], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(55555)
         self.c.send(dg)
+
+    def test_ownrecv(self):
+        self.c.flush()
+        self.c.send(Datagram.create_add_channel(14253647))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(88833) # Parent
+        dg.add_uint32(99922) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(74635241) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+
+        # Set the owner channel:
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER_RECV)
+        dg.add_uint64(14253647)
+        self.c.send(dg)
+
+        # See if it enters OWNER_RECV.
+        dg = Datagram.create([14253647], 74635241, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg.add_uint32(88833) # Parent
+        dg.add_uint32(99922) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(74635241) # ID
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint16(0) # Number of OTHER fields.
+        self.assertTrue(self.c.expect(dg))
+
+        # Send an ownrecv message...
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(74635241)
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0xF005BA11)
+        self.c.send(dg)
+
+        # See if our owner channel gets it.
+        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(74635241)
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0xF005BA11)
+        self.assertTrue(self.c.expect(dg))
+
+        # Change away...
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER_RECV)
+        dg.add_uint64(197519725497)
+        self.c.send(dg)
+
+        # See if we get a CHANGE_OWNER_RECV
+        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_CHANGE_OWNER_RECV)
+        dg.add_uint32(74635241)
+        dg.add_uint64(197519725497)
+        dg.add_uint64(14253647)
+        self.assertTrue(self.c.expect(dg))
+
+        # Switch our channel subscription to follow it.
+        self.c.send(Datagram.create_add_channel(197519725497))
+        self.c.send(Datagram.create_remove_channel(14253647))
+
+        # Hit it with a delete.
+        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(74635241)
+        self.c.send(dg)
+
+        # Make sure the owner is notified.
+        dg = Datagram.create([197519725497], 74635241, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(74635241)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        self.c.send(Datagram.create_remove_channel(197519725497))
+
+    def test_molecular(self):
+        self.c.flush()
+        self.c.send(Datagram.create_add_channel(13371337))
+        self.c.send(Datagram.create_add_channel(88<<32|99))
+
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(13) # setX
+        dg.add_uint32(37) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(11) # setZ
+        self.c.send(dg)
+
+        # Verify its entry...
+        dg = Datagram.create([88<<32|99], 73317331, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(13) # setX
+        dg.add_uint32(37) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(11) # setZ
+        self.assertTrue(self.c.expect(dg))
+
+        # Send a molecular update...
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(77) # setZ
+        self.c.send(dg)
+
+        # See if the MOLECULAR (not the individual fields) is broadcast.
+        dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(77) # setZ
+        self.assertTrue(self.c.expect(dg))
+
+        # Look at the object and see if the requireds are updated...
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(77) # setZ
+        dg.add_uint16(0) # 0 extra fields.
+        self.assertTrue(self.c.expect(dg))
+
+        # Now try a RAM update...
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(set123)
+        dg.add_uint8(1) # setOne
+        dg.add_uint8(2) # setTwo
+        dg.add_uint8(3) # setThree
+        self.c.send(dg)
+
+        # See if the MOLECULAR (not the individual fields) is broadcast.
+        dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(73317331)
+        dg.add_uint16(set123)
+        dg.add_uint8(1) # setOne
+        dg.add_uint8(2) # setTwo
+        dg.add_uint8(3) # setThree
+        self.assertTrue(self.c.expect(dg))
+
+        # A query should have all of the individual fields, not the molecular.
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(0)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(0)
+        dg.add_uint32(88) # Parent
+        dg.add_uint32(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(73317331) # ID
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(77) # setZ
+        dg.add_uint16(3) # 3 extra fields:
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(setTwo)
+        dg.add_uint8(2)
+        dg.add_uint16(setThree)
+        dg.add_uint8(3)
+        self.assertTrue(self.c.expect(dg))
+
+        # Now let's test querying individual fields...
+        dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_QUERY_FIELDS)
+        dg.add_uint32(73317331)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint16(setXyz)
+        dg.add_uint16(setOne)
+        dg.add_uint16(setUnrelated)
+        dg.add_uint16(set123)
+        dg.add_uint16(setX)
+        self.c.send(dg)
+
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_QUERY_FIELDS_RESP)
+        dg.add_uint32(73317331)
+        dg.add_uint32(0xBAB55EED)
+        dg.add_uint8(1)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55)
+        dg.add_uint32(66)
+        dg.add_uint32(77)
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(setUnrelated)
+        dg.add_uint32(999999)
+        dg.add_uint16(set123)
+        dg.add_uint8(1)
+        dg.add_uint8(2)
+        dg.add_uint8(3)
+        dg.add_uint16(setX)
+        dg.add_uint32(55)
+        self.assertTrue(self.c.expect(dg))
+
+        # Clean up.
+        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(73317331)
+        self.c.send(dg)
+        self.c.send(Datagram.create_remove_channel(13371337))
+        self.c.send(Datagram.create_remove_channel(88<<32|99))
 
 if __name__ == '__main__':
     unittest.main()

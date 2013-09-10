@@ -85,6 +85,11 @@ public:
 		return r;
 	}
 
+	std::string read_remainder()
+	{
+		return read_data(m_dg.get_buf_end() - p);
+	}
+
 	// tell returns the current message offset in bytes
 	unsigned int tell()
 	{
