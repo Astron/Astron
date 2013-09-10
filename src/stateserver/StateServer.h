@@ -12,6 +12,7 @@ friend class DistributedObject;
 
 public:
 	StateServer(RoleConfig roleconfig);
+	~StateServer();
 
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 

@@ -20,6 +20,11 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 	m_log = new LogCategory("stateserver", name.str());
 }
 
+StateServer::~StateServer()
+{
+	delete m_log;
+}
+
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 {
 	unsigned int parent_id = dgi.read_uint32();

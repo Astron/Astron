@@ -8,6 +8,7 @@ class DistributedObject : public MDParticipantInterface
 
 public:
 	DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other);
+	~DistributedObject();
 
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 

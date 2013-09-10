@@ -89,6 +89,11 @@ m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 	send_zone_entry();
 }
 
+DistributedObject::~DistributedObject()
+{
+	delete m_log;
+}
+
 void DistributedObject::append_required_data(Datagram &dg)
 {
 	dg.add_uint32(m_parent_id);
