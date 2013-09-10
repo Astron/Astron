@@ -259,8 +259,55 @@ class DatabaseBaseTests(object):
             self.deleteObject(do)
         self.conn.send(Datagram.create_remove_channel(40))
 
-#    def test_ram(self):
-#        pass
+    def test_ram(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(50))
+
+        # Create a stored DistributedTestObject3 with actual values and non-db/ram values we don't care about...
+        dg = Datagram.create([777], 50, DBSERVER_CREATE_STORED_OBJECT)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(5) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(91849)
+        dg.add_uint16(setBA1)
+        dg.add_uint16(239)
+        dg.add_uint16(setDb3)
+        dg.add_string("You monster...")
+        dg.add_uint16(setB1)
+        dg.add_uint8(17)
+        dg.add_uint16(setBR1)
+        dg.add_string("Fiddlesticks!!!")
+        self.conn.send(dg)
+
+        # The Database should return a new do_id...
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_CREATE_STORED_OBJECT_RESP))
+        self.assertTrue(dgi.read_uint32() == 1) # Check context
+        doid = dgi.read_uint32()
+
+        # Retrieve object from the database...
+        dg = Datagram.create([777], 50, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Get values back from server
+        dg = Datagram.create([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(FOUND)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(91849)
+        dg.add_uint16(setDb3)
+        dg.add_string("You monster...")
+        self.assertTrue(self.conn.expect(dg))
+
+        # Cleanup
+        self.deleteObject(50, doid)
+        self.conn.send(Datagram.create_remove_channel(50))
 
 class TestDatabaseServer(unittest.TestCase, DatabaseBaseTests):
     @classmethod
