@@ -17,3 +17,17 @@ dclass DistributedTestObject3 : DistributedTestObject1 {
 	setRDB3(uint32 rdb) required broadcast db;
 };
 
+dclass DistributedTestObject4 {
+	setX(uint32 x) broadcast required;
+	setY(uint32 y) broadcast required;
+	setUnrelated(uint32 lol) required;
+	setZ(uint32 z) broadcast required;
+
+	setXyz : setX, setY, setZ;
+
+	setOne(uint8 one) broadcast ram;
+	setTwo(uint8 two) broadcast ram;
+	setThree(uint8 three) broadcast ram;
+
+	set123 : setOne, setTwo, setThree;
+};
