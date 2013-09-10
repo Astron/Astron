@@ -86,7 +86,7 @@ m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 
 	m_parent_id = 0;
 	handle_parent_change(parent_id);
-	send_zone_entry();
+	send_zone_entry(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 }
 
 DistributedObject::~DistributedObject()
@@ -121,9 +121,9 @@ void DistributedObject::append_other_data(Datagram &dg)
 	}
 }
 
-void DistributedObject::send_zone_entry()
+void DistributedObject::send_zone_entry(channel_t destination)
 {
-	Datagram dg(LOCATION2CHANNEL(m_parent_id, m_zone_id), m_do_id,
+	Datagram dg(destination, m_do_id,
 				m_ram_fields.size() ?
 				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
 				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
@@ -408,7 +408,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			send(dg);
 
 			handle_parent_change(new_parent_id);
-			send_zone_entry();
+			send_zone_entry(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 			break;
 		}
 		case STATESERVER_OBJECT_LOCATE:
