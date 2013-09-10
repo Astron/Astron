@@ -18,8 +18,8 @@ private:
 	DCClass *m_dclass;
 	unsigned int m_parent_id;
 	unsigned int m_zone_id;
-	std::map<DCField*, std::string> m_ram_fields;
-	std::map<DCField*, std::string> m_required_fields;
+	std::map<DCField*, std::string> m_ram_fields; // TODO: Fix for std::unordered_map
+	std::unordered_map<DCField*, std::string> m_required_fields;
 	channel_t m_ai_channel;
 	channel_t m_owner_channel;
 	bool m_ai_explicitly_set;

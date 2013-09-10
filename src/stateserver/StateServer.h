@@ -20,5 +20,5 @@ private:
 	void handle_generate(DatagramIterator &dgi, bool has_other);
 
 	LogCategory *m_log;
-	std::map<unsigned int, DistributedObject*> m_objs;
+	std::unordered_map<unsigned int, DistributedObject*> m_objs;
 };
