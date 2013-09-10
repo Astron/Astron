@@ -505,6 +505,48 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
+		case STATESERVER_OBJECT_QUERY_ZONE_ALL:
+		{
+			unsigned int queried_parent = dgi.read_uint32();
+
+			if(queried_parent == m_do_id)
+			{
+				std::string queried_zones = dgi.read_remainder();
+
+				// Bounce the message down to all children and have them decide
+				// whether or not to reply.
+				// TODO: Is this really that efficient?
+				Datagram dg(LOCATION2CHANNEL(4030, m_do_id), sender,
+				            STATESERVER_OBJECT_QUERY_ZONE_ALL);
+				dg.add_uint32(queried_parent);
+				dg.add_data(queried_zones);
+				send(dg);
+
+				// FIXME: This assumes all objects process and reply before this goes
+				// out. This will typically be the case if everything is on one State
+				// Server; however, a better method should probably be used in the future.
+				Datagram done_dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE);
+				done_dg.add_uint32(queried_parent);
+				done_dg.add_data(queried_zones);
+				send(done_dg);
+				break;
+			}
+
+			if(queried_parent == m_parent_id)
+			{
+				// Query was relayed from parent! See if we match any of the zones
+				// and if so, reply:
+				unsigned short zones = dgi.read_uint16();
+				for(int i = 0; i < zones; ++i)
+				{
+					if(dgi.read_uint32() == m_zone_id)
+					{
+						send_zone_entry(sender);
+						break;
+					}
+				}
+			}
+		}
 		default:
 			m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
 	}

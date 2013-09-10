@@ -807,6 +807,13 @@ class TestStateServer(unittest.TestCase):
 
         # Make a few objects...
         dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
+        dg.add_uint32(4) # Parent
+        dg.add_uint32(2) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(15000) # ID
+        dg.add_uint32(0) # setRequired1
+        self.c.send(dg)
+        dg = Datagram.create([100], 5, STATESERVER_OBJECT_GENERATE_WITH_REQUIRED)
         dg.add_uint32(15000) # Parent
         dg.add_uint32(1337) # Zone
         dg.add_uint16(DistributedTestObject1)
@@ -865,7 +872,39 @@ class TestStateServer(unittest.TestCase):
         expected.append(dg)
         self.assertTrue(self.c.expect_multi(expected, only=True))
 
-        # TODO: Test zone queries.
+        # Test zone queries...
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint16(1) # Only looking at one zone...
+        dg.add_uint32(1337) # Zone
+        self.c.send(dg)
+
+        # We should get ENTERZONEs for both objects in that zone...
+        expected = []
+        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483312) # ID
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        dg = Datagram.create([890], 483311, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint32(1337) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(483311) # ID
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        self.assertTrue(self.c.expect_multi(expected, only=True))
+
+        # Next we should get the QUERY_ZONE_ALL_DONE from the parent...
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(15000) # Parent
+        dg.add_uint16(1) # Only looking at one zone...
+        dg.add_uint32(1337) # Zone
+        self.assertTrue(self.c.expect(dg))
+        # AND NOTHING MORE:
+        self.assertTrue(self.c.expect_none())
 
         # Now test field queries...
         dg = Datagram.create([483312], 890, STATESERVER_OBJECT_QUERY_FIELD)
@@ -933,6 +972,9 @@ class TestStateServer(unittest.TestCase):
 
         # Clean up.
         self.c.send(Datagram.create_remove_channel(890))
+        dg = Datagram.create([15000], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(15000)
+        self.c.send(dg)
         dg = Datagram.create([483310], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(483310)
         self.c.send(dg)
