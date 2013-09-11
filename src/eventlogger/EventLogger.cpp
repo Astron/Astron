@@ -20,4 +20,4 @@ void EventLogger::bind(const std::string &addr)
 	m_socket = new udp::socket(io_service, *it);
 }
 
-RoleFactoryItem<EventLogger> el_fact("eventlogger");
+static RoleFactoryItem<EventLogger> el_fact("eventlogger");
