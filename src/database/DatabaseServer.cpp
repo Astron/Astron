@@ -1,6 +1,5 @@
 #include "core/global.h"
 #include "core/messages.h"
-#include "dcparser/dcClass.h"
 #include <fstream>
 
 #include "DatabaseServer.h"
