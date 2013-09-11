@@ -7,45 +7,6 @@
 
 #include "DistributedObject.h"
 
-static void UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
-{
-	if(field->has_fixed_byte_size())
-	{
-		str += dgi.read_data(field->get_fixed_byte_size());
-	}
-	else if(field->get_num_length_bytes() > 0)
-	{
-		unsigned int length = field->get_num_length_bytes();
-		switch(length)
-		{
-		case 2:
-		{
-			unsigned short l = dgi.read_uint16();
-			str += std::string((char*)&l, 2);
-			length = l;
-		}
-		break;
-		case 4:
-		{
-			unsigned int l = dgi.read_uint32();
-			str += std::string((char*)&l, 4);
-			length = l;
-		}
-		break;
-		break;
-		}
-		str += dgi.read_data(length);
-	}
-	else
-	{
-		unsigned int nNested = field->get_num_nested_fields();
-		for(unsigned int i = 0; i < nNested; ++i)
-		{
-			UnpackFieldFromDG(field->get_nested_field(i), dgi, str);
-		}
-	}
-}
-
 DistributedObject::DistributedObject(StateServer *stateserver, unsigned int do_id, DCClass *dclass, unsigned int parent_id, unsigned int zone_id, DatagramIterator &dgi, bool has_other) :
 m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
 m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
@@ -59,7 +20,7 @@ m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 		DCField *field = m_dclass->get_inherited_field(i);
 		if(field->is_required() && !field->as_molecular_field())
 		{
-			UnpackFieldFromDG(field, dgi, m_required_fields[field]);
+			dgi.unpack_field(field, m_required_fields[field]);
 		}
 	}
 
@@ -72,7 +33,7 @@ m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 			DCField *field = m_dclass->get_field_by_index(field_id);
 			if(field->is_ram())
 			{
-				UnpackFieldFromDG(field, dgi, m_ram_fields[field]);
+				dgi.unpack_field(field, m_ram_fields[field]);
 			}
 			else
 			{
@@ -239,7 +200,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 
 	try
 	{
-		UnpackFieldFromDG(field, dgi, data);
+		dgi.unpack_field(field, data);
 	}
 	catch(std::exception &e)
 	{
@@ -256,7 +217,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		{
 			std::string atomic_data;
 			DCAtomicField *atomic = molecular->get_atomic(i);
-			UnpackFieldFromDG(atomic, dgi, atomic_data);
+			dgi.unpack_field(atomic, atomic_data);
 			save_field(atomic->as_field(), atomic_data);
 		}
 	}
