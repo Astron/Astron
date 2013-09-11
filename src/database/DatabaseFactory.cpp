@@ -18,5 +18,5 @@ Database* DatabaseFactory::instantiate_db(const std::string &db_type, DatabaseCo
 	{
 		return m_factories[db_type]->instantiate(dbconfig);
 	}
-	return m_factories["default"]->instantiate(dbconfig);
+	return NULL;
 }

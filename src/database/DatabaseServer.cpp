@@ -1,8 +1,7 @@
-#include "core/global.h"
-#include "core/messages.h"
-#include <fstream>
-
 #include "DatabaseServer.h"
+
+#include "core/global.h"
+#include <fstream>
 
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
@@ -12,11 +11,12 @@ LogCategory db_log("db", "Database");
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 {
-	m_freeId = id_start.get_rval(roleconfig);
-
+	m_channel = control_channel.get_rval(roleconfig);
 	m_db = DatabaseFactory::singleton.instantiate_db(storage_type.get_rval(roleconfig), roleconfig["storage"]);
+	m_start_id = m_free_id = id_start.get_rval(roleconfig);
+	m_end_id = id_end.get_rval(roleconfig);
 
-	subscribe_channel(control_channel.get_rval(roleconfig));
+	subscribe_channel(m_channel);
 }
 
 DatabaseServer::~DatabaseServer()
@@ -33,56 +33,35 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case DBSERVER_CREATE_STORED_OBJECT:
 		{
 			unsigned int context = dgi.read_uint32();
-			unsigned short dcId = dgi.read_uint16();
-			DCClass *dcc = gDCF->get_class(dcId);
-			unsigned short nFields = dgi.read_uint16();
-			unsigned int doId = m_freeId;
-			if(doId > id_end.get_rval(m_roleconfig))
+			unsigned short dc_id = dgi.read_uint16();
+			DCClass *dcc = gDCF->get_class(dc_id);
+			unsigned short field_count = dgi.read_uint16();
+			unsigned int do_id = m_free_id;
+			if(do_id > m_end_id)
 			{
 				db_log.fatal() << "DB ran out of doIds" << std::endl;
 				exit(1);
 			}
-			m_freeId++;
-			WriteIDFile(m_roleconfig, m_freeId);
+			m_free_id++;
 
-			Datagram serializedDO;
-			serializedDO.add_uint32(doId);
-			serializedDO.add_uint16(nFields);
-
-			for(unsigned short  i = 0; i < nFields; ++i)
+			FieldList fields;
+			for(unsigned short  i = 0; i < field_count; ++i)
 			{
-				unsigned short fieldId = dgi.read_uint16();
-				DCField *field = dcc->get_field(fieldId);
-				if(field)
+				unsigned short field_id = dgi.read_uint16();
+				DCField *field = dcc->get_field(field_id);
+				if(field && field->is_db())
 				{
-					serializedDO.add_string(field->get_name());
-					std::string data;
-					dgi.unpack_field(field, data);
-					serializedDO.add_string(data);
+					fields.emplace(fields.end(), field, "");
+					dgi.unpack_field(field, fields.back().second);
 				}
 			}
 
-			std::stringstream ss;
-			ss << storage_folder.get_rval(m_roleconfig)  << doId;
-			std::ofstream file;
-			file.open(ss.str());
-			Datagram resp;
-			resp.add_uint8(1);
-			resp.add_uint64(sender);
-			resp.add_uint64(control_channel.get_rval(m_roleconfig));
-			resp.add_uint16(DBSERVER_CREATE_STORED_OBJECT_RESP);
+			m_db->create_object(do_id, fields);
 
+			Datagram resp;
+			resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
 			resp.add_uint32(context);
-			if(file.is_open())
-			{
-				file.write(serializedDO.get_data(), serializedDO.get_buf_end());
-				resp.add_uint32(doId);
-			}
-			else
-			{
-				resp.add_uint32(0);
-			}
-			file.close();
+			resp.add_uint32(do_id);
 			send(resp);
 		}
 		break;

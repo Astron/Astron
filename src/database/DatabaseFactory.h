@@ -1,20 +1,26 @@
 #pragma once
 #include "Database.h"
+#include "core/config.h"
 #include <unordered_map>
 
-class BaseDatabaseItem {
+class BaseDatabaseItem
+{
 public:
 	virtual Database* instantiate(DatabaseConfig dbconfig) = 0;
-
 protected:
-	BaseDatabaseItem();
+	BaseDatabaseItem(const std::string &name);
 };
 
 template<class T>
 class DatabaseItem : public BaseDatabaseItem
 {
 public:
-	virtual Database* instantiate(DatabaseConfig dbconfig) {
+	DatabaseItem(const std::string &name) : BaseDatabaseItem(name)
+	{
+	}
+
+	virtual Database* instantiate(DatabaseConfig dbconfig)
+	{
 		return new T(dbconfig);
 	}
 };
@@ -22,7 +28,7 @@ public:
 class DatabaseFactory
 {
 public:
-	Database* instantiate_db(std::string type, DatabaseConfig dbconfig);
+	Database* instantiate_db(const std::string &db_type, DatabaseConfig dbconfig);
 	static DatabaseFactory singleton;
 
 	void add_db(const std::string &name, BaseDatabaseItem *factory);

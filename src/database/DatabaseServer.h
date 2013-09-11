@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/messages.h"
 #include "util/Role.h"
 #include "core/RoleFactory.h"
 #include "Database.h"
@@ -16,7 +17,11 @@ public:
 
 	virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 private:
-	Database *m_db;
 	LogCategory *m_log;
-	unsigned int m_freeId;
+
+	channel_t m_channel;
+	Database *m_db;
+	unsigned int m_free_id;
+	unsigned int m_start_id;
+	unsigned int m_end_id;
 };
