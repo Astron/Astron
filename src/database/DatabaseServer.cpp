@@ -39,8 +39,13 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			unsigned int do_id = m_free_id;
 			if(do_id > m_end_id)
 			{
-				db_log.fatal() << "DB ran out of doIds" << std::endl;
-				exit(1);
+				m_log->error() << "Database ran out of DistributedObject ids" << std::endl;
+				Datagram resp;
+				resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
+				resp.add_uint32(context);
+				resp.add_uint32(0);
+				send(resp);
+				return;
 			}
 			m_free_id++;
 
