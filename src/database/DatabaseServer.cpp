@@ -7,38 +7,22 @@
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
 ConfigVariable<unsigned int> id_end("generate/max", 2000);
-ConfigVariable<std::string> storage_folder("storage_folder", "objs/");
+ConfigVariable<std::string> storage_type("storage/type", "default");
 LogCategory db_log("db", "Database");
-
-void WriteIDFile(RoleConfig &roleconfig, unsigned int doId)
-{
-	std::ofstream file;
-	std::stringstream ss;
-	ss << storage_folder.get_rval(roleconfig)  << "id.txt";
-	file.open(ss.str());
-	file << doId;
-	file.close();
-}
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 {
 	m_freeId = id_start.get_rval(roleconfig);
 
-	std::ifstream file;
-	std::stringstream ss;
-	ss << storage_folder.get_rval(roleconfig)  << "id.txt";
-	file.open(ss.str());
-	if(file.is_open())
-	{
-		file >> m_freeId;
-	}
-	file.close();
+	m_db = DatabaseFactory::singleton.instantiate_db(storage_type.get_rval(roleconfig), roleconfig["storage"]);
 
 	subscribe_channel(control_channel.get_rval(roleconfig));
 }
 
 DatabaseServer::~DatabaseServer()
-{}
+{
+
+}
 
 void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
