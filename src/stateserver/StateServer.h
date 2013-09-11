@@ -1,6 +1,6 @@
 #pragma once
+#include <unordered_map>
 
-#include <map>
 #include "util/Role.h"
 #include "core/RoleFactory.h"
 
