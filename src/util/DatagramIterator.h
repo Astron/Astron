@@ -1,5 +1,6 @@
 #pragma once
 #include "Datagram.h"
+#include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
 #include <sstream>
@@ -88,6 +89,45 @@ public:
 	std::string read_remainder()
 	{
 		return read_data(m_dg.get_buf_end() - p);
+	}
+
+	void unpack_field(DCPackerInterface *field, std::string &str)
+	{
+		if(field->has_fixed_byte_size())
+		{
+			str += read_data(field->get_fixed_byte_size());
+		}
+		else if(field->get_num_length_bytes() > 0)
+		{
+			unsigned int length = field->get_num_length_bytes();
+			switch(length)
+			{
+			case 2:
+			{
+				unsigned short l = read_uint16();
+				str += std::string((char*)&l, 2);
+				length = l;
+			}
+			break;
+			case 4:
+			{
+				unsigned int l = read_uint32();
+				str += std::string((char*)&l, 4);
+				length = l;
+			}
+			break;
+			break;
+			}
+			str += read_data(length);
+		}
+		else
+		{
+			unsigned int nNested = field->get_num_nested_fields();
+			for(unsigned int i = 0; i < nNested; ++i)
+			{
+				unpack_field(field->get_nested_field(i), str);
+			}
+		}
 	}
 
 	// tell returns the current message offset in bytes

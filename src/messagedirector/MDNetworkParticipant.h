@@ -1,7 +1,6 @@
 #pragma once
 #include "MessageDirector.h"
 #include "util/NetworkClient.h"
-#include <vector>
 
 class MDNetworkParticipant : public MDParticipantInterface, public NetworkClient
 {
