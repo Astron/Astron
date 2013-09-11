@@ -1,5 +1,6 @@
 #include "core/global.h"
 #include "core/messages.h"
+#include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
 
