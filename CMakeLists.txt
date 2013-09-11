@@ -79,7 +79,10 @@ endif()
 
 set (BUILD_DBSERVER ON CACHE BOOL "If on, stateserver will be built into binary")
 if(BUILD_DBSERVER)
-	set (DBSERVER_FILES src/database/DBServer.cpp)
+	set (DBSERVER_FILES
+		src/database/DatabaseServer.cpp
+		src/database/DatabaseServer.h
+	)
 endif()
 
 set (BUILD_STATESERVER ON CACHE BOOL "If on, stateserver will be built into binary")
