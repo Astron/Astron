@@ -6,7 +6,7 @@
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
 ConfigVariable<unsigned int> id_end("generate/max", 2000);
-ConfigVariable<std::string> storage_type("storage/type", "default");
+ConfigVariable<std::string> storage_type("storage/type", "yaml");
 LogCategory db_log("db", "Database");
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
@@ -19,10 +19,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 	subscribe_channel(m_channel);
 }
 
-DatabaseServer::~DatabaseServer()
-{
-
-}
+DatabaseServer::~DatabaseServer() {}
 
 void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
