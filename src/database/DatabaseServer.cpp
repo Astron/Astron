@@ -11,8 +11,13 @@ LogCategory db_log("db", "Database");
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 {
+	m_log = &db_log;
 	m_channel = control_channel.get_rval(roleconfig);
 	m_db = DatabaseFactory::singleton.instantiate_db(storage_type.get_rval(roleconfig), roleconfig["storage"]);
+	if(!m_db) {
+		m_log->fatal() << "Database has no storage backend of type: " << storage_type.get_rval(roleconfig) << std::endl;
+		exit(1);
+	}
 	m_start_id = m_free_id = id_start.get_rval(roleconfig);
 	m_end_id = id_end.get_rval(roleconfig);
 
