@@ -1,7 +1,11 @@
 #pragma once
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
 #include "core/global.h"
 #include "util/Role.h"
+
+using boost::asio::ip::udp;
 
 class EventLogger : public Role
 {
@@ -12,4 +16,7 @@ public:
 
 private:
 	LogCategory m_log;
+	udp::socket *m_socket;
+
+	void bind(const std::string &addr);
 };
