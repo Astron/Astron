@@ -87,6 +87,14 @@ if(BUILD_STATESERVER)
 	)
 endif()
 
+set (BUILD_EVENTLOGGER ON CACHE BOOL "If on, Event Logger will be built into binary")
+if(BUILD_EVENTLOGGER)
+	set (EVENTLOGGER_FILES
+		src/eventlogger/EventLogger.cpp
+		src/eventlogger/EventLogger.h
+	)
+endif()
+
 include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
@@ -108,6 +116,7 @@ add_executable (openotpd
 	src/util/NetworkClient.cpp
 	src/util/NetworkClient.h
 	${STATESERVER_FILES}
+	${EVENTLOGGER_FILES}
 	${TEST_FILES}
 )
 
