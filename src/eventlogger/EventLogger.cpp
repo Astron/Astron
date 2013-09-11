@@ -12,6 +12,8 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig), m_log("event
 
 	m_file_format = output_format.get_rval(roleconfig);
 	open_log();
+
+	start_receive();
 }
 
 void EventLogger::bind(const std::string &addr)
@@ -41,6 +43,32 @@ void EventLogger::open_log()
 	m_file = new ofstream(filename);
 
 	m_log.info() << "Opened new log." << std::endl;
+}
+
+void EventLogger::process_packet(const Datagram &dg)
+{
+	DatagramIterator dgi(dg);
+
+	// TODO
+}
+
+void EventLogger::start_receive()
+{
+	m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
+	                             m_remote, boost::bind(&EventLogger::handle_receive, this,
+	                             boost::asio::placeholders::error,
+	                             boost::asio::placeholders::bytes_transferred));
+}
+
+void EventLogger::handle_receive(const boost::system::error_code &error, std::size_t bytes)
+{
+	m_log.spam() << "Got packet from "
+	             << m_remote.address() << ":" << m_remote.port() << std::endl;
+
+	Datagram dg(m_buffer, bytes);
+	process_packet(dg);
+
+	start_receive();
 }
 
 static RoleFactoryItem<EventLogger> el_fact("eventlogger");
