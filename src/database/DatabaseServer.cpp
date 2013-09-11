@@ -21,45 +21,6 @@ void WriteIDFile(RoleConfig &roleconfig, unsigned int doId)
 	file.close();
 }
 
-void db_UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::string &str)
-{
-	if(field->has_fixed_byte_size())
-	{
-		str += dgi.read_data(field->get_fixed_byte_size());
-	}
-	else if(field->get_num_length_bytes() > 0)
-	{
-		unsigned int length = field->get_num_length_bytes();
-		switch(length)
-		{
-		case 2:
-		{
-			unsigned short l = dgi.read_uint16();
-			str += std::string((char*)&l, 2);
-			length = l;
-		}
-		break;
-		case 4:
-		{
-			unsigned int l = dgi.read_uint32();
-			str += std::string((char*)&l, 4);
-			length = l;
-		}
-		break;
-		break;
-		}
-		str += dgi.read_data(length);
-	}
-	else
-	{
-		unsigned int nNested = field->get_num_nested_fields();
-		for(unsigned int i = 0; i < nNested; ++i)
-		{
-			db_UnpackFieldFromDG(field->get_nested_field(i), dgi, str);
-		}
-	}
-}
-
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 {
 	m_freeId = id_start.get_rval(roleconfig);
@@ -113,7 +74,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					serializedDO.add_string(field->get_name());
 					std::string data;
-					db_UnpackFieldFromDG(field, dgi, data);
+					dgi.unpack_field(field, data);
 					serializedDO.add_string(data);
 				}
 			}
