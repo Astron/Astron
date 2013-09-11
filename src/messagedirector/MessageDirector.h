@@ -11,10 +11,6 @@
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
-
-// Standard type defines
-typedef unsigned long long channel_t;
-
 // A ChannelList represents a single channel, or range of channels
 //     that a MDParticipant can be subscribed to.
 struct ChannelList
