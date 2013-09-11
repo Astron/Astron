@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
@@ -17,6 +18,9 @@ public:
 private:
 	LogCategory m_log;
 	udp::socket *m_socket;
+	std::string m_file_format;
+	ofstream *m_file;
 
 	void bind(const std::string &addr);
+	void open_log();
 };
