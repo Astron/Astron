@@ -6,8 +6,8 @@
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
-ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
-ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
+static ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
+static ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
 // Define convenience type
 typedef boost::icl::discrete_interval<channel_t> interval_t; 
