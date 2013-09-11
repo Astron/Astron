@@ -123,12 +123,12 @@ public:
 		add_uint16(message_type);
 	}
 
-	unsigned int get_buf_end()
+	unsigned int get_buf_end() const
 	{
 		return buf_end;
 	}
 
-	const char* get_data()
+	char* get_data() const
 	{
 		return buf;
 	}
