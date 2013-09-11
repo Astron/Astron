@@ -1,8 +1,9 @@
-#include "DatabaseServer.h"
 #include "core/global.h"
 #include "core/messages.h"
 #include "dcparser/dcClass.h"
 #include <fstream>
+
+#include "DatabaseServer.h"
 
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
@@ -59,9 +60,10 @@ void db_UnpackFieldFromDG(DCPackerInterface *field, DatagramIterator &dgi, std::
 	}
 }
 
-DatabaseServer::DatabaseServer(RoleConfig roleconfig) : 
-	Role(roleconfig), m_freeId(id_start.get_rval(roleconfig))
+DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 {
+	m_freeId = id_start.get_rval(roleconfig);
+
 	std::ifstream file;
 	std::stringstream ss;
 	ss << storage_folder.get_rval(roleconfig)  << "id.txt";
@@ -75,7 +77,10 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) :
 	subscribe_channel(control_channel.get_rval(roleconfig));
 }
 
-void DatabaseServer::handle_datagram(Datagram &dg, DatagramIterator &dgi)
+DatabaseServer::~DatabaseServer()
+{}
+
+void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
 	unsigned long long sender = dgi.read_uint64();
 	unsigned short msg_type = dgi.read_uint16();
