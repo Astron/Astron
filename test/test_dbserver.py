@@ -44,7 +44,7 @@ class DatabaseBaseTests(object):
         return dgi.read_uint32()
 
     def deleteObject(self, sender, doid):
-        dg = Datagram.create([777], sender, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg = Datagram.create([777], sender, DBSERVER_DELETE_STORED_OBJECT)
         dg.add_uint32(VERIFY_DELETE_OBJECT)
         dg.add_uint32(doid)
         self.conn.send(dg)
@@ -256,7 +256,7 @@ class DatabaseBaseTests(object):
         # Cleanup
         self.deleteObject(40, doids[0])
         for do in doids:
-            self.deleteObject(do)
+            self.deleteObject(40, do)
         self.conn.send(Datagram.create_remove_channel(40))
 
     def test_ram(self):

@@ -41,17 +41,23 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			unsigned int do_id = m_free_id;
 			if(do_id > m_end_id)
 			{
-				m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
-				Datagram resp;
-				resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
-				resp.add_uint32(context);
-				resp.add_uint32(0);
-				send(resp);
-				return;
-			}
-			m_free_id++;
+				if(m_freed_ids.empty()) {
+					m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
+					Datagram resp;
+					resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
+					resp.add_uint32(context);
+					resp.add_uint32(0);
+					send(resp);
+					return;
+				}
 
-			m_log->spam() << "Created stored object with ID: " << do_id << std::endl;
+				do_id = m_freed_ids.top();
+				m_freed_ids.pop();
+			} else {
+				m_free_id++;
+			}
+
+			m_log->spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
 
 			FieldList fields;
 			for(unsigned short  i = 0; i < field_count; ++i)
@@ -74,8 +80,23 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			send(resp);
 		}
 		break;
+		case DBSERVER_DELETE_STORED_OBJECT:
+		{
+			unsigned int verify = dgi.read_uint32();
+			unsigned int do_id = dgi.read_uint32();
+
+			m_log->spam() << "Deleting object with ID... " << do_id << std::endl;
+			if(verify == 0x44696521) {
+				m_db->delete_object(do_id);
+				m_freed_ids.push(do_id);
+				m_log->spam() << "... delete successful." << std::endl;
+			} else {
+				m_log->spam() << "... delete failed." << std::endl;
+			}
+		}
+		break;
 		default:
-			db_log.error() << "Recieved unknown MsgType: " << msg_type
+			m_log->error() << "Recieved unknown MsgType: " << msg_type
 				<< std::endl;
 	};
 }
