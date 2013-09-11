@@ -42,7 +42,7 @@ DatabaseServer::~DatabaseServer()
 
 void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	unsigned long long sender = dgi.read_uint64();
+	channel_t sender = dgi.read_uint64();
 	unsigned short msg_type = dgi.read_uint16();
 	switch(msg_type)
 	{
