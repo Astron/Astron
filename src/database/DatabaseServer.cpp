@@ -15,7 +15,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig)
 	m_channel = control_channel.get_rval(roleconfig);
 	m_db = DatabaseFactory::singleton.instantiate_db(storage_type.get_rval(roleconfig), roleconfig["storage"]);
 	if(!m_db) {
-		m_log->fatal() << "Database has no storage backend of type: " << storage_type.get_rval(roleconfig) << std::endl;
+		m_log->fatal() << "No storage backend of type '" << storage_type.get_rval(roleconfig) << "' exists." << std::endl;
 		exit(1);
 	}
 	m_start_id = m_free_id = id_start.get_rval(roleconfig);
@@ -41,7 +41,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			unsigned int do_id = m_free_id;
 			if(do_id > m_end_id)
 			{
-				m_log->error() << "Database ran out of DistributedObject ids" << std::endl;
+				m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 				Datagram resp;
 				resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
 				resp.add_uint32(context);
@@ -50,6 +50,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				return;
 			}
 			m_free_id++;
+
+			m_log->spam() << "Created stored object with ID: " << do_id << std::endl;
 
 			FieldList fields;
 			for(unsigned short  i = 0; i < field_count; ++i)
@@ -73,7 +75,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		break;
 		default:
-			db_log.error() << "DB recv'd unknown MsgType: " << msg_type
+			db_log.error() << "Recieved unknown MsgType: " << msg_type
 				<< std::endl;
 	};
 }
