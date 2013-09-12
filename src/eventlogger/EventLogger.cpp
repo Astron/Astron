@@ -13,6 +13,11 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig), m_log("event
 
 	m_file_format = output_format.get_rval(roleconfig);
 	open_log();
+	std::vector<std::string> msg;
+	msg.push_back("EventLogger");
+	msg.push_back("log_opened");
+	msg.push_back("Log opened upon Event Logger startup.");
+	write_log(msg);
 
 	start_receive();
 }
