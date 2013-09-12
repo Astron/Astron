@@ -51,6 +51,17 @@ void EventLogger::open_log()
 	m_log.info() << "Opened new log." << std::endl;
 }
 
+void EventLogger::cycle_log()
+{
+	open_log();
+
+	std::vector<std::string> msg;
+	msg.push_back("EventLogger");
+	msg.push_back("log_opened");
+	msg.push_back("Log cycled.");
+	write_log(msg);
+}
+
 void EventLogger::write_log(const std::vector<std::string> &msg)
 {
 	time_t rawtime;
