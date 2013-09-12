@@ -1,4 +1,5 @@
 #include <ctime>
+#include <cctype>
 
 #include "core/RoleFactory.h"
 #include "EventLogger.h"
@@ -45,11 +46,82 @@ void EventLogger::open_log()
 	m_log.info() << "Opened new log." << std::endl;
 }
 
+void EventLogger::write_log(const std::vector<std::string> &msg)
+{
+	time_t rawtime;
+	time(&rawtime);
+
+	char timestamp[1024];
+	strftime(timestamp, 1024, "\"%Y-%m-%d %H:%M:%S\"", localtime(&rawtime));
+
+	*m_file << timestamp;
+
+	for(auto it = msg.begin(); it != msg.end(); ++it)
+	{
+		// If the column consists purely of alphanumerics, we can just dump it
+		// without quoting it...
+		bool alnum = true;
+		for(const char *c = it->c_str(); *c; ++c)
+		{
+			if(!isalnum(*c))
+			{
+				alnum = false;
+				break;
+			}
+		}
+		if(alnum)
+		{
+			*m_file << ',' << *it;
+			continue;
+		}
+
+		// Okay, there's other stuff in this column, so we're going to quote:
+
+		char *cleaned = new char[it->length()*2+1];
+
+		char *p = cleaned;
+		for(const char *c = it->c_str(); *c; ++c)
+		{
+			if(*c == '"')
+			{
+				*(p++) = '"';
+				*(p++) = '"';
+			}
+			else
+			{
+				*(p++) = *c;
+			}
+		}
+		*p = 0;
+
+		*m_file << ",\"" << cleaned << '"';
+		delete cleaned;
+	}
+
+	*m_file << "\r\n" << std::flush;
+}
+
 void EventLogger::process_packet(const Datagram &dg)
 {
 	DatagramIterator dgi(dg);
 
-	// TODO
+	std::vector<std::string> msg;
+
+	while(dgi.tell() != dg.get_buf_end())
+	{
+		try
+		{
+			msg.push_back(dgi.read_string());
+		}
+		catch(std::exception &e)
+		{
+			m_log.error() << "Received truncated packet from "
+			              << m_remote.address() << ":" << m_remote.port() << std::endl;
+			return;
+		}
+	}
+
+	write_log(msg);
 }
 
 void EventLogger::start_receive()
