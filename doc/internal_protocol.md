@@ -360,7 +360,7 @@ The following is a list of database control messages:
 
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
@@ -388,9 +388,9 @@ All objects will duly broadcast its deletion to any AIs, owners, or zones.
 
 
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
-    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
 **DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, bool found, <FIELDS>)`  
+    `args(uint32 context, bool found, [VALUE]*field_count)`  
 > This message selects a number of fields from an object in the database.  
 It returns the select fields in serialized form, in the order requested -- if found.
 
