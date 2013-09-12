@@ -148,8 +148,17 @@ void EventLogger::start_receive()
 	                             boost::asio::placeholders::bytes_transferred));
 }
 
-void EventLogger::handle_receive(const boost::system::error_code &error, std::size_t bytes)
+void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)
 {
+	if(ec.value())
+	{
+		m_log.warning() << "While receiving packet from "
+		                << m_remote.address() << ":" << m_remote.port()
+		                << ", an error occurred: "
+		                << ec.value() << std::endl;
+		return;
+	}
+
 	m_log.spam() << "Got packet from "
 	             << m_remote.address() << ":" << m_remote.port() << std::endl;
 
