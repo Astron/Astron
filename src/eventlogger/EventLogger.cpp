@@ -79,7 +79,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 		bool alnum = true;
 		for(const char *c = it->c_str(); *c; ++c)
 		{
-			if(!isalnum(*c))
+			if(!isalnum(*c) && *c != '_')
 			{
 				alnum = false;
 				break;
