@@ -34,7 +34,7 @@ public:
 				for(int i=0; i < field_count; ++i)
 				{
 					std::string value;
-					DCField *field = dcc->get_field(data.read_uint16());
+					DCField *field = dcc->get_field_by_index(data.read_uint16());
 					data.unpack_field(field, value);
 					out << YAML::Key << field->get_name();
 					out << YAML::Value << value;
