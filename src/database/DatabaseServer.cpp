@@ -36,8 +36,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			unsigned int context = dgi.read_uint32();
 			unsigned short dc_id = dgi.read_uint16();
-			DCClass *dcc = gDCF->get_class(dc_id);
 			unsigned short field_count = dgi.read_uint16();
+
 			unsigned int do_id = m_free_id;
 			if(do_id > m_end_id)
 			{
@@ -59,19 +59,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			m_log->spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
 
-			FieldList fields;
-			for(unsigned short  i = 0; i < field_count; ++i)
-			{
-				unsigned short field_id = dgi.read_uint16();
-				DCField *field = dcc->get_field(field_id);
-				if(field && field->is_db())
-				{
-					fields.emplace(fields.end(), field, "");
-					dgi.unpack_field(field, fields.back().second);
-				}
-			}
-
-			m_db->create_object(do_id, fields);
+			m_db->create_object(do_id, dc_id, field_count, dgi);
 
 			Datagram resp;
 			resp.add_server_header(sender, m_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
