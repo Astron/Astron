@@ -81,6 +81,7 @@ set (BUILD_DBSERVER ON CACHE BOOL "If on, stateserver will be built into binary"
 if(BUILD_DBSERVER)
 	set (DBSERVER_FILES
 		src/database/DatabaseServer.cpp
+		src/database/IDatabaseEngine.h
 		src/database/DBEngineFactory.h
 		src/database/DBEngineFactory.cpp
 		src/database/FSDBEngine.cpp
