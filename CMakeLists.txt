@@ -82,6 +82,7 @@ if(BUILD_DBSERVER)
 	set (DBSERVER_FILES
 		src/database/DatabaseServer.cpp
 		src/database/DBEngineFactory.h
+		src/database/DBEngineFactory.cpp
 	)
 endif()
 
