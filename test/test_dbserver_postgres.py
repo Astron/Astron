@@ -7,6 +7,7 @@ from testdc import *
 
 from test_dbserver import DatabaseBaseTests
 
+'''
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -40,3 +41,4 @@ class TestDatabaseServerPostgres(unittest.TestCase, DatabaseBaseTests):
 
 if __name__ == '__main__':
     unittest.main()
+'''
