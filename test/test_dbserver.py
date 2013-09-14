@@ -156,7 +156,6 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_remove_channel(20))
 
     def test_delete(self):
-        return
         self.conn.flush()
         self.conn.send(Datagram.create_add_channel(30))
 
@@ -224,7 +223,6 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_remove_channel(30))
 
     def test_create_collisions(self):
-        return
         self.conn.flush()
         self.conn.send(Datagram.create_add_channel(40))
 
@@ -265,7 +263,6 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_remove_channel(40))
 
     def test_ram(self):
-        return
         self.conn.flush()
         self.conn.send(Datagram.create_add_channel(50))
 
