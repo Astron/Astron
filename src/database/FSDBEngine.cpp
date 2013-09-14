@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <list>
 
 ConfigVariable<std::string> folder_name("foldername", "objs");
 LogCategory fsdb_log("fsdb", "Filesystem Database Engine");
@@ -23,13 +24,31 @@ void WriteIDFile(const std::string &filename, unsigned int id)
 	}
 }
 
+void WriteFreeList(const std::string &filename, std::list<unsigned int> &free_list)
+{
+	std::fstream file;
+	file.open(filename, std::ios_base::out | std::ios_base::binary);
+	if(file.is_open())
+	{
+		Datagram dg;
+		dg.add_uint32(free_list.size());
+		for(auto it = free_list.begin(); it != free_list.end(); ++it)
+		{
+			dg.add_uint32(*it);
+		}
+		file.write(dg.get_data(), dg.get_buf_end());
+		file.close();
+	}
+}
+
 class FSDBEngine : public IDatabaseEngine
 {
 	private:
 		unsigned int m_next_id;
+		std::list<unsigned int> m_free_ids;
 	public:
 		FSDBEngine(DBEngineConfig dbeconfig, unsigned int start_id) : IDatabaseEngine(dbeconfig, start_id),
-			m_next_id(start_id)
+			m_next_id(start_id), m_free_ids()
 		{
 			std::fstream file;
 			std::stringstream ss;
@@ -40,18 +59,51 @@ class FSDBEngine : public IDatabaseEngine
 				file >> m_next_id;
 				file.close();
 			}
+
+			ss.str("");
+			ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
+			file.open(ss.str(), std::ios_base::in | std::ios_base::binary);
+			if(file.is_open())
+			{
+				file.seekg(0, std::ios_base::end);
+				unsigned int len = file.tellg();
+				char *data = new char[len];
+				file.seekg(0, std::ios_base::beg);
+				file.read(data, len);
+				file.close();
+				Datagram dg(std::string(data, len));
+				delete [] data; //dg makes a copy
+				DatagramIterator dgi(dg);
+
+				unsigned int num_ids = dgi.read_uint32();
+				for(unsigned int i = 0; i < num_ids; ++i)
+				{
+					m_free_ids.insert(m_free_ids.end(), dgi.read_uint32());
+				}
+			}
 		}
 
 		virtual unsigned int get_next_id()
 		{
+			if(!m_free_ids.empty())
+			{
+				return *m_free_ids.begin();
+			}
 			return m_next_id;
 		}
 
 		virtual bool create_object(const DatabaseObject &dbo)
 		{
-			if(dbo.do_id != m_next_id)
+			if(dbo.do_id != get_next_id())
 			{
 				return false;
+			}
+			if(!m_free_ids.empty())
+			{
+				m_free_ids.remove(dbo.do_id);
+				std::stringstream ss;
+				ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
+				WriteFreeList(ss.str(), m_free_ids);
 			}
 			std::stringstream ss;
 			ss << folder_name.get_rval(m_dbeconfig) << "/id.txt";
@@ -138,7 +190,13 @@ class FSDBEngine : public IDatabaseEngine
 			std::stringstream ss;
 			ss << folder_name.get_rval(m_dbeconfig) << "/" << do_id << ".dat";
 			fsdb_log.debug() << "Deleteing file: " << ss.str() << std::endl;
-			std::remove(ss.str().c_str());
+			if(!std::remove(ss.str().c_str()))
+			{
+				m_free_ids.insert(m_free_ids.end(), do_id);
+				std::stringstream ss;
+				ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
+				WriteFreeList(ss.str(), m_free_ids);
+			}
 		}
 };
 
