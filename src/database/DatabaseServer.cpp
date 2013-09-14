@@ -98,7 +98,7 @@ class DatabaseServer : public Role
 							if(dbo.fields.find(field) == dbo.fields.end())
 							{
 								db_log.error() << "Field " << field->get_name() << " missing when trying to create "
-									"object of type " << dcc->get_name() << std::endl;
+									"object of type " << dcc->get_name();
 
 								resp.add_uint32(0);
 								send(resp);
@@ -144,7 +144,6 @@ class DatabaseServer : public Role
 					else
 					{
 						resp.add_uint8(0);
-						resp.add_uint32(0);
 					}
 					send(resp);
 				}
