@@ -127,16 +127,21 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Get values back from server
-        dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
-        dg.add_uint32(5) # Context
-        dg.add_uint8(FOUND)
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint16(2) # Field count
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(91849)
-        dg.add_uint16(setDb3)
-        dg.add_string("You monster...")
-        self.assertTrue(self.conn.expect(dg))
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
+        self.assertTrue(dgi.read_uint32() == 5) # Check context
+        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 91849)
+            elif field == setDb3:
+                self.assertTrue(dgi.read_string() == "You monster...")
+            else:
+                self.fail("Bad field type")
 
         # Try selecting an ID that doesn't exist
         dg = Datagram.create([777], 20, DBSERVER_SELECT_STORED_OBJECT_ALL)

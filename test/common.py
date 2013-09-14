@@ -264,6 +264,14 @@ class DatagramIterator(object):
 
         return struct.unpack("<Q", self._data[self._offset-8:self._offset])[0]
 
+    def read_string(self):
+        length = self.read_uint16()
+        self._offset += length
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<%ds" % length, self._data[self._offset-length:self._offset])[0]
+
     def seek(self, offset):
         self._offset = offset
 
