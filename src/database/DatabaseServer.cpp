@@ -62,8 +62,11 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					DatabaseObject dbo;
+					dbo.do_id = do_id;
+					dbo.dc_id = dcc->get_number();
+
 					db_log.spam() << "Unpacking fields..." << std::endl;
-					std::map<DCField*, std::string> fields;
 					try
 					{
 						for(unsigned int i = 0; i < field_count; ++i)
@@ -72,7 +75,7 @@ class DatabaseServer : public Role
 							DCField *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
-								dgi.unpack_field(field, fields[field]);
+								dgi.unpack_field(field, dbo.fields[field]);
 							}
 						}
 					}
@@ -83,7 +86,7 @@ class DatabaseServer : public Role
 					}
 
 					db_log.spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
-					if(m_db_engine->create_object(do_id, fields))
+					if(m_db_engine->create_object(dbo))
 					{
 						resp.add_uint32(do_id);
 					}
@@ -93,6 +96,17 @@ class DatabaseServer : public Role
 					}
 
 					send(resp);
+				}
+				break;
+				case DBSERVER_SELECT_STORED_OBJECT_ALL:
+				{
+					unsigned int context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, control_channel.get_rval(m_roleconfig), DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
+					resp.add_uint32(context);
+
+
 				}
 				break;
 				/*case DBSERVER_DELETE_STORED_OBJECT:

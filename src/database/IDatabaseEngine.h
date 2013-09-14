@@ -2,6 +2,13 @@
 #include "core/config.h"
 #include "dcparser/dcField.h"
 
+struct DatabaseObject
+{
+	unsigned int do_id;
+	unsigned short dc_id;
+	std::map<DCField*, std::string> fields;
+};
+
 class IDatabaseEngine
 {
 	public:
@@ -11,7 +18,8 @@ class IDatabaseEngine
 		}
 
 		virtual unsigned int get_next_id() = 0;
-		virtual bool create_object(unsigned int do_id, const std::map<DCField*, std::string> &fields) = 0;
+		virtual bool create_object(const DatabaseObject &dbo) = 0;
+		virtual bool get_object(DatabaseObject &dbo) = 0;
 	protected:
 		DBEngineConfig m_dbeconfig;
 		unsigned int m_start_id;
