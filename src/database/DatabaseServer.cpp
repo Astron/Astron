@@ -83,6 +83,28 @@ class DatabaseServer : public Role
 					{
 						db_log.error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 							<< e.what() << std::endl;
+
+						resp.add_uint32(0);
+						send(resp);
+						return;
+					}
+
+					db_log.spam() << "Checking all required fields exist..." << std::endl;
+					for(unsigned int i = 0; i < dcc->get_num_inherited_fields(); ++i)
+					{
+						DCField *field = dcc->get_inherited_field(i);
+						if(field->is_required() && field->is_db() && !field->as_molecular_field())
+						{
+							if(dbo.fields.find(field) == dbo.fields.end())
+							{
+								db_log.error() << "Field " << field->get_name() << " missing when trying to create "
+									"object of type " << dcc->get_name() << std::endl;
+
+								resp.add_uint32(0);
+								send(resp);
+								return;
+							}
+						}
 					}
 
 					db_log.spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
