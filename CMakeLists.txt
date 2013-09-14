@@ -115,6 +115,8 @@ add_executable (openotpd
 	src/util/Role.h
 	src/util/NetworkClient.cpp
 	src/util/NetworkClient.h
+	src/util/EventSender.cpp
+	src/util/EventSender.h
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${TEST_FILES}
