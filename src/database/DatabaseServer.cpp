@@ -81,7 +81,8 @@ class DatabaseServer : public Role
 								}
 								else
 								{
-									dgi.unpack_field(field, std::string());
+									std::string tmp;
+									dgi.unpack_field(field, tmp);
 								}
 							}
 						}
