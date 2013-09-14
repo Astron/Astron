@@ -224,7 +224,7 @@ class DatabaseBaseTests(object):
         self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
 
         # Cleanup
-        self.deleteObject(doidB)
+        self.deleteObject(30, doidB)
         self.conn.send(Datagram.create_remove_channel(30))
 
     def test_create_collisions(self):
