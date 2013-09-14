@@ -16,7 +16,7 @@ private:
 extern ConfigFile *gConfig;
 
 typedef YAML::Node RoleConfig;
-typedef YAML::Node DatabaseConfig;
+typedef YAML::Node DBEngineConfig;
 
 template<class T>
 class ConfigVariable

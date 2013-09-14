@@ -19,6 +19,9 @@ roles:
       generate:
         min: 1000000
         max: 1000010
+      engine:
+        type: filesystem
+        foldername: objss
 """ % test_dc
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
 VERIFY_DELETE_OBJECT = 0x44696521
