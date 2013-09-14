@@ -83,7 +83,6 @@ class DatabaseServer : public Role
 					}
 
 					db_log.spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
-
 					if(m_db_engine->create_object(do_id, fields))
 					{
 						resp.add_uint32(do_id);
