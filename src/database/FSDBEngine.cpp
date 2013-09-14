@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <sstream>
+#include <cstdio>
 
 ConfigVariable<std::string> folder_name("foldername", "objs");
 LogCategory fsdb_log("fsdb", "Filesystem Database Engine");
@@ -130,6 +131,14 @@ class FSDBEngine : public IDatabaseEngine
 			}
 
 			return false;
+		}
+
+		virtual void delete_object(unsigned int do_id)
+		{
+			std::stringstream ss;
+			ss << folder_name.get_rval(m_dbeconfig) << "/" << do_id << ".dat";
+			fsdb_log.debug() << "Deleteing file: " << ss.str() << std::endl;
+			std::remove(ss.str().c_str());
 		}
 };
 

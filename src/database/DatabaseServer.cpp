@@ -148,6 +148,19 @@ class DatabaseServer : public Role
 					send(resp);
 				}
 				break;
+				case DBSERVER_DELETE_STORED_OBJECT:
+				{
+					if(dgi.read_uint32() == 'Die!')
+					{
+						unsigned int do_id = dgi.read_uint32();
+						m_db_engine->delete_object(do_id);
+					}
+					else
+					{
+						db_log.warning() << "Wrong delete verify code." << std::endl;
+					}
+				}
+				break;
 				/*case DBSERVER_DELETE_STORED_OBJECT:
 				{
 					unsigned int verify = dgi.read_uint32();
