@@ -67,7 +67,7 @@ class DatabaseServer : public Role
 					try
 					{
 						unsigned short field_id = dgi.read_uint16();
-						DCField *field = dcc->get_field(field_id);
+						DCField *field = dcc->get_field_by_index(field_id);
 						if(field)
 						{
 							dgi.unpack_field(field, fields[field]);
