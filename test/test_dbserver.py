@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 import unittest
+import os, shutil
 from socket import *
 
 from common import *
@@ -321,6 +322,9 @@ class DatabaseBaseTests(object):
 class TestDatabaseServerFS(unittest.TestCase, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
+        if not os.path.exists('unittest_db'):
+            os.makedirs('unittest_db')
+
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
