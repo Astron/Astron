@@ -28,11 +28,6 @@ VERIFY_DELETE_OBJECT = 0x44696521
 VERIFY_DELETE_QUERY = 0x4b696c6c
 
 class DatabaseBaseTests(object):
-    @classmethod
-    def tearDownClass(cls):
-        cls.conn.close()
-        cls.daemon.stop()
-
     def createEmptyObjGetId(self, sender, context):
         # Create an object
         dg = Datagram.create([777], sender, DBSERVER_CREATE_STORED_OBJECT)
