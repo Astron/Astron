@@ -11,8 +11,8 @@ class IDatabaseEngine
 		}
 
 		virtual unsigned int get_next_id() = 0;
-		virtual bool create_object(unsigned int do_id, const std::map<DCField*, std::string> &fields);
-	private:
+		virtual bool create_object(unsigned int do_id, const std::map<DCField*, std::string> &fields) = 0;
+	protected:
 		DBEngineConfig m_dbeconfig;
 		unsigned int m_start_id;
 };
