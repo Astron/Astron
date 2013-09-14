@@ -81,7 +81,7 @@ class FSDBEngine : public IDatabaseEngine
 		virtual bool get_object(DatabaseObject &dbo)
 		{
 			std::stringstream ss;
-			ss << folder_name.get_rval(m_dbeconfig) << "/" << dbo.do_id;
+			ss << folder_name.get_rval(m_dbeconfig) << "/" << dbo.do_id << ".dat";
 			std::fstream file;
 			file.open(ss.str(), std::ios_base::in | std::ios_base::binary);
 			if(file.is_open())

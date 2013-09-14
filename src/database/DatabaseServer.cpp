@@ -106,7 +106,25 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, control_channel.get_rval(m_roleconfig), DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
 					resp.add_uint32(context);
 
-
+					DatabaseObject dbo;
+					dbo.do_id = dgi.read_uint32();
+					if(m_db_engine->get_object(dbo))
+					{
+						resp.add_uint8(1);
+						resp.add_uint16(dbo.dc_id);
+						resp.add_uint16(dbo.fields.size());
+						for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
+						{
+							resp.add_uint16(it->first->get_number());
+							resp.add_data(it->second);
+						}
+					}
+					else
+					{
+						resp.add_uint8(0);
+						resp.add_uint32(0);
+					}
+					send(resp);
 				}
 				break;
 				/*case DBSERVER_DELETE_STORED_OBJECT:
