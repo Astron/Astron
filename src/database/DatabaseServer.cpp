@@ -7,7 +7,7 @@
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
 ConfigVariable<unsigned int> id_end("generate/max", 2000);
-ConfigVariable<std::string> engine_type("engine/typee", "filesystem");
+ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 LogCategory db_log("db", "Database");
 
 class DatabaseServer : public Role
