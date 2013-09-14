@@ -21,7 +21,7 @@ roles:
         max: 1000010
       engine:
         type: filesystem
-        foldername: objss
+        foldername: unittest_db
 """ % test_dc
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
 VERIFY_DELETE_OBJECT = 0x44696521
