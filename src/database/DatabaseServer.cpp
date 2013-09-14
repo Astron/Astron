@@ -66,11 +66,14 @@ class DatabaseServer : public Role
 					std::map<DCField*, std::string> fields;
 					try
 					{
-						unsigned short field_id = dgi.read_uint16();
-						DCField *field = dcc->get_field_by_index(field_id);
-						if(field)
+						for(unsigned int i = 0; i < field_count; ++i)
 						{
-							dgi.unpack_field(field, fields[field]);
+							unsigned short field_id = dgi.read_uint16();
+							DCField *field = dcc->get_field_by_index(field_id);
+							if(field)
+							{
+								dgi.unpack_field(field, fields[field]);
+							}
 						}
 					}
 					catch(std::exception &e)
