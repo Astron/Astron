@@ -75,7 +75,14 @@ class DatabaseServer : public Role
 							DCField *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
-								dgi.unpack_field(field, dbo.fields[field]);
+								if(field->is_db())
+								{
+									dgi.unpack_field(field, dbo.fields[field]);
+								}
+								else
+								{
+									dgi.unpack_field(field, std::string());
+								}
 							}
 						}
 					}
