@@ -4,6 +4,7 @@ general:
     name: Core Message Director # To be used in page titles and intra-MD links.
     url: http://123.45.67.89/coremd/ # URL where the web interface may be located. Defaults to:
                                      # http://<web/bind>/
+    eventlogger: 127.0.0.1:9090 # The IP:port of the Event Logger to be used when logging global events.
     dc_files: # A list of DC files to be loaded. ORDER IS SENSITIVE!
         - core.dc
         - game.dc

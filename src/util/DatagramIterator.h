@@ -11,7 +11,7 @@
 class DatagramIterator
 {
 private:
-	Datagram &m_dg;
+	const Datagram &m_dg;
 	unsigned int p;
 
 	void check_read_length(unsigned int l)
@@ -29,7 +29,7 @@ private:
 		};
 	}
 public:
-	DatagramIterator(Datagram &dg, unsigned int offset = 0) : m_dg(dg), p(offset)
+	DatagramIterator(const Datagram &dg, unsigned int offset = 0) : m_dg(dg), p(offset)
 	{
 		check_read_length(0); //shortcuts, yay
 	}
