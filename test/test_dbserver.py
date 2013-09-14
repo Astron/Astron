@@ -257,6 +257,7 @@ class DatabaseBaseTests(object):
             self.assertTrue(do != doid)
 
         # Cleanup
+        self.deleteObject(40, doid)
         self.deleteObject(40, doids[0])
         for do in doids:
             self.deleteObject(40, do)
