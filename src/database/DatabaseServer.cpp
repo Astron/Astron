@@ -169,24 +169,6 @@ class DatabaseServer : public Role
 					}
 				}
 				break;
-				/*case DBSERVER_DELETE_STORED_OBJECT:
-				{
-					unsigned int verify = dgi.read_uint32();
-					unsigned int do_id = dgi.read_uint32();
-
-					m_log->spam() << "Deleting object with ID... " << do_id << std::endl;
-					if(verify == 0x44696521)
-					{
-						m_db_engine->delete_object(do_id);
-						m_freed_ids.push(do_id);
-						m_log->spam() << "... delete successful." << std::endl;
-					}
-					else
-					{
-						m_log->spam() << "... delete failed." << std::endl;
-					}
-				}*/
-				break;
 				default:
 					db_log.error() << "Recieved unknown MsgType: " << msg_type << std::endl;
 			};
