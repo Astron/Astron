@@ -376,7 +376,6 @@ the associated DB-SS.
     `args(uint32 verify_code, uint32 do_id)`  
 > This message removes an object from the server with a given do_id.  
 The verify_code is 0x44696521 (Ascii "Die!") and is required.  
-The object will duly broadcast its deletion to any AIs, owners, or zones.
 
 
 **DBSERVER_DELETE_QUERY(1010)**  
@@ -384,7 +383,6 @@ The object will duly broadcast its deletion to any AIs, owners, or zones.
 > This message removes all objects from the server of the given DistributedClass,
 that satisify the given comparisons.  
 The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
-All objects will duly broadcast its deletion to any AIs, owners, or zones.
 
 
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
