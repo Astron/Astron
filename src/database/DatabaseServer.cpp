@@ -8,22 +8,26 @@ ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_start("generate/min", 1000);
 ConfigVariable<unsigned int> id_end("generate/max", 2000);
 ConfigVariable<std::string> engine_type("engine/type", "filesystem");
-LogCategory db_log("db", "Database");
 
 class DatabaseServer : public Role
 {
 	private:
 		IDatabaseEngine *m_db_engine;
+		LogCategory *m_log;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(engine_type.get_rval(roleconfig), roleconfig["engine"],
 				id_start.get_rval(roleconfig)))
 		{
+			std::stringstream ss;
+			ss << "Database CH: " << control_channel.get_rval(m_roleconfig);
+			m_log = new LogCategory("db", ss.str());
 			if(!m_db_engine)
 			{
-				db_log.fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
+				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
+
 
 			subscribe_channel(control_channel.get_rval(m_roleconfig));
 		}
@@ -45,7 +49,7 @@ class DatabaseServer : public Role
 					DCClass *dcc = gDCF->get_class(dgi.read_uint16());
 					if(!dcc)
 					{
-						db_log.error() << "Unknown dcclass" << std::endl;
+						m_log->error() << "Unknown dcclass" << std::endl;
 						resp.add_uint32(0);
 						send(resp);
 						return;
@@ -56,7 +60,7 @@ class DatabaseServer : public Role
 					unsigned int do_id = m_db_engine->get_next_id();
 					if(do_id > id_end.get_rval(m_roleconfig) || do_id == 0)
 					{
-						db_log.error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
+						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 						resp.add_uint32(0);
 						send(resp);
 						return;
@@ -66,7 +70,7 @@ class DatabaseServer : public Role
 					dbo.do_id = do_id;
 					dbo.dc_id = dcc->get_number();
 
-					db_log.spam() << "Unpacking fields..." << std::endl;
+					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
 					{
 						for(unsigned int i = 0; i < field_count; ++i)
@@ -89,7 +93,7 @@ class DatabaseServer : public Role
 					}
 					catch(std::exception &e)
 					{
-						db_log.error() << "Error while unpacking fields, msg may be truncated. e.what(): "
+						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 							<< e.what() << std::endl;
 
 						resp.add_uint32(0);
@@ -97,7 +101,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					db_log.spam() << "Checking all required fields exist..." << std::endl;
+					m_log->spam() << "Checking all required fields exist..." << std::endl;
 					for(unsigned int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
@@ -105,7 +109,7 @@ class DatabaseServer : public Role
 						{
 							if(dbo.fields.find(field) == dbo.fields.end())
 							{
-								db_log.error() << "Field " << field->get_name() << " missing when trying to create "
+								m_log->error() << "Field " << field->get_name() << " missing when trying to create "
 									"object of type " << dcc->get_name();
 
 								resp.add_uint32(0);
@@ -115,7 +119,7 @@ class DatabaseServer : public Role
 						}
 					}
 
-					db_log.spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
+					m_log->spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
 					if(m_db_engine->create_object(dbo))
 					{
 						resp.add_uint32(do_id);
@@ -165,12 +169,12 @@ class DatabaseServer : public Role
 					}
 					else
 					{
-						db_log.warning() << "Wrong delete verify code." << std::endl;
+						m_log->warning() << "Wrong delete verify code." << std::endl;
 					}
 				}
 				break;
 				default:
-					db_log.error() << "Recieved unknown MsgType: " << msg_type << std::endl;
+					m_log->error() << "Recieved unknown MsgType: " << msg_type << std::endl;
 			};
 		}
 };
