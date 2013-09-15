@@ -46,10 +46,11 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, control_channel.get_rval(m_roleconfig), DBSERVER_CREATE_STORED_OBJECT_RESP);
 					resp.add_uint32(context);
 
-					DCClass *dcc = gDCF->get_class(dgi.read_uint16());
+					unsigned short dc_id = dgi.read_uint16();
+					DCClass *dcc = gDCF->get_class(dc_id);
 					if(!dcc)
 					{
-						m_log->error() << "Unknown dcclass" << std::endl;
+						m_log->error() << "Invalid DCClass when creating object. #" << dc_id << std::endl;
 						resp.add_uint32(0);
 						send(resp);
 						return;
@@ -68,7 +69,7 @@ class DatabaseServer : public Role
 
 					DatabaseObject dbo;
 					dbo.do_id = do_id;
-					dbo.dc_id = dcc->get_number();
+					dbo.dc_id = dc_id;
 
 					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
