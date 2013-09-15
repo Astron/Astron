@@ -1,7 +1,7 @@
 OpenOTP Internal Protocol Documentation
 ---------------------------------------
 **Authors**  
-Sam "CFSworks Edwards" (08-30-2013)  
+Sam "CFSworks" Edwards (08-30-2013)  
 Kevin "Kestred" Stenerson (09-04-2013)
 
 
