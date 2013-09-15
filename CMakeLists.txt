@@ -77,6 +77,17 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	endif()
 endif()
 
+set (BUILD_DBSERVER ON CACHE BOOL "If on, stateserver will be built into binary")
+if(BUILD_DBSERVER)
+	set (DBSERVER_FILES
+		src/database/DatabaseServer.cpp
+		src/database/IDatabaseEngine.h
+		src/database/DBEngineFactory.h
+		src/database/DBEngineFactory.cpp
+		src/database/FSDBEngine.cpp
+	)
+endif()
+
 set (BUILD_STATESERVER ON CACHE BOOL "If on, stateserver will be built into binary")
 if(BUILD_STATESERVER)
 	set (STATESERVER_FILES
@@ -106,6 +117,7 @@ add_executable (openotpd
 	src/core/logger.h
 	src/core/RoleFactory.cpp
 	src/core/RoleFactory.h
+	src/core/messages.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
@@ -120,6 +132,7 @@ add_executable (openotpd
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${TEST_FILES}
+	${DBSERVER_FILES}
 )
 
 source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
