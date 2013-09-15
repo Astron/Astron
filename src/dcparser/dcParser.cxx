@@ -1,20 +1,20 @@
 /* A Bison parser, made by GNU Bison 2.4.2.  */
 
 /* Skeleton implementation for Bison's Yacc-like parsers in C
-   
+
       Copyright (C) 1984, 1989-1990, 2000-2006, 2009-2010 Free Software
    Foundation, Inc.
-   
+
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
@@ -27,7 +27,7 @@
    special exception, which will cause the skeleton and the resulting
    Bison output files to be licensed under the GNU General Public
    License without this special exception.
-   
+
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
@@ -125,7 +125,7 @@ dc_init_parser(istream &in, const string &filename, DCFile &file) {
 }
 
 void
-dc_init_parser_parameter_value(istream &in, const string &filename, 
+dc_init_parser_parameter_value(istream &in, const string &filename,
                                DCPacker &packer) {
   dc_file = NULL;
   current_packer = &packer;
@@ -1920,7 +1920,7 @@ yyreduce:
     {
   if ((yyvsp[(2) - (2)].u.parameter) != (DCParameter *)NULL) {
     DCTypedef *dtypedef = new DCTypedef((yyvsp[(2) - (2)].u.parameter));
-    
+
     if (!dc_file->add_typedef(dtypedef)) {
       DCTypedef *old_typedef = dc_file->get_typedef_by_name(dtypedef->get_name());
       if (old_typedef->is_bogus_typedef()) {
@@ -1993,7 +1993,7 @@ yyreduce:
     if (dclass->is_struct()) {
       yyerror("struct name not allowed");
     }
-  
+
     (yyval.u.dclass) = dclass;
   }
 }
@@ -2119,7 +2119,7 @@ yyreduce:
     if (!dstruct->is_struct()) {
       yyerror("struct name required");
     }
-  
+
     (yyval.u.dclass) = dstruct;
   }
 }
@@ -2409,7 +2409,7 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 661 "dcParser.yxx"
-    { 
+    {
   DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
   nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
   if (!simple_param->is_numeric_type()) {
@@ -2450,10 +2450,10 @@ yyreduce:
           dtypedef = new DCTypedef((yyvsp[(1) - (1)].str));
         }
       }
-      
+
       dc_file->add_typedef(dtypedef);
     }
-    
+
     (yyval.u.parameter) = dtypedef->make_new_parameter();
   }
 }
@@ -2823,7 +2823,7 @@ yyreduce:
     {
   if ((yyvsp[(1) - (2)].str) != current_packer->get_current_field_name()) {
     ostringstream strm;
-    strm << "Got '" << (yyvsp[(1) - (2)].str) << "', expected '" 
+    strm << "Got '" << (yyvsp[(1) - (2)].str) << "', expected '"
          << current_packer->get_current_field_name() << "'";
     yyerror(strm.str());
   }
@@ -3256,7 +3256,7 @@ yyreduce:
   if ((yyvsp[(3) - (3)].u.atomic) != (DCAtomicField *)NULL) {
     current_molecular->add_atomic((yyvsp[(3) - (3)].u.atomic));
     if (!(yyvsp[(3) - (3)].u.atomic)->is_bogus_field() && !current_molecular->compare_keywords(*(yyvsp[(3) - (3)].u.atomic))) {
-      yyerror("Mismatched keywords in molecule between " + 
+      yyerror("Mismatched keywords in molecule between " +
               current_molecular->get_atomic(0)->get_name() + " and " +
               (yyvsp[(3) - (3)].u.atomic)->get_name());
     }

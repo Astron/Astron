@@ -10,7 +10,7 @@ static ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecifie
 static ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
 
 // Define convenience type
-typedef boost::icl::discrete_interval<channel_t> interval_t; 
+typedef boost::icl::discrete_interval<channel_t> interval_t;
 
 bool ChannelList::qualifies(channel_t channel)
 {
@@ -368,7 +368,7 @@ void MessageDirector::start_accept()
 {
 	tcp::socket *socket = new tcp::socket(io_service);
 	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept, 
+	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept,
 		this, socket, boost::asio::placeholders::error));
 }
 

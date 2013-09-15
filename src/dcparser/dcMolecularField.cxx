@@ -127,7 +127,7 @@ add_atomic(DCAtomicField *atomic) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCMolecularField::output
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCMolecularField::
 output(ostream &out, bool brief) const {
@@ -142,7 +142,7 @@ output(ostream &out, bool brief) const {
       ++fi;
     }
   }
-  
+
   out << ";";
 }
 

@@ -64,7 +64,7 @@ public:
 
   virtual void output(ostream &out, bool brief) const;
   virtual void write(ostream &out, bool brief, int indent_level) const;
-  void output_instance(ostream &out, bool brief, const string &prename, 
+  void output_instance(ostream &out, bool brief, const string &prename,
                        const string &name, const string &postname) const;
   void write_instance(ostream &out, bool brief, int indent_level,
                       const string &prename, const string &name,
