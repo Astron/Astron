@@ -110,12 +110,19 @@ class DatabaseServer : public Role
 						{
 							if(dbo.fields.find(field) == dbo.fields.end())
 							{
-								m_log->error() << "Field " << field->get_name() << " missing when trying to create "
-									"object of type " << dcc->get_name();
+								if(!field->has_default_value())
+								{
+									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
+										"object of type " << dcc->get_name();
 
-								resp.add_uint32(0);
-								send(resp);
-								return;
+									resp.add_uint32(0);
+									send(resp);
+									return;
+								}
+								else
+								{
+									dbo.fields[field] = field->get_default_value();
+								}
 							}
 						}
 					}
