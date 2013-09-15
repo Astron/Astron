@@ -83,7 +83,7 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 * **jjkoletar** manages our Jenkins build system.
 
 ## License
-The OpenOTP project is currently available under the GPL license. The terms of this license are available in the "LICENSE" file of this archive.
+The OpenOTP project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
 
 ## Contributing
 We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
