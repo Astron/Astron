@@ -1,5 +1,3 @@
-*.pyc
-openotpd*
-none
-test
-objss/
+*
+!.gitignore
+!*.py
