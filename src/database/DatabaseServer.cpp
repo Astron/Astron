@@ -20,7 +20,7 @@ class DatabaseServer : public Role
 				id_start.get_rval(roleconfig)))
 		{
 			std::stringstream ss;
-			ss << "Database CH: " << control_channel.get_rval(m_roleconfig);
+			ss << "Database(" << control_channel.get_rval(m_roleconfig) << ")";
 			m_log = new LogCategory("db", ss.str());
 			if(!m_db_engine)
 			{
