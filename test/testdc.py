@@ -22,7 +22,6 @@ setBRam2 = 7
 
 setDb3 = 8
 setRDB3 = 9
-
 setX = 10
 setY = 11
 setUnrelated = 12
@@ -32,3 +31,5 @@ setOne = 15
 setTwo = 16
 setThree = 17
 set123 = 18
+
+setRequired1DefaultValue = 78

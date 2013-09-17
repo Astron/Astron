@@ -55,6 +55,41 @@ Therefore, consider this example message:
                                their own, hence the 05 00
 
 
+#### Section 1.1 DistributedObject Serialization ####
+Some messages contained serialized data in their payload.  
+Serialization as used in messages means sending individual
+variables as raw little-endian byte data, with one value
+immediately following the previous value. String type values
+are always prefixed with a uint16 length, which is followed
+by the raw string data.
+
+The standard format for sending the full encoding of a
+DistributedObject is to send, in low to high order of field_id,
+the serialized data of all of the required fields of the object.
+The required is followed by a uint16 which specifices how many
+optional fields exist. If any optional fields exist, this is
+followed by <uint16 field_id, [DATA]> pairs for each optional
+field. The fields may be in any order.
+
+Example DC Class:
+
+    dclass DistributedAvatar
+        name(string n) required db;  // ID = 0 | Value = "Throgdar"
+        x(uint64 x) broadcast ram;   // ID = 1 | Value = 5
+        y(uint64 y) broadcast ram;   // ID = 2 | No Value
+        z(uint64 z) broadcast ram;   // ID = 3 | Value = 0
+
+Serialized form:
+
+    08 00 // Length of "Throgdar"
+    54 68 72 6f 67 64 61 72 // Character data
+    02 00 // Count of optional fields
+    01 00 // field_id for 'x' (ID = 1)
+    05 00 00 00 00 00 00 00 // Value = 5
+    03 00 // field_id for 'z' (ID = 3)
+    00 00 00 00 00 00 00 00 // Value = 0
+
+
 
 ### Section 2: Control messages ###
 
@@ -306,6 +341,8 @@ The following is a list of database control messages:
 
 **Argument Notes**
 
+    bool success/found      // uint8 value where FAILURE or NOT_FOUND = 0x0 (typically SUCCES or FOUND = 0x1 or "TRUE")
+
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
 
     FIELD_DATA ->           // FIELD_DATA implies the following structure
@@ -323,7 +360,7 @@ The following is a list of database control messages:
 
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
@@ -339,7 +376,6 @@ the associated DB-SS.
     `args(uint32 verify_code, uint32 do_id)`  
 > This message removes an object from the server with a given do_id.  
 The verify_code is 0x44696521 (Ascii "Die!") and is required.  
-The object will duly broadcast its deletion to any AIs, owners, or zones.
 
 
 **DBSERVER_DELETE_QUERY(1010)**  
@@ -347,23 +383,21 @@ The object will duly broadcast its deletion to any AIs, owners, or zones.
 > This message removes all objects from the server of the given DistributedClass,
 that satisify the given comparisons.  
 The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
-All objects will duly broadcast its deletion to any AIs, owners, or zones.
 
 
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
-    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
 **DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, <FIELDS>)`  
+    `args(uint32 context, bool found, [VALUE]*field_count)`  
 > This message selects a number of fields from an object in the database.  
-It returns the select fields in serialized form, in the order requested.
+It returns the select fields in serialized form, in the order requested -- if found.
 
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, uint16 dclass_id, ...)`  
-> This message queries all information from the object and returns the response.  
-The ... is like that of REQUIRED_OTHER in the STATESERVER object commands.
+    `args(uint32 context, bool found, [uint16 dclass_id, FIELD_DATA])`  
+> This message queries all of the database fields from the object and returns the response -- if found.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
@@ -387,16 +421,15 @@ If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
     `args(uint32 context, uint32 do_id, uint16 field_count,
           [uint16 field, VALUE old, VALUE new]*field_count)`
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`
+    `args(uint32 context, bool success, [VALUE]*field_count)`
 > This message replaces the current values of the given object with new values,
 only if the old values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
 particularily when the new values are derived or dependent on the old values.
 
 > If any of the given _old_ values don't match then the entire transaction fails.
-If ret_code is 0, the transaction was successful.  
 If unsuccessful, the current values of all given fields will be returned in order
-in serialized form after ret_code.
+in serialized form, after 'success'.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
