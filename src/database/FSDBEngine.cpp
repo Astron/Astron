@@ -189,7 +189,7 @@ public:
 	{
 		std::stringstream ss;
 		ss << folder_name.get_rval(m_dbeconfig) << "/" << do_id << ".dat";
-		fsdb_log.debug() << "Deleteing file: " << ss.str() << std::endl;
+		fsdb_log.debug() << "Deleting file: " << ss.str() << std::endl;
 		if(!std::remove(ss.str().c_str()))
 		{
 			m_free_ids.insert(m_free_ids.end(), do_id);
