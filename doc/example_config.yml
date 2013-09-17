@@ -16,8 +16,8 @@ web:
         username: foo
         password: bar
     #authentication: # A separate file is used, listing username+password+access level.
-    #    method: file
-    #    filename: foo.yml
+    #   method: file
+    #   filename: foo.yml
 
 messagedirector:
     bind: 0.0.0.0:6660
@@ -37,8 +37,10 @@ roles:
     - type: database
       control: 402001
       generate:
-        min: 100000000
-       #max: 200000000
+      # Generate defines the range of DistributedObject ids that the database can create new objects with,
+      # and is generally responsible for. Min and max are both optional fields.
+        min: 100000000 # Default: 0
+      # max: 200000000 # Default: CHANNEL_T_MAX (ULLONG_MAX)
       storage:
         type: bdb
         filename: main_database.db
