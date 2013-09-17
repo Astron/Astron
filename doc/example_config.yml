@@ -46,6 +46,13 @@ roles:
         type: bdb
         filename: main_database.db
 
+    # This describes the existence of an uberdog, with do_id 402002 (and can be accessed on that channel)
+    # anonymous specifies whether an uberdog can be accessed before a client has been authenticated.
+    - type: uberdog
+      class: LoginManager
+      control: 402002
+      anonymous: true #Default: false
+
     # Let's also enable the Event Logger. The Event Logger does not listen on a channel; it uses a
     # separate UDP socket to listen for log events.
     - type: eventlogger
