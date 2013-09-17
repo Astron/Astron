@@ -103,7 +103,7 @@ class DatabaseServer : public Role
 					}
 
 					m_log->spam() << "Checking all required fields exist..." << std::endl;
-					for(unsigned int i = 0; i < dcc->get_num_inherited_fields(); ++i)
+					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
 						if(field->is_required() && field->is_db() && !field->as_molecular_field())
