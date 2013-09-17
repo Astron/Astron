@@ -14,15 +14,21 @@ class DatabaseServer : public Role
 	private:
 		IDatabaseEngine *m_db_engine;
 		LogCategory *m_log;
+
+		channel_t m_control_channel;
+		unsigned int m_id_min, m_id_max;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
 							engine_type.get_rval(roleconfig),
 							roleconfig["engine"],
-							id_min.get_rval(roleconfig)))
+							id_min.get_rval(roleconfig))),
+			m_control_channel(control_channel.get_rval(roleconfig)),
+			m_id_min(id_min.get_rval(roleconfig)),
+			m_id_max(id_max.get_rval(roleconfig))
 		{
 			std::stringstream ss;
-			ss << "Database(" << control_channel.get_rval(m_roleconfig) << ")";
+			ss << "Database(" << m_control_channel << ")";
 			m_log = new LogCategory("db", ss.str());
 			if(!m_db_engine)
 			{
@@ -30,7 +36,7 @@ class DatabaseServer : public Role
 				exit(1);
 			}
 
-			subscribe_channel(control_channel.get_rval(m_roleconfig));
+			subscribe_channel(m_control_channel);
 		}
 
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
@@ -44,7 +50,7 @@ class DatabaseServer : public Role
 					unsigned int context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, control_channel.get_rval(m_roleconfig), DBSERVER_CREATE_STORED_OBJECT_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
 					resp.add_uint32(context);
 
 					unsigned short dc_id = dgi.read_uint16();
@@ -60,7 +66,7 @@ class DatabaseServer : public Role
 					unsigned short field_count = dgi.read_uint16();
 
 					unsigned int do_id = m_db_engine->get_next_id();
-					if(do_id > id_max.get_rval(m_roleconfig) || do_id == 0)
+					if(do_id > m_id_max || do_id == 0)
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 						resp.add_uint32(0);
@@ -146,7 +152,7 @@ class DatabaseServer : public Role
 					unsigned int context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, control_channel.get_rval(m_roleconfig), DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
 					resp.add_uint32(context);
 
 					DatabaseObject dbo;
