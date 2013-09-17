@@ -12,16 +12,18 @@ struct DatabaseObject
 class IDatabaseEngine
 {
 	public:
-		IDatabaseEngine(DBEngineConfig dbeconfig, unsigned int start_id) : m_dbeconfig(dbeconfig),
-			m_start_id(start_id)
+		IDatabaseEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
+			m_config(dbeconfig),
+			m_min_id(min_id),
+			m_max_id(max_id)
 		{
 		}
 
-		virtual unsigned int get_next_id() = 0;
-		virtual bool create_object(const DatabaseObject &dbo) = 0;
+		virtual unsigned int create_object(const DatabaseObject &dbo) = 0;
 		virtual bool get_object(DatabaseObject &dbo) = 0;
 		virtual void delete_object(unsigned int do_id) = 0;
 	protected:
-		DBEngineConfig m_dbeconfig;
-		unsigned int m_start_id;
+		DBEngineConfig m_config;
+		unsigned int m_min_id;
+		unsigned int m_max_id;
 };
