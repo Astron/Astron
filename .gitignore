@@ -1,6 +1,5 @@
 #built cmake files/built project files
 build/
-db_files/
 openotpd
 *.a
 *.o
