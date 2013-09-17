@@ -2,7 +2,6 @@
 #include "core/RoleFactory.h"
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
-#include <fstream>
 
 ConfigVariable<channel_t> control_channel("control", 0);
 ConfigVariable<unsigned int> id_min("generate/min", 0);
