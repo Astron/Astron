@@ -39,9 +39,9 @@ roles:
       generate:
       # Generate defines the range of DistributedObject ids that the database can create new objects with,
       # and is generally responsible for. Min and max are both optional fields.
-        min: 100000000 # Default: Database control channel + 1 (in this example 402002)
-      # max: 200000000 # Default: CHANNEL_T_MAX (ULLONG_MAX)
-      storage:
+        min: 100000000 # Required (no default)
+      # max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
+      engine:
         type: bdb
         filename: main_database.db
 
