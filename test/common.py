@@ -5,7 +5,7 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'MDConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
 
 class Daemon(object):
     DAEMON_PATH = './openotpd'
@@ -42,6 +42,16 @@ DATATYPES = {
 }
 
 CONSTANTS = {
+    # Reserved Values
+    'INVALID_CHANNEL': 0,
+    'INVALID_DO_ID': 0,
+    'INVALID_MSG_TYPE': 0,
+
+    # Defined return codes
+    'FOUND': 1,
+    'NOT_FOUND': 0,
+
+    # Control Channels
     'CONTROL_CHANNEL': 4001,
     'CONTROL_ADD_CHANNEL': 2001,
     'CONTROL_REMOVE_CHANNEL': 2002,
@@ -82,6 +92,23 @@ CONSTANTS = {
     'STATESERVER_OBJECT_LEAVING_AI_INTEREST': 2033,
     'STATESERVER_OBJECT_QUERY_MANAGING_AI': 2083,
     'STATESERVER_OBJECT_NOTIFY_MANAGING_AI': 2047,
+
+
+    # Database Server
+    'DBSERVER_CREATE_STORED_OBJECT': 1003,
+    'DBSERVER_CREATE_STORED_OBJECT_RESP': 1004,
+    'DBSERVER_DELETE_STORED_OBJECT': 1008,
+    'DBSERVER_DELETE_QUERY': 1010,
+    'DBSERVER_SELECT_STORED_OBJECT': 1012,
+    'DBSERVER_SELECT_STORED_OBJECT_RESP': 1013,
+    'DBSERVER_SELECT_STORED_OBJECT_ALL': 1020,
+    'DBSERVER_SELECT_STORED_OBJECT_ALL_RESP': 1021,
+    'DBSERVER_SELECT_QUERY': 1016,
+    'DBSERVER_SELECT_QUERY_RESP': 1017,
+    'DBSERVER_UPDATE_STORED_OBJECT': 1014,
+    'DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS': 1024,
+    'DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP': 1025,
+    'DBSERVER_UPDATE_QUERY': 1018,
 }
 
 locals().update(CONSTANTS)
@@ -181,6 +208,76 @@ class Datagram(object):
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
         return dg
 
+class DatagramIterator(object):
+    def __init__(self, datagram, offset = 0):
+        self._datagram = datagram
+        self._data = datagram.get_data()
+        self._offset = offset
+
+    def matches_header(self, recipients, sender, msgtype, remaining=-1):
+        self.seek(0)
+        channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
+        if len(channels) != len(recipients):
+            print "Channels don't match"
+            return False
+
+        self.seek(8*ord(self._data[0])+1)
+        if sender != self.read_uint64():
+            print "Sender doesn't match"
+            return False
+
+        if msgtype != self.read_uint16():
+            print "MsgType doesn't match"
+            return False
+
+        if remaining != -1 and remaining != len(self._data) - self._offset:
+            print "Remaining doesn't match"
+            return False
+
+        return True
+
+    def read_uint8(self):
+        self._offset += 1
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<B", self._data[self._offset-1:self._offset])[0]
+
+    def read_uint16(self):
+        self._offset += 2
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<H", self._data[self._offset-2:self._offset])[0]
+
+    def read_uint32(self):
+        self._offset += 4
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<I", self._data[self._offset-4:self._offset])[0]
+
+    def read_uint64(self):
+        self._offset += 8
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<Q", self._data[self._offset-8:self._offset])[0]
+
+    def read_string(self):
+        length = self.read_uint16()
+        self._offset += length
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack("<%ds" % length, self._data[self._offset-length:self._offset])[0]
+
+    def seek(self, offset):
+        self._offset = offset
+
+    def tell(self):
+        return self._offset
+
 class MDConnection(object):
     def __init__(self, sock):
         self.s = sock
@@ -190,6 +287,12 @@ class MDConnection(object):
         data = datagram.get_data()
         msg = struct.pack('<H', len(data)) + data
         self.s.send(msg)
+
+    def recv(self):
+        dg = self._read()
+        if dg is None:
+            raise EOFError('No message recieved')
+        return Datagram(dg)
 
     def _read(self):
         try:

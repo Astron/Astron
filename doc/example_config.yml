@@ -17,8 +17,8 @@ web:
         username: foo
         password: bar
     #authentication: # A separate file is used, listing username+password+access level.
-    #    method: file
-    #    filename: foo.yml
+    #   method: file
+    #   filename: foo.yml
 
 messagedirector:
     bind: 0.0.0.0:6660
@@ -33,10 +33,16 @@ roles:
     - type: stateserver
       control: 402000
 
-    # Now a database, which listens on channel 402001, and uses BerkeleyDB as a backing store.
+    # Now a database, which listens on channel 402001, generates objects with ids >= 100,000,000+ and
+    # uses BerkeleyDB as a backing store.
     - type: database
       control: 402001
-      storage:
+      generate:
+      # Generate defines the range of DistributedObject ids that the database can create new objects with,
+      # and is generally responsible for. Min and max are both optional fields.
+        min: 100000000 # Required (no default)
+      # max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
+      engine:
         type: bdb
         filename: main_database.db
 
