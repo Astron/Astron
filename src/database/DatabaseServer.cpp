@@ -170,7 +170,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_DELETE_STORED_OBJECT:
 				{
-					if(dgi.read_uint32() == 'Die!')
+					if(dgi.read_uint32() == DBSERVER_DELETE_STORED_OBJECT_VERIFY_CODE)
 					{
 						unsigned int do_id = dgi.read_uint32();
 						m_db_engine->delete_object(do_id);
