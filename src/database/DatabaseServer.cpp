@@ -5,8 +5,8 @@
 #include <fstream>
 
 ConfigVariable<channel_t> control_channel("control", 0);
-ConfigVariable<unsigned int> id_start("generate/min", 1000);
-ConfigVariable<unsigned int> id_end("generate/max", 2000);
+ConfigVariable<unsigned int> id_min("generate/min", 0);
+ConfigVariable<unsigned int> id_max("generate/max", UINT_MAX);
 ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
 class DatabaseServer : public Role
@@ -16,8 +16,10 @@ class DatabaseServer : public Role
 		LogCategory *m_log;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
-			m_db_engine(DBEngineFactory::singleton.instantiate(engine_type.get_rval(roleconfig), roleconfig["engine"],
-				id_start.get_rval(roleconfig)))
+			m_db_engine(DBEngineFactory::singleton.instantiate(
+							engine_type.get_rval(roleconfig),
+							roleconfig["engine"],
+							id_min.get_rval(roleconfig)))
 		{
 			std::stringstream ss;
 			ss << "Database(" << control_channel.get_rval(m_roleconfig) << ")";
@@ -27,7 +29,6 @@ class DatabaseServer : public Role
 				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
-
 
 			subscribe_channel(control_channel.get_rval(m_roleconfig));
 		}
@@ -59,7 +60,7 @@ class DatabaseServer : public Role
 					unsigned short field_count = dgi.read_uint16();
 
 					unsigned int do_id = m_db_engine->get_next_id();
-					if(do_id > id_end.get_rval(m_roleconfig) || do_id == 0)
+					if(do_id > id_max.get_rval(m_roleconfig) || do_id == 0)
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 						resp.add_uint32(0);
