@@ -25,8 +25,8 @@ roles:
         foldername: unittest_db
 """ % test_dc
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
-VERIFY_DELETE_OBJECT = 0x44696521
-VERIFY_DELETE_QUERY = 0x4b696c6c
+VERIFY_DELETE_OBJECT = 0x21656944
+VERIFY_DELETE_QUERY = 0x6c6c694b
 
 class DatabaseBaseTests(object):
     def createEmptyObjGetId(self, sender, context):
