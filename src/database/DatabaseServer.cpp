@@ -27,9 +27,9 @@ class DatabaseServer : public Role
 			m_id_min(id_min.get_rval(roleconfig)),
 			m_id_max(id_max.get_rval(roleconfig))
 		{
-			std::stringstream ss;
-			ss << "Database(" << m_control_channel << ")";
-			m_log = new LogCategory("db", ss.str());
+			std::stringstream log_title;
+			log_title << "Database(" << m_control_channel << ")";
+			m_log = new LogCategory("db", log_title.str());
 			if(!m_db_engine)
 			{
 				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
