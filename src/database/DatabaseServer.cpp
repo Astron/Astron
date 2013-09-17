@@ -26,15 +26,19 @@ class DatabaseServer : public Role
 			m_id_min(id_min.get_rval(roleconfig)),
 			m_id_max(id_max.get_rval(roleconfig))
 		{
+			// Initialize DatabaseServer log
 			std::stringstream log_title;
 			log_title << "Database(" << m_control_channel << ")";
 			m_log = new LogCategory("db", log_title.str());
+
+			// Check to see the engine was instantiated
 			if(!m_db_engine)
 			{
 				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
 
+			// Listen on control channel
 			subscribe_channel(m_control_channel);
 		}
 
@@ -56,7 +60,7 @@ class DatabaseServer : public Role
 					DCClass *dcc = gDCF->get_class(dc_id);
 					if(!dcc)
 					{
-						m_log->error() << "Invalid DCClass when creating object. #" << dc_id << std::endl;
+						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
 						resp.add_uint32(0);
 						send(resp);
 						return;
@@ -64,6 +68,7 @@ class DatabaseServer : public Role
 
 					unsigned short field_count = dgi.read_uint16();
 
+					// Check next id is valid
 					unsigned int do_id = m_db_engine->get_next_id();
 					if(do_id > m_id_max || do_id == 0)
 					{
@@ -73,6 +78,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Unpack fields to be passed to database
 					DatabaseObject dbo;
 					dbo.do_id = do_id;
 					dbo.dc_id = dc_id;
@@ -133,6 +139,7 @@ class DatabaseServer : public Role
 						}
 					}
 
+					// Create object in database
 					m_log->spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
 					if(m_db_engine->create_object(dbo))
 					{
