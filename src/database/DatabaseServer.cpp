@@ -2,11 +2,10 @@
 #include "core/RoleFactory.h"
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
-#include <fstream>
 
 ConfigVariable<channel_t> control_channel("control", 0);
-ConfigVariable<unsigned int> id_min("generate/min", 0);
-ConfigVariable<unsigned int> id_max("generate/max", UINT_MAX);
+ConfigVariable<unsigned int> min_id("generate/min", 0);
+ConfigVariable<unsigned int> max_id("generate/max", UINT_MAX);
 ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
 class DatabaseServer : public Role
@@ -16,26 +15,31 @@ class DatabaseServer : public Role
 		LogCategory *m_log;
 
 		channel_t m_control_channel;
-		unsigned int m_id_min, m_id_max;
+		unsigned int m_min_id, m_max_id;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
 							engine_type.get_rval(roleconfig),
 							roleconfig["engine"],
-							id_min.get_rval(roleconfig))),
+							min_id.get_rval(roleconfig),
+							max_id.get_rval(roleconfig))),
 			m_control_channel(control_channel.get_rval(roleconfig)),
-			m_id_min(id_min.get_rval(roleconfig)),
-			m_id_max(id_max.get_rval(roleconfig))
+			m_min_id(min_id.get_rval(roleconfig)),
+			m_max_id(max_id.get_rval(roleconfig))
 		{
-			std::stringstream ss;
-			ss << "Database(" << m_control_channel << ")";
-			m_log = new LogCategory("db", ss.str());
+			// Initialize DatabaseServer log
+			std::stringstream log_title;
+			log_title << "Database(" << m_control_channel << ")";
+			m_log = new LogCategory("db", log_title.str());
+
+			// Check to see the engine was instantiated
 			if(!m_db_engine)
 			{
 				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
 
+			// Listen on control channel
 			subscribe_channel(m_control_channel);
 		}
 
@@ -49,35 +53,25 @@ class DatabaseServer : public Role
 				{
 					unsigned int context = dgi.read_uint32();
 
+					// Start response with generic header
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
 					resp.add_uint32(context);
 
+					// Get DistributedClass
 					unsigned short dc_id = dgi.read_uint16();
 					DCClass *dcc = gDCF->get_class(dc_id);
 					if(!dcc)
 					{
-						m_log->error() << "Invalid DCClass when creating object. #" << dc_id << std::endl;
+						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
 						resp.add_uint32(0);
 						send(resp);
 						return;
 					}
 
+					// Unpack fields to be passed to database
+					DatabaseObject dbo(dc_id);
 					unsigned short field_count = dgi.read_uint16();
-
-					unsigned int do_id = m_db_engine->get_next_id();
-					if(do_id > m_id_max || do_id == 0)
-					{
-						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
-						resp.add_uint32(0);
-						send(resp);
-						return;
-					}
-
-					DatabaseObject dbo;
-					dbo.do_id = do_id;
-					dbo.dc_id = dc_id;
-
 					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
 					{
@@ -109,6 +103,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Check for required fields, and populate with defaults
 					m_log->spam() << "Checking all required fields exist..." << std::endl;
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
@@ -134,16 +129,19 @@ class DatabaseServer : public Role
 						}
 					}
 
-					m_log->spam() << "Creating stored object with ID: " << do_id << " ..." << std::endl;
-					if(m_db_engine->create_object(dbo))
+					// Create object in database
+					m_log->spam() << "Creating stored object..." << std::endl;
+					unsigned int do_id = m_db_engine->create_object(dbo);
+					if(do_id == 0 || do_id < m_min_id || do_id > m_max_id)
 					{
-						resp.add_uint32(do_id);
-					}
-					else
-					{
+						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 						resp.add_uint32(0);
+						send(resp);
+						return;
 					}
 
+					m_log->spam() << "... created with ID: " << do_id << std::endl;
+					resp.add_uint32(do_id);
 					send(resp);
 				}
 				break;
@@ -155,9 +153,10 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
 					resp.add_uint32(context);
 
+					unsigned int do_id = dgi.read_uint32();
+
 					DatabaseObject dbo;
-					dbo.do_id = dgi.read_uint32();
-					if(m_db_engine->get_object(dbo))
+					if(m_db_engine->get_object(do_id, dbo))
 					{
 						resp.add_uint8(1);
 						resp.add_uint16(dbo.dc_id);
@@ -181,6 +180,7 @@ class DatabaseServer : public Role
 					{
 						unsigned int do_id = dgi.read_uint32();
 						m_db_engine->delete_object(do_id);
+						m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 					}
 					else
 					{

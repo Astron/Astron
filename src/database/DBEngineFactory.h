@@ -7,14 +7,14 @@ class IDatabaseEngine;
 class BaseDBEngineCreator
 {
 	public:
-		virtual IDatabaseEngine* instantiate(DBEngineConfig config, unsigned int start_do_id) = 0;
+		virtual IDatabaseEngine* instantiate(DBEngineConfig config, unsigned int min_id, unsigned int max_id) = 0;
 };
 
 class DBEngineFactory
 {
 	public:
 		static DBEngineFactory singleton;
-		IDatabaseEngine* instantiate(const std::string &engine_name, DBEngineConfig config, unsigned int start_do_id);
+		IDatabaseEngine* instantiate(const std::string &engine_name, DBEngineConfig config, unsigned int min_id, unsigned int max_id);
 	private:
 		DBEngineFactory();
 		std::map<std::string, BaseDBEngineCreator*> m_creators;
@@ -33,8 +33,8 @@ class DBEngineCreator : public BaseDBEngineCreator
 			DBEngineFactory::singleton.add_creator(name, this);
 		}
 
-		virtual IDatabaseEngine* instantiate(DBEngineConfig config, unsigned int start_do_id)
+		virtual IDatabaseEngine* instantiate(DBEngineConfig config, unsigned int min_id, unsigned int max_id)
 		{
-			return new T(config, start_do_id);
+			return new T(config, min_id, max_id);
 		}
 };
