@@ -75,7 +75,7 @@ private:
 		return do_id;
 	}
 
-	inline void output_field(YAML::Emitter& out, DCField* field, std::string value)
+	inline void output_field(YAML::Emitter& out, DCField* field, const std::string& value)
 	{
 		out << YAML::Key << field->get_name();
 		DCAtomicField* atomic = field->as_atomic_field();
