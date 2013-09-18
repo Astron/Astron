@@ -1,13 +1,16 @@
 #pragma once
-#include <string>
 #include <set>
-#include <string.h>
+#include <string>
+#include <vector>
+#include <string.h> // memcpy
 #include "core/messages.h"
+
+typedef std::vector<unsigned char> bytes;
 
 class Datagram
 {
 private:
-	char* buf;
+	unsigned char* buf;
 	unsigned int buf_size;
 	unsigned int buf_end;
 
@@ -15,38 +18,38 @@ private:
 	{
 		if(buf_end+len > buf_size)
 		{
-			char *tmp_buf = new char[buf_size+len+64];
+			unsigned char *tmp_buf = new unsigned char[buf_size+len+64];
 			memcpy(tmp_buf, buf, buf_size);
 			delete [] buf;
 			buf = tmp_buf;
 		}
 	}
 public:
-	Datagram() : buf(new char[64]), buf_size(64), buf_end(0)
+	Datagram() : buf(new unsigned char[64]), buf_size(64), buf_end(0)
 	{
 	}
 
-	Datagram(const std::string &data) : buf(new char[data.length()]), buf_size(data.length()), buf_end(data.length())
+	Datagram(const std::string &data) : buf(new unsigned char[data.length()]), buf_size(data.length()), buf_end(data.length())
 	{
 		memcpy(buf, data.c_str(), data.length());
 	}
 
-	Datagram(const char *data, size_t length) : buf(new char[length]), buf_size(length), buf_end(length)
+	Datagram(const char *data, size_t length) : buf(new unsigned char[length]), buf_size(length), buf_end(length)
 	{
 		memcpy(buf, data, length);
 	}
 
-	Datagram(unsigned long long to_channel, unsigned long long from_channel, unsigned short message_type) : buf(new char[64]), buf_size(64), buf_end(0)
+	Datagram(unsigned long long to_channel, unsigned long long from_channel, unsigned short message_type) : buf(new unsigned char[64]), buf_size(64), buf_end(0)
 	{
 		add_server_header(to_channel, from_channel, message_type);
 	}
 
-	Datagram(const std::set<unsigned long long> &to_channels, unsigned long long from_channel, unsigned short message_type) : buf(new char[64]), buf_size(64), buf_end(0)
+	Datagram(const std::set<unsigned long long> &to_channels, unsigned long long from_channel, unsigned short message_type) : buf(new unsigned char[64]), buf_size(64), buf_end(0)
 	{
 		add_server_header(to_channels, from_channel, message_type);
 	}
 
-	Datagram(unsigned short message_type) : buf(new char[64]), buf_size(64), buf_end(0)
+	Datagram(unsigned short message_type) : buf(new unsigned char[64]), buf_size(64), buf_end(0)
 	{
 		add_control_header(message_type);
 	}
@@ -84,11 +87,11 @@ public:
 		buf_end += 8;
 	}
 
-	void add_data(const std::string &data)
+	void add_data(const bytes &data)
 	{
-		check_add_length(data.length());
-		memcpy(buf+buf_end, data.c_str(), data.length());
-		buf_end += data.length();
+		check_add_length(data.size());
+		memcpy(buf+buf_end, &data[0], data.size());
+		buf_end += data.size();
 	}
 
 	void add_datagram(const Datagram &dg)
@@ -101,7 +104,9 @@ public:
 	void add_string(const std::string &str)
 	{
 		add_uint16(str.length());
-		add_data(str);
+		check_add_length(str.length());
+		memcpy(buf+buf_end, str.c_str(), str.length());
+		buf_end += str.length();
 	}
 
 	void add_server_header(channel_t to, channel_t from, unsigned short message_type)
@@ -128,12 +133,12 @@ public:
 		add_uint16(message_type);
 	}
 
-	unsigned int get_buf_end() const
+	unsigned int size() const
 	{
 		return buf_end;
 	}
 
-	char* get_data() const
+	unsigned char* get_data() const
 	{
 		return buf;
 	}

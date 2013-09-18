@@ -38,7 +38,7 @@
      dcTypedef.h \
      dcPython.h \
      dcbase.h dcindent.h hashGenerator.h  \
-     primeNumberGenerator.h  
+     primeNumberGenerator.h
 
   #define INCLUDED_SOURCES \
      dcAtomicField.cxx dcClass.cxx \
@@ -55,7 +55,7 @@
      dcSwitch.cxx \
      dcTypedef.cxx \
      dcindent.cxx  \
-     hashGenerator.cxx primeNumberGenerator.cxx 
+     hashGenerator.cxx primeNumberGenerator.cxx
 
   //  #define SOURCES $[SOURCES] $[INCLUDED_SOURCES]
   //  #define COMBINED_SOURCES

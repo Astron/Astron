@@ -66,15 +66,15 @@ public:
 
   virtual void output(ostream &out, bool brief) const;
   virtual void write(ostream &out, bool brief, int indent_level) const;
-  virtual void output_instance(ostream &out, bool brief, const string &prename, 
+  virtual void output_instance(ostream &out, bool brief, const string &prename,
                                const string &name, const string &postname) const=0;
   virtual void write_instance(ostream &out, bool brief, int indent_level,
                               const string &prename, const string &name,
                               const string &postname) const;
-  void output_typedef_name(ostream &out, bool brief, const string &prename, 
+  void output_typedef_name(ostream &out, bool brief, const string &prename,
                            const string &name, const string &postname) const;
   void write_typedef_name(ostream &out, bool brief, int indent_level,
-                          const string &prename, const string &name, 
+                          const string &prename, const string &name,
                           const string &postname) const;
   virtual void generate_hash(HashGenerator &hashgen) const;
 

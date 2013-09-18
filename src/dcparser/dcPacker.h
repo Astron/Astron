@@ -47,7 +47,7 @@ PUBLISHED:
 
   void set_unpack_data(const string &data);
 public:
-  void set_unpack_data(const char *unpack_data, size_t unpack_length, 
+  void set_unpack_data(const char *unpack_data, size_t unpack_length,
                        bool owns_unpack_data);
 
 PUBLISHED:
@@ -157,7 +157,7 @@ PUBLISHED:
 // need to agree with channel_type in dcbase.h
 #define RAW_PACK_CHANNEL(in)  raw_pack_uint64(in)
 #define RAW_UNPACK_CHANNEL()  raw_unpack_uint64()
-  
+
 
   INLINE int raw_unpack_int8();
   INLINE int raw_unpack_int16();
@@ -195,9 +195,9 @@ private:
 #ifdef HAVE_PYTHON
   void pack_class_object(const DCClass *dclass, PyObject *object);
   PyObject *unpack_class_object(const DCClass *dclass);
-  void set_class_element(PyObject *class_def, PyObject *&object, 
+  void set_class_element(PyObject *class_def, PyObject *&object,
                          const DCField *field);
-  void get_class_element(const DCClass *dclass, PyObject *object, 
+  void get_class_element(const DCClass *dclass, PyObject *object,
                          const DCField *field);
 #endif
 

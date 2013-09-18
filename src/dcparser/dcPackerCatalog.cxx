@@ -127,7 +127,7 @@ get_live_catalog(const char *data, size_t length) const {
   for (size_t i = 0; i < _entries.size(); i++) {
     live_catalog->_live_entries.push_back(zero_entry);
   }
-  
+
   DCPacker packer;
   packer.set_unpack_data(data, length, false);
   packer.begin_unpack(_root);
@@ -267,7 +267,7 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
     live_catalog->_live_entries[field_index]._begin = packer.get_num_unpacked_bytes();
   }
 
-  if (packer.has_nested_fields() && 
+  if (packer.has_nested_fields() &&
       (packer.get_pack_type() != PT_string && packer.get_pack_type() != PT_blob)) {
     packer.push();
     while (packer.more_nested_fields()) {
@@ -290,7 +290,7 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
 
     const DCPackerInterface *switch_case = packer.get_current_parent();
     nassertv(switch_case != (DCPackerInterface *)NULL);
-    const DCPackerCatalog *switch_catalog = 
+    const DCPackerCatalog *switch_catalog =
       live_catalog->_catalog->update_switch_fields(last_switch, switch_case);
     nassertv(switch_catalog != (DCPackerCatalog *)NULL);
     live_catalog->_catalog = switch_catalog;
@@ -300,8 +300,8 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
     LiveCatalogEntry zero_entry;
     zero_entry._begin = 0;
     zero_entry._end = 0;
-    for (size_t i = live_catalog->_live_entries.size(); 
-         i < switch_catalog->_entries.size(); 
+    for (size_t i = live_catalog->_live_entries.size();
+         i < switch_catalog->_entries.size();
          i++) {
       live_catalog->_live_entries.push_back(zero_entry);
     }
@@ -313,7 +313,7 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
 //       Access: Private
 //  Description: Returns a new DCPackerCatalog that includes all of
 //               the fields in this object, with the addition of the
-//               fields named by switch_case.  
+//               fields named by switch_case.
 //
 //               This is used to implement switches, which change the
 //               set of fields they make available according to the

@@ -68,7 +68,7 @@ clear() {
   for (di = _things_to_delete.begin(); di != _things_to_delete.end(); ++di) {
     delete (*di);
   }
-  
+
   _classes.clear();
   _imports.clear();
   _things_by_name.clear();
@@ -142,13 +142,13 @@ read(Filename filename) {
     return false;
   }
   bool okflag = read(*in, filename);
-  
+
   // For some reason--compiler bug in gcc 3.2?--explicitly deleting
   // the in pointer does not call the appropriate global delete
   // function; instead apparently calling the system delete
   // function.  So we call the delete function by hand instead.
   vfs->close_read_file(in);
-  
+
   return okflag;
 
 #else  // WITHIN_PANDA
@@ -336,7 +336,7 @@ get_field_by_index(int index_number) const {
   if (index_number >= 0 && index_number < (int)_fields_by_index.size()) {
     return _fields_by_index[index_number];
   }
-  
+
   return NULL;
 }
 
@@ -525,7 +525,7 @@ add_class(DCClass *dclass) {
   if (!dclass->get_name().empty()) {
     bool inserted = _things_by_name.insert
       (ThingsByName::value_type(dclass->get_name(), dclass)).second;
-    
+
     if (!inserted) {
       return false;
     }
@@ -563,7 +563,7 @@ add_switch(DCSwitch *dswitch) {
   if (!dswitch->get_name().empty()) {
     bool inserted = _things_by_name.insert
       (ThingsByName::value_type(dswitch->get_name(), dswitch)).second;
-    
+
     if (!inserted) {
       return false;
     }
@@ -715,10 +715,10 @@ setup_default_keywords() {
 
   _default_keywords.clear_keywords();
   for (int i = 0; default_keywords[i].name != NULL; ++i) {
-    DCKeyword *keyword = 
-      new DCKeyword(default_keywords[i].name, 
+    DCKeyword *keyword =
+      new DCKeyword(default_keywords[i].name,
                     default_keywords[i].flag);
-    
+
     _default_keywords.add_keyword(keyword);
     _things_to_delete.push_back(keyword);
   }

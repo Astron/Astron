@@ -26,7 +26,7 @@ int DCPacker::StackElement::_num_ever_allocated = 0;
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPacker::Constructor
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCPacker::
 DCPacker() {
@@ -40,14 +40,14 @@ DCPacker() {
   _pack_error = false;
   _range_error = false;
   _stack = NULL;
-  
+
   clear();
 }
 
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPacker::Destructor
 //       Access: Published
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCPacker::
 ~DCPacker() {
@@ -71,7 +71,7 @@ DCPacker::
 void DCPacker::
 begin_pack(const DCPackerInterface *root) {
   nassertv(_mode == M_idle);
-  
+
   _mode = M_pack;
   _parse_error = false;
   _pack_error = false;
@@ -98,7 +98,7 @@ begin_pack(const DCPackerInterface *root) {
 bool DCPacker::
 end_pack() {
   nassertr(_mode == M_pack, false);
-  
+
   _mode = M_idle;
 
   if (_stack != NULL || _current_field != NULL || _current_parent != NULL) {
@@ -134,7 +134,7 @@ set_unpack_data(const string &data) {
 //               takes only one parameter.
 ////////////////////////////////////////////////////////////////////
 void DCPacker::
-set_unpack_data(const char *unpack_data, size_t unpack_length, 
+set_unpack_data(const char *unpack_data, size_t unpack_length,
                 bool owns_unpack_data) {
   nassertv(_mode == M_idle);
 
@@ -164,7 +164,7 @@ void DCPacker::
 begin_unpack(const DCPackerInterface *root) {
   nassertv(_mode == M_idle);
   nassertv(_unpack_data != NULL);
-  
+
   _mode = M_unpack;
   _parse_error = false;
   _pack_error = false;
@@ -192,7 +192,7 @@ begin_unpack(const DCPackerInterface *root) {
 bool DCPacker::
 end_unpack() {
   nassertr(_mode == M_unpack, false);
-  
+
   _mode = M_idle;
 
   if (_stack != NULL || _current_field != NULL || _current_parent != NULL) {
@@ -235,7 +235,7 @@ begin_repack(const DCPackerInterface *root) {
   nassertv(_mode == M_idle);
   nassertv(_unpack_data != NULL);
   nassertv(_unpack_p == 0);
-  
+
   _mode = M_repack;
   _parse_error = false;
   _pack_error = false;
@@ -274,7 +274,7 @@ end_repack() {
 
   // Put the rest of the data onto the pack stream.
   _pack_data.append_data(_unpack_data + _unpack_p, _unpack_length - _unpack_p);
-  
+
   _mode = M_idle;
   clear();
 
@@ -304,7 +304,7 @@ seek(const string &field_name) {
     _pack_error = true;
     return false;
   }
-  
+
   int seek_index = _live_catalog->find_entry_by_name(field_name);
   if (seek_index < 0) {
     // The field was not known.
@@ -338,7 +338,7 @@ seek(int seek_index) {
     _pack_error = true;
     return false;
   }
-  
+
   if (_mode == M_unpack) {
     const DCPackerCatalog::Entry &entry = _live_catalog->get_entry(seek_index);
 
@@ -384,7 +384,7 @@ seek(int seek_index) {
     size_t begin = _live_catalog->get_begin(seek_index);
     if (begin < _unpack_p) {
       // Whoops, we are seeking fields out-of-order.  That means we
-      // need to write the entire record and start again. 
+      // need to write the entire record and start again.
       _pack_data.append_data(_unpack_data + _unpack_p, _unpack_length - _unpack_p);
       size_t length = _pack_data.get_length();
       char *buffer = _pack_data.take_data();
@@ -460,7 +460,7 @@ push() {
     // before a sequence of nested fields.
     int num_nested_fields = _current_parent->get_num_nested_fields();
     size_t length_bytes = _current_parent->get_num_length_bytes();
-    
+
     if (_mode == M_pack || _mode == M_repack) {
       // Reserve length_bytes for when we figure out what the length
       // is.
@@ -490,7 +490,7 @@ push() {
             _unpack_p += 2;
           }
           _pop_marker = _unpack_p + length;
-        
+
           // The explicit length trumps the number of nested fields
           // reported by get_num_nested_fields().
           if (length == 0) {
@@ -512,7 +512,7 @@ push() {
     if (_num_nested_fields >= 0 &&
         _current_field_index >= _num_nested_fields) {
       _current_field = NULL;
-      
+
     } else {
       _current_field = _current_parent->get_nested_field(_current_field_index);
     }
@@ -535,7 +535,7 @@ pop() {
     // Oops, didn't pack or unpack enough values.
     _pack_error = true;
 
-  } else if (_mode == M_unpack && _pop_marker != 0 && 
+  } else if (_mode == M_unpack && _pop_marker != 0 &&
              _unpack_p != _pop_marker) {
     // Didn't unpack the right number of values.
     _pack_error = true;
@@ -790,7 +790,7 @@ pack_object(PyObject *object) {
     // For some reason, PySequence_Check() is incorrectly reporting
     // that a class instance is a sequence, even if it doesn't provide
     // __len__, so we double-check by testing for __len__ explicitly.
-    bool is_sequence = 
+    bool is_sequence =
       (PySequence_Check(object) != 0) &&
       (PyObject_HasAttrString(object, "__len__") != 0);
     bool is_instance = false;
@@ -801,7 +801,7 @@ pack_object(PyObject *object) {
       const DCClassParameter *class_param = get_current_field()->as_class_parameter();
       if (class_param != (DCClassParameter *)NULL) {
         dclass = class_param->get_class();
-        
+
         if (dclass->has_class_def()) {
           PyObject *class_def = dclass->get_class_def();
           is_instance = (PyObject_IsInstance(object, dclass->get_class_def()) != 0);
@@ -890,7 +890,7 @@ unpack_object() {
       object = PyFloat_FromDouble(value);
     }
     break;
-      
+
   case PT_int:
     {
       int value = unpack_int();
@@ -901,7 +901,7 @@ unpack_object() {
 #endif
     }
     break;
-      
+
   case PT_uint:
     {
       unsigned int value = unpack_uint();
@@ -916,14 +916,14 @@ unpack_object() {
 #endif
     }
     break;
-      
+
   case PT_int64:
     {
       PN_int64 value = unpack_int64();
       object = PyLong_FromLongLong(value);
     }
     break;
-      
+
   case PT_uint64:
     {
       PN_uint64 value = unpack_uint64();
@@ -1069,7 +1069,7 @@ unpack_and_format(ostream &out, bool show_field_names) {
   if (show_field_names && !get_current_field_name().empty()) {
     nassertv(_current_field != (DCPackerInterface *)NULL);
     const DCField *field = _current_field->as_field();
-    if (field != (DCField *)NULL && 
+    if (field != (DCField *)NULL &&
         field->as_parameter() != (DCParameter *)NULL) {
       out << field->get_name() << " = ";
     }
@@ -1083,19 +1083,19 @@ unpack_and_format(ostream &out, bool show_field_names) {
   case PT_double:
     out << unpack_double();
     break;
-      
+
   case PT_int:
     out << unpack_int();
     break;
-      
+
   case PT_uint:
     out << unpack_uint();
     break;
-      
+
   case PT_int64:
     out << unpack_int64();
     break;
-      
+
   case PT_uint64:
     out << unpack_uint64();
     break;
@@ -1365,7 +1365,7 @@ unpack_class_object(const DCClass *dclass) {
 //               Python class object in whatever way is appropriate.
 ////////////////////////////////////////////////////////////////////
 void DCPacker::
-set_class_element(PyObject *class_def, PyObject *&object, 
+set_class_element(PyObject *class_def, PyObject *&object,
                   const DCField *field) {
   string field_name = field->get_name();
   DCPackType pack_type = get_pack_type();
@@ -1415,7 +1415,7 @@ set_class_element(PyObject *class_def, PyObject *&object,
           }
         }
       }
-      
+
     } else {
       nassertv(object != (PyObject *)NULL);
       PyObject_SetAttrString(object, (char *)field_name.c_str(), element);
@@ -1435,7 +1435,7 @@ set_class_element(PyObject *class_def, PyObject *&object,
 //               packs it.
 ////////////////////////////////////////////////////////////////////
 void DCPacker::
-get_class_element(const DCClass *dclass, PyObject *object, 
+get_class_element(const DCClass *dclass, PyObject *object,
                   const DCField *field) {
   string field_name = field->get_name();
   DCPackType pack_type = get_pack_type();

@@ -84,7 +84,7 @@ public:
 private:
   void add_entry(const string &name, const DCPackerInterface *field,
                  const DCPackerInterface *parent, int field_index);
-  
+
   void r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
                       const DCPackerInterface *parent, int field_index);
   void r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
@@ -92,11 +92,11 @@ private:
 
   const DCPackerCatalog *update_switch_fields(const DCSwitchParameter *dswitch,
                                               const DCPackerInterface *switch_case) const;
-    
+
 
   const DCPackerInterface *_root;
   LiveCatalog *_live_catalog;
-  
+
   typedef pvector<Entry> Entries;
   Entries _entries;
 

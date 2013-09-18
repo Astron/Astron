@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DCClassParameter::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter::
 DCClassParameter(const DCClass *dclass) :
@@ -67,7 +67,7 @@ DCClassParameter(const DCClass *dclass) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCClassParameter::Copy Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter::
 DCClassParameter(const DCClassParameter &copy) :
@@ -80,7 +80,7 @@ DCClassParameter(const DCClassParameter &copy) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCClassParameter::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter *DCClassParameter::
 as_class_parameter() {
@@ -90,7 +90,7 @@ as_class_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCClassParameter::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCClassParameter *DCClassParameter::
 as_class_parameter() const {
@@ -100,7 +100,7 @@ as_class_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCClassParameter::make_copy
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCClassParameter::
 make_copy() const {
@@ -150,7 +150,7 @@ get_nested_field(int n) const {
 //               typename and identifier.
 ////////////////////////////////////////////////////////////////////
 void DCClassParameter::
-output_instance(ostream &out, bool brief, const string &prename, 
+output_instance(ostream &out, bool brief, const string &prename,
                 const string &name, const string &postname) const {
   if (get_typedef() != (DCTypedef *)NULL) {
     output_typedef_name(out, brief, prename, name, postname);
