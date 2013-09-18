@@ -59,7 +59,7 @@ When the client wishes to disconnect, it may simply close the TCP session.
 These are the messages that the client and Client Agent may send between each other
 in order to accomplish various normal game tasks.
 
-**CLIENT_HELLO(???)**
+**CLIENT_HELLO(1)**
     `args(uint32 dc_hash, string version)`
 > This is the first message a client may send. The dc_hash is a 32-bit hash value
 calculated from all fields/classes listed in the client's DC file. The version is
@@ -70,7 +70,7 @@ client is not up-to-date, it will be disconnected with a `CLIENT_GO_GET_LOST`.
 If the client is up-to-date, the gameserver will send a `CLIENT_HELLO_RESP` to
 inform the client that it may proceed with its normal logic flow.
 
-**CLIENT_HELLO_RESP(???)**
+**CLIENT_HELLO_RESP(2)**
     `args()`
 > This is sent by the Client Agent to the client when the client's `CLIENT_HELLO`
 is accepted.
@@ -94,10 +94,27 @@ leaving the client's visibility, either due to deletion, zone change, or dropped
 interest.
 
 **CLIENT_CREATE_OBJECT_REQUIRED(34)**
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
+> Inform the client of an object entering one of the client's interests. The
+... is an in-order serialization of all required fields.
+Note: This is analogous to `STATESERVER_OBJECT_GENERATE_WITH_REQURIED` in the
+internal protocol.
 
 **CLIENT_CREATE_OBJECT_REQUIRED_OTHER(35)**
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
+> As above, but includes OTHER fields. The required fields are followed by a uint16
+representing the number of additional fields included in the generate message,
+followed by a `(uint16 field_id, VALUE)` for each field.
 
 **CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER(36)**
+    `args(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`
+> Data-wise, this is precisely the same as above. However, it carries the additional
+semantic meaning that the object is "owned" by this client, so the client should
+generate an "ownerview" ("OV") perspective rather than its normal client perspective.
+The client will see this object even if it is not in interest (therefore,
+parent_id and zone_id aren't necessarily covered by one of the client's interests)
+and the client will receive all ownrecv field updates (but will only receive
+broadcast if the object is visible).
 
 **CLIENT_HEARTBEAT(52)**
     `args()`
@@ -106,7 +123,31 @@ does not receive a `CLIENT_HEARTBEAT` for a certain (configurable) amount of tim
 it will assume that the client has crashed and disconnect the client.
 
 **CLIENT_ADD_INTEREST(97)**
+    `args(uint16 interest_id, uint32 context, uint32 parent_id, uint32 zone_id, [...])`
+> The client sends this to open interest in one or more zones within a parent.
+The server will respond by sending a CREATE for every object in the new zone,
+followed by a `CLIENT_DONE_INTEREST_RESP`.
 
 **CLIENT_REMOVE_INTEREST(98)**
+    `args(uint16 interest_id, uint32 context)`
+> Remove interest added via a prior `CLIENT_ADD_INTEREST`. The server will send
+`CLIENT_OBJECT_DISABLE`s for any objects that are no longer visible as a result,
+followed by a `CLIENT_DONE_INTEREST_RESP`. Objects that are still visible due to
+another, overlapping interest will be ignored.
+
+**CLIENT_DONE_INTEREST_RESP(48)**
+    `args(uint16 interest_id, uint32 context)`
+> Sent by the server to inform the client that an interest add/remove operation
+for the given interest has completed. The context is the same as the (client-chosen)
+context sent in the operation: this is to disambiguate interests that might reuse
+the same interest ID.
 
 **CLIENT_OBJECT_LOCATION(102)**
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`
+> When the server sends this, it is informing the client that an object is moving
+to another parent/zone that the client has interest in. If the object moves to a
+location that the client does not have interest in, the object is leaving the
+client's scope, and the server will therefore send a `CLIENT_OBJECT_DISABLE`
+instead. When the client sends this, it is requesting that the server move an
+object *that it owns* to a given parent/zone. If the object is not owned, the
+server will disconnect the client.
