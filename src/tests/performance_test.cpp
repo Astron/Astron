@@ -42,7 +42,7 @@ class PerfParticipant : public MDParticipantInterface
 
 class PerfMain
 {
-	public: 
+	public:
 		PerfMain()
 		{
 			perfLog.info() << "Starting perf test..." << std::endl;

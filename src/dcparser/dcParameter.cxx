@@ -55,7 +55,7 @@ DCParameter::
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCParameter::
 as_parameter() {
@@ -65,7 +65,7 @@ as_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCParameter *DCParameter::
 as_parameter() const {
@@ -75,7 +75,7 @@ as_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_simple_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSimpleParameter *DCParameter::
 as_simple_parameter() {
@@ -85,7 +85,7 @@ as_simple_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_simple_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSimpleParameter *DCParameter::
 as_simple_parameter() const {
@@ -95,7 +95,7 @@ as_simple_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter *DCParameter::
 as_class_parameter() {
@@ -105,7 +105,7 @@ as_class_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCClassParameter *DCParameter::
 as_class_parameter() const {
@@ -115,7 +115,7 @@ as_class_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCParameter::
 as_switch_parameter() {
@@ -125,7 +125,7 @@ as_switch_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCParameter::
 as_switch_parameter() const {
@@ -135,7 +135,7 @@ as_switch_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_array_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter *DCParameter::
 as_array_parameter() {
@@ -145,7 +145,7 @@ as_array_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::as_array_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCArrayParameter *DCParameter::
 as_array_parameter() const {
@@ -179,7 +179,7 @@ set_typedef(const DCTypedef *dtypedef) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::append_array_specification
 //       Access: Public, Virtual
-//  Description: Returns the type represented by this_type[size].  
+//  Description: Returns the type represented by this_type[size].
 //
 //               In the case of a generic DCParameter, this means it
 //               returns a DCArrayParameter wrapped around this type.
@@ -192,7 +192,7 @@ append_array_specification(const DCUnsignedIntRange &size) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::output
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
 output(ostream &out, bool brief) const {
@@ -206,7 +206,7 @@ output(ostream &out, bool brief) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCParameter::write
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
 write(ostream &out, bool brief, int indent_level) const {
@@ -224,7 +224,7 @@ write(ostream &out, bool brief, int indent_level) const {
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
 write_instance(ostream &out, bool brief, int indent_level,
-               const string &prename, const string &name, 
+               const string &prename, const string &name,
                const string &postname) const {
   indent(out, indent_level);
   output_instance(out, brief, prename, name, postname);
@@ -258,8 +258,8 @@ output_typedef_name(ostream &out, bool, const string &prename,
 //               the typedef name instead.
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
-write_typedef_name(ostream &out, bool brief, int indent_level, 
-                   const string &prename, const string &name, 
+write_typedef_name(ostream &out, bool brief, int indent_level,
+                   const string &prename, const string &name,
                    const string &postname) const {
   indent(out, indent_level)
     << get_typedef()->get_name();

@@ -1,15 +1,2 @@
-#built cmake files/built project files
-build/
-openotpd
-*.a
-*.o
-#shit that macs crap out
+# Ignore Mac's directory info
 .DS_Store
-#cmake stuff
-CMakeCache.txt
-CMakeFiles
-Makefile
-cmake_install.cmake
-install_manifest.txt
-#unittest artifacts
-unittest_db/

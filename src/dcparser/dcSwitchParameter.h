@@ -44,7 +44,7 @@ public:
 
   const DCPackerInterface *apply_switch(const char *value_data, size_t length) const;
 
-  virtual void output_instance(ostream &out, bool brief, const string &prename, 
+  virtual void output_instance(ostream &out, bool brief, const string &prename,
                                const string &name, const string &postname) const;
   virtual void write_instance(ostream &out, bool brief, int indent_level,
                               const string &prename, const string &name,

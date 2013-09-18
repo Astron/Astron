@@ -27,7 +27,7 @@ DCClassParameter *DCSimpleParameter::_uint32uint8_type = NULL;
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSimpleParameter::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSimpleParameter::
 DCSimpleParameter(DCSubatomicType type, unsigned int divisor) :
@@ -106,7 +106,7 @@ DCSimpleParameter(DCSubatomicType type, unsigned int divisor) :
     _bytes_per_element = 1;
     break;
 
-  case ST_string: 
+  case ST_string:
     _pack_type = PT_string;
     _nested_type = ST_char;
     _has_nested_fields = true;
@@ -198,7 +198,7 @@ DCSimpleParameter(DCSubatomicType type, unsigned int divisor) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSimpleParameter::Copy Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSimpleParameter::
 DCSimpleParameter(const DCSimpleParameter &copy) :
@@ -224,7 +224,7 @@ DCSimpleParameter(const DCSimpleParameter &copy) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSimpleParameter::as_simple_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSimpleParameter *DCSimpleParameter::
 as_simple_parameter() {
@@ -234,7 +234,7 @@ as_simple_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSimpleParameter::as_simple_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSimpleParameter *DCSimpleParameter::
 as_simple_parameter() const {
@@ -244,7 +244,7 @@ as_simple_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSimpleParameter::make_copy
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCSimpleParameter::
 make_copy() const {
@@ -369,7 +369,7 @@ set_modulus(double modulus) {
   case ST_int32array:
     validate_uint64_limits(_uint64_modulus - 1, 31, range_error);
     break;
-    
+
   case ST_int64:
     validate_uint64_limits(_uint64_modulus - 1, 63, range_error);
     break;
@@ -389,7 +389,7 @@ set_modulus(double modulus) {
   case ST_uint32array:
     validate_uint64_limits(_uint64_modulus - 1, 32, range_error);
     break;
-    
+
   case ST_uint64:
   case ST_float64:
     break;
@@ -462,7 +462,7 @@ set_range(const DCDoubleRange &range) {
       _int_range.add_range((int)min, (int)max);
     }
     break;
-    
+
   case ST_int16:
   case ST_int16array:
     _int_range.clear();
@@ -474,7 +474,7 @@ set_range(const DCDoubleRange &range) {
       _int_range.add_range((int)min, (int)max);
     }
     break;
-    
+
   case ST_int32:
   case ST_int32array:
     _int_range.clear();
@@ -486,7 +486,7 @@ set_range(const DCDoubleRange &range) {
       _int_range.add_range((int)min, (int)max);
     }
     break;
-    
+
   case ST_int64:
     _int64_range.clear();
     for (i = 0; i < num_ranges; i++) {
@@ -495,7 +495,7 @@ set_range(const DCDoubleRange &range) {
       _int64_range.add_range(min, max);
     }
     break;
-    
+
   case ST_char:
   case ST_uint8:
   case ST_uint8array:
@@ -508,7 +508,7 @@ set_range(const DCDoubleRange &range) {
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
     }
     break;
-    
+
   case ST_uint16:
   case ST_uint16array:
     _uint_range.clear();
@@ -520,7 +520,7 @@ set_range(const DCDoubleRange &range) {
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
     }
     break;
-    
+
   case ST_uint32:
   case ST_uint32array:
     _uint_range.clear();
@@ -532,7 +532,7 @@ set_range(const DCDoubleRange &range) {
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
     }
     break;
-    
+
   case ST_uint64:
     _uint64_range.clear();
     for (i = 0; i < num_ranges; i++) {
@@ -675,7 +675,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_int16(pack_data.get_write_pointer(2), int_value);
     }
     break;
-    
+
   case ST_int32:
     {
       int int_value = (int)floor(real_value + 0.5);
@@ -683,7 +683,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_int32(pack_data.get_write_pointer(4), int_value);
     }
     break;
-    
+
   case ST_int64:
     {
       PN_int64 int64_value = (PN_int64)floor(real_value + 0.5);
@@ -691,7 +691,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_int64(pack_data.get_write_pointer(8), int64_value);
     }
     break;
-    
+
   case ST_char:
   case ST_uint8:
     {
@@ -701,7 +701,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_uint8(pack_data.get_write_pointer(1), int_value);
     }
     break;
-    
+
   case ST_uint16:
     {
       unsigned int int_value = (unsigned int)floor(real_value + 0.5);
@@ -710,7 +710,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_uint16(pack_data.get_write_pointer(2), int_value);
     }
     break;
-    
+
   case ST_uint32:
     {
       unsigned int int_value = (unsigned int)floor(real_value + 0.5);
@@ -718,7 +718,7 @@ pack_double(DCPackData &pack_data, double value,
       do_pack_uint32(pack_data.get_write_pointer(4), int_value);
     }
     break;
-    
+
   case ST_uint64:
     {
       PN_uint64 int64_value = (PN_uint64)floor(real_value + 0.5);
@@ -1158,7 +1158,7 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
     if (!_uint_range.is_empty()) {
       minimum_length = _uint_range.get_min(0);
     }
-    
+
     DCPacker packer;
     packer.begin_pack(this);
     packer.push();
@@ -1168,7 +1168,7 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
     packer.pop();
     if (!packer.end_pack()) {
       pack_error = true;
-      
+
     } else {
       pack_data.append_data(packer.get_data(), packer.get_length());
     }
@@ -1213,7 +1213,7 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
         pack_uint64(pack_data, _uint64_range.get_min(0), pack_error, pack_error);
       }
       break;
-      
+
     case ST_float64:
       if (_double_range.is_in_range(0.0)) {
         pack_double(pack_data, 0.0, pack_error, pack_error);
@@ -1221,7 +1221,7 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
         pack_double(pack_data, _double_range.get_min(0), pack_error, pack_error);
       }
       break;
-      
+
     default:
       pack_error = true;
     }
@@ -1995,7 +1995,7 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
       string_length = do_unpack_uint16(data + p);
       p += 2;
       break;
-      
+
     case ST_blob32:
       if (p + 4 > length) {
         pack_error = true;
@@ -2004,7 +2004,7 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
       string_length = do_unpack_uint32(data + p);
       p += 4;
       break;
-      
+
     default:
       pack_error = true;
       return;
@@ -2034,7 +2034,7 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
 ////////////////////////////////////////////////////////////////////
 bool DCSimpleParameter::
 unpack_validate(const char *data, size_t length, size_t &p,
-                bool &pack_error, bool &range_error) const { 
+                bool &pack_error, bool &range_error) const {
   if (!_has_range_limits) {
     return unpack_skip(data, length, p, pack_error);
   }
@@ -2195,7 +2195,7 @@ unpack_validate(const char *data, size_t length, size_t &p,
 //               failure (e.g. we don't know how to skip this field).
 ////////////////////////////////////////////////////////////////////
 bool DCSimpleParameter::
-unpack_skip(const char *data, size_t length, size_t &p, 
+unpack_skip(const char *data, size_t length, size_t &p,
             bool &pack_error) const {
   size_t string_length;
 
@@ -2291,7 +2291,7 @@ output_instance(ostream &out, bool brief, const string &prename,
         out << ")";
       }
       break;
-    
+
     case ST_int64:
       if (!_int64_range.is_empty()) {
         out << "(";
@@ -2299,7 +2299,7 @@ output_instance(ostream &out, bool brief, const string &prename,
         out << ")";
       }
       break;
-    
+
     case ST_uint8:
     case ST_uint16:
     case ST_uint32:
@@ -2317,7 +2317,7 @@ output_instance(ostream &out, bool brief, const string &prename,
         out << ")";
       }
       break;
-    
+
     case ST_uint64:
       if (!_uint64_range.is_empty()) {
         out << "(";
