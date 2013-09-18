@@ -229,7 +229,67 @@ public:
 
 	bool get_object(unsigned int do_id, DatabaseObject &dbo)
 	{
-		return false;
+		yamldb_log.spam() << "Getting object #" << do_id << " ..." << std::endl;
+
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+
+		// Open database object file
+		std::ifstream objstream(filename.str());
+		YAML::Node document = YAML::Load(objstream);
+
+		if(document.IsNull()) {
+			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
+			return false;
+		}
+
+		// Read object's DistributedClass
+		YAML::Node key_class = document["class"];
+		if(key_class.IsNull())
+		{
+			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
+			return false;
+		}
+		DCClass* dcc = gDCF->get_class_by_name(document["class"].as<std::string>());
+		if(!dcc) {
+			yamldb_log.error() << "Class '" << document["class"].as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+			return false;
+		}
+		dbo.dc_id = dcc->get_number();
+
+		// Read object's fields
+		YAML::Node key_fields = document["fields"];
+		if(key_fields.IsNull())
+		{
+			yamldb_log.error() << filename.str() << " does not contain the 'fields' key." << std::endl;
+			return false;
+		}
+		for(auto it = key_fields.begin(); it != key_fields.end(); ++it)
+		{
+			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+			if(!field) {
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+				continue;
+			}
+
+			DCAtomicField* atomic = field->as_atomic_field();
+			if(atomic && atomic->get_num_elements() == 1 && atomic->get_element_type(0) == ST_string)
+			{
+				std::string str = it->second.as<std::string>();
+				unsigned int len = str.length();
+				char lenstr[2];
+
+				memcpy(lenstr, (char*)&len, 2);
+				dbo.fields[field] = std::string(lenstr) + str;
+			}
+			else
+			{
+				dbo.fields[field] = it->second.as<std::string>();
+			}
+		}
+
+		return true;
 	}
 
 	void delete_object(unsigned int do_id)
