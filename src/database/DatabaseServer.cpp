@@ -155,9 +155,12 @@ class DatabaseServer : public Role
 
 					unsigned int do_id = dgi.read_uint32();
 
+					m_log->spam() << "Selecting all from do_id: " << do_id << "... " << std::endl;
+
 					DatabaseObject dbo;
 					if(m_db_engine->get_object(do_id, dbo))
 					{
+						m_log->spam() << "... object found!" << std::endl;
 						resp.add_uint8(1);
 						resp.add_uint16(dbo.dc_id);
 						resp.add_uint16(dbo.fields.size());
@@ -165,10 +168,12 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
+							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << it->second << std::endl; 
 						}
 					}
 					else
 					{
+						m_log->spam() << "... object not found." << std::endl;
 						resp.add_uint8(0);
 					}
 					send(resp);
