@@ -10,8 +10,8 @@
 #include <fstream>
 #include <list>
 
-ConfigVariable<std::string> foldername("foldername", "yaml_db");
-LogCategory fsdb_log("YAML-DB", "YAML Database Engine");
+static ConfigVariable<std::string> foldername("foldername", "yaml_db");
+LogCategory yamldb_log("yamldb", "YAML Database Engine");
 
 class YAMLEngine : public IDatabaseEngine
 {
@@ -20,90 +20,144 @@ private:
 	std::list<unsigned int> m_free_ids;
 	std::string m_foldername;
 
-	// update_next_id writes replaces the "next" field of info.yaml
-	// with the current m_next_id value;
-	void update_next_id()
+	// update_info writes m_next_id and m_free_ids to "info.yaml"
+	void update_info()
 	{
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "next";
+		out << YAML::Value << m_next_id;
+		if(!m_free_ids.empty()) {
+			out << YAML::Key << "free";
+			out << YAML::Value << YAML::BeginSeq;
+			for(auto it = m_free_ids.begin(); it != m_free_ids.end(); ++it)
+			{
+				out << *it;
+			}
+			out << YAML::EndSeq;
+		}
+		out << YAML::EndMap;
 
+		std::fstream file;
+		file.open(m_foldername + "/info.yaml", std::ios_base::out);
+		if(file.is_open())
+		{
+			file << out.c_str();
+			file.close();
+		}
 	}
 
-	// update_free_ids replaces the "free" list of ids in info.yaml
-	// with the current list of free ids.
-	void update_free_ids()
+	// get_next_id returns the next available id to be used in object creation
+	unsigned int get_next_id()
 	{
+		unsigned int do_id;
+		if(m_next_id <= m_max_id)
+		{
+			do_id = m_next_id++;
+		}
+		else
+		{
+			// Dequeue id from list
+			if(!m_free_ids.empty())
+			{
+				do_id = *m_free_ids.begin();
+				m_free_ids.remove(do_id);
+			}
+			else
+			{
+				return 0;
+			}
+		}
 
+		update_info();
+		return do_id;
 	}
 public:
-	YAMLEngine(DBEngineConfig dbeconfig, unsigned int start_id) :
-		IDatabaseEngine(dbeconfig, start_id),
-		m_next_id(start_id),
-		m_free_ids()
-		m_foldername(foldername.get_rval(m_dbeconfig))
+	YAMLEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
+		IDatabaseEngine(dbeconfig, min_id, max_id),
+		m_next_id(min_id),
+		m_free_ids(),
+		m_foldername(foldername.get_rval(m_config))
 	{
 		// Open database info file
-		std::ifstream info(m_foldername + "/info.yaml");
-		YAML::Parser parser(info);
-		YAML::Node document;
+		std::ifstream infostream(m_foldername + "/info.yaml");
+		YAML::Node document = YAML::Load(infostream);
 
-		// Read existing database info if file exists
-		if(parser.GetNextDocument(document))
-		{
+		if(!document.IsNull()) {
 			// Read next available id
-			if(auto next = document.FindValue("next"))
+			YAML::Node key_next = document["next"];
+			if(!key_next.IsNull())
 			{
-				next >> m_next_id;
+				m_next_id = document["next"].as<unsigned int>();
 			}
 
 			// Read available freed ids
-			if(auto freed = document.FindValue("free"))
+			YAML::Node key_free = document["free"];
+			if(!key_free.IsNull())
 			{
-				for(unsigned int i = 0; i < freed.size(); i++)
+				for(unsigned int i = 0; i < key_free.size(); i++)
 				{
-					unsigned int id;
-					freed[i] >> id;
-					m_free_ids.push_back(id);
+					m_free_ids.push_back(key_free[i].as<unsigned int>());
 				}
 			}
 		}
 
 		// Close database info file
-		info.close();
+		infostream.close();
 	};
 
-	unsigned int get_next_id()
+	unsigned int create_object(const DatabaseObject &dbo)
 	{
-		// Get first free id from queue
-		if(!m_free_ids.empty())
+		unsigned int do_id = get_next_id();
+		if(do_id == 0)
 		{
-			return *m_free_ids.begin();
+			return 0;
 		}
-		return m_next_id;
+
+		DCClass *dcc = gDCF->get_class(dbo.dc_id);
+
+		// Build object as YAMl output
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "id";
+		out << YAML::Value << do_id;
+		out << YAML::Key << "class";
+		out << YAML::Value << dcc->get_name();
+
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+
+		// Print YAML to file
+		std::fstream file;
+		file.open(filename.str(), std::ios_base::out);
+		if(file.is_open())
+		{
+			file << out.c_str();
+			file.close();
+			return do_id;
+		}		
+
+		return 0;
 	}
 
-	bool create_object(const DatabaseObject &dbo)
+	bool get_object(unsigned int do_id, DatabaseObject &dbo)
 	{
-		if(dbo.do_id != get_next_id())
-		{
-			return false;
-		}
-		if(!m_free_ids.empty())
-		{
-			m_free_ids.remove(dbo.do_id);
-			update_free_ids();
-		}
-		++m_next_id;
-		update_next_id();
-	}
-
-	bool get_object(DatabaseObject &dbo)
-	{
+		return false;
 	}
 
 	void delete_object(unsigned int do_id)
 	{
-
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+		yamldb_log.debug() << "Deleting file: " << filename.str() << std::endl;
+		if(!std::remove(filename.str().c_str()))
+		{
+			m_free_ids.insert(m_free_ids.end(), do_id);
+			update_info();
+		}
 	}
 
 };
 
-DBEngineCreator<FSDBEngine> yamlengine_creator("yaml");
+DBEngineCreator<YAMLEngine> yamlengine_creator("yaml");
