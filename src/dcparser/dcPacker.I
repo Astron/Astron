@@ -300,7 +300,7 @@ unpack_double() {
     _pack_error = true;
 
   } else {
-    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p, 
+    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
                                   value, _pack_error, _range_error);
     advance();
   }
@@ -446,7 +446,7 @@ unpack_double(double &value) {
     _pack_error = true;
 
   } else {
-    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p, 
+    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
                                   value, _pack_error, _range_error);
     advance();
   }

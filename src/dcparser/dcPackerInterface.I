@@ -145,7 +145,7 @@ get_pack_type() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_int8
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_int8(char *buffer, int value) {
@@ -155,7 +155,7 @@ do_pack_int8(char *buffer, int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_int16
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_int16(char *buffer, int value) {
@@ -166,7 +166,7 @@ do_pack_int16(char *buffer, int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_int32
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_int32(char *buffer, int value) {
@@ -179,7 +179,7 @@ do_pack_int32(char *buffer, int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_int64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_int64(char *buffer, PN_int64 value) {
@@ -196,7 +196,7 @@ do_pack_int64(char *buffer, PN_int64 value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_uint8
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_uint8(char *buffer, unsigned int value) {
@@ -206,7 +206,7 @@ do_pack_uint8(char *buffer, unsigned int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_uint16
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_uint16(char *buffer, unsigned int value) {
@@ -217,7 +217,7 @@ do_pack_uint16(char *buffer, unsigned int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_uint32
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_uint32(char *buffer, unsigned int value) {
@@ -230,7 +230,7 @@ do_pack_uint32(char *buffer, unsigned int value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_uint64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_uint64(char *buffer, PN_uint64 value) {
@@ -247,7 +247,7 @@ do_pack_uint64(char *buffer, PN_uint64 value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_pack_float64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
 do_pack_float64(char *buffer, double value) {
@@ -266,7 +266,7 @@ do_pack_float64(char *buffer, double value) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_int8
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int DCPackerInterface::
 do_unpack_int8(const char *buffer) {
@@ -276,7 +276,7 @@ do_unpack_int8(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_int16
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int DCPackerInterface::
 do_unpack_int16(const char *buffer) {
@@ -287,7 +287,7 @@ do_unpack_int16(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_int32
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE int DCPackerInterface::
 do_unpack_int32(const char *buffer) {
@@ -300,7 +300,7 @@ do_unpack_int32(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_int64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PN_int64 DCPackerInterface::
 do_unpack_int64(const char *buffer) {
@@ -316,7 +316,7 @@ do_unpack_int64(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_uint8
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned int DCPackerInterface::
 do_unpack_uint8(const char *buffer) {
@@ -326,7 +326,7 @@ do_unpack_uint8(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_uint16
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned int DCPackerInterface::
 do_unpack_uint16(const char *buffer) {
@@ -337,7 +337,7 @@ do_unpack_uint16(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_uint32
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE unsigned int DCPackerInterface::
 do_unpack_uint32(const char *buffer) {
@@ -350,7 +350,7 @@ do_unpack_uint32(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_uint64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE PN_uint64 DCPackerInterface::
 do_unpack_uint64(const char *buffer) {
@@ -368,13 +368,13 @@ do_unpack_uint64(const char *buffer) {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_float64
 //       Access: Public, Static
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE double DCPackerInterface::
 do_unpack_float64(const char *buffer) {
 #ifdef WORDS_BIGENDIAN
   char reverse[8];
-  
+
   // Reverse the byte ordering for big-endian machines.
   for (size_t i = 0; i < 8; i++) {
     reverse[i] = buffer[7 - i];
@@ -382,7 +382,7 @@ do_unpack_float64(const char *buffer) {
   return *(double *)reverse;
 #else
   return *(double *)buffer;
-#endif  // WORDS_BIGENDIAN 
+#endif  // WORDS_BIGENDIAN
 }
 
 ////////////////////////////////////////////////////////////////////

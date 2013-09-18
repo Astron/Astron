@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
 DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
@@ -41,7 +41,7 @@ DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
     _has_fixed_byte_size = true;
     _fixed_byte_size = _array_size * _element_type->get_fixed_byte_size();
     _has_fixed_structure = true;
-    
+
   } else {
     // We only need to store the length bytes if the array has a
     // variable size.
@@ -75,7 +75,7 @@ DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::Copy Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
 DCArrayParameter(const DCArrayParameter &copy) :
@@ -89,7 +89,7 @@ DCArrayParameter(const DCArrayParameter &copy) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::Destructor
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
 ~DCArrayParameter() {
@@ -99,7 +99,7 @@ DCArrayParameter::
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::as_array_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter *DCArrayParameter::
 as_array_parameter() {
@@ -109,7 +109,7 @@ as_array_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::as_array_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCArrayParameter *DCArrayParameter::
 as_array_parameter() const {
@@ -119,7 +119,7 @@ as_array_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::make_copy
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCArrayParameter::
 make_copy() const {
@@ -164,7 +164,7 @@ get_array_size() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCArrayParameter::append_array_specification
 //       Access: Public, Virtual
-//  Description: Returns the type represented by this_type[size].  
+//  Description: Returns the type represented by this_type[size].
 //
 //               In the case of a DCArrayParameter, this means it
 //               modifies the current type to append the array
@@ -228,7 +228,7 @@ bool DCArrayParameter::
 validate_num_nested_fields(int num_nested_fields) const {
   bool range_error = false;
   _array_size_range.validate(num_nested_fields, range_error);
-       
+
   return !range_error;
 }
 
@@ -246,12 +246,12 @@ output_instance(ostream &out, bool brief, const string &prename,
 
   } else {
     ostringstream strm;
-    
+
     strm << "[";
     _array_size_range.output(strm);
     strm << "]";
-    
-    _element_type->output_instance(out, brief, prename, name, 
+
+    _element_type->output_instance(out, brief, prename, name,
                                    postname + strm.str());
   }
 }

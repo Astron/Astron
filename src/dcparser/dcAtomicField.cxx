@@ -27,7 +27,7 @@
 ////////////////////////////////////////////////////////////////////
 DCAtomicField::
 DCAtomicField(const string &name, DCClass *dclass,
-              bool bogus_field) : 
+              bool bogus_field) :
   DCField(name, dclass)
 {
   _bogus_field = bogus_field;
@@ -40,7 +40,7 @@ DCAtomicField(const string &name, DCClass *dclass,
 ////////////////////////////////////////////////////////////////////
 DCAtomicField::
 ~DCAtomicField() {
-  Elements::iterator ei;  
+  Elements::iterator ei;
   for (ei = _elements.begin(); ei != _elements.end(); ++ei) {
     delete (*ei);
   }
@@ -184,7 +184,7 @@ get_element_divisor(int n) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCAtomicField::output
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
 output(ostream &out, bool brief) const {
@@ -321,7 +321,7 @@ do_check_match_atomic_field(const DCAtomicField *other) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCAtomicField::output_element
 //       Access: Private
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
 output_element(ostream &out, bool brief, DCParameter *element) const {

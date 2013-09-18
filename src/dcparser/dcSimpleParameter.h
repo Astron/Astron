@@ -68,24 +68,24 @@ public:
                            bool &pack_error, bool &range_error) const;
   virtual bool pack_default_value(DCPackData &pack_data, bool &pack_error) const;
 
-  virtual void unpack_double(const char *data, size_t length, size_t &p, 
+  virtual void unpack_double(const char *data, size_t length, size_t &p,
                              double &value, bool &pack_error, bool &range_error) const;
-  virtual void unpack_int(const char *data, size_t length, size_t &p, 
+  virtual void unpack_int(const char *data, size_t length, size_t &p,
                           int &value, bool &pack_error, bool &range_error) const;
-  virtual void unpack_uint(const char *data, size_t length, size_t &p, 
+  virtual void unpack_uint(const char *data, size_t length, size_t &p,
                            unsigned int &value, bool &pack_error, bool &range_error) const;
-  virtual void unpack_int64(const char *data, size_t length, size_t &p, 
+  virtual void unpack_int64(const char *data, size_t length, size_t &p,
                             PN_int64 &value, bool &pack_error, bool &range_error) const;
-  virtual void unpack_uint64(const char *data, size_t length, size_t &p, 
+  virtual void unpack_uint64(const char *data, size_t length, size_t &p,
                              PN_uint64 &value, bool &pack_error, bool &range_error) const;
-  virtual void unpack_string(const char *data, size_t length, size_t &p, 
+  virtual void unpack_string(const char *data, size_t length, size_t &p,
                              string &value, bool &pack_error, bool &range_error) const;
-  virtual bool unpack_validate(const char *data, size_t length, size_t &p, 
+  virtual bool unpack_validate(const char *data, size_t length, size_t &p,
                                bool &pack_error, bool &range_error) const;
   virtual bool unpack_skip(const char *data, size_t length, size_t &p,
                            bool &pack_error) const;
 
-  virtual void output_instance(ostream &out, bool brief, const string &prename, 
+  virtual void output_instance(ostream &out, bool brief, const string &prename,
                                const string &name, const string &postname) const;
   virtual void generate_hash(HashGenerator &hashgen) const;
 
@@ -95,7 +95,7 @@ protected:
   virtual bool do_check_match_array_parameter(const DCArrayParameter *other) const;
 
 private:
-  static DCSimpleParameter *create_nested_field(DCSubatomicType type, 
+  static DCSimpleParameter *create_nested_field(DCSubatomicType type,
                                                 unsigned int divisor);
   static DCPackerInterface *create_uint32uint8_type();
 
