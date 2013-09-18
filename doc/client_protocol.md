@@ -151,3 +151,21 @@ client's scope, and the server will therefore send a `CLIENT_OBJECT_DISABLE`
 instead. When the client sends this, it is requesting that the server move an
 object *that it owns* to a given parent/zone. If the object is not owned, the
 server will disconnect the client.
+
+### Section 4: Disconnect reasons ###
+
+This section lists out a few of the disconnect reasons that the Client Agent
+may give in a `CLIENT_GO_GET_LOST` message, as well as a brief explanation for
+each.
+
+- 107: The client's first message was not `CLIENT_HELLO`.
+- 108: The client sent an invalid msgtype.
+- 109: The client sent a truncated datagram.
+- 118: The client sent a `CLIENT_OBJECT_UPDATE_FIELD` for a field they may not update.
+- 119: The client sent a `CLIENT_OBJECT_LOCATION` for an object they may not relocate.
+- 124: The client sent a `CLIENT_HELLO` with an invalid version string.
+- 125: The client sent a `CLIENT_HELLO` with an invalid DC hash.
+- 153: One of the client's "session objects" has been unexpectedly deleted.
+- 345: The client hasn't sent a `CLIENT_HEARTBEAT` for an extended period of time.
+- 347: The Client Agent had a network I/O error while trying to send a datagram.
+- 348: The Client Agent had a network I/O error while trying to read a datagram.
