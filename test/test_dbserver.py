@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 import unittest
-import os, shutil
+import os, shutil, time
 from socket import *
 
 from common import *
@@ -334,6 +334,7 @@ class TestDatabaseServerFS(unittest.TestCase, DatabaseBaseTests):
 
     @classmethod
     def tearDownClass(cls):
+        time.sleep(0.2) # Wait for filesystem db to finish writing to file
         cls.conn.close()
         cls.daemon.stop()
 
