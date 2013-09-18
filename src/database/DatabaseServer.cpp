@@ -180,6 +180,7 @@ class DatabaseServer : public Role
 					{
 						unsigned int do_id = dgi.read_uint32();
 						m_db_engine->delete_object(do_id);
+						m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 					}
 					else
 					{

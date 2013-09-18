@@ -10,59 +10,89 @@
 #include <cstdio>
 #include <list>
 
-ConfigVariable<std::string> folder_name("foldername", "objs");
+ConfigVariable<std::string> foldername("foldername", "objs");
 LogCategory fsdb_log("fsdb", "Filesystem Database Engine");
-
-void WriteIDFile(const std::string &filename, unsigned int id)
-{
-	std::fstream file;
-	file.open(filename, std::ios_base::out);
-	if(file.is_open())
-	{
-		file << id;
-		file.close();
-	}
-}
-
-void WriteFreeList(const std::string &filename, std::list<unsigned int> &free_list)
-{
-	std::fstream file;
-	file.open(filename, std::ios_base::out | std::ios_base::binary);
-	if(file.is_open())
-	{
-		Datagram dg;
-		dg.add_uint32(free_list.size());
-		for(auto it = free_list.begin(); it != free_list.end(); ++it)
-		{
-			dg.add_uint32(*it);
-		}
-		file.write(dg.get_data(), dg.get_buf_end());
-		file.close();
-	}
-}
 
 class FSDBEngine : public IDatabaseEngine
 {
 private:
 	unsigned int m_next_id;
 	std::list<unsigned int> m_free_ids;
-public:
-	FSDBEngine(DBEngineConfig dbeconfig, unsigned int start_id) : IDatabaseEngine(dbeconfig, start_id),
-		m_next_id(start_id), m_free_ids()
+	std::string m_foldername;
+
+	// update_next_id updates "id.txt" on the disk with the next available id
+	void update_next_id()
 	{
 		std::fstream file;
-		std::stringstream ss;
-		ss << folder_name.get_rval(m_dbeconfig) << "/id.txt";
-		file.open(ss.str(), std::ios_base::in);
+		file.open(m_foldername + "/id.txt", std::ios_base::out);
+		if(file.is_open())
+		{
+			file << m_next_id;
+			file.close();
+		}
+	}
+
+	// update_free_ids updates "free.dat" on the disk with the current list of freed ids
+	void update_free_ids()
+	{
+		std::fstream file;
+		file.open(m_foldername + "/free.dat", std::ios_base::out | std::ios_base::binary);
+		if(file.is_open())
+		{
+			Datagram dg;
+			dg.add_uint32(m_free_ids.size());
+			for(auto it = m_free_ids.begin(); it != m_free_ids.end(); ++it)
+			{
+				dg.add_uint32(*it);
+			}
+			file.write(dg.get_data(), dg.get_buf_end());
+			file.close();
+		}
+	}
+
+	// get_next_id returns the next available id to be used in object creation
+	unsigned int get_next_id()
+	{
+		unsigned int do_id;
+		if(m_next_id <= m_max_id)
+		{
+			do_id = m_next_id++;
+			update_next_id();
+		}
+		else
+		{
+			// Dequeue id from list
+			if(!m_free_ids.empty())
+			{
+				do_id = *m_free_ids.begin();
+				m_free_ids.remove(do_id);
+				update_free_ids();
+			}
+			else
+			{
+				return 0;
+			}
+		}
+		return do_id;
+	}
+public:
+	FSDBEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
+		IDatabaseEngine(dbeconfig, min_id, max_id),
+		m_next_id(min_id), m_free_ids(),
+		m_foldername(foldername.get_rval(m_config))
+	{
+		std::fstream file;
+
+		// Get next id from "id.txt" in database
+		file.open(m_foldername + "/id.txt", std::ios_base::in);
 		if(file.is_open())
 		{
 			file >> m_next_id;
 			file.close();
 		}
 
-		ss.str("");
-		ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
-		file.open(ss.str(), std::ios_base::in | std::ios_base::binary);
+		// Get list of free ids from "free.dat" in database
+		file.open(m_foldername + "/free.dat", std::ios_base::in | std::ios_base::binary);
 		if(file.is_open())
 		{
 			file.seekg(0, std::ios_base::end);
@@ -78,41 +108,28 @@ public:
 			unsigned int num_ids = dgi.read_uint32();
 			for(unsigned int i = 0; i < num_ids; ++i)
 			{
-				m_free_ids.insert(m_free_ids.end(), dgi.read_uint32());
+				auto k = dgi.read_uint32();
+				fsdb_log.spam() << "Loaded free id: " << k << std::endl;
+				m_free_ids.insert(m_free_ids.end(), k);
 			}
 		}
 	}
 
-	virtual unsigned int get_next_id()
+	virtual unsigned int create_object(const DatabaseObject &dbo)
 	{
-		if(!m_free_ids.empty())
+		unsigned int do_id = get_next_id();
+		if(do_id == 0)
 		{
-			return *m_free_ids.begin();
+			return 0;
 		}
-		return m_next_id;
-	}
 
-	virtual bool create_object(const DatabaseObject &dbo)
-	{
-		if(dbo.do_id != get_next_id())
-		{
-			return false;
-		}
-		if(!m_free_ids.empty())
-		{
-			m_free_ids.remove(dbo.do_id);
-			std::stringstream ss;
-			ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
-			WriteFreeList(ss.str(), m_free_ids);
-		}
-		std::stringstream ss;
-		ss << folder_name.get_rval(m_dbeconfig) << "/id.txt";
-		WriteIDFile(ss.str(), ++m_next_id);
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".dat";
 
-		ss.str("");
-		ss << folder_name.get_rval(m_dbeconfig) << "/" << dbo.do_id << ".dat";
+		// Write object to file
 		std::fstream file;
-		file.open(ss.str(), std::ios_base::out | std::ios_base::binary);
+		file.open(filename.str(), std::ios_base::out | std::ios_base::binary);
 		if(file.is_open())
 		{
 			Datagram dg;
@@ -125,18 +142,19 @@ public:
 			}
 			file.write(dg.get_data(), dg.get_buf_end());
 			file.close();
-			return true;
+			return do_id;
 		}
 		
-		return false;
+		return 0;
 	}
 
-	virtual bool get_object(DatabaseObject &dbo)
+	virtual bool get_object(unsigned int do_id, DatabaseObject &dbo)
 	{
-		std::stringstream ss;
-		ss << folder_name.get_rval(m_dbeconfig) << "/" << dbo.do_id << ".dat";
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".dat";
+
 		std::fstream file;
-		file.open(ss.str(), std::ios_base::in | std::ios_base::binary);
+		file.open(filename.str(), std::ios_base::in | std::ios_base::binary);
 		if(file.is_open())
 		{
 			try
@@ -177,8 +195,8 @@ public:
 			}
 			catch (std::exception &e)
 			{
-				fsdb_log.error() << "Exception in get_object while trying to read doId: "
-					<< dbo.do_id << " e.what(): " << e.what() << std::endl;
+				fsdb_log.error() << "Exception in get_object while trying to read do_id: #"
+					<< do_id << " e.what(): " << e.what() << std::endl;
 			}
 		}
 
@@ -187,15 +205,13 @@ public:
 
 	virtual void delete_object(unsigned int do_id)
 	{
-		std::stringstream ss;
-		ss << folder_name.get_rval(m_dbeconfig) << "/" << do_id << ".dat";
-		fsdb_log.debug() << "Deleting file: " << ss.str() << std::endl;
-		if(!std::remove(ss.str().c_str()))
+		std::stringstream filename;
+		filename << foldername.get_rval(m_config) << "/" << do_id << ".dat";
+		fsdb_log.debug() << "Deleting file: " << filename.str() << std::endl;
+		if(!std::remove(filename.str().c_str()))
 		{
 			m_free_ids.insert(m_free_ids.end(), do_id);
-			std::stringstream ss;
-			ss << folder_name.get_rval(m_dbeconfig) << "/free.dat";
-			WriteFreeList(ss.str(), m_free_ids);
+			update_free_ids();
 		}
 	}
 };
