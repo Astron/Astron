@@ -26,12 +26,12 @@ private:
 	void update_info()
 	{
 		YAML::Emitter out;
-		out << YAML::BeginMap;
-		out << YAML::Key << "next";
-		out << YAML::Value << m_next_id;
+		out << YAML::BeginMap
+			<< YAML::Key << "next"
+			<< YAML::Value << m_next_id;
 		if(!m_free_ids.empty()) {
-			out << YAML::Key << "free";
-			out << YAML::Value << YAML::BeginSeq;
+			out << YAML::Key << "free"
+				<< YAML::Value << YAML::BeginSeq;
 			for(auto it = m_free_ids.begin(); it != m_free_ids.end(); ++it)
 			{
 				out << *it;
@@ -196,19 +196,19 @@ public:
 
 		// Build object as YAMl output
 		YAML::Emitter out;
-		out << YAML::BeginMap;
-		out << YAML::Key << "id";
-		out << YAML::Value << do_id;
-		out << YAML::Key << "class";
-		out << YAML::Value << dcc->get_name();
-		out << YAML::Key << "fields";
-		out << YAML::Value << YAML::BeginMap;
+		out << YAML::BeginMap
+			<< YAML::Key << "id"
+			<< YAML::Value << do_id
+			<< YAML::Key << "class"
+			<< YAML::Value << dcc->get_name()
+			<< YAML::Key << "fields"
+			<< YAML::Value << YAML::BeginMap;
 		for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 		{
 			output_field(out, it->first, it->second);
 		}
-		out << YAML::EndMap;
-		out << YAML::EndMap;
+		out << YAML::EndMap
+			<< YAML::EndMap;
 
 		// Prepare object filename
 		std::stringstream filename;
