@@ -5,6 +5,8 @@
 #include "util/DatagramIterator.h"
 #include "core/logger.h"
 #include "core/global.h"
+#include "dcparser/dcSubatomicType.h"
+#include "dcparser/dcAtomicField.h"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -72,6 +74,82 @@ private:
 		update_info();
 		return do_id;
 	}
+
+	inline void output_field(YAML::Emitter& out, DCField* field, std::string value)
+	{
+		out << YAML::Key << field->get_name();
+		DCAtomicField* atomic = field->as_atomic_field();
+
+		if(atomic && atomic->get_num_elements() == 1)
+		{
+			out << YAML::Value;
+			switch(atomic->get_element_type(0)) {
+				case ST_char:
+				{
+					out << *(char*)(value.c_str());
+				}
+				break;
+				case ST_int8:
+				{
+					// Cast as short, because char treated as character data
+					out << *(short*)(value.c_str());
+				}
+				break;
+				case ST_int16:
+				{
+					out << *(short*)(value.c_str());
+				}
+				break;
+				case ST_int32:
+				{
+					out << *(int*)(value.c_str());
+				}
+				break;
+				case ST_int64:
+				{
+					out << *(long long*)(value.c_str());
+				}
+				break;
+				case ST_uint8:
+				{
+					out << *(unsigned char*)(value.c_str());
+				}
+				break;
+				case ST_uint16:
+				{
+					out << *(unsigned short*)(value.c_str());
+				}
+				break;
+				case ST_uint32:
+				{
+					out << *(unsigned int*)(value.c_str());
+				}
+				break;
+				case ST_uint64:
+				{
+					out << *(unsigned long long*)(value.c_str());
+				}
+				break;
+				case ST_float64:
+				{
+					out << *(double*)(value.c_str());
+				}
+				break;
+				case ST_string:
+				{
+					// Skip the length bytes
+					out << value.substr(2);
+				}
+				break;
+				default:
+					out << value;
+			}
+			return;
+		}
+
+		yamldb_log.error() << "Recieved non-atomic field: " << field->get_name() << std::endl;
+		out << YAML::Value << value;
+	}
 public:
 	YAMLEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
 		IDatabaseEngine(dbeconfig, min_id, max_id),
@@ -104,7 +182,7 @@ public:
 
 		// Close database info file
 		infostream.close();
-	};
+	}
 
 	unsigned int create_object(const DatabaseObject &dbo)
 	{
@@ -123,6 +201,14 @@ public:
 		out << YAML::Value << do_id;
 		out << YAML::Key << "class";
 		out << YAML::Value << dcc->get_name();
+		out << YAML::Key << "fields";
+		out << YAML::Value << YAML::BeginMap;
+		for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
+		{
+			output_field(out, it->first, it->second);
+		}
+		out << YAML::EndMap;
+		out << YAML::EndMap;
 
 		// Prepare object filename
 		std::stringstream filename;
@@ -157,7 +243,6 @@ public:
 			update_info();
 		}
 	}
-
 };
 
 DBEngineCreator<YAMLEngine> yamlengine_creator("yaml");
