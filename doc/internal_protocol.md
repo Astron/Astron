@@ -502,53 +502,53 @@ own. Therefore, all of these messages are meant to be sent to an active client
 session channel.
 
 
-**CLIENTAGENT_OPEN_CHANNEL(????)**
+**CLIENTAGENT_OPEN_CHANNEL(3104)**
     `args(uint64 channel)`
 > Instruct the client session to open a channel on the MD. Messages sent to this
 new channel will be processed by the CA.
 
-**CLIENTAGENT_CLOSE_CHANNEL(????)**
+**CLIENTAGENT_CLOSE_CHANNEL(3105)**
     `args(uint64 channel)`
 > This message is the antithesis of the message above. The channel is immediately
 closed, even if the channel was automatically opened.
 
-**CLIENTAGENT_ADD_INTEREST(????)**
+**CLIENTAGENT_ADD_INTEREST(3106)**
     `args(uint16 interest_id, uint32 parent_id, [uint32 zone_id, uint32 zone_id, ...])`
 > This message instructs the CA to open an interest, as if the client had
 requested the interest itself.
 
-**CLIENTAGENT_REMOVE_INTEREST(????)**
+**CLIENTAGENT_REMOVE_INTEREST(3107)**
     `args(uint16 interest_id)`
 > The antithesis of the message above: cause an open interest to be closed. This
 is even valid for client-opened interests, if the interest_id matches a client-requested
 interest.
 
-**CLIENTAGENT_ADD_POST_REMOVE(????)**
+**CLIENTAGENT_ADD_POST_REMOVE(3108)**
     `args(string msg)`
 > Similar to CONTROL_ADD_POST_REMOVE, this hangs a "post-remove" message on the
 client. If the client is ever disconnected, the post-remove messages will be sent
 out automatically.
 
-**CLIENTAGENT_CLEAR_POST_REMOVE(????)**
+**CLIENTAGENT_CLEAR_POST_REMOVE(3109)**
     `args()`
 > Undoes all CLIENTAGENT_ADD_POST_REMOVE messages.
 
-**CLIENTAGENT_DISCONNECT(????)**
+**CLIENTAGENT_DISCONNECT(3101)**
     `args(uint16 code, string reason)`
 > Drops the client with the specified code and reason. The code and reason carry
 the same meaning as CLIENT_GO_GET_LOST.
 
-**CLIENTAGENT_DROP(????)**
+**CLIENTAGENT_DROP(3102)**
     `args()`
 > Similar to above, but causes the CA to silently close the client connection,
 providing no explanation whatsoever to the client.
 
-**CLIENTAGENT_SEND_DATAGRAM(????)**
+**CLIENTAGENT_SEND_DATAGRAM(3100)**
     `args(string datagram)`
 > Send a raw datagram down the pipe to the client. This is useful for sending
 game-specific messages to the client, debugging, etc.
 
-**CLIENTAGENT_SET_SENDER_ID(????)**
+**CLIENTAGENT_SET_SENDER_ID(3103)**
     `args(uint64 channel)`
 > Changes the sender used to represent this client. This is useful if game
 components need to identify the avatar/account a given message came from: by
@@ -556,13 +556,13 @@ changing the sender channel to include this information, the server can easily
 determine the account ID of a client that sends a field update. Note that this
 also results in the CA opening the new channel, if it isn't open already.
 
-**CLIENTAGENT_SET_STATE(????)**
+**CLIENTAGENT_SET_STATE(3110)**
     `args(uint16 state)`
 > Move the CA's state machine to a given state. This is mainly used when a client
 logs in or logs out, to flip the client between the ANONYMOUS and ESTABLISHED
 states respectively.
 
-**CLIENTAGENT_ADD_SESSION_OBJECT(????)**
+**CLIENTAGENT_ADD_SESSION_OBJECT(3112)**
     `args(uint32 do_id)`
 > Declares the specified object to be a "session object" -- an avatar, for example --
 that is automatically cleaned up when the client disconnects. In addition, session
@@ -570,13 +570,13 @@ objects are presumed to be required for the proper function of a client. Therefo
 if a session object is ever deleted by another process, the client is automatically
 dropped.
 
-**CLIENTAGENT_REMOVE_SESSION_OBJECT(????)**
+**CLIENTAGENT_REMOVE_SESSION_OBJECT(3113)**
     `args(uint32 do_id)`
 > Antithesis of above message. The declared object is no longer tied to the client's
 session, and will therefore not be deleted if the client drops (nor will the client
 be dropped if this object is deleted).
 
-**CLIENTAGENT_DECLARE_OBJECT(????)**
+**CLIENTAGENT_DECLARE_OBJECT(3114)**
     `args(uint32 do_id, uint16 dclass_id)`
 > Because Client Agents verify the integrity of field updates, they must know the
 dclass of a given object to ensure that the incoming field update is for a field that
@@ -586,12 +586,12 @@ to the client. This message explicitly tells the CA that a given object exists, 
 a given type, and allows the client to send field updates to that object even if
 the client cannot currently see that object.
 
-**CLIENTAGENT_UNDECLARE_OBJECT(????)**
+**CLIENTAGENT_UNDECLARE_OBJECT(3115)**
     `args(uint32 do_id)`
 > Antithesis of above message: the object is no longer explicitly declared, and
 the client can no longer send updates on this object without seeing it.
 
-**CLIENTAGENT_SET_FIELDS_SENDABLE(????)**
+**CLIENTAGENT_SET_FIELDS_SENDABLE(3111)**
     `args(uint32 do_id, [uint16 field_id, uint16 field_id, ...])`
 > Override the security on certain fields for a given object. The specified fields
 are made sendable by the client regardless of ownsend/clsend. To undo the security
