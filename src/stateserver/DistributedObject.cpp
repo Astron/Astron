@@ -172,7 +172,7 @@ void DistributedObject::handle_shard_reset()
 	annihilate();
 }
 
-void DistributedObject::save_field(DCField *field, const std::string &data)
+void DistributedObject::save_field(DCField *field, const bytes &data)
 {
 	if(field->is_required())
 	{
@@ -186,8 +186,8 @@ void DistributedObject::save_field(DCField *field, const std::string &data)
 
 bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sender)
 {
+	bytes data;
 	unsigned int field_id = dgi.read_uint16();
-	std::string data;
 	DCField *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
 	{
@@ -215,7 +215,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		int n = molecular->get_num_atomics();
 		for(int i = 0; i < n; ++i)
 		{
-			std::string atomic_data;
+			bytes atomic_data;
 			DCAtomicField *atomic = molecular->get_atomic(i);
 			dgi.unpack_field(atomic, atomic_data);
 			save_field(atomic->as_field(), atomic_data);
@@ -421,7 +421,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			Datagram raw_fields;
 			bool success = true;
-			while(dgi.tell() != in_dg.get_buf_end())
+			while(dgi.tell() != in_dg.size())
 			{
 				unsigned short field_id = dgi.read_uint16();
 				raw_fields.add_uint16(field_id);
@@ -472,7 +472,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(queried_parent == m_do_id)
 			{
-				std::string queried_zones = dgi.read_remainder();
+				bytes queried_zones = dgi.read_remainder();
 
 				// Bounce the message down to all children and have them decide
 				// whether or not to reply.

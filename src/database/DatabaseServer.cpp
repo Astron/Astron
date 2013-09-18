@@ -87,8 +87,8 @@ class DatabaseServer : public Role
 								}
 								else
 								{
-									std::string tmp;
-									dgi.unpack_field(field, tmp);
+									m_log->warning() << "Recieved non-db field in CREATE_STORED_OBJECT." << std::endl;
+									dgi.skip_field(field);
 								}
 							}
 						}
@@ -123,7 +123,8 @@ class DatabaseServer : public Role
 								}
 								else
 								{
-									dbo.fields[field] = field->get_default_value();
+									std::string val = field->get_default_value();
+									dbo.fields[field] = bytes(val.begin(), val.end());
 								}
 							}
 						}
@@ -165,6 +166,7 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
+							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(it->second.begin(), it->second.end()) << std::endl; 
 						}
 					}
 					else

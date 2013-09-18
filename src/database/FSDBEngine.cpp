@@ -45,7 +45,7 @@ private:
 			{
 				dg.add_uint32(*it);
 			}
-			file.write(dg.get_data(), dg.get_buf_end());
+			file.write((char*)dg.get_data(), dg.size());
 			file.close();
 		}
 	}
@@ -138,9 +138,9 @@ public:
 			for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 			{
 				dg.add_uint16(it->first->get_number());
-				dg.add_string(it->second);
+				dg.add_string(std::string(it->second.begin(), it->second.end()));
 			}
-			file.write(dg.get_data(), dg.get_buf_end());
+			file.write((char*)dg.get_data(), dg.size());
 			file.close();
 			return do_id;
 		}
@@ -189,7 +189,8 @@ public:
 						ss << "DCField " << field_id << " does not exist in DCClass " << dbo.dc_id;
 						throw std::runtime_error(ss.str());
 					}
-					dbo.fields[field] = dgi.read_string();
+					std::string str = dgi.read_string();
+					dbo.fields[field] = bytes(str.begin(), str.end());
 				}
 				return true;
 			}

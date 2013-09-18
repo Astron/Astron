@@ -1,11 +1,12 @@
 #pragma once
 #include "core/config.h"
 #include "dcparser/dcField.h"
+#include <vector>
 
 struct DatabaseObject
 {
 	unsigned short dc_id;
-	std::map<DCField*, std::string> fields;
+	std::map<DCField*, std::vector<unsigned char>> fields;
 
 	DatabaseObject() {}
 	DatabaseObject(unsigned short dcid) : dc_id(dcid) {}
