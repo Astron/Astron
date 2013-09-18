@@ -12,6 +12,10 @@
 #include <fstream>
 #include <list>
 
+
+#define as_bytes(value, len) bytes((unsigned char*)&value, (unsigned char*)&value + len)
+
+
 static ConfigVariable<std::string> foldername("foldername", "yaml_db");
 LogCategory yamldb_log("yamldb", "YAML Database Engine");
 
@@ -75,7 +79,7 @@ private:
 		return do_id;
 	}
 
-	std::string read_yaml_field(DCField* field, YAML::Node node)
+	bytes read_yaml_field(DCField* field, YAML::Node node)
 	{
 		DCAtomicField* atomic = field->as_atomic_field();
 		if(atomic && atomic->get_num_elements() == 1)
@@ -85,111 +89,84 @@ private:
 				case ST_char:
 				{
 					char value = node.as<char>();
-					return std::string(&value);
+					return bytes(value, 1);
 				}
 				break;
 				case ST_int8:
 				{
-					// Cast as short because char treated as character data
-					short value = node.as<short>();
-					char buffer[1];
-
-					memcpy(buffer, (char*)&value, 1);
-					return std::string(buffer);
+					char value = node.as<char>();
+					return bytes(value, 1);
 				}
 				break;
 				case ST_int16:
 				{
 					short value = node.as<short>();
-					char buffer[2];
-
-					memcpy(buffer, (char*)&value, 2);
-					return std::string(buffer);
+					return as_bytes(value, 2);
 				}
 				break;
 				case ST_int32:
 				{
 					int value = node.as<int>();
-					char buffer[4];
-
-					memcpy(buffer, (char*)&value, 4);
-					return std::string(buffer);
+					return as_bytes(value, 4);
 				}
 				break;
 				case ST_int64:
 				{
 					long long value = node.as<long long>();
-					char buffer[8];
-
-					memcpy(buffer, (char*)&value, 8);
-					return std::string(buffer);
+					return as_bytes(value, 8);
 				}
 				break;
 				case ST_uint8:
 				{
-					unsigned short value = node.as<unsigned short>();
-					char buffer[1];
-
-					memcpy(buffer, (char*)&value, 1);
-					return std::string(buffer);
+					unsigned short value = node.as<unsigned char>();
+					return as_bytes(value, 1);
 				}
 				break;
 				case ST_uint16:
 				{
 					unsigned short value = node.as<unsigned short>();
-					char buffer[2];
-
-					memcpy(buffer, (char*)&value, 2);
-					return std::string(buffer);
+					return as_bytes(value, 2);
 				}
 				break;
 				case ST_uint32:
 				{
 					unsigned int value = node.as<unsigned int>();
-					char buffer[4];
-
-					memcpy(buffer, (char*)&value, 4);
-					return std::string(buffer);
+					return as_bytes(value, 4);
 				}
 				break;
 				case ST_uint64:
 				{
 					unsigned long long value = node.as<unsigned long long>();
-					char buffer[8];
-
-					memcpy(buffer, (char*)&value, 8);
-					return std::string(buffer);
+					return as_bytes(value, 8);
 				}
 				break;
 				case ST_float64:
 				{
 					double value = node.as<double>();
-					char buffer[8];
-
-					memcpy(buffer, (char*)&value, 8);
-					return std::string(buffer);
+					return as_bytes(value, 8);
 				}
 				break;
 				case ST_string:
 				{
 					std::string value = node.as<std::string>();
-					unsigned int len = value.length();
-					char lenstr[2];
+					unsigned short length = value.length();
 
-					memcpy(lenstr, (char*)&len, 2);
-					return std::string(lenstr) + value;
+					bytes str = as_bytes(length, 2);
+					str.insert(str.end(), value.begin(), value.end());
+					return str;
 				}
 				break;
 				default:
-					return node.as<std::string>();
+					std::string value = node.as<std::string>();
+					return bytes(value.begin(), value.end());
 			}
 
 		}
 
-		return "";
+		return bytes();
 	}
 
-	void write_yaml_field(YAML::Emitter& out, DCField* field, const std::string& value)
+	void write_yaml_field(YAML::Emitter& out, DCField* field, const bytes& value)
 	{
 		out << YAML::Key << field->get_name();
 		DCAtomicField* atomic = field->as_atomic_field();
@@ -201,59 +178,59 @@ private:
 			{
 				case ST_char:
 				{
-					out << *(char*)(value.c_str());
+					out << *(char*)(&value[0]);
 				}
 				break;
 				case ST_int8:
 				{
 					// Cast as short, because char treated as character data
-					out << *(short*)(value.c_str());
+					out << *(short*)(&value[0]);
 				}
 				break;
 				case ST_int16:
 				{
-					out << *(short*)(value.c_str());
+					out << *(short*)(&value[0]);
 				}
 				break;
 				case ST_int32:
 				{
-					out << *(int*)(value.c_str());
+					out << *(int*)(&value[0]);
 				}
 				break;
 				case ST_int64:
 				{
-					out << *(long long*)(value.c_str());
+					out << *(long long*)(&value[0]);
 				}
 				break;
 				case ST_uint8:
 				{
-					out << *(unsigned char*)(value.c_str());
+					out << *(unsigned char*)(&value[0]);
 				}
 				break;
 				case ST_uint16:
 				{
-					out << *(unsigned short*)(value.c_str());
+					out << *(unsigned short*)(&value[0]);
 				}
 				break;
 				case ST_uint32:
 				{
-					out << *(unsigned int*)(value.c_str());
+					out << *(unsigned int*)(&value[0]);
 				}
 				break;
 				case ST_uint64:
 				{
-					out << *(unsigned long long*)(value.c_str());
+					out << *(unsigned long long*)(&value[0]);
 				}
 				break;
 				case ST_float64:
 				{
-					out << *(double*)(value.c_str());
+					out << *(double*)(&value[0]);
 				}
 				break;
 				case ST_string:
 				{
 					// Skip the length bytes
-					out << value.substr(2);
+					out << std::string(value.begin()+2, value.end());
 				}
 				break;
 				default:
