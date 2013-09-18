@@ -75,7 +75,121 @@ private:
 		return do_id;
 	}
 
-	inline void output_field(YAML::Emitter& out, DCField* field, const std::string& value)
+	std::string read_yaml_field(DCField* field, YAML::Node node)
+	{
+		DCAtomicField* atomic = field->as_atomic_field();
+		if(atomic && atomic->get_num_elements() == 1)
+		{
+			switch(atomic->get_element_type(0))
+			{
+				case ST_char:
+				{
+					char value = node.as<char>();
+					return std::string(&value);
+				}
+				break;
+				case ST_int8:
+				{
+					// Cast as short because char treated as character data
+					short value = node.as<short>();
+					char buffer[1];
+
+					memcpy(buffer, (char*)&value, 1);
+					return std::string(buffer);
+				}
+				break;
+				case ST_int16:
+				{
+					short value = node.as<short>();
+					char buffer[2];
+
+					memcpy(buffer, (char*)&value, 2);
+					return std::string(buffer);
+				}
+				break;
+				case ST_int32:
+				{
+					int value = node.as<int>();
+					char buffer[4];
+
+					memcpy(buffer, (char*)&value, 4);
+					return std::string(buffer);
+				}
+				break;
+				case ST_int64:
+				{
+					long long value = node.as<long long>();
+					char buffer[8];
+
+					memcpy(buffer, (char*)&value, 8);
+					return std::string(buffer);
+				}
+				break;
+				case ST_uint8:
+				{
+					unsigned short value = node.as<unsigned short>();
+					char buffer[1];
+
+					memcpy(buffer, (char*)&value, 1);
+					return std::string(buffer);
+				}
+				break;
+				case ST_uint16:
+				{
+					unsigned short value = node.as<unsigned short>();
+					char buffer[2];
+
+					memcpy(buffer, (char*)&value, 2);
+					return std::string(buffer);
+				}
+				break;
+				case ST_uint32:
+				{
+					unsigned int value = node.as<unsigned int>();
+					char buffer[4];
+
+					memcpy(buffer, (char*)&value, 4);
+					return std::string(buffer);
+				}
+				break;
+				case ST_uint64:
+				{
+					unsigned long long value = node.as<unsigned long long>();
+					char buffer[8];
+
+					memcpy(buffer, (char*)&value, 8);
+					return std::string(buffer);
+				}
+				break;
+				case ST_float64:
+				{
+					double value = node.as<double>();
+					char buffer[8];
+
+					memcpy(buffer, (char*)&value, 8);
+					return std::string(buffer);
+				}
+				break;
+				case ST_string:
+				{
+					std::string value = node.as<std::string>();
+					unsigned int len = value.length();
+					char lenstr[2];
+
+					memcpy(lenstr, (char*)&len, 2);
+					return std::string(lenstr) + value;
+				}
+				break;
+				default:
+					return node.as<std::string>();
+			}
+
+		}
+
+		return "";
+	}
+
+	void write_yaml_field(YAML::Emitter& out, DCField* field, const std::string& value)
 	{
 		out << YAML::Key << field->get_name();
 		DCAtomicField* atomic = field->as_atomic_field();
@@ -83,7 +197,8 @@ private:
 		if(atomic && atomic->get_num_elements() == 1)
 		{
 			out << YAML::Value;
-			switch(atomic->get_element_type(0)) {
+			switch(atomic->get_element_type(0))
+			{
 				case ST_char:
 				{
 					out << *(char*)(value.c_str());
@@ -205,7 +320,7 @@ public:
 			<< YAML::Value << YAML::BeginMap;
 		for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 		{
-			output_field(out, it->first, it->second);
+			write_yaml_field(out, it->first, it->second);
 		}
 		out << YAML::EndMap
 			<< YAML::EndMap;
@@ -273,20 +388,7 @@ public:
 				continue;
 			}
 
-			DCAtomicField* atomic = field->as_atomic_field();
-			if(atomic && atomic->get_num_elements() == 1 && atomic->get_element_type(0) == ST_string)
-			{
-				std::string str = it->second.as<std::string>();
-				unsigned int len = str.length();
-				char lenstr[2];
-
-				memcpy(lenstr, (char*)&len, 2);
-				dbo.fields[field] = std::string(lenstr) + str;
-			}
-			else
-			{
-				dbo.fields[field] = it->second.as<std::string>();
-			}
+			dbo.fields[field] = read_yaml_field(field, it->second);
 		}
 
 		return true;
