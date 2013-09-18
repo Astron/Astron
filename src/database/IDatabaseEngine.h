@@ -4,23 +4,21 @@
 
 struct DatabaseObject
 {
-	unsigned int do_id;
 	unsigned short dc_id;
 	std::map<DCField*, std::string> fields;
+
+	DatabaseObject() {}
+	DatabaseObject(unsigned short dcid) : dc_id(dcid) {}
 };
 
 class IDatabaseEngine
 {
 	public:
 		IDatabaseEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
-			m_config(dbeconfig),
-			m_min_id(min_id),
-			m_max_id(max_id)
-		{
-		}
+			m_config(dbeconfig), m_min_id(min_id), m_max_id(max_id) {}
 
 		virtual unsigned int create_object(const DatabaseObject &dbo) = 0;
-		virtual bool get_object(DatabaseObject &dbo) = 0;
+		virtual bool get_object(unsigned int do_id, DatabaseObject &dbo) = 0;
 		virtual void delete_object(unsigned int do_id) = 0;
 	protected:
 		DBEngineConfig m_config;
