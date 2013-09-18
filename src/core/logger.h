@@ -59,11 +59,11 @@ public:
 	{
 	}
 
-	LogCategory(const char *id, const std::string &name) : m_id(id), m_name(name)
+	LogCategory(const char* id, const std::string &name) : m_id(id), m_name(name)
 	{
 	}
 
-	LogCategory(const char *id, const char *name) : m_id(id), m_name(name)
+	LogCategory(const char* id, const char* name) : m_id(id), m_name(name)
 	{
 	}
 

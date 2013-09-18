@@ -16,8 +16,8 @@ LogCategory fsdb_log("fsdb", "Filesystem Database Engine");
 class FSDBEngine : public IDatabaseEngine
 {
 private:
-	unsigned int m_next_id;
-	std::list<unsigned int> m_free_ids;
+	uint32_t m_next_id;
+	std::list<uint32_t> m_free_ids;
 	std::string m_foldername;
 
 	// update_next_id updates "id.txt" on the disk with the next available id
@@ -51,9 +51,9 @@ private:
 	}
 
 	// get_next_id returns the next available id to be used in object creation
-	unsigned int get_next_id()
+	uint32_t get_next_id()
 	{
-		unsigned int do_id;
+		uint32_t do_id;
 		if(m_next_id <= m_max_id)
 		{
 			do_id = m_next_id++;
@@ -76,7 +76,7 @@ private:
 		return do_id;
 	}
 public:
-	FSDBEngine(DBEngineConfig dbeconfig, unsigned int min_id, unsigned int max_id) :
+	FSDBEngine(DBEngineConfig dbeconfig, uint32_t min_id, uint32_t max_id) :
 		IDatabaseEngine(dbeconfig, min_id, max_id),
 		m_next_id(min_id), m_free_ids(),
 		m_foldername(foldername.get_rval(m_config))
@@ -96,17 +96,17 @@ public:
 		if(file.is_open())
 		{
 			file.seekg(0, std::ios_base::end);
-			unsigned int len = file.tellg();
-			char *data = new char[len];
+			uint32_t len = file.tellg();
+			uint8_t *data = new uint8_t[len];
 			file.seekg(0, std::ios_base::beg);
-			file.read(data, len);
+			file.read((char*)data, len);
 			file.close();
-			Datagram dg(std::string(data, len));
+			Datagram dg(data, len);
 			delete [] data; //dg makes a copy
 			DatagramIterator dgi(dg);
 
-			unsigned int num_ids = dgi.read_uint32();
-			for(unsigned int i = 0; i < num_ids; ++i)
+			uint32_t num_ids = dgi.read_uint32();
+			for(uint32_t i = 0; i < num_ids; ++i)
 			{
 				auto k = dgi.read_uint32();
 				fsdb_log.spam() << "Loaded free id: " << k << std::endl;
@@ -115,9 +115,9 @@ public:
 		}
 	}
 
-	virtual unsigned int create_object(const DatabaseObject &dbo)
+	virtual uint32_t create_object(const DatabaseObject &dbo)
 	{
-		unsigned int do_id = get_next_id();
+		uint32_t do_id = get_next_id();
 		if(do_id == 0)
 		{
 			return 0;
@@ -148,7 +148,7 @@ public:
 		return 0;
 	}
 
-	virtual bool get_object(unsigned int do_id, DatabaseObject &dbo)
+	virtual bool get_object(uint32_t do_id, DatabaseObject &dbo)
 	{
 		std::stringstream filename;
 		filename << m_foldername << "/" << do_id << ".dat";
@@ -160,12 +160,12 @@ public:
 			try
 			{
 				file.seekg(0, std::ios_base::end);
-				unsigned int len = file.tellg();
-				char *data = new char[len];
+				uint32_t len = file.tellg();
+				uint8_t *data = new uint8_t[len];
 				file.seekg(0, std::ios_base::beg);
-				file.read(data, len);
+				file.read((char*)data, len);
 				file.close();
-				Datagram dg(std::string(data, len));
+				Datagram dg(data, len);
 				delete [] data; //dg makes a copy
 				DatagramIterator dgi(dg);
 
@@ -178,10 +178,10 @@ public:
 					throw std::runtime_error(ss.str());
 				}
 
-				unsigned short field_count = dgi.read_uint16();
-				for(unsigned int i = 0; i < field_count; ++i)
+				uint16_t field_count = dgi.read_uint16();
+				for(uint32_t i = 0; i < field_count; ++i)
 				{
-					unsigned short field_id = dgi.read_uint16();
+					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
 					if(!field)
 					{
@@ -190,7 +190,7 @@ public:
 						throw std::runtime_error(ss.str());
 					}
 					std::string str = dgi.read_string();
-					dbo.fields[field] = bytes(str.begin(), str.end());
+					dbo.fields[field] = std::vector<uint8_t>(str.begin(), str.end());
 				}
 				return true;
 			}
@@ -204,7 +204,7 @@ public:
 		return false;
 	}
 
-	virtual void delete_object(unsigned int do_id)
+	virtual void delete_object(uint32_t do_id)
 	{
 		std::stringstream filename;
 		filename << foldername.get_rval(m_config) << "/" << do_id << ".dat";

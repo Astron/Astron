@@ -4,8 +4,8 @@
 #include "IDatabaseEngine.h"
 
 ConfigVariable<channel_t> control_channel("control", 0);
-ConfigVariable<unsigned int> min_id("generate/min", 0);
-ConfigVariable<unsigned int> max_id("generate/max", UINT_MAX);
+ConfigVariable<uint32_t> min_id("generate/min", 0);
+ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
 ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
 class DatabaseServer : public Role
@@ -15,7 +15,7 @@ class DatabaseServer : public Role
 		LogCategory *m_log;
 
 		channel_t m_control_channel;
-		unsigned int m_min_id, m_max_id;
+		uint32_t m_min_id, m_max_id;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
@@ -46,12 +46,12 @@ class DatabaseServer : public Role
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			channel_t sender = dgi.read_uint64();
-			unsigned short msg_type = dgi.read_uint16();
+			uint16_t msg_type = dgi.read_uint16();
 			switch(msg_type)
 			{
 				case DBSERVER_CREATE_STORED_OBJECT:
 				{
-					unsigned int context = dgi.read_uint32();
+					uint32_t context = dgi.read_uint32();
 
 					// Start response with generic header
 					Datagram resp;
@@ -59,7 +59,7 @@ class DatabaseServer : public Role
 					resp.add_uint32(context);
 
 					// Get DistributedClass
-					unsigned short dc_id = dgi.read_uint16();
+					uint16_t dc_id = dgi.read_uint16();
 					DCClass *dcc = gDCF->get_class(dc_id);
 					if(!dcc)
 					{
@@ -71,13 +71,13 @@ class DatabaseServer : public Role
 
 					// Unpack fields to be passed to database
 					DatabaseObject dbo(dc_id);
-					unsigned short field_count = dgi.read_uint16();
+					uint16_t field_count = dgi.read_uint16();
 					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
 					{
-						for(unsigned int i = 0; i < field_count; ++i)
+						for(uint32_t i = 0; i < field_count; ++i)
 						{
-							unsigned short field_id = dgi.read_uint16();
+							uint16_t field_id = dgi.read_uint16();
 							DCField *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
@@ -124,7 +124,7 @@ class DatabaseServer : public Role
 								else
 								{
 									std::string val = field->get_default_value();
-									dbo.fields[field] = bytes(val.begin(), val.end());
+									dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
 								}
 							}
 						}
@@ -132,7 +132,7 @@ class DatabaseServer : public Role
 
 					// Create object in database
 					m_log->spam() << "Creating stored object..." << std::endl;
-					unsigned int do_id = m_db_engine->create_object(dbo);
+					uint32_t do_id = m_db_engine->create_object(dbo);
 					if(do_id == 0 || do_id < m_min_id || do_id > m_max_id)
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
@@ -148,13 +148,13 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_SELECT_STORED_OBJECT_ALL:
 				{
-					unsigned int context = dgi.read_uint32();
+					uint32_t context = dgi.read_uint32();
 
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
 					resp.add_uint32(context);
 
-					unsigned int do_id = dgi.read_uint32();
+					uint32_t do_id = dgi.read_uint32();
 
 					DatabaseObject dbo;
 					if(m_db_engine->get_object(do_id, dbo))
@@ -180,7 +180,7 @@ class DatabaseServer : public Role
 				{
 					if(dgi.read_uint32() == DBSERVER_DELETE_STORED_OBJECT_VERIFY_CODE)
 					{
-						unsigned int do_id = dgi.read_uint32();
+						uint32_t do_id = dgi.read_uint32();
 						m_db_engine->delete_object(do_id);
 						m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 					}
