@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc)
 			{
-				delete gLogger;
-				gLogger = new Logger(argv[++i]);
+				delete g_logger;
+				g_logger = new Logger(argv[++i]);
 			}
 		}
 	}
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	if (!gConfig->load(file))
+	if (!g_config->load(file))
 	{
 		mainlog.fatal() << "Could not parse configuration file!" << std::endl;
 		return 1;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	std::vector<std::string> dc_file_names = dc_files.get_val();
 	for(auto it = dc_file_names.begin(); it != dc_file_names.end(); ++it)
 	{
-		if(!gDCF->read(*it))
+		if(!g_dcf->read(*it))
 		{
 			mainlog.fatal() << "Could not read DC file " << *it << std::endl;
 			return 1;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 	MessageDirector::singleton.init_network();
 	g_eventsender.init();
 
-	YAML::Node node = gConfig->copy_node();
+	YAML::Node node = g_config->copy_node();
 	node = node["roles"];
 	for(auto it = node.begin(); it != node.end(); ++it)
 	{

@@ -60,7 +60,7 @@ class DatabaseServer : public Role
 
 					// Get DistributedClass
 					uint16_t dc_id = dgi.read_uint16();
-					DCClass *dcc = gDCF->get_class(dc_id);
+					DCClass *dcc = g_dcf->get_class(dc_id);
 					if(!dcc)
 					{
 						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;

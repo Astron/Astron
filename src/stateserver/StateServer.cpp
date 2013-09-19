@@ -32,7 +32,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	uint16_t dc_id = dgi.read_uint16();
 	uint32_t do_id = dgi.read_uint32();
 
-	if(dc_id >= gDCF->get_num_classes())
+	if(dc_id >= g_dcf->get_num_classes())
 	{
 		m_log->error() << "Received create for unknown dclass ID=" << dc_id << std::endl;
 		return;
@@ -44,7 +44,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 		return;
 	}
 
-	DCClass *dclass = gDCF->get_class(dc_id);
+	DCClass *dclass = g_dcf->get_class(dc_id);
 	DistributedObject *obj;
 	try
 	{

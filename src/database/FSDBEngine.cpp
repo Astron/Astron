@@ -170,7 +170,7 @@ public:
 				DatagramIterator dgi(dg);
 
 				dbo.dc_id = dgi.read_uint16();
-				DCClass *dcc = gDCF->get_class(dbo.dc_id);
+				DCClass *dcc = g_dcf->get_class(dbo.dc_id);
 				if(!dcc)
 				{
 					std::stringstream ss;
