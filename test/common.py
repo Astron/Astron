@@ -17,6 +17,16 @@ class Daemon(object):
         self.config_file = None
 
     def start(self):
+        if 'MANUAL_LAUNCH_CONFIG' in os.environ:
+            # User wants to manually launch their OpenOTP daemon, so we'll write
+            # out the config for them and prompt them to
+            with open(os.environ['MANUAL_LAUNCH_CONFIG'], 'wb') as config:
+                config.write(self.config)
+
+            raw_input('Waiting for manual launch; press enter when ready...')
+
+            return # Because the start happened manually.
+
         cfg, self.config_file = tempfile.mkstemp()
         os.write(cfg, self.config)
         os.close(cfg)
@@ -27,8 +37,10 @@ class Daemon(object):
         time.sleep(1.0) # Allow some time for daemon to initialize...
 
     def stop(self):
-        self.daemon.kill()
-        os.remove(self.config_file)
+        if self.daemon is not None:
+            self.daemon.kill()
+        if self.config_file is not None:
+            os.remove(self.config_file)
 
 DATATYPES = {
     'int8': '<b',
