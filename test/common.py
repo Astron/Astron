@@ -5,7 +5,8 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection',
+           'ClientConnection']
 
 class Daemon(object):
     DAEMON_PATH = './openotpd'
@@ -192,6 +193,9 @@ class Datagram(object):
     def is_subset_of(self, other):
         return self.get_payload() == other.get_payload() and \
                self.get_channels() <= other.get_channels()
+
+    def equals(self, other):
+        return self.get_data() == other.get_data()
 
     # Common datagram type helpers:
     @classmethod
@@ -391,3 +395,22 @@ class MDConnection(object):
 
     def expect_none(self):
         return self._read() == None
+
+class ClientConnection(MDConnection):
+    def expect_multi(self, datagrams, only=False):
+        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
+
+        while datagrams:
+            dg = self._read()
+            if dg is None: return False # Augh, we didn't see all the dgs yet!
+            dg = Datagram(dg)
+
+            for datagram in datagrams:
+                if datagram.equals(dg):
+                    datagrams.remove(datagram)
+                    break
+            else:
+                if only:
+                    return False
+
+        return True
