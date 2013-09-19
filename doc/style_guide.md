@@ -56,3 +56,10 @@ Example:
 
 	std::list<DistributedObjects> my_objects;
 	auto it = my_objects.begin();
+
+## Template specifiers
+There shall be no space between the identifier and the <>
+
+Good example: `std::list<channel_t> my_channels;`
+
+Bad example: `std::list <channel_t> my_channels;`
