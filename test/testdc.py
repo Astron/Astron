@@ -33,3 +33,7 @@ setThree = 17
 set123 = 18
 
 setRequired1DefaultValue = 78
+
+# If you edit test.dc *AT ALL*, you will have to recalculate this.
+# If you don't know how, ask CFS.
+DC_HASH = 0x1db27a5
