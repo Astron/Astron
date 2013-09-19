@@ -106,6 +106,13 @@ if(BUILD_EVENTLOGGER)
 	)
 endif()
 
+set (BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
+if(BUILD_CLIENTAGENT)
+	set (CLIENTAGENT_FILES
+		src/clientagent/ClientAgent.cpp
+	)
+endif()
+
 include_directories (src)
 add_executable (openotpd
 	src/core/main.cpp 
@@ -131,6 +138,7 @@ add_executable (openotpd
 	src/util/EventSender.h
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
+	${CLIENTAGENT_FILES}
 	${TEST_FILES}
 	${DBSERVER_FILES}
 )
