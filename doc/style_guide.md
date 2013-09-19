@@ -43,3 +43,16 @@ Example:
 	{
 		std::cout << "Hello " << name << "!" << std::endl;
 	}
+	
+## Preprocessor Macros
+Preproc macros shall be UPPER CASE and words shall be seperated by underlines.
+
+Example: `#define CLIENT_HELLO 1`
+
+## auto Keyword
+The `auto` keyword shall be used to avoid typing out long-ass iterator types, and only for that.
+
+Example:
+
+	std::list<DistributedObjects> my_objects;
+	auto it = my_objects.begin();
