@@ -1,4 +1,7 @@
 # OpenOTP C++ Style Guide
+Failing to adhere to this guide will result in a paddling and your
+pull-request being instantlyrejected. Feel free to fix the issues
+and re-submit the pull request though.
 - - -
 ## Whitespace
 Tabs shall be used to indent, spaces shall be used to align.
