@@ -36,3 +36,10 @@ Example: `typedef unsigned int uint32_t`
 
 ## Usage of std::string
 Whenever possible, have function parameters be of type `const std::string&` and not `std::string`
+
+Example:
+
+	void foo(const std::string &name)
+	{
+		std::cout << "Hello " << name << "!" << std::endl;
+	}
