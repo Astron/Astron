@@ -1,10 +1,10 @@
 #include "core/global.h"
 #include "messagedirector/MessageDirector.h"
 
-class ParticipantTest : public MDParticipantInterface
+class MDParticipantTest : public MDParticipantInterface
 {
 	public:
-		ParticipantTest() : MDParticipantInterface()
+		MDParticipantTest() : MDParticipantInterface()
 		{
 			MessageDirector::singleton.subscribe_channel(this, 100);
 			MessageDirector::singleton.subscribe_channel(this, 200);
@@ -26,8 +26,8 @@ class ParticipantTest : public MDParticipantInterface
 
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
-			gLogger->log(LogSeverity::LSEVERITY_DEBUG) << dgi.read_string() << std::endl;
+			g_logger->log(LogSeverity::LSEVERITY_DEBUG) << dgi.read_string() << std::endl;
 		}
 };
 
-ParticipantTest participant_test;
+MDParticipantTest unittest_mdparticipant;
