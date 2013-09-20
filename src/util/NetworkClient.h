@@ -18,8 +18,8 @@ private:
 	void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
 	boost::asio::ip::tcp::socket *m_socket;
 
-	char* m_buffer;
-	short m_bytes_to_go;
-	short m_bufsize;
+	uint8_t* m_buffer;
+	uint16_t m_bytes_to_go;
+	uint16_t m_bufsize;
 	bool m_is_data;
 };

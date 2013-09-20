@@ -89,13 +89,13 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 {
 	m_log.spam() << "Processing datagram...." << std::endl;
 	DatagramIterator dgi(dg);
-	unsigned char channels = dgi.read_uint8();
+	uint8_t channels = dgi.read_uint8();
 
 	// Route messages to participants
 	auto &recieve_log = m_log.spam();
 	recieve_log << "Recievers: ";
 	std::set<MDParticipantInterface*> receiving_participants;
-	for(unsigned char i = 0; i < channels; ++i)
+	for(uint8_t i = 0; i < channels; ++i)
 	{
 		channel_t channel = dgi.read_uint64();
 		recieve_log << channel << ", ";
@@ -245,7 +245,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	if(is_client)
 	{
 		// Check how many intervals along that range are already subscribed
-		int new_intervals = 0, premade_intervals = 0;
+		uint64_t new_intervals = 0, premade_intervals = 0;
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{

@@ -66,8 +66,8 @@ set (BUILD_TESTS CACHE BOOL "If set to true, test files will be compiled in")
 
 if(BUILD_TESTS)
 	set (TEST_FILES
-		src/tests/participant_test.cpp
-		src/tests/performance_test.cpp
+		src/tests/MDParticipantTest.cpp
+		src/tests/MDPerformanceTest.cpp
 	)
 endif()
 
