@@ -487,7 +487,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Add a post-remove...
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr1)
+        dg.add_string(pr1.get_data())
         self.server.send(dg)
 
         # Clear the post-removes...
@@ -496,11 +496,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Add two different ones...
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr2)
+        dg.add_string(pr2.get_data())
         self.server.send(dg)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr3)
+        dg.add_string(pr3.get_data())
         self.server.send(dg)
 
         # Client suddenly loses connection...!
