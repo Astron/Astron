@@ -102,6 +102,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 				return;
 			}
 			break;
+			case CLIENTAGENT_DROP:
+			{
+				do_disconnect();
+				return;
+			}
+			break;
 			case CLIENTAGENT_SET_STATE:
 			{
 				m_state = (ClientState)dgi.read_uint16();
