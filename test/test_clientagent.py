@@ -95,6 +95,11 @@ class TestClientAgent(unittest.TestCase):
 
         return sender_id
 
+    def set_state(self, client, state):
+        dg = Datagram([self.identify(client)], 1, CLIENTAGENT_SET_STATE)
+        dg.add_uint16(state)
+        self.server.send(dg)
+
     def test_hello(self):
         # First, see if the CA ensures that the first datagram is a HELLO.
         client = self.connect(False)
@@ -209,9 +214,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Restore the client back to the NEW state.
-        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
-        dg.add_uint16(0)
-        self.server.send(dg)
+        self.set_state(client, 0)
 
         # Since it's in the NEW state, sending something should cause a HELLO
         # error.
@@ -228,9 +231,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Put the client in the ESTABLISHED state.
-        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
-        dg.add_uint16(2)
-        self.server.send(dg)
+        self.set_state(client, 2)
 
         # Try to send an update to UberDog2.
         dg = Datagram()
@@ -255,9 +256,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint8(), 0x06)
 
         # Now revert back to anonymous state:
-        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
-        dg.add_uint16(1)
-        self.server.send(dg)
+        self.set_state(client, 1)
 
         # Try again:
         dg = Datagram()
