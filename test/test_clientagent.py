@@ -356,6 +356,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Twiddle with an unknown object:
         client = self.connect()
+        self.set_state(client, 2) # Let it out of the sandbox for this test.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
         dg.add_uint32(0xDECAFBAD)
