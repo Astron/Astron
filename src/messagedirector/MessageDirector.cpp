@@ -113,7 +113,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	}
 	recieve_log << std::endl;
 
-	if (p)
+	if(p)
 	{
 		receiving_participants.erase(p);
 	}
@@ -231,12 +231,12 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	m_range_subscriptions += std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->channels().begin(); it != p->channels().end();)
+	for(auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi)
+		if(lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
 			p->channels().erase(prev);
@@ -252,7 +252,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			++new_intervals;
-			if (it->second.size() > 1)
+			if(it->second.size() > 1)
 			{
 				++premade_intervals;
 			}
@@ -289,12 +289,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->channels().begin(); it != p->channels().end();)
+	for(auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi)
+		if(lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
 			p->channels().erase(prev);
@@ -308,7 +308,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		std::list<interval_t> silent_intervals;
 
 		// If that was the last interval in m_range_subscriptions, remove it upstream
-		if (boost::icl::interval_count(m_range_subscriptions) == 0)
+		if(boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
 			silent_intervals.insert(silent_intervals.end(), range_copy.begin()->first);
 		}
@@ -323,14 +323,14 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				if(it->first.lower() <= hi && it->first.upper() >= lo)
 				{
 					// If an existing interval is empty it is silent
-					if (it->second.empty())
+					if(it->second.empty())
 					{
 						silent_intervals.insert(silent_intervals.end(), it->first);
 					}
 					if(next != m_range_subscriptions.end())
 					{
 						// If there is room between intervals, that is a silent interval
-						if (next->first.lower() - it->first.upper() > 0)
+						if(next->first.lower() - it->first.upper() > 0)
 						{
 							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
 						}

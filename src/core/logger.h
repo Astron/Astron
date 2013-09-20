@@ -11,7 +11,7 @@ class LoggerBuf : public std::streambuf
 		LoggerBuf(const std::string &file_name, bool output_to_console = true);
 	protected:
 		int overflow(int c = EOF);
-		std::streamsize xsputn (const char* s, std::streamsize n);
+		std::streamsize xsputn(const char* s, std::streamsize n);
 	private:
 		std::ofstream m_file;
 		bool m_has_file;

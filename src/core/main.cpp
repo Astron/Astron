@@ -16,20 +16,20 @@ int main(int argc, char *argv[])
 	std::string cfg_file;
 
 	//TODO: Perhaps verbosity should be specified via command-line switch?
-	if (argc < 2)
+	if(argc < 2)
 	{
 		cfg_file = "openotpd.yml";
 	}
 	else
 	{
 		cfg_file = "openotpd.yml";
-		for (int i = 1; i < argc; i++)
+		for(int i = 1; i < argc; i++)
 		{
-			if (strcmp(argv[i],  "-config") == 0 && i + 1 < argc)
+			if(strcmp(argv[i],  "-config") == 0 && i + 1 < argc)
 			{
 				cfg_file = argv[++i];
 			}
-			else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc)
+			else if(strcmp(argv[i], "-log") == 0 && i + 1 < argc)
 			{
 				delete g_logger;
 				g_logger = new Logger(argv[++i]);
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!g_config->load(file))
+	if(!g_config->load(file))
 	{
 		mainlog.fatal() << "Could not parse configuration file!" << std::endl;
 		return 1;

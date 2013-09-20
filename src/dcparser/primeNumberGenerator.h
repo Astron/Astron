@@ -39,7 +39,7 @@ class PrimeNumberGenerator
 	public:
 		PrimeNumberGenerator();
 
-		int operator [] (int n);
+		int operator [](int n);
 
 	private:
 		typedef vector_int Primes;

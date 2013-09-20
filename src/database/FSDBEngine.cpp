@@ -194,7 +194,7 @@ class FSDBEngine : public IDatabaseEngine
 					}
 					return true;
 				}
-				catch (std::exception &e)
+				catch(std::exception &e)
 				{
 					fsdb_log.error() << "Exception in get_object while trying to read do_id: #"
 					                 << do_id << " e.what(): " << e.what() << std::endl;

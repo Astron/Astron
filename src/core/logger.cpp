@@ -32,7 +32,7 @@ int LoggerBuf::overflow(int c)
 	return c;
 }
 
-std::streamsize LoggerBuf::xsputn (const char* s, std::streamsize n)
+std::streamsize LoggerBuf::xsputn(const char* s, std::streamsize n)
 {
 	if(m_output_to_console)
 	{
