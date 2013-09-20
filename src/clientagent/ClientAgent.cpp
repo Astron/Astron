@@ -247,6 +247,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 
 				DCField *field = dcc->get_field_by_index(field_id);
+				if(!field)
+				{
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+				}
 				if(!field->is_clsend())
 				{
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
@@ -295,6 +299,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 
 				DCField *field = dcc->get_field_by_index(field_id);
+				if(!field)
+				{
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+				}
 				if(!field->is_clsend())
 				{
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
