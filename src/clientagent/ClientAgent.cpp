@@ -102,6 +102,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 				return;
 			}
 			break;
+			case CLIENTAGENT_SET_STATE:
+			{
+				m_state = (ClientState)dgi.read_uint16();
+			}
+			break;
 			default:
 				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 			}
@@ -119,7 +124,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					handle_pre_auth(dg);
 					break;
 				case CS_AUTHENTICATED:
-					//handle_authenticated(dg);
+					handle_authenticated(dg);
 					break;
 			}
 		}
@@ -201,6 +206,50 @@ class Client : public NetworkClient, public MDParticipantInterface
 				{
 					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "");
 					return;
+				}
+
+				DCField *field = dcc->get_field_by_index(field_id);
+				if(!field->is_clsend())
+				{
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
+					return;
+				}
+
+				Datagram resp;
+				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
+				dgi.seek(2);
+				resp.add_data(dgi.read_remainder());
+				send(resp);
+			}
+			break;
+			default:
+				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
+			}
+		}
+
+		void handle_authenticated(Datagram &dg)
+		{
+			DatagramIterator dgi(dg);
+			uint16_t msg_type = dgi.read_uint16();
+			switch(msg_type)
+			{
+			case CLIENT_OBJECT_UPDATE_FIELD:
+			{
+				uint32_t do_id = dgi.read_uint32();
+				uint16_t field_id = dgi.read_uint16();
+				DCClass *dcc = NULL;
+				YAML::Node uberdogs = gConfig->copy_node()["uberdogs"];
+				for(auto it = uberdogs.begin(); it != uberdogs.end(); ++it)
+				{
+					YAML::Node uberdog = *it;
+					if(uberdog["id"].as<uint32_t>() == do_id)
+					{
+						dcc = gDCF->get_class_by_name(uberdog["class"].as<std::string>());
+					}
+				}
+				if(!dcc)
+				{
+					//TODO: Search through list of DOs visible to the CA.
 				}
 
 				DCField *field = dcc->get_field_by_index(field_id);

@@ -69,3 +69,4 @@ typedef unsigned long long channel_t;
 #define DBSERVER_SELECT_STORED_OBJECT_ALL_RESP 1021
 
 #define CLIENTAGENT_DISCONNECT 3101
+#define CLIENTAGENT_SET_STATE 3110
