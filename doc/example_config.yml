@@ -23,6 +23,13 @@ web:
 messagedirector:
     bind: 0.0.0.0:6660
 
+# This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
+# anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
+uberdogs:
+    - id: 1234
+      class: LoginManager
+      anonymous: true #Default: false
+
 roles:
     # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
@@ -45,13 +52,6 @@ roles:
       engine:
         type: bdb
         filename: main_database.db
-
-    # This describes the existence of an uberdog, with do_id 402002 (and can be accessed on that channel)
-    # anonymous specifies whether an uberdog can be accessed before a client has been authenticated.
-    - type: uberdog
-      class: LoginManager
-      control: 402002
-      anonymous: true #Default: false
 
     # Let's also enable the Event Logger. The Event Logger does not listen on a channel; it uses a
     # separate UDP socket to listen for log events.
