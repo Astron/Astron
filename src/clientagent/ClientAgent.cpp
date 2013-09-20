@@ -121,6 +121,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 				network_send(resp);
 			}
 			break;
+			case CLIENTAGENT_SET_SENDER_ID:
+			{
+				m_ct->free_channel(m_channel);
+				m_channel = dgi.read_uint64();
+				subscribe_channel(m_channel);
+			}
+			break;
 			default:
 				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 			}

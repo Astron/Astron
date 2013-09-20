@@ -70,4 +70,5 @@ typedef unsigned long long channel_t;
 
 #define CLIENTAGENT_DISCONNECT 3101
 #define CLIENTAGENT_DROP 3102
+#define CLIENTAGENT_SET_SENDER_ID 3103
 #define CLIENTAGENT_SET_STATE 3110
