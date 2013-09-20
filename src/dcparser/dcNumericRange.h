@@ -26,7 +26,8 @@
 //               types, as well as array sizes.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-class DCNumericRange {
+class DCNumericRange
+{
 	public:
 		typedef NUM Number;
 
@@ -56,7 +57,8 @@ class DCNumericRange {
 		INLINE Number get_max(int n) const;
 
 	private:
-		class MinMax {
+		class MinMax
+		{
 			public:
 				INLINE bool operator < (const MinMax &other) const;
 

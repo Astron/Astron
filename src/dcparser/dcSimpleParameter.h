@@ -29,7 +29,8 @@
 //               elements (and represents a fixed-point numeric
 //               convention).
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCSimpleParameter : public DCParameter {
+class EXPCL_DIRECT DCSimpleParameter : public DCParameter
+{
 	public:
 		DCSimpleParameter(DCSubatomicType type, unsigned int divisor = 1);
 		DCSimpleParameter(const DCSimpleParameter &copy);

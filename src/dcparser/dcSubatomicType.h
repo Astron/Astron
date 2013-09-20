@@ -25,7 +25,8 @@ BEGIN_PUBLISH
 //               will get added to the message when the atomic field
 //               method is called.
 ////////////////////////////////////////////////////////////////////
-enum DCSubatomicType {
+enum DCSubatomicType
+{
 	ST_int8,
 	ST_int16,
 	ST_int32,

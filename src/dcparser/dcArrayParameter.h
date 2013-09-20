@@ -26,7 +26,8 @@
 //               arbitrary (or possibly fixed) number of nested
 //               fields, all of which are of the same type.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCArrayParameter : public DCParameter {
+class EXPCL_DIRECT DCArrayParameter : public DCParameter
+{
 	public:
 		DCArrayParameter(DCParameter *element_type,
 		                 const DCUnsignedIntRange &size = DCUnsignedIntRange());

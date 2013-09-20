@@ -44,7 +44,8 @@ class DCParameter;
 // Description : Defines a particular DistributedClass as read from an
 //               input .dc file.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCClass : public DCDeclaration {
+class EXPCL_DIRECT DCClass : public DCDeclaration
+{
 	public:
 		DCClass(DCFile *dc_file, const string &name,
 		        bool is_struct, bool bogus_class);

@@ -61,7 +61,8 @@ class MessageDirector : public NetworkClient
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
 
 		// logger returns the MessageDirector log category.
-		inline LogCategory& logger() {
+		inline LogCategory& logger()
+		{
 			return m_log;
 		}
 	private:
@@ -129,10 +130,12 @@ class MDParticipantInterface
 			}
 		}
 
-		inline std::set<channel_t> &channels() {
+		inline std::set<channel_t> &channels()
+		{
 			return m_channels;
 		}
-		inline boost::icl::interval_set<channel_t> &ranges() {
+		inline boost::icl::interval_set<channel_t> &ranges()
+		{
 			return m_ranges;
 		}
 

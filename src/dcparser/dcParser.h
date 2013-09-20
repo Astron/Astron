@@ -37,7 +37,8 @@
 # define YYTOKENTYPE
 /* Put the tokens into the symbol table, so that GDB and other debuggers
    know about them.  */
-enum yytokentype {
+enum yytokentype
+{
 	UNSIGNED_INTEGER = 258,
 	SIGNED_INTEGER = 259,
 	REAL = 260,

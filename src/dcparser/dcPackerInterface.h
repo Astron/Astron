@@ -32,7 +32,8 @@ class DCPackerCatalog;
 BEGIN_PUBLISH
 // This enumerated type is returned by get_pack_type() and represents
 // the best choice for a subsequent call to pack_*() or unpack_*().
-enum DCPackType {
+enum DCPackType
+{
 	// This one should never be returned in a normal situation.
 	PT_invalid,
 
@@ -68,7 +69,8 @@ END_PUBLISH
 //               DCPacker object; the user wouldn't normally call
 //               these directly.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackerInterface {
+class EXPCL_DIRECT DCPackerInterface
+{
 	public:
 		DCPackerInterface(const string &name = string());
 		DCPackerInterface(const DCPackerInterface &copy);

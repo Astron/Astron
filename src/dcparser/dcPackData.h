@@ -22,7 +22,8 @@
 // Description : This is a block of data that receives the results of
 //               DCPacker.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackData {
+class EXPCL_DIRECT DCPackData
+{
 	PUBLISHED:
 		INLINE DCPackData();
 		INLINE ~DCPackData();

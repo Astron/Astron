@@ -34,7 +34,8 @@ typedef vector<int> vector_int;
 //               recompute step only if n is greater than any previous
 //               n.
 ////////////////////////////////////////////////////////////////////
-class PrimeNumberGenerator {
+class PrimeNumberGenerator
+{
 	public:
 		PrimeNumberGenerator();
 

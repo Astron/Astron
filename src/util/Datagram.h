@@ -119,7 +119,9 @@ class Datagram
 		{
 			add_uint8(to.size());
 			for(auto it = to.begin(); it != to.end(); ++it)
+			{
 				add_uint64(*it);
+			}
 			add_uint64(from);
 			add_uint16(message_type);
 		}

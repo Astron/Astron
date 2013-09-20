@@ -26,7 +26,8 @@ class DCClass;
 //               parameter itself.  This means that all the fields of
 //               the class get packed into the message.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCClassParameter : public DCParameter {
+class EXPCL_DIRECT DCClassParameter : public DCParameter
+{
 	public:
 		DCClassParameter(const DCClass *dclass);
 		DCClassParameter(const DCClassParameter &copy);

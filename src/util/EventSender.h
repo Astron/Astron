@@ -6,7 +6,8 @@
 
 using boost::asio::ip::udp;
 
-class EventSender {
+class EventSender
+{
 	public:
 		EventSender();
 

@@ -25,7 +25,8 @@ class HashGenerator;
 // Description : This is a list of keywords (see DCKeyword) that may
 //               be set on a particular field.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCKeywordList {
+class EXPCL_DIRECT DCKeywordList
+{
 	public:
 		DCKeywordList();
 		DCKeywordList(const DCKeywordList &copy);

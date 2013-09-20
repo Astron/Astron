@@ -18,7 +18,8 @@ class LoggerBuf : public std::streambuf
 		bool m_output_to_console;
 };
 
-enum LogSeverity {
+enum LogSeverity
+{
 	LSEVERITY_SPAM,
 	LSEVERITY_DEBUG,
 	LSEVERITY_INFO,
@@ -31,21 +32,26 @@ enum LogSeverity {
 class NullStream;
 extern NullStream null_stream;
 
-class NullStream {
+class NullStream
+{
 	public:
-		void setFile() {
+		void setFile()
+		{
 			/* no-op */
 		}
 		template<typename TPrintable>
-		inline NullStream& operator<<(TPrintable const&) {
+		inline NullStream& operator<<(TPrintable const&)
+		{
 			return null_stream;
 		}
-		inline NullStream& operator<<(std::ostream &(std::ostream&)) {
+		inline NullStream& operator<<(std::ostream &(std::ostream&))
+		{
 			return null_stream;
 		}
 };
 
-class Logger {
+class Logger
+{
 	public:
 		Logger(const std::string &log_file, bool console_output = true);
 		Logger();
@@ -59,7 +65,8 @@ class Logger {
 
 extern Logger *g_logger;
 
-class LogCategory {
+class LogCategory
+{
 	public:
 		LogCategory(const std::string &id, const std::string &name) : m_id(id), m_name(name)
 		{
@@ -85,10 +92,12 @@ class LogCategory {
 		F(spam, LSEVERITY_SPAM)
 		F(debug, LSEVERITY_DEBUG)
 #else
-		inline NullStream &spam() {
+		inline NullStream &spam()
+		{
 			return null_stream;
 		}
-		inline NullStream &debug() {
+		inline NullStream &debug()
+		{
 			return null_stream;
 		}
 #endif

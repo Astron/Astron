@@ -36,7 +36,8 @@ class HashGenerator;
 //               which has the same properties as the referenced type,
 //               but a different name.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCParameter : public DCField {
+class EXPCL_DIRECT DCParameter : public DCField
+{
 	protected:
 		DCParameter();
 		DCParameter(const DCParameter &copy);

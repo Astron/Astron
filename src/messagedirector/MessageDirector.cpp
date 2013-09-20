@@ -142,7 +142,8 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 {
 	// Check if participant is already subscribed in a range
-	if(boost::icl::find(p->ranges(), c) == p->ranges().end()) {
+	if(boost::icl::find(p->ranges(), c) == p->ranges().end())
+	{
 		// If not, subscribe participant to channel
 		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
@@ -195,7 +196,8 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	}
 
 	// Check if should unsubscribe upstream...
-	if(is_client) {
+	if(is_client)
+	{
 		// Check if there are any remaining single channel subscriptions
 		if(m_channel_subscriptions[c].size() > 0)
 		{
@@ -318,15 +320,18 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			{
 				// For the range we care about
 				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
-				if(it->first.lower() <= hi && it->first.upper() >= lo) {
+				if(it->first.lower() <= hi && it->first.upper() >= lo)
+				{
 					// If an existing interval is empty it is silent
 					if (it->second.empty())
 					{
 						silent_intervals.insert(silent_intervals.end(), it->first);
 					}
-					if(next != m_range_subscriptions.end()) {
+					if(next != m_range_subscriptions.end())
+					{
 						// If there is room between intervals, that is a silent interval
-						if (next->first.lower() - it->first.upper() > 0) {
+						if (next->first.lower() - it->first.upper() > 0)
+						{
 							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
 						}
 						++next;
@@ -345,9 +350,13 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			channel_t lo = it->lower();
 			channel_t hi = it->upper();
 			if(!(it->bounds().bits() & BOOST_BINARY(10)))
+			{
 				lo += 1;
+			}
 			if(!(it->bounds().bits() & BOOST_BINARY(01)))
+			{
 				hi -= 1;
+			}
 
 			dg.add_uint64(lo);
 			dg.add_uint64(hi);

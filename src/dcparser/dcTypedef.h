@@ -26,7 +26,8 @@ class DCParameter;
 //               dc file.  It assigns a particular type to a new name,
 //               just like a C typedef.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCTypedef : public DCDeclaration {
+class EXPCL_DIRECT DCTypedef : public DCDeclaration
+{
 	public:
 		DCTypedef(DCParameter *parameter, bool implicit = false);
 		DCTypedef(const string &name);

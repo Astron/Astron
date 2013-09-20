@@ -44,7 +44,9 @@ void EventLogger::open_log()
 	m_log.debug() << "New log filename: " << filename << std::endl;
 
 	if(m_file)
+	{
 		m_file->close();
+	}
 
 	m_file = new ofstream(filename);
 

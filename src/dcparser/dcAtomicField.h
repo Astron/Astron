@@ -31,7 +31,8 @@
 //               Distributed Class, and is always implemented as a
 //               remote procedure method.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCAtomicField : public DCField {
+class EXPCL_DIRECT DCAtomicField : public DCField
+{
 	public:
 		DCAtomicField(const string &name, DCClass *dclass, bool bogus_field);
 		virtual ~DCAtomicField();

@@ -37,7 +37,8 @@ class HashGenerator;
 // Description : A single field of a Distributed Class, either atomic
 //               or molecular.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList {
+class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
+{
 	public:
 		DCField();
 		DCField(const string &name, DCClass *dclass);
@@ -125,7 +126,8 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList {
 #endif
 };
 
-INLINE ostream &operator << (ostream &out, const DCField &field) {
+INLINE ostream &operator << (ostream &out, const DCField &field)
+{
 	field.output(out);
 	return out;
 }

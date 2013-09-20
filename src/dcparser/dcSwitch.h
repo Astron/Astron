@@ -30,7 +30,8 @@ class DCField;
 //               alternative unpacking schemes based on the first
 //               field read.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCSwitch : public DCDeclaration {
+class EXPCL_DIRECT DCSwitch : public DCDeclaration
+{
 	public:
 		DCSwitch(const string &name, DCField *key_parameter);
 		virtual ~DCSwitch();
@@ -78,7 +79,8 @@ class EXPCL_DIRECT DCSwitch : public DCDeclaration {
 		typedef pvector<DCField *> Fields;
 		typedef pmap<string, DCField *> FieldsByName;
 
-		class SwitchFields : public DCPackerInterface {
+		class SwitchFields : public DCPackerInterface
+		{
 			public:
 				SwitchFields(const string &name);
 				~SwitchFields();
@@ -99,7 +101,8 @@ class EXPCL_DIRECT DCSwitch : public DCDeclaration {
 				bool _has_default_value;
 		};
 
-		class SwitchCase {
+		class SwitchCase
+		{
 			public:
 				SwitchCase(const string &value, SwitchFields *fields);
 				~SwitchCase();

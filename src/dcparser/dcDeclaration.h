@@ -30,7 +30,8 @@ class DCSwitch;
 //               typedefs can be stored in one list together so they
 //               can be ordered correctly on output.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCDeclaration {
+class EXPCL_DIRECT DCDeclaration
+{
 	public:
 		virtual ~DCDeclaration();
 
@@ -48,7 +49,8 @@ class EXPCL_DIRECT DCDeclaration {
 		virtual void write(ostream &out, bool brief, int indent_level) const=0;
 };
 
-INLINE ostream &operator << (ostream &out, const DCDeclaration &decl) {
+INLINE ostream &operator << (ostream &out, const DCDeclaration &decl)
+{
 	decl.output(out);
 	return out;
 }

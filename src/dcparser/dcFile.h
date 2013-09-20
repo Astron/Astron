@@ -31,7 +31,8 @@ class DCDeclaration;
 // Description : Represents the complete list of Distributed Class
 //               descriptions as read from a .dc file.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCFile {
+class EXPCL_DIRECT DCFile
+{
 	PUBLISHED:
 		DCFile();
 		~DCFile();
@@ -97,7 +98,8 @@ class EXPCL_DIRECT DCFile {
 		ThingsByName _things_by_name;
 
 		typedef pvector<string> ImportSymbols;
-		class Import {
+		class Import
+		{
 			public:
 				string _module;
 				ImportSymbols _symbols;

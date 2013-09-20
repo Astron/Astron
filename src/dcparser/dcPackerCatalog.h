@@ -29,7 +29,8 @@ class DCSwitchParameter;
 //               from a particular field; its ownership is retained by
 //               the field so it must not be deleted.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackerCatalog {
+class EXPCL_DIRECT DCPackerCatalog
+{
 	private:
 		DCPackerCatalog(const DCPackerInterface *root);
 		DCPackerCatalog(const DCPackerCatalog &copy);
@@ -38,7 +39,8 @@ class EXPCL_DIRECT DCPackerCatalog {
 	public:
 		// The Entry class records the static catalog data: the name of each
 		// field and its relationship to its parent.
-		class Entry {
+		class Entry
+		{
 			public:
 				string _name;
 				const DCPackerInterface *_field;
@@ -50,12 +52,14 @@ class EXPCL_DIRECT DCPackerCatalog {
 		// location of each field within the data record.  This might be
 		// different for different data records (since some data fields have
 		// a dynamic length).
-		class LiveCatalogEntry {
+		class LiveCatalogEntry
+		{
 			public:
 				size_t _begin;
 				size_t _end;
 		};
-		class LiveCatalog {
+		class LiveCatalog
+		{
 			public:
 				INLINE size_t get_begin(int n) const;
 				INLINE size_t get_end(int n) const;

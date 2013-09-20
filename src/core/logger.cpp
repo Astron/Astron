@@ -58,7 +58,8 @@ std::ostream &Logger::log(LogSeverity sev)
 {
 	const char *sevtext;
 
-	switch(sev) {
+	switch(sev)
+	{
 		case LSEVERITY_SPAM:
 			sevtext = "SPAM";
 			break;

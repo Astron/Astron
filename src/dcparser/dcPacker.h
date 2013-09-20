@@ -35,7 +35,8 @@ class DCSwitchParameter;
 //               complete description and examples of using this
 //               class.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPacker {
+class EXPCL_DIRECT DCPacker
+{
 	PUBLISHED:
 		DCPacker();
 		~DCPacker();
@@ -202,7 +203,8 @@ class EXPCL_DIRECT DCPacker {
 #endif
 
 	private:
-		enum Mode {
+		enum Mode
+		{
 			M_idle,
 			M_pack,
 			M_unpack,
@@ -220,7 +222,8 @@ class EXPCL_DIRECT DCPacker {
 		const DCPackerCatalog *_catalog;
 		const DCPackerCatalog::LiveCatalog *_live_catalog;
 
-		class StackElement {
+		class StackElement
+		{
 			public:
 				// As an optimization, we implement operator new and delete here
 				// to minimize allocation overhead during push() and pop().

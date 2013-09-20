@@ -45,9 +45,11 @@ extern DCFile *dc_file;
 // union), so we'll use a class instead.  That means we need to
 // declare it externally, here.
 
-class DCTokenType {
+class DCTokenType
+{
 	public:
-		union U {
+		union U
+		{
 			int s_int;
 			unsigned int s_uint;
 			PN_int64 int64;
