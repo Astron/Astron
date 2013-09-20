@@ -30,27 +30,29 @@ class DCSwitch;
 //               typedefs can be stored in one list together so they
 //               can be ordered correctly on output.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCDeclaration {
-public:
-  virtual ~DCDeclaration();
+class EXPCL_DIRECT DCDeclaration
+{
+	public:
+		virtual ~DCDeclaration();
 
-PUBLISHED:
-  virtual DCClass *as_class();
-  virtual const DCClass *as_class() const;
-  virtual DCSwitch *as_switch();
-  virtual const DCSwitch *as_switch() const;
+	PUBLISHED:
+		virtual DCClass *as_class();
+		virtual const DCClass *as_class() const;
+		virtual DCSwitch *as_switch();
+		virtual const DCSwitch *as_switch() const;
 
-  virtual void output(ostream &out) const;
-  void write(ostream &out, int indent_level) const;
+		virtual void output(ostream &out) const;
+		void write(ostream &out, int indent_level) const;
 
-public:
-  virtual void output(ostream &out, bool brief) const=0;
-  virtual void write(ostream &out, bool brief, int indent_level) const=0;
+	public:
+		virtual void output(ostream &out, bool brief) const = 0;
+		virtual void write(ostream &out, bool brief, int indent_level) const = 0;
 };
 
-INLINE ostream &operator << (ostream &out, const DCDeclaration &decl) {
-  decl.output(out);
-  return out;
+INLINE ostream &operator << (ostream &out, const DCDeclaration &decl)
+{
+	decl.output(out);
+	return out;
 }
 
 #endif

@@ -34,15 +34,16 @@ typedef vector<int> vector_int;
 //               recompute step only if n is greater than any previous
 //               n.
 ////////////////////////////////////////////////////////////////////
-class PrimeNumberGenerator {
-public:
-  PrimeNumberGenerator();
+class PrimeNumberGenerator
+{
+	public:
+		PrimeNumberGenerator();
 
-  int operator [] (int n);
+		int operator [](int n);
 
-private:
-  typedef vector_int Primes;
-  Primes _primes;
+	private:
+		typedef vector_int Primes;
+		Primes _primes;
 };
 
 #endif

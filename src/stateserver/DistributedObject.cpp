@@ -7,9 +7,10 @@
 
 #include "DistributedObject.h"
 
-DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass, uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
-m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
-m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
+DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass,
+                                     uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
+	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
+	m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -85,23 +86,29 @@ void DistributedObject::append_other_data(Datagram &dg)
 void DistributedObject::send_zone_entry(channel_t destination)
 {
 	Datagram dg(destination, m_do_id,
-				m_ram_fields.size() ?
-				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
-				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+	            m_ram_fields.size() ?
+	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 	append_required_data(dg);
 	if(m_ram_fields.size())
+	{
 		append_other_data(dg);
+	}
 	send(dg);
 }
 
 void DistributedObject::handle_parent_change(channel_t new_parent)
 {
 	if(new_parent == m_parent_id)
-		return; // Not actually changing parent, no need to handle.
+	{
+		return;    // Not actually changing parent, no need to handle.
+	}
 
 	// Unsubscribe from the old parent's child-broadcast channel.
 	if(m_parent_id)
+	{
 		MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
+	}
 
 	m_parent_id = new_parent;
 
@@ -119,7 +126,9 @@ void DistributedObject::handle_parent_change(channel_t new_parent)
 void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_explicit)
 {
 	if(new_channel == m_ai_channel)
+	{
 		return;
+	}
 
 	if(m_ai_channel)
 	{
@@ -150,7 +159,9 @@ void DistributedObject::annihilate()
 	std::set<channel_t> targets;
 	targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 	if(m_owner_channel)
+	{
 		targets.insert(m_owner_channel);
+	}
 	Datagram dg(targets, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
 	dg.add_uint32(m_do_id);
 	send(dg);
@@ -210,7 +221,8 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	}
 
 	DCMolecularField *molecular = field->as_molecular_field();
-	if(molecular) {
+	if(molecular)
+	{
 		dgi.seek(field_start);
 		int n = molecular->get_num_atomics();
 		for(int i = 0; i < n; ++i)
@@ -228,11 +240,17 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 
 	std::set <channel_t> targets;
 	if(field->is_broadcast())
+	{
 		targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+	}
 	if(field->is_airecv() && m_ai_channel)
+	{
 		targets.insert(m_ai_channel);
+	}
 	if(field->is_ownrecv() && m_owner_channel)
+	{
 		targets.insert(m_owner_channel);
+	}
 	if(targets.size()) // TODO: Review this for efficiency?
 	{
 		Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
@@ -250,7 +268,7 @@ bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
 	if(!field)
 	{
 		m_log->error() << "Received query for missing field ID="
-						<< field_id << std::endl;
+		               << field_id << std::endl;
 		return false;
 	}
 
@@ -261,17 +279,25 @@ bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
 		for(int i = 0; i < n; ++i)
 		{
 			if(!handle_query(out, molecular->get_atomic(i)->get_number()))
+			{
 				return false;
+			}
 		}
 		return true;
 	}
 
 	if(m_required_fields.count(field))
+	{
 		out.add_data(m_required_fields[field]);
+	}
 	else if(m_ram_fields.count(field))
+	{
 		out.add_data(m_ram_fields[field]);
+	}
 	else
+	{
 		return false;
+	}
 
 	return true;
 }
@@ -284,7 +310,8 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	{
 		case STATESERVER_SHARD_RESET:
 		{
-			if(m_ai_channel != dgi.read_uint64()) {
+			if(m_ai_channel != dgi.read_uint64())
+			{
 				m_log->warning() << " received reset for wrong AI channel" << std::endl;
 				break; // Not my AI!
 			}
@@ -294,25 +321,33 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_DELETE_RAM:
 		{
 			if(m_do_id != dgi.read_uint32())
-				break; // Not meant for me!
+			{
+				break;    // Not meant for me!
+			}
 			annihilate();
 			break;
 		}
 		case STATESERVER_OBJECT_UPDATE_FIELD:
 		{
 			if(m_do_id != dgi.read_uint32())
-				break; // Not meant for me!
+			{
+				break;    // Not meant for me!
+			}
 			handle_one_update(dgi, sender);
 			break;
 		}
 		case STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
 		{
 			if(m_do_id != dgi.read_uint32())
-				break; // Not meant for me!
+			{
+				break;    // Not meant for me!
+			}
 			uint16_t field_count = dgi.read_uint16();
 			for(int16_t i = 0; i < field_count; ++i)
 				if(!handle_one_update(dgi, sender))
+				{
 					break;
+				}
 			break;
 		}
 		case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
@@ -327,7 +362,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 			if(m_ai_explicitly_set)
+			{
 				break;
+			}
 			handle_ai_change(r_ai_channel, false);
 			break;
 		}
@@ -337,7 +374,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			channel_t r_ai_channel = dgi.read_uint64();
 			m_log->spam() << "STATESERVER_OBJECT_SET_AI_CHANNEL: ai_channel=" << r_ai_channel << std::endl;
 			if(r_do_id != m_do_id)
+			{
 				break;
+			}
 			handle_ai_change(r_ai_channel, true);
 			break;
 		}
@@ -359,7 +398,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			std::set <channel_t> targets;
 			targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
 			if(m_ai_channel)
+			{
 				targets.insert(m_ai_channel);
+			}
 			Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
 			dg.add_uint32(m_do_id);
 			dg.add_uint32(new_parent_id);
@@ -396,7 +437,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_QUERY_FIELD:
 		{
 			if(dgi.read_uint32() != m_do_id)
-				return; // Not meant for this object!
+			{
+				return;    // Not meant for this object!
+			}
 			uint16_t field_id = dgi.read_uint16();
 			uint32_t context = dgi.read_uint32();
 
@@ -409,14 +452,18 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(context);
 			dg.add_uint8(success);
 			if(success)
+			{
 				dg.add_datagram(raw_field);
+			}
 			send(dg);
 			break;
 		}
 		case STATESERVER_OBJECT_QUERY_FIELDS:
 		{
 			if(dgi.read_uint32() != m_do_id)
-				return; // Not meant for this object!
+			{
+				return;    // Not meant for this object!
+			}
 			uint32_t context = dgi.read_uint32();
 
 			Datagram raw_fields;
@@ -437,7 +484,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(context);
 			dg.add_uint8(success);
 			if(success)
+			{
 				dg.add_datagram(raw_fields);
+			}
 			send(dg);
 			break;
 		}
@@ -446,7 +495,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			channel_t owner_channel = dgi.read_uint64();
 
 			if(owner_channel == m_owner_channel)
+			{
 				return;
+			}
 
 			if(m_owner_channel)
 			{
