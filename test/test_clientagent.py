@@ -408,5 +408,74 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
 
+    def test_ownership(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Let the client out of the sandbox...
+        self.set_state(client, 2)
+
+        # Give it an object that it owns.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg.add_uint32(1234) # Parent
+        dg.add_uint32(5678) # Zone
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint32(55446655)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(0xDC)
+        dg.add_uint8(0xAE)
+        dg.add_uint8(0xEE)
+        self.server.send(dg)
+
+        # The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint32(1234) # Parent
+        dg.add_uint32(5678) # Zone
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint32(55446655)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        self.assertTrue(client.expect(dg))
+
+        # ownsend should be okay...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(55446655)
+        dg.add_uint16(setColor)
+        dg.add_uint8(44)
+        dg.add_uint8(55)
+        dg.add_uint8(66)
+        client.send(dg)
+        self.assertTrue(client.expect_none())
+
+        # clsend as well...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(55446655)
+        dg.add_uint16(requestKill)
+        client.send(dg)
+        self.assertTrue(client.expect_none())
+
+        # And we can relocate it...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_uint32(55446655)
+        dg.add_uint32(1234)
+        dg.add_uint32(4321)
+        client.send(dg)
+        self.assertTrue(client.expect_none())
+
+        # But anything else is a no-no.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(55446655)
+        dg.add_uint16(setName)
+        dg.add_string('Alicorn Amulet')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+
 if __name__ == '__main__':
     unittest.main()
