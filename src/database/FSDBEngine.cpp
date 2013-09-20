@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <list>
 
-ConfigVariable<std::string> foldername("foldername", "objs");
+static ConfigVariable<std::string> foldername("foldername", "objs");
 LogCategory fsdb_log("fsdb", "Filesystem Database Engine");
 
 class FSDBEngine : public IDatabaseEngine

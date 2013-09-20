@@ -3,10 +3,10 @@
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
 
-ConfigVariable<channel_t> control_channel("control", 0);
-ConfigVariable<uint32_t> min_id("generate/min", 0);
-ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
-ConfigVariable<std::string> engine_type("engine/type", "filesystem");
+static ConfigVariable<channel_t> control_channel("control", 0);
+static ConfigVariable<uint32_t> min_id("generate/min", 0);
+static ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
+static ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
 class DatabaseServer : public Role
 {
