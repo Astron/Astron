@@ -37,6 +37,12 @@ class MDPerformanceParticipant : public MDParticipantInterface
 			num_messages++;
 		}
 
+		void spam(Datagram &dg)
+		{
+			send(dg);
+			num_messages++;
+		}
+
 		uint32_t num_messages;
 };
 
@@ -46,6 +52,18 @@ class MDPerformanceTest
 		MDPerformanceTest()
 		{
 			mdperf_log.info() << "Starting perf test..." << std::endl;
+			setup();
+			speed_test();
+			cleanup();
+			setup();
+			speed_test_no_memcpy();
+			cleanup();
+		}
+	private:
+		MDPerformanceParticipant **m_participants;
+
+		void setup()
+		{
 			mdperf_log.info() << "Creating random data..." << std::endl;
 			data = new uint8_t[MD_PERF_DATASIZE];
 			data[0] = MD_PERF_NUM_DEST_CHANNELS;
@@ -54,37 +72,68 @@ class MDPerformanceTest
 				data[i] = rand()%256;
 			}
 			mdperf_log.info() << "Creating MDPerformanceParticipants" << std::endl;
-			MDPerformanceParticipant **participants = new MDPerformanceParticipant*[MD_PERF_NUM_PARTICIPANTS];
+			m_participants = new MDPerformanceParticipant*[MD_PERF_NUM_PARTICIPANTS];
 			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 			{
-				participants[i] = new MDPerformanceParticipant;
+				m_participants[i] = new MDPerformanceParticipant;
 			}
+		}
 
-			mdperf_log.info() << "Starting  test..." << std::endl;
+		void cleanup()
+		{
+			mdperf_log.info() << "Cleaning up..." << std::endl;
+			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
+			{
+				delete m_participants[i];
+			}
+			delete [] m_participants;
+			delete [] data;
+		}
+
+		void speed_test()
+		{
+			mdperf_log.info() << "Starting speed test I..." << std::endl;
 			clock_t startTime = clock();
 			while((clock()-startTime)/CLOCKS_PER_SEC < MD_PERF_TIME)
 			{
 				for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 				{
-					participants[i]->spam();
+					m_participants[i]->spam();
 				}
 			}
 			mdperf_log.info() << "Test over. Averaging messages..." << std::endl;
 			double num_messages = 0;
 			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 			{
-				num_messages += double(participants[i]->num_messages)/double(MD_PERF_NUM_PARTICIPANTS);
+				num_messages += double(m_participants[i]->num_messages)/double(MD_PERF_NUM_PARTICIPANTS);
 			}
 
 			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
 				"this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
-			mdperf_log.info() << "Cleaning up..." << std::endl;
+		}
+
+		void speed_test_no_memcpy()
+		{
+			Datagram dg(data, MD_PERF_DATASIZE);
+			mdperf_log.info() << "Starting speed test II (avoids memcopy)..." << std::endl;
+			clock_t startTime = clock();
+			while((clock()-startTime)/CLOCKS_PER_SEC < MD_PERF_TIME)
+			{
+				for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
+				{
+					m_participants[i]->spam(dg);
+				}
+			}
+			mdperf_log.info() << "Test over. Averaging messages..." << std::endl;
+
+			double num_messages = 0;
 			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 			{
-				delete participants[i];
+				num_messages += double(m_participants[i]->num_messages)/double(MD_PERF_NUM_PARTICIPANTS);
 			}
-			delete [] participants;
-			delete [] data;
+
+			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
+				"this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
 		}
 };
 
