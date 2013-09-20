@@ -9,6 +9,9 @@ DistributedTestObject1 = 0
 DistributedTestObject2 = 1
 DistributedTestObject3 = 2
 DistributedTestObject4 = 3
+UberDog1 = 4
+UberDog2 = 5
+DistributedTestObject5 = 6
 
 setRequired1 = 0
 setB1 = 1
@@ -32,8 +35,19 @@ setTwo = 16
 setThree = 17
 set123 = 18
 
+request = 19
+response = 20
+
+foo = 21
+bar = 22
+
+setName = 23
+setColor = 24
+requestKill = 25
+sendMessage = 26
+
 setRequired1DefaultValue = 78
 
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
-DC_HASH = 0x1db27a5
+DC_HASH = 0x4274141
