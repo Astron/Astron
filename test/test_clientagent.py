@@ -96,7 +96,7 @@ class TestClientAgent(unittest.TestCase):
         return sender_id
 
     def set_state(self, client, state):
-        dg = Datagram([self.identify(client)], 1, CLIENTAGENT_SET_STATE)
+        dg = Datagram.create([self.identify(client)], 1, CLIENTAGENT_SET_STATE)
         dg.add_uint16(state)
         self.server.send(dg)
 
