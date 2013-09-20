@@ -113,6 +113,14 @@ class Client : public NetworkClient, public MDParticipantInterface
 				m_state = (ClientState)dgi.read_uint16();
 			}
 			break;
+			case STATESERVER_OBJECT_UPDATE_FIELD:
+			{
+				Datagram resp;
+				resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
+				resp.add_data(dgi.read_remainder());
+				network_send(resp);
+			}
+			break;
 			default:
 				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 			}
