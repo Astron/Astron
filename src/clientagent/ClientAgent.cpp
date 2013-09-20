@@ -9,6 +9,7 @@
 #include "util/Datagram.h"
 
 #include <stack>
+#include <set>
 
 using boost::asio::ip::tcp;
 
@@ -23,6 +24,16 @@ enum ClientState
 	CS_PRE_AUTH,
 	CS_AUTHENTICATED
 };
+
+struct DistributedObject
+{
+	uint32_t id;
+	uint32_t parent;
+	uint32_t zone;
+	DCClass *dcc;
+};
+
+std::map<uint32_t, DistributedObject*> dist_objs;
 
 class ChannelTracker
 {
@@ -67,11 +78,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 		ChannelTracker *m_ct;
 		channel_t m_channel;
 		bool m_is_channel_allocated;
+		std::set<uint32_t> m_owned_objects;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
 				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
-				m_is_channel_allocated(true)
+				m_is_channel_allocated(true), m_owned_objects()
 		{
 			m_channel = m_ct->alloc_channel();
 			subscribe_channel(m_channel);
@@ -121,6 +133,34 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				Datagram resp;
 				resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
+				resp.add_data(dgi.read_remainder());
+				network_send(resp);
+			}
+			break;
+			case STATESERVER_OBJECT_ENTER_OWNER_RECV:
+			{
+				uint32_t parent = dgi.read_uint32();
+				uint32_t zone = dgi.read_uint32();
+				uint16_t dc_id = dgi.read_uint16();
+				uint32_t do_id = dgi.read_uint32();
+				m_owned_objects.insert(do_id);
+
+				if(!dist_objs[do_id])
+				{
+					DistributedObject *obj = new DistributedObject;
+					obj->id = do_id;
+					obj->parent = parent;
+					obj->zone = zone;
+					obj->dcc = gDCF->get_class(dc_id);
+					dist_objs[do_id] = obj;
+				}
+
+				Datagram resp;
+				resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER);
+				resp.add_uint32(parent);
+				resp.add_uint32(zone);
+				resp.add_uint16(dc_id);
+				resp.add_uint32(do_id);
 				resp.add_data(dgi.read_remainder());
 				network_send(resp);
 			}
@@ -317,9 +357,15 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				if(!dcc)
 				{
-					//TODO: Search through list of DOs visible to the CA.
-					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
-					return;
+					if(dist_objs[do_id])
+					{
+						dcc = dist_objs[do_id]->dcc;
+					}
+					else
+					{
+						send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+						return;
+					}
 				}
 
 				DCField *field = dcc->get_field_by_index(field_id);
@@ -328,7 +374,18 @@ class Client : public NetworkClient, public MDParticipantInterface
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
 					return;
 				}
-				if(!field->is_clsend())
+				
+				bool is_owned = false;
+				for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
+				{
+					if(*it == do_id)
+					{
+						is_owned = true;
+						break;
+					}
+				}
+
+				if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
 				{
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
 					return;
@@ -349,6 +406,34 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				resp.add_data(data);
 				send(resp);
+			}
+			break;
+			case CLIENT_OBJECT_LOCATION:
+			{
+				uint32_t do_id = dgi.read_uint32();
+				if(!dist_objs[do_id])
+				{
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+					return;
+				}
+				bool is_owned = false;
+				for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
+				{
+					if(*it == do_id)
+					{
+						is_owned = true;
+						break;
+					}
+				}
+
+				if(!is_owned)
+				{
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE);
+					return;
+				}
+
+				//TODO: Finish this
+				dgi.read_remainder();
 			}
 			break;
 			default:
