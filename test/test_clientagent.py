@@ -12,6 +12,14 @@ messagedirector:
 general:
     dc_files:
         - %r
+uberdogs:
+    - id: 1234
+      class: UberDog1
+      anonymous: true
+
+    - id: 1235
+      class: UberDog2
+      anonymous: false
 
 roles:
     - type: clientagent
