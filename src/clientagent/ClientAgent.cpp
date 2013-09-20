@@ -262,6 +262,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, "");
+				return;
 			}
 		}
 
@@ -306,6 +308,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, "");
+				return;
 			}
 		}
 
