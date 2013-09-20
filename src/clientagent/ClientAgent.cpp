@@ -290,6 +290,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 				if(!dcc)
 				{
 					//TODO: Search through list of DOs visible to the CA.
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "");
+					return;
 				}
 
 				DCField *field = dcc->get_field_by_index(field_id);
