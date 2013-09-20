@@ -481,9 +481,9 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         id = self.identify(client)
 
-        pr1 = Datagram.create([1234], 66, 123456)
-        pr2 = Datagram.create([1234, 1235], 88, 123457)
-        pr3 = Datagram.create([1235], 88, 654321)
+        pr1 = Datagram.create([1234], 66, 12346)
+        pr2 = Datagram.create([1234, 1235], 88, 12345)
+        pr3 = Datagram.create([1235], 88, 6543)
 
         # Add a post-remove...
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
