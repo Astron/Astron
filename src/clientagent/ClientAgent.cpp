@@ -178,6 +178,23 @@ class Client : public NetworkClient, public MDParticipantInterface
 				subscribe_channel(m_channel);
 			}
 			break;
+			case CLIENTAGENT_SEND_DATAGRAM:
+			{
+				Datagram resp;
+				resp.add_data(dgi.read_string());
+				network_send(resp);
+			}
+			break;
+			case CLIENTAGENT_OPEN_CHANNEL:
+			{
+				subscribe_channel(dgi.read_uint64());
+			}
+			break;
+			case CLIENTAGENT_CLOSE_CHANNEL:
+			{
+				unsubscribe_channel(dgi.read_uint64());
+			}
+			break;
 			default:
 				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 			}
