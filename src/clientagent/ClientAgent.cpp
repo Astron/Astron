@@ -269,6 +269,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
+			if(dgi.tell() < dg.get_buf_end())
+			{
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+				return;
+			}
 		}
 
 		void handle_authenticated(Datagram &dg)
