@@ -161,6 +161,8 @@ each.
 - 107: The client's first message was not `CLIENT_HELLO`.
 - 108: The client sent an invalid msgtype.
 - 109: The client sent a truncated datagram.
+- 113: The client violated the rules of the anonymous sandbox.
+- 117: The client tried to manipulate a nonexistent/unseen/unknown object ID.
 - 118: The client sent a `CLIENT_OBJECT_UPDATE_FIELD` for a field they may not update.
 - 119: The client sent a `CLIENT_OBJECT_LOCATION` for an object they may not relocate.
 - 124: The client sent a `CLIENT_HELLO` with an invalid version string.
