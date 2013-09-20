@@ -58,23 +58,33 @@ class TestClientAgent(unittest.TestCase):
                 s.close()
                 return
 
-    def connect(self):
+    def connect(self, do_hello=True):
         s = socket(AF_INET, SOCK_STREAM)
         s.connect(('127.0.0.1', 57128))
         client = ClientConnection(s)
+
+        if do_hello:
+            dg = Datagram()
+            dg.add_uint16(CLIENT_HELLO)
+            dg.add_uint32(DC_HASH)
+            dg.add_string(VERSION)
+            client.send(dg)
+            dg = Datagram()
+            dg.add_uint16(CLIENT_HELLO_RESP)
+            self.assertTrue(client.expect(dg))
 
         return client
 
     def test_hello(self):
         # First, see if the CA ensures that the first datagram is a HELLO.
-        client = self.connect()
+        client = self.connect(False)
         dg = Datagram()
         dg.add_uint16(5) # invalid msgtype
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_NO_HELLO)
 
         # Next, see if the version gets validated:
-        client = self.connect()
+        client = self.connect(False)
         dg = Datagram()
         dg.add_uint16(CLIENT_HELLO)
         dg.add_uint32(DC_HASH)
@@ -83,7 +93,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertDisconnect(client, CLIENT_DISCONNECT_BAD_VERSION)
 
         # Now dchash validation:
-        client = self.connect()
+        client = self.connect(False)
         dg = Datagram()
         dg.add_uint16(CLIENT_HELLO)
         dg.add_uint32(0x12345678)
@@ -92,7 +102,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertDisconnect(client, CLIENT_DISCONNECT_BAD_DCHASH)
 
         # If everything is correct, it should simply allow us in:
-        client = self.connect()
+        client = self.connect(False)
         dg = Datagram()
         dg.add_uint16(CLIENT_HELLO)
         dg.add_uint32(DC_HASH)
@@ -107,14 +117,6 @@ class TestClientAgent(unittest.TestCase):
     def test_anonymous(self):
         # Connect and hello:
         client = self.connect()
-        dg = Datagram()
-        dg.add_uint16(CLIENT_HELLO)
-        dg.add_uint32(DC_HASH)
-        dg.add_string(VERSION)
-        client.send(dg)
-        dg = Datagram()
-        dg.add_uint16(CLIENT_HELLO_RESP)
-        self.assertTrue(client.expect(dg))
 
         # Now, we should be able to send an update to the anonymous UD...
         dg = Datagram()
