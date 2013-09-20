@@ -27,22 +27,26 @@ class Datagram
 		{
 		}
 
-		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_size(data.length()), buf_end(data.length())
+		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_size(data.length()),
+			buf_end(data.length())
 		{
 			memcpy(buf, data.c_str(), data.length());
 		}
 
-		Datagram(const uint8_t *data, size_t length) : buf(new uint8_t[length]), buf_size(length), buf_end(length)
+		Datagram(const uint8_t *data, size_t length) : buf(new uint8_t[length]), buf_size(length),
+			buf_end(length)
 		{
 			memcpy(buf, data, length);
 		}
 
-		Datagram(uint64_t to_channel, uint64_t from_channel, uint16_t message_type) : buf(new uint8_t[64]), buf_size(64), buf_end(0)
+		Datagram(uint64_t to_channel, uint64_t from_channel, uint16_t message_type) :
+			buf(new uint8_t[64]), buf_size(64), buf_end(0)
 		{
 			add_server_header(to_channel, from_channel, message_type);
 		}
 
-		Datagram(const std::set<uint64_t> &to_channels, uint64_t from_channel, uint16_t message_type) : buf(new uint8_t[64]), buf_size(64), buf_end(0)
+		Datagram(const std::set<uint64_t> &to_channels, uint64_t from_channel,
+		         uint16_t message_type) : buf(new uint8_t[64]), buf_size(64), buf_end(0)
 		{
 			add_server_header(to_channels, from_channel, message_type);
 		}

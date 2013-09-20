@@ -7,7 +7,8 @@
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197");
 static ConfigVariable<std::string> output_format("output", "events-%Y%m%d-%H%M%S.csv");
 
-EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig), m_log("eventlogger", "Event Logger")
+EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
+	m_log("eventlogger", "Event Logger")
 {
 	bind(bind_addr.get_rval(roleconfig));
 

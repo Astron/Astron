@@ -58,7 +58,8 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 			}
 			break;
 			default:
-				logger().error() << "MDNetworkParticipant got unknown control message, type : " << msg_type << std::endl;
+				logger().error() << "MDNetworkParticipant got unknown control message, type : "
+				                 << msg_type << std::endl;
 		}
 		return;
 	}

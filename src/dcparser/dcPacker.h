@@ -205,10 +205,10 @@ class EXPCL_DIRECT DCPacker
 	private:
 		enum Mode
 		{
-			M_idle,
-			M_pack,
-			M_unpack,
-			M_repack,
+		    M_idle,
+		    M_pack,
+		    M_unpack,
+		    M_repack,
 		};
 		Mode _mode;
 

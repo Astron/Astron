@@ -35,7 +35,8 @@ class DatabaseServer : public Role
 			// Check to see the engine was instantiated
 			if(!m_db_engine)
 			{
-				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
+				m_log->fatal() << "No database engine of type '"
+				               << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
 
@@ -166,7 +167,8 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
-							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(it->second.begin(), it->second.end()) << std::endl;
+							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
+							                  it->second.begin(), it->second.end()) << std::endl;
 						}
 					}
 					else

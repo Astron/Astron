@@ -7,7 +7,8 @@
 
 #include "DistributedObject.h"
 
-DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass, uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
+DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass,
+                                     uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
 	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
 	m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 {

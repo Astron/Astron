@@ -34,28 +34,28 @@ BEGIN_PUBLISH
 // the best choice for a subsequent call to pack_*() or unpack_*().
 enum DCPackType
 {
-	// This one should never be returned in a normal situation.
-	PT_invalid,
+    // This one should never be returned in a normal situation.
+    PT_invalid,
 
-	// These PackTypes are all fundamental types, and should be packed
-	// (or unpacked) with the corresponding call to pack_double(),
-	// pack_int(), etc.  PT_blob is the same as PT_string, but implies
-	// that the string contains binary data.
-	PT_double,
-	PT_int,
-	PT_uint,
-	PT_int64,
-	PT_uint64,
-	PT_string,
-	PT_blob,
+    // These PackTypes are all fundamental types, and should be packed
+    // (or unpacked) with the corresponding call to pack_double(),
+    // pack_int(), etc.  PT_blob is the same as PT_string, but implies
+    // that the string contains binary data.
+    PT_double,
+    PT_int,
+    PT_uint,
+    PT_int64,
+    PT_uint64,
+    PT_string,
+    PT_blob,
 
-	// The remaining PackTypes imply a need to call push() and pop().
-	// They are all variants on the same thing: a list of nested fields,
-	// but the PackType provides a bit of a semantic context.
-	PT_array,
-	PT_field,
-	PT_class,
-	PT_switch,
+    // The remaining PackTypes imply a need to call push() and pop().
+    // They are all variants on the same thing: a list of nested fields,
+    // but the PackType provides a bit of a semantic context.
+    PT_array,
+    PT_field,
+    PT_class,
+    PT_switch,
 };
 END_PUBLISH
 

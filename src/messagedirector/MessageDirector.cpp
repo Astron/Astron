@@ -332,7 +332,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 						// If there is room between intervals, that is a silent interval
 						if(next->first.lower() - it->first.upper() > 0)
 						{
-							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
+							silent_intervals.insert(silent_intervals.end(),
+							                        boost::icl::inner_complement(it->first, next->first));
 						}
 						++next;
 					}
@@ -365,7 +366,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	}
 }
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false), m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
+	m_log("msgdir", "Message Director")
 {
 	// Initialize m_range_susbcriptions with empty range
 	auto empty_set = std::set<MDParticipantInterface*>();

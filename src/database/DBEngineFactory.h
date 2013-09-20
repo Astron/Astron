@@ -14,7 +14,8 @@ class DBEngineFactory
 {
 	public:
 		static DBEngineFactory singleton;
-		IDatabaseEngine* instantiate(const std::string &engine_name, DBEngineConfig config, uint32_t min_id, uint32_t max_id);
+		IDatabaseEngine* instantiate(const std::string &engine_name, DBEngineConfig config, uint32_t min_id,
+		                             uint32_t max_id);
 	private:
 		DBEngineFactory();
 		std::map<std::string, BaseDBEngineCreator*> m_creators;
