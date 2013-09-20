@@ -301,6 +301,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 					return;
 				}
 
+				dgi.unpack_field(field, std::string());//if an exception occurs it will be handled
+				//and client will be dc'd for truncated datagram
+
 				Datagram resp;
 				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
 				dgi.seek(2);
