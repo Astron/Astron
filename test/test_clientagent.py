@@ -477,5 +477,39 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
 
+    def test_postremove(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        pr1 = Datagram.create([1234], 66, 123456)
+        pr2 = Datagram.create([1234, 1235], 88, 123457)
+        pr3 = Datagram.create([1235], 88, 654321)
+
+        # Add a post-remove...
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
+        dg.add_string(pr1)
+        self.server.send(dg)
+
+        # Clear the post-removes...
+        dg = Datagram.create([id], 1, CLIENTAGENT_CLEAR_POST_REMOVE)
+        self.server.send(dg)
+
+        # Add two different ones...
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
+        dg.add_string(pr2)
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
+        dg.add_string(pr3)
+        self.server.send(dg)
+
+        # Client suddenly loses connection...!
+        client.close()
+
+        # Ensure pr2 and pr3 are sent out, but not pr1.
+        self.assertTrue(self.server.expect_multi([pr2, pr3], only=True))
+        self.assertTrue(self.server.expect_none())
+
+
 if __name__ == '__main__':
     unittest.main()
