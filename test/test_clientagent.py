@@ -422,9 +422,9 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(DistributedTestObject5)
         dg.add_uint32(55446655)
         dg.add_string('Big crown thingy')
-        dg.add_uint8(0xDC)
-        dg.add_uint8(0xAE)
-        dg.add_uint8(0xEE)
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
         self.server.send(dg)
 
         # The client should receive the new object.
