@@ -115,7 +115,7 @@ class DatabaseServer : public Role
 								if(!field->has_default_value())
 								{
 									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
-										"object of type " << dcc->get_name();
+										"object of type " << dcc->get_name() << std::endl;
 
 									resp.add_uint32(0);
 									send(resp);
