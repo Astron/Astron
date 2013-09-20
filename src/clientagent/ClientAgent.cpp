@@ -66,11 +66,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 		RoleConfig m_roleconfig;
 		ChannelTracker *m_ct;
 		channel_t m_channel;
+		bool m_is_channel_allocated;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
-				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0)
-			
+				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
+				m_is_channel_allocated(true)
 		{
 			m_channel = m_ct->alloc_channel();
 			subscribe_channel(m_channel);
@@ -82,7 +83,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 		~Client()
 		{
-			m_ct->free_channel(m_channel);
+			if(m_is_channel_allocated)
+			{
+				m_ct->free_channel(m_channel);
+			}
 		}
 
 		//for participant interface
@@ -123,7 +127,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			case CLIENTAGENT_SET_SENDER_ID:
 			{
-				m_ct->free_channel(m_channel);
+				if(m_is_channel_allocated)
+				{
+					unsubscribe_channel(m_channel);
+					m_ct->free_channel(m_channel);
+				}
 				m_channel = dgi.read_uint64();
 				subscribe_channel(m_channel);
 			}
@@ -250,6 +258,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				if(!field)
 				{
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+					return;
 				}
 				if(!field->is_clsend())
 				{
@@ -257,10 +266,20 @@ class Client : public NetworkClient, public MDParticipantInterface
 					return;
 				}
 
+				std::string data;
+				dgi.unpack_field(field, data);//if an exception occurs it will be handled
+				//and client will be dc'd for truncated datagram
+
 				Datagram resp;
 				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
-				dgi.seek(2);
-				resp.add_data(dgi.read_remainder());
+				resp.add_uint32(do_id);
+				resp.add_uint16(field_id);
+				if(data.length() > 65535- resp.get_buf_end())
+				{
+					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+					return;
+				}
+				resp.add_data(data);
 				send(resp);
 			}
 			break;
@@ -307,6 +326,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				if(!field)
 				{
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+					return;
 				}
 				if(!field->is_clsend())
 				{
@@ -314,19 +334,31 @@ class Client : public NetworkClient, public MDParticipantInterface
 					return;
 				}
 
-				dgi.unpack_field(field, std::string());//if an exception occurs it will be handled
+				std::string data;
+				dgi.unpack_field(field, data);//if an exception occurs it will be handled
 				//and client will be dc'd for truncated datagram
 
 				Datagram resp;
 				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
-				dgi.seek(2);
-				resp.add_data(dgi.read_remainder());
+				resp.add_uint32(do_id);
+				resp.add_uint16(field_id);
+				if(data.length() > 65535- resp.get_buf_end())
+				{
+					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+					return;
+				}
+				resp.add_data(data);
 				send(resp);
 			}
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
+				return;
+			}
+			if(dgi.tell() < dg.get_buf_end())
+			{
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 				return;
 			}
 		}

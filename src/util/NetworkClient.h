@@ -20,7 +20,7 @@ private:
 	boost::asio::ip::tcp::socket *m_socket;
 
 	char* m_buffer;
-	short m_bytes_to_go;
-	short m_bufsize;
+	unsigned short m_bytes_to_go;
+	unsigned short m_bufsize;
 	bool m_is_data;
 };
