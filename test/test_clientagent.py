@@ -525,5 +525,35 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(raw_dg))
         client.close()
 
+    def test_channel(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        dg = Datagram.create([id], 1, CLIENTAGENT_OPEN_CHANNEL)
+        dg.add_uint64(66778899)
+        self.server.send(dg)
+
+        # In practice, it's dumb to do this, but this is a unit test, so:
+        dg = Datagram.create([id], 1, CLIENTAGENT_CLOSE_CHANNEL)
+        dg.add_uint64(id)
+        self.server.send(dg)
+
+        # Sending things to the ID channel should no longer work...
+        dg = Datagram.create([id], 1, CLIENTAGENT_DISCONNECT)
+        dg.add_uint16(1234)
+        dg.add_string('What fun is there in making sense?')
+        self.server.send(dg)
+
+        # Nothing happens to the client:
+        self.assertTrue(client.expect_none())
+
+        # But the new channel is now valid!
+        dg = Datagram.create([66778899], 1, CLIENTAGENT_DISCONNECT)
+        dg.add_uint16(4321)
+        dg.add_string('What fun is there in making cents?')
+        self.server.send(dg)
+
+        self.assertDisconnect(client, 4321)
+
 if __name__ == '__main__':
     unittest.main()
