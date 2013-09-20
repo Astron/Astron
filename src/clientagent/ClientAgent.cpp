@@ -77,15 +77,17 @@ class Client : public NetworkClient, public MDParticipantInterface
 		RoleConfig m_roleconfig;
 		ChannelTracker *m_ct;
 		channel_t m_channel;
+		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
 		std::set<uint32_t> m_owned_objects;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
 				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
-				m_is_channel_allocated(true), m_owned_objects()
+				m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0)
 		{
 			m_channel = m_ct->alloc_channel();
+			m_allocated_channel = m_channel;
 			subscribe_channel(m_channel);
 			std::stringstream ss;
 			ss << "Client(" << socket->remote_endpoint().address().to_string() << ":"
@@ -95,10 +97,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 		~Client()
 		{
-			if(m_is_channel_allocated)
-			{
-				m_ct->free_channel(m_channel);
-			}
+			m_ct->free_channel(m_allocated_channel);
 		}
 
 		//for participant interface
@@ -169,8 +168,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				if(m_is_channel_allocated)
 				{
+					m_is_channel_allocated = false;
+				}
+				else
+				{
 					unsubscribe_channel(m_channel);
-					m_ct->free_channel(m_channel);
 				}
 				m_channel = dgi.read_uint64();
 				subscribe_channel(m_channel);
