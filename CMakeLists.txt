@@ -114,6 +114,7 @@ set (BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into bin
 if(BUILD_CLIENTAGENT)
 	set (CLIENTAGENT_FILES
 		src/clientagent/ClientAgent.cpp
+		src/clientagent/ClientMessages.h
 	)
 endif()
 

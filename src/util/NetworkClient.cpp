@@ -48,6 +48,11 @@ void NetworkClient::network_send(Datagram &dg)
 	m_socket->send(boost::asio::buffer(dg.get_data(), dg.get_buf_end()));
 }
 
+void NetworkClient::do_disconnect()
+{
+	m_socket->close();
+}
+
 void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
