@@ -510,6 +510,20 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(self.server.expect_multi([pr2, pr3], only=True))
         self.assertTrue(self.server.expect_none())
 
+    def test_send_datagram(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        raw_dg = Datagram()
+        raw_dg.add_uint16(5555)
+        raw_dg.add_uint64(152379565)
+
+        dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
+        dg.add_string(raw_dg)
+        self.server.send(dg)
+
+        self.assertTrue(client.expect(raw_dg))
+        client.close()
 
 if __name__ == '__main__':
     unittest.main()
