@@ -1,29 +1,7 @@
 #!/usr/bin/env python2
-import unittest
-import os, shutil, time
-from socket import *
-
 from common import *
 from testdc import *
 
-CONFIG = """\
-messagedirector:
-    bind: 127.0.0.1:57123
-
-general:
-    dc_files:
-        - %r
-
-roles:
-    - type: database
-      control: 777
-      generate:
-        min: 1000000
-        max: 1000010
-      engine:
-        type: filesystem
-        foldername: unittest_db
-""" % test_dc
 CREATE_DOID_OFFSET = 1 + 8 + 8 + 2 + 4
 VERIFY_DELETE_OBJECT = 0x21656944
 VERIFY_DELETE_QUERY = 0x6c6c694b
@@ -318,25 +296,3 @@ class DatabaseBaseTests(object):
         # Cleanup
         self.deleteObject(50, doid)
         self.conn.send(Datagram.create_remove_channel(50))
-
-class TestDatabaseServerFS(unittest.TestCase, DatabaseBaseTests):
-    @classmethod
-    def setUpClass(cls):
-        if not os.path.exists('unittest_db'):
-            os.makedirs('unittest_db')
-
-        cls.daemon = Daemon(CONFIG)
-        cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
-    @classmethod
-    def tearDownClass(cls):
-        time.sleep(0.2) # Wait for filesystem db to finish writing to file
-        cls.conn.close()
-        cls.daemon.stop()
-
-if __name__ == '__main__':
-    unittest.main()

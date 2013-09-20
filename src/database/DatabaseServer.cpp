@@ -156,9 +156,12 @@ class DatabaseServer : public Role
 
 					uint32_t do_id = dgi.read_uint32();
 
+					m_log->spam() << "Selecting all from do_id: " << do_id << "... " << std::endl;
+
 					DatabaseObject dbo;
 					if(m_db_engine->get_object(do_id, dbo))
 					{
+						m_log->spam() << "... object found!" << std::endl;
 						resp.add_uint8(1);
 						resp.add_uint16(dbo.dc_id);
 						resp.add_uint16(dbo.fields.size());
@@ -171,6 +174,7 @@ class DatabaseServer : public Role
 					}
 					else
 					{
+						m_log->spam() << "... object not found." << std::endl;
 						resp.add_uint8(0);
 					}
 					send(resp);

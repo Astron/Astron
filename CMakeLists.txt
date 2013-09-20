@@ -89,6 +89,7 @@ if(BUILD_DBSERVER)
 		src/database/DBEngineFactory.h
 		src/database/DBEngineFactory.cpp
 		src/database/FSDBEngine.cpp
+		src/database/YAMLEngine.cpp
 	)
 endif()
 
