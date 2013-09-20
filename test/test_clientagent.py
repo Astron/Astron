@@ -333,5 +333,80 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
         self.assertTrue(client.expect_none())
 
+    def test_errors(self):
+        # Zero-length datagram:
+        client = self.connect()
+        dg = Datagram()
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
+
+        # Really truncated datagram:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint8(3)
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
+
+        # Bad msgtype:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(0x1337)
+        dg.add_uint64(0x3141592653589793) # Why the heck not add something to it?
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_INVALID_MSGTYPE)
+
+        # Twiddle with an unknown object:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(0xDECAFBAD)
+        dg.add_uint16(request)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_MISSING_OBJECT)
+
+        # Send a field update to a non-present field:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(foo)
+        dg.add_uint8(5)
+        dg.add_uint8(4)
+        dg.add_uint8(6)
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+
+        # Send a field update to a non-clsend field:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(response)
+        dg.add_string('Bizaam!')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+
+        # Send a truncated field update:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(request)
+        dg.add_uint16(16) # Faking the string length...
+        dg.add_uint64(0) # Whoops, only 8 bytes!
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
+
+        # Send an oversized field update:
+        client = self.connect()
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(request)
+        dg.add_string('F'*65525) # This will fit inside the client dg, but be too big for the server.
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
+
 if __name__ == '__main__':
     unittest.main()
