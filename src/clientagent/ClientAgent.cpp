@@ -136,17 +136,34 @@ class Client : public NetworkClient, public MDParticipantInterface
 	private:
 		virtual void network_datagram(Datagram &dg)
 		{
-			switch(m_state)
+			if(dg.get_buf_end() == 0)
 			{
-				case CS_PRE_HELLO:
-					handle_pre_hello(dg);
-					break;
-				case CS_PRE_AUTH:
-					handle_pre_auth(dg);
-					break;
-				case CS_AUTHENTICATED:
-					handle_authenticated(dg);
-					break;
+				m_log->error() << "0-length DG" << std::endl;
+				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "0-length");
+				return;
+			}
+
+			try
+			{
+				switch(m_state)
+				{
+					case CS_PRE_HELLO:
+						handle_pre_hello(dg);
+						break;
+					case CS_PRE_AUTH:
+						handle_pre_auth(dg);
+						break;
+					case CS_AUTHENTICATED:
+						handle_authenticated(dg);
+						break;
+				}
+			}
+			catch(std::exception &e)
+			{
+				m_log->error() << "Exception while parsing client dg. DCing for truncated "
+					"e.what() " << e.what() << std::endl;
+				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "");
+				return;
 			}
 		}
 
