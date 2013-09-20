@@ -294,5 +294,44 @@ class TestClientAgent(unittest.TestCase):
 
         client.close()
 
+    def test_set_sender(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_SENDER_ID)
+        dg.add_uint64(555566667777)
+        self.server.send(dg)
+
+        # Reidentify the client, make sure the sender has changed.
+        self.assertTrue(self.identify(client), 555566667777)
+
+        # The client should have a subscription on the new sender channel automatically:
+        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(0xF00D)
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(0xF00D)
+        self.assertTrue(client.expect(dg))
+
+        # Change the sender ID again... This is still being sent to the session
+        # channel, which the client should always have a subscription on.
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_SENDER_ID)
+        dg.add_uint64(777766665555)
+        self.server.send(dg)
+
+        # Ensure that 555566667777 has been dropped...
+        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(0x7AB)
+        self.server.send(dg)
+        self.assertTrue(client.expect_none())
+
 if __name__ == '__main__':
     unittest.main()
