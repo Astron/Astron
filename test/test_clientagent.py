@@ -25,6 +25,9 @@ roles:
     - type: clientagent
       bind: 127.0.0.1:57128
       version: "Sword Art Online v5.1"
+      channels:
+          min: 100
+          max: 999
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
