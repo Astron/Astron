@@ -202,7 +202,7 @@ class TestClientAgent(unittest.TestCase):
 
         # TODO: Rewrite this line to be less ugly.
         # Check that the connection closes with no other data.
-        self.assertEqual(client.s.recv(), '')
+        self.assertEqual(client.s.recv(1024), '')
 
 if __name__ == '__main__':
     unittest.main()

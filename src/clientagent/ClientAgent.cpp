@@ -8,16 +8,53 @@
 #include "core/RoleFactory.h"
 #include "util/Datagram.h"
 
+#include <stack>
+
 using boost::asio::ip::tcp;
 
 ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
 ConfigVariable<std::string> server_version("version", "dev");
+ConfigVariable<channel_t> min_channel("channels/min", 0);
+ConfigVariable<channel_t> max_channel("channels/max", 0);
 
 enum ClientState
 {
 	CS_PRE_HELLO,
 	CS_PRE_AUTH,
 	CS_AUTHENTICATED
+};
+
+class ChannelTracker
+{
+	private:
+		channel_t m_next;
+		channel_t m_max;
+		std::stack<channel_t> m_unused_channels;
+	public:
+		ChannelTracker(channel_t min, channel_t max) : m_next(min),
+			m_max(max), m_unused_channels()
+		{
+		}
+
+		channel_t alloc_channel()
+		{
+			channel_t ret;
+			if(!m_unused_channels.empty())
+			{
+				ret = m_unused_channels.top();
+				m_unused_channels.pop();
+			}
+			else
+			{
+				ret = m_next++;
+			}
+			return ret;
+		}
+
+		void free_channel(channel_t channel)
+		{
+			m_unused_channels.push(channel);
+		}
 };
 
 class Client : public NetworkClient, public MDParticipantInterface
@@ -27,14 +64,25 @@ class Client : public NetworkClient, public MDParticipantInterface
 		LogCategory *m_log;
 		std::string m_client_name;
 		RoleConfig m_roleconfig;
+		ChannelTracker *m_ct;
+		channel_t m_channel;
 	public:
-		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig) :
-			NetworkClient(socket), m_state(CS_PRE_HELLO), m_log(log), m_roleconfig(roleconfig)
+		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
+			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
+				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0)
+			
 		{
+			m_channel = m_ct->alloc_channel();
+			subscribe_channel(m_channel);
 			std::stringstream ss;
 			ss << "Client(" << socket->remote_endpoint().address().to_string() << ":"
 				<< socket->remote_endpoint().port() << "): ";
 			m_client_name = ss.str();
+		}
+
+		~Client()
+		{
+			m_ct->free_channel(m_channel);
 		}
 
 		//for participant interface
@@ -163,7 +211,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 
 				Datagram resp;
-				resp.add_server_header(do_id, 0, STATESERVER_OBJECT_UPDATE_FIELD);
+				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
 				dgi.seek(2);
 				resp.add_data(dgi.read_remainder());
 				send(resp);
@@ -185,10 +233,10 @@ class ClientAgent : public Role
 	private:
 		LogCategory *m_log;
 		tcp::acceptor *m_acceptor;
-
+		ChannelTracker m_ct;
 	public:
 		ClientAgent(RoleConfig roleconfig) : Role(roleconfig),
-			m_acceptor(NULL)
+			m_acceptor(NULL), m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig))
 		{
 			std::stringstream ss;
 			ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
@@ -223,7 +271,7 @@ class ClientAgent : public Role
 			boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
 			m_log->info() << "Got an incoming connection from "
 						 << remote.address() << ":" << remote.port() << std::endl;
-			new Client(socket, m_log, m_roleconfig); //It deletes itsself when connection is lost
+			new Client(socket, m_log, m_roleconfig, &m_ct); //It deletes itsself when connection is lost
 			start_accept();
 		}
 
