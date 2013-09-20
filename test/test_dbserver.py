@@ -59,7 +59,7 @@ class DatabaseBaseTests(object):
         # Retrieve object from the database, we stored no DB values, so get none back
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
         self.assertTrue(self.conn.expect(dg)) # Expecting SELECT_RESP with no values
@@ -108,7 +108,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
         self.assertTrue(dgi.read_uint32() == 5) # Check context
-        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
         self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
         self.assertTrue(dgi.read_uint16() == 2) # Check field count
         for x in xrange(2):
@@ -129,7 +129,7 @@ class DatabaseBaseTests(object):
         # Get failure from server
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(6) # Context
-        dg.add_uint8(NOT_FOUND)
+        dg.add_uint8(FAILURE_NOT_SUCCESS)
         self.assertTrue(self.conn.expect(dg))
 
         # Cleanup
@@ -156,7 +156,7 @@ class DatabaseBaseTests(object):
         # Get failure from database
         dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
-        dg.add_uint8(NOT_FOUND)
+        dg.add_uint8(FAILURE_NOT_SUCCESS)
         self.assertTrue(self.conn.expect(dg)) # object deleted
 
         # Create some other objects
@@ -175,7 +175,7 @@ class DatabaseBaseTests(object):
         # Reponse for object "B"
         dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(5) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
         self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
@@ -195,7 +195,7 @@ class DatabaseBaseTests(object):
         # Reponse for object "B"
         dg = Datagram.create([30], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(6) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
         self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
@@ -285,7 +285,7 @@ class DatabaseBaseTests(object):
             dgi = DatagramIterator(dg)
             self.assertTrue(dgi.matches_header([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
             self.assertTrue(dgi.read_uint32() == context) # Check context
-            self.assertTrue(dgi.read_uint8() == FOUND)
+            self.assertTrue(dgi.read_uint8() == SUCCESS)
             self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
             self.assertTrue(dgi.read_uint16() == 2) # Check field count
             for x in xrange(2):
@@ -310,6 +310,28 @@ class DatabaseBaseTests(object):
 
         # Update shouldn't store ram fields
         assert_no_change(3)
+
+        # Update if equals with a ram field
+        dg = Datagram.create([777], 50, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(4) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(91849) # Old value
+        dg.add_uint32(44444) # New value
+        dg.add_uint16(setBA1)
+        dg.add_uint16(0) # Old value (null: 0)
+        dg.add_uint16(239) # New value
+        self.conn.send(dg)
+
+        # Get update failure
+        dg = Datagram.create([50], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(FAILURE_INVALID_FIELDS)
+        self.conn.expect(dg)
+
+        # Update shouldn't store ram fields, are update non-ram fields
+        assert_no_change(5)
 
         # Cleanup
         self.deleteObject(50, doid)
@@ -343,7 +365,7 @@ class DatabaseBaseTests(object):
         # Should get only RDB3 back
         dg = Datagram.create([60], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(2) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
@@ -370,7 +392,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([60], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
         self.assertTrue(dgi.read_uint32() == 3) # Check context
-        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
         self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
         self.assertTrue(dgi.read_uint16() == 2) # Check field count
         for x in xrange(2):
@@ -431,7 +453,7 @@ class DatabaseBaseTests(object):
         # Recieve updated value
         dg = Datagram.create([70], [777], DBSERVER_SELECT_STORED_OBJECT_RESP)
         dg.add_uint32(3) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_uint32(787878)
         self.assertTrue(self.conn.expect(dg))
 
@@ -448,7 +470,7 @@ class DatabaseBaseTests(object):
         # Get update failure
         dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
         dg.add_uint32(4) # Context
-        dg.add_uint8(FAILURE)
+        dg.add_uint8(FAILURE_VALUES_NOT_EQUAL)
         dg.add_uint32(787878) # Correct value
         self.assertTrue(self.conn.expect(dg))
 
@@ -465,7 +487,7 @@ class DatabaseBaseTests(object):
         # Get update failure
         dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
         dg.add_uint32(5) # Context
-        dg.add_uint8(FAILURE)
+        dg.add_uint8(FAILURE_VALUES_NOT_EQUAL)
         dg.add_uint16(0) # Non-existant value (0-length string)
         self.assertTrue(self.conn.expect(dg))
 
@@ -496,7 +518,7 @@ class DatabaseBaseTests(object):
         # Recieve updated value
         dg = Datagram.create([70], [777], DBSERVER_SELECT_STORED_OBJECT_RESP)
         dg.add_uint32(7) # Context
-        dg.add_uint8(FOUND)
+        dg.add_uint8(SUCCESS)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
         self.assertTrue(self.conn.expect(dg))
 
@@ -515,7 +537,7 @@ class DatabaseBaseTests(object):
         # Get update failure
         dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
         dg.add_uint32(8) # Context
-        dg.add_uint8(FAILURE)
+        dg.add_uint8(FAILURE_VALUES_NOT_EQUAL)
         dg.add_uint32(787878)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
 
@@ -529,7 +551,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(919191) # New value
         dg.add_uint16(setDb3)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
-        dg.add_string("Mind if I... take a look inside the barn?!")
+        dg.add_string("Mind if I... take a look inside the barn?!") # New value
 
         # Recieve update success
         dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
@@ -548,7 +570,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([70], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
         self.assertTrue(dgi.read_uint32() == 10) # Check context
-        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
         self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
         self.assertTrue(dgi.read_uint16() == 2) # Check field count
         for x in xrange(2):
