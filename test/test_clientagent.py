@@ -519,7 +519,7 @@ class TestClientAgent(unittest.TestCase):
         raw_dg.add_uint64(152379565)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
-        dg.add_string(raw_dg)
+        dg.add_string(raw_dg.get_data())
         self.server.send(dg)
 
         self.assertTrue(client.expect(raw_dg))
