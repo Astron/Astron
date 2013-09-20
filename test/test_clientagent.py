@@ -75,6 +75,26 @@ class TestClientAgent(unittest.TestCase):
 
         return client
 
+    def identify(self, client):
+        # Figure out the sender ID for a given client connection.
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(request)
+        dg.add_string('What... am I?')
+        client.send(dg)
+
+        dgi = DatagramIterator(self.server.recv())
+        self.assertEqual(dgi.read_uint8(), 1)
+        self.assertEqual(dgi.read_uint64(), 1234)
+        sender_id = dgi.read_uint64()
+
+        #self.assertLessEqual(sender_id, 999)
+        #self.assertGreaterEqual(sender_id, 100)
+
+        return sender_id
+
     def test_hello(self):
         # First, see if the CA ensures that the first datagram is a HELLO.
         client = self.connect(False)
@@ -154,6 +174,35 @@ class TestClientAgent(unittest.TestCase):
 
         # And the client should get booted.
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
+
+    def test_disconnect(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Send a CLIENTAGENT_DISCONNECT to the session...
+        dg = Datagram.create([id], 1, CLIENTAGENT_DISCONNECT)
+        dg.add_uint16(999)
+        dg.add_string('ERROR: The night... will last... forever!')
+        self.server.send(dg)
+
+        # See if the client dies with that exact error...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_GO_GET_LOST)
+        dg.add_uint16(999)
+        dg.add_string('ERROR: The night... will last... forever!')
+        self.assertTrue(client.expect(dg))
+        client.close()
+
+        # New connection:
+        client = self.connect()
+        id = self.identify(client)
+
+        dg = Datagram.create([id], 1, CLIENTAGENT_DROP)
+        self.server.send(dg)
+
+        # TODO: Rewrite this line to be less ugly.
+        # Check that the connection closes with no other data.
+        self.assertEqual(client.s.recv(), '')
 
 if __name__ == '__main__':
     unittest.main()
