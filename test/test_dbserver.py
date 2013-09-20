@@ -7,11 +7,11 @@ VERIFY_DELETE_OBJECT = 0x21656944
 VERIFY_DELETE_QUERY = 0x6c6c694b
 
 class DatabaseBaseTests(object):
-    def createEmptyObjGetId(self, sender, context):
-        # Create an object
+    def createTypeGetId(self, sender, context, type):
+        # Create object of type
         dg = Datagram.create([777], sender, DBSERVER_CREATE_STORED_OBJECT)
-        dg.add_uint32(1) # Context
-        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(context)
+        dg.add_uint16(type)
         dg.add_uint16(0) # Field count
         self.conn.send(dg)
 
@@ -19,6 +19,9 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         return dgi.read_uint32()
+
+    def createGenericGetId(self, sender, context):
+        return self.createTypeGetId(sender, context, DistributedTestObject1)
 
     def deleteObject(self, sender, doid):
         dg = Datagram.create([777], sender, DBSERVER_DELETE_STORED_OBJECT)
@@ -139,7 +142,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(30))
 
         # Create an object, get its doid
-        doid = self.createEmptyObjGetId(30, 1)
+        doid = self.createGenericGetId(30, 1)
 
         # Delete the object
         self.deleteObject(30, doid)
@@ -157,8 +160,8 @@ class DatabaseBaseTests(object):
         self.assertTrue(self.conn.expect(dg)) # object deleted
 
         # Create some other objects
-        doidA = self.createEmptyObjGetId(30, 3)
-        doidB = self.createEmptyObjGetId(30, 4)
+        doidA = self.createGenericGetId(30, 3)
+        doidB = self.createGenericGetId(30, 4)
 
         # Delete object "A"
         self.deleteObject(30, doidA)
@@ -208,10 +211,10 @@ class DatabaseBaseTests(object):
         doids = []
 
         # Create the maximum number of objects we can assign
-        doid = self.createEmptyObjGetId(40, len(doids))
+        doid = self.createGenericGetId(40, len(doids))
         while doid != 0 and len(doids) < 15:
             doids.append(doid)
-            doid = self.createEmptyObjGetId(40, len(doids))
+            doid = self.createGenericGetId(40, len(doids))
 
         self.assertTrue(len(set(doids)) == len(doids)) # Check if duplicate do_ids exist
         self.assertTrue(len(doids) == 11) # Check we recieved the max do_ids we requested
@@ -221,7 +224,7 @@ class DatabaseBaseTests(object):
         self.deleteObject(40, doids[6])
 
         # Get new object with the last remaining id
-        newdoid = self.createEmptyObjGetId(40, 16)
+        newdoid = self.createGenericGetId(40, 16)
         self.assertTrue(newdoid == doids[6])
 
         # Delete multiple objects
@@ -231,7 +234,7 @@ class DatabaseBaseTests(object):
         doids = doids[3:]
 
         # Create an object, it shouldn't collide
-        doid = self.createEmptyObjGetId(40, 17)
+        doid = self.createGenericGetId(40, 17)
         for do in doids:
             self.assertTrue(do != doid)
 
@@ -293,6 +296,108 @@ class DatabaseBaseTests(object):
             else:
                 self.fail("Bad field type")
 
+        # Update object with ram fields
+        dg = Datagram.create([777], 50, DBSERVER_UPDATE_STORED_OBJECT)
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setBR1)
+        dg.add_string("(deep breath...) 'Yay...'")
+        self.conn.send(dg)
+
+        # Retrieve object from the database...
+        dg = Datagram.create([777], 50, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Get values back from server
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
+        self.assertTrue(dgi.read_uint32() == 3) # Check context
+        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 91849)
+            elif field == setDb3:
+                self.assertTrue(dgi.read_string() == "You monster...")
+            else:
+                self.fail("Bad field type")
+
         # Cleanup
         self.deleteObject(50, doid)
         self.conn.send(Datagram.create_remove_channel(50))
+
+    def test_update(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(60))
+
+        # Create db object
+        dg = Datagram.create([777], 60, DBSERVER_CREATE_STORED_OBJECT)
+        dg.add_uint32(1)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(54231)
+        self.conn.send(dg)
+
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        doid = dgi.read_uint32()
+
+        # Select all fields from the stored object
+        dg = Datagram.create([777], 60, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Retrieve object from the database
+        # Should get only RDB3 back
+        dg = Datagram.create([60], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(FOUND)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(54231)
+        self.assertTrue(self.conn.expect(dg)) # Expecting SELECT_RESP with RDB3
+
+        # Update values
+        dg = Datagram.create([777], 60, DBSERVER_UPDATE_STORED_OBJECT)
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("20 percent cooler!!!")
+        self.conn.send(dg)
+
+        # Select all fields from the stored object
+        dg = Datagram.create([777], 60, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Retrieve object from the database
+        # The values should be updated
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([60], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
+        self.assertTrue(dgi.read_uint32() == 3) # Check context
+        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 54231)
+            elif field == setDb3:
+                self.assertTrue(dgi.read_string() == "20 percent cooler!!!")
+            else:
+                self.fail("Bad field type")
+
+        # Cleanup
+        self.deleteObject(60, doid)
+        self.conn.send(Datagram.create_remove_channel(60))

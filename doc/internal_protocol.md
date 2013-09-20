@@ -410,7 +410,7 @@ The return is a list of do_ids corresponding to the selected elements.
 
 
 **DBSERVER_UPDATE_STORED_OBJECT(1014)**  
-    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+    `args(uint32 do_id, FIELD_DATA)`  
 > This message replaces the current values of the given object,
 with the new values given in FIELD_DATA.  
 This command updates a value in the database, ignoring its initial value.
