@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import unittest
+import unittest, time
 from socket import *
 
 from common import *
@@ -502,6 +502,9 @@ class TestClientAgent(unittest.TestCase):
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
         dg.add_string(pr3.get_data())
         self.server.send(dg)
+
+        #Wait
+        time.sleep(0.1)
 
         # Client suddenly loses connection...!
         client.close()

@@ -195,6 +195,16 @@ class Client : public NetworkClient, public MDParticipantInterface
 				unsubscribe_channel(dgi.read_uint64());
 			}
 			break;
+			case CLIENTAGENT_ADD_POST_REMOVE:
+			{
+				add_post_remove(dgi.read_string());
+			}
+			break;
+			case CLIENTAGENT_CLEAR_POST_REMOVE:
+			{
+				clear_post_removes();
+			}
+			break;
 			default:
 				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 			}
