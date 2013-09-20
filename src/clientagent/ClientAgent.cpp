@@ -40,6 +40,23 @@ class Client : public NetworkClient, public MDParticipantInterface
 		//for participant interface
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
+			channel_t sender = dgi.read_uint64();
+			uint16_t msgtype = dgi.read_uint16();
+			switch(msgtype)
+			{
+			case CLIENTAGENT_DISCONNECT:
+			{
+				uint16_t reason = dgi.read_uint16();
+				std::string error_string = dgi.read_string();
+				m_log->info() << "Recv'd upstream request to DC client. Reason: "
+					<< reason << " Err str: " << error_string << std::endl;
+				send_disconnect(reason, error_string);
+				return;
+			}
+			break;
+			default:
+				m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
+			}
 		}
 
 	private:
