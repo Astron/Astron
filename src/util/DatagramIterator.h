@@ -17,10 +17,10 @@ class DatagramIterator
 
 		void check_read_length(uint16_t length)
 		{
-			if(m_offset+length > m_dg.size())
+			if(m_offset + length > m_dg.size())
 			{
 				std::stringstream error;
-				error << "dgi tried to read past dg end, offset+length(" << m_offset+length << ") buf_size(" << m_dg.size() << ")" << std::endl;
+				error << "dgi tried to read past dg end, offset+length(" << m_offset + length << ") buf_size(" << m_dg.size() << ")" << std::endl;
 #ifdef _DEBUG
 				std::fstream test("test", std::ios_base::out | std::ios_base::binary);
 				test.write(m_dg.get_data(), m_dg.get_buf_end());
@@ -38,7 +38,7 @@ class DatagramIterator
 		uint8_t read_uint8()
 		{
 			check_read_length(1);
-			uint8_t r = *(uint8_t*)(m_dg.get_data()+m_offset);
+			uint8_t r = *(uint8_t*)(m_dg.get_data() + m_offset);
 			m_offset += 1;
 			return r;
 		}
@@ -46,7 +46,7 @@ class DatagramIterator
 		uint16_t read_uint16()
 		{
 			check_read_length(2);
-			uint16_t r = *(uint16_t*)(m_dg.get_data()+m_offset);
+			uint16_t r = *(uint16_t*)(m_dg.get_data() + m_offset);
 			m_offset += 2;
 			return r;
 		}
@@ -54,7 +54,7 @@ class DatagramIterator
 		uint32_t read_uint32()
 		{
 			check_read_length(4);
-			uint32_t r = *(uint32_t*)(m_dg.get_data()+m_offset);
+			uint32_t r = *(uint32_t*)(m_dg.get_data() + m_offset);
 			m_offset += 4;
 			return r;
 		}
@@ -62,7 +62,7 @@ class DatagramIterator
 		uint64_t read_uint64()
 		{
 			check_read_length(8);
-			uint64_t r = *(uint64_t*)(m_dg.get_data()+m_offset);
+			uint64_t r = *(uint64_t*)(m_dg.get_data() + m_offset);
 			m_offset += 8;
 			return r;
 		}
@@ -74,7 +74,7 @@ class DatagramIterator
 		{
 			uint32_t length = read_uint16();
 			check_read_length(length);
-			std::string str((char*)(m_dg.get_data()+m_offset), length);
+			std::string str((char*)(m_dg.get_data() + m_offset), length);
 			m_offset += length;
 			return str;
 		}
@@ -82,7 +82,7 @@ class DatagramIterator
 		std::vector<uint8_t> read_data(uint32_t length)
 		{
 			check_read_length(length);
-			std::vector<uint8_t> data(m_dg.get_data()+m_offset, m_dg.get_data()+m_offset+length);
+			std::vector<uint8_t> data(m_dg.get_data() + m_offset, m_dg.get_data() + m_offset + length);
 			m_offset += length;
 			return data;
 		}

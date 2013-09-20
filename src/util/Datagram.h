@@ -14,9 +14,9 @@ class Datagram
 
 		void check_add_length(uint32_t len)
 		{
-			if(buf_end+len > buf_size)
+			if(buf_end + len > buf_size)
 			{
-				uint8_t *tmp_buf = new uint8_t[buf_size+len+64];
+				uint8_t *tmp_buf = new uint8_t[buf_size + len + 64];
 				memcpy(tmp_buf, buf, buf_size);
 				delete [] buf;
 				buf = tmp_buf;
@@ -60,42 +60,42 @@ class Datagram
 		void add_uint8(const uint8_t &v)
 		{
 			check_add_length(1);
-			memcpy(buf+buf_end, &v, 1);
+			memcpy(buf + buf_end, &v, 1);
 			buf_end += 1;
 		}
 
 		void add_uint16(const uint16_t &v)
 		{
 			check_add_length(2);
-			memcpy(buf+buf_end, &v, 2);
+			memcpy(buf + buf_end, &v, 2);
 			buf_end += 2;
 		}
 
 		void add_uint32(const uint32_t &v)
 		{
 			check_add_length(4);
-			memcpy(buf+buf_end, &v, 4);
+			memcpy(buf + buf_end, &v, 4);
 			buf_end += 4;
 		}
 
 		void add_uint64(const uint64_t &v)
 		{
 			check_add_length(8);
-			memcpy(buf+buf_end, &v, 8);
+			memcpy(buf + buf_end, &v, 8);
 			buf_end += 8;
 		}
 
 		void add_data(const std::vector<uint8_t> &data)
 		{
 			check_add_length(data.size());
-			memcpy(buf+buf_end, &data[0], data.size());
+			memcpy(buf + buf_end, &data[0], data.size());
 			buf_end += data.size();
 		}
 
 		void add_datagram(const Datagram &dg)
 		{
 			check_add_length(dg.buf_end);
-			memcpy(buf+buf_end, dg.buf, dg.buf_end);
+			memcpy(buf + buf_end, dg.buf, dg.buf_end);
 			buf_end += dg.buf_end;
 		}
 
@@ -103,7 +103,7 @@ class Datagram
 		{
 			add_uint16(str.length());
 			check_add_length(str.length());
-			memcpy(buf+buf_end, str.c_str(), str.length());
+			memcpy(buf + buf_end, str.c_str(), str.length());
 			buf_end += str.length();
 		}
 

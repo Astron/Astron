@@ -44,7 +44,7 @@ class NullStream
 		{
 			return null_stream;
 		}
-		inline NullStream& operator<<(std::ostream &(std::ostream&))
+		inline NullStream& operator<<(std::ostream & (std::ostream&))
 		{
 			return null_stream;
 		}

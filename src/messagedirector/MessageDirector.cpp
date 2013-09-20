@@ -48,7 +48,7 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
 			std::string str_ip = bind_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
 			tcp::resolver resolver(io_service);
 			tcp::resolver::query query(str_ip, str_port);
@@ -62,7 +62,7 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
 			std::string str_ip = connect_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
 			tcp::resolver resolver(io_service);
 			tcp::resolver::query query(str_ip, str_port);
@@ -120,7 +120,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1+channels*8);
+		DatagramIterator msg_dgi(dg, 1 + channels * 8);
 		(*it)->handle_datagram(dg, msg_dgi);
 	}
 

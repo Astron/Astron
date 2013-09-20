@@ -94,8 +94,8 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
 #endif
 
 	public:
-		virtual void output(ostream &out, bool brief) const=0;
-		virtual void write(ostream &out, bool brief, int indent_level) const=0;
+		virtual void output(ostream &out, bool brief) const = 0;
+		virtual void write(ostream &out, bool brief, int indent_level) const = 0;
 		virtual void generate_hash(HashGenerator &hashgen) const;
 		virtual bool pack_default_value(DCPackData &pack_data, bool &pack_error) const;
 		virtual void set_name(const string &name);

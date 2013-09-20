@@ -44,15 +44,15 @@ class ConfigVariable
 				}
 				else
 				{
-					cnode = cnode[m_name.substr(offset, noffset-offset)];
+					cnode = cnode[m_name.substr(offset, noffset - offset)];
 					if(!cnode.IsDefined())
 					{
 						return m_def_val;
 					}
 				}
-				offset = noffset+1;
+				offset = noffset + 1;
 			}
-			cnode = cnode[m_name.substr(offset, m_name.length()-offset)];
+			cnode = cnode[m_name.substr(offset, m_name.length() - offset)];
 			if(!cnode.IsDefined())
 			{
 				return m_def_val;

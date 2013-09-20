@@ -45,8 +45,8 @@ class EXPCL_DIRECT DCDeclaration
 		void write(ostream &out, int indent_level) const;
 
 	public:
-		virtual void output(ostream &out, bool brief) const=0;
-		virtual void write(ostream &out, bool brief, int indent_level) const=0;
+		virtual void output(ostream &out, bool brief) const = 0;
+		virtual void write(ostream &out, bool brief, int indent_level) const = 0;
 };
 
 INLINE ostream &operator << (ostream &out, const DCDeclaration &decl)

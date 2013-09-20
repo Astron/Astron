@@ -26,7 +26,7 @@ void EventLogger::bind(const std::string &addr)
 {
 	m_log.info() << "Opening UDP socket..." << std::endl;
 	std::string str_ip = addr;
-	std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 	str_ip = str_ip.substr(0, str_ip.find(':', 0));
 	udp::resolver resolver(io_service);
 	udp::resolver::query query(str_ip, str_port);
@@ -95,7 +95,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 
 		// Okay, there's other stuff in this column, so we're going to quote:
 
-		char *cleaned = new char[it->length()*2+1];
+		char *cleaned = new char[it->length() * 2 + 1];
 
 		char *p = cleaned;
 		for(const char *c = it->c_str(); *c; ++c)

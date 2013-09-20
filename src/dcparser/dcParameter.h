@@ -56,8 +56,8 @@ class EXPCL_DIRECT DCParameter : public DCField
 		virtual DCArrayParameter *as_array_parameter();
 		virtual const DCArrayParameter *as_array_parameter() const;
 
-		virtual DCParameter *make_copy() const=0;
-		virtual bool is_valid() const=0;
+		virtual DCParameter *make_copy() const = 0;
+		virtual bool is_valid() const = 0;
 
 		const DCTypedef *get_typedef() const;
 
@@ -68,7 +68,7 @@ class EXPCL_DIRECT DCParameter : public DCField
 		virtual void output(ostream &out, bool brief) const;
 		virtual void write(ostream &out, bool brief, int indent_level) const;
 		virtual void output_instance(ostream &out, bool brief, const string &prename,
-		                             const string &name, const string &postname) const=0;
+		                             const string &name, const string &postname) const = 0;
 		virtual void write_instance(ostream &out, bool brief, int indent_level,
 		                            const string &prename, const string &name,
 		                            const string &postname) const;

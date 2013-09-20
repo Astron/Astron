@@ -19,7 +19,7 @@ class MDPerformanceParticipant : public MDParticipantInterface
 	public:
 		MDPerformanceParticipant() : MDParticipantInterface(), num_messages(0)
 		{
-			boost::random::uniform_int_distribution<uint64_t> dist(0,0xFFFFFFFFFFFFFFFF);
+			boost::random::uniform_int_distribution<uint64_t> dist(0, 0xFFFFFFFFFFFFFFFF);
 			for(uint32_t i = 0; i < MD_PERF_NUM_CHANNELS; ++i)
 			{
 				subscribe_channel(dist(gen));
@@ -69,7 +69,7 @@ class MDPerformanceTest
 			data[0] = MD_PERF_NUM_DEST_CHANNELS;
 			for(uint32_t i = 1; i < MD_PERF_DATASIZE; ++i)
 			{
-				data[i] = rand()%256;
+				data[i] = rand() % 256;
 			}
 			mdperf_log.info() << "Creating MDPerformanceParticipants" << std::endl;
 			m_participants = new MDPerformanceParticipant*[MD_PERF_NUM_PARTICIPANTS];
@@ -94,7 +94,7 @@ class MDPerformanceTest
 		{
 			mdperf_log.info() << "Starting speed test I..." << std::endl;
 			clock_t startTime = clock();
-			while((clock()-startTime)/CLOCKS_PER_SEC < MD_PERF_TIME)
+			while((clock() - startTime) / CLOCKS_PER_SEC < MD_PERF_TIME)
 			{
 				for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 				{
@@ -105,11 +105,11 @@ class MDPerformanceTest
 			double num_messages = 0;
 			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 			{
-				num_messages += double(m_participants[i]->num_messages)/double(MD_PERF_NUM_PARTICIPANTS);
+				num_messages += double(m_participants[i]->num_messages) / double(MD_PERF_NUM_PARTICIPANTS);
 			}
 
 			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
-			                  "this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
+			                  "this comes out to be " << num_messages / MD_PERF_TIME << " messages/second" << std::endl;
 		}
 
 		void speed_test_no_memcpy()
@@ -117,7 +117,7 @@ class MDPerformanceTest
 			Datagram dg(data, MD_PERF_DATASIZE);
 			mdperf_log.info() << "Starting speed test II (avoids memcopy)..." << std::endl;
 			clock_t startTime = clock();
-			while((clock()-startTime)/CLOCKS_PER_SEC < MD_PERF_TIME)
+			while((clock() - startTime) / CLOCKS_PER_SEC < MD_PERF_TIME)
 			{
 				for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 				{
@@ -129,11 +129,11 @@ class MDPerformanceTest
 			double num_messages = 0;
 			for(uint32_t i = 0; i < MD_PERF_NUM_PARTICIPANTS; ++i)
 			{
-				num_messages += double(m_participants[i]->num_messages)/double(MD_PERF_NUM_PARTICIPANTS);
+				num_messages += double(m_participants[i]->num_messages) / double(MD_PERF_NUM_PARTICIPANTS);
 			}
 
 			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
-			                  "this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
+			                  "this comes out to be " << num_messages / MD_PERF_TIME << " messages/second" << std::endl;
 		}
 };
 

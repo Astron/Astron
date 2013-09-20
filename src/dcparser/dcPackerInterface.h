@@ -173,7 +173,7 @@ class EXPCL_DIRECT DCPackerInterface
 		const DCPackerCatalog *get_catalog() const;
 
 	protected:
-		virtual bool do_check_match(const DCPackerInterface *other) const=0;
+		virtual bool do_check_match(const DCPackerInterface *other) const = 0;
 
 	public:
 		// These are declared public just so the derived classes can call
