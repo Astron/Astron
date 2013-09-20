@@ -6,11 +6,11 @@ DBEngineFactory::DBEngineFactory()
 {
 }
 
-IDatabaseEngine* DBEngineFactory::instantiate(const std::string &engine_name, DBEngineConfig config, unsigned int start_do_id)
+IDatabaseEngine* DBEngineFactory::instantiate(const std::string &engine_name, DBEngineConfig config, unsigned int min_id, unsigned int max_id)
 {
 	if(m_creators[engine_name])
 	{
-		return m_creators[engine_name]->instantiate(config, start_do_id);
+		return m_creators[engine_name]->instantiate(config, min_id, max_id);
 	}
 	return NULL;
 }

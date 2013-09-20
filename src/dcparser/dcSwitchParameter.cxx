@@ -19,7 +19,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSwitchParameter::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter::
 DCSwitchParameter(const DCSwitch *dswitch) :
@@ -51,12 +51,12 @@ DCSwitchParameter(const DCSwitch *dswitch) :
 
     // Consider each case for fixed size, etc.
     for (int i = 0; i < num_cases; i++) {
-      const DCSwitch::SwitchFields *fields = 
+      const DCSwitch::SwitchFields *fields =
         (const DCSwitch::SwitchFields *)_dswitch->get_case(i);
-                                     
-      if (!fields->has_fixed_byte_size() || 
+
+      if (!fields->has_fixed_byte_size() ||
           fields->get_fixed_byte_size() != _fixed_byte_size) {
-        
+
         // Nope, we have a variable byte size.
         _has_fixed_byte_size = false;
       }
@@ -67,14 +67,14 @@ DCSwitchParameter(const DCSwitch *dswitch) :
   }
 
   // Also consider the default case, if there is one.
-  const DCSwitch::SwitchFields *fields = 
+  const DCSwitch::SwitchFields *fields =
     (DCSwitch::SwitchFields *)_dswitch->get_default_case();
   if (fields != (DCSwitch::SwitchFields *)NULL) {
-    if (!fields->has_fixed_byte_size() || 
+    if (!fields->has_fixed_byte_size() ||
         fields->get_fixed_byte_size() != _fixed_byte_size) {
       _has_fixed_byte_size = false;
     }
-    
+
     _has_range_limits = _has_range_limits || fields->has_range_limits();
     _has_default_value = _has_default_value || fields->_has_default_value;
   }
@@ -83,7 +83,7 @@ DCSwitchParameter(const DCSwitch *dswitch) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSwitchParameter::Copy Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter::
 DCSwitchParameter(const DCSwitchParameter &copy) :
@@ -95,7 +95,7 @@ DCSwitchParameter(const DCSwitchParameter &copy) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSwitchParameter::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCSwitchParameter::
 as_switch_parameter() {
@@ -105,7 +105,7 @@ as_switch_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSwitchParameter::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCSwitchParameter::
 as_switch_parameter() const {
@@ -115,7 +115,7 @@ as_switch_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCSwitchParameter::make_copy
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCSwitchParameter::
 make_copy() const {
@@ -177,7 +177,7 @@ apply_switch(const char *value_data, size_t length) const {
 //               typename and identifier.
 ////////////////////////////////////////////////////////////////////
 void DCSwitchParameter::
-output_instance(ostream &out, bool brief, const string &prename, 
+output_instance(ostream &out, bool brief, const string &prename,
                 const string &name, const string &postname) const {
   if (get_typedef() != (DCTypedef *)NULL) {
     output_typedef_name(out, brief, prename, name, postname);
@@ -195,7 +195,7 @@ output_instance(ostream &out, bool brief, const string &prename,
 ////////////////////////////////////////////////////////////////////
 void DCSwitchParameter::
 write_instance(ostream &out, bool brief, int indent_level,
-               const string &prename, const string &name, 
+               const string &prename, const string &name,
                const string &postname) const {
   if (get_typedef() != (DCTypedef *)NULL) {
     write_typedef_name(out, brief, indent_level, prename, name, postname);

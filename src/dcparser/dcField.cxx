@@ -29,7 +29,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCField::
-DCField() : 
+DCField() :
   _dclass(NULL)
 #ifdef WITHIN_PANDA
   ,
@@ -57,7 +57,7 @@ DCField() :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCField::
-DCField(const string &name, DCClass *dclass) : 
+DCField(const string &name, DCClass *dclass) :
   DCPackerInterface(name),
   _dclass(dclass)
 #ifdef WITHIN_PANDA
@@ -92,7 +92,7 @@ DCField::
 ////////////////////////////////////////////////////////////////////
 //     Function: DCField::as_field
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCField *DCField::
 as_field() {
@@ -102,7 +102,7 @@ as_field() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCField::as_field
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCField *DCField::
 as_field() const {
@@ -160,7 +160,7 @@ as_molecular_field() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCField::as_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCField::
 as_parameter() {
@@ -170,7 +170,7 @@ as_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCField::as_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCParameter *DCField::
 as_parameter() const {
@@ -303,7 +303,7 @@ pack_args(DCPacker &packer, PyObject *sequence) const {
                << get_pystr(sequence);
           exc_type = PyExc_ValueError;
         }
-        
+
         Py_DECREF(tuple);
       }
     }
@@ -360,11 +360,11 @@ unpack_args(DCPacker &packer) const {
 
       exc_type = PyExc_RuntimeError;
     } else {
-      strm << "Value outside specified range when unpacking field " 
+      strm << "Value outside specified range when unpacking field "
            << get_name() << ": " << get_pystr(object);
       exc_type = PyExc_ValueError;
     }
-    
+
     string message = strm.str();
     PyErr_SetString(exc_type, message.c_str());
   }
@@ -411,7 +411,7 @@ receive_update(DCPacker &packer, PyObject *distobj) const {
       if (args != (PyObject *)NULL) {
         PyObject *func = PyObject_GetAttrString(distobj, (char *)_name.c_str());
         nassertv(func != (PyObject *)NULL);
-      
+
         PyObject *result;
         {
 #ifdef WITHIN_PANDA

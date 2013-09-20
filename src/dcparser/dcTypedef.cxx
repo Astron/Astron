@@ -160,7 +160,7 @@ output(ostream &out, bool brief) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCTypedef::write
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 void DCTypedef::
 write(ostream &out, bool brief, int indent_level) const {

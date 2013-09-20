@@ -21,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
 DCPackerInterface(const string &name) :
@@ -41,7 +41,7 @@ DCPackerInterface(const string &name) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::Copy Constructor
 //       Access: Public
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
 DCPackerInterface(const DCPackerInterface &copy) :
@@ -61,7 +61,7 @@ DCPackerInterface(const DCPackerInterface &copy) :
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::Destructor
 //       Access: Public, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
 ~DCPackerInterface() {
@@ -93,7 +93,7 @@ find_seek_index(const string &name) const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_field
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCField *DCPackerInterface::
 as_field() {
@@ -103,7 +103,7 @@ as_field() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_field
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCField *DCPackerInterface::
 as_field() const {
@@ -113,7 +113,7 @@ as_field() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCPackerInterface::
 as_switch_parameter() {
@@ -123,7 +123,7 @@ as_switch_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_switch_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCPackerInterface::
 as_switch_parameter() const {
@@ -133,7 +133,7 @@ as_switch_parameter() const {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter *DCPackerInterface::
 as_class_parameter() {
@@ -143,7 +143,7 @@ as_class_parameter() {
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::as_class_parameter
 //       Access: Published, Virtual
-//  Description: 
+//  Description:
 ////////////////////////////////////////////////////////////////////
 const DCClassParameter *DCPackerInterface::
 as_class_parameter() const {
@@ -427,7 +427,7 @@ unpack_skip(const char *data, size_t length, size_t &p,
     // If we have a length prefix, use that for skipping.
     if (p + _num_length_bytes > length) {
       pack_error = true;
-      
+
     } else {
       if (_num_length_bytes == 4) {
         size_t this_length = do_unpack_uint32(data + p);

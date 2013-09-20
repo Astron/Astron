@@ -83,7 +83,7 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 * **jjkoletar** manages our Jenkins build system.
 
 ## License
-The OpenOTP project is currently available under the GPL license. The terms of this license are available in the "LICENSE" file of this archive.
+The OpenOTP project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
 
 ## Contributing
 We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
@@ -116,9 +116,9 @@ There are a lot of resources we use as a guide and for inspiration while buildin
 **NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
 
 Video lectures from Disney:
- - [DistributedObjects](http://video.google.com/videoplay?docid=59098437095671394&hl=en)
- - [DistributedObjects and the OTP Server](http://video.google.com/videoplay?docid=-4547040139284563409&hl=en)
- - [OTP Server Internals](http://video.google.com/videoplay?docid=-6551816888913680536&hl=en)
+ - [DistributedObjects](http://www.youtube.com/watch?v=JsgCFVpXQtQ)
+ - [DistributedObjects and the OTP Server](http://www.youtube.com/watch?v=r_ZP9SInPcs)
+ - [OTP Server Internals](http://www.youtube.com/watch?v=SzybRdxjYoA)
 
 Presentation Slides
  - [MMO 101 - Building Disney's Server](http://twvideo01.ubm-us.net/o1/vault/gdconline10/slides/11516-MMO_101_Building_Disneys_Sever.pdf)
