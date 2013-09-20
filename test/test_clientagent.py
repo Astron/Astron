@@ -204,5 +204,76 @@ class TestClientAgent(unittest.TestCase):
         # Check that the connection closes with no other data.
         self.assertEqual(client.s.recv(1024), '')
 
+    def test_set_state(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Restore the client back to the NEW state.
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # Since it's in the NEW state, sending something should cause a HELLO
+        # error.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(request)
+        dg.add_string('I wish to be an Oompa Loompa. Take me to them so the deed may be done.')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_NO_HELLO)
+
+        # New client:
+        client = self.connect()
+        id = self.identify(client)
+
+        # Put the client in the ESTABLISHED state.
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
+        dg.add_uint16(2)
+        self.server.send(dg)
+
+        # Try to send an update to UberDog2.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1235)
+        dg.add_uint16(foo)
+        dg.add_uint8(0xBE)
+        dg.add_uint8(0xAD)
+        dg.add_uint8(0x06)
+        client.send(dg)
+
+        # The update should show up inside the server:
+        dgi = DatagramIterator(self.server.recv())
+        self.assertEqual(dgi.read_uint8(), 1)
+        self.assertEqual(dgi.read_uint64(), 1235)
+        dgi.read_uint64() # Sender ID; we don't know this.
+        self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_UPDATE_FIELD)
+        self.assertEqual(dgi.read_uint32(), 1235)
+        self.assertEqual(dgi.read_uint16(), foo)
+        self.assertEqual(dgi.read_uint8(), 0xBE)
+        self.assertEqual(dgi.read_uint8(), 0xAD)
+        self.assertEqual(dgi.read_uint8(), 0x06)
+
+        # Now revert back to anonymous state:
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_STATE)
+        dg.add_uint16(1)
+        self.server.send(dg)
+
+        # Try again:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1235)
+        dg.add_uint16(foo)
+        dg.add_uint8(0xBE)
+        dg.add_uint8(0xAD)
+        dg.add_uint8(0x06)
+        client.send(dg)
+
+        # Nothing should happen inside the server:
+        self.assertTrue(self.server.expect_none())
+
+        # Client should get booted:
+        self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
+
 if __name__ == '__main__':
     unittest.main()
