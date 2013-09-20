@@ -62,6 +62,8 @@ CONSTANTS = {
     # Defined return codes
     'FOUND': 1,
     'NOT_FOUND': 0,
+    'SUCCESS': 1,
+    'FAILURE': 0,
 
     # Control Channels
     'CONTROL_CHANNEL': 4001,

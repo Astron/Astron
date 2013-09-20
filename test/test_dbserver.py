@@ -273,28 +273,32 @@ class DatabaseBaseTests(object):
         self.assertTrue(dgi.read_uint32() == 1) # Check context
         doid = dgi.read_uint32()
 
-        # Retrieve object from the database...
-        dg = Datagram.create([777], 50, DBSERVER_SELECT_STORED_OBJECT_ALL)
-        dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
-        self.conn.send(dg)
+        def assert_no_change(context):
+            # Retrieve object from the database...
+            dg = Datagram.create([777], 50, DBSERVER_SELECT_STORED_OBJECT_ALL)
+            dg.add_uint32(context) # Context
+            dg.add_uint32(doid)
+            self.conn.send(dg)
 
-        # Get values back from server
-        dg = self.conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 2) # Check context
-        self.assertTrue(dgi.read_uint8() == FOUND)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 91849)
-            elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "You monster...")
-            else:
-                self.fail("Bad field type")
+            # Get values back from server
+            dg = self.conn.recv()
+            dgi = DatagramIterator(dg)
+            self.assertTrue(dgi.matches_header([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
+            self.assertTrue(dgi.read_uint32() == context) # Check context
+            self.assertTrue(dgi.read_uint8() == FOUND)
+            self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+            self.assertTrue(dgi.read_uint16() == 2) # Check field count
+            for x in xrange(2):
+                field = dgi.read_uint16()
+                if field == setRDB3:
+                    self.assertTrue(dgi.read_uint32() == 91849)
+                elif field == setDb3:
+                    self.assertTrue(dgi.read_string() == "You monster...")
+                else:
+                    self.fail("Bad field type")
+
+        # Create shouldn't store ram fields
+        assert_no_change(2)
 
         # Update object with ram fields
         dg = Datagram.create([777], 50, DBSERVER_UPDATE_STORED_OBJECT)
@@ -304,28 +308,8 @@ class DatabaseBaseTests(object):
         dg.add_string("(deep breath...) 'Yay...'")
         self.conn.send(dg)
 
-        # Retrieve object from the database...
-        dg = Datagram.create([777], 50, DBSERVER_SELECT_STORED_OBJECT_ALL)
-        dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
-        self.conn.send(dg)
-
-        # Get values back from server
-        dg = self.conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 3) # Check context
-        self.assertTrue(dgi.read_uint8() == FOUND)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 91849)
-            elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "You monster...")
-            else:
-                self.fail("Bad field type")
+        # Update shouldn't store ram fields
+        assert_no_change(3)
 
         # Cleanup
         self.deleteObject(50, doid)
@@ -401,3 +385,181 @@ class DatabaseBaseTests(object):
         # Cleanup
         self.deleteObject(60, doid)
         self.conn.send(Datagram.create_remove_channel(60))
+
+    def test_update_if_equals(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(70))
+
+        # Create db object
+        dg = Datagram.create([777], 70, DBSERVER_CREATE_STORED_OBJECT)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(767676)
+        self.conn.send(dg)
+
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        doid = dgi.read_uint32()
+
+        # Update field with correct old value
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(767676) # Old value
+        dg.add_uint32(787878) # New value
+        self.conn.send(dg)
+
+        # Get update response
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(SUCCESS)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select object with new value
+        dg = Datagram.create([777], 70, DBSERVER_SELECT_STORED_OBJECT)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        self.conn.send(dg)
+
+        # Recieve updated value
+        dg = Datagram.create([70], [777], DBSERVER_SELECT_STORED_OBJECT_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(FOUND)
+        dg.add_uint32(787878)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Update field with incorrect old value
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(4) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(767676) # Old value (incorrect)
+        dg.add_uint32(383838) # New value
+        self.conn.send(dg)
+
+        # Get update failure
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(FAILURE)
+        dg.add_uint32(787878) # Correct value
+        self.assertTrue(self.conn.expect(dg))
+
+        # Comparison existing value to non existing value in update
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("That was a TERRIBLE surprise!") # Old value
+        dg.add_string("Wish upon a twinkle...") # New value
+        self.conn.send(dg)
+
+        # Get update failure
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint8(FAILURE)
+        dg.add_uint16(0) # Non-existant value (0-length string)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Update field where updated value equals the null value
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(0) # Old value (null: 0-length)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        self.conn.send(dg)
+
+        # Get update success
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(SUCCESS)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select object with new value
+        dg = Datagram.create([777], 70, DBSERVER_SELECT_STORED_OBJECT)
+        dg.add_uint32(7) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Recieve updated value
+        dg = Datagram.create([70], [777], DBSERVER_SELECT_STORED_OBJECT_RESP)
+        dg.add_uint32(7) # Context
+        dg.add_uint8(FOUND)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        self.assertTrue(self.conn.expect(dg))
+
+        # Update object with partially incorrect values
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(8) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(787878) # Old value
+        dg.add_uint32(919191) # New value
+        dg.add_uint16(setDb3)
+        dg.add_string("I can clear the sky in 10 seconds flat.")
+        dg.add_string("Jesse!! We have to code!")
+
+        # Get update failure
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(8) # Context
+        dg.add_uint8(FAILURE)
+        dg.add_uint32(787878)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+
+        # Update multiple with correct old values
+        dg = Datagram.create([777], 70, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS)
+        dg.add_uint32(9) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(787878) # Old value
+        dg.add_uint32(919191) # New value
+        dg.add_uint16(setDb3)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        dg.add_string("Mind if I... take a look inside the barn?!")
+
+        # Recieve update success
+        dg = Datagram.create([70], 777, DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP)
+        dg.add_uint32(9) # Context
+        dg.add_uint8(SUCCESS)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select object with new value
+        dg = Datagram.create([777], 70, DBSERVER_SELECT_STORED_OBJECT_ALL)
+        dg.add_uint32(10) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Recieve updated value
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([70], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP))
+        self.assertTrue(dgi.read_uint32() == 10) # Check context
+        self.assertTrue(dgi.read_uint8() == FOUND)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 919191)
+            elif field == setDb3:
+                self.assertTrue(dgi.read_string() == "Mind if I... take a look inside the barn?!")
+            else:
+                self.fail("Bad field type")
+
+        # Cleanup
+        self.deleteObject(70, doid)
+        self.conn.send(Datagram.create_remove_channel(70))
