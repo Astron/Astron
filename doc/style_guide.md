@@ -5,9 +5,11 @@ and re-submit the pull request though.
 - - -
 ## Whitespace
 Tabs shall be used to indent, spaces shall be used to align.
+Source files should end with a newline.
 
 ## Variable Names
 Variables shall have a descriptive lowercase name, where words are seperated by underscores.
+Global variables shall start with g_
 Member variables shall start with m_
 
 Example: `field_count` or
@@ -44,7 +46,7 @@ Typedefs shall have a descriptive name and end with _t
 
 Example: `typedef unsigned int uint32_t`
 
-## Usage of std::string
+## Usage of std::string (and when possible for stl types)
 Whenever possible, have function parameters be of type `const std::string&` and not `std::string`
 
 Example:
