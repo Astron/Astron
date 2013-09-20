@@ -57,13 +57,12 @@ CONSTANTS = {
     # Reserved Values
     'INVALID_CHANNEL': 0,
     'INVALID_DO_ID': 0,
-    'INVALID_MSG_TYPE': 0,
 
     # Defined return codes
-    'FOUND': 1,
-    'NOT_FOUND': 0,
-    'SUCCESS': 1,
-    'FAILURE': 0,
+    'SUCCESS': 0,
+    'FAILURE_NOT_FOUND': 1,
+    'FAILURE_VALUES_NOT_EQUAL': 2,
+    'FAILURE_INVALID_FIELDS': 3,
 
     # Control Channels
     'CONTROL_CHANNEL': 4001,
