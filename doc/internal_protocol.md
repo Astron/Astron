@@ -442,8 +442,12 @@ This method of updating the database is used to prevent race conditions,
 particularily when the new values are derived or dependent on the old values.
 
 > If any of the given _old_ values don't match then the entire transaction fails.
-If unsuccessful, the current values of all given fields will be returned in order
-in serialized form, after 'success'.
+In this case, the current values of all given fields will be returned in order
+in serialized form, after 'FAILURE_VALUES_NOT_EQUAL'.
+
+> If any of the given fields are not database fields, the entire transaction fails,
+In this case the return code is 'FAILURE_INVALID_FIELDS'.
+The current values are not returned.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
