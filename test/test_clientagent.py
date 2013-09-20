@@ -558,5 +558,123 @@ class TestClientAgent(unittest.TestCase):
 
         self.assertDisconnect(client, 4321)
 
+    def test_interest(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, 2)
+
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(1)
+        dg.add_uint32(2)
+        dg.add_uint32(1234)
+        dg.add_uint32(5555) # Zone 1
+        dg.add_uint32(4444) # Zone 2
+        client.send(dg)
+
+        # Server should ask for the objects:
+        dg = Datagram.create([1234], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1234)
+        dg.add_uint16(2)
+        dg.add_uint32(5555) # Zone 1
+        dg.add_uint32(4444) # Zone 2
+        self.assertTrue(self.server.expect(dg))
+
+        # We'll throw a couple its way:
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(8888) # do_id
+        dg.add_uint32(1234) # parent_id
+        dg.add_uint32(5555) # zone_id
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint32(1234) # parent_id
+        dg.add_uint32(5555) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(8888) # do_id
+        dg.add_uint32(999999) # setRequired1
+        self.assertTrue(client.expect(dg))
+
+        # Now the CA discovers the second object...
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(7777) # do_id
+        dg.add_uint32(1234) # parent_id
+        dg.add_uint32(4444) # zone_id
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string('What cause have I to feel glad?')
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER)
+        dg.add_uint32(1234) # parent_id
+        dg.add_uint32(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(7777) # do_id
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string('What cause have I to feel glad?')
+        self.assertTrue(client.expect(dg))
+
+        # And the CA is done opening the interest.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1234)
+        dg.add_uint16(2)
+        dg.add_uint32(5555) # Zone 1
+        dg.add_uint32(4444) # Zone 2
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(1)
+        dg.add_uint32(2)
+        self.assertTrue(client.expect(dg))
+
+        # Now, let's move the objects around...
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg.add_uint32(8888) # do_id
+        dg.add_uint32(1234) # new_parent
+        dg.add_uint32(4444) # new_zone
+        dg.add_uint32(1234) # old_parent
+        dg.add_uint32(5555) # old_zone
+        self.server.send(dg)
+
+        # The client should get a zone change notification.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_uint32(8888)
+        dg.add_uint32(1234)
+        dg.add_uint32(4444)
+        self.assertTrue(client.expect(dg))
+
+        # How about moving the other object outside of interest?
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg.add_uint32(7777) # do_id
+        dg.add_uint32(1234) # new_parent
+        dg.add_uint32(1111) # new_zone
+        dg.add_uint32(1234) # old_parent
+        dg.add_uint32(4444) # old_zone
+        self.server.send(dg)
+
+        # This time the client should have the object disabled.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(7777)
+        self.assertTrue(client.expect(dg))
+
+        client.close()
+
 if __name__ == '__main__':
     unittest.main()
