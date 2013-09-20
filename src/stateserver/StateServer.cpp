@@ -8,11 +8,11 @@
 #include "StateServer.h"
 
 
-ConfigVariable<channel_t> cfg_channel("control", 0);
+static ConfigVariable<channel_t> control_channel("control", 0);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
-	channel_t channel = cfg_channel.get_rval(m_roleconfig);
+	channel_t channel = control_channel.get_rval(m_roleconfig);
 	MessageDirector::singleton.subscribe_channel(this, channel);
 
 	std::stringstream name;
