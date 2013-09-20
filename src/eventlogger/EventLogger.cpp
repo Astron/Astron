@@ -111,7 +111,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 		*p = 0;
 
 		*m_file << ",\"" << cleaned << '"';
-		delete cleaned;
+		delete [] cleaned;
 	}
 
 	*m_file << "\r\n" << std::flush;
