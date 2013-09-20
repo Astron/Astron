@@ -275,5 +275,24 @@ class TestClientAgent(unittest.TestCase):
         # Client should get booted:
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
+    def test_receive_update(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(response)
+        dg.add_string('It... is... ON!')
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(1234)
+        dg.add_uint16(response)
+        dg.add_string('It... is... ON!')
+        self.assertTrue(client.expect(dg))
+
+        client.close()
+
 if __name__ == '__main__':
     unittest.main()
