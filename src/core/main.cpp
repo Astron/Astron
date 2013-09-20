@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 		mainlog.fatal() << "Failed to open configuration file." << std::endl;
 		return 1;
 	}
-	
+
 	if (!g_config->load(file))
 	{
 		mainlog.fatal() << "Could not parse configuration file!" << std::endl;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	catch(std::exception &e)
 	{
 		mainlog.fatal() << "Exception from the network io service: "
-		            << e.what() << std::endl;
+		                << e.what() << std::endl;
 	}
 
 	//gDCF->read("filename.dc");

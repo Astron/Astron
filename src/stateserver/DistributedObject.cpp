@@ -8,8 +8,8 @@
 #include "DistributedObject.h"
 
 DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass, uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
-m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
-m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
+	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
+	m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -85,9 +85,9 @@ void DistributedObject::append_other_data(Datagram &dg)
 void DistributedObject::send_zone_entry(channel_t destination)
 {
 	Datagram dg(destination, m_do_id,
-				m_ram_fields.size() ?
-				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
-				STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+	            m_ram_fields.size() ?
+	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
 	append_required_data(dg);
 	if(m_ram_fields.size())
 		append_other_data(dg);
@@ -250,7 +250,7 @@ bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
 	if(!field)
 	{
 		m_log->error() << "Received query for missing field ID="
-						<< field_id << std::endl;
+		               << field_id << std::endl;
 		return false;
 	}
 

@@ -59,27 +59,27 @@ std::ostream &Logger::log(LogSeverity sev)
 	const char *sevtext;
 
 	switch(sev) {
-	case LSEVERITY_SPAM:
-		sevtext = "SPAM";
-		break;
-	case LSEVERITY_DEBUG:
-		sevtext = "DEBUG";
-		break;
-	case LSEVERITY_INFO:
-		sevtext = "INFO";
-		break;
-	case LSEVERITY_WARNING:
-		sevtext = "WARNING";
-		break;
-	case LSEVERITY_SECURITY:
-		sevtext = "SECURITY";
-		break;
-	case LSEVERITY_ERROR:
-		sevtext = "ERROR";
-		break;
-	case LSEVERITY_FATAL:
-		sevtext = "FATAL";
-		break;
+		case LSEVERITY_SPAM:
+			sevtext = "SPAM";
+			break;
+		case LSEVERITY_DEBUG:
+			sevtext = "DEBUG";
+			break;
+		case LSEVERITY_INFO:
+			sevtext = "INFO";
+			break;
+		case LSEVERITY_WARNING:
+			sevtext = "WARNING";
+			break;
+		case LSEVERITY_SECURITY:
+			sevtext = "SECURITY";
+			break;
+		case LSEVERITY_ERROR:
+			sevtext = "ERROR";
+			break;
+		case LSEVERITY_FATAL:
+			sevtext = "FATAL";
+			break;
 	}
 
 	time_t rawtime;

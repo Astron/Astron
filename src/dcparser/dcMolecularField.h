@@ -29,40 +29,40 @@ class DCParameter;
 //               be treated as a unit.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_DIRECT DCMolecularField : public DCField {
-public:
-  DCMolecularField(const string &name, DCClass *dclass);
+	public:
+		DCMolecularField(const string &name, DCClass *dclass);
 
-PUBLISHED:
-  virtual DCMolecularField *as_molecular_field();
-  virtual const DCMolecularField *as_molecular_field() const;
+	PUBLISHED:
+		virtual DCMolecularField *as_molecular_field();
+		virtual const DCMolecularField *as_molecular_field() const;
 
-  int get_num_atomics() const;
-  DCAtomicField *get_atomic(int n) const;
+		int get_num_atomics() const;
+		DCAtomicField *get_atomic(int n) const;
 
-public:
-  void add_atomic(DCAtomicField *atomic);
+	public:
+		void add_atomic(DCAtomicField *atomic);
 
-  virtual void output(ostream &out, bool brief) const;
-  virtual void write(ostream &out, bool brief, int indent_level) const;
-  virtual void generate_hash(HashGenerator &hashgen) const;
+		virtual void output(ostream &out, bool brief) const;
+		virtual void write(ostream &out, bool brief, int indent_level) const;
+		virtual void generate_hash(HashGenerator &hashgen) const;
 
-  virtual DCPackerInterface *get_nested_field(int n) const;
+		virtual DCPackerInterface *get_nested_field(int n) const;
 
-protected:
-  virtual bool do_check_match(const DCPackerInterface *other) const;
-  virtual bool do_check_match_molecular_field(const DCMolecularField *other) const;
+	protected:
+		virtual bool do_check_match(const DCPackerInterface *other) const;
+		virtual bool do_check_match_molecular_field(const DCMolecularField *other) const;
 
-private:
-  // These members define the primary interface to the molecular field
-  // definition as read from the file.
-  typedef pvector<DCAtomicField *> Fields;
-  Fields _fields;
-  bool _got_keywords;
+	private:
+		// These members define the primary interface to the molecular field
+		// definition as read from the file.
+		typedef pvector<DCAtomicField *> Fields;
+		Fields _fields;
+		bool _got_keywords;
 
-  DCParameter *get_next_pack_element();
+		DCParameter *get_next_pack_element();
 
-  typedef pvector<DCPackerInterface *> NestedFields;
-  NestedFields _nested_fields;
+		typedef pvector<DCPackerInterface *> NestedFields;
+		NestedFields _nested_fields;
 };
 
 #endif

@@ -26,38 +26,38 @@ class HashGenerator;
 //               be set on a particular field.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_DIRECT DCKeywordList {
-public:
-  DCKeywordList();
-  DCKeywordList(const DCKeywordList &copy);
-  void operator = (const DCKeywordList &copy);
-  ~DCKeywordList();
+	public:
+		DCKeywordList();
+		DCKeywordList(const DCKeywordList &copy);
+		void operator = (const DCKeywordList &copy);
+		~DCKeywordList();
 
-PUBLISHED:
-  bool has_keyword(const string &name) const;
-  bool has_keyword(const DCKeyword *keyword) const;
-  int get_num_keywords() const;
-  const DCKeyword *get_keyword(int n) const;
-  const DCKeyword *get_keyword_by_name(const string &name) const;
+	PUBLISHED:
+		bool has_keyword(const string &name) const;
+		bool has_keyword(const DCKeyword *keyword) const;
+		int get_num_keywords() const;
+		const DCKeyword *get_keyword(int n) const;
+		const DCKeyword *get_keyword_by_name(const string &name) const;
 
-  bool compare_keywords(const DCKeywordList &other) const;
+		bool compare_keywords(const DCKeywordList &other) const;
 
-public:
-  void copy_keywords(const DCKeywordList &other);
+	public:
+		void copy_keywords(const DCKeywordList &other);
 
-  bool add_keyword(const DCKeyword *keyword);
-  void clear_keywords();
+		bool add_keyword(const DCKeyword *keyword);
+		void clear_keywords();
 
-  void output_keywords(ostream &out) const;
-  void generate_hash(HashGenerator &hashgen) const;
+		void output_keywords(ostream &out) const;
+		void generate_hash(HashGenerator &hashgen) const;
 
-private:
-  typedef pvector<const DCKeyword *> Keywords;
-  Keywords _keywords;
+	private:
+		typedef pvector<const DCKeyword *> Keywords;
+		Keywords _keywords;
 
-  typedef pmap<string, const DCKeyword *> KeywordsByName;
-  KeywordsByName _keywords_by_name;
+		typedef pmap<string, const DCKeyword *> KeywordsByName;
+		KeywordsByName _keywords_by_name;
 
-  int _flags;
+		int _flags;
 };
 
 #endif

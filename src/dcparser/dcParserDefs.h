@@ -31,7 +31,7 @@ void dc_init_parser(istream &in, const string &filename, DCFile &file);
 void dc_init_parser_parameter_value(istream &in, const string &filename,
                                     DCPacker &packer);
 void dc_init_parser_parameter_description(istream &in, const string &filename,
-                                          DCFile *file);
+        DCFile *file);
 DCField *dc_get_parameter_description();
 void dc_cleanup_parser();
 int dcyyparse();
@@ -46,23 +46,23 @@ extern DCFile *dc_file;
 // declare it externally, here.
 
 class DCTokenType {
-public:
-  union U {
-    int s_int;
-    unsigned int s_uint;
-    PN_int64 int64;
-    PN_uint64 uint64;
-    double real;
-    bool flag;
-    DCClass *dclass;
-    DCSwitch *dswitch;
-    DCField *field;
-    DCAtomicField *atomic;
-    DCSubatomicType subatomic;
-    DCParameter *parameter;
-    const DCKeyword *keyword;
-  } u;
-  string str;
+	public:
+		union U {
+			int s_int;
+			unsigned int s_uint;
+			PN_int64 int64;
+			PN_uint64 uint64;
+			double real;
+			bool flag;
+			DCClass *dclass;
+			DCSwitch *dswitch;
+			DCField *field;
+			DCAtomicField *atomic;
+			DCSubatomicType subatomic;
+			DCParameter *parameter;
+			const DCKeyword *keyword;
+		} u;
+		string str;
 };
 
 // The yacc-generated code expects to use the symbol 'YYSTYPE' to

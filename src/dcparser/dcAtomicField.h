@@ -32,42 +32,42 @@
 //               remote procedure method.
 ////////////////////////////////////////////////////////////////////
 class EXPCL_DIRECT DCAtomicField : public DCField {
-public:
-  DCAtomicField(const string &name, DCClass *dclass, bool bogus_field);
-  virtual ~DCAtomicField();
+	public:
+		DCAtomicField(const string &name, DCClass *dclass, bool bogus_field);
+		virtual ~DCAtomicField();
 
-PUBLISHED:
-  virtual DCAtomicField *as_atomic_field();
-  virtual const DCAtomicField *as_atomic_field() const;
+	PUBLISHED:
+		virtual DCAtomicField *as_atomic_field();
+		virtual const DCAtomicField *as_atomic_field() const;
 
-  int get_num_elements() const;
-  DCParameter *get_element(int n) const;
+		int get_num_elements() const;
+		DCParameter *get_element(int n) const;
 
-  // These five methods are deprecated and will be removed soon.
-  string get_element_default(int n) const;
-  bool has_element_default(int n) const;
-  string get_element_name(int n) const;
-  DCSubatomicType get_element_type(int n) const;
-  int get_element_divisor(int n) const;
+		// These five methods are deprecated and will be removed soon.
+		string get_element_default(int n) const;
+		bool has_element_default(int n) const;
+		string get_element_name(int n) const;
+		DCSubatomicType get_element_type(int n) const;
+		int get_element_divisor(int n) const;
 
-public:
-  void add_element(DCParameter *element);
+	public:
+		void add_element(DCParameter *element);
 
-  virtual void output(ostream &out, bool brief) const;
-  virtual void write(ostream &out, bool brief, int indent_level) const;
-  virtual void generate_hash(HashGenerator &hashgen) const;
+		virtual void output(ostream &out, bool brief) const;
+		virtual void write(ostream &out, bool brief, int indent_level) const;
+		virtual void generate_hash(HashGenerator &hashgen) const;
 
-  virtual DCPackerInterface *get_nested_field(int n) const;
+		virtual DCPackerInterface *get_nested_field(int n) const;
 
-protected:
-  virtual bool do_check_match(const DCPackerInterface *other) const;
-  virtual bool do_check_match_atomic_field(const DCAtomicField *other) const;
+	protected:
+		virtual bool do_check_match(const DCPackerInterface *other) const;
+		virtual bool do_check_match_atomic_field(const DCAtomicField *other) const;
 
-private:
-  void output_element(ostream &out, bool brief, DCParameter *element) const;
+	private:
+		void output_element(ostream &out, bool brief, DCParameter *element) const;
 
-  typedef pvector<DCParameter *> Elements;
-  Elements _elements;
+		typedef pvector<DCParameter *> Elements;
+		Elements _elements;
 };
 
 #include "dcAtomicField.I"

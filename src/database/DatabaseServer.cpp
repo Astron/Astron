@@ -19,10 +19,10 @@ class DatabaseServer : public Role
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
-							engine_type.get_rval(roleconfig),
-							roleconfig["engine"],
-							min_id.get_rval(roleconfig),
-							max_id.get_rval(roleconfig))),
+			                engine_type.get_rval(roleconfig),
+			                roleconfig["engine"],
+			                min_id.get_rval(roleconfig),
+			                max_id.get_rval(roleconfig))),
 			m_control_channel(control_channel.get_rval(roleconfig)),
 			m_min_id(min_id.get_rval(roleconfig)),
 			m_max_id(max_id.get_rval(roleconfig))
@@ -96,7 +96,7 @@ class DatabaseServer : public Role
 					catch(std::exception &e)
 					{
 						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
-							<< e.what() << std::endl;
+						               << e.what() << std::endl;
 
 						resp.add_uint32(0);
 						send(resp);
@@ -115,7 +115,7 @@ class DatabaseServer : public Role
 								if(!field->has_default_value())
 								{
 									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
-										"object of type " << dcc->get_name();
+									               "object of type " << dcc->get_name();
 
 									resp.add_uint32(0);
 									send(resp);
@@ -166,7 +166,7 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
-							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(it->second.begin(), it->second.end()) << std::endl; 
+							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(it->second.begin(), it->second.end()) << std::endl;
 						}
 					}
 					else

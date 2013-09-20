@@ -144,8 +144,8 @@ void EventLogger::start_receive()
 {
 	m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
 	                             m_remote, boost::bind(&EventLogger::handle_receive, this,
-	                             boost::asio::placeholders::error,
-	                             boost::asio::placeholders::bytes_transferred));
+	                                     boost::asio::placeholders::error,
+	                                     boost::asio::placeholders::bytes_transferred));
 }
 
 void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)

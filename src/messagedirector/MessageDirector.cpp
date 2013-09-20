@@ -339,7 +339,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-				<< it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
+			              << it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
 			Datagram dg(CONTROL_REMOVE_RANGE);
 
 			channel_t lo = it->lower();
@@ -369,7 +369,7 @@ void MessageDirector::start_accept()
 	tcp::socket *socket = new tcp::socket(io_service);
 	tcp::endpoint peerEndpoint;
 	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept,
-		this, socket, boost::asio::placeholders::error));
+	                         this, socket, boost::asio::placeholders::error));
 }
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)

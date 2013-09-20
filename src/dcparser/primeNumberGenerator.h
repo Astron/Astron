@@ -35,14 +35,14 @@ typedef vector<int> vector_int;
 //               n.
 ////////////////////////////////////////////////////////////////////
 class PrimeNumberGenerator {
-public:
-  PrimeNumberGenerator();
+	public:
+		PrimeNumberGenerator();
 
-  int operator [] (int n);
+		int operator [] (int n);
 
-private:
-  typedef vector_int Primes;
-  Primes _primes;
+	private:
+		typedef vector_int Primes;
+		Primes _primes;
 };
 
 #endif

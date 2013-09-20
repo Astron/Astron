@@ -5,7 +5,7 @@
 static ConfigVariable<std::string> target_addr("general/eventlogger", "");
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
-                             m_socket(io_service, udp::v4()), m_enabled(false)
+	m_socket(io_service, udp::v4()), m_enabled(false)
 {
 
 }

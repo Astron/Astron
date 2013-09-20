@@ -109,7 +109,7 @@ class MDPerformanceTest
 			}
 
 			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
-				"this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
+			                  "this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
 		}
 
 		void speed_test_no_memcpy()
@@ -133,7 +133,7 @@ class MDPerformanceTest
 			}
 
 			mdperf_log.info() << "An average of " << num_messages << " messages were processed. "
-				"this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
+			                  "this comes out to be " << num_messages/MD_PERF_TIME << " messages/second" << std::endl;
 		}
 };
 

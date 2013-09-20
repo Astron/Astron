@@ -29,27 +29,27 @@ class HashGenerator;
 //               "broadcast" or "airecv".
 ////////////////////////////////////////////////////////////////////
 class EXPCL_DIRECT DCKeyword : public DCDeclaration {
-public:
-  DCKeyword(const string &name, int historical_flag = ~0);
-  virtual ~DCKeyword();
+	public:
+		DCKeyword(const string &name, int historical_flag = ~0);
+		virtual ~DCKeyword();
 
-PUBLISHED:
-  const string &get_name() const;
+	PUBLISHED:
+		const string &get_name() const;
 
-public:
-  int get_historical_flag() const;
-  void clear_historical_flag();
+	public:
+		int get_historical_flag() const;
+		void clear_historical_flag();
 
-  virtual void output(ostream &out, bool brief) const;
-  virtual void write(ostream &out, bool brief, int indent_level) const;
-  void generate_hash(HashGenerator &hashgen) const;
+		virtual void output(ostream &out, bool brief) const;
+		virtual void write(ostream &out, bool brief, int indent_level) const;
+		void generate_hash(HashGenerator &hashgen) const;
 
-private:
-  const string _name;
+	private:
+		const string _name;
 
-  // This flag is only kept for historical reasons, so we can preserve
-  // the file's hash code if no new flags are in use.
-  int _historical_flag;
+		// This flag is only kept for historical reasons, so we can preserve
+		// the file's hash code if no new flags are in use.
+		int _historical_flag;
 };
 
 #endif
