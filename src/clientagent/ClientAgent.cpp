@@ -162,12 +162,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				m_log->error() << "Exception while parsing client dg. DCing for truncated "
 					"e.what() " << e.what() << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "");
+				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM);
 				return;
 			}
 		}
 
-		void send_disconnect(uint16_t reason, const std::string &error_string)
+		void send_disconnect(uint16_t reason, const std::string &error_string = "")
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_GO_GET_LOST);
@@ -185,7 +185,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				m_log->error() << m_client_name << "SECURITY WARNING: Client sent packet other than "
 					"CLIENT_HELLO, pre-hello" << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "");
+				send_disconnect(CLIENT_DISCONNECT_NO_HELLO);
 				return;
 			}
 
@@ -195,7 +195,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				m_log->error() << m_client_name << "Wrong DC hash. Got: "
 					<< std::hex << dc_hash << " expected " <<
 					gDCF->get_hash() << std::dec << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, "");
+				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH);
 				return;
 			}
 			std::string version = dgi.read_string();
@@ -234,7 +234,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					{
 						if(!uberdog["anonymous"].as<bool>())
 						{
-							send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "");
+							send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
 							return;
 						}
 						dcc = gDCF->get_class_by_name(uberdog["class"].as<std::string>());
@@ -242,7 +242,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				if(!dcc)
 				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "");
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
 					return;
 				}
 
@@ -262,7 +262,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, "");
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
 		}
@@ -290,7 +290,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				if(!dcc)
 				{
 					//TODO: Search through list of DOs visible to the CA.
-					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "");
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
 					return;
 				}
 
@@ -310,7 +310,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, "");
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
 		}
