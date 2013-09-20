@@ -4,22 +4,22 @@
 
 class NetworkClient
 {
-protected:
-	NetworkClient();
-	NetworkClient(boost::asio::ip::tcp::socket *socket);
-	virtual ~NetworkClient();
-	void set_socket(boost::asio::ip::tcp::socket *socket);
+	protected:
+		NetworkClient();
+		NetworkClient(boost::asio::ip::tcp::socket *socket);
+		virtual ~NetworkClient();
+		void set_socket(boost::asio::ip::tcp::socket *socket);
 
-	virtual void network_datagram(Datagram &dg) = 0;
-	virtual void network_disconnect() = 0;
-	void network_send(Datagram &dg);
-private:
-	void start_receive();
-	void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
-	boost::asio::ip::tcp::socket *m_socket;
+		virtual void network_datagram(Datagram &dg) = 0;
+		virtual void network_disconnect() = 0;
+		void network_send(Datagram &dg);
+	private:
+		void start_receive();
+		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
+		boost::asio::ip::tcp::socket *m_socket;
 
-	uint8_t* m_buffer;
-	uint16_t m_bytes_to_go;
-	uint16_t m_bufsize;
-	bool m_is_data;
+		uint8_t* m_buffer;
+		uint16_t m_bytes_to_go;
+		uint16_t m_bufsize;
+		bool m_is_data;
 };

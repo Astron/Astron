@@ -36,8 +36,10 @@ void NetworkClient::set_socket(tcp::socket *socket)
 void NetworkClient::start_receive()
 {
 	uint16_t offset = m_bufsize - m_bytes_to_go;
-	m_socket->async_receive(boost::asio::buffer(m_buffer+offset, m_bufsize-offset), boost::bind(&NetworkClient::read_handler,
-		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	m_socket->async_receive(boost::asio::buffer(m_buffer + offset, m_bufsize - offset),
+	                        boost::bind(&NetworkClient::read_handler, this,
+	                                    boost::asio::placeholders::error,
+	                                    boost::asio::placeholders::bytes_transferred));
 }
 
 void NetworkClient::network_send(Datagram &dg)

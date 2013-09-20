@@ -7,7 +7,8 @@
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197");
 static ConfigVariable<std::string> output_format("output", "events-%Y%m%d-%H%M%S.csv");
 
-EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig), m_log("eventlogger", "Event Logger")
+EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
+	m_log("eventlogger", "Event Logger")
 {
 	bind(bind_addr.get_rval(roleconfig));
 
@@ -26,7 +27,7 @@ void EventLogger::bind(const std::string &addr)
 {
 	m_log.info() << "Opening UDP socket..." << std::endl;
 	std::string str_ip = addr;
-	std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 	str_ip = str_ip.substr(0, str_ip.find(':', 0));
 	udp::resolver resolver(io_service);
 	udp::resolver::query query(str_ip, str_port);
@@ -44,7 +45,9 @@ void EventLogger::open_log()
 	m_log.debug() << "New log filename: " << filename << std::endl;
 
 	if(m_file)
+	{
 		m_file->close();
+	}
 
 	m_file = new ofstream(filename);
 
@@ -93,7 +96,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 
 		// Okay, there's other stuff in this column, so we're going to quote:
 
-		char *cleaned = new char[it->length()*2+1];
+		char *cleaned = new char[it->length() * 2 + 1];
 
 		char *p = cleaned;
 		for(const char *c = it->c_str(); *c; ++c)
@@ -111,7 +114,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 		*p = 0;
 
 		*m_file << ",\"" << cleaned << '"';
-		delete cleaned;
+		delete [] cleaned;
 	}
 
 	*m_file << "\r\n" << std::flush;
@@ -144,8 +147,8 @@ void EventLogger::start_receive()
 {
 	m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
 	                             m_remote, boost::bind(&EventLogger::handle_receive, this,
-	                             boost::asio::placeholders::error,
-	                             boost::asio::placeholders::bytes_transferred));
+	                                     boost::asio::placeholders::error,
+	                                     boost::asio::placeholders::bytes_transferred));
 }
 
 void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)

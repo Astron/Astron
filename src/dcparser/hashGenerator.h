@@ -23,19 +23,20 @@
 // Description : This class generates an arbitrary hash number from a
 //               sequence of ints.
 ////////////////////////////////////////////////////////////////////
-class HashGenerator {
-public:
-  HashGenerator();
+class HashGenerator
+{
+	public:
+		HashGenerator();
 
-  void add_int(int num);
-  void add_string(const string &str);
+		void add_int(int num);
+		void add_string(const string &str);
 
-  unsigned long get_hash() const;
+		unsigned long get_hash() const;
 
-private:
-  long _hash;
-  int _index;
-  PrimeNumberGenerator _primes;
+	private:
+		long _hash;
+		int _index;
+		PrimeNumberGenerator _primes;
 };
 
 #endif
