@@ -42,7 +42,7 @@ void EventSender::send(const Datagram &dg)
 	}
 
 	m_log.spam() << "Sending event..." << std::endl;
-	m_socket.send_to(boost::asio::buffer(dg.get_data(), dg.get_buf_end()),
+	m_socket.send_to(boost::asio::buffer(dg.get_data(), dg.size()),
 	                 m_target);
 }
 

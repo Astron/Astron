@@ -51,7 +51,7 @@ private:
 	std::ostream m_output;
 };
 
-extern Logger *gLogger;
+extern Logger *g_logger;
 
 class LogCategory {
 public:
@@ -59,18 +59,18 @@ public:
 	{
 	}
 
-	LogCategory(const char *id, const std::string &name) : m_id(id), m_name(name)
+	LogCategory(const char* id, const std::string &name) : m_id(id), m_name(name)
 	{
 	}
 
-	LogCategory(const char *id, const char *name) : m_id(id), m_name(name)
+	LogCategory(const char* id, const char* name) : m_id(id), m_name(name)
 	{
 	}
 
 #define F(level, severity) \
 	std::ostream &level() \
 	{ \
-		std::ostream &out = gLogger->log(severity); \
+		std::ostream &out = g_logger->log(severity); \
 		out << m_name << ": "; \
 		return out; \
 	}

@@ -13,7 +13,7 @@ private:
 	YAML::Node m_node;
 };
 
-extern ConfigFile *gConfig;
+extern ConfigFile *g_config;
 
 typedef YAML::Node RoleConfig;
 typedef YAML::Node DBEngineConfig;
@@ -62,6 +62,6 @@ public:
 
 	T get_val()
 	{
-		return get_rval(gConfig->m_node);
+		return get_rval(g_config->m_node);
 	}
 };

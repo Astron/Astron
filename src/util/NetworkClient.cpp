@@ -5,12 +5,12 @@
 
 using boost::asio::ip::tcp;
 
-NetworkClient::NetworkClient() : m_socket(NULL), m_buffer(new char[2]),
+NetworkClient::NetworkClient() : m_socket(NULL), m_buffer(new uint8_t[2]),
 	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
 {
 }
 
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new char[2]),
+NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new uint8_t[2]),
 	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
 {
 	start_receive();
@@ -35,7 +35,7 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::start_receive()
 {
-	unsigned short offset = m_bufsize - m_bytes_to_go;
+	uint16_t offset = m_bufsize - m_bytes_to_go;
 	m_socket->async_receive(boost::asio::buffer(m_buffer+offset, m_bufsize-offset), boost::bind(&NetworkClient::read_handler,
 		this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
@@ -43,9 +43,9 @@ void NetworkClient::start_receive()
 void NetworkClient::network_send(Datagram &dg)
 {
 	//TODO: make this asynch if necessary
-	unsigned short len = dg.get_buf_end();
-	m_socket->send(boost::asio::buffer((char*)&len, 2));
-	m_socket->send(boost::asio::buffer(dg.get_data(), dg.get_buf_end()));
+	uint16_t len = dg.size();
+	m_socket->send(boost::asio::buffer((uint8_t*)&len, 2));
+	m_socket->send(boost::asio::buffer(dg.get_data(), dg.size()));
 }
 
 void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
@@ -61,18 +61,18 @@ void NetworkClient::read_handler(const boost::system::error_code &ec, size_t byt
 		{
 			if(!m_is_data)
 			{
-				m_bufsize = *(unsigned short*)m_buffer;
+				m_bufsize = *(uint16_t*)m_buffer;
 				delete [] m_buffer;
-				m_buffer = new char[m_bufsize];
+				m_buffer = new uint8_t[m_bufsize];
 				m_bytes_to_go = m_bufsize;
 				m_is_data = true;
 			}
 			else
 			{
-				Datagram dg(std::string(m_buffer, m_bufsize));
+				Datagram dg(m_buffer, m_bufsize);
 				delete [] m_buffer;//dg makes a copy
 				m_bufsize = 2;
-				m_buffer = new char[m_bufsize];
+				m_buffer = new uint8_t[m_bufsize];
 				m_bytes_to_go = m_bufsize;
 				m_is_data = false;
 				network_datagram(dg);

@@ -123,7 +123,7 @@ void EventLogger::process_packet(const Datagram &dg)
 
 	std::vector<std::string> msg;
 
-	while(dgi.tell() != dg.get_buf_end())
+	while(dgi.tell() != dg.size())
 	{
 		try
 		{
