@@ -354,8 +354,8 @@ The following is a list of database control messages:
 
     uint8 ret_code          // SUCCESS = 0
                             // FAILURE_NOT_FOUND = 1
-                            // FAILURE_VALUES_NOT_EQUAL = 2 (only: UPDATE_STORED_OBJECT_IF_EQUALS)
-                            // FAILURE_INVALID_FIELDS = 3 (only: UPDATE_STORED_OBJECT_IF_EQUALS)
+                            // FAILURE_INVALID_FIELD = 2
+                            // FAILURE_VALUE_NOT_EQUAL = 3 (only: UPDATE_STORED_OBJECT_IF_EQUALS)
 
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
 
@@ -405,6 +405,7 @@ The verify_code is 0x4b696c6c (Ascii "Kill") and is required.
     `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`  
 > This message selects a number of fields from an object in the database.  
 It returns the select fields in serialized form, in the order requested -- if found.
+Returns one of {SUCCESS, FAILURE_NOT_FOUND, FAILURE_INVALID_FIELD}.
 
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
@@ -412,6 +413,7 @@ It returns the select fields in serialized form, in the order requested -- if fo
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
     `args(uint32 context, uint8 ret_code, [uint16 dclass_id, FIELD_DATA])`  
 > This message queries all of the database fields from the object and returns the response -- if found.
+Returns one of {SUCCESS, FAILURE_NOT_FOUND}.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
@@ -443,10 +445,10 @@ particularily when the new values are derived or dependent on the old values.
 
 > If any of the given _old_ values don't match then the entire transaction fails.
 In this case, the current values of all given fields will be returned in order
-in serialized form, after 'FAILURE_VALUES_NOT_EQUAL'.
+in serialized form, after 'FAILURE_VALUE_NOT_EQUAL'.
 
 > If any of the given fields are not database fields, the entire transaction fails,
-In this case the return code is 'FAILURE_INVALID_FIELDS'.
+In this case the return code is 'FAILURE_INVALID_FIELD'.
 The current values are not returned.
 
 

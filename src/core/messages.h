@@ -14,8 +14,8 @@ typedef uint64_t channel_t;
 // Return code constants
 #define MSG_SUCCESS 0
 #define MSG_FAILURE_NOT_FOUND 1
-#define MSG_FAILURE_VALUES_NOT_EQUAL 2
-#define MSG_FAILURE_INVALID_FIELDS 3
+#define MSG_FAILURE_VALUE_NOT_EQUAL 2
+#define MSG_FAILURE_INVALID_FIELD 3
 
 // Control message-type constants
 #define CONTROL_ADD_CHANNEL 2001
