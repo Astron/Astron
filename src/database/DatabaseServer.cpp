@@ -3,8 +3,8 @@
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
 
-ConfigVariable<channel_t> control_channel("control", 0);
-ConfigVariable<uint32_t> min_id("generate/min", 0);
+ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
+ConfigVariable<uint32_t> min_id("generate/min", INVALID_DO_ID);
 ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
 ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
@@ -64,7 +64,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
-						resp.add_uint32(0);
+						resp.add_uint32(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
@@ -98,7 +98,7 @@ class DatabaseServer : public Role
 						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 							<< e.what() << std::endl;
 
-						resp.add_uint32(0);
+						resp.add_uint32(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
@@ -117,7 +117,7 @@ class DatabaseServer : public Role
 									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
 										"object of type " << dcc->get_name() << std::endl;
 
-									resp.add_uint32(0);
+									resp.add_uint32(INVALID_DO_ID);
 									send(resp);
 									return;
 								}
@@ -133,10 +133,10 @@ class DatabaseServer : public Role
 					// Create object in database
 					m_log->spam() << "Creating stored object..." << std::endl;
 					uint32_t do_id = m_db_engine->create_object(dbo);
-					if(do_id == 0 || do_id < m_min_id || do_id > m_max_id)
+					if(do_id == INVALID_DO_ID || do_id < m_min_id || do_id > m_max_id)
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
-						resp.add_uint32(0);
+						resp.add_uint32(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
@@ -162,7 +162,7 @@ class DatabaseServer : public Role
 					if(m_db_engine->get_object(do_id, dbo))
 					{
 						m_log->spam() << "... object found!" << std::endl;
-						resp.add_uint8(1);
+						resp.add_uint8(MSG_SUCCESS);
 						resp.add_uint16(dbo.dc_id);
 						resp.add_uint16(dbo.fields.size());
 						for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
@@ -175,7 +175,7 @@ class DatabaseServer : public Role
 					else
 					{
 						m_log->spam() << "... object not found." << std::endl;
-						resp.add_uint8(0);
+						resp.add_uint8(MSG_FAILURE_NOT_FOUND);
 					}
 					send(resp);
 				}

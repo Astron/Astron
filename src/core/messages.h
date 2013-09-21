@@ -5,6 +5,17 @@ typedef uint64_t channel_t;
 
 // Channel constants
 #define CONTROL_MESSAGE 4001
+#define INVALID_CHANNEL 0
+
+// DO ID Constants
+#define INVALID_DO_ID 0
+#define INVALID_ZONE 0
+
+// Return code constants
+#define MSG_SUCCESS 0
+#define MSG_FAILURE_NOT_FOUND 1
+#define MSG_FAILURE_VALUES_NOT_EQUAL 2
+#define MSG_FAILURE_INVALID_FIELDS 3
 
 // Control message-type constants
 #define CONTROL_ADD_CHANNEL 2001
