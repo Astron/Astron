@@ -433,7 +433,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 
 			uint32_t dc_hash = dgi.read_uint32();
-			if(dc_hash != gDCF->get_hash())
+			const static uint32_t expected_hash = gDCF->get_hash();
+			if(dc_hash != expected_hash)
 			{
 				m_log->error() << m_client_name << "Wrong DC hash. Got: "
 					<< std::hex << dc_hash << " expected " <<
@@ -441,9 +442,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH);
 				return;
 			}
-			std::string version = dgi.read_string();
 
-			if(version != server_version.get_rval(m_roleconfig))
+			std::string version = dgi.read_string();
+			const static std::string expected_version = server_version.get_rval(m_roleconfig);
+			if(version != expected_version)
 			{
 				m_log->error() << m_client_name << "Wrong Server version. Got: "
 					<< version << " expected: " << server_version.get_rval(m_roleconfig);
