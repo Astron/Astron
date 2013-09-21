@@ -1,0 +1,39 @@
+### Control Messages ###
+| Message                   | Type Id | Format                      |
+| ------------------------- |:-------:| --------------------------- |
+| CONTROL_SET_CON_NAME      |    2004 | `string name`               |
+| CONTROL_SET_CON_URL       |    2005 | `string url`                |
+| CONTROL_ADD_POST_REMOVE   |    2010 | `blob datagram`             |
+| CONTROL_CLEAR_POST_REMOVE |    2011 |                             |
+| CONTROL_ADD_CHANNEL       |    2001 | `uint64 channel`            |
+| CONTROL_REMOVE_CHANNEL    |    2002 | `uint64 channel`            |
+| CONTROL_ADD_RANGE         |    2008 | `uint64 low`, `uint64 high` |
+| CONTROL_REMOVE_RANGE      |    2009 | `uint64 low`, `uint64 high` |
+
+### State Server Messages ###
+| Message                                         | Type Id | Format                                                                          |
+| ----------------------------------------------- |:-------:| ------------------------------------------------------------------------------- |
+| STATESERVER_OBJECT_GENERATE_WITH_REQUIRED       |    2001 | `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `uint32 do_id`, `...` |
+| STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER |    2003 | `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `uint32 do_id`, `...` |
+| STATESERVER_SHARD_RESET                         |    2061 | `uint64 ai_channel`                                                             |
+
+### Distributed Object Messages ###
+| Message                                           | Type Id | Format                                                                                         |
+| ------------------------------------------------- |:-------:| ---------------------------------------------------------------------------------------------- |
+| STATESERVER_OBJECT_UPDATE_FIELD                   |    2004 | `uint32 do_id`, `uint16 field`, `<VALUE>`                                                      |
+| STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE          |    2005 | `uint32 do_id`, `<FIELD_DATA>`                                                                 |
+| STATESERVER_OBJECT_DELETE_RAM                     |    2007 | `uint32 do_id`                                                                                 |
+| STATESERVER_OBJECT_DELETE_DISK                    |    2060 | `uint32 do_id`                                                                                 |
+| STATESERVER_OBJECT_SET_ZONE                       |    2008 | `uint32 parent_id`, `uint32 zone_id`                                                           |
+| STATESERVER_OBJECT_CHANGE_ZONE                    |    2009 | `uint32 do_id`, `uint32 new_parent`, `uint32 new_zone`, `uint32 old_parent`, `uint32 old_zone` |
+| STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED_OTHER |    2066 | `uint16 dclass_id`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                       |
+| STATESERVER_OBJECT_QUERY_ZONE_ALL                 |    2021 | `uint32 parent_id`, `uint16 num_zones`, `[uint32 zone]*num_zones`                              |
+| STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE            |    2046 | `uint32 parent_id`, `uint16 num_zones`, `[uint32 zone]*num_zones`                              |
+| STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED       |    2065 | `uint16 dclass_id`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `...`                |
+| STATESERVER_OBJECT_LOCATE                         |    2022 | `uint32 context`                                                                               |
+| STATESERVER_OBJECT_LOCATE_RESP                    |    2023 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                         |
+| STATESERVER_OBJECT_QUERY_FIELD                    |    2024 | `uint32 do_id`, `uint16 field_id`, `uint32 context`                                            |
+| STATESERVER_OBJECT_QUERY_FIELD_RESP               |    2062 | `uint32 do_id`, `uint16 field_id`, `uint32 context` `uint8 success`, `[<VALUE>]`               |
+| STATESERVER_OBJECT_SET_AI_CHANNEL                 |    2045 | `uint32 do_id`, `uint64 ai_channel`                                                            |
+| STATESERVER_OBJECT_ENTER_AI_RECV                  |    2067 | `uint32 parent_id`, `uint32 zone_id`, `uint16 class_id`, `uint32 do_id`                        |
+| STATESERVER_OBJECT_LEAVING_AI_INTEREST            |    2033 | `uint32 do_id`                                                                                 |
