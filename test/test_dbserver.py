@@ -129,11 +129,11 @@ class DatabaseBaseTests(object):
         # Get failure from server
         dg = Datagram.create([20], 777, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP)
         dg.add_uint32(6) # Context
-        dg.add_uint8(FAILURE_NOT_SUCCESS)
+        dg.add_uint8(FAILURE_NOT_FOUND)
         self.assertTrue(self.conn.expect(dg))
 
         # Cleanup
-        for doid in doids:
+        for doid in doids
             self.deleteObject(20, doid)
         self.conn.send(Datagram.create_remove_channel(20))
 
@@ -585,3 +585,27 @@ class DatabaseBaseTests(object):
         # Cleanup
         self.deleteObject(70, doid)
         self.conn.send(Datagram.create_remove_channel(70))
+
+    def test_select(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(80))
+
+        # Create object
+        dg = Datagram.create([777], 80, DBSERVER_CREATE_STORED_OBJECT)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(5) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
+        self.conn.send(dg)
+
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        doid = dgi.read_uint32()
+
+        # Select the first field
+
+        # Cleanup
+        self.deleteObject(80, doid)
+        self.conn.send(Datagram.create_remove_channel(80))
