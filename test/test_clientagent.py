@@ -702,5 +702,125 @@ class TestClientAgent(unittest.TestCase):
 
         client.close()
 
+    def test_interest_overlap(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, 2)
+
+        # Open interest on two zones in 1235:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
+        dg.add_uint32(1235)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        client.send(dg)
+
+        # CA asks for objects...
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1235)
+        dg.add_uint16(2)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        self.assertTrue(self.server.expect(dg))
+
+        # Let's give 'em one...
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(54321) # do_id
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(2222) # zone_id
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(2222) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(54321) # do_id
+        dg.add_uint32(999999) # setRequired1
+        self.assertTrue(client.expect(dg))
+
+        # Nothing else!
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1235)
+        dg.add_uint16(2)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
+        self.assertTrue(client.expect(dg))
+
+        # Now, open a second, overlapping interest:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(7)
+        dg.add_uint32(8)
+        dg.add_uint32(1235)
+        dg.add_uint32(2222) # Zone 2 from interest above.
+        client.send(dg)
+
+        # CA doesn't have to ask, this interest is already there.
+        self.assertTrue(self.server.expect_none())
+
+        # And it tells the client that the interest is open:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(8)
+        self.assertTrue(client.expect(dg))
+
+        # Now, the client asks to kill the first interest...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(88)
+        client.send(dg)
+
+        # And only the interest dies...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(88)
+        self.assertTrue(client.expect(dg))
+
+        # ...with no activity happening on the server.
+        self.assertTrue(self.server.expect_none())
+
+        # But if we kill the SECOND interest...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint16(7)
+        dg.add_uint32(99)
+        client.send(dg)
+
+        # ...the object dies...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(54321)
+        self.assertTrue(client.expect(dg))
+
+        # ...the operation completes...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(7)
+        dg.add_uint32(99)
+        self.assertTrue(client.expect(dg))
+
+        # ...but still nothing on the server:
+        self.assertTrue(self.server.expect_none())
+
+        client.close()
+
 if __name__ == '__main__':
     unittest.main()
