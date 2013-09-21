@@ -640,24 +640,44 @@ class Client : public NetworkClient, public MDParticipantInterface
 				i.parent = parent;
 
 				i.zones.reserve((dg.get_buf_end()-dgi.tell())/sizeof(uint32_t));
+				std::list<uint32_t> new_zones;
 				for(uint16_t p = dgi.tell(); p != dg.get_buf_end(); p = dgi.tell())
 				{
 					uint32_t zone = dgi.read_uint32();
+					new_zones.insert(new_zones.end(), zone);
 					i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
-					subscribe_channel(LOCATION2CHANNEL(parent, zone));
+				}
+				for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+				{
+					for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
+					{
+						new_zones.remove(it2->first);
+					}
 				}
 
 				m_interests[interest_id] = i;
 
-				Datagram resp;
-				resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
-				resp.add_uint32(parent);
-				resp.add_uint16(i.zones.size());
-				for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+				if(!new_zones.empty())
 				{
-					resp.add_uint32(it->first);
+					Datagram resp;
+					resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+					resp.add_uint32(parent);
+					resp.add_uint16(i.zones.size());
+					for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
+					{
+						resp.add_uint32(*it);
+						subscribe_channel(LOCATION2CHANNEL(parent, *it));
+					}
+					send(resp);
 				}
-				send(resp);
+				else
+				{
+					Datagram resp;
+					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+					resp.add_uint16(interest_id);
+					resp.add_uint32(context);
+					network_send(resp);
+				}
 			}
 			break;
 			case CLIENT_REMOVE_INTEREST:
@@ -682,7 +702,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 					bool found = false;
 					for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
 					{
-						for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.begin(); ++it3)
+						if(it2->first == id)
+						{
+							continue;
+						}
+						for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
 						{
 							if(it3->first == zone)
 							{
@@ -724,6 +748,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 						}
 					}
 				}
+				m_interests.erase(m_interests.find(id));
 
 				if(context)
 				{

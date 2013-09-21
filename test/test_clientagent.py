@@ -803,7 +803,7 @@ class TestClientAgent(unittest.TestCase):
         # And it tells the client that the interest is open:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
+        dg.add_uint16(7)
         dg.add_uint32(8)
         self.assertTrue(client.expect(dg))
 
