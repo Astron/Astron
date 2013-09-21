@@ -94,6 +94,14 @@ struct Interest
 	}
 };
 
+struct Uberdog
+{
+	DCClass *dcc;
+	bool anonymous;
+};
+
+std::map<uint32_t, Uberdog> uberdogs;
+
 class Client : public NetworkClient, public MDParticipantInterface
 {
 	private:
@@ -461,25 +469,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 				uint32_t do_id = dgi.read_uint32();
 				uint16_t field_id = dgi.read_uint16();
 				DCClass *dcc = NULL;
-				YAML::Node uberdogs = gConfig->copy_node()["uberdogs"];
-				for(auto it = uberdogs.begin(); it != uberdogs.end(); ++it)
-				{
-					YAML::Node uberdog = *it;
-					if(uberdog["id"].as<uint32_t>() == do_id)
-					{
-						if(!uberdog["anonymous"].as<bool>())
-						{
-							send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
-							return;
-						}
-						dcc = gDCF->get_class_by_name(uberdog["class"].as<std::string>());
-					}
-				}
-				if(!dcc)
+				if(uberdogs.find(do_id) == uberdogs.end() || !uberdogs[do_id].anonymous)
 				{
 					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
 					return;
 				}
+				dcc = uberdogs[do_id].dcc;
 
 				DCField *field = dcc->get_field_by_index(field_id);
 				if(!field)
@@ -533,14 +528,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 				uint32_t do_id = dgi.read_uint32();
 				uint16_t field_id = dgi.read_uint16();
 				DCClass *dcc = NULL;
-				YAML::Node uberdogs = gConfig->copy_node()["uberdogs"];
-				for(auto it = uberdogs.begin(); it != uberdogs.end(); ++it)
+				if(uberdogs.find(do_id) != uberdogs.end())
 				{
-					YAML::Node uberdog = *it;
-					if(uberdog["id"].as<uint32_t>() == do_id)
-					{
-						dcc = gDCF->get_class_by_name(uberdog["class"].as<std::string>());
-					}
+					dcc = uberdogs[do_id].dcc;
 				}
 				if(!dcc)
 				{
@@ -696,6 +686,29 @@ class ClientAgent : public Role
 			tcp::resolver::query query(str_ip, str_port);
 			tcp::resolver::iterator it = resolver.resolve(query);
 			m_acceptor = new tcp::acceptor(io_service, *it, true);
+
+			if(uberdogs.empty())
+			{
+				YAML::Node udnodes = gConfig->copy_node()["uberdogs"];
+				if(!udnodes.IsNull())
+				{
+					for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
+					{
+						YAML::Node udnode = *it;
+						Uberdog ud;
+						ud.dcc = gDCF->get_class_by_name(udnode["class"].as<std::string>());
+						if(!ud.dcc)
+						{
+							m_log->fatal() << "DCClass " << udnode["class"].as<std::string>()
+								<< "Does not exist!" << std::endl;
+							exit(1);
+						}
+						ud.anonymous = udnode["anonymous"].as<bool>();
+						uberdogs[udnode["id"].as<uint32_t>()] = ud;
+					}
+				}
+			}
+
 			start_accept();
 		}
 
