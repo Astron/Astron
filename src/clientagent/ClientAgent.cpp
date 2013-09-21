@@ -642,7 +642,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 				i.zones.reserve((dg.get_buf_end()-dgi.tell())/sizeof(uint32_t));
 				for(uint16_t p = dgi.tell(); p != dg.get_buf_end(); p = dgi.tell())
 				{
-					i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(dgi.read_uint32(), false));
+					uint32_t zone = dgi.read_uint32();
+					i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
+					subscribe_channel(LOCATION2CHANNEL(parent, zone));
 				}
 
 				m_interests[interest_id] = i;
@@ -696,6 +698,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					if(!found)
 					{
 						removed_zones.insert(removed_zones.end(), zone);
+						unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
 					}
 				}
 				for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
