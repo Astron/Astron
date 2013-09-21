@@ -659,6 +659,18 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(4444)
         self.assertTrue(client.expect(dg))
 
+        # Realistically, object 8888 would send an enterzone on the new location:
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(8888) # do_id
+        dg.add_uint32(1234) # parent_id
+        dg.add_uint32(4444) # zone_id
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # But the CA should silently ignore it:
+        self.assertTrue(client.expect_none())
+
         # How about moving the other object outside of interest?
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGE_ZONE)
         dg.add_uint32(7777) # do_id
