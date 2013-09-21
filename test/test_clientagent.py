@@ -642,6 +642,21 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(2)
         self.assertTrue(client.expect(dg))
 
+        # One of the objects broadcasts!
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(7777) # do_id
+        dg.add_uint16(setBR1)
+        dg.add_string("I've built my life on judgement and causing pain...")
+        self.server.send(dg)
+
+        # And the client is informed.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(7777)
+        dg.add_uint16(setBR1)
+        dg.add_string("I've built my life on judgement and causing pain...")
+        self.assertTrue(client.expect(dg))
+
         # Now, let's move the objects around...
         dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGE_ZONE)
         dg.add_uint32(8888) # do_id
@@ -666,7 +681,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint32(999999) # setRequired1
-        self.server.send(dg)
+        #self.server.send(dg)
 
         # But the CA should silently ignore it:
         self.assertTrue(client.expect_none())
