@@ -674,6 +674,29 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(7777)
         self.assertTrue(client.expect(dg))
 
+        # Now, kill the interest!
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint16(1)
+        dg.add_uint32(55)
+        client.send(dg)
+
+        # The remaining seen object should die...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(8888)
+        self.assertTrue(client.expect(dg))
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(1)
+        dg.add_uint32(2)
+        self.assertTrue(client.expect(dg))
+
+        # And NOTHING ELSE:
+        self.assertTrue(client.expect_none())
+
         client.close()
 
 if __name__ == '__main__':
