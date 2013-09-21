@@ -355,6 +355,16 @@ class Client : public NetworkClient, public MDParticipantInterface
 						}
 					}
 				}
+
+				if(dist_objs.find(do_id) != dist_objs.end())
+				{
+					dist_objs[do_id].zone = n_zone;
+					if(disable)
+					{
+						dist_objs[do_id].refcount--;
+					}
+				}
+
 				Datagram resp;
 				if(disable)
 				{
@@ -646,6 +656,80 @@ class Client : public NetworkClient, public MDParticipantInterface
 					resp.add_uint32(it->first);
 				}
 				send(resp);
+			}
+			break;
+			case CLIENT_REMOVE_INTEREST:
+			{
+				uint16_t id = dgi.read_uint16();
+				uint32_t context = 0;
+				if(dgi.tell() < dg.get_buf_end())
+				{
+					context = dgi.read_uint32();
+				}
+				if(m_interests.find(id) == m_interests.end())
+				{
+					send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest");
+					return;
+				}
+				Interest &i = m_interests[id];
+				std::vector<uint32_t> removed_zones(0);
+				removed_zones.reserve(i.zones.size());
+				for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+				{
+					uint32_t zone = it->first;
+					bool found = false;
+					for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
+					{
+						for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.begin(); ++it3)
+						{
+							if(it3->first == zone)
+							{
+								found = true;
+								break;
+							}
+						}
+						if(found)
+						{
+							break;
+						}
+					}
+					if(!found)
+					{
+						removed_zones.insert(removed_zones.end(), zone);
+					}
+				}
+				for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+				{
+					if(it->second.parent == i.parent)
+					{
+						bool found = false;
+						for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
+						{
+							if(it->second.zone == *it2)
+							{
+								found = true;
+								break;
+							}
+						}
+						if(found)
+						{
+							Datagram resp;
+							resp.add_uint16(CLIENT_OBJECT_DISABLE);
+							resp.add_uint32(it->second.id);
+							network_send(resp);
+							it->second.refcount--;
+						}
+					}
+				}
+
+				if(context)
+				{
+					Datagram resp;
+					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+					resp.add_uint16(id);
+					resp.add_uint32(context);
+					network_send(resp);
+				}
 			}
 			break;
 			default:
