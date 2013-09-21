@@ -158,6 +158,7 @@ This section lists out a few of the disconnect reasons that the Client Agent
 may give in a `CLIENT_GO_GET_LOST` message, as well as a brief explanation for
 each.
 
+- 001: Undefined, see error string.
 - 100: The client's account was logged into on another session of the game.
 - 106: The client sent an oversized datagram.
 - 107: The client's first message was not `CLIENT_HELLO`.

@@ -10,6 +10,7 @@
 
 #include <stack>
 #include <set>
+#include <list>
 
 using boost::asio::ip::tcp;
 
@@ -31,9 +32,10 @@ struct DistributedObject
 	uint32_t parent;
 	uint32_t zone;
 	DCClass *dcc;
+	uint32_t refcount;
 };
 
-std::map<uint32_t, DistributedObject*> dist_objs;
+std::map<uint32_t, DistributedObject> dist_objs;
 
 class ChannelTracker
 {
@@ -68,6 +70,30 @@ class ChannelTracker
 		}
 };
 
+struct Interest
+{
+	uint32_t parent;
+	std::vector<std::pair<uint32_t, bool>> zones; //bool = readiness state
+	uint32_t context;
+
+	Interest() : parent(0),
+		zones(0), context(0)
+	{
+	}
+
+	bool is_ready()
+	{
+		for(auto it = zones.begin(); it != zones.end(); ++it)
+		{
+			if(!it->second)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+};
+
 class Client : public NetworkClient, public MDParticipantInterface
 {
 	private:
@@ -80,11 +106,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
 		std::set<uint32_t> m_owned_objects;
+		std::map<uint16_t, Interest> m_interests;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
 				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
-				m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0)
+				m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0),
+				m_interests()
 		{
 			m_channel = m_ct->alloc_channel();
 			m_allocated_channel = m_channel;
@@ -97,6 +125,21 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 		~Client()
 		{
+			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+			{
+				Interest &i = it->second;
+				for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+				{
+					uint32_t zone = it->first;
+					for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+					{
+						if(it->second.refcount)
+						{
+							it->second.refcount--;
+						}
+					}
+				}
+			}
 			m_ct->free_channel(m_allocated_channel);
 		}
 
@@ -144,15 +187,17 @@ class Client : public NetworkClient, public MDParticipantInterface
 				uint32_t do_id = dgi.read_uint32();
 				m_owned_objects.insert(do_id);
 
-				if(!dist_objs[do_id])
+				if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
 				{
-					DistributedObject *obj = new DistributedObject;
-					obj->id = do_id;
-					obj->parent = parent;
-					obj->zone = zone;
-					obj->dcc = gDCF->get_class(dc_id);
+					DistributedObject obj;
+					obj.id = do_id;
+					obj.parent = parent;
+					obj.zone = zone;
+					obj.dcc = gDCF->get_class(dc_id);
+					obj.refcount = 0;
 					dist_objs[do_id] = obj;
 				}
+				dist_objs[do_id].refcount++;
 
 				Datagram resp;
 				resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER);
@@ -203,6 +248,119 @@ class Client : public NetworkClient, public MDParticipantInterface
 			case CLIENTAGENT_CLEAR_POST_REMOVE:
 			{
 				clear_post_removes();
+			}
+			break;
+			case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED:
+			case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
+			{
+				uint16_t dc_id = dgi.read_uint16();
+				uint32_t do_id = dgi.read_uint32();
+				uint32_t parent = dgi.read_uint32();
+				uint32_t zone = dgi.read_uint32();
+				if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
+				{
+					DistributedObject obj;
+					obj.id = do_id;
+					obj.dcc = gDCF->get_class(dc_id);
+					obj.parent = parent;
+					obj.refcount = 0;
+					obj.zone = zone;
+					dist_objs[do_id] = obj;
+				}
+				dist_objs[do_id].refcount++;
+
+				Datagram resp;
+				if(msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+				{
+					resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED);
+				}
+				else
+				{
+					resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER);
+				}
+				resp.add_uint32(parent);
+				resp.add_uint32(zone);
+				resp.add_uint16(dc_id);
+				resp.add_uint32(do_id);
+				resp.add_data(dgi.read_remainder());
+				network_send(resp);
+			}
+			break;
+			case STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE:
+			{
+				uint32_t parent = dgi.read_uint32();
+				uint16_t n_zones = dgi.read_uint16();
+				std::vector<uint32_t> zones(0);
+				zones.reserve(n_zones);
+				for(uint16_t i = 0; i < n_zones; ++i)
+				{
+					zones.insert(zones.end(), dgi.read_uint32());
+				}
+				for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+				{
+					Interest &i = it->second;
+					if(!i.is_ready())
+					{
+						for(auto it2 = i.zones.begin();  it2 != i.zones.end(); ++it2)
+						{
+							if(!it2->second)
+							{
+								for(auto it3 = zones.begin(); it3 != zones.end(); ++it3)
+								{
+									if(it2->first == *it3)
+									{
+										it2->second = true;
+										break;
+									}
+								}
+							}
+						}
+						if(i.is_ready())
+						{
+							Datagram resp;
+							resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+							resp.add_uint16(it->first);
+							resp.add_uint32(i.context);
+							network_send(resp);
+						}
+					}
+				}
+			}
+			break;
+			case STATESERVER_OBJECT_CHANGE_ZONE:
+			{
+				uint32_t do_id = dgi.read_uint32();
+				uint32_t n_parent = dgi.read_uint32();
+				uint32_t n_zone = dgi.read_uint32();
+				uint32_t o_parent = dgi.read_uint32();
+				uint32_t o_zone = dgi.read_uint32();
+				bool disable = true;
+				for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+				{
+					Interest &i = it->second;
+					for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
+					{
+						if(it2->first == n_zone)
+						{
+							disable = false;
+							break;
+						}
+					}
+				}
+				Datagram resp;
+				if(disable)
+				{
+					resp.add_uint16(CLIENT_OBJECT_DISABLE);
+					resp.add_uint32(do_id);
+				}
+				else
+				{
+					resp.add_uint16(CLIENT_OBJECT_LOCATION);
+					resp.add_uint32(do_id);
+					resp.add_uint32(n_parent);
+					resp.add_uint32(n_zone);
+				}
+				network_send(resp);
 			}
 			break;
 			default:
@@ -386,9 +544,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				if(!dcc)
 				{
-					if(dist_objs[do_id])
+					if(dist_objs.find(do_id) != dist_objs.end())
 					{
-						dcc = dist_objs[do_id]->dcc;
+						dcc = dist_objs[do_id].dcc;
 					}
 					else
 					{
@@ -440,7 +598,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			case CLIENT_OBJECT_LOCATION:
 			{
 				uint32_t do_id = dgi.read_uint32();
-				if(!dist_objs[do_id])
+				if(dist_objs.find(do_id) == dist_objs.end())
 				{
 					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
 					return;
@@ -463,6 +621,39 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 				//TODO: Finish this
 				dgi.read_remainder();
+			}
+			break;
+			case CLIENT_ADD_INTEREST:
+			{
+				uint16_t interest_id = dgi.read_uint16();
+				uint32_t context = dgi.read_uint32();
+				uint32_t parent = dgi.read_uint32();
+				if(m_interests.find(interest_id) != m_interests.end())
+				{
+					m_log->warning() << m_client_name << "Duplicate interest handle, dropping client" << std::endl;
+					send_disconnect(CLIENT_DISCONNECT_GENERIC, "Duplicate interest handle");
+				}
+				Interest i;
+				i.context = context;
+				i.parent = parent;
+
+				i.zones.reserve((dg.get_buf_end()-dgi.tell())/sizeof(uint32_t));
+				for(uint16_t p = dgi.tell(); p != dg.get_buf_end(); p = dgi.tell())
+				{
+					i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(dgi.read_uint32(), false));
+				}
+
+				m_interests[interest_id] = i;
+
+				Datagram resp;
+				resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+				resp.add_uint32(parent);
+				resp.add_uint16(i.zones.size());
+				for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+				{
+					resp.add_uint32(it->first);
+				}
+				send(resp);
 			}
 			break;
 			default:
