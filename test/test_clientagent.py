@@ -643,7 +643,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Now, let's move the objects around...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGE_ZONE)
         dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # new_parent
         dg.add_uint32(4444) # new_zone
@@ -660,7 +660,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # How about moving the other object outside of interest?
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGE_ZONE)
         dg.add_uint32(7777) # do_id
         dg.add_uint32(1234) # new_parent
         dg.add_uint32(1111) # new_zone
@@ -691,11 +691,14 @@ class TestClientAgent(unittest.TestCase):
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
         dg.add_uint16(1)
-        dg.add_uint32(2)
+        dg.add_uint32(55)
         self.assertTrue(client.expect(dg))
 
         # And NOTHING ELSE:
         self.assertTrue(client.expect_none())
+
+        # Meanwhile, nothing happens on the server either:
+        self.assertTrue(self.server.expect_none())
 
         client.close()
 
