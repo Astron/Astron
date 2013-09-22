@@ -324,6 +324,7 @@ Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
 
 
 
+
 ### Section 4: Database Server messages ###
 
 This section documents the messages involved in interacting with a Database
@@ -337,11 +338,27 @@ When a stored object is created directly, the object behaves as if it were its o
 Message Director participant, and subscribes to its own channel (equal to the
 object's ID) to receive object-specific updates.
 
-The following is a list of database control messages:
 
+#### Section 4.1: Comparison with non-existant values ####
+In most operations, if a value does not exist, it simply is not included in any
+datagram. In the case of operations which require comparisons, it may be necessary
+to compare against a field which doesn't exist (example: UPDATE_IF_EQUALS).
+
+During comparisons the Null values are:
+
+ - Integer-types, Float-types: `0`
+ - Strings, blobs, variable-width types: _No data (length zero)_
+
+
+#### Section 4.2: Database Server control messages ####
+
+The following is a list of database control messages:
 **Argument Notes**
 
-    bool success/found      // uint8 value where FAILURE or NOT_FOUND = 0x0 (typically SUCCES or FOUND = 0x1 or "TRUE")
+    uint8 ret_code          // SUCCESS = 0
+                            // FAILURE_NOT_FOUND = 1
+                            // FAILURE_INVALID_FIELD = 2
+                            // FAILURE_VALUE_NOT_EQUAL = 3 (only: UPDATE_STORED_OBJECT_IF_EQUALS)
 
     uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
 
@@ -388,16 +405,18 @@ The verify_code is 0x4b696c6c (Ascii "Kill") and is required.
 **DBSERVER_SELECT_STORED_OBJECT(1012)**  
     `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
 **DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, bool found, [VALUE]*field_count)`  
+    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`  
 > This message selects a number of fields from an object in the database.  
 It returns the select fields in serialized form, in the order requested -- if found.
+Returns one of {SUCCESS, FAILURE_NOT_FOUND, FAILURE_INVALID_FIELD}.
 
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, bool found, [uint16 dclass_id, FIELD_DATA])`  
+    `args(uint32 context, uint8 ret_code, [uint16 dclass_id, FIELD_DATA])`  
 > This message queries all of the database fields from the object and returns the response -- if found.
+Returns one of {SUCCESS, FAILURE_NOT_FOUND}.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
@@ -410,7 +429,7 @@ The return is a list of do_ids corresponding to the selected elements.
 
 
 **DBSERVER_UPDATE_STORED_OBJECT(1014)**  
-    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
+    `args(uint32 do_id, FIELD_DATA)`  
 > This message replaces the current values of the given object,
 with the new values given in FIELD_DATA.  
 This command updates a value in the database, ignoring its initial value.
@@ -421,15 +440,19 @@ If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
     `args(uint32 context, uint32 do_id, uint16 field_count,
           [uint16 field, VALUE old, VALUE new]*field_count)`
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, bool success, [VALUE]*field_count)`
+    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`
 > This message replaces the current values of the given object with new values,
 only if the old values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
 particularily when the new values are derived or dependent on the old values.
 
 > If any of the given _old_ values don't match then the entire transaction fails.
-If unsuccessful, the current values of all given fields will be returned in order
-in serialized form, after 'success'.
+In this case, the current values of all given fields will be returned in order
+in serialized form, after 'FAILURE_VALUE_NOT_EQUAL'.
+
+> If any of the given fields are not database fields, the entire transaction fails,
+In this case the return code is 'FAILURE_INVALID_FIELD'.
+The current values are not returned.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
