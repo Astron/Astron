@@ -90,6 +90,32 @@ Serialized form:
     00 00 00 00 00 00 00 00 // Value = 0
 
 
+### Section 1.2: Argument Types ###
+> TODO
+
+
+### Section 1.2: Argument Notation ###
+    FIELD_DATA ->           // FIELD_DATA implies the following structure
+        (uint16 field_count,    // Number of following fields
+            [uint16 field,          // The field of the DistributeClass
+             <VALUE>                // The serialized value of that field
+            ]*field_count)
+
+    COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
+        (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
+            [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
+             uint16 field,          // The field of the DistributeClass to compare
+             VALUE                  // The serialized value of that field
+            ]*compare_count)
+
+    REQUIRED ->             // REQUIRED is an inline of
+        <VALUE>*required_count  // All of the fields with the 'required' keyword in
+                                // ascending order by field_id.
+
+    OTHER -> <FIELD_DATA>   // OTHER is like field_data but only contains any remaining
+                            // optional fields that may be provided by the caller.
+
+
 
 ### Section 2: Control messages ###
 
@@ -109,8 +135,8 @@ Control messages are distinguished by two things:
 
 The following control messages exist, with their respective formats:
 
-**CONTROL_SET_CON_NAME(2004)** `args(string)`  
-**CONTROL_SET_CON_URL(2005)** `args(string)`  
+**CONTROL_SET_CON_NAME(2004)** `args(string name)`  
+**CONTROL_SET_CON_URL(2005)** `args(string url)`  
 > As every OpenOTP daemon may include a webserver with debug information, it is
 often helpful to understand the purpose of incoming MD connections. A
 downstream MD may be configured with a specific name, and it may wish to
@@ -118,29 +144,31 @@ inform the upstream MD what its name and webserver URL are. These control
 messages allow the downstream MD to communicate this information.
 
 
-**CONTROL_ADD_POST_REMOVE(2010)** `args(string)`  
+**CONTROL_ADD_POST_REMOVE(2010)** `args(blob datagram)`  
 **CONTROL_CLEAR_POST_REMOVE(2011)** `args()`  
 > Often, Message Directors may be unexpectedly disconnected from one another, or
 a Message Director may crash while under normal operation without the chance
 to clean up. These control messages allow a downstream MD to schedule messages
 on the upstream MD to be sent in the event of an unexpected disconnect.
 
-> The argument to CONTROL_ADD_POST_REMOVE is a string; the string contains a
-message, minus the length tag (since the string already includes a length tag
+> The argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
+message, minus the length tag (since the blob already includes a length tag
 of its own, this would be redundant information).
 CONTROL_CLEAR_POST_REMOVE is used to reset all of the on-disconnect messages.
 This may be used prior to a MD's clean shutdown, if it doesn't wish the
 unexpected-disconnect messages to be processed.
 
 
-**CONTROL_ADD_CHANNEL(2001)** `args(uint64)`  
-**CONTROL_REMOVE_CHANNEL(2002)** `args(uint64)`  
+**CONTROL_ADD_CHANNEL(2001)** `args(uint64 channel)`  
+**CONTROL_REMOVE_CHANNEL(2002)** `args(uint64 channel)`  
 > These messages allow a downstream Message Director to (un)subscribe a channel.
 The argument is the channel to be added or removed from the subscriptions.
 
 
-**CONTROL_ADD_RANGE(2008)** `args(uint64, uint64)`  
-**CONTROL_REMOVE_RANGE(2009)** `args(uint64, uint64)`  
+**CONTROL_ADD_RANGE(2008)**  
+`args(uint64 low_channel, uint64 high_channel)`  
+**CONTROL_REMOVE_RANGE(2009)**  
+`args(uint64 low_channel, uint64 high_channel)`  
 > These messages add/remove an entire range of channels at once. The first
 argument(s) should be the lower channel to add. The second argument(s) is the
 upper channel of the range. The ranges are inclusive.
@@ -165,15 +193,11 @@ These messages are to be sent directly to the State Server's configured
 control channel:
 
 **STATESERVER_OBJECT_GENERATE_WITH_REQUIRED(2001)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, <REQUIRED>)`  
 **STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER(2003)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, <REQUIRED>, <OTHER>)`  
 > Create an object on the State Server, specifying its initial location
-as (parent_id, zone_id) and its object type and ID. The ... is an in-order
-serialization of all object fields with the "required" keyword.
-In the case of *_OTHER, the required fields are followed by a uint16, which
-specifies how many additional fields the message contains. Each field is then
-a uint16 (representing the field number) followed by the serialized field.
+as (parent_id, zone_id) and its object type and ID.
 
 
 **STATESERVER_SHARD_RESET(2061)** `args(uint64 ai_channel)`  
@@ -191,9 +215,9 @@ a channel with their own object ID, and therefore can be reached directly by
 using their ID as the channel.
 
 **STATESERVER_OBJECT_UPDATE_FIELD(2004)**  
-    `args(uint32 do_id, uint16 field, VALUE)`  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
 **STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE(2005)**  
-    `args(uint32 do_id, uint16 field_count, [uint16 field, VALUE]*field_count)`  
+    `args(uint32 do_id, <FIELD_DATA>)`  
 > Handle a field update on this object. Note that the object MAY ALSO SEND this
 message to inform others of an update. If the field is ownrecv, the message
 will get sent to the owning-client's channel. If airecv, the message will get
@@ -220,10 +244,10 @@ its presence in the new zone and its absence in the old zone.
 
 
 **STATESERVER_OBJECT_CHANGE_ZONE(2009)**  
-    `args(uint32 do_id, uint32 new_parent, uint32 new_zone,
-                        uint32 old_parent, uint32 old_zone)`  
-**STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066)**  
-    `(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
+    `args(uint32 do_id, uint32 new_parent_id, uint32 new_zone_id,
+                        uint32 old_parent_id, uint32 old_zone_id)`  
+**STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED_OTHER(2066)**  
+    `(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, <REQUIRED>, <OTHER>)`  
 > These messages are SENT BY THE OBJECT when processing a SET_ZONE.
 CHANGE_ZONE tells everything that can see the object where the object is going.
 
@@ -231,19 +255,19 @@ CHANGE_ZONE tells everything that can see the object where the object is going.
 slightly differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
 
-**STATESERVER_OBJECT_QUERY_ZONES_ALL(2021)**__
-    `args(uint32 parent_id, uint16 zone_count, [uint32 zone]*zone_count)`
+**STATESERVER_OBJECT_QUERY_ZONES_ALL(2021)**  
+    `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > Sent to the parent; queries zone(s) for all objects within. Each object will
 answer with a STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(_OTHER). After all
 objects have answered, the parent will send:
 
-**STATESERVER_OBJECT_QUERY_ZONES_ALL_DONE(2046)**__
-    `args(uint32 parent_id, uint16 zone_count, [uint32 zone]*zone_count)`
+**STATESERVER_OBJECT_QUERY_ZONES_ALL_DONE(2046)**  
+    `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > This is an echo of the above message. It is sent back to the enquierer after
 all objects have announced their existence.
 
 **STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**  
-    `args(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
+    `args(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, <REQUIRED>)`  
 > Analogous to above, but includes REQUIRED fields only.
 
 
@@ -256,7 +280,7 @@ all objects have announced their existence.
 **STATESERVER_OBJECT_QUERY_FIELD(2024)**  
     `args(uint32 do_id, uint16 field_id, uint32 context)`  
 **STATESERVER_OBJECT_QUERY_FIELD_RESP(2062)**  
-    `args(uint32 do_id, uint16 field_id, uint32 context, uint8 success, [VALUE])`  
+    `args(uint32 do_id, uint16 field_id, uint32 context, uint8 success, [<VALUE>])`  
 > This message may be used to ask an object for the value of a field. Returning the
 response with a success = 1 if the field is present, or 0(failure) if the field is
 nonpresent. Value is not present on failure.
@@ -265,7 +289,8 @@ nonpresent. Value is not present on failure.
 **STATESERVER_OBJECT_SET_AI_CHANNEL(2045)**  
     `args(uint32 do_id, uint64 ai_channel)`  
 **STATESERVER_OBJECT_ENTER_AI_RECV(2067)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 class_id, uint32 do_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id,
+     uint16 class_id, uint32 do_id, <REQUIRED>, <OTHER>)`  
 **STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `args(uint32 do_id)`  
 > Sets the channel for the managing AI. All airecv updates are automatically
 forwarded to this channel.  
@@ -274,7 +299,6 @@ explicitly, it defaults to the AI channel (implicit or explicit) of the
 parent.
 
 > ENTER_AI_RECV tells the new AI Server of the object's arrival.
-The ... is as in REQUIRED_OTHER.  
 LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
 
@@ -283,16 +307,16 @@ the object's departure or deletion.
 **STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 **STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, <REQUIRED>, <OTHER>)`  
 > SET_OWNER sets the channel of the object owner. This is the channel of the Client Agent
 connection object where ownrecv messages will be forwarded. Similar to changing zone,
 this will generate some traffic:  
 CHANGE_OWNER will be sent to the old owner.  
-ENTER_OWNER tells the new owner of the object's arrival. The ... is as in REQUIRED_OTHER.
+ENTER_OWNER tells the new owner of the object's arrival.
 
 
 **STATESERVER_OBJECT_QUERY_FIELDS(2080)**  
-    `args(uint32 do_id, uint32 context, uint16 field_count, [uint16 field]*field_count)`  
+    `args(uint32 do_id, uint32 context, uint16 field_count, [uint16 field_id]*field_count)`  
 > This message asks for multiple fields to be recieved at the same time.
 
 
@@ -351,31 +375,10 @@ During comparisons the Null values are:
 #### Section 4.2: Database Server control messages ####
 
 The following is a list of database control messages:
-**Argument Notes**
-
-    uint8 ret_code          // SUCCESS = 0
-                            // FAILURE_NOT_FOUND = 1
-                            // FAILURE_INVALID_FIELD = 2
-                            // FAILURE_VALUE_NOT_EQUAL = 3 (only: UPDATE_STORED_OBJECT_IF_EQUALS)
-
-    uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
-
-    FIELD_DATA ->           // FIELD_DATA implies the following structure
-        (uint16 field_count,    // Number of following fields
-            [uint16 field,          // The field of the DistributeClass
-             VALUE                  // The serialized value of that field
-            ]*field_count)
-
-    COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
-        (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
-            [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
-             uint16 field,          // The field of the DistributeClass to compare
-             VALUE                  // The serialized value of that field
-            ]*compare_count)
 
 
 **DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
+    `args(uint32 context, uint16 dclass_id, <FIELD_DATA>)`  
 **DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
@@ -394,13 +397,13 @@ The verify_code is 0x44696521 (Ascii "Die!") and is required.
 
 
 **DBSERVER_DELETE_QUERY(1010)**  
-    `args(uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)`  
+    `args(uint32 verify_code, uint16 dclass_id, <COMPARISON_QUERY>)`  
 > This message removes all objects from the server of the given DistributedClass,
 that satisify the given comparisons.  
 The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
 
 **DBSERVER_SELECT_STORED_OBJECT_FIELD(????)**  
-    `args(uint32 context, uint32 do_id, uint16 field`  
+    `args(uint32 context, uint32 do_id, uint16 field_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_FIELD_RESP(????)**  
     `args(uint32 context, uint8 ret_code, <VALUE>)`  
 > This message select a single field from an object in the database.
@@ -409,7 +412,7 @@ If the object does not have that field, the return code is FAILURE_INVALID_FIELD
 If the field is empty, the return code is FAILURE_FIELD_EMPTY
 
 **DBSERVER_SELECT_STORED_OBJECT_FIELDS(1012)**  
-    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
+    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count`  
 **DBSERVER_SELECT_STORED_OBJECT_FIELDS_RESP(1013)**  
     `args(uint32 context, uint8 ret_code, <FIELD_DATA>)`  
 > This message selects multiple fields from an object in the database.
@@ -421,25 +424,25 @@ If any of the requested fields are empty, they are not returned.
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, uint8 ret_code, [uint16 dclass_id, FIELD_DATA])`  
+    `args(uint32 context, uint8 ret_code, [uint16 dclass_id, <FIELD_DATA>])`  
 > This message queries all of the database fields from the object.
 If the object is not found, it returns FAILURE_NOT_FOUND.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
-    `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
+    `args(uint32 context, uint32 dclass_id, <COMPARISON_QUERY>)`  
 **DBSERVER_SELECT_QUERY_RESP(1017)**  
-    `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
+    `args(uint32 context, uint32 do_id_count, [uint32 do_id]*do_id_count)`  
 > This message selects from the database all items of the given
 DistributedClass that satisfy the given comparisons.
 The return is a list of do_ids corresponding to the selected elements.
 
 **DBSERVER_UPDATE_STORED_OBJECT_FIELD(????)**  
-    `args(uint32 do_id, uint16 field_id, uint16 <VALUE>)`  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
 > This message updates a single database field.
 
 **DBSERVER_UPDATE_STORED_OBJECT_FIELDS(1014)**  
-    `args(uint32 do_id, FIELD_DATA)`  
+    `args(uint32 do_id, <FIELD_DATA>)`  
 > This message replaces the current values of the given object,
 with the new values given in FIELD_DATA.  
 This command updates a value in the database, ignoring its initial value.
@@ -447,9 +450,9 @@ If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
 
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS(1024)**  
     `args(uint32 context, uint32 do_id, uint16 field_count,
-          [uint16 field, VALUE old, VALUE new]*field_count)`
+          [uint16 field_id, <VALUE> old, <VALUE> new]*field_count)`
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`
+    `args(uint32 context, uint8 ret_code, [<VALUE>]*field_count)`
 > This message replaces the current values of the given object with new values,
 only if the old values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
@@ -465,7 +468,7 @@ The current values are not returned.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
-    `args(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)`  
+    `args(uint32 dclass_id, <COMPARISON_QUERY>, <FIELD_DATA>)`  
 > This message updates all objects of type dclass_id which satisfy the
 COMPARISON_QUERY with the fields in FIELD_DATA.
 
@@ -557,7 +560,7 @@ requested the interest itself.
 is even valid for client-opened interests, if the interest_id matches a client-requested
 interest.
 
-**CLIENTAGENT_ADD_POST_REMOVE(3108)** `args(string msg)`  
+**CLIENTAGENT_ADD_POST_REMOVE(3108)** `args(blob datagram)`  
 > Similar to CONTROL_ADD_POST_REMOVE, this hangs a "post-remove" message on the
 client. If the client is ever disconnected, the post-remove messages will be sent
 out automatically.
@@ -566,7 +569,7 @@ out automatically.
 > Undoes all CLIENTAGENT_ADD_POST_REMOVE messages.
 
 **CLIENTAGENT_DISCONNECT(3101)**  
-    `args(uint16 code, string reason)`  
+    `args(uint16 disconnect_code, string reason)`  
 > Drops the client with the specified code and reason. The code and reason carry
 the same meaning as CLIENT_GO_GET_LOST.
 
@@ -574,7 +577,7 @@ the same meaning as CLIENT_GO_GET_LOST.
 > Similar to above, but causes the CA to silently close the client connection,
 providing no explanation whatsoever to the client.
 
-**CLIENTAGENT_SEND_DATAGRAM(3100)** `args(string datagram)`  
+**CLIENTAGENT_SEND_DATAGRAM(3100)** `args(blob datagram)`  
 > Send a raw datagram down the pipe to the client. This is useful for sending
 game-specific messages to the client, debugging, etc.
 
@@ -585,7 +588,7 @@ changing the sender channel to include this information, the server can easily
 determine the account ID of a client that sends a field update. Note that this
 also results in the CA opening the new channel, if it isn't open already.
 
-**CLIENTAGENT_SET_STATE(3110)** `args(uint16 state)`  
+**CLIENTAGENT_SET_STATE(3110)** `args(uint16 ca_state)`  
 > Move the CA's state machine to a given state. This is mainly used when a client
 logs in or logs out, to flip the client between the ANONYMOUS and ESTABLISHED
 states respectively.
@@ -617,7 +620,7 @@ the client cannot currently see that object.
 the client can no longer send updates on this object without seeing it.
 
 **CLIENTAGENT_SET_FIELDS_SENDABLE(3111)**  
-    `args(uint32 do_id, uint16 field_count, [uint16 field]*field_count)`  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
 > Override the security on certain fields for a given object. The specified fields
 are made sendable by the client regardless of ownsend/clsend. To undo the security
 override, send this message again without any field IDs, to clear the list of
