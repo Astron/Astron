@@ -133,7 +133,7 @@ class DatabaseBaseTests(object):
         self.assertTrue(self.conn.expect(dg))
 
         # Cleanup
-        for doid in doids
+        for doid in doids:
             self.deleteObject(20, doid)
         self.conn.send(Datagram.create_remove_channel(20))
 
