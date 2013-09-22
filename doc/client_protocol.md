@@ -59,8 +59,8 @@ When the client wishes to disconnect, it may simply close the TCP session.
 These are the messages that the client and Client Agent may send between each other
 in order to accomplish various normal game tasks.
 
-**CLIENT_HELLO(1)**
-    `args(uint32 dc_hash, string version)`
+**CLIENT_HELLO(1)**  
+    `args(uint32 dc_hash, string version)`  
 > This is the first message a client may send. The dc_hash is a 32-bit hash value
 calculated from all fields/classes listed in the client's DC file. The version is
 a game-specific string that developers should change whenever they release a new
@@ -70,38 +70,36 @@ client is not up-to-date, it will be disconnected with a `CLIENT_GO_GET_LOST`.
 If the client is up-to-date, the gameserver will send a `CLIENT_HELLO_RESP` to
 inform the client that it may proceed with its normal logic flow.
 
-**CLIENT_HELLO_RESP(2)**
-    `args()`
+**CLIENT_HELLO_RESP(2)** `args()`  
 > This is sent by the Client Agent to the client when the client's `CLIENT_HELLO`
 is accepted.
 
-**CLIENT_GO_GET_LOST(4)**
-    `args(uint16 error_code, string reason)`
+**CLIENT_GO_GET_LOST(4)**  
+    `args(uint16 error_code, string reason)`  
 > This is sent by the Client Agent to the client when the client is being
 disconnected. The error_code and reason arguments provide some explanation as
 to why the client is being dropped from the game.
 
-**CLIENT_OBJECT_UPDATE_FIELD(24)**
-    `args(uint32 do_id, uint16 field_id, VALUE)`
+**CLIENT_OBJECT_UPDATE_FIELD(24)**  
+    `args(uint32 do_id, uint16 field_id, VALUE)`  
 > This is sent either by the Client Agent or the client to issue a field update
 on a given object. The format of this message is exactly the same as
 `STATESERVER_OBJECT_UPDATE_FIELD` in the internal protocol.
 
-**CLIENT_OBJECT_DISABLE(25)**
-    `args(uint32 do_id)`
+**CLIENT_OBJECT_DISABLE(25)** `args(uint32 do_id)`  
 > This is sent by the Client Agent to let the client know that an object is
 leaving the client's visibility, either due to deletion, zone change, or dropped
 interest.
 
-**CLIENT_CREATE_OBJECT_REQUIRED(34)**
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
+**CLIENT_CREATE_OBJECT_REQUIRED(34)**  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
 > Inform the client of an object entering one of the client's interests. The
 ... is an in-order serialization of all required fields.
 Note: This is analogous to `STATESERVER_OBJECT_GENERATE_WITH_REQURIED` in the
 internal protocol.
 
-**CLIENT_CREATE_OBJECT_REQUIRED_OTHER(35)**
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
+**CLIENT_CREATE_OBJECT_REQUIRED_OTHER(35)**  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
 > As above, but includes OTHER fields. The required fields are followed by a uint16
 representing the number of additional fields included in the generate message,
 followed by a `(uint16 field_id, VALUE)` for each field.
@@ -116,34 +114,40 @@ parent_id and zone_id aren't necessarily covered by one of the client's interest
 and the client will receive all ownrecv field updates (but will only receive
 broadcast if the object is visible).
 
-**CLIENT_HEARTBEAT(52)**
-    `args()`
+**CLIENT_HEARTBEAT(52)** `args()`  
 > The client should send this message on a regular interval. If the Client Agent
 does not receive a `CLIENT_HEARTBEAT` for a certain (configurable) amount of time,
 it will assume that the client has crashed and disconnect the client.
 
-**CLIENT_ADD_INTEREST(97)**
-    `args(uint16 interest_id, uint32 context, uint32 parent_id, uint32 zone_id, [...])`
-> The client sends this to open interest in one or more zones within a parent.
+**CLIENT_ADD_INTEREST(97)**  
+    `args(uint16 interest_id, uint32 context, uint32 parent_id, uint32 zone_id)`  
+> The client sends this to open an interest in a single zone within a parent.
 The server will respond by sending a CREATE for every object in the new zone,
 followed by a `CLIENT_DONE_INTEREST_RESP`.
 
-**CLIENT_REMOVE_INTEREST(98)**
-    `args(uint16 interest_id, uint32 context)`
+**CLIENT_ADD_INTEREST_MULTIPLE(97)**  
+    `args(uint16 interest_id, uint32 context, uint32 parent_id,
+     uint16 zone_count, [uint32 zone_id]*zone_count)`  
+> The client sends this to open an interest cotaining multiple zones within a
+single parent. The server will respond with a single DONE response after every
+object from every zone replies.
+
+**CLIENT_REMOVE_INTEREST(98)**  
+    `args(uint16 interest_id, uint32 context)`  
 > Remove interest added via a prior `CLIENT_ADD_INTEREST`. The server will send
 `CLIENT_OBJECT_DISABLE`s for any objects that are no longer visible as a result,
 followed by a `CLIENT_DONE_INTEREST_RESP`. Objects that are still visible due to
 another, overlapping interest will be ignored.
 
-**CLIENT_DONE_INTEREST_RESP(48)**
-    `args(uint16 interest_id, uint32 context)`
+**CLIENT_DONE_INTEREST_RESP(48)**  
+    `args(uint16 interest_id, uint32 context)`  
 > Sent by the server to inform the client that an interest add/remove operation
 for the given interest has completed. The context is the same as the (client-chosen)
 context sent in the operation: this is to disambiguate interests that might reuse
 the same interest ID.
 
-**CLIENT_OBJECT_LOCATION(102)**
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`
+**CLIENT_OBJECT_LOCATION(102)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`  
 > When the server sends this, it is informing the client that an object is moving
 to another parent/zone that the client has interest in. If the object moves to a
 location that the client does not have interest in, the object is leaving the
