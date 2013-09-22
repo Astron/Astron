@@ -59,9 +59,9 @@ Therefore, consider this example message:
 Some messages contained serialized data in their payload.  
 Serialization as used in messages means sending individual
 variables as raw little-endian byte data, with one value
-immediately following the previous value. String type values
-are always prefixed with a uint16 length, which is followed
-by the raw string data.
+immediately following the previous value. String and blob type
+values are always prefixed with a uint16 length, which is
+followed by the raw string/binary data.
 
 The standard format for sending the full encoding of a
 DistributedObject is to send, in low to high order of field_id,
@@ -90,11 +90,9 @@ Serialized form:
     00 00 00 00 00 00 00 00 // Value = 0
 
 
-### Section 1.2: Argument Types ###
-> TODO
-
-
 ### Section 1.2: Argument Notation ###
+    VALUE                   // VALUE is the serialization of a DistrubutedObject field
+
     FIELD_DATA ->           // FIELD_DATA implies the following structure
         (uint16 field_count,    // Number of following fields
             [uint16 field,          // The field of the DistributeClass
@@ -102,10 +100,11 @@ Serialized form:
             ]*field_count)
 
     COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
-        (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
+        (uint16 dclass_id,      // The DistributedClass of objects to be compared
+         uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
             [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
              uint16 field,          // The field of the DistributeClass to compare
-             VALUE                  // The serialized value of that field
+             <VALUE>                // The serialized value of that field
             ]*compare_count)
 
     REQUIRED ->             // REQUIRED is an inline of
@@ -249,8 +248,7 @@ its presence in the new zone and its absence in the old zone.
 **STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED_OTHER(2066)**  
     `(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, <REQUIRED>, <OTHER>)`  
 > These messages are SENT BY THE OBJECT when processing a SET_ZONE.
-CHANGE_ZONE tells everything that can see the object where the object is going.
-
+CHANGE_ZONE tells everything that can see the object where the object is going.  
 > ENTER_ZONE tells the new zone about the object's entry. The message is ordered
 slightly differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
@@ -278,12 +276,11 @@ all objects have announced their existence.
 
 
 **STATESERVER_OBJECT_QUERY_FIELD(2024)**  
-    `args(uint32 do_id, uint16 field_id, uint32 context)`  
+    `args(uint32 context, uint16 field_id)`  
 **STATESERVER_OBJECT_QUERY_FIELD_RESP(2062)**  
-    `args(uint32 do_id, uint16 field_id, uint32 context, uint8 success, [<VALUE>])`  
-> This message may be used to ask an object for the value of a field. Returning the
-response with a success = 1 if the field is present, or 0(failure) if the field is
-nonpresent. Value is not present on failure.
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
+> This message may be used to ask an object for the value of a field.
+Returns failure(0) if the field is nonpresent.
 
 
 **STATESERVER_OBJECT_SET_AI_CHANNEL(2045)**  
@@ -296,8 +293,7 @@ nonpresent. Value is not present on failure.
 forwarded to this channel.  
 Note: The managing AI channel can also be set implicitly. If it isn't set
 explicitly, it defaults to the AI channel (implicit or explicit) of the
-parent.
-
+parent.  
 > ENTER_AI_RECV tells the new AI Server of the object's arrival.
 LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
 the object's departure or deletion.
@@ -316,13 +312,11 @@ ENTER_OWNER tells the new owner of the object's arrival.
 
 
 **STATESERVER_OBJECT_QUERY_FIELDS(2080)**  
-    `args(uint32 do_id, uint32 context, uint16 field_count, [uint16 field_id]*field_count)`  
+    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+**STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081)**  
+    `args(uint32 context, uin32 do_id, uint8 success, <FIELD_DATA>)`  
 > This message asks for multiple fields to be recieved at the same time.
 
-
-**STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081)**  
-    `args(uint32 do_id, uint32 context, uint8 success, <FIELD_DATA>)`  
-> The reply sent back to the requester.
 
 **STATESERVER_OBJECT_QUERY_ALL(2020)** `args(uint32 context)`  
 **STATESERVER_OBJECT_QUERY_ALL_RESP(2030)**  
@@ -391,46 +385,36 @@ the associated DB-SS.
 
 
 **DBSERVER_DELETE_STORED_OBJECT(1008)**  
-    `args(uint32 verify_code, uint32 do_id)`  
+    `args(uint32 do_id)`  
 > This message removes an object from the server with a given do_id.  
-The verify_code is 0x44696521 (Ascii "Die!") and is required.  
 
 
 **DBSERVER_DELETE_QUERY(1010)**  
-    `args(uint32 verify_code, uint16 dclass_id, <COMPARISON_QUERY>)`  
+    `args(<COMPARISON_QUERY>)`  
 > This message removes all objects from the server of the given DistributedClass,
 that satisify the given comparisons.  
-The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
 
 **DBSERVER_SELECT_STORED_OBJECT_FIELD(????)**  
     `args(uint32 context, uint32 do_id, uint16 field_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_FIELD_RESP(????)**  
-    `args(uint32 context, uint8 ret_code, <VALUE>)`  
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
 > This message select a single field from an object in the database.
-If the object is not found, the return code is FAILURE_NOT_FOUND.  
-If the object does not have that field, the return code is FAILURE_INVALID_FIELD.  
-If the field is empty, the return code is FAILURE_FIELD_EMPTY
 
 **DBSERVER_SELECT_STORED_OBJECT_FIELDS(1012)**  
-    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count`  
+    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
 **DBSERVER_SELECT_STORED_OBJECT_FIELDS_RESP(1013)**  
-    `args(uint32 context, uint8 ret_code, <FIELD_DATA>)`  
+    `args(uint32 context, uint8 success, [<FIELD_DATA>])`  
 > This message selects multiple fields from an object in the database.
-If the object is not found, it returns FAILURE_NOT_FOUND.
-If the object does not have one of the fields, it returns FAILURE_INVALID_FIELD.
-If any of the requested fields are empty, they are not returned.
-
+If any fields are empty, the select is still successful but doesn't return those fields.
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, uint8 ret_code, [uint16 dclass_id, <FIELD_DATA>])`  
+    `args(uint32 context, uint8 success, [uint16 dclass_id, <FIELD_DATA>])`  
 > This message queries all of the database fields from the object.
-If the object is not found, it returns FAILURE_NOT_FOUND.
-
 
 **DBSERVER_SELECT_QUERY(1016)**  
-    `args(uint32 context, uint32 dclass_id, <COMPARISON_QUERY>)`  
+    `args(uint32 context, <COMPARISON_QUERY>)`  
 **DBSERVER_SELECT_QUERY_RESP(1017)**  
     `args(uint32 context, uint32 do_id_count, [uint32 do_id]*do_id_count)`  
 > This message selects from the database all items of the given
@@ -452,25 +436,19 @@ If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
     `args(uint32 context, uint32 do_id, uint16 field_count,
           [uint16 field_id, <VALUE> old, <VALUE> new]*field_count)`
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, uint8 ret_code, [<VALUE>]*field_count)`
+    `args(uint32 context, uint8 success, <FIELD_DATA>)`
 > This message replaces the current values of the given object with new values,
 only if the old values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
-particularily when the new values are derived or dependent on the old values.
-
-> If any of the given _old_ values don't match then the entire transaction fails.
-In this case, the current values of all given fields will be returned in order
-in serialized form, after 'FAILURE_VALUE_NOT_EQUAL'.
-
-> If any of the given fields are not database fields, the entire transaction fails,
-In this case the return code is 'FAILURE_INVALID_FIELD'.
-The current values are not returned.
+particularily when the new values are derived or dependent on the old values.
 
 
 **DBSERVER_UPDATE_QUERY(1018)**  
-    `args(uint32 dclass_id, <COMPARISON_QUERY>, <FIELD_DATA>)`  
+    `args(<COMPARISON_QUERY>, <FIELD_DATA>)`  
 > This message updates all objects of type dclass_id which satisfy the
 COMPARISON_QUERY with the fields in FIELD_DATA.
+
+
 
 ### Section 5: Event Logger ###
 
@@ -490,6 +468,8 @@ and event parameters in that order. It simply writes each string to its
 CSV-formatted log file. However, by convention, the sender name is to be sent
 first, followed by the event type, and then all interesting details on that event.
 
+
+
 ### Section 6: Client Agent ###
 
 The Client Agent is responsible for allowing clients into the network. Clients
@@ -502,6 +482,7 @@ The client protocol is not the same as the internal inter-MD protocol documented
 here. For information on how clients communicate with the server, see the
 `client_protocol.md` file in this directory.
 
+
 #### Section 6.1: Client Agent responsibilities ####
 
 The Client Agent is responsible for all security in the game environment.
@@ -513,6 +494,7 @@ Aside from security, the Client Agent is responsible for retrieving information
 from the running cluster on the client's behalf. If a client sends a message
 to open interest in a particular zone, the Client Agent will query all objects
 residing in that zone.
+
 
 #### Section 6.2: Client Agent state machine ####
 
@@ -529,6 +511,7 @@ queries. Upon providing suitable authentication, the UberDOG(s) will instruct th
 CA, using an internal message, to move the client to the next state.
 - **ESTABLISHED(2)**: The client is fully connected and may behave normally. It is
 no longer restricted to the "anonymous" subset of UberDOGs.
+
 
 #### Section 6.3: Client Agent session messages ####
 
