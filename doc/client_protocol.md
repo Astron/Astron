@@ -158,8 +158,11 @@ This section lists out a few of the disconnect reasons that the Client Agent
 may give in a `CLIENT_GO_GET_LOST` message, as well as a brief explanation for
 each.
 
-- 001: Undefined, see error string.
-- 100: The client's account was logged into on another session of the game.
+#### Section 4.1: CA disconnect reasons ####
+
+These are reasons sent by the Client Agent itself. As such, clients should be
+prepared to receive them even if nothing else in the cluster uses these codes.
+
 - 106: The client sent an oversized datagram.
 - 107: The client's first message was not `CLIENT_HELLO`.
 - 108: The client sent an invalid msgtype.
@@ -168,14 +171,24 @@ each.
 - 117: The client tried to manipulate a nonexistent/unseen/unknown object ID.
 - 118: The client sent a `CLIENT_OBJECT_UPDATE_FIELD` for a field they may not update.
 - 119: The client sent a `CLIENT_OBJECT_LOCATION` for an object they may not relocate.
-- 122: There was an unexpected problem with login.
 - 124: The client sent a `CLIENT_HELLO` with an invalid version string.
 - 125: The client sent a `CLIENT_HELLO` with an invalid DC hash.
-- 126: The client tries to use administrative actions without authorization.
-- 151: An adminsitrator has logged out the client.
-- 152: The clinet had been banned
-- 153: The shard the client was on has shut down.
-- 154: One of the client's "session objects" has been unexpectedly deleted.
+- 153: One of the client's "session objects" has been unexpectedly deleted.
 - 345: The client hasn't sent a `CLIENT_HEARTBEAT` for an extended period of time.
 - 347: The Client Agent had a network I/O error while trying to send a datagram.
 - 348: The Client Agent had a network I/O error while trying to read a datagram.
+
+#### Section 4.2: Cluster disconnect reasons ####
+
+The CA will not send these disconnect messages itself. They are entirely up to
+the game developer to issue these codes via `CLIENTAGENT_DISCONNECT`. However,
+we have reserved these codes for the convenience of game developers, as they may
+be useful for certain games:
+
+- 100: Another client logged in on the same account elsewhere.
+- 122: Login issue; the login mechanism rejected the client's credentials.
+- 126: Administrative access violation; the client attempted to issue an administrator
+       command, but the gameserver did not authorize it.
+- 151: Client logged out by administrator command, not necessarily for rules violation.
+- 152: Client logged out (and possibly banned) by a moderator for rules violation.
+- 154: Gameserver is going down for maintenance.
