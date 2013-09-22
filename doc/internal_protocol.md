@@ -193,7 +193,7 @@ using their ID as the channel.
 **STATESERVER_OBJECT_UPDATE_FIELD(2004)**  
     `args(uint32 do_id, uint16 field, VALUE)`  
 **STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE(2005)**  
-    `args(uint32 do_id, uint16 num_fields, [uint16 field, VALUE]*num_fields)`  
+    `args(uint32 do_id, uint16 field_count, [uint16 field, VALUE]*field_count)`  
 > Handle a field update on this object. Note that the object MAY ALSO SEND this
 message to inform others of an update. If the field is ownrecv, the message
 will get sent to the owning-client's channel. If airecv, the message will get
@@ -231,14 +231,14 @@ CHANGE_ZONE tells everything that can see the object where the object is going.
 slightly differently, but is otherwise identical to the behavior of
 STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
 
-**STATESERVER_OBJECT_QUERY_ZONE_ALL(2021)**__
-    `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
+**STATESERVER_OBJECT_QUERY_ZONES_ALL(2021)**__
+    `args(uint32 parent_id, uint16 zone_count, [uint32 zone]*zone_count)`
 > Sent to the parent; queries zone(s) for all objects within. Each object will
 answer with a STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(_OTHER). After all
 objects have answered, the parent will send:
 
-**STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE(2046)**__
-    `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
+**STATESERVER_OBJECT_QUERY_ZONES_ALL_DONE(2046)**__
+    `args(uint32 parent_id, uint16 zone_count, [uint32 zone]*zone_count)`
 > This is an echo of the above message. It is sent back to the enquierer after
 all objects have announced their existence.
 
@@ -292,15 +292,13 @@ ENTER_OWNER tells the new owner of the object's arrival. The ... is as in REQUIR
 
 
 **STATESERVER_OBJECT_QUERY_FIELDS(2080)**  
-    `args(uint32 do_id, uint32 context, uint16 field_ids[...])`  
-> Ask the object for all of its fields.  
-Note: there is no length tag on field_ids; the end of the message signifies the
-end of the field ID list.
+    `args(uint32 do_id, uint32 context, uint16 field_count, [uint16 field]*field_count)`  
+> This message asks for multiple fields to be recieved at the same time.
 
 
 **STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081)**  
-    `args(uint32 do_id, uint32 context, uint8 success, [uint16 field_id, VALUE])`  
-> The reply sent back to the requester. Again, there is no length tag.
+    `args(uint32 do_id, uint32 context, uint8 success, <FIELD_DATA>)`  
+> The reply sent back to the requester.
 
 **STATESERVER_OBJECT_QUERY_ALL(2020)** `args(uint32 context)`  
 **STATESERVER_OBJECT_QUERY_ALL_RESP(2030)**  
@@ -401,22 +399,31 @@ The verify_code is 0x44696521 (Ascii "Die!") and is required.
 that satisify the given comparisons.  
 The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
 
+**DBSERVER_SELECT_STORED_OBJECT_FIELD(????)**  
+    `args(uint32 context, uint32 do_id, uint16 field`  
+**DBSERVER_SELECT_STORED_OBJECT_FIELD_RESP(????)**  
+    `args(uint32 context, uint8 ret_code, <VALUE>)`  
+> This message select a single field from an object in the database.
+If the object is not found, the return code is FAILURE_NOT_FOUND.  
+If the object does not have that field, the return code is FAILURE_INVALID_FIELD.  
+If the field is empty, the return code is FAILURE_FIELD_EMPTY
 
-**DBSERVER_SELECT_STORED_OBJECT(1012)**  
+**DBSERVER_SELECT_STORED_OBJECT_FIELDS(1012)**  
     `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
-**DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, uint8 ret_code, [VALUE]*field_count)`  
-> This message selects a number of fields from an object in the database.  
-It returns the select fields in serialized form, in the order requested -- if found.
-Returns one of {SUCCESS, FAILURE_NOT_FOUND, FAILURE_INVALID_FIELD}.
+**DBSERVER_SELECT_STORED_OBJECT_FIELDS_RESP(1013)**  
+    `args(uint32 context, uint8 ret_code, <FIELD_DATA>)`  
+> This message selects multiple fields from an object in the database.
+If the object is not found, it returns FAILURE_NOT_FOUND.
+If the object does not have one of the fields, it returns FAILURE_INVALID_FIELD.
+If any of the requested fields are empty, they are not returned.
 
 
 **DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
     `args(uint32 context, uint32 do_id)`  
 **DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
     `args(uint32 context, uint8 ret_code, [uint16 dclass_id, FIELD_DATA])`  
-> This message queries all of the database fields from the object and returns the response -- if found.
-Returns one of {SUCCESS, FAILURE_NOT_FOUND}.
+> This message queries all of the database fields from the object.
+If the object is not found, it returns FAILURE_NOT_FOUND.
 
 
 **DBSERVER_SELECT_QUERY(1016)**  
@@ -427,14 +434,16 @@ Returns one of {SUCCESS, FAILURE_NOT_FOUND}.
 DistributedClass that satisfy the given comparisons.
 The return is a list of do_ids corresponding to the selected elements.
 
+**DBSERVER_UPDATE_STORED_OBJECT_FIELD(????)**  
+    `args(uint32 do_id, uint16 field_id, uint16 <VALUE>)`  
+> This message updates a single database field.
 
-**DBSERVER_UPDATE_STORED_OBJECT(1014)**  
+**DBSERVER_UPDATE_STORED_OBJECT_FIELDS(1014)**  
     `args(uint32 do_id, FIELD_DATA)`  
 > This message replaces the current values of the given object,
 with the new values given in FIELD_DATA.  
 This command updates a value in the database, ignoring its initial value.
 If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
-
 
 **DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS(1024)**  
     `args(uint32 context, uint32 do_id, uint16 field_count,
@@ -525,82 +534,76 @@ own. Therefore, all of these messages are meant to be sent to an active client
 session channel.
 
 
-**CLIENTAGENT_OPEN_CHANNEL(3104)**
-    `args(uint64 channel)`
+**CLIENTAGENT_OPEN_CHANNEL(3104)** `args(uint64 channel)`  
 > Instruct the client session to open a channel on the MD. Messages sent to this
 new channel will be processed by the CA.
 
-**CLIENTAGENT_CLOSE_CHANNEL(3105)**
-    `args(uint64 channel)`
+**CLIENTAGENT_CLOSE_CHANNEL(3105)** `args(uint64 channel)`  
 > This message is the antithesis of the message above. The channel is immediately
 closed, even if the channel was automatically opened.
 
-**CLIENTAGENT_ADD_INTEREST(3106)**
-    `args(uint16 interest_id, uint32 parent_id, [uint32 zone_id, uint32 zone_id, ...])`
+**CLIENTAGENT_ADD_INTEREST(3106)**  
+    `args(uint16 interest_id, uint32 parent_id, uint32 zone_id)`  
 > This message instructs the CA to open an interest, as if the client had
 requested the interest itself.
 
-**CLIENTAGENT_REMOVE_INTEREST(3107)**
-    `args(uint16 interest_id)`
+**CLIENTAGENT_ADD_INTEREST_MULTIPLE(????)**  
+    `args(uint16 interest_id, uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
+> This message instructs the CA to open an interest, as if the client had
+requested the interest itself.
+
+**CLIENTAGENT_REMOVE_INTEREST(3107)** `args(uint16 interest_id)`  
 > The antithesis of the message above: cause an open interest to be closed. This
 is even valid for client-opened interests, if the interest_id matches a client-requested
 interest.
 
-**CLIENTAGENT_ADD_POST_REMOVE(3108)**
-    `args(string msg)`
+**CLIENTAGENT_ADD_POST_REMOVE(3108)** `args(string msg)`  
 > Similar to CONTROL_ADD_POST_REMOVE, this hangs a "post-remove" message on the
 client. If the client is ever disconnected, the post-remove messages will be sent
 out automatically.
 
-**CLIENTAGENT_CLEAR_POST_REMOVE(3109)**
-    `args()`
+**CLIENTAGENT_CLEAR_POST_REMOVE(3109)** `args()`  
 > Undoes all CLIENTAGENT_ADD_POST_REMOVE messages.
 
-**CLIENTAGENT_DISCONNECT(3101)**
-    `args(uint16 code, string reason)`
+**CLIENTAGENT_DISCONNECT(3101)**  
+    `args(uint16 code, string reason)`  
 > Drops the client with the specified code and reason. The code and reason carry
 the same meaning as CLIENT_GO_GET_LOST.
 
-**CLIENTAGENT_DROP(3102)**
-    `args()`
+**CLIENTAGENT_DROP(3102)** `args()`  
 > Similar to above, but causes the CA to silently close the client connection,
 providing no explanation whatsoever to the client.
 
-**CLIENTAGENT_SEND_DATAGRAM(3100)**
-    `args(string datagram)`
+**CLIENTAGENT_SEND_DATAGRAM(3100)** `args(string datagram)`  
 > Send a raw datagram down the pipe to the client. This is useful for sending
 game-specific messages to the client, debugging, etc.
 
-**CLIENTAGENT_SET_SENDER_ID(3103)**
-    `args(uint64 channel)`
+**CLIENTAGENT_SET_SENDER_ID(3103)** `args(uint64 channel)`  
 > Changes the sender used to represent this client. This is useful if game
 components need to identify the avatar/account a given message came from: by
 changing the sender channel to include this information, the server can easily
 determine the account ID of a client that sends a field update. Note that this
 also results in the CA opening the new channel, if it isn't open already.
 
-**CLIENTAGENT_SET_STATE(3110)**
-    `args(uint16 state)`
+**CLIENTAGENT_SET_STATE(3110)** `args(uint16 state)`  
 > Move the CA's state machine to a given state. This is mainly used when a client
 logs in or logs out, to flip the client between the ANONYMOUS and ESTABLISHED
 states respectively.
 
-**CLIENTAGENT_ADD_SESSION_OBJECT(3112)**
-    `args(uint32 do_id)`
+**CLIENTAGENT_ADD_SESSION_OBJECT(3112)** `args(uint32 do_id)`  
 > Declares the specified object to be a "session object" -- an avatar, for example --
 that is automatically cleaned up when the client disconnects. In addition, session
 objects are presumed to be required for the proper function of a client. Therefore,
 if a session object is ever deleted by another process, the client is automatically
 dropped.
 
-**CLIENTAGENT_REMOVE_SESSION_OBJECT(3113)**
-    `args(uint32 do_id)`
+**CLIENTAGENT_REMOVE_SESSION_OBJECT(3113)** `args(uint32 do_id)`  
 > Antithesis of above message. The declared object is no longer tied to the client's
 session, and will therefore not be deleted if the client drops (nor will the client
 be dropped if this object is deleted).
 
-**CLIENTAGENT_DECLARE_OBJECT(3114)**
-    `args(uint32 do_id, uint16 dclass_id)`
+**CLIENTAGENT_DECLARE_OBJECT(3114)**  
+    `args(uint32 do_id, uint16 dclass_id)`  
 > Because Client Agents verify the integrity of field updates, they must know the
 dclass of a given object to ensure that the incoming field update is for a field that
 the dclass/object actually has. Therefore, clients are normally unable to send messages
@@ -609,13 +612,12 @@ to the client. This message explicitly tells the CA that a given object exists, 
 a given type, and allows the client to send field updates to that object even if
 the client cannot currently see that object.
 
-**CLIENTAGENT_UNDECLARE_OBJECT(3115)**
-    `args(uint32 do_id)`
+**CLIENTAGENT_UNDECLARE_OBJECT(3115)** `args(uint32 do_id)`  
 > Antithesis of above message: the object is no longer explicitly declared, and
 the client can no longer send updates on this object without seeing it.
 
-**CLIENTAGENT_SET_FIELDS_SENDABLE(3111)**
-    `args(uint32 do_id, [uint16 field_id, uint16 field_id, ...])`
+**CLIENTAGENT_SET_FIELDS_SENDABLE(3111)**  
+    `args(uint32 do_id, uint16 field_count, [uint16 field]*field_count)`  
 > Override the security on certain fields for a given object. The specified fields
 are made sendable by the client regardless of ownsend/clsend. To undo the security
 override, send this message again without any field IDs, to clear the list of
