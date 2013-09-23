@@ -11,43 +11,45 @@
 | CONTROL_SET_CON_URL       |    9014 | `string url`                |
 
 ### Client Messages ###
-| Message                                   | Type Id | Format                                                                                            |
-| ----------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
-| CLIENT_HELLO                              |    0000 | `uint32 dc_hash`, `string version`                                                                |
-| CLIENT_HELLO_RESP                         |    0001 |                                                                                                   |
-| CLIENT_LEAVING                            |    0002 |                                                                                                   |
-| CLIENT_DISCONNECT                         |    0003 | `uint16 disconnect_code`, `string reason`                                                         |
-| CLIENT_HEARTBEAT                          |    0004 |                                                                                                   |
-| CLIENT_CREATE_OBJECT_REQUIRED             |    0100 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
-| CLIENT_CREATE_OBJECT_REQUIRED_OTHER       |    0101 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER |    0102 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| CLIENT_OBJECT_DISABLE                     |    0103 | `uint32 do_id`                                                                                    |
-| CLIENT_OBJECT_SET_FIELD                   |    0116 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                      |
-| CLIENT_OBJECT_SET_FIELDS                  |    0117 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                    |
-| CLIENT_OBJECT_LOCATION                    |    0139 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                              |
-
-#TODO
-| CLIENT_ADD_INTEREST                       |      97 | `uint16 interest_id`, `uint32 context`, `uint32 parent_id`, `uint32 zone_id`, [`...`]             |
-| CLIENT_REMOVE_INTERST                     |      98 | `uint16 interest_id`, `uint32 context`                                                            |
-| CLIENT_DONE_INTEREST_RESP                 |      48 | `uint16 interest_id`, `uint32 context`                                                            |
+| Message                                   | Type Id | Format                                                                                                         |
+| ----------------------------------------- |:-------:| -------------------------------------------------------------------------------------------------------------- |
+| CLIENT_HELLO                              |    0000 | `uint32 dc_hash`, `string version`                                                                             |
+| CLIENT_HELLO_RESP                         |    0001 |                                                                                                                |
+| CLIENT_LEAVING                            |    0002 |                                                                                                                |
+| CLIENT_DISCONNECT                         |    0003 | `uint16 disconnect_code`, `string reason`                                                                      |
+| CLIENT_HEARTBEAT                          |    0004 |                                                                                                                |
+| CLIENT_CREATE_OBJECT_REQUIRED             |    0100 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
+| CLIENT_CREATE_OBJECT_REQUIRED_OTHER       |    0101 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
+| CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER |    0102 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
+| CLIENT_OBJECT_DISABLE                     |    0103 | `uint32 do_id`                                                                                                 |
+| CLIENT_OBJECT_SET_FIELD                   |    0116 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                   |
+| CLIENT_OBJECT_SET_FIELDS                  |    0117 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                 |
+| CLIENT_OBJECT_LOCATION                    |    0139 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                                           |
+| CLIENT_ADD_INTEREST                       |    0200 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
+| CLIENT_ADD_INTEREST_MULTIPLE              |    0201 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| CLIENT_REMOVE_INTEREST                    |    0202 | `uint32 context`, `uint16 interest_id`                                                                         |
+| CLIENT_DONE_INTEREST_RESP                 |    0203 | `uint32 context`, `uint16 interest_id`                                                                         |
 
 ### Client Agent Messages ###
-| Message                           | Type Id | Format                                                                |
-| --------------------------------- |:-------:| --------------------------------------------------------------------- |
-| CLIENTAGENT_SET_STATE             |    1000 | `uint16 ca_state`                                                     |
-| CLIENTAGENT_DISCONNECT            |    1003 | `uint16 disconnect_code`, `string reason`                             |           |
-| CLIENTAGENT_DROP                  |    1004 |                                                                       |
-| CLIENTAGENT_DECLARE_OBJECT        |    1010 | `uint32 do_id`, `uint16 dclass_id`                                    |
-| CLIENTAGENT_UNDECLARE_OBJECT      |    1011 | `uint32 do_id`                                                        |
-| CLIENTAGENT_OPEN_CHANNNEL         |    1101 | `uint64 channel`                                                      |
-| CLIENTAGENT_CLOSE_CHANNEL         |    1102 | `uint64 channel`                                                      |
-| CLIENTAGENT_ADD_POST_REMOVE       |    1111 | `blob datagram`                                                       |
-| CLIENTAGENT_CLEAR_POST_REMOVE     |    1112 |                                                                       |
-| CLIENTAGENT_ADD_INTEREST          |    1200 | `uint16 interest_id`, `uint32 parent_id`, `[uint32 zone_id]`, `[...]` |
-| CLIENTAGENT_REMOVE_INTEREST       |    1201 | `uint16 interest_id`                                                  |
-| CLIENTAGENT_ADD_SESSION_OBJECT    |    3112 | `uint32 do_id`                                                        |
-| CLIENTAGENT_REMOVE_SESSION_OBJECT |    3113 | `uint32 do_id`                                                        |
-| CLIENTAGENT_SET_FIELDS_SENDABLE   |    3111 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                          |
+| Message                           | Type Id | Format                                                                                       |
+| --------------------------------- |:-------:| -------------------------------------------------------------------------------------------- |
+| CLIENTAGENT_SET_STATE             |    1000 | `uint16 ca_state`                                                                            |
+| CLIENTAGENT_SET_CLIENT_ID         |    1001 | `uint64 channel`                                                                             |
+| CLIENTAGENT_SEND_DATAGRAM         |    1002 | `blob datagram`                                                                              |
+| CLIENTAGENT_DISCONNECT            |    1003 | `uint16 disconnect_code`, `string reason`                                                    |
+| CLIENTAGENT_DROP                  |    1004 |                                                                                              |
+| CLIENTAGENT_DECLARE_OBJECT        |    1010 | `uint32 do_id`, `uint16 dclass_id`                                                           |
+| CLIENTAGENT_UNDECLARE_OBJECT      |    1011 | `uint32 do_id`                                                                               |
+| CLIENTAGENT_ADD_SESSION_OBJECT    |    1012 | `uint32 do_id`                                                                               |
+| CLIENTAGENT_REMOVE_SESSION_OBJECT |    1013 | `uint32 do_id`                                                                               |
+| CLIENTAGENT_SET_FIELDS_SENDABLE   |    1014 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                                                 |
+| CLIENTAGENT_OPEN_CHANNNEL         |    1101 | `uint64 channel`                                                                             |
+| CLIENTAGENT_CLOSE_CHANNEL         |    1102 | `uint64 channel`                                                                             |
+| CLIENTAGENT_ADD_POST_REMOVE       |    1111 | `blob datagram`                                                                              |
+| CLIENTAGENT_CLEAR_POST_REMOVE     |    1112 |                                                                                              |
+| CLIENTAGENT_ADD_INTEREST          |    1200 | `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
+| CLIENTAGENT_ADD_INTEREST_MULTIPLE |    1201 | `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| CLIENTAGENT_REMOVE_INTEREST       |    1202 | `uint16 interest_id`                                                                         |
 
 ### State Server Messages ###
 | Message                                       | Type Id | Format                                                                                            |
