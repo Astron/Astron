@@ -778,3 +778,157 @@ class DatabaseBaseTests(object):
         # Cleanup
         self.deleteObject(80, doid)
         self.conn.send(Datagram.create_remove_channel(80))
+
+    def test_delete_fields(self):
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(90))
+
+        # Create objects
+        def generic_db_obj():
+            dg = Datagram.create([777], 90, DBSERVER_OBJECT_CREATE)
+            dg.add_uint32(1) # Context
+            dg.add_uint16(DistributedTestObject5)
+            dg.add_uint16(4) # Field count
+            dg.add_uint16(setDb3)
+            dg.add_string("Not enough vespian gas.")
+            dg.add_uint16(setRDB3)
+            dg.add_uint32(5337)
+            dg.add_uint16(setRDbD5)
+            dg.add_uint8(9)
+            dg.add_uint16(setFoo)
+            dg.add_uint16(123)
+            self.conn.send(dg)
+
+            dg = self.conn.recv()
+            dgi = DatagramIterator(dg)
+            dgi.seek(CREATE_DOID_OFFSET)
+            return dgi.read_uint32()
+
+        doidA = generic_db_obj()
+
+        # Clear a single field
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_uint32(doidA)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get cleared field
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doidA)
+        self.conn.send(dg)
+
+        # Cleared field shouldn't be returned
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Clear a required field with a default
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_uint32(doidA)
+        dg.add_uint16(setRDbD5)
+        self.conn.send(dg)
+
+        # Get cleared fields
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doidA)
+        dg.add_uint16(setRDbD5)
+        self.conn.send(dg)
+
+        # Cleared required default field should be reset 
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint32(setRDbD5DefaultValue)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Clear a defaultless required field
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_uint32(doidA)
+        dg.add_uint16(setRDB3)
+        self.conn.send(dg)
+
+        # Get cleared field
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(4) # Context
+        dg.add_uint32(doidA)
+        dg.add_uint16(setRDB3)
+        self.conn.send(dg)
+
+        # Cleared defaultless required field should be ignored
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(5337)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Clearing multiple fields should behave as expected per field
+        doidB = generic_db_obj()
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELDS)
+        dg.add_uint32(doidB)
+        dg.add_uint16(4) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint16(setFoo)
+        self.conn.send(dg)
+
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(doidB)
+        self.conn.send(dg)
+
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(5337)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint32(setRDbD5DefaultValue)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Clear one field then attempt to clear multiple fields, some of which are already cleared
+        doidC = generic_db_obj()
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_uint32(doidC)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELDS)
+        dg.add_uint32(doidC)
+        dg.add_uint16(4) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint16(setFoo)
+        self.conn.send(dg)
+
+        # Get all object fields
+        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(doidC)
+        self.conn.send(dg)
+
+        # Fields should be cleared
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(5337)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint32(setRDbD5DefaultValue)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Cleanup
+        self.deleteObject(90, doidA)
+        self.deleteObject(90, doidB)
+        self.deleteObject(90, doidC)
+        self.conn.send(Datagram.create_remove_channel(90))

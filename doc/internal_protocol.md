@@ -422,6 +422,7 @@ fails and no values are returned.
 **DBSERVER_OBJECT_DELETE_FIELDS(4031)**  
    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
 > These messages delete individual fields from a database object.
+Required fields with defaults will be reset. Required fields without defaults cannot be cleared.
 
 
 
