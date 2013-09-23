@@ -13,11 +13,11 @@
 ### Client Messages ###
 | Message                                   | Type Id | Format                                                                                                         |
 | ----------------------------------------- |:-------:| -------------------------------------------------------------------------------------------------------------- |
-| CLIENT_HELLO                              |    0000 | `uint32 dc_hash`, `string version`                                                                             |
-| CLIENT_HELLO_RESP                         |    0001 |                                                                                                                |
-| CLIENT_LEAVING                            |    0002 |                                                                                                                |
-| CLIENT_DISCONNECT                         |    0003 | `uint16 disconnect_code`, `string reason`                                                                      |
-| CLIENT_HEARTBEAT                          |    0004 |                                                                                                                |
+| CLIENT_HELLO                              |    0001 | `uint32 dc_hash`, `string version`                                                                             |
+| CLIENT_HELLO_RESP                         |    0002 |                                                                                                                |
+| CLIENT_GOODBYE                            |    0003 |                                                                                                                |
+| CLIENT_EJECT                              |    0004 | `uint16 error_code`, `string reason`                                                                      |
+| CLIENT_HEARTBEAT                          |    0005 |                                                                                                                |
 | CLIENT_CREATE_OBJECT_REQUIRED             |    0100 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
 | CLIENT_CREATE_OBJECT_REQUIRED_OTHER       |    0101 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
 | CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER |    0102 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
@@ -36,8 +36,8 @@
 | CLIENTAGENT_SET_STATE             |    1000 | `uint16 ca_state`                                                                            |
 | CLIENTAGENT_SET_CLIENT_ID         |    1001 | `uint64 channel`                                                                             |
 | CLIENTAGENT_SEND_DATAGRAM         |    1002 | `blob datagram`                                                                              |
-| CLIENTAGENT_DISCONNECT            |    1003 | `uint16 disconnect_code`, `string reason`                                                    |
-| CLIENTAGENT_DROP                  |    1004 |                                                                                              |
+| CLIENTAGENT_EJECT                 |    1004 | `uint16 error_code`, `string reason`                                                    |
+| CLIENTAGENT_DROP                  |    1005 |                                                                                              |
 | CLIENTAGENT_DECLARE_OBJECT        |    1010 | `uint32 do_id`, `uint16 dclass_id`                                                           |
 | CLIENTAGENT_UNDECLARE_OBJECT      |    1011 | `uint32 do_id`                                                                               |
 | CLIENTAGENT_ADD_SESSION_OBJECT    |    1012 | `uint32 do_id`                                                                               |
@@ -56,7 +56,7 @@
 | --------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
 | STATESERVER_OBJECT_CREATE_WITH_REQUIRED       |    2000 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
 | STATESERVER_OBJECT_CREATE_WITH_REQUIRED_OTHER |    2001 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| STATESERVER_AI_RESET                          |    2090 | `uint64 ai_channel`                                                                               |
+| STATESERVER_DELETE_AI_OBJECTS                 |    2090 | `uint64 ai_channel`                                                                               |
 
 ### Distributed Object Accessor Messages ###
 | Message                            | Type Id | Format                                                                                            |
