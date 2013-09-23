@@ -49,13 +49,13 @@ class DatabaseServer : public Role
 			uint16_t msg_type = dgi.read_uint16();
 			switch(msg_type)
 			{
-				case DBSERVER_CREATE_STORED_OBJECT:
+				case DBSERVER_OBJECT_CREATE:
 				{
 					uint32_t context = dgi.read_uint32();
 
 					// Start response with generic header
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_CREATE_STORED_OBJECT_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_CREATE_RESP);
 					resp.add_uint32(context);
 
 					// Get DistributedClass
@@ -146,12 +146,12 @@ class DatabaseServer : public Role
 					send(resp);
 				}
 				break;
-				case DBSERVER_SELECT_STORED_OBJECT_ALL:
+				case DBSERVER_OBJECT_GET_ALL:
 				{
 					uint32_t context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_SELECT_STORED_OBJECT_ALL_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
 					resp.add_uint32(context);
 
 					uint32_t do_id = dgi.read_uint32();
@@ -162,7 +162,7 @@ class DatabaseServer : public Role
 					if(m_db_engine->get_object(do_id, dbo))
 					{
 						m_log->spam() << "... object found!" << std::endl;
-						resp.add_uint8(MSG_SUCCESS);
+						resp.add_uint8(SUCCESS);
 						resp.add_uint16(dbo.dc_id);
 						resp.add_uint16(dbo.fields.size());
 						for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
@@ -175,23 +175,16 @@ class DatabaseServer : public Role
 					else
 					{
 						m_log->spam() << "... object not found." << std::endl;
-						resp.add_uint8(MSG_FAILURE_NOT_FOUND);
+						resp.add_uint8(FAILURE);
 					}
 					send(resp);
 				}
 				break;
-				case DBSERVER_DELETE_STORED_OBJECT:
+				case DBSERVER_OBJECT_DELETE:
 				{
-					if(dgi.read_uint32() == DBSERVER_DELETE_STORED_OBJECT_VERIFY_CODE)
-					{
-						uint32_t do_id = dgi.read_uint32();
-						m_db_engine->delete_object(do_id);
-						m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
-					}
-					else
-					{
-						m_log->warning() << "Wrong delete verify code." << std::endl;
-					}
+					uint32_t do_id = dgi.read_uint32();
+					m_db_engine->delete_object(do_id);
+					m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 				}
 				break;
 				default:
