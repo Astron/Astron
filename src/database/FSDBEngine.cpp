@@ -115,6 +115,15 @@ public:
 		}
 	}
 
+	// TODO: Implement
+	virtual DCClass* get_dclass(uint32_t do_id)
+	{
+		return NULL;
+	}
+	virtual void set_fields(uint32_t do_id, DatabaseObject &dbo)
+	{
+	}
+
 	virtual uint32_t create_object(const DatabaseObject &dbo)
 	{
 		uint32_t do_id = get_next_id();

@@ -187,6 +187,165 @@ class DatabaseServer : public Role
 					m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 				}
 				break;
+				case DBSERVER_OBJECT_SET_FIELD:
+				{
+					uint32_t do_id = dgi.read_uint32();
+					DCClass *dcc = m_db_engine->get_dclass(do_id);
+					if(!dcc)
+					{
+						return;
+					}
+
+					DatabaseObject dbo(dcc->get_number());
+					uint16_t field_id = dgi.read_uint16();
+					DCField *field = dcc->get_field_by_index(field_id);
+					if(field)
+					{
+						if(field->is_db())
+						{
+							dgi.unpack_field(field, dbo.fields[field]);
+							m_db_engine->set_fields(do_id, dbo);
+						}
+					}
+				}
+				break;
+				case DBSERVER_OBJECT_SET_FIELDS:
+				{
+					uint32_t do_id = dgi.read_uint32();
+					DCClass *dcc = m_db_engine->get_dclass(do_id);
+					if(!dcc)
+					{
+						return;
+					}
+
+					DatabaseObject dbo(dcc->get_number());
+					uint16_t field_count = dgi.read_uint16();
+					m_log->spam() << "Unpacking fields..." << std::endl;
+					try
+					{
+						for(uint32_t i = 0; i < field_count; ++i)
+						{
+							uint16_t field_id = dgi.read_uint16();
+							DCField *field = dcc->get_field_by_index(field_id);
+							if(field)
+							{
+								if(field->is_db())
+								{
+									dgi.unpack_field(field, dbo.fields[field]);
+								}
+								else
+								{
+									m_log->warning() << "Recieved non-db field in OBJECT_SET_FIELDS." << std::endl;
+									dgi.skip_field(field);
+								}
+							}
+						}
+					}
+					catch(std::exception &e)
+					{
+						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
+						               << e.what() << std::endl;
+						return;
+					}
+					m_db_engine->set_fields(do_id, dbo);					
+				}
+				break;
+				case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
+				{
+					uint32_t context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+					resp.add_uint32(context);
+
+					// Get existing database values
+					DatabaseObject dbo_get;
+					uint32_t do_id = dgi.read_uint32();
+					if(!m_db_engine->get_object(do_id, dbo_get))
+					{
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Unpack fields from datagram
+					DCClass *dcc = g_dcf->get_class(dbo_get.dc_id);
+					DatabaseObject dbo_old(dbo_get.dc_id);
+					DatabaseObject dbo_new(dbo_get.dc_id);
+					uint16_t field_count = dgi.read_uint16();
+					m_log->spam() << "Unpacking fields..." << std::endl;
+					try
+					{
+						for(uint32_t i = 0; i < field_count; ++i)
+						{
+							uint16_t field_id = dgi.read_uint16();
+							DCField *field = dcc->get_field_by_index(field_id);
+							if(field)
+							{
+								if(field->is_db())
+								{
+									dgi.unpack_field(field, dbo_old.fields[field]);
+									dgi.unpack_field(field, dbo_new.fields[field]);
+								}
+								else
+								{
+									m_log->error() << "Recieved non-db field in OBJECT_SET_FIELDS_IF_EQUALS." << std::endl;
+									resp.add_uint8(FAILURE);
+									send(resp);
+									return;
+								}
+							}
+						}
+					}
+					catch(std::exception &e)
+					{
+						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
+						               << e.what() << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Compare old and existing fields
+					bool failure = false;
+					std::list<DCField*> not_equals;
+					for(auto it = dbo_old.fields.begin(); it != dbo_old.fields.end() && !failure; ++it)
+					{
+						auto current = dbo_get.fields.find(it->first);
+						if(current != dbo_get.fields.end())
+						{
+							if(current->second != it->second)
+							{
+								failure = true;
+								not_equals.push_back(current->first);
+							}
+						}
+						else
+						{
+							failure = true;
+						}
+					}
+
+					// Set fields if successful
+					if(!failure)
+					{
+						m_db_engine->set_fields(do_id, dbo_new);
+						resp.add_uint8(SUCCESS);
+						send(resp);
+						return;
+					}
+
+					// Return current fields if not equals
+					resp.add_uint16(not_equals.size());
+					for(auto it = not_equals.begin(); it != not_equals.end(); ++it)
+					{
+						std::vector<uint8_t> data = dbo_get.fields[*it];
+						resp.add_uint16((*it)->get_number());
+						resp.add_data(data);
+					}
+					send(resp);
+				}
+				break;
 				default:
 					m_log->error() << "Recieved unknown MsgType: " << msg_type << std::endl;
 			};

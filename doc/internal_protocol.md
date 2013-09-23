@@ -335,20 +335,6 @@ When a stored object is created directly, the object behaves as if it were its o
 Message Director participant, and subscribes to its own channel (equal to the
 object's ID) to receive object-specific updates.
 
-
-#### Section 4.1: Comparison with non-existant values ####
-In most operations, if a value does not exist, it simply is not included in any
-datagram. In the case of operations which require comparisons, it may be necessary
-to compare against a field which doesn't exist (example: UPDATE_IF_EQUALS).
-
-During comparisons the Null values are:
-
- - Integer-types, Float-types: `0`
- - Strings, blobs, variable-width types: _No data (length zero)_
-
-
-#### Section 4.2: Database Server control messages ####
-
 The following is a list of database control messages:
 
 **DBSERVER_OBJECT_CREATE(4000)**  
