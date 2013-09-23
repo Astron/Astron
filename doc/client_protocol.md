@@ -97,22 +97,22 @@ leaving the client's visibility, either due to deletion, zone change, or dropped
 interest.
 
 **CLIENT_CREATE_OBJECT_REQUIRED(34)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, <REQUIRED>)`  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id, <REQUIRED>)`  
 > Inform the client of an object entering one of the client's interests. The
 ... is an in-order serialization of all required fields.
 Note: This is analogous to `STATESERVER_OBJECT_GENERATE_WITH_REQURIED` in the
 internal protocol.
 
 **CLIENT_CREATE_OBJECT_REQUIRED_OTHER(35)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id,
-     uint32 do_id, <REQUIRED>, <OTHER>)`  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED>, <OTHER>)`  
 > As above, but includes OTHER fields. The required fields are followed by a uint16
 representing the number of additional fields included in the generate message,
 followed by a `(uint16 field_id, VALUE)` for each field.
 
-**CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER(36)**
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id,
-     uint32 do_id, <REQUIRED>, <OTHER>)`  
+**CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER(36)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED>, <OTHER>)` 
 > Data-wise, this is precisely the same as above. However, it carries the additional
 semantic meaning that the object is "owned" by this client, so the client should
 generate an "ownerview" ("OV") perspective rather than its normal client perspective.
