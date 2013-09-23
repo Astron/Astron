@@ -643,7 +643,9 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_CREATE)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject3)
-        dg.add_uint16(5) # Field count
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
         dg.add_uint16(setDb3)
         dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
         self.conn.send(dg)
@@ -653,8 +655,125 @@ class DatabaseBaseTests(object):
         dgi.seek(CREATE_DOID_OFFSET)
         doid = dgi.read_uint32()
 
-        # Select the first field
-        # TODO: Finish
+        # Select the field
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get value in reply
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setDb3)
+        dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select multiple fields
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
+        self.conn.send(dg)
+
+        # Get values in reply
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(dgi.read_uint32() == 3) # Check context
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 1337)
+            elif field == setDb3:
+                self.assertTrue(dgi.read_string() == "Uppercut! Downercut! Fireball! Bowl of Punch!")
+            else:
+                self.fail("Bad field type")
+
+        # Select invalid object
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(4) # Context
+        dg.add_uint32(doid+1)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get failure
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(FAILURE)
+        selt.assertTrue(self.conn.expect(dg))
+
+        # Select invalid object, multiple fields
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(doid+1)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
+        self.conn.send(dg)
+
+        # Get failure
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint8(FAILURE)
+        selt.assertTrue(self.conn.expect(dg))
+
+        # Clear one field
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Select the cleared field
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get failure
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(FAILURE)
+        selt.assertTrue(self.conn.expect(dg))
+
+        # Select the cleared field, with multiple message
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(7) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get success
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(7) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(0) # Field count
+        selt.assertTrue(self.conn.expect(dg))
+
+        # Select a cleared and non-cleared field
+        dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(8) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Get success
+        dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(7) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        selt.assertTrue(self.conn.expect(dg))
 
         # Cleanup
         self.deleteObject(80, doid)
