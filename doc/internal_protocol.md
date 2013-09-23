@@ -352,7 +352,8 @@ During comparisons the Null values are:
 The following is a list of database control messages:
 
 **DBSERVER_OBJECT_CREATE(4000)**  
-    `args(uint32 context, uint16 dclass_id, uint16 field_count, [uint16 field_id, <VALUE>])`  
+    `args(uint32 context, uint16 dclass_id, uint16 field_count,
+         [uint16 field_id, <VALUE>]*field_count)`  
 **DBSERVER_OBJECT_CREATE_RESP(4001)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
@@ -372,9 +373,11 @@ is returned.
 If the field is not set, the response returns a failure.
 
 **DBSERVER_OBJECT_GET_FIELDS(4012)**  
-    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count`  
+    `args(uint32 context, uint32 do_id, uint16 field_count,
+         [uint16 field_id]*field_count`  
 **DBSERVER_OBJECT_GET_FIELDS_RESP(4013)**  
-    `args(uint32 context, uint8 success, [uint16 field_count], [uint16 field_id, <VALUE>]*field_count)`  
+    `args(uint32 context, uint8 success, [uint16 field_count],
+         [uint16 field_id, <VALUE>]*field_count)`  
 > This message gets the values of multiple fields from an object in the database.
 Database fields with no stored value are not included in the list of returned fields.
 
@@ -389,7 +392,7 @@ Database fields with no stored value are not included in the list of returned fi
 
 **DBSERVER_OBJECT_SET_FIELD(4020)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
-**DBSERVER_OBJECT_SET_FIELD(4021)**  
+**DBSERVER_OBJECT_SET_FIELDS(4021)**  
     `args(uint32 do_id, uint16 field_count, [uint16 field_id, <VALUE>]*field_count)`  
 > These messages replace an object's current stored values for given fields.
 For updates that are derived or dependent on previous values, consider
@@ -399,10 +402,10 @@ using SET_FIELD(S)_IF_EQUALS message instead.
     `args(uint32 context, uint32 do_id, uint16 field_id, <VALUE> old, <VALUE> new)`  
 **DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP(4023)**  
     `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
-**DBSERVER_OBJECT_SET_FIELD_IF_EQUALS(4024)**  
+**DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS(4024)**  
     `args(uint32 context, uint32 do_id, uint16 field_count,
          [uint16 field_id, VALUE old, VALUE new]*field_count)`  
-**DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP(4025)**  
+**DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP(4025)**  
     `args(uint32 context, uint8 success, [uint16 field_count],
          [uint16 field_id, <VALUE>]*field_count)`  
 > These message replaces the current values of the given object with new values,
