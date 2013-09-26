@@ -183,23 +183,22 @@ private:
 				break;
 				case ST_int8:
 				{
-					// Cast as short, because char treated as character data
-					out << *(short*)(&value[0]);
+					out << *(int8_t*)(&value[0]);
 				}
 				break;
 				case ST_int16:
 				{
-					out << *(short*)(&value[0]);
+					out << *(int16_t*)(&value[0]);
 				}
 				break;
 				case ST_int32:
 				{
-					out << *(int*)(&value[0]);
+					out << *(int32_t*)(&value[0]);
 				}
 				break;
 				case ST_int64:
 				{
-					out << *(long long*)(&value[0]);
+					out << *(int64_t*)(&value[0]);
 				}
 				break;
 				case ST_uint8:
@@ -241,6 +240,39 @@ private:
 
 		yamldb_log.error() << "Recieved non-atomic field: " << field->get_name() << std::endl;
 		out << YAML::Value << value;
+	}
+
+	bool write_yaml_object(uint32_t do_id, DCClass* dcc, const DatabaseObject &dbo) {
+		// Build object as YAMl output
+		YAML::Emitter out;
+		out << YAML::BeginMap
+			<< YAML::Key << "id"
+			<< YAML::Value << do_id
+			<< YAML::Key << "class"
+			<< YAML::Value << dcc->get_name()
+			<< YAML::Key << "fields"
+			<< YAML::Value << YAML::BeginMap;
+		for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
+		{
+			write_yaml_field(out, it->first, it->second);
+		}
+		out << YAML::EndMap
+			<< YAML::EndMap;
+
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+
+		// Print YAML to file
+		std::fstream file;
+		file.open(filename.str(), std::ios_base::out);
+		if(file.is_open())
+		{
+			file << out.c_str();
+			file.close();
+			return true;
+		}
+		return false;
 	}
 public:
 	YAMLEngine(DBEngineConfig dbeconfig, uint32_t min_id, uint32_t max_id) :
@@ -286,35 +318,10 @@ public:
 
 		DCClass *dcc = g_dcf->get_class(dbo.dc_id);
 
-		// Build object as YAMl output
-		YAML::Emitter out;
-		out << YAML::BeginMap
-			<< YAML::Key << "id"
-			<< YAML::Value << do_id
-			<< YAML::Key << "class"
-			<< YAML::Value << dcc->get_name()
-			<< YAML::Key << "fields"
-			<< YAML::Value << YAML::BeginMap;
-		for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
+		if(write_yaml_object(do_id, dcc, dbo))
 		{
-			write_yaml_field(out, it->first, it->second);
-		}
-		out << YAML::EndMap
-			<< YAML::EndMap;
-
-		// Prepare object filename
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-
-		// Print YAML to file
-		std::fstream file;
-		file.open(filename.str(), std::ios_base::out);
-		if(file.is_open())
-		{
-			file << out.c_str();
-			file.close();
 			return do_id;
-		}		
+		}
 
 		return 0;
 	}
@@ -369,6 +376,91 @@ public:
 		}
 
 		return true;
+	}
+
+	DCClass* get_dclass(uint32_t do_id)
+	{
+		yamldb_log.spam() << "Getting dclass of object #" << do_id << " ..." << std::endl;
+
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+
+		// Open database object file
+		std::ifstream objstream(filename.str());
+		YAML::Node document = YAML::Load(objstream);
+
+		if(document.IsNull()) {
+			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
+			return NULL;
+		}
+
+		// Read object's DistributedClass
+		YAML::Node key_class = document["class"];
+		if(key_class.IsNull())
+		{
+			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
+			return NULL;
+		}
+		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+		if(!dcc) {
+			yamldb_log.error() << "Class '" << document["class"].as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+			return NULL;
+		}
+
+		return dcc;
+	}
+
+	void set_fields(uint32_t do_id, DatabaseObject &dbo)
+	{
+		yamldb_log.spam() << "Setting fields on object #" << do_id << " ..." << std::endl;
+
+		// Prepare object filename
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+
+		// Open database object file
+		std::ifstream objstream(filename.str());
+		YAML::Node document = YAML::Load(objstream);
+
+		if(document.IsNull()) {
+			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
+			return;
+		}
+
+		// Read object's DistributedClass
+		YAML::Node key_class = document["class"];
+		if(key_class.IsNull())
+		{
+			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
+			return;
+		}
+
+		// Read object's fields
+		YAML::Node key_fields = document["fields"];
+		if(key_fields.IsNull())
+		{
+			yamldb_log.error() << filename.str() << " does not contain the 'fields' key." << std::endl;
+			return;
+		}
+
+		// Get the fields from the file that are not being updated
+		DCClass* dcc = g_dcf->get_class(dbo.dc_id);
+		for(auto it = key_fields.begin(); it != key_fields.end(); ++it)
+		{
+			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+			if(!field) {
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+				continue;
+			}
+
+			if(dbo.fields.find(field) == dbo.fields.end())
+			{
+				dbo.fields[field] = read_yaml_field(field, it->second);
+			}
+		}
+
+		write_yaml_object(do_id, dcc, dbo);
 	}
 
 	void delete_object(uint32_t do_id)
