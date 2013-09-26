@@ -169,7 +169,9 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
-							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(it->second.begin(), it->second.end()) << std::endl; 
+							m_log->spam() << "Recieved field name-" << it->first->get_name()
+							              << ", value-" << std::string(it->second.begin(), it->second.end())
+							              << std::endl;
 						}
 					}
 					else
@@ -247,7 +249,66 @@ class DatabaseServer : public Role
 						               << e.what() << std::endl;
 						return;
 					}
-					m_db_engine->set_fields(do_id, dbo);					
+					m_db_engine->set_fields(do_id, dbo);
+				}
+				break;
+				case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
+				{
+					uint32_t context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+					resp.add_uint32(context);
+
+					// Get existing database values
+					DatabaseObject dbo_get;
+					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Setting object #" << do_id << " field if equals..." << std::endl;
+					if(!m_db_engine->get_object(do_id, dbo_get))
+					{
+						m_log->spam() << " ... object not found." << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Unpack field from datagram
+					DCClass *dcc = g_dcf->get_class(dbo_get.dc_id);
+					uint16_t field_id = dgi.read_uint16();
+					DCField *field = dcc->get_field_by_index(field_id);
+
+					// Check if field is set
+					auto current = dbo_get.fields.find(field);
+					if(current == dbo_get.fields.end())
+					{
+						m_log->spam() << " ... field not set." << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					std::vector<uint8_t> val_old;
+					std::vector<uint8_t> val_new;
+					dgi.unpack_field(field, val_old);
+					dgi.unpack_field(field, val_new);
+
+					// Return current value if not equals
+					if(current->second != val_old)
+					{
+						m_log->spam() << " ... old value != current value." << std::endl;
+						resp.add_uint8(FAILURE);
+						resp.add_uint16(field_id);
+						resp.add_data(current->second);
+						send(resp);
+					}
+
+					// Update current value
+					DatabaseObject dbo_new(dbo_get.dc_id);
+					dbo_new.fields[field] = val_new;
+					m_db_engine->set_fields(do_id, dbo_new);
+					m_log->spam() << "... successful." << std::endl;
+					resp.add_uint8(SUCCESS);
+					send(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
@@ -255,7 +316,7 @@ class DatabaseServer : public Role
 					uint32_t context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
 					// Get existing database values

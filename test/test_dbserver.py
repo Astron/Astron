@@ -496,7 +496,7 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = Datagram.create([70], [777], DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([70], 777, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(3) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject3)
