@@ -643,11 +643,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				uint16_t interest_id = dgi.read_uint16();
 				uint32_t context = dgi.read_uint32();
 				uint32_t parent = dgi.read_uint32();
-				if(m_interests.find(interest_id) != m_interests.end())
-				{
-					m_log->warning() << m_client_name << "Duplicate interest handle, dropping client" << std::endl;
-					send_disconnect(CLIENT_DISCONNECT_GENERIC, "Duplicate interest handle");
-				}
+				m_interests.erase(interest_id);
 				Interest i;
 				i.context = context;
 				i.parent = parent;
