@@ -399,9 +399,16 @@ but only if the 'old' values match the current state of the database.
 This method of updating the database is used to prevent race conditions,
 particularily when the new values are derived or dependent on the old values.  
 > If any of the given _old_ values don't match then the entire transaction fails.
-In this case, the current values of all given fields will be returned after FAILURE.  
+In this case, the current values of all non-empty fields will be returned after FAILURE.  
 > If any of the given fields are non-database or invalid, the entire transaction
 fails and no values are returned.
+
+**DBSERVER_OBJECT_SET_FIELD_IF_EMPTY(4026)**  
+    `args(uint32 context, uint32 do_id, uint16 field_id, <VALUE>)`  
+**DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP(4027)**  
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
+> This message sets the given field if it does not currently have a value.  
+> If the field is non-empty, the current value will be returned after FAILURE.
 
 **DBSERVER_OBJECT_DELETE_FIELD(4030)**  
    `args(uint32 do_id, uint16 field_id)`  
