@@ -115,6 +115,8 @@ if(BUILD_CLIENTAGENT)
 	set (CLIENTAGENT_FILES
 		src/clientagent/ClientAgent.cpp
 		src/clientagent/ClientMessages.h
+		src/clientagent/ClientFactory.cpp
+		src/clientagent/ClientFactory.h
 	)
 endif()
 

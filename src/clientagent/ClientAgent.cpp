@@ -1,4 +1,5 @@
 #include "ClientMessages.h"
+#include "ClientFactory.h"
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -844,7 +845,7 @@ class ClientAgent : public Role
 			boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
 			m_log->info() << "Got an incoming connection from "
 						 << remote.address() << ":" << remote.port() << std::endl;
-			new Client(socket, m_log, m_roleconfig, &m_ct); //It deletes itsself when connection is lost
+			ClientFactory::get_singleton().create(socket, m_log, m_roleconfig, &m_ct);
 			start_accept();
 		}
 
@@ -853,5 +854,8 @@ class ClientAgent : public Role
 
 		}
 };
+
+
+static ClientType<Client> client_type(0);
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");
