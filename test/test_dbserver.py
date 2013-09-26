@@ -456,6 +456,40 @@ class DatabaseBaseTests(object):
         self.deleteObject(60, doid)
         self.conn.send(Datagram.create_remove_channel(60))
 
+    def test_set_if_empty(self):
+        self.fail("Test no implemented.")
+        '''
+        # Update field where updated value equals the null value
+        dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
+        dg.add_uint32(6) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        dg.add_uint16(0) # Old value (null: 0-length)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        self.conn.send(dg)
+
+        # Get update success
+        dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP)
+        dg.add_uint32(6) # Context
+        dg.add_uint8(SUCCESS)
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select object with new value
+        dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(7) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Recieve updated value
+        dg = Datagram.create([70], [777], DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(7) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setDb3)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        self.assertTrue(self.conn.expect(dg))
+        '''
+
     def test_set_if_equals(self):
         self.conn.flush()
         self.conn.send(Datagram.create_add_channel(70))
@@ -501,6 +535,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(1) # Field Count
+        dg.add_uint16(setRDB3)
         dg.add_uint32(787878)
         self.assertTrue(self.conn.expect(dg))
 
@@ -520,6 +555,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878) # Correct value
         self.assertTrue(self.conn.expect(dg))
+        self.conn.flush()
 
         # Comparison existing value to non existing value in update
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
@@ -530,45 +566,13 @@ class DatabaseBaseTests(object):
         dg.add_string("Wish upon a twinkle...") # New value
         self.conn.send(dg)
 
-        # Get update failure
+        # Get update failure (old value doesn't exist)
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint8(FAILURE)
-        dg.add_uint16(setDb3)
-        dg.add_uint16(0) # Non-existant value (0-length string)
         self.assertTrue(self.conn.expect(dg))
 
-        # Update field where updated value equals the null value
-        dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
-        dg.add_uint32(6) # Context
-        dg.add_uint32(doid)
-        dg.add_uint16(setDb3)
-        dg.add_uint16(0) # Old value (null: 0-length)
-        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
-        self.conn.send(dg)
-
-        # Get update success
-        dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP)
-        dg.add_uint32(6) # Context
-        dg.add_uint8(SUCCESS)
-        self.assertTrue(self.conn.expect(dg))
-
-        # Select object with new value
-        dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(7) # Context
-        dg.add_uint32(doid)
-        dg.add_uint16(setDb3)
-        self.conn.send(dg)
-
-        # Recieve updated value
-        dg = Datagram.create([70], [777], DBSERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(7) # Context
-        dg.add_uint8(SUCCESS)
-        dg.add_uint16(setDb3)
-        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
-        self.assertTrue(self.conn.expect(dg))
-
-        # Update object with partially incorrect values
+        # Update object with partially empty values
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
         dg.add_uint32(8) # Context
         dg.add_uint32(doid)
@@ -584,10 +588,14 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
         dg.add_uint32(8) # Context
         dg.add_uint8(FAILURE)
-        dg.add_uint16(2) # Field count
+        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
-        dg.add_uint16(setDb3)
         dg.add_uint32(787878)
+
+        # Set the empty value to an actual value
+        dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
 
         # Update multiple with correct old values
@@ -601,6 +609,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setDb3)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
         dg.add_string("Mind if I... take a look inside the barn?!") # New value
+        self.conn.send(dg)
 
         # Recieve update success
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)

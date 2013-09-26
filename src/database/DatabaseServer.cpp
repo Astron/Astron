@@ -169,9 +169,6 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
-							m_log->spam() << "Recieved field name-" << it->first->get_name()
-							              << ", value-" << std::string(it->second.begin(), it->second.end())
-							              << std::endl;
 						}
 					}
 					else
@@ -322,8 +319,10 @@ class DatabaseServer : public Role
 					// Get existing database values
 					DatabaseObject dbo_get;
 					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Setting object #" << do_id << " fields if equals..." << std::endl;
 					if(!m_db_engine->get_object(do_id, dbo_get))
 					{
+						m_log->spam() << " ... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
@@ -383,6 +382,7 @@ class DatabaseServer : public Role
 						}
 						else
 						{
+							m_log->spam() << " ... field '" << it->first->get_name() << "' not set." << std::endl;
 							failure = true;
 						}
 					}
@@ -390,6 +390,7 @@ class DatabaseServer : public Role
 					// Set fields if successful
 					if(!failure)
 					{
+						m_log->spam() << "... successful." << std::endl;
 						m_db_engine->set_fields(do_id, dbo_new);
 						resp.add_uint8(SUCCESS);
 						send(resp);
@@ -400,6 +401,7 @@ class DatabaseServer : public Role
 					resp.add_uint16(not_equals.size());
 					for(auto it = not_equals.begin(); it != not_equals.end(); ++it)
 					{
+						m_log->spam() << "... field '" << (*it)->get_name() << "': current != old." << std::endl;
 						std::vector<uint8_t> data = dbo_get.fields[*it];
 						resp.add_uint16((*it)->get_number());
 						resp.add_data(data);
