@@ -128,7 +128,7 @@ it will assume that the client has crashed and disconnect the client.
 The server will respond by sending a CREATE for every object in the new zone,
 followed by a `CLIENT_DONE_INTEREST_RESP`.
 
-**CLIENT_REMOVE_INTEREST(98)**
+**CLIENT_REMOVE_INTEREST(99)**
     `args(uint16 interest_id, uint32 context)`
 > Remove interest added via a prior `CLIENT_ADD_INTEREST`. The server will send
 `CLIENT_OBJECT_DISABLE`s for any objects that are no longer visible as a result,
