@@ -585,10 +585,10 @@ class TestClientAgent(unittest.TestCase):
 
         # We'll throw a couple its way:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(5555) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
@@ -604,10 +604,10 @@ class TestClientAgent(unittest.TestCase):
 
         # Now the CA discovers the second object...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(7777) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(7777) # do_id
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
@@ -676,10 +676,10 @@ class TestClientAgent(unittest.TestCase):
 
         # Realistically, object 8888 would send an enterzone on the new location:
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
         #self.server.send(dg)
 
@@ -756,10 +756,10 @@ class TestClientAgent(unittest.TestCase):
 
         # Let's give 'em one...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(54321) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 

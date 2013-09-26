@@ -261,10 +261,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 			case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED:
 			case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
 			{
-				uint16_t dc_id = dgi.read_uint16();
-				uint32_t do_id = dgi.read_uint32();
 				uint32_t parent = dgi.read_uint32();
 				uint32_t zone = dgi.read_uint32();
+				uint16_t dc_id = dgi.read_uint16();
+				uint32_t do_id = dgi.read_uint32();
 				if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
 				{
 					DistributedObject obj;
