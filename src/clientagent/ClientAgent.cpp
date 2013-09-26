@@ -431,7 +431,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			do_disconnect();
 		}
 
-		void handle_pre_hello(Datagram &dg)
+		virtual void handle_pre_hello(Datagram &dg)
 		{
 			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
@@ -471,7 +471,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			m_state = CS_PRE_AUTH;
 		}
 
-		void handle_pre_auth(Datagram &dg)
+		virtual void handle_pre_auth(Datagram &dg)
 		{
 			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
@@ -530,7 +530,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 		}
 
-		void handle_authenticated(Datagram &dg)
+		virtual void handle_authenticated(Datagram &dg)
 		{
 			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
