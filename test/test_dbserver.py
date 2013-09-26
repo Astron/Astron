@@ -583,6 +583,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setDb3)
         dg.add_string("I can clear the sky in 10 seconds flat.")
         dg.add_string("Jesse!! We have to code!")
+        self.conn.send(dg)
 
         # Get update failure
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
@@ -591,12 +592,39 @@ class DatabaseBaseTests(object):
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878)
+        self.assertTrue(self.conn.expect(dg))
 
         # Set the empty value to an actual value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD)
         dg.add_uint32(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        self.conn.send(dg)
+
+        # Sanity check on set field
+        dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(10) # Context
+        dg.add_uint32(doid)
+        self.conn.send(dg)
+
+        # Recieve updated value
+        dg = self.conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(dgi.read_uint32() == 10) # Check context
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field == setRDB3:
+                self.assertTrue(dgi.read_uint32() == 787878)
+            elif field == setDb3:
+                print dgi.read_string()
+                self.assertTrue(dgi.read_string() == "Daddy... why did you eat my fries? I bought them... and they were mine.")
+            else:
+                self.fail("Bad field type")
+
 
         # Update multiple with correct old values
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
