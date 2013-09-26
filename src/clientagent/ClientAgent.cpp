@@ -9,7 +9,7 @@
 #include "core/RoleFactory.h"
 #include "util/Datagram.h"
 
-#include <stack>
+#include <queue>
 #include <set>
 #include <list>
 
@@ -43,7 +43,7 @@ class ChannelTracker
 	private:
 		channel_t m_next;
 		channel_t m_max;
-		std::stack<channel_t> m_unused_channels;
+		std::queue<channel_t> m_unused_channels;
 	public:
 		ChannelTracker(channel_t min, channel_t max) : m_next(min),
 			m_max(max), m_unused_channels()
@@ -53,16 +53,22 @@ class ChannelTracker
 		channel_t alloc_channel()
 		{
 			channel_t ret;
-			if(!m_unused_channels.empty())
+			if(m_next <= m_max)
 			{
-				ret = m_unused_channels.top();
-				m_unused_channels.pop();
+				return m_next++;
 			}
 			else
 			{
-				ret = m_next++;
+				if(!m_unused_channels.empty())
+				{
+					ret = m_unused_channels.front();
+					m_unused_channels.pop();
+				}
+				else
+				{
+					return 0;
+				}
 			}
-			return ret;
 		}
 
 		void free_channel(channel_t channel)
@@ -124,6 +130,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 				m_interests()
 		{
 			m_channel = m_ct->alloc_channel();
+			if(!m_channel)
+			{
+				send_disconnect(CLIENT_DISCONNECT_GENERIC, "Client capacity reached");
+				delete this;
+				return;
+			}
 			m_allocated_channel = m_channel;
 			subscribe_channel(m_channel);
 			std::stringstream ss;
