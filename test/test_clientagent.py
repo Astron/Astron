@@ -849,5 +849,197 @@ class TestClientAgent(unittest.TestCase):
 
         client.close()
 
+    def test_alter_interest(self):
+        # N.B. this is largely copied from the test above...
+
+        client = self.connect()
+        id = self.identify(client)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, 2)
+
+        # Open interest on two zones in 1235:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
+        dg.add_uint32(1235)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        client.send(dg)
+
+        # CA asks for objects...
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1235)
+        dg.add_uint16(2)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        self.assertTrue(self.server.expect(dg))
+
+        # Let's give 'em one...
+        dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(2222) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(54321) # do_id
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(2222) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(54321) # do_id
+        dg.add_uint32(999999) # setRequired1
+        self.assertTrue(client.expect(dg))
+
+        # Nothing else!
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1235)
+        dg.add_uint16(2)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
+        self.assertTrue(client.expect(dg))
+
+        # Now the client alters the interest to add a third zone:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(9)
+        dg.add_uint32(1235)
+        dg.add_uint32(1111) # Zone 1
+        dg.add_uint32(2222) # Zone 2
+        dg.add_uint32(5555) # Zone 5--er, 3...
+        client.send(dg)
+
+        # The CA should ask for JUST the difference...
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1235)
+        dg.add_uint16(1)
+        dg.add_uint32(5555)
+        self.assertTrue(self.server.expect(dg))
+
+        # We'll pretend 1235,5555 is empty, so:
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1235)
+        dg.add_uint16(1)
+        dg.add_uint32(5555)
+        self.server.send(dg)
+
+        # And the CA should tell the client the handle/context operation is done:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(9)
+        self.assertTrue(client.expect(dg))
+
+        # Now let's alter to add another zone, but remove 2222:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(10)
+        dg.add_uint32(1235)
+        dg.add_uint32(5555) # zones requested out of their original order,
+        dg.add_uint32(1111) # because ordering is for suckers
+        dg.add_uint32(8888)
+        client.send(dg)
+
+        # The CA should ask for stuff in 8888...
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1235)
+        dg.add_uint16(1)
+        dg.add_uint32(8888)
+        self.assertTrue(self.server.expect(dg))
+
+        # We'll pretend there's something in there this time:
+        dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(8888) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(23239) # do_id
+        dg.add_uint32(31416) # setRequired1
+        self.server.send(dg)
+
+        # End of query...
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1235)
+        dg.add_uint16(1)
+        dg.add_uint32(8888)
+        self.server.send(dg)
+
+        # Now, the CA should say two things (not necessarily in order):
+        expected = []
+        # 1. Object 54321 is dead:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(54321)
+        expected.append(dg)
+        # 2. Object 23239 is alive:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(8888) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(23239) # do_id
+        dg.add_uint32(31416) # setRequired1
+        expected.append(dg)
+        # Let's see if the CA does as it's supposed to:
+        self.assertTrue(client.expect_multi(expected))
+
+        # And the CA should tell the client the handle/context operation is finished:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(10)
+        self.assertTrue(client.expect(dg))
+
+        # Now let's alter the interest to a different parent entirely:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(119)
+        dg.add_uint32(1234)
+        dg.add_uint32(1111)
+        client.send(dg)
+
+        # The query goes out to the SS...
+        dg = Datagram.create([1234], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1234)
+        dg.add_uint16(1)
+        dg.add_uint32(1111)
+        self.assertTrue(self.server.expect(dg))
+
+        # We'll pretend 1234,1111 is empty, so:
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg.add_uint32(1234)
+        dg.add_uint16(1)
+        dg.add_uint32(1111)
+        self.server.send(dg)
+
+        # Now the CA destroys object 23239...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(23239)
+        self.assertTrue(client.expect(dg))
+
+        # Interest operation finished:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(119)
+        self.assertTrue(client.expect(dg))
+
+        # Cave Johnson, we're done here.
+        client.close()
+
 if __name__ == '__main__':
     unittest.main()
