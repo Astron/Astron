@@ -56,7 +56,7 @@ DistributedObject::~DistributedObject()
 	delete m_log;
 }
 
-void DistributedObject::append_required_data(Datagram &dg)
+void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
 {
 	dg.add_uint32(m_parent_id);
 	dg.add_uint32(m_zone_id);
@@ -66,7 +66,7 @@ void DistributedObject::append_required_data(Datagram &dg)
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
 		DCField *field = m_dclass->get_inherited_field(i);
-		if(field->is_required() && !field->as_molecular_field())
+		if(field->is_required() && !field->as_molecular_field() && (!broadcast_only || field->is_broadcast()))
 		{
 			dg.add_data(m_required_fields[field]);
 		}
@@ -89,7 +89,7 @@ void DistributedObject::send_zone_entry(channel_t destination)
 	            m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
 	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
-	append_required_data(dg);
+	append_required_data(dg, true);
 	if(m_ram_fields.size())
 	{
 		append_other_data(dg);
@@ -142,7 +142,7 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	m_ai_explicitly_set = channel_is_explicit;
 
 	Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
-	append_required_data(dg1);
+	append_required_data(dg1, false);
 	append_other_data(dg1);
 	send(dg1);
 	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
@@ -438,7 +438,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ALL_RESP);
 			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
-			append_required_data(dg);
+			append_required_data(dg, false);
 			append_other_data(dg);
 			send(dg);
 
@@ -523,7 +523,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_owner_channel = owner_channel;
 
 			Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV);
-			append_required_data(dg1);
+			append_required_data(dg1, false);
 			append_other_data(dg1);
 			send(dg1);
 
