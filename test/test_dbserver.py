@@ -805,7 +805,7 @@ class DatabaseBaseTests(object):
 
         # Get success
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
-        dg.add_uint32(7) # Context
+        dg.add_uint32(8) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
