@@ -20,7 +20,7 @@ dclass DistributedTestObject3 : DistributedTestObject1 {
 dclass DistributedTestObject4 {
 	setX(uint32 x) broadcast required;
 	setY(uint32 y) broadcast required;
-	setUnrelated(uint32 lol) required;
+	setUnrelated(uint32 lol) broadcast required;
 	setZ(uint32 z) broadcast required;
 
 	setXyz : setX, setY, setZ;
