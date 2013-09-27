@@ -216,8 +216,8 @@ class FSDBEngine : public IDatabaseEngine
 			}
 		}
 
-		#define val_t std::vector<uint8_t>
-		#define map_t std::map<DCField*, std::vector<uint8_t>>
+#define val_t std::vector<uint8_t>
+#define map_t std::map<DCField*, std::vector<uint8_t>>
 		DCClass* get_class(uint32_t do_id)
 		{
 			return NULL;
@@ -259,8 +259,8 @@ class FSDBEngine : public IDatabaseEngine
 		{
 			return false;
 		}
-		#undef map_t
-		#undef val_t
+#undef map_t
+#undef val_t
 };
 
 DBEngineCreator<FSDBEngine> fsdbengine_creator("filesystem");

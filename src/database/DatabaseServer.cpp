@@ -486,7 +486,7 @@ class DatabaseServer : public Role
 					{
 						resp.add_uint16(it->first->get_number());
 						m_log->spam() << "FIELD TYPE: " << it->first->get_number() << std::endl;
-						resp.add_data(it->second);						
+						resp.add_data(it->second);
 					}
 					send(resp);
 					m_log->spam() << "... success." << std::endl;
