@@ -310,7 +310,7 @@ class DatabaseServer : public Role
 					uint32_t context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
 					uint32_t do_id = dgi.read_uint32();

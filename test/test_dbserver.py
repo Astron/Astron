@@ -620,7 +620,6 @@ class DatabaseBaseTests(object):
             if field == setRDB3:
                 self.assertTrue(dgi.read_uint32() == 787878)
             elif field == setDb3:
-                print dgi.read_string()
                 self.assertTrue(dgi.read_string() == "Daddy... why did you eat my fries? I bought them... and they were mine.")
             else:
                 self.fail("Bad field type")
