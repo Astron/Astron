@@ -37,17 +37,17 @@ class YAMLEngine : public IDatabaseEngine
 		{
 			std::ifstream stream(filename(do_id));
 			document = YAML::Load(stream);
-			if(document.IsNull())
+			if(!document.IsDefined() || document.IsNull())
 			{
 				yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
 				return false;
 			}
-			if(document["class"].IsNull())
+			if(!document["class"].IsDefined() || document["class"].IsNull())
 			{
 				yamldb_log.error() << filename(do_id) << " does not contain the 'class' key." << std::endl;
 				return false;
 			}
-			if(document["fields"].IsNull())
+			if(!document["fields"].IsDefined() || document["fields"].IsNull())
 			{
 				yamldb_log.error() << filename(do_id) << " does not contain the 'fields' key." << std::endl;
 				return false;
@@ -58,7 +58,7 @@ class YAMLEngine : public IDatabaseEngine
 			{
 				yamldb_log.error() << "Class '" << dc_name << "', loaded from '" << filename(do_id)
 				                   << "', does not exist." << std::endl;
-				return NULL;
+				return false;
 			}
 
 			return true;
@@ -123,85 +123,96 @@ class YAMLEngine : public IDatabaseEngine
 			const DCAtomicField* atomic = field->as_atomic_field();
 			if(atomic && atomic->get_num_elements() == 1)
 			{
-				switch(atomic->get_element_type(0))
+				try
 				{
-					case ST_char:
+					switch(atomic->get_element_type(0))
 					{
-						char value = node.as<char>();
-						return AS_BYTES(value, 1);
-					}
-					break;
-					case ST_int8:
-					{
-						char value = node.as<char>();
-						return AS_BYTES(value, 1);
-					}
-					break;
-					case ST_int16:
-					{
-						short value = node.as<short>();
-						return AS_BYTES(value, 2);
-					}
-					break;
-					case ST_int32:
-					{
-						int value = node.as<int>();
-						return AS_BYTES(value, 4);
-					}
-					break;
-					case ST_int64:
-					{
-						long long value = node.as<long long>();
-						return AS_BYTES(value, 8);
-					}
-					break;
-					case ST_uint8:
-					{
-						uint8_t value = node.as<uint8_t>();
-						return AS_BYTES(value, 1);
-					}
-					break;
-					case ST_uint16:
-					{
-						uint16_t value = node.as<uint16_t>();
-						return AS_BYTES(value, 2);
-					}
-					break;
-					case ST_uint32:
-					{
-						uint32_t value = node.as<uint32_t>();
-						return AS_BYTES(value, 4);
-					}
-					break;
-					case ST_uint64:
-					{
-						uint64_t value = node.as<uint64_t>();
-						return AS_BYTES(value, 8);
-					}
-					break;
-					case ST_float64:
-					{
-						double value = node.as<double>();
-						return AS_BYTES(value, 8);
-					}
-					break;
-					case ST_string:
-					{
-						std::string value = node.as<std::string>();
-						uint16_t length = value.length();
+						case ST_char:
+						{
+							char value = node.as<char>();
+							return AS_BYTES(value, 1);
+						}
+						break;
+						case ST_int8:
+						{
+							// Convert as u(int16) to avoid treatment as char data
+							char value = node.as<short>();
+							return AS_BYTES(value, 1);
+						}
+						break;
+						case ST_int16:
+						{
+							short value = node.as<short>();
+							return AS_BYTES(value, 2);
+						}
+						break;
+						case ST_int32:
+						{
+							int value = node.as<int>();
+							return AS_BYTES(value, 4);
+						}
+						break;
+						case ST_int64:
+						{
+							long long value = node.as<long long>();
+							return AS_BYTES(value, 8);
+						}
+						break;
+						case ST_uint8:
+						{
+							// Convert as u(int16) to avoid treatment as char data
+							uint8_t value = node.as<uint16_t>();
+							return AS_BYTES(value, 1);
+						}
+						break;
+						case ST_uint16:
+						{
+							uint16_t value = node.as<uint16_t>();
+							return AS_BYTES(value, 2);
+						}
+						break;
+						case ST_uint32:
+						{
+							uint32_t value = node.as<uint32_t>();
+							return AS_BYTES(value, 4);
+						}
+						break;
+						case ST_uint64:
+						{
+							uint64_t value = node.as<uint64_t>();
+							return AS_BYTES(value, 8);
+						}
+						break;
+						case ST_float64:
+						{
+							double value = node.as<double>();
+							return AS_BYTES(value, 8);
+						}
+						break;
+						case ST_string:
+						{
+							std::string value = node.as<std::string>();
+							uint16_t length = value.length();
 
-						std::vector<uint8_t> str = AS_BYTES(length, 2);
-						str.insert(str.end(), value.begin(), value.end());
-						return str;
+							std::vector<uint8_t> str = AS_BYTES(length, 2);
+							str.insert(str.end(), value.begin(), value.end());
+							return str;
+						}
+						break;
+						default:
+							std::string value = node.as<std::string>();
+							return std::vector<uint8_t>(value.begin(), value.end());
 					}
-					break;
-					default:
-						std::string value = node.as<std::string>();
-						return std::vector<uint8_t>(value.begin(), value.end());
 				}
-
+				catch(YAML::Exception &e)
+				{
+					yamldb_log.error() << "Recieved exception converting from yaml."
+					                   << " Field: " << field->get_name() //<< std::endl;
+					                   << " Value: " << node << std::endl;
+				}
 			}
 
+			// If fails, return 0 length vector
 			return std::vector<uint8_t>();
 		}
 
@@ -222,7 +233,8 @@ class YAMLEngine : public IDatabaseEngine
 					break;
 					case ST_int8:
 					{
-						out << *(int8_t*)(&value[0]);
+						int16_t intval = *(int8_t*)(&value[0]);
+						out << intval;
 					}
 					break;
 					case ST_int16:
@@ -242,7 +254,8 @@ class YAMLEngine : public IDatabaseEngine
 					break;
 					case ST_uint8:
 					{
-						out << *(uint8_t*)(&value[0]);
+						uint16_t intval = *(uint8_t*)(&value[0]);
+						out << intval;
 					}
 					break;
 					case ST_uint16:
@@ -321,18 +334,18 @@ class YAMLEngine : public IDatabaseEngine
 			std::ifstream infostream(m_foldername + "/info.yaml");
 			YAML::Node document = YAML::Load(infostream);
 
-			if(!document.IsNull())
+			if(document.IsDefined() && !document.IsNull())
 			{
 				// Read next available id
 				YAML::Node key_next = document["next"];
-				if(!key_next.IsNull())
+				if(key_next.IsDefined() && !key_next.IsNull())
 				{
 					m_next_id = document["next"].as<uint32_t>();
 				}
 
 				// Read available freed ids
 				YAML::Node key_free = document["free"];
-				if(!key_free.IsNull())
+				if(key_free.IsDefined() && !key_free.IsNull())
 				{
 					for(uint32_t i = 0; i < key_free.size(); i++)
 					{
@@ -401,7 +414,11 @@ class YAMLEngine : public IDatabaseEngine
 					continue;
 				}
 
-				dbo.fields[field] = read_yaml_field(field, it->second);
+				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				if(value.size() > 0)
+				{
+					dbo.fields[field] = value;
+				}
 			}
 
 			return true;
@@ -428,6 +445,7 @@ class YAMLEngine : public IDatabaseEngine
 		{
 			yamldb_log.spam() << "Deleting field on object #" << do_id << std::endl;
 
+			// Read object from database
 			YAML::Node document;
 			if(!load(do_id, document))
 			{
@@ -448,9 +466,18 @@ class YAMLEngine : public IDatabaseEngine
 					                     << "', does not exist." << std::endl;
 					continue;
 				}
-				dbo.fields[field] = read_yaml_field(field, it->second);
+				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				if(value.size() > 0)
+				{
+					dbo.fields[field] = value;
+				}
 			}
+
+			// Remove field to be deleted from DatabaseObject
 			dbo.fields.erase(field);
+
+			// Write out new object to file
+			write_yaml_object(do_id, dcc, dbo);
 		}
 		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
 		{
@@ -476,13 +503,18 @@ class YAMLEngine : public IDatabaseEngine
 					                     << "', does not exist." << std::endl;
 					continue;
 				}
-				dbo.fields[field] = read_yaml_field(field, it->second);
+				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				if(value.size() > 0)
+				{
+					dbo.fields[field] = value;
+				}
 			}
 
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
 				dbo.fields.erase(*it);
 			}
+			write_yaml_object(do_id, dcc, dbo);
 		}
 		void set_field(uint32_t do_id, DCField* field, const val_t &value)
 		{
@@ -508,7 +540,11 @@ class YAMLEngine : public IDatabaseEngine
 					                     << "', does not exist." << std::endl;
 					continue;
 				}
-				dbo.fields[field] = read_yaml_field(field, it->second);
+				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				if(value.size() > 0)
+				{
+					dbo.fields[field] = value;
+				}
 			}
 
 			dbo.fields[field] = value;
@@ -543,6 +579,11 @@ class YAMLEngine : public IDatabaseEngine
 				auto found = fields.find(field);
 				if(found == fields.end())
 				{
+					std::vector<uint8_t> value = read_yaml_field(field, it->second);
+					if(value.size() > 0)
+					{
+						dbo.fields[field] = value;
+					}
 					dbo.fields[field] = read_yaml_field(field, it->second);
 				}
 				else
@@ -581,7 +622,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get the fields from the file that are not being updated
 			YAML::Node node = document["fields"][field->get_name()];
-			if(node.IsNull())
+			if(!node.IsDefined() || node.IsNull())
 			{
 				return false;
 			}
@@ -589,7 +630,12 @@ class YAMLEngine : public IDatabaseEngine
 			yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
 
 			value = read_yaml_field(field, node);
-			return true;
+			if(value.size() > 0)
+			{
+				return true;
+			}
+
+			return false;
 		}
 		bool get_fields(uint32_t do_id, const std::vector<DCField*> &fields, map_t &values)
 		{
@@ -611,8 +657,12 @@ class YAMLEngine : public IDatabaseEngine
 				{
 					if(it2->first.as<std::string>() == field->get_name())
 					{
-						values[*it] = read_yaml_field(field, it2->second);
-						yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
+						std::vector<uint8_t> value = read_yaml_field(field, it2->second);
+						if(value.size() > 0)
+						{
+							values[*it] = value;
+							yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
+						}
 					}
 				}
 			}

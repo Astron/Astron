@@ -424,7 +424,6 @@ class DatabaseServer : public Role
 					// Send value in response
 					resp.add_uint8(SUCCESS);
 					resp.add_uint16(field_id);
-					m_log->spam() << "FIELD TYPE: " << field_id << std::endl;
 					resp.add_data(value);
 					send(resp);
 					m_log->spam() << "... success." << std::endl;
@@ -485,11 +484,128 @@ class DatabaseServer : public Role
 					for(auto it = values.begin(); it != values.end(); ++it)
 					{
 						resp.add_uint16(it->first->get_number());
-						m_log->spam() << "FIELD TYPE: " << it->first->get_number() << std::endl;
 						resp.add_data(it->second);
 					}
 					send(resp);
 					m_log->spam() << "... success." << std::endl;
+				}
+				break;
+				case DBSERVER_OBJECT_DELETE_FIELD:
+				{
+					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Deleting field of obj-" << do_id << "..." << std::endl;
+
+					DCClass* dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
+					{
+						m_log->spam() << "... object does not exist." << std::endl;
+						return;
+					}
+
+					uint16_t field_id = dgi.read_uint16();
+					DCField* field = dcc->get_field_by_index(field_id);
+					if(!field)
+					{
+						m_log->error() << "Tried to delete an invalid field:" << field_id
+						               << " on obj-" << do_id << "." << std::endl;
+						return;
+					}
+
+					if(field->is_db())
+					{
+						if(field->has_default_value())
+						{
+							std::string str = field->get_default_value();
+							std::vector<uint8_t> value(str.begin(), str.end());
+							/* Alternate implementation for performance compare */
+							//std::vector<uint8_t> value(str.length());
+							//memcpy(&value[0], str.c_str(), str.length());
+							m_db_engine->set_field(do_id, field, value);
+							m_log->spam() << "... field set to default." << std::endl;
+						}
+						else if(!field->is_required())
+						{
+							m_db_engine->del_field(do_id, field);
+							m_log->spam() << "... field deleted." << std::endl;
+						}
+						else
+						{
+							m_log->warning() << "Cannot delete required field of obj-" << do_id
+							                 << "." << std::endl;
+						}
+					}
+					else
+					{
+						m_log->warning() << "Cannot delete non-db field of obj-" << do_id
+						                 << "." << std::endl;
+					}
+				}
+				break;
+				case DBSERVER_OBJECT_DELETE_FIELDS:
+				{
+					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Deleting field of obj-" << do_id << "..." << std::endl;
+
+					DCClass* dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
+					{
+						m_log->spam() << "... object does not exist." << std::endl;
+						return;
+					}
+
+					uint16_t field_count = dgi.read_uint16();
+					std::vector<DCField*> del_fields;
+					std::map<DCField*, std::vector<uint8_t>> set_fields;
+					for(uint16_t i = 0; i < field_count; ++i)
+					{
+						uint16_t field_id = dgi.read_uint16();
+						DCField* field = dcc->get_field_by_index(field_id);
+						if(!field)
+						{
+							m_log->error() << "Tried to delete an invalid field:" << field_id
+							               << " on obj-" << do_id << "." << std::endl;
+							return;
+						}
+						else if(field->is_db())
+						{
+							if(field->has_default_value())
+							{
+								std::string str = field->get_default_value();
+								std::vector<uint8_t> value(str.begin(), str.end());
+								/* Alternate implementation for performance compare */
+								//std::vector<uint8_t> value(str.length());
+								//memcpy(&value[0], str.c_str(), str.length());
+								set_fields[field] = value;
+								m_log->spam() << "... field set to default ..." << std::endl;
+							}
+							else if(!field->is_required())
+							{
+								del_fields.push_back(field);
+								m_log->spam() << "... field deleted ..." << std::endl;
+							}
+							else
+							{
+								m_log->warning() << "Cannot delete required field of obj-" << do_id
+								                 << "." << std::endl;
+							}
+						}
+						else
+						{
+							m_log->warning() << "Cannot delete non-db field of obj-" << do_id
+							                 << "." << std::endl;
+						}
+					}
+
+					if(del_fields.size() > 0)
+					{
+						m_db_engine->del_fields(do_id, del_fields);
+						m_log->spam() << "... fields deleted." << std::endl;
+					}
+					if(set_fields.size() > 0)
+					{
+						m_db_engine->set_fields(do_id, set_fields);
+						m_log->spam() << "... fields deleted." << std::endl;
+					}
 				}
 				break;
 				default:
