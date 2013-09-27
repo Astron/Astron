@@ -15,10 +15,10 @@
 
 using boost::asio::ip::tcp;
 
-ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
-ConfigVariable<std::string> server_version("version", "dev");
-ConfigVariable<channel_t> min_channel("channels/min", 0);
-ConfigVariable<channel_t> max_channel("channels/max", 0);
+static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
+static ConfigVariable<std::string> server_version("version", "dev");
+static ConfigVariable<channel_t> min_channel("channels/min", 0);
+static ConfigVariable<channel_t> max_channel("channels/max", 0);
 
 enum ClientState
 {
@@ -64,11 +64,8 @@ class ChannelTracker
 					ret = m_unused_channels.front();
 					m_unused_channels.pop();
 				}
-				else
-				{
-					return 0;
-				}
 			}
+			return 0;
 		}
 
 		void free_channel(channel_t channel)
@@ -214,7 +211,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					obj.id = do_id;
 					obj.parent = parent;
 					obj.zone = zone;
-					obj.dcc = gDCF->get_class(dc_id);
+					obj.dcc = g_dcf->get_class(dc_id);
 					obj.refcount = 0;
 					dist_objs[do_id] = obj;
 				}
@@ -282,7 +279,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				{
 					DistributedObject obj;
 					obj.id = do_id;
-					obj.dcc = gDCF->get_class(dc_id);
+					obj.dcc = g_dcf->get_class(dc_id);
 					obj.parent = parent;
 					obj.refcount = 0;
 					obj.zone = zone;
@@ -402,7 +399,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 	private:
 		virtual void network_datagram(Datagram &dg)
 		{
-			if(dg.get_buf_end() == 0)
+			if(dg.size() == 0)
 			{
 				m_log->error() << "0-length DG" << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "0-length");
@@ -456,12 +453,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 
 			uint32_t dc_hash = dgi.read_uint32();
-			const static uint32_t expected_hash = gDCF->get_hash();
+			const static uint32_t expected_hash = g_dcf->get_hash();
 			if(dc_hash != expected_hash)
 			{
 				m_log->error() << m_client_name << "Wrong DC hash. Got: "
 					<< std::hex << dc_hash << " expected " <<
-					gDCF->get_hash() << std::dec << std::endl;
+					g_dcf->get_hash() << std::dec << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH);
 				return;
 			}
@@ -513,7 +510,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					return;
 				}
 
-				std::string data;
+				std::vector<uint8_t> data(0);
 				dgi.unpack_field(field, data);//if an exception occurs it will be handled
 				//and client will be dc'd for truncated datagram
 
@@ -521,7 +518,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
 				resp.add_uint32(do_id);
 				resp.add_uint16(field_id);
-				if(data.length() > 65535- resp.get_buf_end())
+				if(data.size() > 65535u-resp.size())
 				{
 					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 					return;
@@ -535,7 +532,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
-			if(dgi.tell() < dg.get_buf_end())
+			if(dgi.tell() < dg.size())
 			{
 				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 				return;
@@ -593,7 +590,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 					return;
 				}
 
-				std::string data;
+				std::vector<uint8_t> data;
 				dgi.unpack_field(field, data);//if an exception occurs it will be handled
 				//and client will be dc'd for truncated datagram
 
@@ -601,7 +598,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
 				resp.add_uint32(do_id);
 				resp.add_uint16(field_id);
-				if(data.length() > 65535- resp.get_buf_end())
+				if(data.size() > 65535u-resp.size())
 				{
 					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 					return;
@@ -648,9 +645,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 				i.context = context;
 				i.parent = parent;
 
-				i.zones.reserve((dg.get_buf_end()-dgi.tell())/sizeof(uint32_t));
+				i.zones.reserve((dg.size()-dgi.tell())/sizeof(uint32_t));
 				std::list<uint32_t> new_zones;
-				for(uint16_t p = dgi.tell(); p != dg.get_buf_end(); p = dgi.tell())
+				for(uint16_t p = dgi.tell(); p != dg.size(); p = dgi.tell())
 				{
 					uint32_t zone = dgi.read_uint32();
 					new_zones.insert(new_zones.end(), zone);
@@ -693,7 +690,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				uint16_t id = dgi.read_uint16();
 				uint32_t context = 0;
-				if(dgi.tell() < dg.get_buf_end())
+				if(dgi.tell() < dg.size())
 				{
 					context = dgi.read_uint32();
 				}
@@ -774,7 +771,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
-			if(dgi.tell() < dg.get_buf_end())
+			if(dgi.tell() < dg.size())
 			{
 				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 				return;
@@ -812,14 +809,14 @@ class ClientAgent : public Role
 
 			if(uberdogs.empty())
 			{
-				YAML::Node udnodes = gConfig->copy_node()["uberdogs"];
+				YAML::Node udnodes = g_config->copy_node()["uberdogs"];
 				if(!udnodes.IsNull())
 				{
 					for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
 					{
 						YAML::Node udnode = *it;
 						Uberdog ud;
-						ud.dcc = gDCF->get_class_by_name(udnode["class"].as<std::string>());
+						ud.dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
 						if(!ud.dcc)
 						{
 							m_log->fatal() << "DCClass " << udnode["class"].as<std::string>()

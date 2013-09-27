@@ -24,7 +24,7 @@ class DatagramIterator
 				      << ") buf_size(" << m_dg.size() << ")" << std::endl;
 #ifdef _DEBUG
 				std::fstream test("test", std::ios_base::out | std::ios_base::binary);
-				test.write(m_dg.get_data(), m_dg.get_buf_end());
+				test.write((const char*)m_dg.get_data(), m_dg.size());
 				test.close();
 #endif
 				throw std::runtime_error(error.str());

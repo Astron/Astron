@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cstdint>
 // Defined types
 typedef uint64_t channel_t;
 
