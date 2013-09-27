@@ -1,7 +1,7 @@
 #pragma once
 
 // Defined types
-typedef unsigned long long channel_t;
+typedef uint64_t channel_t;
 
 // Channel constants
 #define CONTROL_MESSAGE 4001

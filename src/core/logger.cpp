@@ -32,7 +32,7 @@ int LoggerBuf::overflow(int c)
 	return c;
 }
 
-std::streamsize LoggerBuf::xsputn (const char* s, std::streamsize n)
+std::streamsize LoggerBuf::xsputn(const char* s, std::streamsize n)
 {
 	if(m_output_to_console)
 	{
@@ -58,28 +58,29 @@ std::ostream &Logger::log(LogSeverity sev)
 {
 	const char *sevtext;
 
-	switch(sev) {
-	case LSEVERITY_SPAM:
-		sevtext = "SPAM";
-		break;
-	case LSEVERITY_DEBUG:
-		sevtext = "DEBUG";
-		break;
-	case LSEVERITY_INFO:
-		sevtext = "INFO";
-		break;
-	case LSEVERITY_WARNING:
-		sevtext = "WARNING";
-		break;
-	case LSEVERITY_SECURITY:
-		sevtext = "SECURITY";
-		break;
-	case LSEVERITY_ERROR:
-		sevtext = "ERROR";
-		break;
-	case LSEVERITY_FATAL:
-		sevtext = "FATAL";
-		break;
+	switch(sev)
+	{
+		case LSEVERITY_SPAM:
+			sevtext = "SPAM";
+			break;
+		case LSEVERITY_DEBUG:
+			sevtext = "DEBUG";
+			break;
+		case LSEVERITY_INFO:
+			sevtext = "INFO";
+			break;
+		case LSEVERITY_WARNING:
+			sevtext = "WARNING";
+			break;
+		case LSEVERITY_SECURITY:
+			sevtext = "SECURITY";
+			break;
+		case LSEVERITY_ERROR:
+			sevtext = "ERROR";
+			break;
+		case LSEVERITY_FATAL:
+			sevtext = "FATAL";
+			break;
 	}
 
 	time_t rawtime;

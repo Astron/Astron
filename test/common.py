@@ -33,7 +33,7 @@ class Daemon(object):
         os.close(cfg)
 
         self.daemon = subprocess.Popen([self.DAEMON_PATH,
-                                        '-config', self.config_file])
+                                        '--config', self.config_file])
 
         time.sleep(1.0) # Allow some time for daemon to initialize...
 
