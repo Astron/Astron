@@ -316,6 +316,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break; // Not my AI!
 			}
 			handle_shard_reset();
+
 			break;
 		}
 		case STATESERVER_OBJECT_DELETE_RAM:
@@ -325,6 +326,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;    // Not meant for me!
 			}
 			annihilate();
+
 			break;
 		}
 		case STATESERVER_OBJECT_UPDATE_FIELD:
@@ -334,6 +336,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;    // Not meant for me!
 			}
 			handle_one_update(dgi, sender);
+
 			break;
 		}
 		case STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
@@ -348,6 +351,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					break;
 				}
+
 			break;
 		}
 		case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
@@ -366,6 +370,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 			handle_ai_change(r_ai_channel, false);
+
 			break;
 		}
 		case STATESERVER_OBJECT_SET_AI_CHANNEL:
@@ -378,6 +383,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 			handle_ai_change(r_ai_channel, true);
+
 			break;
 		}
 		case STATESERVER_OBJECT_QUERY_MANAGING_AI:
@@ -387,6 +393,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(m_do_id);
 			dg.add_uint64(m_ai_channel);
 			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_SET_ZONE:
@@ -411,6 +418,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			handle_parent_change(new_parent_id);
 			send_zone_entry(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+
 			break;
 		}
 		case STATESERVER_OBJECT_LOCATE:
@@ -423,6 +431,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(m_parent_id);
 			dg.add_uint32(m_zone_id);
 			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_QUERY_ALL:
@@ -432,6 +441,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			append_required_data(dg);
 			append_other_data(dg);
 			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_QUERY_FIELD:
@@ -456,6 +466,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_datagram(raw_field);
 			}
 			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_QUERY_FIELDS:
@@ -488,6 +499,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_datagram(raw_fields);
 			}
 			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_SET_OWNER_RECV:
@@ -541,6 +553,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				done_dg.add_uint32(queried_parent);
 				done_dg.add_data(queried_zones);
 				send(done_dg);
+
 				break;
 			}
 
@@ -558,6 +571,8 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					}
 				}
 			}
+
+			break;
 		}
 		default:
 			m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
