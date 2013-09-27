@@ -26,7 +26,7 @@ class DistributedObject : public MDParticipantInterface
 		bool m_ai_explicitly_set;
 		LogCategory *m_log;
 
-		void append_required_data(Datagram &dg);
+		void append_required_data(Datagram &dg, bool broadcast_only);
 		void append_other_data(Datagram &dg);
 
 		void send_zone_entry(channel_t destination);
