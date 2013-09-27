@@ -19,10 +19,10 @@ class DatabaseServer : public Role
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
-							engine_type.get_rval(roleconfig),
-							roleconfig["engine"],
-							min_id.get_rval(roleconfig),
-							max_id.get_rval(roleconfig))),
+			                engine_type.get_rval(roleconfig),
+			                roleconfig["engine"],
+			                min_id.get_rval(roleconfig),
+			                max_id.get_rval(roleconfig))),
 			m_control_channel(control_channel.get_rval(roleconfig)),
 			m_min_id(min_id.get_rval(roleconfig)),
 			m_max_id(max_id.get_rval(roleconfig))
@@ -35,7 +35,8 @@ class DatabaseServer : public Role
 			// Check to see the engine was instantiated
 			if(!m_db_engine)
 			{
-				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
+				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(
+				                   roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
 
@@ -96,7 +97,7 @@ class DatabaseServer : public Role
 					catch(std::exception &e)
 					{
 						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
-							<< e.what() << std::endl;
+						               << e.what() << std::endl;
 
 						resp.add_uint32(INVALID_DO_ID);
 						send(resp);
@@ -108,24 +109,22 @@ class DatabaseServer : public Role
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
-						if(field->is_required() && field->is_db() && !field->as_molecular_field())
+						if(field->is_required() && field->is_db() && !field->as_molecular_field()
+						        && dbo.fields.find(field) == dbo.fields.end())
 						{
-							if(dbo.fields.find(field) == dbo.fields.end())
+							if(!field->has_default_value())
 							{
-								if(!field->has_default_value())
-								{
-									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
-										"object of type " << dcc->get_name() << std::endl;
-
-									resp.add_uint32(INVALID_DO_ID);
-									send(resp);
-									return;
-								}
-								else
-								{
-									std::string val = field->get_default_value();
-									dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
-								}
+								m_log->error() << "Field " << field->get_name()
+								               << " missing when trying to create object"
+								               << " of type " << dcc->get_name() << std::endl;
+								resp.add_uint32(INVALID_DO_ID);
+								send(resp);
+								return;
+							}
+							else
+							{
+								std::string val = field->get_default_value();
+								dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
 							}
 						}
 					}
@@ -189,35 +188,32 @@ class DatabaseServer : public Role
 				case DBSERVER_OBJECT_SET_FIELD:
 				{
 					uint32_t do_id = dgi.read_uint32();
-					DCClass *dcc = m_db_engine->get_dclass(do_id);
+					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
 						return;
 					}
 
-					DatabaseObject dbo(dcc->get_number());
 					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
-					if(field)
+					if(field && field->is_db())
 					{
-						if(field->is_db())
-						{
-							dgi.unpack_field(field, dbo.fields[field]);
-							m_db_engine->set_fields(do_id, dbo);
-						}
+						std::vector<uint8_t> value;
+						dgi.unpack_field(field, value);
+						m_db_engine->set_field(do_id, field, value);
 					}
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELDS:
 				{
 					uint32_t do_id = dgi.read_uint32();
-					DCClass *dcc = m_db_engine->get_dclass(do_id);
+					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
 						return;
 					}
 
-					DatabaseObject dbo(dcc->get_number());
+					std::map<DCField*, std::vector<uint8_t>> fields;
 					uint16_t field_count = dgi.read_uint16();
 					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
@@ -230,11 +226,10 @@ class DatabaseServer : public Role
 							{
 								if(field->is_db())
 								{
-									dgi.unpack_field(field, dbo.fields[field]);
+									dgi.unpack_field(field, fields[field]);
 								}
 								else
 								{
-									m_log->warning() << "Recieved non-db field in OBJECT_SET_FIELDS." << std::endl;
 									dgi.skip_field(field);
 								}
 							}
@@ -246,7 +241,7 @@ class DatabaseServer : public Role
 						               << e.what() << std::endl;
 						return;
 					}
-					m_db_engine->set_fields(do_id, dbo);
+					m_db_engine->set_fields(do_id, fields);
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
@@ -257,54 +252,40 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
-					// Get existing database values
-					DatabaseObject dbo_get;
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Setting object #" << do_id << " field if equals..." << std::endl;
-					if(!m_db_engine->get_object(do_id, dbo_get))
+					DCClass *dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
 					{
-						m_log->spam() << " ... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
-						return;
 					}
 
-					// Unpack field from datagram
-					DCClass *dcc = g_dcf->get_class(dbo_get.dc_id);
 					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
-
-					// Check if field is set
-					auto current = dbo_get.fields.find(field);
-					if(current == dbo_get.fields.end())
+					if(!field->is_db())
 					{
-						m_log->spam() << " ... field not set." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
 					}
 
-					std::vector<uint8_t> val_old;
-					std::vector<uint8_t> val_new;
-					dgi.unpack_field(field, val_old);
-					dgi.unpack_field(field, val_new);
+					std::vector<uint8_t> equal;
+					std::vector<uint8_t> value;
+					dgi.unpack_field(field, equal);
+					dgi.unpack_field(field, value);
 
-					// Return current value if not equals
-					if(current->second != val_old)
+					if(m_db_engine->set_field_if_equals(do_id, field, equal, value))
 					{
-						m_log->spam() << " ... old value != current value." << std::endl;
-						resp.add_uint8(FAILURE);
-						resp.add_uint16(field_id);
-						resp.add_data(current->second);
+						resp.add_uint8(SUCCESS);
 						send(resp);
+						return;
 					}
 
-					// Update current value
-					DatabaseObject dbo_new(dbo_get.dc_id);
-					dbo_new.fields[field] = val_new;
-					m_db_engine->set_fields(do_id, dbo_new);
-					m_log->spam() << "... successful." << std::endl;
-					resp.add_uint8(SUCCESS);
+					resp.add_uint8(FAILURE);
+					if(value.size() > 0)
+					{
+						resp.add_uint16(field_id);
+						resp.add_data(value);
+					}
 					send(resp);
 				}
 				break;
@@ -313,30 +294,25 @@ class DatabaseServer : public Role
 					uint32_t context = dgi.read_uint32();
 
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
-					// Get existing database values
-					DatabaseObject dbo_get;
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Setting object #" << do_id << " fields if equals..." << std::endl;
-					if(!m_db_engine->get_object(do_id, dbo_get))
+					DCClass *dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
 					{
-						m_log->spam() << " ... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
 					}
 
 					// Unpack fields from datagram
-					DCClass *dcc = g_dcf->get_class(dbo_get.dc_id);
-					DatabaseObject dbo_old(dbo_get.dc_id);
-					DatabaseObject dbo_new(dbo_get.dc_id);
+					std::map<DCField*, std::vector<uint8_t>> equals;
+					std::map<DCField*, std::vector<uint8_t>> values;
 					uint16_t field_count = dgi.read_uint16();
-					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
 					{
-						for(uint32_t i = 0; i < field_count; ++i)
+						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
 							DCField *field = dcc->get_field_by_index(field_id);
@@ -344,12 +320,11 @@ class DatabaseServer : public Role
 							{
 								if(field->is_db())
 								{
-									dgi.unpack_field(field, dbo_old.fields[field]);
-									dgi.unpack_field(field, dbo_new.fields[field]);
+									dgi.unpack_field(field, equals[field]);
+									dgi.unpack_field(field, values[field]);
 								}
 								else
 								{
-									m_log->error() << "Recieved non-db field in OBJECT_SET_FIELDS_IF_EQUALS." << std::endl;
 									resp.add_uint8(FAILURE);
 									send(resp);
 									return;
@@ -359,60 +334,153 @@ class DatabaseServer : public Role
 					}
 					catch(std::exception &e)
 					{
-						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
-						               << e.what() << std::endl;
+						m_log->error() << "Error while unpacking fields, msg may be truncated."
+						               << " e.what(): " << e.what() << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
 					}
 
-					// Compare old and existing fields
-					bool failure = false;
-					std::list<DCField*> not_equals;
-					for(auto it = dbo_old.fields.begin(); it != dbo_old.fields.end() && !failure; ++it)
+					if(m_db_engine->set_fields_if_equals(do_id, equals, values))
 					{
-						auto current = dbo_get.fields.find(it->first);
-						if(current != dbo_get.fields.end())
-						{
-							if(current->second != it->second)
-							{
-								failure = true;
-								not_equals.push_back(current->first);
-							}
-						}
-						else
-						{
-							m_log->spam() << " ... field '" << it->first->get_name() << "' not set." << std::endl;
-							failure = true;
-						}
-					}
-
-					// Set fields if successful
-					if(!failure)
-					{
-						m_log->spam() << "... successful." << std::endl;
-						m_db_engine->set_fields(do_id, dbo_new);
 						resp.add_uint8(SUCCESS);
 						send(resp);
 						return;
 					}
 
-					// Return current fields if not equals
-					resp.add_uint16(not_equals.size());
-					for(auto it = not_equals.begin(); it != not_equals.end(); ++it)
+					resp.add_uint8(FAILURE);
+					if(values.size() > 0)
 					{
-						m_log->spam() << "... field '" << (*it)->get_name() << "': current != old." << std::endl;
-						std::vector<uint8_t> data = dbo_get.fields[*it];
-						resp.add_uint16((*it)->get_number());
-						resp.add_data(data);
+						resp.add_uint16(values.size());
+						for(auto it = values.begin(); it != values.end(); ++it)
+						{
+							resp.add_uint16(it->first->get_number());
+							resp.add_data(it->second);
+						}
 					}
 					send(resp);
+				}
+				break;
+				case DBSERVER_OBJECT_GET_FIELD:
+				{
+					uint32_t context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELD_RESP);
+					resp.add_uint32(context);
+
+					// Get object id from datagram
+					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Reading field from obj-" << do_id << "..." << std::endl;
+
+					// Get object class from db
+					DCClass *dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
+					{
+						m_log->spam() << "... object not found in database." << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Get field from datagram
+					uint16_t field_id = dgi.read_uint16();
+					DCField *field = dcc->get_field_by_index(field_id);
+					if(!field)
+					{
+						m_log->error() << "Asked for invalid field,"
+						               << " reading from obj-" << do_id << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Get value from database
+					std::vector<uint8_t> value;
+					if(!m_db_engine->get_field(do_id, field, value))
+					{
+						m_log->spam() << "... field not set." << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Send value in response
+					resp.add_uint8(SUCCESS);
+					resp.add_uint16(field_id);
+					m_log->spam() << "FIELD TYPE: " << field_id << std::endl;
+					resp.add_data(value);
+					send(resp);
+					m_log->spam() << "... success." << std::endl;
+				}
+				break;
+				case DBSERVER_OBJECT_GET_FIELDS:
+				{
+					uint32_t context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELDS_RESP);
+					resp.add_uint32(context);
+
+					// Get object id from datagram
+					uint32_t do_id = dgi.read_uint32();
+					m_log->spam() << "Reading fields from obj-" << do_id << "..." << std::endl;
+
+					// Get object class from db
+					DCClass *dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
+					{
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Get fields from datagram
+					uint16_t field_count = dgi.read_uint16();
+					std::vector<DCField*> fields(field_count);
+					for(uint16_t i = 0; i < field_count; ++i)
+					{
+						uint16_t field_id = dgi.read_uint16();
+						DCField *field = dcc->get_field_by_index(field_id);
+						if(!field)
+						{
+							m_log->error() << "Asked for invalid field(s),"
+							               << " reading from object #" << do_id << std::endl;
+							resp.add_uint8(FAILURE);
+							send(resp);
+							return;
+						}
+						fields[i] = field;
+					}
+
+					// Get values from database
+					std::map<DCField*, std::vector<uint8_t>> values;
+					if(!m_db_engine->get_fields(do_id, fields, values))
+					{
+						m_log->spam() << "... failure." << std::endl;
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					// Send value in response
+					resp.add_uint8(SUCCESS);
+					resp.add_uint16(values.size());
+					for(auto it = values.begin(); it != values.end(); ++it)
+					{
+						resp.add_uint16(it->first->get_number());
+						m_log->spam() << "FIELD TYPE: " << it->first->get_number() << std::endl;
+						resp.add_data(it->second);						
+					}
+					send(resp);
+					m_log->spam() << "... success." << std::endl;
 				}
 				break;
 				default:
 					m_log->error() << "Recieved unknown MsgType: " << msg_type << std::endl;
 			};
 		}
+
 };
 
 RoleFactoryItem<DatabaseServer> dbserver_fact("database");

@@ -26,6 +26,42 @@ private:
 	std::list<uint32_t> m_free_ids;
 	std::string m_foldername;
 
+	inline std::string filename(uint32_t do_id)
+	{
+		std::stringstream filename;
+		filename << m_foldername << "/" << do_id << ".yaml";
+		return filename.str();
+	}
+
+	inline bool load(uint32_t do_id, YAML::Node &document)
+	{
+		std::ifstream stream(filename(do_id));
+		document = YAML::Load(stream);
+		if(document.IsNull()) {
+			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
+			return false;
+		}
+		if(document["class"].IsNull())
+		{
+			yamldb_log.error() << filename(do_id) << " does not contain the 'class' key." << std::endl;
+			return false;
+		}
+		if(document["fields"].IsNull())
+		{
+			yamldb_log.error() << filename(do_id) << " does not contain the 'fields' key." << std::endl;
+			return false;
+		}
+		// Read object's DistributedClass
+		std::string dc_name = document["class"].as<std::string>();
+		if(!g_dcf->get_class_by_name(dc_name)) {
+			yamldb_log.error() << "Class '" << dc_name << "', loaded from '" << filename(do_id)
+			                   << "', does not exist." << std::endl;
+			return NULL;
+		}
+
+		return true;
+	}
+
 	// update_info writes m_next_id and m_free_ids to "info.yaml"
 	void update_info()
 	{
@@ -79,9 +115,9 @@ private:
 		return do_id;
 	}
 
-	std::vector<uint8_t> read_yaml_field(DCField* field, YAML::Node node)
+	std::vector<uint8_t> read_yaml_field(const DCField* field, YAML::Node node)
 	{
-		DCAtomicField* atomic = field->as_atomic_field();
+		const DCAtomicField* atomic = field->as_atomic_field();
 		if(atomic && atomic->get_num_elements() == 1)
 		{
 			switch(atomic->get_element_type(0))
@@ -166,10 +202,10 @@ private:
 		return std::vector<uint8_t>();
 	}
 
-	void write_yaml_field(YAML::Emitter& out, DCField* field, const std::vector<uint8_t>& value)
+	void write_yaml_field(YAML::Emitter& out, const DCField* field, const std::vector<uint8_t>& value)
 	{
 		out << YAML::Key << field->get_name();
-		DCAtomicField* atomic = field->as_atomic_field();
+		const DCAtomicField* atomic = field->as_atomic_field();
 
 		if(atomic && atomic->get_num_elements() == 1)
 		{
@@ -259,13 +295,9 @@ private:
 		out << YAML::EndMap
 			<< YAML::EndMap;
 
-		// Prepare object filename
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-
 		// Print YAML to file
 		std::fstream file;
-		file.open(filename.str(), std::ios_base::out);
+		file.open(filename(do_id), std::ios_base::out);
 		if(file.is_open())
 		{
 			file << out.c_str();
@@ -326,49 +358,40 @@ public:
 		return 0;
 	}
 
+	void delete_object(uint32_t do_id)
+	{
+		yamldb_log.debug() << "Deleting file: " << filename(do_id) << std::endl;
+		if(!std::remove(filename(do_id).c_str()))
+		{
+			m_free_ids.insert(m_free_ids.end(), do_id);
+			update_info();
+		}
+	}
+
 	bool get_object(uint32_t do_id, DatabaseObject &dbo)
 	{
 		yamldb_log.spam() << "Getting object #" << do_id << " ..." << std::endl;
 
-		// Prepare object filename
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-
-		// Open database object file
-		std::ifstream objstream(filename.str());
-		YAML::Node document = YAML::Load(objstream);
-
-		if(document.IsNull()) {
-			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
+		// Open file for object
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
 			return false;
 		}
 
 		// Read object's DistributedClass
-		YAML::Node key_class = document["class"];
-		if(key_class.IsNull())
-		{
-			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
-			return false;
-		}
 		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-		if(!dcc) {
-			yamldb_log.error() << "Class '" << document["class"].as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
-			return false;
-		}
 		dbo.dc_id = dcc->get_number();
 
 		// Read object's fields
-		YAML::Node key_fields = document["fields"];
-		if(key_fields.IsNull())
-		{
-			yamldb_log.error() << filename.str() << " does not contain the 'fields' key." << std::endl;
-			return false;
-		}
-		for(auto it = key_fields.begin(); it != key_fields.end(); ++it)
+		YAML::Node fields = document["fields"];
+		for(auto it = fields.begin(); it != fields.end(); ++it)
 		{
 			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
 			if(!field) {
-				yamldb_log.warning() << "Field '" << it->first.as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+				                     << "', loaded from '" << filename(do_id)
+				                     << "', does not exist." << std::endl;
 				continue;
 			}
 
@@ -378,102 +401,215 @@ public:
 		return true;
 	}
 
-	DCClass* get_dclass(uint32_t do_id)
+	DCClass* get_class(uint32_t do_id)
 	{
-		yamldb_log.spam() << "Getting dclass of object #" << do_id << " ..." << std::endl;
+		yamldb_log.spam() << "Getting dclass of object #" << do_id << std::endl;
 
-		// Prepare object filename
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-
-		// Open database object file
-		std::ifstream objstream(filename.str());
-		YAML::Node document = YAML::Load(objstream);
-
-		if(document.IsNull()) {
-			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
-			return NULL;
-		}
-
-		// Read object's DistributedClass
-		YAML::Node key_class = document["class"];
-		if(key_class.IsNull())
+		// Open file for object
+		YAML::Node document;
+		if(!load(do_id, document))
 		{
-			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
-			return NULL;
-		}
-		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-		if(!dcc) {
-			yamldb_log.error() << "Class '" << document["class"].as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
 			return NULL;
 		}
 
-		return dcc;
+		return g_dcf->get_class_by_name(document["class"].as<std::string>());
 	}
 
-	void set_fields(uint32_t do_id, DatabaseObject &dbo)
+
+	#define val_t std::vector<uint8_t>
+	#define map_t std::map<DCField*, std::vector<uint8_t>>
+	void del_field(uint32_t do_id, DCField* field)
 	{
-		yamldb_log.spam() << "Setting fields on object #" << do_id << " ..." << std::endl;
+		yamldb_log.spam() << "Deleting field on object #" << do_id << std::endl;
 
-		// Prepare object filename
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-
-		// Open database object file
-		std::ifstream objstream(filename.str());
-		YAML::Node document = YAML::Load(objstream);
-
-		if(document.IsNull()) {
-			yamldb_log.error() << "Object #" << do_id << " does not exist in database." << std::endl;
-			return;
-		}
-
-		// Read object's DistributedClass
-		YAML::Node key_class = document["class"];
-		if(key_class.IsNull())
+		YAML::Node document;
+		if(!load(do_id, document))
 		{
-			yamldb_log.error() << filename.str() << " does not contain the 'class' key." << std::endl;
-			return;
-		}
-
-		// Read object's fields
-		YAML::Node key_fields = document["fields"];
-		if(key_fields.IsNull())
-		{
-			yamldb_log.error() << filename.str() << " does not contain the 'fields' key." << std::endl;
 			return;
 		}
 
 		// Get the fields from the file that are not being updated
-		DCClass* dcc = g_dcf->get_class(dbo.dc_id);
-		for(auto it = key_fields.begin(); it != key_fields.end(); ++it)
+		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+		DatabaseObject dbo(dcc->get_number());
+		YAML::Node existing = document["fields"];
+		for(auto it = existing.begin(); it != existing.end(); ++it)
 		{
 			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
 			if(!field) {
-				yamldb_log.warning() << "Field '" << it->first.as<std::string>() << "', loaded from '" << filename.str() << "', does not exist." << std::endl;
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+				                     << "', loaded from '" << filename(do_id)
+				                     << "', does not exist." << std::endl;
+				continue;
+			}
+			dbo.fields[field] = read_yaml_field(field, it->second);
+		}
+		dbo.fields.erase(field);
+	}
+	void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
+	{
+		yamldb_log.spam() << "Deleting fields on object #" << do_id << std::endl;
+
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
+			return;
+		}
+
+		// Get the fields from the file that are not being updated
+		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+		DatabaseObject dbo(dcc->get_number());
+		YAML::Node existing = document["fields"];
+		for(auto it = existing.begin(); it != existing.end(); ++it)
+		{
+			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+			if(!field) {
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+				                     << "', loaded from '" << filename(do_id)
+				                     << "', does not exist." << std::endl;
+				continue;
+			}
+			dbo.fields[field] = read_yaml_field(field, it->second);
+		}
+
+		for(auto it = fields.begin(); it != fields.end(); ++it)
+		{
+			dbo.fields.erase(*it);
+		}
+	}
+	void set_field(uint32_t do_id, DCField* field, const val_t &value)
+	{
+		yamldb_log.spam() << "Setting field on object #" << do_id << std::endl;
+
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
+			return;
+		}
+
+		// Get the fields from the file that are not being updated
+		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+		DatabaseObject dbo(dcc->get_number());
+		YAML::Node existing = document["fields"];
+		for(auto it = existing.begin(); it != existing.end(); ++it)
+		{
+			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+			if(!field) {
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+				                     << "', loaded from '" << filename(do_id)
+				                     << "', does not exist." << std::endl;
+				continue;
+			}
+			dbo.fields[field] = read_yaml_field(field, it->second);
+		}
+
+		dbo.fields[field] = value;
+		write_yaml_object(do_id, dcc, dbo);
+	}
+
+	void set_fields(uint32_t do_id, const map_t &fields)
+	{
+		yamldb_log.spam() << "Setting fields on object #" << do_id << std::endl;
+
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
+			return;
+		}
+
+		// Get the fields from the file that are not being updated
+		DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+		DatabaseObject dbo(dcc->get_number());
+		YAML::Node existing = document["fields"];
+		for(auto it = existing.begin(); it != existing.end(); ++it)
+		{
+			DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+			if(!field) {
+				yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+				                     << "', loaded from '" << filename(do_id)
+				                     << "', does not exist." << std::endl;
 				continue;
 			}
 
-			if(dbo.fields.find(field) == dbo.fields.end())
+			auto found = fields.find(field);
+			if(found == fields.end())
 			{
 				dbo.fields[field] = read_yaml_field(field, it->second);
+			}
+			else
+			{
+				dbo.fields[field] = found->second;
 			}
 		}
 
 		write_yaml_object(do_id, dcc, dbo);
 	}
-
-	void delete_object(uint32_t do_id)
+	bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
 	{
-		std::stringstream filename;
-		filename << m_foldername << "/" << do_id << ".yaml";
-		yamldb_log.debug() << "Deleting file: " << filename.str() << std::endl;
-		if(!std::remove(filename.str().c_str()))
-		{
-			m_free_ids.insert(m_free_ids.end(), do_id);
-			update_info();
-		}
+		return false;
 	}
+	bool set_fields_if_empty(uint32_t do_id, map_t &values)
+	{
+		return false;
+	}
+	bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
+	{
+		return false;
+	}
+	bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
+	{
+		return false;
+	}
+	bool get_field(uint32_t do_id, const DCField* field, val_t &value)
+	{
+		yamldb_log.spam() << "Getting field on object #" << do_id << std::endl;
+
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
+			return false;
+		}
+
+		// Get the fields from the file that are not being updated
+		YAML::Node node = document["fields"][field->get_name()];
+		if(node.IsNull())
+		{
+			return false;
+		}
+
+		yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
+
+		value = read_yaml_field(field, node);
+		return true;
+	}
+	bool get_fields(uint32_t do_id, const std::vector<DCField*> &fields, map_t &values)
+	{
+		yamldb_log.spam() << "Getting fields on object #" << do_id << std::endl;
+
+		YAML::Node document;
+		if(!load(do_id, document))
+		{
+			return false;
+		}
+
+		// Get the fields from the file that are not being updated
+		for(auto it = fields.begin(); it != fields.end(); ++it)
+		{
+			DCField* field = *it;
+			yamldb_log.spam() << "Searching for field: " << field->get_name() << std::endl;
+			YAML::Node existing = document["fields"];
+			for(auto it2 = existing.begin(); it2 != existing.end(); ++it2)
+			{
+				if(it2->first.as<std::string>() == field->get_name())
+				{
+					values[*it] = read_yaml_field(field, it2->second);
+					yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;					
+				}
+			}
+		}
+		return true;
+	}
+	#undef map_t
+	#undef val_t
 };
 
 DBEngineCreator<YAMLEngine> yamlengine_creator("yaml");

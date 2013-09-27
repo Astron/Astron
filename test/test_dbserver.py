@@ -853,6 +853,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(2) # Context
         dg.add_uint32(doidA)
+        dg.add_uint16(setDb3)
         self.conn.send(dg)
 
         # Cleared field shouldn't be returned
