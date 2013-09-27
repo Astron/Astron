@@ -130,7 +130,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 			if(!m_channel)
 			{
 				send_disconnect(CLIENT_DISCONNECT_GENERIC, "Client capacity reached");
-				delete this;
 				return;
 			}
 			m_allocated_channel = m_channel;
@@ -191,10 +190,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			case STATESERVER_OBJECT_UPDATE_FIELD:
 			{
-				Datagram resp;
-				resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
-				resp.add_data(dgi.read_remainder());
-				network_send(resp);
+				if(sender != m_channel)
+				{
+					Datagram resp;
+					resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
+					resp.add_data(dgi.read_remainder());
+					network_send(resp);
+				}
 			}
 			break;
 			case STATESERVER_OBJECT_ENTER_OWNER_RECV:
@@ -436,14 +438,18 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 		void send_disconnect(uint16_t reason, const std::string &error_string = "")
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_GO_GET_LOST);
-			resp.add_uint16(reason);
-			resp.add_string(error_string);
-			network_send(resp);
-			do_disconnect();
+			if(is_connected())
+			{
+				Datagram resp;
+				resp.add_uint16(CLIENT_GO_GET_LOST);
+				resp.add_uint16(reason);
+				resp.add_string(error_string);
+				network_send(resp);
+				do_disconnect();
+			}
 		}
 
+		//Only handles one message type, so it does not need to be split up.
 		virtual void handle_pre_hello(Datagram &dg)
 		{
 			DatagramIterator dgi(dg);
@@ -488,52 +494,21 @@ class Client : public NetworkClient, public MDParticipantInterface
 		{
 			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
+			bool should_die = false;
 			switch(msg_type)
 			{
 			case CLIENT_OBJECT_UPDATE_FIELD:
 			{
-				uint32_t do_id = dgi.read_uint32();
-				uint16_t field_id = dgi.read_uint16();
-				DCClass *dcc = NULL;
-				if(uberdogs.find(do_id) == uberdogs.end() || !uberdogs[do_id].anonymous)
-				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
-					return;
-				}
-				dcc = uberdogs[do_id].dcc;
-
-				DCField *field = dcc->get_field_by_index(field_id);
-				if(!field)
-				{
-					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
-					return;
-				}
-				if(!field->is_clsend())
-				{
-					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
-					return;
-				}
-
-				std::vector<uint8_t> data(0);
-				dgi.unpack_field(field, data);//if an exception occurs it will be handled
-				//and client will be dc'd for truncated datagram
-
-				Datagram resp;
-				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
-				resp.add_uint32(do_id);
-				resp.add_uint16(field_id);
-				if(data.size() > 65535u-resp.size())
-				{
-					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
-					return;
-				}
-				resp.add_data(data);
-				send(resp);
+				should_die = handle_client_object_update_field(dgi);
 			}
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
+				return;
+			}
+			if(should_die)
+			{
 				return;
 			}
 			if(dgi.tell() < dg.size())
@@ -547,239 +522,272 @@ class Client : public NetworkClient, public MDParticipantInterface
 		{
 			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
+			bool should_die = false;
 			switch(msg_type)
 			{
 			case CLIENT_OBJECT_UPDATE_FIELD:
-			{
-				uint32_t do_id = dgi.read_uint32();
-				uint16_t field_id = dgi.read_uint16();
-				DCClass *dcc = NULL;
-				if(uberdogs.find(do_id) != uberdogs.end())
-				{
-					dcc = uberdogs[do_id].dcc;
-				}
-				if(!dcc)
-				{
-					if(dist_objs.find(do_id) != dist_objs.end())
-					{
-						dcc = dist_objs[do_id].dcc;
-					}
-					else
-					{
-						send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
-						return;
-					}
-				}
-
-				DCField *field = dcc->get_field_by_index(field_id);
-				if(!field)
-				{
-					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
-					return;
-				}
-				
-				bool is_owned = false;
-				for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
-				{
-					if(*it == do_id)
-					{
-						is_owned = true;
-						break;
-					}
-				}
-
-				if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
-				{
-					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
-					return;
-				}
-
-				std::vector<uint8_t> data;
-				dgi.unpack_field(field, data);//if an exception occurs it will be handled
-				//and client will be dc'd for truncated datagram
-
-				Datagram resp;
-				resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
-				resp.add_uint32(do_id);
-				resp.add_uint16(field_id);
-				if(data.size() > 65535u-resp.size())
-				{
-					send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
-					return;
-				}
-				resp.add_data(data);
-				send(resp);
-			}
-			break;
+				should_die = handle_client_object_update_field(dgi);
+				break;
 			case CLIENT_OBJECT_LOCATION:
-			{
-				uint32_t do_id = dgi.read_uint32();
-				if(dist_objs.find(do_id) == dist_objs.end())
-				{
-					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
-					return;
-				}
-				bool is_owned = false;
-				for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
-				{
-					if(*it == do_id)
-					{
-						is_owned = true;
-						break;
-					}
-				}
-
-				if(!is_owned)
-				{
-					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE);
-					return;
-				}
-
-				//TODO: Finish this
-				dgi.read_remainder();
-			}
-			break;
+				should_die = handle_client_object_location(dgi);
+				break;
 			case CLIENT_ADD_INTEREST:
-			{
-				uint16_t interest_id = dgi.read_uint16();
-				uint32_t context = dgi.read_uint32();
-				uint32_t parent = dgi.read_uint32();
-				m_interests.erase(interest_id);
-				Interest i;
-				i.context = context;
-				i.parent = parent;
-
-				i.zones.reserve((dg.size()-dgi.tell())/sizeof(uint32_t));
-				std::list<uint32_t> new_zones;
-				for(uint16_t p = dgi.tell(); p != dg.size(); p = dgi.tell())
-				{
-					uint32_t zone = dgi.read_uint32();
-					new_zones.insert(new_zones.end(), zone);
-					i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
-				}
-				for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
-				{
-					for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
-					{
-						new_zones.remove(it2->first);
-					}
-				}
-
-				m_interests[interest_id] = i;
-
-				if(!new_zones.empty())
-				{
-					Datagram resp;
-					resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
-					resp.add_uint32(parent);
-					resp.add_uint16(i.zones.size());
-					for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
-					{
-						resp.add_uint32(*it);
-						subscribe_channel(LOCATION2CHANNEL(parent, *it));
-					}
-					send(resp);
-				}
-				else
-				{
-					Datagram resp;
-					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-					resp.add_uint16(interest_id);
-					resp.add_uint32(context);
-					network_send(resp);
-				}
-			}
-			break;
+				should_die = handle_client_add_interest(dg, dgi);
+				break;
 			case CLIENT_REMOVE_INTEREST:
-			{
-				uint16_t id = dgi.read_uint16();
-				uint32_t context = 0;
-				if(dgi.tell() < dg.size())
-				{
-					context = dgi.read_uint32();
-				}
-				if(m_interests.find(id) == m_interests.end())
-				{
-					send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest");
-					return;
-				}
-				Interest &i = m_interests[id];
-				std::vector<uint32_t> removed_zones(0);
-				removed_zones.reserve(i.zones.size());
-				for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-				{
-					uint32_t zone = it->first;
-					bool found = false;
-					for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
-					{
-						if(it2->first == id)
-						{
-							continue;
-						}
-						for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
-						{
-							if(it3->first == zone)
-							{
-								found = true;
-								break;
-							}
-						}
-						if(found)
-						{
-							break;
-						}
-					}
-					if(!found)
-					{
-						removed_zones.insert(removed_zones.end(), zone);
-						unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
-					}
-				}
-				for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
-				{
-					if(it->second.parent == i.parent)
-					{
-						bool found = false;
-						for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
-						{
-							if(it->second.zone == *it2)
-							{
-								found = true;
-								break;
-							}
-						}
-						if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
-						{
-							Datagram resp;
-							resp.add_uint16(CLIENT_OBJECT_DISABLE);
-							resp.add_uint32(it->second.id);
-							network_send(resp);
-							it->second.refcount--;
-						}
-					}
-				}
-				m_interests.erase(m_interests.find(id));
-
-				if(context)
-				{
-					Datagram resp;
-					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-					resp.add_uint16(id);
-					resp.add_uint32(context);
-					network_send(resp);
-				}
-			}
-			break;
+				should_die = handle_client_remove_interest(dg, dgi);
+				break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
 				return;
 			}
+
+			if(should_die)
+			{
+				return;
+			}
+
 			if(dgi.tell() < dg.size())
 			{
 				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
 				return;
 			}
+		}
+
+		bool handle_client_object_update_field(DatagramIterator &dgi)
+		{
+			uint32_t do_id = dgi.read_uint32();
+			uint16_t field_id = dgi.read_uint16();
+			DCClass *dcc = NULL;
+			if(uberdogs.find(do_id) != uberdogs.end())
+			{
+				if(m_state != CS_AUTHENTICATED && !uberdogs[do_id].anonymous)
+				{
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
+					return true;
+				}
+				dcc = uberdogs[do_id].dcc;
+			}
+			if(!dcc)
+			{
+				if(m_state != CS_AUTHENTICATED)
+				{
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
+					return true;
+				}
+				if(dist_objs.find(do_id) != dist_objs.end())
+				{
+					dcc = dist_objs[do_id].dcc;
+				}
+				else
+				{
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+					return true;
+				}
+			}
+
+			DCField *field = dcc->get_field_by_index(field_id);
+			if(!field)
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+				return true;
+			}
+				
+			bool is_owned = false;
+			for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
+			{
+				if(*it == do_id)
+				{
+					is_owned = true;
+					break;
+				}
+			}
+
+			if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
+				return true;
+			}
+
+			std::vector<uint8_t> data;
+			dgi.unpack_field(field, data);//if an exception occurs it will be handled
+			//and client will be dc'd for truncated datagram
+
+			Datagram resp;
+			resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
+			resp.add_uint32(do_id);
+			resp.add_uint16(field_id);
+			if(data.size() > 65535u-resp.size())
+			{
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+				return true;
+			}
+			resp.add_data(data);
+			send(resp);
+			return false;
+		}
+
+		bool handle_client_object_location(DatagramIterator &dgi)
+		{
+			uint32_t do_id = dgi.read_uint32();
+			if(dist_objs.find(do_id) == dist_objs.end())
+			{
+				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+				return true;
+			}
+			bool is_owned = false;
+			for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
+			{
+				if(*it == do_id)
+				{
+					is_owned = true;
+					break;
+				}
+			}
+
+			if(!is_owned)
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE);
+				return true;
+			}
+
+			//TODO: Finish this
+			dgi.read_remainder();
+			return false;
+		}
+
+		bool handle_client_add_interest(Datagram &dg, DatagramIterator &dgi)
+		{
+			uint16_t interest_id = dgi.read_uint16();
+			uint32_t context = dgi.read_uint32();
+			uint32_t parent = dgi.read_uint32();
+			m_interests.erase(interest_id);
+			Interest i;
+			i.context = context;
+			i.parent = parent;
+
+			i.zones.reserve((dg.size()-dgi.tell())/sizeof(uint32_t));
+			std::list<uint32_t> new_zones;
+			for(uint16_t p = dgi.tell(); p != dg.size(); p = dgi.tell())
+			{
+				uint32_t zone = dgi.read_uint32();
+				new_zones.insert(new_zones.end(), zone);
+				i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
+			}
+			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+			{
+				for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
+				{
+					new_zones.remove(it2->first);
+				}
+			}
+
+			m_interests[interest_id] = i;
+
+			if(!new_zones.empty())
+			{
+				Datagram resp;
+				resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+				resp.add_uint32(parent);
+				resp.add_uint16(i.zones.size());
+				for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
+				{
+					resp.add_uint32(*it);
+					subscribe_channel(LOCATION2CHANNEL(parent, *it));
+				}
+				send(resp);
+			}
+			else
+			{
+				Datagram resp;
+				resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+				resp.add_uint16(interest_id);
+				resp.add_uint32(context);
+				network_send(resp);
+			}
+			return false;
+		}
+
+		bool handle_client_remove_interest(Datagram &dg, DatagramIterator &dgi)
+		{
+			uint16_t id = dgi.read_uint16();
+			uint32_t context = 0;
+			if(dgi.tell() < dg.size())
+			{
+				context = dgi.read_uint32();
+			}
+			if(m_interests.find(id) == m_interests.end())
+			{
+				send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest");
+				return true;
+			}
+			Interest &i = m_interests[id];
+			std::vector<uint32_t> removed_zones(0);
+			removed_zones.reserve(i.zones.size());
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				uint32_t zone = it->first;
+				bool found = false;
+				for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
+				{
+					if(it2->first == id)
+					{
+						continue;
+					}
+					for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
+					{
+						if(it3->first == zone)
+						{
+							found = true;
+							break;
+						}
+					}
+					if(found)
+					{
+						break;
+					}
+				}
+				if(!found)
+				{
+					removed_zones.insert(removed_zones.end(), zone);
+					unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
+				}
+			}
+			for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+			{
+				if(it->second.parent == i.parent)
+				{
+					bool found = false;
+					for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
+					{
+						if(it->second.zone == *it2)
+						{
+							found = true;
+							break;
+						}
+					}
+					if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
+					{
+						Datagram resp;
+						resp.add_uint16(CLIENT_OBJECT_DISABLE);
+						resp.add_uint32(it->second.id);
+						network_send(resp);
+						it->second.refcount--;
+					}
+				}
+			}
+			m_interests.erase(m_interests.find(id));
+
+			if(context)
+			{
+				Datagram resp;
+				resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+				resp.add_uint16(id);
+				resp.add_uint32(context);
+				network_send(resp);
+			}
+			return false;
 		}
 
 		virtual void network_disconnect()

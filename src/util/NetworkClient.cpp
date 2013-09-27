@@ -88,3 +88,8 @@ void NetworkClient::read_handler(const boost::system::error_code &ec, size_t byt
 		start_receive();
 	}
 }
+
+bool NetworkClient::is_connected()
+{
+	return m_socket->is_open();
+}
