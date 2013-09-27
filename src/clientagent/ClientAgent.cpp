@@ -275,6 +275,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				uint32_t zone = dgi.read_uint32();
 				uint16_t dc_id = dgi.read_uint16();
 				uint32_t do_id = dgi.read_uint32();
+				if(m_owned_objects.find(do_id) != m_owned_objects.end())
+				{
+					return;
+				}
 				if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
 				{
 					DistributedObject obj;
@@ -376,7 +380,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 
 				Datagram resp;
-				if(disable)
+				if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
 				{
 					resp.add_uint16(CLIENT_OBJECT_DISABLE);
 					resp.add_uint32(do_id);
@@ -744,7 +748,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 								break;
 							}
 						}
-						if(found)
+						if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
 						{
 							Datagram resp;
 							resp.add_uint16(CLIENT_OBJECT_DISABLE);
