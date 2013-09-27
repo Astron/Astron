@@ -558,6 +558,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					}
 				}
 			}
+			break;
 		}
 		default:
 			m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
