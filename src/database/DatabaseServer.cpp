@@ -3,10 +3,10 @@
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
 
-ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
-ConfigVariable<uint32_t> min_id("generate/min", INVALID_DO_ID);
-ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
-ConfigVariable<std::string> engine_type("engine/type", "filesystem");
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
+static ConfigVariable<uint32_t> min_id("generate/min", INVALID_DO_ID);
+static ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
+static ConfigVariable<std::string> engine_type("engine/type", "filesystem");
 
 class DatabaseServer : public Role
 {
@@ -35,8 +35,8 @@ class DatabaseServer : public Role
 			// Check to see the engine was instantiated
 			if(!m_db_engine)
 			{
-				m_log->fatal() << "No database engine of type '" << engine_type.get_rval(
-				                   roleconfig) << "' exists." << std::endl;
+				m_log->fatal() << "No database engine of type '"
+				               << engine_type.get_rval(roleconfig) << "' exists." << std::endl;
 				exit(1);
 			}
 
@@ -125,6 +125,20 @@ class DatabaseServer : public Role
 							{
 								std::string val = field->get_default_value();
 								dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
+								if(!field->has_default_value())
+								{
+									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
+									               "object of type " << dcc->get_name();
+
+									resp.add_uint32(0);
+									send(resp);
+									return;
+								}
+								else
+								{
+									std::string val = field->get_default_value();
+									dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
+								}
 							}
 						}
 					}
@@ -168,6 +182,8 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
+							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
+							                  it->second.begin(), it->second.end()) << std::endl;
 						}
 					}
 					else

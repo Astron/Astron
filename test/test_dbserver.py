@@ -743,7 +743,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(4) # Context
         dg.add_uint8(FAILURE)
-        selt.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg))
 
         # Select invalid object, multiple fields
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
@@ -758,7 +758,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint8(FAILURE)
-        selt.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg))
 
         # Clear one field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_DELETE_FIELD)
@@ -777,7 +777,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(6) # Context
         dg.add_uint8(FAILURE)
-        selt.assertTrue(self.conn.expect(dg))
+        self.assertTrue(self.conn.expect(dg))
 
         # Select the cleared field, with multiple message
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)

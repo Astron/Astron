@@ -48,7 +48,7 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
 			std::string str_ip = bind_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
 			tcp::resolver resolver(io_service);
 			tcp::resolver::query query(str_ip, str_port);
@@ -62,7 +62,7 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
 			std::string str_ip = connect_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 			str_ip = str_ip.substr(0, str_ip.find(':', 0));
 			tcp::resolver resolver(io_service);
 			tcp::resolver::query query(str_ip, str_port);
@@ -113,14 +113,14 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	}
 	recieve_log << std::endl;
 
-	if (p)
+	if(p)
 	{
 		receiving_participants.erase(p);
 	}
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1+channels*8);
+		DatagramIterator msg_dgi(dg, 1 + channels * 8);
 		(*it)->handle_datagram(dg, msg_dgi);
 	}
 
@@ -142,7 +142,8 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 {
 	// Check if participant is already subscribed in a range
-	if(boost::icl::find(p->ranges(), c) == p->ranges().end()) {
+	if(boost::icl::find(p->ranges(), c) == p->ranges().end())
+	{
 		// If not, subscribe participant to channel
 		p->channels().insert(p->channels().end(), c);
 		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
@@ -195,7 +196,8 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	}
 
 	// Check if should unsubscribe upstream...
-	if(is_client) {
+	if(is_client)
+	{
 		// Check if there are any remaining single channel subscriptions
 		if(m_channel_subscriptions[c].size() > 0)
 		{
@@ -229,12 +231,12 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	m_range_subscriptions += std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->channels().begin(); it != p->channels().end();)
+	for(auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi)
+		if(lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
 			p->channels().erase(prev);
@@ -250,7 +252,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
 			++new_intervals;
-			if (it->second.size() > 1)
+			if(it->second.size() > 1)
 			{
 				++premade_intervals;
 			}
@@ -287,12 +289,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for (auto it = p->channels().begin(); it != p->channels().end();)
+	for(auto it = p->channels().begin(); it != p->channels().end();)
 	{
 		auto prev = it++;
 		channel_t c = *prev;
 
-		if (lo <= c && c <= hi)
+		if(lo <= c && c <= hi)
 		{
 			m_channel_subscriptions[c].erase(p);
 			p->channels().erase(prev);
@@ -306,7 +308,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		std::list<interval_t> silent_intervals;
 
 		// If that was the last interval in m_range_subscriptions, remove it upstream
-		if (boost::icl::interval_count(m_range_subscriptions) == 0)
+		if(boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
 			silent_intervals.insert(silent_intervals.end(), range_copy.begin()->first);
 		}
@@ -318,16 +320,20 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			{
 				// For the range we care about
 				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
-				if(it->first.lower() <= hi && it->first.upper() >= lo) {
+				if(it->first.lower() <= hi && it->first.upper() >= lo)
+				{
 					// If an existing interval is empty it is silent
-					if (it->second.empty())
+					if(it->second.empty())
 					{
 						silent_intervals.insert(silent_intervals.end(), it->first);
 					}
-					if(next != m_range_subscriptions.end()) {
+					if(next != m_range_subscriptions.end())
+					{
 						// If there is room between intervals, that is a silent interval
-						if (next->first.lower() - it->first.upper() > 0) {
-							silent_intervals.insert(silent_intervals.end(), boost::icl::inner_complement(it->first, next->first));
+						if(next->first.lower() - it->first.upper() > 0)
+						{
+							silent_intervals.insert(silent_intervals.end(),
+							                        boost::icl::inner_complement(it->first, next->first));
 						}
 						++next;
 					}
@@ -339,15 +345,19 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-				<< it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
+			              << it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
 			Datagram dg(CONTROL_REMOVE_RANGE);
 
 			channel_t lo = it->lower();
 			channel_t hi = it->upper();
 			if(!(it->bounds().bits() & BOOST_BINARY(10)))
+			{
 				lo += 1;
+			}
 			if(!(it->bounds().bits() & BOOST_BINARY(01)))
+			{
 				hi -= 1;
+			}
 
 			dg.add_uint64(lo);
 			dg.add_uint64(hi);
@@ -356,7 +366,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	}
 }
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false), m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
+	m_log("msgdir", "Message Director")
 {
 	// Initialize m_range_susbcriptions with empty range
 	auto empty_set = std::set<MDParticipantInterface*>();
@@ -369,7 +380,7 @@ void MessageDirector::start_accept()
 	tcp::socket *socket = new tcp::socket(io_service);
 	tcp::endpoint peerEndpoint;
 	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept,
-		this, socket, boost::asio::placeholders::error));
+	                         this, socket, boost::asio::placeholders::error));
 }
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)

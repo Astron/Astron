@@ -26,36 +26,37 @@ class DCClass;
 //               parameter itself.  This means that all the fields of
 //               the class get packed into the message.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCClassParameter : public DCParameter {
-public:
-  DCClassParameter(const DCClass *dclass);
-  DCClassParameter(const DCClassParameter &copy);
+class EXPCL_DIRECT DCClassParameter : public DCParameter
+{
+	public:
+		DCClassParameter(const DCClass *dclass);
+		DCClassParameter(const DCClassParameter &copy);
 
-PUBLISHED:
-  virtual DCClassParameter *as_class_parameter();
-  virtual const DCClassParameter *as_class_parameter() const;
-  virtual DCParameter *make_copy() const;
-  virtual bool is_valid() const;
+	PUBLISHED:
+		virtual DCClassParameter *as_class_parameter();
+		virtual const DCClassParameter *as_class_parameter() const;
+		virtual DCParameter *make_copy() const;
+		virtual bool is_valid() const;
 
-  const DCClass *get_class() const;
+		const DCClass *get_class() const;
 
-public:
-  virtual DCPackerInterface *get_nested_field(int n) const;
+	public:
+		virtual DCPackerInterface *get_nested_field(int n) const;
 
-  virtual void output_instance(ostream &out, bool brief, const string &prename,
-                               const string &name, const string &postname) const;
-  virtual void generate_hash(HashGenerator &hashgen) const;
+		virtual void output_instance(ostream &out, bool brief, const string &prename,
+		                             const string &name, const string &postname) const;
+		virtual void generate_hash(HashGenerator &hashgen) const;
 
-protected:
-  virtual bool do_check_match(const DCPackerInterface *other) const;
-  virtual bool do_check_match_class_parameter(const DCClassParameter *other) const;
-  virtual bool do_check_match_array_parameter(const DCArrayParameter *other) const;
+	protected:
+		virtual bool do_check_match(const DCPackerInterface *other) const;
+		virtual bool do_check_match_class_parameter(const DCClassParameter *other) const;
+		virtual bool do_check_match_array_parameter(const DCArrayParameter *other) const;
 
-private:
-  typedef pvector<DCPackerInterface *> Fields;
-  Fields _nested_fields;
+	private:
+		typedef pvector<DCPackerInterface *> Fields;
+		Fields _nested_fields;
 
-  const DCClass *_dclass;
+		const DCClass *_dclass;
 };
 
 #endif

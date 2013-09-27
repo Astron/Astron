@@ -16,24 +16,32 @@ int main(int argc, char *argv[])
 	std::string cfg_file;
 
 	//TODO: Perhaps verbosity should be specified via command-line switch?
-	if (argc < 2)
+	if(argc < 2)
 	{
 		cfg_file = "openotpd.yml";
 	}
 	else
 	{
 		cfg_file = "openotpd.yml";
-		for (int i = 1; i < argc; i++)
+		for(int i = 1; i < argc; i++)
 		{
-			if (strcmp(argv[i],  "-config") == 0 && i + 1 < argc)
-			{
-				cfg_file = argv[++i];
-			}
-			else if (strcmp(argv[i], "-log") == 0 && i + 1 < argc)
+			if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc)
 			{
 				delete g_logger;
 				g_logger = new Logger(argv[++i]);
 			}
+			else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+			{
+				std::cerr << "Usage: openotpd [OPTION]... [CONFIG]" << std::endl
+				          << "OpenOTPd is a distributed server daemon." << std::endl << std::endl
+				          << "-h, --help  Print this help dialog." << std::endl
+				          << "-L, --log   Specify a file to write log messages to." << std::endl;
+				exit(0);
+			}
+		}
+		if(argv[argc - 1][0] != '-')
+		{
+			cfg_file = argv[argc - 1];
 		}
 	}
 
@@ -46,8 +54,8 @@ int main(int argc, char *argv[])
 		mainlog.fatal() << "Failed to open configuration file." << std::endl;
 		return 1;
 	}
-	
-	if (!g_config->load(file))
+
+	if(!g_config->load(file))
 	{
 		mainlog.fatal() << "Could not parse configuration file!" << std::endl;
 		return 1;
@@ -81,7 +89,7 @@ int main(int argc, char *argv[])
 	catch(std::exception &e)
 	{
 		mainlog.fatal() << "Exception from the network io service: "
-		            << e.what() << std::endl;
+		                << e.what() << std::endl;
 	}
 
 	//gDCF->read("filename.dc");

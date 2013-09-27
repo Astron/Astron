@@ -8,11 +8,11 @@
 #include "StateServer.h"
 
 
-ConfigVariable<channel_t> cfg_channel("control", 0);
+static ConfigVariable<channel_t> control_channel("control", 0);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
-	channel_t channel = cfg_channel.get_rval(m_roleconfig);
+	channel_t channel = control_channel.get_rval(m_roleconfig);
 	MessageDirector::singleton.subscribe_channel(this, channel);
 
 	std::stringstream name;
@@ -81,7 +81,9 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			std::set <channel_t> targets;
 			for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
 				if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
+				{
 					targets.insert(it->second->m_do_id);
+				}
 
 			if(targets.size())
 			{

@@ -221,7 +221,7 @@ its presence in the new zone and its absence in the old zone.
     `args(uint32 do_id, uint32 new_parent, uint32 new_zone,
                         uint32 old_parent, uint32 old_zone)`  
 **STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER(2066)**  
-    `(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
 > These messages are SENT BY THE OBJECT when processing a SET_ZONE.
 CHANGE_ZONE tells everything that can see the object where the object is going.
 
@@ -241,7 +241,7 @@ objects have answered, the parent will send:
 all objects have announced their existence.
 
 **STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**  
-    `args(uint16 dclass_id, uint32 do_id, uint32 parent_id, uint32 zone_id, ...)`  
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
 > Analogous to above, but includes REQUIRED fields only.
 
 
