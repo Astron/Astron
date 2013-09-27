@@ -12,6 +12,7 @@
 #include <queue>
 #include <set>
 #include <list>
+#include <algorithm>
 
 using boost::asio::ip::tcp;
 
@@ -555,6 +556,135 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 		}
 
+		//returns new zones
+		std::list<uint32_t> add_interest(Interest &i)
+		{
+			std::list<uint32_t> new_zones;
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				new_zones.insert(new_zones.end(), it->first);
+			}
+			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+			{
+				for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
+				{
+					new_zones.remove(it2->first);
+				}
+			}
+			if(!new_zones.empty())
+			{
+				Datagram resp;
+				resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+				resp.add_uint32(i.parent);
+				resp.add_uint16(i.zones.size());
+				for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
+				{
+					resp.add_uint32(*it);
+					subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
+				}
+				send(resp);
+			}
+			return new_zones;
+		}
+
+		void remove_interest(Interest &i, uint32_t id)
+		{
+			std::vector<uint32_t> removed_zones(0);
+			removed_zones.reserve(i.zones.size());
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				uint32_t zone = it->first;
+				bool found = false;
+				for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
+				{
+					if(it2->first == id)
+					{
+						continue;
+					}
+					for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
+					{
+						if(it3->first == zone)
+						{
+							found = true;
+							break;
+						}
+					}
+					if(found)
+					{
+						break;
+					}
+				}
+				if(!found)
+				{
+					removed_zones.insert(removed_zones.end(), zone);
+					unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
+				}
+			}
+			for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+			{
+				if(it->second.parent == i.parent)
+				{
+					bool found = false;
+					for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
+					{
+						if(it->second.zone == *it2)
+						{
+							found = true;
+							break;
+						}
+					}
+					if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
+					{
+						Datagram resp;
+						resp.add_uint16(CLIENT_OBJECT_DISABLE);
+						resp.add_uint32(it->second.id);
+						network_send(resp);
+						it->second.refcount--;
+					}
+				}
+			}
+		}
+
+		void alter_interest(Interest &i, uint16_t id)
+		{
+			Interest &other = m_interests[id];
+			std::list<uint32_t> new_zones;
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				if(std::find(other.zones.begin(), other.zones.end(), *it) != other.zones.end())
+				{
+					new_zones.insert(new_zones.end(), it->first);
+				}
+			}
+
+			Interest temp;
+			temp.parent = i.parent;
+			temp.context = i.context;
+			for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
+			{
+				temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
+			}
+			add_interest(i);
+
+			m_interests[id] = i;
+			std::vector<uint32_t> removed_zones;
+			removed_zones.reserve(other.zones.size());
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				if(std::find(other.zones.begin(), other.zones.end(), *it) == other.zones.end())
+				{
+					removed_zones.insert(removed_zones.end(), it->first);
+				}
+			}
+
+			temp.zones.clear();
+			for(auto it = removed_zones.begin(); it != removed_zones.end(); ++it)
+			{
+				temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
+			}
+			remove_interest(temp, id);
+		}
+
 		bool handle_client_object_update_field(DatagramIterator &dgi)
 		{
 			uint32_t do_id = dgi.read_uint32();
@@ -668,37 +798,23 @@ class Client : public NetworkClient, public MDParticipantInterface
 			i.parent = parent;
 
 			i.zones.reserve((dg.size()-dgi.tell())/sizeof(uint32_t));
-			std::list<uint32_t> new_zones;
 			for(uint16_t p = dgi.tell(); p != dg.size(); p = dgi.tell())
 			{
 				uint32_t zone = dgi.read_uint32();
-				new_zones.insert(new_zones.end(), zone);
 				i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
 			}
-			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+
+			std::list<uint32_t> new_zones = add_interest(i);
+
+			if(m_interests.find(interest_id) != m_interests.end())
 			{
-				for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
-				{
-					new_zones.remove(it2->first);
-				}
+				alter_interest(i, interest_id);
+				return false;//alter_interest takes care of the rest
 			}
 
 			m_interests[interest_id] = i;
 
-			if(!new_zones.empty())
-			{
-				Datagram resp;
-				resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
-				resp.add_uint32(parent);
-				resp.add_uint16(i.zones.size());
-				for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
-				{
-					resp.add_uint32(*it);
-					subscribe_channel(LOCATION2CHANNEL(parent, *it));
-				}
-				send(resp);
-			}
-			else
+			if(new_zones.empty())
 			{
 				Datagram resp;
 				resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
@@ -723,60 +839,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				return true;
 			}
 			Interest &i = m_interests[id];
-			std::vector<uint32_t> removed_zones(0);
-			removed_zones.reserve(i.zones.size());
-			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-			{
-				uint32_t zone = it->first;
-				bool found = false;
-				for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
-				{
-					if(it2->first == id)
-					{
-						continue;
-					}
-					for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
-					{
-						if(it3->first == zone)
-						{
-							found = true;
-							break;
-						}
-					}
-					if(found)
-					{
-						break;
-					}
-				}
-				if(!found)
-				{
-					removed_zones.insert(removed_zones.end(), zone);
-					unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
-				}
-			}
-			for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
-			{
-				if(it->second.parent == i.parent)
-				{
-					bool found = false;
-					for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
-					{
-						if(it->second.zone == *it2)
-						{
-							found = true;
-							break;
-						}
-					}
-					if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
-					{
-						Datagram resp;
-						resp.add_uint16(CLIENT_OBJECT_DISABLE);
-						resp.add_uint32(it->second.id);
-						network_send(resp);
-						it->second.refcount--;
-					}
-				}
-			}
+			remove_interest(i, id);
 			m_interests.erase(m_interests.find(id));
 
 			if(context)
