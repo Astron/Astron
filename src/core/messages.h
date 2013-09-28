@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 // Defined types
 typedef uint64_t channel_t;
