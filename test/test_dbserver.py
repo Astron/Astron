@@ -391,7 +391,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_SET_FIELD)
         dg.add_uint32(doid)
         dg.add_uint16(setDb3)
-        dg.add_string("20 percent cooler!!!")
+        dg.add_string("Oh my gosh! Oh my gosh!! OMG! OMG!!!")
         self.conn.send(dg)
 
         # Select all fields from the stored object
@@ -414,7 +414,7 @@ class DatabaseBaseTests(object):
             if field == setRDB3:
                 self.assertTrue(dgi.read_uint32() == 54231)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "20 percent cooler!!!")
+                self.assertTrue(dgi.read_string() == "Oh my gosh! Oh my gosh!! OMG! OMG!!!")
             else:
                 self.fail("Bad field type")
 
