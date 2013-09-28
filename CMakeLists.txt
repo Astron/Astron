@@ -87,7 +87,7 @@ if(BUILD_DBSERVER)
 		src/database/DatabaseServer.cpp
 		src/database/IDatabaseEngine.h
 		src/database/DBEngineFactory.h
-		src/datmakabase/DBEngineFactory.cpp
+		src/database/DBEngineFactory.cpp
 	)
 
 	set (BUILD_DB_FILESYSTEM OFF CACHE BOOL "If on, will support a filesystem-based database")
