@@ -215,6 +215,52 @@ class FSDBEngine : public IDatabaseEngine
 				update_free_ids();
 			}
 		}
+
+#define val_t std::vector<uint8_t>
+#define map_t std::map<DCField*, std::vector<uint8_t>>
+		DCClass* get_class(uint32_t do_id)
+		{
+			return NULL;
+		}
+		void del_field(uint32_t do_id, DCField* field)
+		{
+		}
+		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
+		{
+		}
+		void set_field(uint32_t do_id, DCField* field, const val_t &value)
+		{
+		}
+		void set_fields(uint32_t do_id, const map_t &fields)
+		{
+		}
+		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
+		{
+			return false;
+		}
+		bool set_fields_if_empty(uint32_t do_id, map_t &values)
+		{
+			return false;
+		}
+		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
+		{
+			return false;
+		}
+		bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
+		{
+			return false;
+		}
+
+		bool get_field(uint32_t do_id, const DCField* field, val_t &value)
+		{
+			return false;
+		}
+		bool get_fields(uint32_t do_id,  const std::vector<DCField*> &fields, map_t &values)
+		{
+			return false;
+		}
+#undef map_t
+#undef val_t
 };
 
 DBEngineCreator<FSDBEngine> fsdbengine_creator("filesystem");
