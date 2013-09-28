@@ -598,10 +598,6 @@ class YAMLEngine : public IDatabaseEngine
 		{
 			return false;
 		}
-		bool set_fields_if_empty(uint32_t do_id, map_t &values)
-		{
-			return false;
-		}
 		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
 		{
 			yamldb_log.spam() << "Setting field if equal on obj-" << do_id << std::endl;

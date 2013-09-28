@@ -34,10 +34,12 @@ class IDatabaseEngine
 #define map_t std::map<DCField*, std::vector<uint8_t>>
 		virtual void del_field(uint32_t do_id, DCField* field) = 0;
 		virtual void del_fields(uint32_t do_id, const std::vector<DCField*> &fields) = 0;
+
 		virtual void set_field(uint32_t do_id, DCField* field, const val_t &value) = 0;
 		virtual void set_fields(uint32_t do_id, const map_t &fields) = 0;
+
+		// If not-equals/-empty, current are returned using value(s)
 		virtual bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value) = 0;
-		virtual bool set_fields_if_empty(uint32_t do_id, map_t &values) = 0;
 		virtual bool set_field_if_equals(uint32_t do_id, DCField* field,
 		                                 const val_t &equal, val_t &value) = 0;
 		virtual bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values) = 0;

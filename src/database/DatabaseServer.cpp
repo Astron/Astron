@@ -260,6 +260,50 @@ class DatabaseServer : public Role
 					m_db_engine->set_fields(do_id, fields);
 				}
 				break;
+				case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
+				{
+					uint32_t context = dgi.read_uint32();
+
+					Datagram resp;
+					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
+					resp.add_uint32(context);
+
+					uint32_t do_id = dgi.read_uint32();
+					DCClass *dcc = m_db_engine->get_class(do_id);
+					if(!dcc)
+					{
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					uint16_t field_id = dgi.read_uint16();
+					DCField *field = dcc->get_field_by_index(field_id);
+					if(!field->is_db())
+					{
+						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
+					}
+
+					std::vector<uint8_t> value;
+					dgi.unpack_field(field, value);
+					if(m_db_engine->set_field_if_empty(do_id, field, value))
+					{
+						resp.add_uint8(SUCCESS);
+						send(resp);
+						return;
+					}
+
+					resp.add_uint8(FAILURE);
+					if(value.size() > 0)
+					{
+						resp.add_uint16(field_id);
+						resp.add_data(value);
+					}
+					send(resp);
+				}
+				break;
 				case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
 				{
 					uint32_t context = dgi.read_uint32();
@@ -273,6 +317,8 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
+						send(resp);
+						return;
 					}
 
 					uint16_t field_id = dgi.read_uint16();
@@ -478,7 +524,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					// Send value in response
+					// Send values in response
 					resp.add_uint8(SUCCESS);
 					resp.add_uint16(values.size());
 					for(auto it = values.begin(); it != values.end(); ++it)
