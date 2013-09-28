@@ -58,6 +58,7 @@ CONSTANTS = {
     'INVALID_CHANNEL': 0,
     'INVALID_DO_ID': 0,
     'INVALID_ZONE': 0,
+    'RESERVED_MSG_TYPE': 0,
 
     # Success booleans
     'SUCCESS': 1,

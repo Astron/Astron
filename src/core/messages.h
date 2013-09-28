@@ -15,6 +15,9 @@ typedef uint64_t channel_t;
 #define SUCCESS 1
 #define FAILURE 0
 
+// Reserve message-type 0
+#define RESERVED_MSG_TYPE 0
+
 // Control message-type constants
 #define CONTROL_ADD_CHANNEL 2001
 #define CONTROL_REMOVE_CHANNEL 2002
