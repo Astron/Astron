@@ -31,7 +31,7 @@ class DistributedObject : public MDParticipantInterface
 
 		void send_zone_entry(channel_t destination);
 
-		void handle_parent_change(channel_t new_parent);
+		void handle_parent_change(uint32_t new_parent);
 		void handle_ai_change(channel_t new_channel, bool channel_is_explicit);
 		void handle_shard_reset();
 
