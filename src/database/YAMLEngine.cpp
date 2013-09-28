@@ -596,7 +596,46 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
 		{
-			return false;
+			yamldb_log.spam() << "Setting field if empty on obj-" << do_id << std::endl;
+
+			YAML::Node document;
+			if(!load(do_id, document))
+			{
+				value = std::vector<uint8_t>();
+				return false;
+			}
+
+			// Get current field values from the file
+			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
+			DatabaseObject dbo(dcc->get_number());
+			YAML::Node existing = document["fields"];
+			for(auto it = existing.begin(); it != existing.end(); ++it)
+			{
+				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				if(!field)
+				{
+					yamldb_log.warning() << "Field '" << it->first.as<std::string>()
+					                     << "', loaded from '" << filename(do_id)
+					                     << "', does not exist." << std::endl;
+					continue;
+				}
+				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				if(value.size() > 0)
+				{
+					dbo.fields[field] = value;
+				}
+			}
+
+			auto found = dbo.fields.find(field);
+			if(found != dbo.fields.end())
+			{
+				value = found->second;
+				return false;
+			}
+
+			dbo.fields[field] = value;
+			write_yaml_object(do_id, dcc, dbo);
+			return true;
 		}
 		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
 		{
@@ -630,7 +669,8 @@ class YAMLEngine : public IDatabaseEngine
 				}
 			}
 
-			if(dbo.fields[field] != equal)
+			auto found = dbo.fields.find(field);
+			if(found == dbo.fields.end() || found->second != equal)
 			{
 				value = dbo.fields[field];
 				return false;

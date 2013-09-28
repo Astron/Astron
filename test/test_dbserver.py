@@ -483,33 +483,22 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Get update response
-        dg = self.conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([100], 777, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP))
-        self.assertTrue(dgi.read_uint32() == 2) # Context
-        self.assertTrue(dgi.read_uint8() == FAILURE)#SUCCESS)
-        print "PIRATES" + str(dgi.read_uint16())
-        print "CLARP" + str(dgi.read_string())
-        self.fail("BECAUSE")
-        '''
         dg = Datagram.create([100], 777, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(SUCCESS)
         self.assertTrue(self.conn.expect(dg))
-        '''
 
         # Select object with new value
-        dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_ALL)
+        dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(3) # Context
         dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = Datagram.create([100], 777, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([100], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(3) # Context
         dg.add_uint8(SUCCESS)
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint16(1) # Field Count
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!")
         self.assertTrue(self.conn.expect(dg))
@@ -526,6 +515,21 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([100], 777, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP)
         dg.add_uint32(4) # Context
         dg.add_uint8(FAILURE)
+        dg.add_uint16(setDb3)
+        dg.add_string("Beware... beware!!!")
+        self.assertTrue(self.conn.expect(dg))
+
+        # Select object
+        dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid)
+        dg.add_uint16(setDb3)
+        self.conn.send(dg)
+
+        # Ensure value not updated
+        dg = Datagram.create([100], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(SUCCESS)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!")
         self.assertTrue(self.conn.expect(dg))
