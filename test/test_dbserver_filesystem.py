@@ -7,6 +7,7 @@ from testdc import test_dc
 from common import Daemon, MDConnection
 from test_dbserver import DatabaseBaseTests
 
+'''
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -47,3 +48,4 @@ class TestDatabaseServerFS(unittest.TestCase, DatabaseBaseTests):
 
 if __name__ == '__main__':
     unittest.main()
+'''
