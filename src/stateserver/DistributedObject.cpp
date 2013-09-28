@@ -97,7 +97,7 @@ void DistributedObject::send_zone_entry(channel_t destination)
 	send(dg);
 }
 
-void DistributedObject::handle_parent_change(channel_t new_parent)
+void DistributedObject::handle_parent_change(uint32_t new_parent)
 {
 	if(new_parent == m_parent_id)
 	{
