@@ -9,6 +9,7 @@ DistributedTestObject1 = 0
 DistributedTestObject2 = 1
 DistributedTestObject3 = 2
 DistributedTestObject4 = 3
+DistributedTestObject5 = 4
 
 setRequired1 = 0
 setB1 = 1
@@ -31,5 +32,8 @@ setOne = 15
 setTwo = 16
 setThree = 17
 set123 = 18
+setRDbD5 = 19
+setFoo = 20
 
 setRequired1DefaultValue = 78
+setRDbD5DefaultValue = 20

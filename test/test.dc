@@ -31,3 +31,8 @@ dclass DistributedTestObject4 {
 
 	set123 : setOne, setTwo, setThree;
 };
+
+dclass DistributedTestObject5 : DistributedTestObject3 {
+	setRDbD5(uint8 rdbd = 20) required db;
+	setFoo(uint16 foo) db;
+};
