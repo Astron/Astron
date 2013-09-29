@@ -394,7 +394,9 @@ class MDConnection(object):
 
         while datagrams:
             dg = self._read()
-            if dg is None: return False # Augh, we didn't see all the dgs yet!
+            if dg is None:
+                print "No Datagram Recv'd"
+                return False # Augh, we didn't see all the dgs yet!
             dg = Datagram(dg)
 
             for datagram in datagrams:
@@ -403,6 +405,13 @@ class MDConnection(object):
                     break
             else:
                 if only:
+                    print "Wrong Datagram Recv'd"
+                    f = open("test.x", "wb")
+                    f.write(dg.get_data())
+                    f.close()
+                    f = open("test.y", "wb")
+                    f.write(datagram.get_data())
+                    f.close()
                     return False
 
         return True
@@ -417,7 +426,9 @@ class ClientConnection(MDConnection):
 
         while datagrams:
             dg = self._read()
-            if dg is None: return False # Augh, we didn't see all the dgs yet!
+            if dg is None:
+                print "No Datagram Recv'd"
+                return False # Augh, we didn't see all the dgs yet!
             dg = Datagram(dg)
 
             for datagram in datagrams:
@@ -426,6 +437,7 @@ class ClientConnection(MDConnection):
                     break
             else:
                 if only:
+                    print "Wrong Datagram Recv'd"
                     return False
 
         return True

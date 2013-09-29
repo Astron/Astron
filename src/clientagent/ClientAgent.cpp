@@ -566,6 +566,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
 			{
+				if(it->second.parent != i.parent)
+				{
+					continue;
+				}
 				for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
 				{
 					new_zones.remove(it2->first);
@@ -573,12 +577,14 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(!new_zones.empty())
 			{
+				m_log->debug() << "SS query for i.context " << i.context << " zones: ";
 				Datagram resp;
 				resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
 				resp.add_uint32(i.parent);
-				resp.add_uint16(i.zones.size());
+				resp.add_uint16(new_zones.size());
 				for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 				{
+					m_log->debug() << *it << "," << std::endl;
 					resp.add_uint32(*it);
 					subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
 				}
@@ -597,7 +603,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				bool found = false;
 				for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
 				{
-					if(it2->first == id)
+					if(it2->first == id || it2->second.parent != i.parent)
 					{
 						continue;
 					}
@@ -648,10 +654,26 @@ class Client : public NetworkClient, public MDParticipantInterface
 		void alter_interest(Interest &i, uint16_t id)
 		{
 			Interest &other = m_interests[id];
+			if(other.parent != i.parent)
+			{
+				remove_interest(other, id);
+				add_interest(i);
+				m_interests[id] = i;
+				return;
+			}
 			std::list<uint32_t> new_zones;
 			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 			{
-				if(std::find(other.zones.begin(), other.zones.end(), *it) != other.zones.end())
+				bool found = false;
+				for(auto it2 = other.zones.begin(); it2 != other.zones.end(); ++it2)
+				{
+					if(it->first == it2->first)
+					{
+						found = true;
+						break;
+					}
+				}
+				if(!found)
 				{
 					new_zones.insert(new_zones.end(), it->first);
 				}
@@ -664,14 +686,22 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
 			}
-			add_interest(i);
+			add_interest(temp);
 
-			m_interests[id] = i;
 			std::vector<uint32_t> removed_zones;
 			removed_zones.reserve(other.zones.size());
-			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			for(auto it = other.zones.begin(); it != other.zones.end(); ++it)
 			{
-				if(std::find(other.zones.begin(), other.zones.end(), *it) == other.zones.end())
+				bool found = false;
+				for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
+				{
+					if(it2->first == it->first)
+					{
+						found = true;
+						break;
+					}
+				}
+				if(!found)
 				{
 					removed_zones.insert(removed_zones.end(), it->first);
 				}
@@ -683,6 +713,27 @@ class Client : public NetworkClient, public MDParticipantInterface
 				temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
 			}
 			remove_interest(temp, id);
+
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				for(auto it2 = other.zones.begin(); it2 != other.zones.end(); ++it2)
+				{
+					if(it->first == it2->first)
+					{
+						it->second = it2->second;
+						break;
+					}
+				}
+			}
+			if(i.is_ready())
+			{
+				Datagram resp;
+				resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+				resp.add_uint16(id);
+				resp.add_uint32(i.context);
+				network_send(resp);
+			}
+			m_interests[id] = i;
 		}
 
 		bool handle_client_object_update_field(DatagramIterator &dgi)
@@ -792,7 +843,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 			uint16_t interest_id = dgi.read_uint16();
 			uint32_t context = dgi.read_uint32();
 			uint32_t parent = dgi.read_uint32();
-			m_interests.erase(interest_id);
 			Interest i;
 			i.context = context;
 			i.parent = parent;
@@ -804,13 +854,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 				i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
 			}
 
-			std::list<uint32_t> new_zones = add_interest(i);
-
 			if(m_interests.find(interest_id) != m_interests.end())
 			{
 				alter_interest(i, interest_id);
 				return false;//alter_interest takes care of the rest
 			}
+
+			std::list<uint32_t> new_zones = add_interest(i);
 
 			m_interests[interest_id] = i;
 
