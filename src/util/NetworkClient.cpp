@@ -19,7 +19,9 @@ NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(n
 NetworkClient::~NetworkClient()
 {
 	if(m_socket)
+	{
 		m_socket->close();
+	}
 	delete m_socket;
 	delete m_buffer;
 }
