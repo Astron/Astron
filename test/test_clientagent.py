@@ -55,6 +55,9 @@ class TestClientAgent(unittest.TestCase):
             dgi = DatagramIterator(dg)
             if dgi.read_uint16() == CLIENT_GO_GET_LOST:
                 self.assertEqual(dgi.read_uint16(), reason_code)
+                # According to client_protocol.md, the string must provide some explanation, so
+                # ensure that it is there.
+                self.assertNotEqual(dgi.read_string(), '')
                 s.close()
                 return
 
