@@ -46,6 +46,11 @@ roles:
         type: bdb
         filename: main_database.db
 
+    # We will then create a database state server which provides state-server-like behavior on database
+    # objects.  The dbss does not have a control channel, and so cannot generate new objects.
+    - type: dbss
+      database: 402001 # The channel of the associated database
+
     # Let's also enable the Event Logger. The Event Logger does not listen on a channel; it uses a
     # separate UDP socket to listen for log events.
     - type: eventlogger
