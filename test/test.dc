@@ -14,7 +14,7 @@ dclass DistributedTestObject2 {
 
 dclass DistributedTestObject3 : DistributedTestObject1 {
 	setDb3(string data) ram db;
-	setRDB3(uint32 rdb) required broadcast db;
+	setRDB3(uint32 rdb = 517517) required broadcast db;
 };
 
 dclass DistributedTestObject4 {
@@ -35,4 +35,14 @@ dclass DistributedTestObject4 {
 dclass DistributedTestObject5 : DistributedTestObject3 {
 	setRDbD5(uint8 rdbd = 20) required db;
 	setFoo(uint16 foo) db;
+};
+
+dclass DistributedBadDBObject1
+{
+	setBadRDB(uint16 rdb) required db;
+};
+
+dclass DistributedBadDBObject2
+{
+	setBadRequired(string req) required;
 };
