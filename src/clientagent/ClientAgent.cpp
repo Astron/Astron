@@ -432,12 +432,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				m_log->error() << "Exception while parsing client dg. DCing for truncated "
 					"e.what() " << e.what() << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM);
+				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, e.what());
 				return;
 			}
 		}
 
-		void send_disconnect(uint16_t reason, const std::string &error_string = "")
+		void send_disconnect(uint16_t reason, const std::string &error_string)
 		{
 			if(is_connected())
 			{
@@ -459,7 +459,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				m_log->error() << m_client_name << "SECURITY WARNING: Client sent packet other than "
 					"CLIENT_HELLO, pre-hello" << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_NO_HELLO);
+				send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "At least say hello before you start probing me");
 				return;
 			}
 
@@ -469,8 +469,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				m_log->error() << m_client_name << "Wrong DC hash. Got: "
 					<< std::hex << dc_hash << " expected " <<
-					g_dcf->get_hash() << std::dec << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH);
+					expected_hash << std::dec << std::endl;
+				std::stringstream ss;
+				ss << "Incorrect DC Hash. Expected: " << std::hex << expected_hash << " Got: " << dc_hash;
+				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
 				return;
 			}
 
@@ -505,7 +507,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 			break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
+				std::stringstream ss;
+				ss << "Unk msg type: " << std::hex << msg_type;
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
 				return;
 			}
 			if(should_die)
@@ -514,7 +518,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Extra data in DG");
 				return;
 			}
 		}
@@ -540,7 +544,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 				break;
 			default:
 				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE);
+				std::stringstream ss;
+				ss << "Unk msgtype: " << std::hex << msg_type;
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
 				return;
 			}
 
@@ -551,7 +557,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Extra data in dg");
 				return;
 			}
 		}
@@ -745,7 +751,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				if(m_state != CS_AUTHENTICATED && !uberdogs[do_id].anonymous)
 				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "uberdog is not anonymous");
 					return true;
 				}
 				dcc = uberdogs[do_id].dcc;
@@ -754,7 +760,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				if(m_state != CS_AUTHENTICATED)
 				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION);
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "do_id is not a uberdog");
 					return true;
 				}
 				if(dist_objs.find(do_id) != dist_objs.end())
@@ -763,7 +769,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				else
 				{
-					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "do does not exist");
 					return true;
 				}
 			}
@@ -801,7 +807,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			resp.add_uint16(field_id);
 			if(data.size() > 65535u-resp.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM);
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field updat too large");
 				return true;
 			}
 			resp.add_data(data);
@@ -814,7 +820,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			uint32_t do_id = dgi.read_uint32();
 			if(dist_objs.find(do_id) == dist_objs.end())
 			{
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT);
+				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "doid does not exist");
 				return true;
 			}
 			bool is_owned = false;
@@ -829,7 +835,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(!is_owned)
 			{
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE);
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE, 
+					"Can't relocate an object the client doesn't own");
 				return true;
 			}
 
