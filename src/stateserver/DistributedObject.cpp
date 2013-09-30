@@ -66,7 +66,8 @@ void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
 		DCField *field = m_dclass->get_inherited_field(i);
-		if(field->is_required() && !field->as_molecular_field() && (!broadcast_only || field->is_broadcast()))
+		if(field->is_required() && !field->as_molecular_field() && (!broadcast_only
+		        || field->is_broadcast()))
 		{
 			dg.add_data(m_required_fields[field]);
 		}
