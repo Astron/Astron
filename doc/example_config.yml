@@ -50,6 +50,18 @@ roles:
     # objects.  The dbss does not have a control channel, and so cannot generate new objects.
     - type: dbss
       database: 402001 # The channel of the associated database
+      ranges:
+      # Ranges defines a sequence of ranges of DistributedObject ids that the database-state server
+      # will provide stateserver-like behavior for.
+      # Note: The ranges do not have to match that of the database. This allows for multiple dbss to
+      #       split up the handling of a single database. Additionally, it can be used to exclude
+      #       special-case or prepopulated objects from recieving SS behavior.
+      # Warning: While this is currently allowed by the protocol, if the range of non-prepopulated
+      #          object ids are incompletely-covered by DBSS or covered by multiple, erroneous
+      #          behavior will occur.
+      #          It is recommended to use seperate database roles for DBSS and non-DBSS objects.
+        - min: 100000000
+      #   max: 200000000
 
     # Let's also enable the Event Logger. The Event Logger does not listen on a channel; it uses a
     # separate UDP socket to listen for log events.
@@ -57,4 +69,3 @@ roles:
       bind: 0.0.0.0:9090 # REMEMBER: UDP
       output: /var/log/openotp/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
       rotate_interval: 1d # Rotate the logs daily.
-
