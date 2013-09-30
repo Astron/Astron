@@ -8,7 +8,7 @@
 #include "StateServer.h"
 
 
-static ConfigVariable<channel_t> control_channel("control", 0);
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
