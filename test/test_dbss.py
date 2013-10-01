@@ -45,11 +45,12 @@ class TestStateServer(unittest.TestCase):
         cls.shard.close()
         cls.daemon.stop()
 
-    # Tests the messages OBJECT_SET_ZONE, OBJECT_DELETE_RAM
-    def test_select_delete(self):
+    # Tests the messages OBJECT_QUERY_ALL
+    def test_query_all(self):
         self.database.flush()
         self.shard.flush()
 
+        ### Test for QueryAll while object exists in Database ###
         # Query all from an object which hasn't been loaded into ram
         dg = Datagram.create([9000], 5, STATESERVER_OBJECT_QUERY_ALL)
         dg.add_uint32(1) # Context
@@ -74,8 +75,9 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(23)
         self.database.send(dg)
 
-        # Values should be returned with INVALID_LOCATION
+        # Values should be returned from DBSS with INVALID_LOCATION
         dg = Datagram.create(5, 9000, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(1) # Context
         dg.add_uint32(INVALID_DO_ID) # Parent
         dg.add_uint32(INVALID_ZONE) # Zone
         dg.add_uint16(DistributedTestObject5)
@@ -83,30 +85,13 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(23) # setRDbD5
+        dg.add_uint16(0) # Optional field count
         self.shard.expect(dg)
 
-        # Destroy our object in ram...
-        dg = Datagram.create([9000], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(9000) # Object Id
-        self.shard.send(dg)
 
-        # Object doesn't have a location and so shouldn't announce its disappearance...
-        self.shard.expect_none()
 
-        # Destroy our object...
-        dg = Datagram.create([9000], 5, STATESERVER_OBJECT_DELETE_DISK)
-        dg.add_uint32(9000) # Object Id
-        self.shard.send(dg)
-
-        # Database should expect a delete message
-        dg = Datagram.create([200], 9000, DATABASE_OBJECT_DELETE)
-        dg.add_uint32(9000) # Object Id
-        self.database.expect(dg)
-
-        # Object doesn't have a location and so shouldn't announcet its disappearance...
-        self.shard.expect_none()
-
-        # Get the object to ensure values are not cached-badly|stored-improperly by the DBSS
+        ### Test for QueryAll while object DOES NOT exist in Database ###
+        # Query all from an object which hasn't been loaded into ram
         dg = Datagram.create([9000], 5, STATESERVER_OBJECT_QUERY_ALL)
         dg.add_uint32(2) # Context
         self.shard.send(dg)
@@ -118,7 +103,7 @@ class TestStateServer(unittest.TestCase):
         context = dgi.read_uint32() # Get context
         self.assertTrue(dgi.read_uint32() == 9000) # object Id
 
-        # Send back failure to DBSS
+        # This time pretend the object doesn't exist
         dg = Datagram.create([9000], 200, DATABASE_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(FAILURE)
@@ -127,14 +112,16 @@ class TestStateServer(unittest.TestCase):
         # Should recieve no stateserver object response
         self.shard.expect_none()
 
+    # Tests the message OBJECT_SET_ZONE
     def test_set_zone(self):
         self.database.flush()
         self.shard.flush()
         self.shard.send(Datagram.create_add_channel(80000<<32|100))
         self.shard.send(Datagram.create_add_channel(80000<<32|101))
 
+        ### Test for SetZone while object is not loaded into ram ###
         # Enter an object into ram from the disk by setting its zone
-        dg = Datagram.create([9001], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg = Datagram.create([9010], 5, STATESERVER_OBJECT_SET_ZONE)
         dg.add_uint32(80000) # Parent
         dg.add_uint32(100) # Zone
         self.shard.send(dg)
@@ -142,12 +129,12 @@ class TestStateServer(unittest.TestCase):
         # Expect values to be retrieved from database
         dg = self.database.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9001, DATABASE_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(dgi.matches_header([200], 9010, DATABASE_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9001) # object Id
+        self.assertTrue(dgi.read_uint32() == 9010) # object Id
 
         # Send back to the DBSS with some required values
-        dg = Datagram.create([9001], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([9010], 200, DATABASE_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject5)
@@ -159,7 +146,7 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # See if it announces its entry into 100.
-        dg = Datagram.create([80000<<32|100], 9001, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([80000<<32|100], 9010, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
         dg.add_uint32(80000) # Parent
         dg.add_uint32(100) # Zone
         dg.add_uint16(DistributedTestObject5)
@@ -169,8 +156,11 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(97) # setRDbD5
         self.shard.expect(dg)
 
+
+
+        ### Test for SetZone while object is already loaded into ram ###
         # Move an object in ram to a different zone
-        dg = Datagram.create([9001], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg = Datagram.create([9010], 5, STATESERVER_OBJECT_SET_ZONE)
         dg.add_uint32(80000) # Parent
         dg.add_uint32(101) # Zone
         self.shard.send(dg)
@@ -178,51 +168,214 @@ class TestStateServer(unittest.TestCase):
         # See if it announces its departure from 100...
         expected = []
         dg = Datagram.create([80000<<32|100], 5, STATESERVER_OBJECT_CHANGE_ZONE)
-        dg.add_uint32(9001)
+        dg.add_uint32(9010)
         dg.add_uint32(80000)
         dg.add_uint32(101)
         dg.add_uint32(80000)
         dg.add_uint32(100)
         expected.append(dg)
         # ...and its entry into 101.
-        dg = Datagram.create([80000<<32|101], 9001, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([80000<<32|101], 9010, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
         dg.add_uint32(80000) # Parent
         dg.add_uint32(101) # Zone
         dg.add_uint16(DistributedTestObject5)
-        dg.add_uint32(9001) # ID
+        dg.add_uint32(9010) # ID
         dg.add_uint32(3117) # setRequired1
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(97) # setRDbD5
         expected.append(dg)
-
         self.assertTrue(self.c.expect_multi(expected, only=True))
 
-        # Destroy our object in ram...
-        dg = Datagram.create([9001], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(9001)
+
+        ### Clean up ###
+        dg = Datagram.create([9010], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(9010)
         self.shard.send(dg)
+        self.shard.flush()
 
-        # Object should announce its disappearance...
-        dg = Datagram.create([80000<<32|101], 9001, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(9001)
-        self.assertTrue(self.shard.expect(dg))
-
-        # Destroy our object on disk...
-        dg = Datagram.create([9001], 5, STATESERVER_OBJECT_DELETE_DISK)
-        dg.add_uint32(9001)
-        self.shard.send(dg)
-
-        # Object should announce its disappearance...
-        dg = Datagram.create([80000<<32|101], 9001, STATESERVER_OBJECT_DELETE_DISK)
-        dg.add_uint32(9001)
-        self.assertTrue(self.shard.expect(dg))
-
-        # Ignore database call, not testing that behavior here
-        self.database.flush()
-
-        # Clean up
         self.shard.send(Datagram.create_remove_channel(80000<<32|100))
         self.shard.send(Datagram.create_remove_channel(80000<<32|101))
+
+    # Tests the messages OBJECT_DELETE_DISK, OBJECT_DELETE_RAM
+    def test_delete(self):
+        self.shard.send(Datagram.create_add_channel(90000<<32|200))
+
+        ### Test for DelDisk ###
+        # Destroy our object...
+        dg = Datagram.create([9020], 5, STATESERVER_OBJECT_DELETE_DISK)
+        dg.add_uint32(9020) # Object Id
+        self.shard.send(dg)
+
+        # Object doesn't have a location and so shouldn't announcet its disappearance...
+        self.shard.expect_none()
+
+        # Database should expect a delete message
+        dg = Datagram.create([200], 9000, DATABASE_OBJECT_DELETE)
+        dg.add_uint32(9020) # Object Id
+        self.database.expect(dg)
+
+
+
+        ### Test for SetZone->DelRam ###
+        # Enter an object into ram from the disk by setting its zone
+        dg = Datagram.create([9021], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(200) # Zone
+        self.shard.send(dg)
+
+        # Give the DBSS values from the database
+        dg = self.database.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9021, DATABASE_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertTrue(dgi.read_uint32() == 9021) # object Id
+        dg = Datagram.create([9021], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(2)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(setRDB3DefaultValue)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(setRDbD5DefaultValue)
+        self.database.send(dg)
+
+        # Ignore entry notification, we're not testing set_zone right now
+        self.shard.flush()
+
+        # Destroy our object in ram...
+        dg = Datagram.create([9021], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(9021) # Object Id
+        self.shard.send(dg)
+
+        # Object should announce its disappearance...
+        dg = Datagram.create([90000<<32|200], 9021, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(9021)
+        self.assertTrue(self.shard.expect(dg))
+
+
+
+        ### Test for SetZone->DelRam->DelDisk ### (continues from last)
+        # Destroy our object on disk...
+        dg = Datagram.create([9021], 5, STATESERVER_OBJECT_DELETE_DISK)
+        dg.add_uint32(9021)
+        self.shard.send(dg)
+
+        # Object no longer has a location and so shouldn't announce its disappearance...
+        self.shard.expect_none()
+
+        # Database should expect a delete message
+        dg = Datagram.create([200], 9021, DATABASE_OBJECT_DELETE)
+        dg.add_uint32(9021) # Object Id
+        self.database.expect(dg)
+
+
+
+        ### Test for SetZone->DelDisk ###
+        # Enter an object into ram from the disk by setting its zone
+        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(200) # Zone
+        self.shard.send(dg)
+
+        # Give the DBSS values from the database
+        dg = self.database.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9022, DATABASE_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertTrue(dgi.read_uint32() == 9022) # object Id
+        dg = Datagram.create([9022], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(2)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(333444)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(3344)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(34)
+        self.database.send(dg)
+
+        # Destroy our object on disk...
+        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_DELETE_DISK)
+        dg.add_uint32(9022)
+        self.shard.send(dg)
+
+        # Object should announce its disappearance...
+        dg = Datagram.create([90000<<32|200], 9022, STATESERVER_OBJECT_DELETE_DISK)
+        dg.add_uint32(9022)
+        self.assertTrue(self.shard.expect(dg))
+
+        # Database should expect a delete message
+        dg = Datagram.create([200], 9022, DATABASE_OBJECT_DELETE)
+        dg.add_uint32(9022) # Object Id
+        self.database.expect(dg)
+
+        # Check that Ram/Requried fields still exist in ram still
+        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(1) # Context
+        self.shard.send(dg)
+
+        # Reply to database_get_all with object does not exist (was deleted)
+        dg = self.database.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9022, DATABASE_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertTrue(dgi.read_uint32() == 9022) # object Id
+        dg = Datagram.create([9022], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(FAILURE)
+        self.database.send(dg)
+
+        # Expect ram/required fields to be returned (with valid location)
+        dg = Datagram.create(5, 9022, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_uint32(90000) # Parent
+        dg.add_uint32(200) # Zone
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint32(9022) # ID
+        dg.add_uint32(setRequired1DefaultValue) # setRequired1
+        dg.add_uint32(32144123) # setRDB3
+        dg.add_uint8(23) # setRDbD5
+        dg.add_uint16(0) # Optional field count
+        self.shard.expect(dg)
+
+
+
+        ### Test for SetZone->DelDisk->DelRam ### (continues from last)
+        # Destroy our object on ram...
+        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(9022)
+        self.shard.send(dg)
+
+        # Object should announce its disappearance...
+        dg = Datagram.create([90000<<32|200], 9022, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(9022)
+        self.assertTrue(self.shard.expect(dg))
+
+        # Check that object no longer exists
+        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_QUERY_ALL)
+        dg.add_uint32(2) # Context
+        self.shard.send(dg)
+
+        # Reply to database_get_all with object does not exist (was deleted)
+        dg = self.database.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9022, DATABASE_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertTrue(dgi.read_uint32() == 9022) # object Id
+        dg = Datagram.create([9022], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(FAILURE)
+        self.database.send(dg)
+
+        # Expect no response
+        self.shard.expect_none()
+
+
+        ### Clean Up ###
+        self.shard.send(Datagram.create_remove_channel(90000<<32|200))
 
     # Tests that the DBSS is listening to the entire range it was configured with
     #def test_subscribe(self):
