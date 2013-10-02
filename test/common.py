@@ -313,6 +313,12 @@ class MDConnection(object):
             raise EOFError('No message recieved')
         return Datagram(dg)
 
+    def recv_maybe(self):
+        dg = self._read()
+        if dg is None:
+            return None
+        return Datagram(dg)
+
     def _read(self):
         try:
             length = 2

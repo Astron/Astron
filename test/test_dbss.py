@@ -21,6 +21,8 @@ roles:
           - 9999
 """ % test_dc
 
+CONTEXT_OFFSET = 1 + 8 + 8 + 2
+
 class TestStateServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -198,6 +200,8 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the messages OBJECT_DELETE_DISK, OBJECT_DELETE_RAM
     def test_delete(self):
+        self.database.flush()
+        self.shard.flush()
         self.shard.send(Datagram.create_add_channel(90000<<32|200))
 
         ### Test for DelDisk ###
@@ -378,8 +382,54 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(Datagram.create_remove_channel(90000<<32|200))
 
     # Tests that the DBSS is listening to the entire range it was configured with
-    #def test_subscribe(self):
-    #    self.fail("Test not implemented.")
+    def test_subscribe(self):
+        self.database.flush()
+        self.shard.flush()
+
+        probe_context = 0
+        def probe(doid):
+            # Try a query all on the id
+            dg = Datagram.create([doid], 5, STATESERVER_OBJECT_QUERY_ALL)
+            dg.add_uint32(++probe_context) # Context
+            self.shard.send(dg)
+
+            # Check if recieved database query
+            dg = self.database.recv_maybe()
+            if dg is None:
+                return False
+
+            # Cleanup message
+            dgi = DatagramIterator(dg)
+            dgi.seek(CONTEXT_OFFSET)
+            context = dgi.read_uint32() # Get context
+            dg = Datagram.create([doid], 200, DATABASE_OBJECT_GET_ALL_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(DistributedTestObject3)
+            dg.add_uint16(1)
+            dg.add_uint16(setRDB3)
+            dg.add_uint32(setRDB3DefaultValue)
+            self.database.send(dg)
+            self.shard.flush()
+
+        self.assertFalse(probe(900))
+        self.assertFalse(probe(999))
+        self.assertFalse(probe(8400))
+        self.assertFalse(probe(8980))
+        self.assertFalse(probe(8999))
+        self.assertTrue(probe(9000))
+        self.assertTrue(probe(9001))
+        self.assertTrue(probe(9047))
+        self.assertTrue(probe(9236))
+        self.assertTrue(probe(9500))
+        self.assertTrue(probe(9856))
+        self.assertTrue(probe(9999))
+        self.assertFalse(probe(10000))
+        self.assertFalse(probe(10017))
+        self.assertFalse(probe(14545))
+        self.assertFalse(probe(90000))
+        self.assertFalse(probe(99000))
+        self.assertFalse(probe(99990))
 
 if __name__ == '__main__':
     unittest.main()
