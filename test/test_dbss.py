@@ -531,5 +531,72 @@ class TestStateServer(unittest.TestCase):
         self.assertFalse(probe(99000))
         self.assertFalse(probe(99990))
 
+    # Tests the message STATESERVER_OBJECT_UPDATE_FIELD, STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE
+    def test_update_db(self):
+        self.shard.flush()
+        self.database.flush()
+
+        ### Test for UpdateField with db field on unloaded object###
+        # Update field on stateserver object
+        dg = Datagram.create([9030], 5, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(setFoo)
+        dg.add_uint16(4096)
+        self.shard.send(dg)
+
+        # Expect database field to be sent to database
+        dg = Datagram.create([200], 9030, DATABASE_OBJECT_SET_FIELD)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(setFoo)
+        dg.add_uint16(4096)
+        self.database.expect(dg)
+
+
+        ### Test for UpdateFieldMultiple with all db fields on unloaded object ###
+        # Update field multiple on stateserver object
+        dg = Datagram.create([9030], 5, STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(2) # field count
+        dg.add_uint16(setFoo)
+        dg.add_uint16(4096)
+        dg.add_uint16(setRDB)
+        dg.add_uint32(8192)
+        self.shard.send(dg)
+
+        # Expect database fields to be sent to database
+        dg = Datagram.create([200], 9030, DATABASE_OBJECT_SET_FIELDS)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(2) # field count
+        dg.add_uint16(setFoo)
+        dg.add_uint16(4096)
+        dg.add_uint16(setRDB)
+        dg.add_uint32(8192)
+        self.shard.send(dg)
+
+
+        ### Test for UpdateField with non-db field on unloaded object ###
+        # Update field on stateserver object
+        dg = Datagram.create([200], 9030, DATABASE_OBJECT_SET_FIELD)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(512)
+        self.database.expect(dg)
+
+        # Expect none at database
+        self.database.expect_none()
+
+        ### Test for UpdateField with all non-db fields on unloaded object ###
+        # Update fields on stateserver object
+        dg = Datagram.create([200], 9030, DATABASE_OBJECT_SET_FIELD)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(512)
+        dg.add_uint16(setBR1)
+        dg.add_string("Sleeping in the middle of a summer afternoon.")
+        self.database.expect(dg)
+
+        # Expect none at database
+        self.database.expect_none()
+
 if __name__ == '__main__':
     unittest.main()
