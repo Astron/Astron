@@ -154,8 +154,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(100) # Zone
         dg.add_uint16(DistributedTestObject5)
         dg.add_uint32(9000) # ID
-        dg.add_uint32(3117) # setRequired1
-        dg.add_uint32(32144123) # setRDB3
+        dg.add_uint32(setRequired1DefaultValue) # setRequired1
+        dg.add_uint32(3117) # setRDB3
         dg.add_uint8(97) # setRDbD5
         self.shard.expect(dg)
 
@@ -184,8 +184,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(101) # Zone
         dg.add_uint16(DistributedTestObject5)
         dg.add_uint32(9010) # ID
-        dg.add_uint32(3117) # setRequired1
-        dg.add_uint32(32144123) # setRDB3
+        dg.add_uint32(setRequired1DefaultValue) # setRequired1
+        dg.add_uint32(3117) # setRDB3
         dg.add_uint8(97) # setRDbD5
         expected.append(dg)
         self.assertTrue(self.c.expect_multi(expected, only=True))
@@ -291,6 +291,31 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(9011)
         self.shard.send(dg)
         self.shard.flush()
+
+
+
+        ### Test for SetZone on non-existant Database object ###
+        # Enter an object into ram from the disk by setting its zone
+        dg = Datagram.create([9012], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg.add_uint32(80000) # Parent
+        dg.add_uint32(100) # Zone
+        self.shard.send(dg)
+
+        # Expect values to be retrieved from database
+        dg = self.database.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9012, DATABASE_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertTrue(dgi.read_uint32() == 9012) # object Id
+
+        # Send back to the DBSS with failed-to-find object
+        dg = Datagram.create([9010], 200, DATABASE_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(FAILURE)
+        self.database.send(dg)
+
+        # Expect no entry messages
+        self.shard.expect_none()
 
 
         ### Clean up ###
@@ -440,8 +465,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(DistributedTestObject5)
         dg.add_uint32(9022) # ID
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
-        dg.add_uint32(32144123) # setRDB3
-        dg.add_uint8(23) # setRDbD5
+        dg.add_uint32(333444) # setRDB3
+        dg.add_uint8(34) # setRDbD5
         dg.add_uint16(0) # Optional field count
         self.shard.expect(dg)
 
