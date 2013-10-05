@@ -329,9 +329,10 @@ This channel is used to request the Database Server to:
  - Update object fields stored in database.
  - Run queries on objects stored in the database.
 
-When a stored object is created directly, the object behaves as if it were its own
-Message Director participant, and subscribes to its own channel (equal to the
-object's ID) to receive object-specific updates.
+When one or more of a database object's values is updated through a set- or delete-
+operation, the database will broadcast the recieved message to the channel with the
+object's ID (ie, the object's control channel, if it exists).  This behavior is
+default, but can be disabled through the daemon config.
 
 The following is a list of database control messages:
 
