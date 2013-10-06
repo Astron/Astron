@@ -453,17 +453,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         self.shard.send(dg)
 
-        # Reply to database_get_all with object does not exist (was deleted)
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None)
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9022, DBSERVER_OBJECT_GET_ALL, 4+4))
-        context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9022) # object Id
-        dg = Datagram.create([9022], 200, DBSERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(context)
-        dg.add_uint8(FAILURE)
-        self.database.send(dg)
+        # DBSS should use cached values, so Database expects none
+        self.database.expect_none()
 
         # Expect ram/required fields to be returned (with valid location)
         dg = Datagram.create([5], 9022, STATESERVER_OBJECT_QUERY_ALL_RESP)
@@ -724,27 +715,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         self.shard.send(dg)
 
-        # Expect values to be retrieved from database
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None)
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_ALL, 4+4))
-        context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9031) # object Id
-
-        # Send back to the DBSS with the previously set values
-        dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(context)
-        dg.add_uint8(SUCCESS)
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint16(2)
-        dg.add_uint16(setFoo)
-        dg.add_uint16(7722)
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(18811881)
-        dg.add_uint16(setRDbD5)
-        dg.add_uint8(222)
-        self.database.send(dg)
+        # DBSS should use cached values, so Database expects none
+        self.database.expect_none()
 
         # Updated values should be returned from DBSS
         dg = Datagram.create([5], 9031, STATESERVER_OBJECT_QUERY_ALL_RESP)
@@ -782,27 +754,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(2) # Context
         self.shard.send(dg)
 
-        # Expect values to be retrieved from database
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None)
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_ALL, 4+4))
-        context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9031) # object Id
-
-        # Send back to the DBSS with the previously set values
-        dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(context)
-        dg.add_uint8(SUCCESS)
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint16(2)
-        dg.add_uint16(setFoo)
-        dg.add_uint16(7722)
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(18811881)
-        dg.add_uint16(setRDbD5)
-        dg.add_uint8(222)
-        self.database.send(dg)
+        # DBSS should use cached values, so Database expects none
+        self.database.expect_none()
 
         # Updated values should be returned from DBSS
         dg = self.shard.recv_maybe()
