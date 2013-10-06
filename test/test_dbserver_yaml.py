@@ -4,7 +4,7 @@ import os, time
 from socket import *
 
 from testdc import test_dc
-from common import Daemon, MDConnection
+from common import Daemon, MDConnection, Datagram
 from test_dbserver import DatabaseBaseTests
 
 CONFIG = """\
@@ -39,9 +39,16 @@ class TestDatabaseServerYAML(unittest.TestCase, DatabaseBaseTests):
         sock.connect(('127.0.0.1', 57123))
         cls.conn = MDConnection(sock)
 
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.connect(('127.0.0.1', 57123))
+        cls.objects = MDConnection(sock)
+        cls.objects.send(Datagram.create_add_range(1000000, 1000010))
+
     @classmethod
     def tearDownClass(cls):
         time.sleep(0.25) # Wait for yaml db to finish writing to file
+        cls.objects.send(Datagram.create_remove_range(1000000, 1000010))
+        cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
 
