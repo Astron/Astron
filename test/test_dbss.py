@@ -453,8 +453,34 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         self.shard.send(dg)
 
-        # DBSS should use cached values, so Database expects none
-        self.database.expect_none()
+        # DBSS should request the value of foo from the DBSS
+        msgtype = None
+        context = None
+        dg = self.database.recv(dg)
+        dgi = DatagramIterator(dg)
+        if dgi.matches_header([200], 9022, DBSERVER_OBJECT_GET_FIELD, 4+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELD
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9022)
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        elif dgi.matches_header([200], 9022, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELDS
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9022)
+            self.assertTrue(dgi.read_uint16() == 1) # Field count
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        else:
+            self.fail("Unexpected message type.")
+
+        # Return Failure to DBSS
+        if msgtype is DBSERVER_OBJECT_GET_FIELD:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(FAILURE)
+        else:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(FAILURE)
 
         # Expect ram/required fields to be returned (with valid location)
         dg = Datagram.create([5], 9022, STATESERVER_OBJECT_QUERY_ALL_RESP)
@@ -715,8 +741,40 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         self.shard.send(dg)
 
-        # DBSS should use cached values, so Database expects none
-        self.database.expect_none()
+        # DBSS should request the value of foo from the DBSS
+        msgtype = None
+        context = None
+        dg = self.database.recv(dg)
+        dgi = DatagramIterator(dg)
+        if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELD
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9031)
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELDS
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9031)
+            self.assertTrue(dgi.read_uint16() == 1) # Field count
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        else:
+            self.fail("Unexpected message type.")
+
+        # Return values to DBSS
+        if msgtype is DBSERVER_OBJECT_GET_FIELD:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(setFoo)
+            dg.add_uint16(7722)
+        else:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(1) # Field coutn
+            dg.add_uint16(setFoo)
+            dg.add_uint16(7722)
+
 
         # Updated values should be returned from DBSS
         dg = Datagram.create([5], 9031, STATESERVER_OBJECT_QUERY_ALL_RESP)
@@ -728,7 +786,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(512) # setRequired1
         dg.add_uint32(18811881) #setRDB3
         dg.add_uint8(222) # setRDbD5
-        dg.add_uint16(1) # Optional field count
+        dg.add_uint16(1) # Optional fields count
         dg.add_uint16(setFoo)
         dg.add_uint16(7722)
         self.shard.expect(dg)
@@ -754,8 +812,39 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(2) # Context
         self.shard.send(dg)
 
-        # DBSS should use cached values, so Database expects none
-        self.database.expect_none()
+        # DBSS should request the value of foo from the DBSS
+        msgtype = None
+        context = None
+        dg = self.database.recv(dg)
+        dgi = DatagramIterator(dg)
+        if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELD
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9031)
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
+            msgtype = DBSERVER_OBJECT_GET_FIELDS
+            context = dgi.read_uint32()
+            self.assertTrue(dgi.read_uint32() == 9031)
+            self.assertTrue(dgi.read_uint16() == 1) # Field count
+            self.assertTrue(dgi.read_uint16() == setFoo)
+        else:
+            self.fail("Unexpected message type.")
+
+        # Return values to DBSS
+        if msgtype is DBSERVER_OBJECT_GET_FIELD:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(setFoo)
+            dg.add_uint16(7722)
+        else:
+            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
+            dg.add_uint32(context)
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(1) # Field coutn
+            dg.add_uint16(setFoo)
+            dg.add_uint16(7722)
 
         # Updated values should be returned from DBSS
         dg = self.shard.recv_maybe()
