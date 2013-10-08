@@ -427,12 +427,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 		}
 
-		void send_disconnect(uint16_t reason, const std::string &error_string)
+		void send_disconnect(uint16_t reason, const std::string &error_string, bool security=false)
 		{
 			if(is_connected())
 			{
-				m_log->error() << "Terminating client connection (" << reason << "): "
-				               << error_string << std::endl;
+				(security ? m_log->security() : m_log->error())
+						<< "Terminating client connection (" << reason << "): "
+						<< error_string << std::endl;
 
 				Datagram resp;
 				resp.add_uint16(CLIENT_GO_GET_LOST);
@@ -496,7 +497,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			default:
 				std::stringstream ss;
 				ss << "Message type " << msg_type << " not allowed prior to authentication.";
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
 				return;
 			}
 			if(should_die)
@@ -505,7 +506,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.", true);
 				return;
 			}
 		}
@@ -532,7 +533,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			default:
 				std::stringstream ss;
 				ss << "Message type " << msg_type << " not valid.";
-				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
+				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
 				return;
 			}
 
@@ -543,7 +544,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.", true);
 				return;
 			}
 		}
@@ -739,7 +740,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				{
 					std::stringstream ss;
 					ss << "Object " << do_id << " does not accept anonymous updates.";
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str());
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str(), true);
 					return true;
 				}
 				dcc = uberdogs[do_id].dcc;
@@ -748,7 +749,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				if(m_state != CLIENT_STATE_ESTABLISHED)
 				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "do_id is not a uberdog");
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "do_id is not a uberdog", true);
 					return true;
 				}
 				if(dist_objs.find(do_id) != dist_objs.end())
@@ -757,7 +758,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				}
 				else
 				{
-					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "do does not exist");
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "do does not exist", true);
 					return true;
 				}
 			}
@@ -768,10 +769,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				std::stringstream ss;
 				ss << "Client tried to send update for nonexistent field " << field_id << " to object "
 				   << dcc->get_name() << "(" << do_id << ")";
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str());
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
 				return true;
 			}
-				
+
 			bool is_owned = false;
 			for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
 			{
@@ -787,7 +788,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				std::stringstream ss;
 				ss << "Client tried to send update for non-sendable field: "
 				   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str());
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
 				return true;
 			}
 
@@ -801,7 +802,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			resp.add_uint16(field_id);
 			if(data.size() > 65535u-resp.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field update too large to be routed on MD.");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field update too large to be routed on MD.", true);
 				return true;
 			}
 			resp.add_data(data);
@@ -816,7 +817,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				std::stringstream ss;
 				ss << "Client tried to manipulate unknown object " << do_id;
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str());
+				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
 				return true;
 			}
 			bool is_owned = false;
@@ -832,7 +833,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			if(!is_owned)
 			{
 				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE, 
-					"Can't relocate an object the client doesn't own");
+					"Can't relocate an object the client doesn't own", true);
 				return true;
 			}
 
@@ -888,7 +889,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(m_interests.find(id) == m_interests.end())
 			{
-				send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest");
+				send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest", true);
 				return true;
 			}
 			Interest &i = m_interests[id];
