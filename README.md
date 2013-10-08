@@ -1,5 +1,5 @@
 # Astron project
-_ A Server Technology for Realtime Object Networking _
+_A Server Technology for Realtime Object Networking_
 
 Astron is an open-source, distributed server suite particularily well-suited for powering MMO games.
 The design is inspired by a similar unrelated project developed at the Disney Interactive Media
