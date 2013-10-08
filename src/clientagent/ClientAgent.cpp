@@ -172,8 +172,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				uint16_t reason = dgi.read_uint16();
 				std::string error_string = dgi.read_string();
-				m_log->info() << "Recv'd upstream request to DC client. Reason: "
-					<< reason << " Err str: " << error_string << std::endl;
 				send_disconnect(reason, error_string);
 				return;
 			}
@@ -406,13 +404,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 	private:
 		virtual void network_datagram(Datagram &dg)
 		{
-			if(dg.size() == 0)
-			{
-				m_log->error() << "0-length DG" << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "0-length");
-				return;
-			}
-
 			try
 			{
 				switch(m_state)
@@ -441,6 +432,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 		{
 			if(is_connected())
 			{
+				m_log->error() << m_client_name
+				               << "Terminating client connection (" << reason << "): "
+				               << error_string << std::endl;
+
 				Datagram resp;
 				resp.add_uint16(CLIENT_GO_GET_LOST);
 				resp.add_uint16(reason);
@@ -457,9 +452,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			uint16_t msg_type = dgi.read_uint16();
 			if(msg_type != CLIENT_HELLO)
 			{
-				m_log->error() << m_client_name << "SECURITY WARNING: Client sent packet other than "
-					"CLIENT_HELLO, pre-hello" << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "At least say hello before you start probing me");
+				send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "First packet is not CLIENT_HELLO");
 				return;
 			}
 
@@ -467,11 +460,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			const static uint32_t expected_hash = g_dcf->get_hash();
 			if(dc_hash != expected_hash)
 			{
-				m_log->error() << m_client_name << "Wrong DC hash. Got: "
-					<< std::hex << dc_hash << " expected " <<
-					expected_hash << std::dec << std::endl;
 				std::stringstream ss;
-				ss << "Incorrect DC Hash. Expected: " << std::hex << expected_hash << " Got: " << dc_hash;
+				ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
 				return;
 			}
@@ -480,9 +470,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 			const static std::string expected_version = server_version.get_rval(m_roleconfig);
 			if(version != expected_version)
 			{
-				m_log->error() << m_client_name << "Wrong Server version. Got: "
-					<< version << " expected: " << server_version.get_rval(m_roleconfig);
-				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, server_version.get_rval(m_roleconfig));
+				std::stringstream ss;
+				ss << "Client version mismatch: server=" << expected_version << ", client=" << version;
+				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
 				return;
 			}
 
@@ -506,9 +496,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			break;
 			default:
-				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
 				std::stringstream ss;
-				ss << "Unk msg type: " << std::hex << msg_type;
+				ss << "Message type " << msg_type << " not allowed prior to authentication.";
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
 				return;
 			}
@@ -518,7 +507,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Extra data in DG");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.");
 				return;
 			}
 		}
@@ -543,9 +532,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 				should_die = handle_client_remove_interest(dg, dgi);
 				break;
 			default:
-				m_log->warning() << m_client_name << "Recv'd unk msg type " << msg_type << std::endl;
 				std::stringstream ss;
-				ss << "Unk msgtype: " << std::hex << msg_type;
+				ss << "Message type " << msg_type << " not valid.";
 				send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str());
 				return;
 			}
@@ -557,7 +545,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(dgi.tell() < dg.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Extra data in dg");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.");
 				return;
 			}
 		}
@@ -751,7 +739,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				if(m_state != CLIENT_STATE_ESTABLISHED && !uberdogs[do_id].anonymous)
 				{
-					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "uberdog is not anonymous");
+					std::stringstream ss;
+					ss << "Object " << do_id << " does not accept anonymous updates.";
+					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str());
 					return true;
 				}
 				dcc = uberdogs[do_id].dcc;
@@ -777,7 +767,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 			DCField *field = dcc->get_field_by_index(field_id);
 			if(!field)
 			{
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not exist for object");
+				std::stringstream ss;
+				ss << "Client tried to send update for nonexistent field " << field_id << " to object "
+				   << dcc->get_name() << "(" << do_id << ")";
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str());
 				return true;
 			}
 				
@@ -793,7 +786,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
 			{
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, "field does not have clsend");
+				std::stringstream ss;
+				ss << "Client tried to send update for non-sendable field: "
+				   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str());
 				return true;
 			}
 
@@ -807,7 +803,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			resp.add_uint16(field_id);
 			if(data.size() > 65535u-resp.size())
 			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field updat too large");
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field update too large to be routed on MD.");
 				return true;
 			}
 			resp.add_data(data);
@@ -820,7 +816,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 			uint32_t do_id = dgi.read_uint32();
 			if(dist_objs.find(do_id) == dist_objs.end())
 			{
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "doid does not exist");
+				std::stringstream ss;
+				ss << "Client tried to manipulate unknown object " << do_id;
+				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str());
 				return true;
 			}
 			bool is_owned = false;
