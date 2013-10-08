@@ -9,6 +9,12 @@
 #include <fstream>
 #endif
 
+class DatagramIteratorEOF : public std::runtime_error
+{
+	public:
+		DatagramIteratorEOF(const string &what) : std::runtime_error(what) { }
+};
+
 class DatagramIterator
 {
 	private:
@@ -27,7 +33,7 @@ class DatagramIterator
 				test.write((const char*)m_dg.get_data(), m_dg.size());
 				test.close();
 #endif
-				throw std::runtime_error(error.str());
+				throw DatagramIteratorEOF(error.str());
 			};
 		}
 	public:
