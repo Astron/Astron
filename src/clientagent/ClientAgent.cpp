@@ -419,11 +419,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 						break;
 				}
 			}
-			catch(std::exception &e)
+			catch(DatagramIteratorEOF &e)
 			{
-				m_log->error() << "Exception while parsing client dg. DCing for truncated "
-					"e.what() " << e.what() << std::endl;
-				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, e.what());
+				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, "Datagram unexpectedly ended while iterating.");
 				return;
 			}
 
