@@ -17,8 +17,8 @@ roles:
     - type: dbss
       database: 200
       ranges:
-          - 9000
-          - 9999
+          - min: 9000
+            max: 9999
 """ % test_dc
 
 CONTEXT_OFFSET = 1 + 8 + 8 + 2
@@ -252,7 +252,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetZone while object is already loaded into ram
         ### (continues from above)
         # Enter an object into ram by activating it
-        dg = Datagram.create([9010], 5, STATESERVER_OBJECT_ACTIVATE)
+        dg = Datagram.create([9010], 5, DBSS_OBJECT_ACTIVATE)
         dg.add_uint32(9010)
         dg.add_uint32(80000) # Parent
         dg.add_uint32(100) # Zone
@@ -340,9 +340,10 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for SetZone->DelRam ###
+        ### Test for Activate->DelRam ###
         # Enter an object into ram from the disk by setting its zone
-        dg = Datagram.create([9021], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg = Datagram.create([9021], 5, DBSS_OBJECT_ACTIVATE)
+        dg.add_uint32(9021) # Id
         dg.add_uint32(90000) # Parent
         dg.add_uint32(200) # Zone
         self.shard.send(dg)
@@ -380,7 +381,7 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for SetZone->DelRam->DelDisk ### (continues from last)
+        ### Test for (Activate->DelRam)->DelDisk ### (continues from last)
         # Destroy our object on disk...
         dg = Datagram.create([9021], 5, DBSS_OBJECT_DELETE_DISK)
         dg.add_uint32(9021)
@@ -396,9 +397,10 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for SetZone->DelDisk ###
+        ### Test for Activate->DelDisk ###
         # Enter an object into ram from the disk by setting its zone
-        dg = Datagram.create([9022], 5, STATESERVER_OBJECT_SET_ZONE)
+        dg = Datagram.create([9022], 5, DBSS_OBJECT_ACTIVATE)
+        dg.add_uint32(9022)
         dg.add_uint32(90000) # Parent
         dg.add_uint32(200) # Zone
         self.shard.send(dg)
@@ -487,7 +489,7 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for SetZone->DelDisk->DelRam ### (continues from last)
+        ### Test for (Activate->DelDisk)->DelRam ### (continues from last)
         # Destroy our object on ram...
         dg = Datagram.create([9022], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(9022)
