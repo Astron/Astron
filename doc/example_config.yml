@@ -1,4 +1,4 @@
-# This is an example configuration file for configuring an OpenOTP daemon.
+# This is an example configuration file for configuring an Astron daemon.
 
 general:
     name: Core Message Director # To be used in page titles and intra-MD links.
@@ -50,6 +50,6 @@ roles:
     # separate UDP socket to listen for log events.
     - type: eventlogger
       bind: 0.0.0.0:9090 # REMEMBER: UDP
-      output: /var/log/openotp/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
+      output: /var/log/astron/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
       rotate_interval: 1d # Rotate the logs daily.
 

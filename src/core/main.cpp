@@ -18,22 +18,30 @@ int main(int argc, char *argv[])
 	//TODO: Perhaps verbosity should be specified via command-line switch?
 	if(argc < 2)
 	{
-		cfg_file = "openotpd.yml";
+		cfg_file = "astrond.yml";
 	}
 	else
 	{
-		cfg_file = "openotpd.yml";
+		cfg_file = "astrond.yml";
 		for(int i = 1; i < argc; i++)
 		{
-			if(strcmp(argv[i],  "-config") == 0 && i + 1 < argc)
-			{
-				cfg_file = argv[++i];
-			}
-			else if(strcmp(argv[i], "-log") == 0 && i + 1 < argc)
+			if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc)
 			{
 				delete g_logger;
 				g_logger = new Logger(argv[++i]);
 			}
+			else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+			{
+				std::cerr << "Usage: astrond [OPTION]... [CONFIG]" << std::endl
+				          << "Astrond is a distributed server daemon." << std::endl << std::endl
+				          << "-h, --help  Print this help dialog." << std::endl
+				          << "-L, --log   Specify a file to write log messages to." << std::endl;
+				exit(0);
+			}
+		}
+		if(argv[argc - 1][0] != '-')
+		{
+			cfg_file = argv[argc - 1];
 		}
 	}
 

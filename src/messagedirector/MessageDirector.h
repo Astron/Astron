@@ -24,7 +24,7 @@ struct ChannelList
 
 class MDParticipantInterface;
 
-// A MessageDirector is the internal networking object for an OpenOTP server-node.
+// A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector recieves message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
 class MessageDirector : public NetworkClient
@@ -35,7 +35,7 @@ class MessageDirector : public NetworkClient
 		void init_network();
 		static MessageDirector singleton;
 
-		// handle_datagram accepts any OpenOTP message (a Datagram), and
+		// handle_datagram accepts any Astron message (a Datagram), and
 		//     properly routes it to any subscribed listeners.
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
 		void handle_datagram(MDParticipantInterface *p, Datagram &dg);

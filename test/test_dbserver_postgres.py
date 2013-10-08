@@ -24,9 +24,9 @@ roles:
         max: 1000010
       storage:
         type: postgres
-        user: openotp_test
+        user: astron_test
         pass: sudowoodo
-        database: openotp_test
+        database: astron_test
 """ % test_dc
 
 class TestDatabaseServerPostgres(unittest.TestCase, DatabaseBaseTests):

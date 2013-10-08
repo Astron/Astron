@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
 import unittest
+import os, time
 from socket import *
 
-from common import *
-from testdc import *
-
+from testdc import test_dc
+from common import Daemon, MDConnection
 from test_dbserver import DatabaseBaseTests
 
-'''
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -22,14 +21,17 @@ roles:
       generate:
         min: 1000000
         max: 1000010
-      storage:
-        type: bdb
-        filename: main_database.db
+      engine:
+        type: yaml
+        foldername: unittest_db
 """ % test_dc
 
-class TestDatabaseServerBerkeley(unittest.TestCase, DatabaseBaseTests):
+class TestDatabaseServerYAML(unittest.TestCase, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
+        if not os.path.exists('unittest_db'):
+            os.makedirs('unittest_db')
+
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
@@ -37,6 +39,11 @@ class TestDatabaseServerBerkeley(unittest.TestCase, DatabaseBaseTests):
         sock.connect(('127.0.0.1', 57123))
         cls.conn = MDConnection(sock)
 
+    @classmethod
+    def tearDownClass(cls):
+        time.sleep(0.25) # Wait for yaml db to finish writing to file
+        cls.conn.close()
+        cls.daemon.stop()
+
 if __name__ == '__main__':
     unittest.main()
-'''

@@ -20,6 +20,7 @@ class Datagram
 				memcpy(tmp_buf, buf, buf_size);
 				delete [] buf;
 				buf = tmp_buf;
+				buf_size = buf_size + len + 64;
 			}
 		}
 	public:

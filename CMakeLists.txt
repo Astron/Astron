@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
-project (OOTP)
+project (Astron)
 
 if (WIN32)
 	add_definitions (-D_WIN32_WINDOWS)
@@ -81,18 +81,36 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	endif()
 endif()
 
-set (BUILD_DBSERVER ON CACHE BOOL "If on, stateserver will be built into binary")
+set (BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	set (DBSERVER_FILES
 		src/database/DatabaseServer.cpp
 		src/database/IDatabaseEngine.h
 		src/database/DBEngineFactory.h
 		src/database/DBEngineFactory.cpp
-		src/database/FSDBEngine.cpp
 	)
+
+	set (BUILD_DB_FILESYSTEM OFF CACHE BOOL "If on, will support a filesystem-based database")
+	if(BUILD_DB_FILESYSTEM)
+		set (DBSERVER_FILES
+			${DBSERVER_FILES}
+			src/database/FSDBEngine.cpp
+		)
+	endif()
+
+	set (BUILD_DB_YAML ON CACHE BOOL "If on, will support a YAML-based database (for development)")
+	if(BUILD_DB_YAML)
+		set (DBSERVER_FILES
+			${DBSERVER_FILES}
+			src/database/YAMLEngine.cpp
+		)
+	endif()
+else()
+	set (BUILD_DB_FILESYSTEM OFF)
+	set (BUILD_DB_YAML OFF)
 endif()
 
-set (BUILD_STATESERVER ON CACHE BOOL "If on, stateserver will be built into binary")
+set (BUILD_STATESERVER ON CACHE BOOL "If on, State Server will be built into binary")
 if(BUILD_STATESERVER)
 	set (STATESERVER_FILES
 		src/stateserver/StateServer.cpp
@@ -111,7 +129,7 @@ if(BUILD_EVENTLOGGER)
 endif()
 
 include_directories (src)
-add_executable (openotpd
+add_executable (astrond
 	src/core/main.cpp 
 	src/core/config.cpp 
 	src/core/logger.cpp 
@@ -148,5 +166,5 @@ add_library (dcparser
 	src/dcparser/dcParser.cxx
 )
 
-add_dependencies (openotpd dcparser)
-target_link_libraries (openotpd dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+add_dependencies (astrond dcparser)
+target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})

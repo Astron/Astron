@@ -399,9 +399,6 @@ void MessageDirector::add_participant(MDParticipantInterface* p)
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
-	// Send out a post remove, if one exists
-	p->post_remove();
-
 	// Send out unsubscribe messages for indivually subscribed channels
 	auto channels = std::set<channel_t>(p->channels());
 	for(auto it = channels.begin(); it != channels.end(); ++it)
@@ -419,6 +416,13 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 
 	// Stop tracking participant
 	m_participants.remove(p);
+
+	// Send out any post-remove messages the participant may have added.
+	// N.B. this is done last, because we don't want to send messages
+	// through the Director while a participant is being removed, as
+	// certain data structures may not have their invariants satisfied
+	// during that time.
+	p->post_remove();
 }
 
 void MessageDirector::network_datagram(Datagram &dg)
