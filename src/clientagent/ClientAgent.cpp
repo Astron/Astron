@@ -23,9 +23,9 @@ static ConfigVariable<channel_t> max_channel("channels/max", 0);
 
 enum ClientState
 {
-	CS_PRE_HELLO,
-	CS_PRE_AUTH,
-	CS_AUTHENTICATED
+	CLIENT_STATE_NEW,
+	CLIENT_STATE_ANONYMOUS,
+	CLIENT_STATE_ESTABLISHED
 };
 
 struct DistributedObject
@@ -122,7 +122,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		std::map<uint16_t, Interest> m_interests;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
-			ChannelTracker *ct) : NetworkClient(socket), m_state(CS_PRE_HELLO),
+			ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
 				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
 				m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0),
 				m_interests()
@@ -417,13 +417,13 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				switch(m_state)
 				{
-					case CS_PRE_HELLO:
+					case CLIENT_STATE_NEW:
 						handle_pre_hello(dg);
 						break;
-					case CS_PRE_AUTH:
+					case CLIENT_STATE_ANONYMOUS:
 						handle_pre_auth(dg);
 						break;
-					case CS_AUTHENTICATED:
+					case CLIENT_STATE_ESTABLISHED:
 						handle_authenticated(dg);
 						break;
 				}
@@ -490,7 +490,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			resp.add_uint16(CLIENT_HELLO_RESP);
 			network_send(resp);
 
-			m_state = CS_PRE_AUTH;
+			m_state = CLIENT_STATE_ANONYMOUS;
 		}
 
 		virtual void handle_pre_auth(Datagram &dg)
@@ -749,7 +749,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			DCClass *dcc = NULL;
 			if(uberdogs.find(do_id) != uberdogs.end())
 			{
-				if(m_state != CS_AUTHENTICATED && !uberdogs[do_id].anonymous)
+				if(m_state != CLIENT_STATE_ESTABLISHED && !uberdogs[do_id].anonymous)
 				{
 					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "uberdog is not anonymous");
 					return true;
@@ -758,7 +758,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			}
 			if(!dcc)
 			{
-				if(m_state != CS_AUTHENTICATED)
+				if(m_state != CLIENT_STATE_ESTABLISHED)
 				{
 					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "do_id is not a uberdog");
 					return true;

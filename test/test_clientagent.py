@@ -217,7 +217,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Restore the client back to the NEW state.
-        self.set_state(client, 0)
+        self.set_state(client, CLIENT_STATE_NEW)
 
         # Since it's in the NEW state, sending something should cause a HELLO
         # error.
@@ -234,7 +234,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Put the client in the ESTABLISHED state.
-        self.set_state(client, 2)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Try to send an update to UberDog2.
         dg = Datagram()
@@ -259,7 +259,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint8(), 0x06)
 
         # Now revert back to anonymous state:
-        self.set_state(client, 1)
+        self.set_state(client, CLIENT_STATE_ANONYMOUS)
 
         # Try again:
         dg = Datagram()
@@ -359,7 +359,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Twiddle with an unknown object:
         client = self.connect()
-        self.set_state(client, 2) # Let it out of the sandbox for this test.
+        self.set_state(client, CLIENT_STATE_ESTABLISHED) # Let it out of the sandbox for this test.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
         dg.add_uint32(0xDECAFBAD)
@@ -416,7 +416,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Let the client out of the sandbox...
-        self.set_state(client, 2)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Give it an object that it owns.
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
@@ -566,7 +566,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Client needs to be outside of the sandbox for this:
-        self.set_state(client, 2)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Open interest on two zones in 1234:
         dg = Datagram()
@@ -737,7 +737,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Client needs to be outside of the sandbox for this:
-        self.set_state(client, 2)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Open interest on two zones in 1235:
         dg = Datagram()
@@ -859,7 +859,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Client needs to be outside of the sandbox for this:
-        self.set_state(client, 2)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Open interest on two zones in 1235:
         dg = Datagram()
