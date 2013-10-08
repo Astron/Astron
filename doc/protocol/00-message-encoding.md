@@ -78,14 +78,16 @@ Serialized form:
     03 00 // field_id for 'z' (ID = 3)
     00 00 00 00 00 00 00 00 // Value = 0
 
-### Section 2: Argument Notation ###
-    VALUE                   // VALUE is the serialization of a DistrubutedObject field
+### Section 2: Argument Types ###
+The following are the types used as message arguments:
 
-    FIELD_DATA ->           // FIELD_DATA implies the following structure
-        (uint16 field_count,    // Number of following fields
-            [uint16 field,          // The field of the DistributeClass
-             <VALUE>                // The serialized value of that field
-            ]*field_count)
+ - *bool:* A single byte integer containg either 0 (False) or 1 (True).
+ - *blob:* A length-prefixed array of raw-byte data.
+ - *string:* A length-prefixed array of character data (no null-terminator).
+ - *uintN:* An N-bit little-endian encoded integer value.
+
+### Section 3: Special Argument Shorthand ###
+    VALUE                   // VALUE is the serialization of a DistrubutedObject field
 
     REQUIRED ->             // REQUIRED is an inline of
         <VALUE>*required_count  // All of the fields with the 'required' keyword in
@@ -95,7 +97,7 @@ Serialized form:
                             // optional fields that may be provided by the caller.
 
 
-### Section 3: Message-type Ranges ###
+### Section 4: Message-type Ranges ###
 Each component of the Astron daemon is given its own message-type range:
 
  - **Client:**              1 -  999

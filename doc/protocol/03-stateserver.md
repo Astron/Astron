@@ -32,7 +32,7 @@ control channel:
 > (parent_id, zone_id), its class, and initial field data.
 
 
-**STATESERVER_DELETE_AI_OBJECTS (2007)** `args(uint64 ai_channel)`  
+**STATESERVER_DELETE_AI_OBJECTS (2004)** `args(uint64 ai_channel)`  
 > Used by an AI Server to inform the State Server that it is going down. The
 > State Server will then delete all objects matching the ai_channel.
 >
@@ -46,63 +46,137 @@ These messages are to be sent to the objects themselves. Objects subscribe to
 a channel with their own object ID, and therefore can be reached directly by
 using their ID as the channel.
 
-**STATESERVER_OBJECT_SET_FIELD(2015)**  
+
+#### Section 2.1: Single Object Accessors ####
+These messages provide read and write access to an objects fields. Each accessor
+message requires a DistributedObject Id; this means messages can only be sent
+to one object at a time.
+
+
+**STATESERVER_OBJECT_DELETE_RAM(2002)** `args(uint32 do_id)`  
+> Delete the object from the State Server; a stored copy on the database is not
+> affected, if one exists.
+>
+> The message is also used to inform others of the delete.  It is broadcast to
+> the objects location, send to the managing AI, and also sent to the owner if
+> one exists.
+> The delete-notification's sender is equal to the original message's sender.
+
+
+**STATESERVER_OBJECT_GET_FIELD(2010)**  
+    `args(uint32 context, uint32 do_id, uint16 field_id)`  
+**STATESERVER_OBJECT_GET_FIELD_RESP(2011)**  
+    `args(uint32 context, bool success, [uint16 field_id, <VALUE>])`  
+> Get the value of a field from a single object.
+>
+> If the field is unset or invalid, the message returns a failure.
+
+
+**STATESERVER_OBJECT_GET_FIELDS(2012)**  
+    `args(uint32 context, uint32 do_id,
+          uint16 field_count, [uint16 field_id]*field_count)`  
+**STATESERVER_OBJECT_GET_FIELDS_RESP(2013)**  
+    `args(uint32 context, uint8 success,
+          uint16 field_count, [uint16 field_id, <VALUE>]*field_count)`  
+> Get the value of multiple fields from a single object.
+>
+> A failure is only returned if one or more of the values are invalid for the
+> object's distributed class.  Otherwise, a `field_id, <VALUE>` pair is returned
+> for each present field.
+
+
+**STATESERVER_OBJECT_GET_ALL(2014)** `args(uint32 context, uint32 do_id)`  
+**STATESERVER_OBJECT_GET_ALL_RESP(2015)**  
+   `args(uint32 context, uint32 do_id,
+         uint32 parent_id, uint32 zone_id,
+         uint16 dclass_id, <REQUIRED>, <OTHER>)`
+> Get the location, class, and fields of a single object.
+
+
+**STATESERVER_OBJECT_SET_FIELD(2020)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
-**STATESERVER_OBJECT_SET_FIELDS(2016)**  
+**STATESERVER_OBJECT_SET_FIELDS(2021)**  
     `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
-> These messages are used to set one or more field(s) on the distributed object.  
-> The message is also used to inform others of the change with the following:
+> Set one or more field(s) of a single object.
+>
+> The message is also used to inform others of the change by the following:
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
-> The change message's sender is equal to the original message's sender.
+> The change-notification's sender is equal to the original message's sender.
 >
 > In SET_FIELDS, there are multiple field updates in one message, which will be
 > processed as an atomic operation. Note, in the case of field duplicates, the
 > last value in the message is used.
+
+
+**STATESERVER_OBJECT_DELETE_FIELD(2030)**  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
+**STATESERVER_OBJECT_DELETE_FIELDS(2031)**  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+> Delete one or more field(s) of a single object.
+> Required fields with defaults will be reset.
+> Required fields without defaults cannot be deleted.
 >
-> _Notes: The doid argument in this message is used for identification by
->         update-recievers as well as for inactive objects in a dbss._
+> The message is also used to inform others of the delete by the following:
+> - An airecv field will be sent to the object's AI channel.
+> - An ownrecv field will be sent to the owning-client's channel.
+> - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
+> The delete-notifications's sender is equal to the original message's sender.
+>
+> In DELETE_FIELDS, there are multiple field deletes in one message, which will
+> be processed as an atomic operation.
 
 
-**STATESERVER_OBJECT_DELETE_RAM(2007)** `args()`  
-**STATESERVER_OBJECT_DELETE_DISK(2060)** `args()`  
-> Remove the object from the State Server.
-RAM (handled by SS) does not affect a stored copy on the database, if one exists.  
-DISK (handled by DBSS) deletes a copy of the field on the database.  
-The object will duly broadcast its deletion to any AIs, owners, or zones.
+#### Section 2.2: Object Visibility Messages ####
 
-
-**STATESERVER_OBJECT_SET_ZONE(2008)** `args(uint32 parent_id, uint32 zone_id)`  
-> Moves the object to a new location (specified by parent_id, zone_id).
-The object will inform any AIs and owners of this change, as well as broadcast
-its presence in the new zone and its absence in the old zone.
-
-
-**STATESERVER_OBJECT_CHANGE_ZONE(2009)**  
+**STATESERVER_OBJECT_SET_LOCATION(2040)** `args(uint32 parent_id, uint32 zone_id)` 
+**STATESERVER_OBJECT_CHANGING_LOCATION(2041)**  
     `args(uint32 do_id, uint32 new_parent_id, uint32 new_zone_id,
-                        uint32 old_parent_id, uint32 old_zone_id)`  
-**STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED_OTHER(2066)**  
-    `(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id, <REQUIRED>, <OTHER>)`  
-> These messages are SENT BY THE OBJECT when processing a SET_ZONE.
-CHANGE_ZONE tells everything that can see the object where the object is going.  
+                        uint32 old_parent_id, uint32 old_zone_id)`   
+> A set location message moves recieving objects to a new location.
+>
+> The objects will first broadcast a changing location message to its old location
+> channel, as well as its AI channel, and an owner channel if one exists.
+>
+> Then the objects will broadcast one of the following enter zone messages to
+> the new location.
 
-> ENTER_ZONE tells the new zone about the object's entry. The message is ordered
-slightly differently, but is otherwise identical to the behavior of
-STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
+
+**STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED(2042)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BROADCAST>)`  
+**STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER(2043)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BROADCAST>, <OTHER_BROADCAST>)` 
+> Used by the object to tell the new location about the object's entry.
+>
+> The message format is identical to OBJECT_CREATE except that non-broadcast
+> fields are not included in the object serialization.  Broadcast fields are the
+> only public fields on an object.  Non-broadcast fields are not sent, because
+> clients with interest in the object may not be privy to those fields.
 
 
-**STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
-> Analogous to above, but includes REQUIRED+BROADCAST fields only, no OTHER.
+**STATESERVER_OBJECT_GET_LOCATION(2044)** `args(uint32 context)`  
+**STATESERVER_OBJECT_GET_LOCATION_RESP(2045):**  
+    `args(uint32 context, uint32 do_id, uint32 parent_id, uint32 zone_id)`  
+> Get the location from one or more objects.
 
-**STATESERVER_OBJECT_QUERY_ZONE_ALL(????)**  
+
+
+# START UNREVISED MESSAGES #
+
+
+
+**STATESERVER_OBJECT_GET_ZONE_OBJECTS(2046)**  
     `args(uint32 parent_id, uint32 zone_id)`  
-**STATESERVER_OBJECT_QUERY_ZONES_ALL(2021)**  
+**STATESERVER_OBJECT_GET_ZONES_OBJECTS(2047)**  
     `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
-> Sent to the parent; queries zone(s) for all objects within. Each object will
-answer with a STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(_OTHER). After all
-objects have answered, the parent will send the corresponding _DONE message.
+> Get all child objects in one or more zones from a single object.
+>
+> Each object will reply with a STATESERVER_OBJECT_ENTER_ZONE message.
+> answer with a _WITH_REQUIRED(_OTHER). After all
+> objects have answered, the parent will send the corresponding _DONE message.
 
 **STATESERVER_OBJECT_QUERY_ZONE_DONE(????)**
     `args(uint32 parent_id, uint32 zone_id)`
@@ -112,22 +186,14 @@ objects have answered, the parent will send the corresponding _DONE message.
 all objects have announced their existence.
 
 
-**STATESERVER_OBJECT_LOCATE(2022)** `args(uint32 context)`  
-**STATESERVER_OBJECT_LOCATE_RESP(2023):**  
-    `args(uint32 context, uint32 parent_id, uint32 zone_id)`  
-> This message may be used to ask an object for its location, returning the response.
 
-
-**STATESERVER_OBJECT_QUERY_FIELD(2024)**  
-    `args(uint32 context, uint16 field_id)`  
-**STATESERVER_OBJECT_QUERY_FIELD_RESP(2062)**  
-    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
-> This message may be used to ask an object for the value of a field.
-Returns failure(0) if the field is nonpresent.
-
-
-**STATESERVER_OBJECT_SET_AI_CHANNEL(2045)**  
+**STATESERVER_OBJECT_SET_AI_CHANNEL(2050)**  
     `args(uint64 ai_channel)`  
+**STATESERVER_OBJECT_NOTIFY_MANAGING_AI(2047)**  
+    `args(uint32 parent_id, uint64 ai_channel)`  
+> _Internally Used_ Broadcast by a parent_id to all of its children (the channel
+for this is given by (4030<<32)|parent_id) when its airecv channel changes.
+Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
 **STATESERVER_OBJECT_ENTER_AI_RECV(2067)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 class_id, <REQUIRED>, <OTHER>)`  
@@ -153,19 +219,6 @@ this will generate some traffic:
 CHANGE_OWNER will be sent to the old owner.  
 ENTER_OWNER tells the new owner of the object's arrival.
 
-
-**STATESERVER_OBJECT_QUERY_FIELDS(2080)**  
-    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
-**STATESERVER_OBJECT_QUERY_FIELDS_RESP(2081)**  
-    `args(uint32 context, uint32 do_id, uint8 success, <FIELD_DATA>)`  
-> This message asks for multiple fields to be recieved at the same time.
-
-
-**STATESERVER_OBJECT_QUERY_ALL(2020)** `args(uint32 context)`  
-**STATESERVER_OBJECT_QUERY_ALL_RESP(2030)**  
-   `args(uint32 context, uint32 do_id, uint32 parent_id, uint32 zone_id,
-         uint16 dclass_id, <REQUIRED>, <OTHER>)`
-> This message queries all information from the object and returns the response.
 
 
 **STATESERVER_OBJECT_QUERY_MANAGING_AI(2083)** `args()`  
