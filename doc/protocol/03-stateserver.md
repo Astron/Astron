@@ -22,20 +22,22 @@ of control afforded by communicating to an instantiated object directly.
 These messages are to be sent directly to the State Server's configured
 control channel:
 
-**STATESERVER_OBJECT_GENERATE_WITH_REQUIRED(2001)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id, <REQUIRED>)`  
-**STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER(2003)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id, <REQUIRED>, <OTHER>)`  
-> Create an object on the State Server, specifying its initial location
-as (parent_id, zone_id) and its object type and ID.
+**STATESERVER_OBJECT_CREATE_WITH_REQUIRED(2001)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED>)`  
+**STATESERVER_OBJECT_CREATE_WITH_REQUIRED_OTHER(2001)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED>, <OTHER>)`  
+> Create an object on the State Server, specifying its initial location as
+> (parent_id, zone_id), its class, and initial field data.
 
 
-**STATESERVER_SHARD_RESET(2061)** `args(uint64 ai_channel)`  
+**STATESERVER_DELETE_AI_OBJECTS (2007)** `args(uint64 ai_channel)`  
 > Used by an AI Server to inform the State Server that it is going down. The
-State Server will then delete all objects matching the ai_channel.
-The AI will typically hang this on its connected MD using ADD_POST_REMOVE, so
-that the message goes out automatically if the AI loses connection
-unexpectedly.
+> State Server will then delete all objects matching the ai_channel.
+>
+> The AI will typically hang this on its connected MD using ADD_POST_REMOVE, so
+> that the message goes out automatically if the AI loses connection unexpectedly.
 
 
 ### Section 2: Distributed Object Control Messages ###
@@ -44,19 +46,23 @@ These messages are to be sent to the objects themselves. Objects subscribe to
 a channel with their own object ID, and therefore can be reached directly by
 using their ID as the channel.
 
-**STATESERVER_OBJECT_UPDATE_FIELD(2004)**  
-    `args(uint16 field_id, <VALUE>)`  
-**STATESERVER_OBJECT_UPDATE_FIELDS(2005)**  
-    `args(<FIELD_DATA>)`  
-> Handle a field update on this object. Note that the object MAY ALSO SEND this
-message to inform others of an update. If the field is ownrecv, the message
-will get sent to the owning-client's channel. If airecv, the message will get
-sent to the owning AI Server's channel. If broadcast, the message will get
-sent to the location-channel (i.e. (parent_id<<32)|zone_id) so all clients
-with interest on that location may see the update.
-
-> In _FIELDS, there are multiple field updates in one message, with the
-intention that the updates will be processed atomically.
+**STATESERVER_OBJECT_SET_FIELD(2015)**  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
+**STATESERVER_OBJECT_SET_FIELDS(2016)**  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+> These messages are used to set one or more field(s) on the distributed object.  
+> The message is also used to inform others of the change with the following:
+> - An airecv field will be sent to the object's AI channel.
+> - An ownrecv field will be sent to the owning-client's channel.
+> - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
+> The change message's sender is equal to the original message's sender.
+>
+> In SET_FIELDS, there are multiple field updates in one message, which will be
+> processed as an atomic operation. Note, in the case of field duplicates, the
+> last value in the message is used.
+>
+> _Notes: The doid argument in this message is used for identification by
+>         update-recievers as well as for inactive objects in a dbss._
 
 
 **STATESERVER_OBJECT_DELETE_RAM(2007)** `args()`  
