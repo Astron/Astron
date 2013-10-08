@@ -403,18 +403,19 @@ class Client : public NetworkClient, public MDParticipantInterface
 	private:
 		virtual void network_datagram(Datagram &dg)
 		{
+			DatagramIterator dgi(dg);
 			try
 			{
 				switch(m_state)
 				{
 					case CLIENT_STATE_NEW:
-						handle_pre_hello(dg);
+						handle_pre_hello(dgi);
 						break;
 					case CLIENT_STATE_ANONYMOUS:
-						handle_pre_auth(dg);
+						handle_pre_auth(dgi);
 						break;
 					case CLIENT_STATE_ESTABLISHED:
-						handle_authenticated(dg);
+						handle_authenticated(dgi);
 						break;
 				}
 			}
@@ -423,6 +424,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 				m_log->error() << "Exception while parsing client dg. DCing for truncated "
 					"e.what() " << e.what() << std::endl;
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM, e.what());
+				return;
+			}
+
+			if(dgi.get_remaining())
+			{
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.", true);
 				return;
 			}
 		}
@@ -445,9 +452,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 		}
 
 		//Only handles one message type, so it does not need to be split up.
-		virtual void handle_pre_hello(Datagram &dg)
+		virtual void handle_pre_hello(DatagramIterator &dgi)
 		{
-			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
 			if(msg_type != CLIENT_HELLO)
 			{
@@ -482,9 +488,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			m_state = CLIENT_STATE_ANONYMOUS;
 		}
 
-		virtual void handle_pre_auth(Datagram &dg)
+		virtual void handle_pre_auth(DatagramIterator &dgi)
 		{
-			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
 			bool should_die = false;
 			switch(msg_type)
@@ -504,16 +509,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				return;
 			}
-			if(dgi.tell() < dg.size())
-			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.", true);
-				return;
-			}
 		}
 
-		virtual void handle_authenticated(Datagram &dg)
+		virtual void handle_authenticated(DatagramIterator &dgi)
 		{
-			DatagramIterator dgi(dg);
 			uint16_t msg_type = dgi.read_uint16();
 			bool should_die = false;
 			switch(msg_type)
@@ -525,10 +524,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 				should_die = handle_client_object_location(dgi);
 				break;
 			case CLIENT_ADD_INTEREST:
-				should_die = handle_client_add_interest(dg, dgi);
+				should_die = handle_client_add_interest(dgi);
 				break;
 			case CLIENT_REMOVE_INTEREST:
-				should_die = handle_client_remove_interest(dg, dgi);
+				should_die = handle_client_remove_interest(dgi);
 				break;
 			default:
 				std::stringstream ss;
@@ -539,12 +538,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 
 			if(should_die)
 			{
-				return;
-			}
-
-			if(dgi.tell() < dg.size())
-			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Datagram contains excess data.", true);
 				return;
 			}
 		}
@@ -842,7 +835,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			return false;
 		}
 
-		bool handle_client_add_interest(Datagram &dg, DatagramIterator &dgi)
+		bool handle_client_add_interest(DatagramIterator &dgi)
 		{
 			uint16_t interest_id = dgi.read_uint16();
 			uint32_t context = dgi.read_uint32();
@@ -851,8 +844,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 			i.context = context;
 			i.parent = parent;
 
-			i.zones.reserve((dg.size()-dgi.tell())/sizeof(uint32_t));
-			for(uint16_t p = dgi.tell(); p != dg.size(); p = dgi.tell())
+			i.zones.reserve(dgi.get_remaining()/sizeof(uint32_t));
+			while(dgi.get_remaining())
 			{
 				uint32_t zone = dgi.read_uint32();
 				i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
@@ -879,11 +872,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 			return false;
 		}
 
-		bool handle_client_remove_interest(Datagram &dg, DatagramIterator &dgi)
+		bool handle_client_remove_interest(DatagramIterator &dgi)
 		{
 			uint16_t id = dgi.read_uint16();
 			uint32_t context = 0;
-			if(dgi.tell() < dg.size())
+			if(dgi.get_remaining())
 			{
 				context = dgi.read_uint32();
 			}
