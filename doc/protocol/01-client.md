@@ -1,13 +1,14 @@
-OpenOTP Client Protocol Documentation
+Astron Client Protocol Documentation
 ---------------------------------------
 **Author**
 Sam "CFSworks" Edwards (09-17-2013)
 
+
 ### Section 0: Abstract ###
 
-This file documents the protocol used by clients to communicate with an OpenOTP
+This file documents the protocol used by clients to communicate with an Astron
 cluster. This should not be confused with the *internal protocol*, which is used
-by OpenOTP servers to communicate amongst themselves. Instead, the client
+by Astron servers to communicate amongst themselves. Instead, the client
 protocol is used by game clients (running on the players' computers) to communicate
 with the Client Agent -- the gateway into the cluster. Because clients connect
 to the Client Agent rather than directly into the Message Director, I will use
@@ -39,7 +40,7 @@ client: the client is expected to know their IDs in advance.
 
 The purpose of this mechanism is to allow the client to provide suitable authentication
 to the gameserver cluster. The authentication mechanism is entirely up to the
-game developer: OpenOTP does not mandate any sort of authentication method.
+game developer: Astron does not mandate any sort of authentication method.
 
 Once the client proves its identity to the server (through the aforementioned
 pre-approved objects), the server will unrestrict the client, allowing it full
