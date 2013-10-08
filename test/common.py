@@ -8,7 +8,7 @@ import os
 __all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
 
 class Daemon(object):
-    DAEMON_PATH = './openotpd'
+    DAEMON_PATH = './astrond'
 
     def __init__(self, config):
         self.config = config
@@ -18,7 +18,7 @@ class Daemon(object):
 
     def start(self):
         if 'MANUAL_LAUNCH_CONFIG' in os.environ:
-            # User wants to manually launch their OpenOTP daemon, so we'll write
+            # User wants to manually launch their Astron daemon, so we'll write
             # out the config for them and prompt them to
             with open(os.environ['MANUAL_LAUNCH_CONFIG'], 'wb') as config:
                 config.write(self.config)

@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
-project (OOTP)
+project (Astron)
 
 if (WIN32)
 	add_definitions (-D_WIN32_WINDOWS)
@@ -129,7 +129,7 @@ if(BUILD_EVENTLOGGER)
 endif()
 
 include_directories (src)
-add_executable (openotpd
+add_executable (astrond
 	src/core/main.cpp 
 	src/core/config.cpp 
 	src/core/logger.cpp 
@@ -166,5 +166,5 @@ add_library (dcparser
 	src/dcparser/dcParser.cxx
 )
 
-add_dependencies (openotpd dcparser)
-target_link_libraries (openotpd dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+add_dependencies (astrond dcparser)
+target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})

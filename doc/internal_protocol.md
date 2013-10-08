@@ -1,4 +1,4 @@
-OpenOTP Internal Protocol Documentation
+Astron Internal Protocol Documentation
 ---------------------------------------
 **Authors**  
 Sam "CFSworks" Edwards (08-30-2013)  
@@ -8,26 +8,26 @@ Kevin "Kestred" Stenerson (09-04-2013)
 ### Section 0: Abstract ###
 
 The purpose of this document is to be a complete reference describing how to
-communicate within the OpenOTP cluster. At the heart of every OpenOTP cluster
+communicate within the Astron cluster. At the heart of every Astron cluster
 is a backbone consisting of one or more "Message Directors" which route
 messages between the various nodes in the cluster. This document describes the
 exact protocol used by the MDs to communicate, as well as the various types of
-messages that one can expect to see in a working OpenOTP environment.
+messages that one can expect to see in a working Astron environment.
 
 
 
 ### Section 1: Anatomy of a message ###
 
-OpenOTP Message Directors are linked via TCP streams. The linking forms a
+Astron Message Directors are linked via TCP streams. The linking forms a
 tree; that is, no routing loops may exist in a Message Director network. If a
 routing loop exists, the traffic will be amplified into a broadcast storm.
 
 When any TCP connection is established, there is an initiator (or connector)
-and a receiver (or listener). This distinction is important in the OpenOTP
+and a receiver (or listener). This distinction is important in the Astron
 Message Director hierarchy: One Message Director should be configured as a
 root node, which makes no connections to any other nodes. Instead, the root
 node listens for connections from other Message Directors, which may either
-host other components of the OpenOTP cluster, or they may themselves listen
+host other components of the Astron cluster, or they may themselves listen
 for connections from other MDs.
 
 Once the TCP connection is open, there is no handshaking process required. The
@@ -109,7 +109,7 @@ The following control messages exist, with their respective formats:
 
 **CONTROL_SET_CON_NAME(2004)** `args(string)`  
 **CONTROL_SET_CON_URL(2005)** `args(string)`  
-> As every OpenOTP daemon may include a webserver with debug information, it is
+> As every Astron daemon may include a webserver with debug information, it is
 often helpful to understand the purpose of incoming MD connections. A
 downstream MD may be configured with a specific name, and it may wish to
 inform the upstream MD what its name and webserver URL are. These control
