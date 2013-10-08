@@ -1,4 +1,4 @@
-OpenOTP Internal Protocol Documentation
+Astron Internal Protocol Documentation
 ---------------------------------------
 **Authors**  
 Sam "CFSworks" Edwards (08-30-2013)  
@@ -8,26 +8,26 @@ Kevin "Kestred" Stenerson (09-04-2013)
 ### Section 0: Abstract ###
 
 The purpose of this document is to be a complete reference describing how to
-communicate within the OpenOTP cluster. At the heart of every OpenOTP cluster
+communicate within the Astron cluster. At the heart of every Astron cluster
 is a backbone consisting of one or more "Message Directors" which route
 messages between the various nodes in the cluster. This document describes the
 exact protocol used by the MDs to communicate, as well as the various types of
-messages that one can expect to see in a working OpenOTP environment.
+messages that one can expect to see in a working Astron environment.
 
 
 
 ### Section 1: Anatomy of a message ###
 
-OpenOTP Message Directors are linked via TCP streams. The linking forms a
+Astron Message Directors are linked via TCP streams. The linking forms a
 tree; that is, no routing loops may exist in a Message Director network. If a
 routing loop exists, the traffic will be amplified into a broadcast storm.
 
 When any TCP connection is established, there is an initiator (or connector)
-and a receiver (or listener). This distinction is important in the OpenOTP
+and a receiver (or listener). This distinction is important in the Astron
 Message Director hierarchy: One Message Director should be configured as a
 root node, which makes no connections to any other nodes. Instead, the root
 node listens for connections from other Message Directors, which may either
-host other components of the OpenOTP cluster, or they may themselves listen
+host other components of the Astron cluster, or they may themselves listen
 for connections from other MDs.
 
 Once the TCP connection is open, there is no handshaking process required. The
@@ -89,8 +89,6 @@ Serialized form:
     03 00 // field_id for 'z' (ID = 3)
     00 00 00 00 00 00 00 00 // Value = 0
 
-
-
 ### Section 2: Control messages ###
 
 As Message Directors operate on a publish-subscribe model, a message will only
@@ -111,7 +109,7 @@ The following control messages exist, with their respective formats:
 
 **CONTROL_SET_CON_NAME(2004)** `args(string)`  
 **CONTROL_SET_CON_URL(2005)** `args(string)`  
-> As every OpenOTP daemon may include a webserver with debug information, it is
+> As every Astron daemon may include a webserver with debug information, it is
 often helpful to understand the purpose of incoming MD connections. A
 downstream MD may be configured with a specific name, and it may wish to
 inform the upstream MD what its name and webserver URL are. These control
@@ -227,9 +225,12 @@ its presence in the new zone and its absence in the old zone.
 > These messages are SENT BY THE OBJECT when processing a SET_ZONE.
 CHANGE_ZONE tells everything that can see the object where the object is going.
 
-> ENTER_ZONE tells the new zone about the object's entry. The message is ordered
-slightly differently, but is otherwise identical to the behavior of
-STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER.
+> ENTERZONE tells the new zone about the object's entry. Note that this message
+only includes required fields that are also marked broadcast.
+
+**STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**
+    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`
+> Analogous to above, but includes REQUIRED+BROADCAST fields only, no OTHER.
 
 **STATESERVER_OBJECT_QUERY_ZONE_ALL(2021)**__
     `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
@@ -241,11 +242,6 @@ objects have answered, the parent will send:
     `args(uint32 parent_id, uint16 num_zones, [uint32 zone]*num_zones)`
 > This is an echo of the above message. It is sent back to the enquierer after
 all objects have announced their existence.
-
-**STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED(2065)**  
-    `args(uint32 parent_id, uint32 zone_id, uint16 dclass_id, uint32 do_id, ...)`  
-> Analogous to above, but includes REQUIRED fields only.
-
 
 **STATESERVER_OBJECT_LOCATE(2022)** `args(uint32 context)`  
 **STATESERVER_OBJECT_LOCATE_RESP(2023):**  
@@ -339,103 +335,87 @@ object's ID) to receive object-specific updates.
 
 The following is a list of database control messages:
 
-**Argument Notes**
-
-    bool success/found      // uint8 value where FAILURE or NOT_FOUND = 0x0 (typically SUCCES or FOUND = 0x1 or "TRUE")
-
-    uint16 dclass_id        // DistributedClass of objects to compare (think MySQL table or mongodb file)
-
-    FIELD_DATA ->           // FIELD_DATA implies the following structure
-        (uint16 field_count,    // Number of following fields
-            [uint16 field,          // The field of the DistributeClass
-             VALUE                  // The serialized value of that field
-            ]*field_count)
-
-    COMPARISON_QUERY  ->    // COMPARISON_QUERY implies the following structure
-        (uint16 compare_count,  // Number of following comparisons (think SQL WHERE field = value)
-            [uint8 compare_op,      // EQUALS(0), NOT_EQUALS(1)
-             uint16 field,          // The field of the DistributeClass to compare
-             VALUE                  // The serialized value of that field
-            ]*compare_count)
-
-
-**DBSERVER_CREATE_STORED_OBJECT(1003)**  
-    `args(uint32 context, uint16 dclass_id, FIELD_DATA)`  
-**DBSERVER_CREATE_STORED_OBJECT_RESP(1004)**  
+**DBSERVER_OBJECT_CREATE(4000)**  
+    `args(uint32 context, uint16 dclass_id, uint16 field_count,
+         [uint16 field_id, <VALUE>]*field_count)`  
+**DBSERVER_OBJECT_CREATE_RESP(4001)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
 the given values. For required fields that are not given, the default values
-are used.  Objects with required fields that do not have default values cannot
-be stored in the database.  
-The return is the do_id of the object. The BAD_DO_ID (0x0) is a failure.  
-When the object is queried, this object is automatically fetched and managed by
-the associated DB-SS.  
+are used. The return is the do_id of the object. If creation fails, BAD_DO_ID (0x0)
+is returned.
 
+**DBSERVER_OBJECT_DELETE(4002)**  
+    `args(uint32 do_id)`  
+> This message removes the object with the given do_id from the server.  
 
-**DBSERVER_DELETE_STORED_OBJECT(1008)**  
-    `args(uint32 verify_code, uint32 do_id)`  
-> This message removes an object from the server with a given do_id.  
-The verify_code is 0x44696521 (Ascii "Die!") and is required.  
+**DBSERVER_OBJECT_GET_FIELD(4010)**  
+    `args(uint32 context, uint32 do_id, uint16 field_id)`  
+**DBSERVER_OBJECT_GET_FIELD_RESP(4011)**  
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
+> This message gets the value of a single field from an object in the database.
+If the field is not set, the response returns a failure.
 
-
-**DBSERVER_DELETE_QUERY(1010)**  
-    `args(uint32 verify_code, uint16 dclass_id, COMPARISON_QUERY)`  
-> This message removes all objects from the server of the given DistributedClass,
-that satisify the given comparisons.  
-The verify_code is 0x4b696c6c (Ascii "Kill") and is required.  
-
-
-**DBSERVER_SELECT_STORED_OBJECT(1012)**  
-    `args(uint32 context, uint32 do_id, uint16 field_count, [uint16 field]*field_count`  
-**DBSERVER_SELECT_STORED_OBJECT_RESP(1013)**  
-    `args(uint32 context, bool found, [VALUE]*field_count)`  
-> This message selects a number of fields from an object in the database.  
-It returns the select fields in serialized form, in the order requested -- if found.
-
-
-**DBSERVER_SELECT_STORED_OBJECT_ALL(1020)**  
-    `args(uint32 context, uint32 do_id)`  
-**DBSERVER_SELECT_STORED_OBJECT_ALL_RESP(1021)**  
-    `args(uint32 context, bool found, [uint16 dclass_id, FIELD_DATA])`  
-> This message queries all of the database fields from the object and returns the response -- if found.
-
-
-**DBSERVER_SELECT_QUERY(1016)**  
-    `args(uint32 context, uint32 dclass_id, COMPARISON_QUERY)`  
-**DBSERVER_SELECT_QUERY_RESP(1017)**  
-    `args(uint32 context, uint32 items, [uint32 do_id]*items)`  
-> This message selects from the database all items of the given
-DistributedClass that satisfy the given comparisons.
-The return is a list of do_ids corresponding to the selected elements.
-
-
-**DBSERVER_UPDATE_STORED_OBJECT(1014)**  
-    `args(uint32 context, uint32 do_id, FIELD_DATA)`  
-> This message replaces the current values of the given object,
-with the new values given in FIELD_DATA.  
-This command updates a value in the database, ignoring its initial value.
-If using a SELECT, followed by an UPDATE, see UPDATE_IF_EQUALS instead.
-
-
-**DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS(1024)**  
+**DBSERVER_OBJECT_GET_FIELDS(4012)**  
     `args(uint32 context, uint32 do_id, uint16 field_count,
-          [uint16 field, VALUE old, VALUE new]*field_count)`
-**DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP(1025)**  
-    `args(uint32 context, bool success, [VALUE]*field_count)`
-> This message replaces the current values of the given object with new values,
-only if the old values match the current state of the database.  
+         [uint16 field_id]*field_count`  
+**DBSERVER_OBJECT_GET_FIELDS_RESP(4013)**  
+    `args(uint32 context, uint8 success, [uint16 field_count],
+         [uint16 field_id, <VALUE>]*field_count)`  
+> This message gets the values of multiple fields from an object in the database.
+Database fields with no stored value are not included in the list of returned fields.
+
+**DBSERVER_OBJECT_GET_ALL(4014)**  
+    `args(uint32 context, uint32 do_id)`  
+**DBSERVER_OBJECT_GET_ALL_RESP(4015)**  
+    `args(uint32 context, uint8 success,
+         [uint16 dclass_id, uint16 field_count],
+         [uint16 field_id, <VALUE>]*field_count)`  
+> This message queries all of the data stored in the database about an object.
+Database fields with no stored value are not included in the list of returned fields.
+
+**DBSERVER_OBJECT_SET_FIELD(4020)**  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
+**DBSERVER_OBJECT_SET_FIELDS(4021)**  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id, <VALUE>]*field_count)`  
+> These messages replace an object's current stored values for given fields.
+For updates that are derived or dependent on previous values, consider
+using SET_FIELD(S)_IF_EQUALS message instead.
+
+**DBSERVER_OBJECT_SET_FIELD_IF_EQUALS(4022)**  
+    `args(uint32 context, uint32 do_id, uint16 field_id, <VALUE> old, <VALUE> new)`  
+**DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP(4023)**  
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
+**DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS(4024)**  
+    `args(uint32 context, uint32 do_id, uint16 field_count,
+         [uint16 field_id, VALUE old, VALUE new]*field_count)`  
+**DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP(4025)**  
+    `args(uint32 context, uint8 success, [uint16 field_count],
+         [uint16 field_id, <VALUE>]*field_count)`  
+> These message replaces the current values of the given object with new values,
+but only if the 'old' values match the current state of the database.  
 This method of updating the database is used to prevent race conditions,
-particularily when the new values are derived or dependent on the old values.
-
+particularily when the new values are derived or dependent on the old values.  
 > If any of the given _old_ values don't match then the entire transaction fails.
-If unsuccessful, the current values of all given fields will be returned in order
-in serialized form, after 'success'.
+In this case, the current values of all non-empty fields will be returned after FAILURE.  
+> If any of the given fields are non-database or invalid, the entire transaction
+fails and no values are returned.
+
+**DBSERVER_OBJECT_SET_FIELD_IF_EMPTY(4026)**  
+    `args(uint32 context, uint32 do_id, uint16 field_id, <VALUE>)`  
+**DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP(4027)**  
+    `args(uint32 context, uint8 success, [uint16 field_id, <VALUE>])`  
+> This message sets the given field if it does not currently have a value.  
+> If the field is non-empty, the current value will be returned after FAILURE.
+
+**DBSERVER_OBJECT_DELETE_FIELD(4030)**  
+   `args(uint32 do_id, uint16 field_id)`  
+**DBSERVER_OBJECT_DELETE_FIELDS(4031)**  
+   `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+> These messages delete individual fields from a database object.
+Required fields with defaults will be reset. Required fields without defaults cannot be cleared.
 
 
-**DBSERVER_UPDATE_QUERY(1018)**  
-    `args(uint32 dclass_id, COMPARISON_QUERY, FIELD_DATA)`  
-> This message updates all objects of type dclass_id which satisfy the
-COMPARISON_QUERY with the fields in FIELD_DATA.
 
 ### Section 5: Event Logger ###
 

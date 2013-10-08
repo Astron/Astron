@@ -1,4 +1,4 @@
-# OpenOTP C++ Style Guide
+# Astron C++ Style Guide
 Failing to adhere to this guide will result in a paddling and your
 pull-request being instantly rejected. Feel free to fix the issues
 and re-submit the pull request though.

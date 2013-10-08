@@ -9,7 +9,7 @@ __all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection',
            'ClientConnection']
 
 class Daemon(object):
-    DAEMON_PATH = './openotpd'
+    DAEMON_PATH = './astrond'
 
     def __init__(self, config):
         self.config = config
@@ -19,7 +19,7 @@ class Daemon(object):
 
     def start(self):
         if 'MANUAL_LAUNCH_CONFIG' in os.environ:
-            # User wants to manually launch their OpenOTP daemon, so we'll write
+            # User wants to manually launch their Astron daemon, so we'll write
             # out the config for them and prompt them to
             with open(os.environ['MANUAL_LAUNCH_CONFIG'], 'wb') as config:
                 config.write(self.config)
@@ -58,11 +58,12 @@ CONSTANTS = {
     # Reserved Values
     'INVALID_CHANNEL': 0,
     'INVALID_DO_ID': 0,
-    'INVALID_MSG_TYPE': 0,
+    'INVALID_ZONE': 0,
+    'RESERVED_MSG_TYPE': 0,
 
-    # Defined return codes
-    'FOUND': 1,
-    'NOT_FOUND': 0,
+    # Success booleans
+    'SUCCESS': 1,
+    'FAILURE': 0,
 
     # Control Channels
     'CONTROL_CHANNEL': 4001,
@@ -108,20 +109,25 @@ CONSTANTS = {
 
 
     # Database Server
-    'DBSERVER_CREATE_STORED_OBJECT': 1003,
-    'DBSERVER_CREATE_STORED_OBJECT_RESP': 1004,
-    'DBSERVER_DELETE_STORED_OBJECT': 1008,
-    'DBSERVER_DELETE_QUERY': 1010,
-    'DBSERVER_SELECT_STORED_OBJECT': 1012,
-    'DBSERVER_SELECT_STORED_OBJECT_RESP': 1013,
-    'DBSERVER_SELECT_STORED_OBJECT_ALL': 1020,
-    'DBSERVER_SELECT_STORED_OBJECT_ALL_RESP': 1021,
-    'DBSERVER_SELECT_QUERY': 1016,
-    'DBSERVER_SELECT_QUERY_RESP': 1017,
-    'DBSERVER_UPDATE_STORED_OBJECT': 1014,
-    'DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS': 1024,
-    'DBSERVER_UPDATE_STORED_OBJECT_IF_EQUALS_RESP': 1025,
-    'DBSERVER_UPDATE_QUERY': 1018,
+    'DBSERVER_OBJECT_CREATE': 4000,
+    'DBSERVER_OBJECT_CREATE_RESP': 4001,
+    'DBSERVER_OBJECT_DELETE': 4002,
+    'DBSERVER_OBJECT_GET_FIELD': 4010,
+    'DBSERVER_OBJECT_GET_FIELD_RESP': 4011,
+    'DBSERVER_OBJECT_GET_FIELDS': 4012,
+    'DBSERVER_OBJECT_GET_FIELDS_RESP': 4013,
+    'DBSERVER_OBJECT_GET_ALL': 4014,
+    'DBSERVER_OBJECT_GET_ALL_RESP': 4015,
+    'DBSERVER_OBJECT_SET_FIELD': 4020,
+    'DBSERVER_OBJECT_SET_FIELDS': 4021,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS': 4022,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP': 4023,
+    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS': 4024,
+    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP': 4025,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY': 4026,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP': 4027,
+    'DBSERVER_OBJECT_DELETE_FIELD': 4030,
+    'DBSERVER_OBJECT_DELETE_FIELDS': 4031,
 
     # Client Agent
     'CLIENTAGENT_OPEN_CHANNEL': 3104,

@@ -422,7 +422,7 @@ class TestClientAgent(unittest.TestCase):
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
         dg.add_uint32(1234) # Parent
         dg.add_uint32(5678) # Zone
-        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(DistributedClientTestObject)
         dg.add_uint32(55446655)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
@@ -435,7 +435,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
         dg.add_uint32(1234) # Parent
         dg.add_uint32(5678) # Zone
-        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(DistributedClientTestObject)
         dg.add_uint32(55446655)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
