@@ -112,7 +112,6 @@ class Client : public NetworkClient, public MDParticipantInterface
 	private:
 		ClientState m_state;
 		LogCategory *m_log;
-		std::string m_client_name;
 		RoleConfig m_roleconfig;
 		ChannelTracker *m_ct;
 		channel_t m_channel;
@@ -123,7 +122,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
-				m_log(log), m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
+				m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
 				m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0),
 				m_interests()
 		{
@@ -136,9 +135,9 @@ class Client : public NetworkClient, public MDParticipantInterface
 			m_allocated_channel = m_channel;
 			subscribe_channel(m_channel);
 			std::stringstream ss;
-			ss << "Client(" << socket->remote_endpoint().address().to_string() << ":"
-				<< socket->remote_endpoint().port() << "): ";
-			m_client_name = ss.str();
+			ss << "Client (" << socket->remote_endpoint().address().to_string() << ":"
+			   << socket->remote_endpoint().port() << ")";
+			m_log = new LogCategory("client", ss.str());
 		}
 
 		~Client()
@@ -432,8 +431,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		{
 			if(is_connected())
 			{
-				m_log->error() << m_client_name
-				               << "Terminating client connection (" << reason << "): "
+				m_log->error() << "Terminating client connection (" << reason << "): "
 				               << error_string << std::endl;
 
 				Datagram resp;
