@@ -13,11 +13,14 @@ static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
 	channel_t channel = control_channel.get_rval(m_roleconfig);
-	MessageDirector::singleton.subscribe_channel(this, channel);
+	if(channel != INVALID_CHANNEL)
+	{
+		MessageDirector::singleton.subscribe_channel(this, channel);
 
-	std::stringstream name;
-	name << "StateServer(" << channel << ")";
-	m_log = new LogCategory("stateserver", name.str());
+		std::stringstream name;
+		name << "StateServer(" << channel << ")";
+		m_log = new LogCategory("stateserver", name.str());
+	}
 }
 
 StateServer::~StateServer()

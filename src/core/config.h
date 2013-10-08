@@ -16,6 +16,7 @@ class ConfigFile
 extern ConfigFile *g_config;
 
 typedef YAML::Node RoleConfig;
+typedef YAML::Node RangesConfig;
 typedef YAML::Node DBEngineConfig;
 
 template<class T>
