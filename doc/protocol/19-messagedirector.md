@@ -23,15 +23,15 @@ Control messages are distinguished by two things:
 
 The following control messages exist, with their respective formats:
 
-**CONTROL_ADD_CHANNEL(9001)** `args(uint64 channel)`  
-**CONTROL_REMOVE_CHANNEL(9002)** `args(uint64 channel)`  
+**CONTROL_ADD_CHANNEL(9000)** `args(uint64 channel)`  
+**CONTROL_REMOVE_CHANNEL(9001)** `args(uint64 channel)`  
 > These messages allow a downstream Message Director to (un)subscribe a channel.
 > The argument is the channel to be added or removed from the subscriptions.
 
 
-**CONTROL_ADD_RANGE(9003)**  
+**CONTROL_ADD_RANGE(9002)**  
 `args(uint64 low_channel, uint64 high_channel)`  
-**CONTROL_REMOVE_RANGE(9004)**  
+**CONTROL_REMOVE_RANGE(9003)**  
 `args(uint64 low_channel, uint64 high_channel)`  
 > These messages add/remove an entire range of channels at once. The first
 > argument(s) should be the lower channel to add. The second argument(s) is the
