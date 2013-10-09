@@ -13,11 +13,11 @@ specifically requested to be informed of messages on one of the message's
 channels. Uplink messages, however, are sent unsolicited.
 
 To request messages on a channel, the upstream Message Director must receive a
-control message from a downstream MD requesting to be added to a channel.
+control message from a downstream \MD requesting to be added to a channel.
 
 Control messages are distinguished by two things:
 
-1. Control messages must be sent to only channel 4001, and no other channels.
+1. Control messages must be sent only to channel 1, and no other channels.
 2. Control messages OMIT the sender field; this is because the sender is
    assumed (known) to be the MD on the other end of the link.
 
