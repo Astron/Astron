@@ -58,8 +58,12 @@ to one object at a time.
 > affected, if one exists.
 >
 > The message is also used to inform others of the delete.  It is broadcast to
-> the objects location, send to the managing AI, and also sent to the owner if
-> one exists.
+> the objects location, sent to the object's parent and managing AI, and also
+> sent to the owner if one exists.
+>
+> If the object has any children, it sends a STATESERVER_OBJECT_DELETE_CHILDREN
+> message over the parent messages channel (1 << 32|parent_id).
+>
 > The delete-notification's sender is equal to the original message's sender.
 
 
@@ -130,14 +134,17 @@ to one object at a time.
 
 #### Section 2.2: Object Visibility Messages ####
 
-**STATESERVER_OBJECT_SET_LOCATION(2040)** `args(uint32 parent_id, uint32 zone_id)` 
+**STATESERVER_OBJECT_SET_LOCATION(2040)**  
+    `args(uint32 parent_id, uint32 zone_id)`  
 **STATESERVER_OBJECT_CHANGING_LOCATION(2041)**  
     `args(uint32 do_id, uint32 new_parent_id, uint32 new_zone_id,
-                        uint32 old_parent_id, uint32 old_zone_id)`   
+                        uint32 old_parent_id, uint32 old_zone_id)`  
 > A set location message moves receiving objects to a new location.
 >
 > The objects will first broadcast a changing location message to its old location
 > channel, as well as its AI channel, and an owner channel if one exists.
+> A changing location message should also be sent to the new and old parent if
+> the parent is different.
 >
 > Then the objects will broadcast one of the following enter location messages
 > to the new location.
@@ -223,28 +230,66 @@ to one object at a time.
 > Other fields are not sent, because the owner may not be privy to those fields.
 
 
-#### Section 2.3: Client Interest Methods ####
-
-
-
-__ STILL UNDER BRAINSTORMING __
-
-
+#### Section 2.3: Parent Object Methods ####
+These messages are sent to a single parent object to interact with its children.
 
 **STATESERVER_OBJECT_GET_ZONE_OBJECTS(2100)**  
-    `args(uint32 parent_id, uint32 zone_id)`  
+    `args(uint32 context, uint32 parent_id, uint32 zone_id)`  
 **STATESERVER_OBJECT_GET_ZONES_OBJECTS(2101)**  
-    `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
+    `args(uint32 context, uint32 parent_id,
+          uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > Get all child objects in one or more zones from a single object.
 >
-> The parent will reply with a ZONE_OBJECT_COUNT or ZONES_OBJECT_COUNT message.
->
+> The parent will reply immediately with a GET_CHILD_COUNT_RESP message.
 > Each object will reply with a STATESERVER_OBJECT_ENTER_LOCATION message.
+>
+> _Note: If a shard crashes the number of objects may not be correct, as such
+>        a client (for ADD_INTEREST) or AI/Uberdog (in the general case) should
+>        stop waiting after a reasonable timeout.  In some cases, it may be
+>        acceptable or even preferred to not wait for all responses to come in
+>        and just act on objects as they come in._
 
 
-**STATESERVER_OBJECT_ZONE_OBJECT_COUNT(2102)**
-    `args(uint32 parent_id, uint32 zone_id)`
-**STATESERVER_OBJECT_ZONES_OBJECT_COUNT(2102)**  
+**STATESERVER_OBJECT_GET_CHILD_COUNT(2102)**  
+    `args(uint32 context, uint32 parent_id)`  
+**STATESERVER_OBJECT_GET_CHILD_COUNT_RESP(2102)**  
+    `args(uint32 context, uint32 count)`  
+> Get the number of children the object has.
+
+**STATESERVER_OBJECT_DELETE_ZONE(2110)**  
+    `args(uint32 parent_id, uint32 zone_id)`  
+> Delete all objects in a zone by forwarding this message to the parent's
+> children over the parent messages channel (1 << 32|parent_id).
+>
+> Children with a matching zone behave as if they had recieved DELETE_RAM.
+
+
+**STATESERVER_OBJECT_DELETE_ZONES(2111)**
     `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
-> These are echoes of the above messages. They are sent back to the enquierer after
-all objects have announced their existence.
+> Delete all objects in some zones by forwarding this message to the parent's
+> children over the parent messages channel (1 << 32|parent_id).
+>
+> Children with a matching zone behave as if they had recieved DELETE_RAM.
+
+
+**STATESERVER_OBJECT_DELETE_CHILDREN(2112)**
+> Delete all children of this object by forwarding this message over the parent
+> messages channel (1 << 32|parent_id).
+>
+> Children behave as if they had recieved a DELETE_RAM.
+> Children who recieve a DELETE_CHILDREN do not send a DELETE_RAM message back
+> to the parent object.
+
+
+#### Section 2.4: Database-State Objects ####
+
+**DBSS_OBJECT_ACTIVATE(2200)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`  
+> Load an object into ram from disk with the given parent and zone.
+> This message otherwise behaves equivalently to STATESERVER_OBJECT_SET_ZONE.
+
+
+**DBSS_OBJECT_DELETE_DISK(2208)**  
+    `args(uint32 do_id)`  
+> Delete the object from the Database. The object still exists in ram, if it
+> was previously activated.
