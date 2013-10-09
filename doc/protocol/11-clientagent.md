@@ -126,20 +126,20 @@ session channel.
 
 #### Section 3.1: Client Agent Control Messages ####
 
-**CLIENTAGENT_OPEN_CHANNEL(1101)** `args(uint64 channel)`  
+**CLIENTAGENT_OPEN_CHANNEL(1100)** `args(uint64 channel)`  
 > Instruct the client session to open a channel on the MD. Messages sent to this
 > new channel will be processed by the CA.
 
-**CLIENTAGENT_CLOSE_CHANNEL(1102)** `args(uint64 channel)`  
+**CLIENTAGENT_CLOSE_CHANNEL(1101)** `args(uint64 channel)`  
 > This message is the antithesis of the message above. The channel is immediately
 > closed, even if the channel was automatically opened.
 
-**CLIENTAGENT_ADD_POST_REMOVE(1111)** `args(blob datagram)`  
+**CLIENTAGENT_ADD_POST_REMOVE(1110)** `args(blob datagram)`  
 > Similar to CONTROL_ADD_POST_REMOVE, this hangs a "post-remove" message on the
 > client. If the client is ever disconnected, the post-remove messages will be
 > sent out automatically.
 
-**CLIENTAGENT_CLEAR_POST_REMOVE(1112)** `args()`  
+**CLIENTAGENT_CLEAR_POST_REMOVE(1111)** `args()`  
 > Undoes all CLIENTAGENT_ADD_POST_REMOVE messages.
 
 
