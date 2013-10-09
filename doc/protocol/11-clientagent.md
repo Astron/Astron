@@ -156,7 +156,7 @@ session channel.
 > This message instructs the CA to open an interest, as if the client had
 > requested the interest itself.
 
-**CLIENTAGENT_REMOVE_INTEREST(1202)** `args(uint16 interest_id)`  
+**CLIENTAGENT_REMOVE_INTEREST(1203)** `args(uint16 interest_id)`  
 > The antithesis of the message above: cause an open interest to be closed. This
 > is even valid for client-opened interests, if the interest_id matches a
 > client-requested interest.
