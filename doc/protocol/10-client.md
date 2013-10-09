@@ -111,7 +111,7 @@ in order to accomplish various normal game tasks.
 >        internal protocol._
 
 
-**CLIENT_ENTER_OBJECT_REQUIRED_OWNER(173)**  
+**CLIENT_ENTER_OBJECT_REQUIRED_OWNER(172)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED>)`  
 **CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER(173)**  
