@@ -100,10 +100,23 @@ The following are the types used as message arguments:
 ### Section 4: Message-type Ranges ###
 Each component of the Astron daemon is given its own message-type range:
 
- - **Client:**              1 -  999
- - **Client Agent:**     1000 - 1999
- - **State Server:**     2000 - 2999
- - **Database Server:**  3000 - 3999
- - _Reserved:_           4000 - 8999
- - **Message Director:** 9000 - 9999
- 
+ - **Client:**              1 to  999
+ - **Client Agent:**     1000 to 1999
+ - **State Server:**     2000 to 2999
+ - **Database Server:**  3000 to 3999
+ - _Reserved:_           4000 to 8999
+ - **Message Director:** 9000 to 9999
+
+ ### Section 5: Reserved Channels | Object IDs ###
+
+ - **Invalid Channel:**         0
+ - **Control Messages:**        1
+ - **All Clients:**            10
+ - **All State Servers:**      12
+ - **All Database Servers:**   13
+ - _Reserved Channels:_      <999
+
+ ### Section 6: Reserved Ranges ###
+
+ - **Parent Messages:**     1 << 32
+ - _Reserved Ranges:_    <999 << 32
