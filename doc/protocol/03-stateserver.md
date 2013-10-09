@@ -22,7 +22,7 @@ of control afforded by communicating to an instantiated object directly.
 These messages are to be sent directly to the State Server's configured
 control channel:
 
-**STATESERVER_OBJECT_CREATE_WITH_REQUIRED(2001)**  
+**STATESERVER_OBJECT_CREATE_WITH_REQUIRED(2000)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED>)`  
 **STATESERVER_OBJECT_CREATE_WITH_REQUIRED_OTHER(2001)**  
@@ -32,7 +32,7 @@ control channel:
 > (parent_id, zone_id), its class, and initial field data.
 
 
-**STATESERVER_DELETE_AI_OBJECTS (2004)** `args(uint64 ai_channel)`  
+**STATESERVER_DELETE_AI_OBJECTS (2009)** `args(uint64 ai_channel)`  
 > Used by an AI Server to inform the State Server that it is going down. The
 > State Server will then delete all objects matching the ai_channel.
 >
@@ -53,7 +53,7 @@ message requires a DistributedObject Id; this means messages can only be sent
 to one object at a time.
 
 
-**STATESERVER_OBJECT_DELETE_RAM(2002)** `args(uint32 do_id)`  
+**STATESERVER_OBJECT_DELETE_RAM(2008)** `args(uint32 do_id)`  
 > Delete the object from the State Server; a stored copy on the database is not
 > affected, if one exists.
 >
@@ -134,21 +134,21 @@ to one object at a time.
 **STATESERVER_OBJECT_CHANGING_LOCATION(2041)**  
     `args(uint32 do_id, uint32 new_parent_id, uint32 new_zone_id,
                         uint32 old_parent_id, uint32 old_zone_id)`   
-> A set location message moves recieving objects to a new location.
+> A set location message moves receiving objects to a new location.
 >
 > The objects will first broadcast a changing location message to its old location
 > channel, as well as its AI channel, and an owner channel if one exists.
 >
-> Then the objects will broadcast one of the following enter zone messages to
-> the new location.
+> Then the objects will broadcast one of the following enter location messages
+> to the new location.
 
 
 **STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED(2042)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 dclass_id, <REQUIRED_BROADCAST>)`  
+          uint16 dclass_id, <REQUIRED_BCAST>)`  
 **STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER(2043)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 dclass_id, <REQUIRED_BROADCAST>, <OTHER_BROADCAST>)` 
+          uint16 dclass_id, <REQUIRED_BCAST>, <OTHER_BCAST>)` 
 > Used by the object to tell the new location about the object's entry.
 >
 > The message format is identical to OBJECT_CREATE except that non-broadcast
@@ -163,74 +163,88 @@ to one object at a time.
 > Get the location from one or more objects.
 
 
+**STATESERVER_OBJECT_SET_AI(2050)** `args(uint64 ai_channel)`  
+**STATESERVER_OBJECT_CHANGING_AI(2051)**  
+    `args(uint32 doid_id, uint64 new_ai_channel, uint64 old_ai_channel)`  
+> A set AI message moves receiving objects to a new AI.
+>
+> The objects will first broadcast a changing AI message to its old AI channel,
+> as well as to all of its children on the parent message channel (1 << 32|parent_id).
+> Children whose AI channels have not been explicitly set will process the message
+> as if they had recieved a set AI message with ai_channel equal to the new AI;
+> their AI channel is implicitly set to that of their parent.
+>
+> Then the objects will send one of the following enter AI messages to the new AI.
 
-# START UNREVISED MESSAGES #
+
+**STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED(2052)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 class_id, <REQUIRED>)`  
+**STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER(2053)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 class_id, <REQUIRED>, <OTHER>)`  
+> Used by the object to tell the new AI about the objects' entry.
+>
+> The message format is identical to OBJECT_CREATE.
+
+
+**STATESERVER_OBJECT_GET_AI(2054)** `args(uint32 context)`  
+**STATESERVER_OBJECT_GET_AI_RESP(2055):**  
+    `args(uint32 context, uint32 do_id, uint64 ai_channel)`  
+> Get the AI from one or more objects.
+>
+> This message is sent automatically by an object that has just changed parents
+> to check if the new parent has a different AI channel. If the object's AI
+> channel has not been explicitly set, it will act as if it had recieved a set
+> AI message; sending out its own changing and entering AI messages.
+
+
+**STATESERVER_OBJECT_SET_OWNER(2070)** `args(uint64 owner_channel)`
+**STATESERVER_OBJECT_CHANGING_OWNER(2071)**  
+    `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
+> A set owner message moves receiving object to a new owner.
+>
+> The objects will first send a change owner message to its older owner.
+>
+> Then the objects will send one of the following enter owner messages to the
+> new owner.
+
+
+**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED(2072):**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BCAST_OR_OWNRECV>)`  
+**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER(2073):**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BCAST_OR_OWNRECV>, <OTHER_BCAST_OR_OWNRECV>)`  
+> Used by the object to tell the new owner about the object's entry.
+>
+> The message format is identical to OBJECT_CREATE except that only fields with
+> the broadcast or ownrecv keyword are included in the object serialization.
+> Other fields are not sent, because the owner may not be privy to those fields.
+
+
+#### Section 2.3: Client Interest Methods ####
 
 
 
-**STATESERVER_OBJECT_GET_ZONE_OBJECTS(2046)**  
+__ STILL UNDER BRAINSTORMING __
+
+
+
+**STATESERVER_OBJECT_GET_ZONE_OBJECTS(2100)**  
     `args(uint32 parent_id, uint32 zone_id)`  
-**STATESERVER_OBJECT_GET_ZONES_OBJECTS(2047)**  
+**STATESERVER_OBJECT_GET_ZONES_OBJECTS(2101)**  
     `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > Get all child objects in one or more zones from a single object.
 >
-> Each object will reply with a STATESERVER_OBJECT_ENTER_ZONE message.
-> answer with a _WITH_REQUIRED(_OTHER). After all
-> objects have answered, the parent will send the corresponding _DONE message.
+> The parent will reply with a ZONE_OBJECT_COUNT or ZONES_OBJECT_COUNT message.
+>
+> Each object will reply with a STATESERVER_OBJECT_ENTER_LOCATION message.
 
-**STATESERVER_OBJECT_QUERY_ZONE_DONE(????)**
+
+**STATESERVER_OBJECT_ZONE_OBJECT_COUNT(2102)**
     `args(uint32 parent_id, uint32 zone_id)`
-**STATESERVER_OBJECT_QUERY_ZONES_ALL_DONE(2046)**  
+**STATESERVER_OBJECT_ZONES_OBJECT_COUNT(2102)**  
     `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > These are echoes of the above messages. They are sent back to the enquierer after
 all objects have announced their existence.
-
-
-
-**STATESERVER_OBJECT_SET_AI_CHANNEL(2050)**  
-    `args(uint64 ai_channel)`  
-**STATESERVER_OBJECT_NOTIFY_MANAGING_AI(2047)**  
-    `args(uint32 parent_id, uint64 ai_channel)`  
-> _Internally Used_ Broadcast by a parent_id to all of its children (the channel
-for this is given by (4030<<32)|parent_id) when its airecv channel changes.
-Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
-**STATESERVER_OBJECT_ENTER_AI_RECV(2067)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 class_id, <REQUIRED>, <OTHER>)`  
-**STATESERVER_OBJECT_LEAVING_AI_INTEREST(2033)** `args(uint32 do_id)`  
-> Sets the channel for the managing AI. All airecv updates are automatically
-forwarded to this channel.  
-Note: The managing AI channel can also be set implicitly. If it isn't set
-explicitly, it defaults to the AI channel (implicit or explicit) of the
-parent.  
-> ENTER_AI_RECV tells the new AI Server of the object's arrival.
-LEAVING_AI_INTEREST is sent to the old AI Server to notify it of
-the object's departure or deletion.
-
-
-**STATESERVER_OBJECT_SET_OWNER_RECV(2070)** `args(uint64 owner_channel)`
-**STATESERVER_OBJECT_CHANGE_OWNER_RECV(2069)**  
-    `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
-**STATESERVER_OBJECT_ENTER_OWNER_RECV(2068):**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id, <REQUIRED>, <OTHER>)`  
-> SET_OWNER sets the channel of the object owner. This is the channel of the Client Agent
-connection object where ownrecv messages will be forwarded. Similar to changing zone,
-this will generate some traffic:  
-CHANGE_OWNER will be sent to the old owner.  
-ENTER_OWNER tells the new owner of the object's arrival.
-
-
-
-**STATESERVER_OBJECT_QUERY_MANAGING_AI(2083)** `args()`  
-> _Internally Used_ The object has just changed parents. It wants to know if its
-new parent has a different AI Server channel. This message is sent to the new
-parent to request that it resend its AI Server channel.
-
-
-**STATESERVER_OBJECT_NOTIFY_MANAGING_AI(2047)**  
-    `args(uint32 parent_id, uint64 ai_channel)`  
-> _Internally Used_ Broadcast by a parent_id to all of its children (the channel
-for this is given by (4030<<32)|parent_id) when its airecv channel changes.
-Also sent on demand in response to STATESERVER_OBJECT_QUERY_MANAGING_AI.
-
-
