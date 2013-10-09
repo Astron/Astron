@@ -206,8 +206,8 @@ to one object at a time.
 > AI message; sending out its own changing and entering AI messages.
 
 
-**STATESERVER_OBJECT_SET_OWNER(2070)** `args(uint64 owner_channel)`
-**STATESERVER_OBJECT_CHANGING_OWNER(2071)**  
+**STATESERVER_OBJECT_SET_OWNER(2060)** `args(uint64 owner_channel)`
+**STATESERVER_OBJECT_CHANGING_OWNER(2061)**  
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 > A set owner message moves receiving object to a new owner.
 >
@@ -217,10 +217,10 @@ to one object at a time.
 > new owner.
 
 
-**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED(2072):**  
+**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED(2062):**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED_BCAST_OR_OWNRECV>)`  
-**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER(2073):**  
+**STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER(2063):**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED_BCAST_OR_OWNRECV>, <OTHER_BCAST_OR_OWNRECV>)`  
 > Used by the object to tell the new owner about the object's entry.
