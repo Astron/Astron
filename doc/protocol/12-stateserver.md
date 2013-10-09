@@ -58,11 +58,14 @@ to one object at a time.
 > affected, if one exists.
 >
 > The message is also used to inform others of the delete.  It is broadcast to
-> the objects location, sent to the object's parent and managing AI, and also
-> sent to the owner if one exists.
+> the objects location, managing AI, and also sent to the owner if one exists.
 >
 > If the object has any children, it sends a STATESERVER_OBJECT_DELETE_CHILDREN
 > message over the parent messages channel (1 << 32|parent_id).
+>
+> If the object recieved an explicit DELETE_RAM and not an implicit delete (such
+> as a DELETE_CHILDREN from a parent), it sends a STATSERVER_OBJECT_CHANGING_LOCATION
+> to its parent object with INVALID_PARENT and INVALID_ZONE as the new location.
 >
 > The delete-notification's sender is equal to the original message's sender.
 
@@ -235,13 +238,14 @@ These messages are sent to a single parent object to interact with its children.
 
 **STATESERVER_OBJECT_GET_ZONE_OBJECTS(2100)**  
     `args(uint32 context, uint32 parent_id, uint32 zone_id)`  
-**STATESERVER_OBJECT_GET_ZONES_OBJECTS(2101)**  
-    `args(uint32 context, uint32 parent_id,
-          uint16 zone_count, [uint32 zone_id]*zone_count)`  
+**STATESERVER_OBJECT_GET_ZONES_OBJECTS(2102)**  
+    `args(uint32 context, uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
+**STATESERVER_OBJECT_GET_CHILDREN(2104)**  
+    `args(uint32 context, uint32 parent_id)`  
 > Get all child objects in one or more zones from a single object.
 >
-> The parent will reply immediately with a GET_CHILD_COUNT_RESP message.
-> Each object will reply with a STATESERVER_OBJECT_ENTER_LOCATION message.
+> The parent will reply immediately with a GET_{ZONE,ZONES,CHILD}_COUNT_RESP
+> message. Each object will reply with a STATESERVER_OBJECT_ENTER_LOCATION message.
 >
 > _Note: If a shard crashes the number of objects may not be correct, as such
 >        a client (for ADD_INTEREST) or AI/Uberdog (in the general case) should
@@ -250,35 +254,33 @@ These messages are sent to a single parent object to interact with its children.
 >        and just act on objects as they come in._
 
 
-**STATESERVER_OBJECT_GET_CHILD_COUNT(2102)**  
-    `args(uint32 context, uint32 parent_id)`  
-**STATESERVER_OBJECT_GET_CHILD_COUNT_RESP(2102)**  
+**STATESERVER_OBJECT_GET_ZONE_COUNT(2110)**  
+    `args(uint32 context, uint32 parent_id, uint32 zone_id)`  
+**STATESERVER_OBJECT_GET_ZONE_COUNT_RESP(2111)**  
     `args(uint32 context, uint32 count)`  
-> Get the number of children the object has.
+**STATESERVER_OBJECT_GET_ZONES_COUNT(2112)**  
+    `args(uint32 context, uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
+**STATESERVER_OBJECT_GET_ZONES_COUNT_RESP(2113)**  
+    `args(uint32 context, uint32 count)`  
+**STATESERVER_OBJECT_GET_CHILD_COUNT(2114)**  
+    `args(uint32 context, uint32 parent_id)`  
+**STATESERVER_OBJECT_GET_CHILD_COUNT_RESP(2115)**  
+    `args(uint32 context, uint32 count)`  
+> Get the number of children objects in one or more of a single object's zones.
 
-**STATESERVER_OBJECT_DELETE_ZONE(2110)**  
+
+**STATESERVER_OBJECT_DELETE_ZONE(2120)**  
     `args(uint32 parent_id, uint32 zone_id)`  
-> Delete all objects in a zone by forwarding this message to the parent's
-> children over the parent messages channel (1 << 32|parent_id).
->
-> Children with a matching zone behave as if they had recieved DELETE_RAM.
-
-
-**STATESERVER_OBJECT_DELETE_ZONES(2111)**
+**STATESERVER_OBJECT_DELETE_ZONES(2122)**  
     `args(uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
-> Delete all objects in some zones by forwarding this message to the parent's
-> children over the parent messages channel (1 << 32|parent_id).
->
-> Children with a matching zone behave as if they had recieved DELETE_RAM.
-
-
-**STATESERVER_OBJECT_DELETE_CHILDREN(2112)**
-> Delete all children of this object by forwarding this message over the parent
-> messages channel (1 << 32|parent_id).
+**STATESERVER_OBJECT_DELETE_CHILDREN(2124)**  
+    `args(uint32 parent_id)`  
+> Delete all objects in one or more zones by forwarding this message to the
+> parent's children over the parent messages channel (1 << 32|parent_id).
 >
 > Children behave as if they had recieved a DELETE_RAM.
-> Children who recieve a DELETE_CHILDREN do not send a DELETE_RAM message back
-> to the parent object.
+> Children who recieve a DELETE_{ZONE,ZONES,CHILDREN} should not send a
+> CHANGING_LOCATION message back to the parent.
 
 
 
