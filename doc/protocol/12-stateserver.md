@@ -32,7 +32,7 @@ control channel:
 > (parent_id, zone_id), its class, and initial field data.
 
 
-**STATESERVER_DELETE_AI_OBJECTS (2009)** `args(uint64 ai_channel)`  
+**STATESERVER_DELETE_AI_OBJECTS (2004)** `args(uint64 ai_channel)`  
 > Used by an AI Server to inform the State Server that it is going down. The
 > State Server will then delete all objects matching the ai_channel.
 >
