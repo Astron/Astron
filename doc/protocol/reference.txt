@@ -21,7 +21,7 @@
 | CLIENT_CREATE_OBJECT_REQUIRED             |    0100 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
 | CLIENT_CREATE_OBJECT_REQUIRED_OTHER       |    0101 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
 | CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER |    0102 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
-| CLIENT_OBJECT_DISABLE                     |    0103 | `uint32 do_id`                                                                                                 |
+| CLIENT_OBJECT_DISABLE                     |    0108 | `uint32 do_id`                                                                                                 |
 | CLIENT_OBJECT_SET_FIELD                   |    0116 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                   |
 | CLIENT_OBJECT_SET_FIELDS                  |    0117 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                 |
 | CLIENT_OBJECT_LOCATION                    |    0139 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                                           |
@@ -36,7 +36,7 @@
 | CLIENTAGENT_SET_STATE             |    1000 | `uint16 ca_state`                                                                            |
 | CLIENTAGENT_SET_CLIENT_ID         |    1001 | `uint64 channel`                                                                             |
 | CLIENTAGENT_SEND_DATAGRAM         |    1002 | `blob datagram`                                                                              |
-| CLIENTAGENT_EJECT                 |    1004 | `uint16 error_code`, `string reason`                                                    |
+| CLIENTAGENT_EJECT                 |    1004 | `uint16 error_code`, `string reason`                                                         |
 | CLIENTAGENT_DROP                  |    1005 |                                                                                              |
 | CLIENTAGENT_DECLARE_OBJECT        |    1010 | `uint32 do_id`, `uint16 dclass_id`                                                           |
 | CLIENTAGENT_UNDECLARE_OBJECT      |    1011 | `uint32 do_id`                                                                               |

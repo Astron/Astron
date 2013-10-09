@@ -22,10 +22,10 @@ of control afforded by communicating to an instantiated object directly.
 These messages are to be sent directly to the State Server's configured
 control channel:
 
-**STATESERVER_OBJECT_CREATE_WITH_REQUIRED(2000)**  
+**STATESERVER_CREATE_OBJECT_WITH_REQUIRED(2000)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED>)`  
-**STATESERVER_OBJECT_CREATE_WITH_REQUIRED_OTHER(2001)**  
+**STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER(2001)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
           uint16 dclass_id, <REQUIRED>, <OTHER>)`  
 > Create an object on the State Server, specifying its initial location as
