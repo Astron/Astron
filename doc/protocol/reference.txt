@@ -1,34 +1,35 @@
 ### Control Messages ###
-| Message                   | Type Id | Format                      |
-| ------------------------- |:-------:| --------------------------- |
-| CONTROL_ADD_CHANNEL       |    9001 | `uint64 channel`            |
-| CONTROL_REMOVE_CHANNEL    |    9002 | `uint64 channel`            |
-| CONTROL_ADD_RANGE         |    9003 | `uint64 low`, `uint64 high` |
-| CONTROL_REMOVE_RANGE      |    9004 | `uint64 low`, `uint64 high` |
-| CONTROL_ADD_POST_REMOVE   |    9011 | `blob datagram`             |
-| CONTROL_CLEAR_POST_REMOVE |    9012 |                             |
-| CONTROL_SET_CON_NAME      |    9013 | `string name`               |
-| CONTROL_SET_CON_URL       |    9014 | `string url`                |
+| Message                    | Type Id | Format                      |
+| -------------------------- |:-------:| --------------------------- |
+| CONTROL_ADD_CHANNEL        |    9000 | `uint64 channel`            |
+| CONTROL_REMOVE_CHANNEL     |    9001 | `uint64 channel`            |
+| CONTROL_ADD_RANGE          |    9002 | `uint64 low`, `uint64 high` |
+| CONTROL_REMOVE_RANGE       |    9003 | `uint64 low`, `uint64 high` |
+| CONTROL_ADD_POST_REMOVE    |    9010 | `blob datagram`             |
+| CONTROL_CLEAR_POST_REMOVES |    9011 |                             |
+| CONTROL_SET_CON_NAME       |    9012 | `string name`               |
+| CONTROL_SET_CON_URL        |    9013 | `string url`                |
 
 ### Client Messages ###
-| Message                                   | Type Id | Format                                                                                                         |
-| ----------------------------------------- |:-------:| -------------------------------------------------------------------------------------------------------------- |
-| CLIENT_HELLO                              |    0001 | `uint32 dc_hash`, `string version`                                                                             |
-| CLIENT_HELLO_RESP                         |    0002 |                                                                                                                |
-| CLIENT_GOODBYE                            |    0003 |                                                                                                                |
-| CLIENT_EJECT                              |    0004 | `uint16 error_code`, `string reason`                                                                      |
-| CLIENT_HEARTBEAT                          |    0005 |                                                                                                                |
-| CLIENT_CREATE_OBJECT_REQUIRED             |    0100 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
-| CLIENT_CREATE_OBJECT_REQUIRED_OTHER       |    0101 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
-| CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER |    0102 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
-| CLIENT_OBJECT_DISABLE                     |    0108 | `uint32 do_id`                                                                                                 |
-| CLIENT_OBJECT_SET_FIELD                   |    0116 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                   |
-| CLIENT_OBJECT_SET_FIELDS                  |    0117 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                 |
-| CLIENT_OBJECT_LOCATION                    |    0139 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                                           |
-| CLIENT_ADD_INTEREST                       |    0200 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
-| CLIENT_ADD_INTEREST_MULTIPLE              |    0201 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
-| CLIENT_REMOVE_INTEREST                    |    0202 | `uint32 context`, `uint16 interest_id`                                                                         |
-| CLIENT_DONE_INTEREST_RESP                 |    0203 | `uint32 context`, `uint16 interest_id`                                                                         |
+| Message                                  | Type Id | Format                                                                                                         |
+| ---------------------------------------- |:-------:| -------------------------------------------------------------------------------------------------------------- |
+| CLIENT_HELLO                             |    0001 | `uint32 dc_hash`, `string version`                                                                             |
+| CLIENT_HELLO_RESP                        |    0002 |                                                                                                                |
+| CLIENT_GOODBYE                           |    0003 |                                                                                                                |
+| CLIENT_EJECT                             |    0004 | `uint16 error_code`, `string reason`                                                                           |
+| CLIENT_HEARTBEAT                         |    0005 |                                                                                                                |
+| CLIENT_ENTER_OBJECT_REQUIRED             |    0142 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
+| CLIENT_ENTER_OBJECT_REQUIRED_OTHER       |    0143 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
+| CLIENT_ENTER_OBJECT_REQUIRED_OWNER       |    0172 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
+| CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER |    0173 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
+| CLIENT_OBJECT_LEAVING                    |    0108 | `uint32 do_id`                                                                                                 |
+| CLIENT_OBJECT_SET_FIELD                  |    0120 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                   |
+| CLIENT_OBJECT_SET_FIELDS                 |    0121 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                 |
+| CLIENT_OBJECT_LOCATION                   |    0140 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                                           |
+| CLIENT_ADD_INTEREST                      |    0200 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
+| CLIENT_ADD_INTEREST_MULTIPLE             |    0201 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| CLIENT_REMOVE_INTEREST                   |    0203 | `uint32 context`, `uint16 interest_id`                                                                         |
+| CLIENT_DONE_INTEREST_RESP                |    0204 | `uint32 context`, `uint16 interest_id`                                                                         |
 
 ### Client Agent Messages ###
 | Message                           | Type Id | Format                                                                                       |
@@ -43,69 +44,79 @@
 | CLIENTAGENT_ADD_SESSION_OBJECT    |    1012 | `uint32 do_id`                                                                               |
 | CLIENTAGENT_REMOVE_SESSION_OBJECT |    1013 | `uint32 do_id`                                                                               |
 | CLIENTAGENT_SET_FIELDS_SENDABLE   |    1014 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                                                 |
-| CLIENTAGENT_OPEN_CHANNNEL         |    1101 | `uint64 channel`                                                                             |
-| CLIENTAGENT_CLOSE_CHANNEL         |    1102 | `uint64 channel`                                                                             |
-| CLIENTAGENT_ADD_POST_REMOVE       |    1111 | `blob datagram`                                                                              |
-| CLIENTAGENT_CLEAR_POST_REMOVE     |    1112 |                                                                                              |
+| CLIENTAGENT_OPEN_CHANNNEL         |    1100 | `uint64 channel`                                                                             |
+| CLIENTAGENT_CLOSE_CHANNEL         |    1101 | `uint64 channel`                                                                             |
+| CLIENTAGENT_ADD_POST_REMOVE       |    1110 | `blob datagram`                                                                              |
+| CLIENTAGENT_CLEAR_POST_REMOVES    |    1111 |                                                                                              |
 | CLIENTAGENT_ADD_INTEREST          |    1200 | `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
 | CLIENTAGENT_ADD_INTEREST_MULTIPLE |    1201 | `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
-| CLIENTAGENT_REMOVE_INTEREST       |    1202 | `uint16 interest_id`                                                                         |
+| CLIENTAGENT_REMOVE_INTEREST       |    1203 | `uint16 interest_id`                                                                         |
 
 ### State Server Messages ###
 | Message                                       | Type Id | Format                                                                                            |
 | --------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
-| STATESERVER_OBJECT_CREATE_WITH_REQUIRED       |    2000 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
-| STATESERVER_OBJECT_CREATE_WITH_REQUIRED_OTHER |    2001 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| STATESERVER_DELETE_AI_OBJECTS                 |    2090 | `uint64 ai_channel`                                                                               |
+| STATESERVER_CREATE_OBJECT_WITH_REQUIRED       |    2000 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
+| STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER |    2001 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+| STATESERVER_DELETE_AI_OBJECTS                 |    2004 | `uint64 ai_channel`                                                                               |
 
 ### Distributed Object Accessor Messages ###
-| Message                            | Type Id | Format                                                                                            |
-| ---------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
-| STATESERVER_OBJECT_GET_FIELD       |    2010 | `uint32 context`, `uint16 field_id`                                                               |
-| STATESERVER_OBJECT_GET_FIELD_RESP  |    2011 | `uint32 context`, `uint8 success`, `[uint16 field_id, <VALUE>]`                                   |
-| STATESERVER_OBJECT_GET_FIELDS      |    2012 | `uint32 context`, `uint16 field_count`, `[uint16 field_id]*field_count`                           |
-| STATESERVER_OBJECT_GET_FIELDS_RESP |    2013 | `uint32 context`, `uint8 success`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count` |
-| STATESERVER_OBJECT_GET_ALL         |    2014 | `uint32 context`                                                                                  |
-| STATESERVER_OBJECT_GET_ALL_RESP    |    2015 | `uint32 context`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`                                     |
-| STATESERVER_OBJECT_SET_FIELD       |    2016 | `uint16 field_id`, `<VALUE>`                                                                      |
-| STATESERVER_OBJECT_SET_FIELDS      |    2017 | `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                    |
-| STATESERVER_OBJECT_DELETE_FIELD    |    2018 | `uint16 field_id`                                                                                 |
-| STATESERVER_OBJECT_DELETE_FIELDS   |    2019 | `uint16 field_count`, `[uint16 field_id]*field_count`                                             |
-| STATESERVER_OBJECT_DELETE_RAM      |    2020 |                                                                                                   |
+| Message                            | Type Id | Format                                                                                                              |
+| ---------------------------------- |:-------:| ------------------------------------------------------------------------------------------------------------------- |
+| STATESERVER_OBJECT_DELETE_RAM      |    2008 | `uint32 do_id`                                                                                                      |
+| STATESERVER_OBJECT_GET_FIELD       |    2010 | `uint32 context`, `uint32 do_id`, `uint16 field_id`                                                                 |
+| STATESERVER_OBJECT_GET_FIELD_RESP  |    2011 | `uint32 context`, `uint8 success`, `[uint16 field_id, <VALUE>]`                                                     |
+| STATESERVER_OBJECT_GET_FIELDS      |    2012 | `uint32 context`, `uint32 do_id`, `uint16 field_count`, `[uint16 field_id]*field_count`                             |
+| STATESERVER_OBJECT_GET_FIELDS_RESP |    2013 | `uint32 context`, `uint8 success`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                   |
+| STATESERVER_OBJECT_GET_ALL         |    2014 | `uint32 context`, `uint32 do_id`                                                                                    |
+| STATESERVER_OBJECT_GET_ALL_RESP    |    2015 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+| STATESERVER_OBJECT_SET_FIELD       |    2020 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                        |
+| STATESERVER_OBJECT_SET_FIELDS      |    2021 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                      |
+| STATESERVER_OBJECT_DELETE_FIELD    |    2030 | `uint32 do_id`, `uint16 field_id`                                                                                   |
+| STATESERVER_OBJECT_DELETE_FIELDS   |    2031 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id]*field_count`                                               |
 
-### Distributed Object Location Messages ###
-| Message                                           | Type Id | Format                                                                                            |
-| ------------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
-| STATESERVER_OBJECT_SET_ZONE                       |    2030 | `uint32 parent_id`, `uint32 zone_id`                                                              |
-| STATESERVER_OBJECT_CHANGING_ZONE                  |    2031 | `uint32 do_id`, `uint32 new_parent`, `uint32 new_zone`, `uint32 old_parent`, `uint32 old_zone`    |
-| STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED       |    2032 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
-| STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED_OTHER |    2033 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| STATESERVER_OBJECT_GET_ZONE_ALL                   |    2034 | `uint32 zone_id`                                                                                  |
-| STATESERVER_OBJECT_GET_ZONE_ALL_DONE              |    2035 | `uint32 zone_id`                                                                                  |
-| STATESERVER_OBJECT_GET_ZONES_ALL                  |    2036 | `uint16 zone_count`, `[uint32 zone_id]*zone_count`                                                |
-| STATESERVER_OBJECT_GET_ZONES_ALL_DONE             |    2037 | `uint16 zone_count`, `[uint32 zone_id]*zone_count`                                                |
-| STATESERVER_OBJECT_LOCATE                         |    2038 | `uint32 context`                                                                                  |
-| STATESERVER_OBJECT_LOCATE_RESP                    |    2039 | `uint32 context`, `uint32 parent_id`, `uint32 zone_id`                                            |
+### Distributed Object Visibility Messages ###
+| Message                                               | Type Id | Format                                                                                            |
+| ----------------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
+| STATESERVER_OBJECT_SET_LOCATION                       |    2040 | `uint32 parent_id`, `uint32 zone_id`                                                              |
+| STATESERVER_OBJECT_CHANGING_LOCATION                  |    2041 | `uint32 do_id`, `uint32 new_parent`, `uint32 new_zone`, `uint32 old_parent`, `uint32 old_zone`    |
+| STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED       |    2042 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
+| STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER |    2043 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+| STATESERVER_OBJECT_GET_LOCATION                       |    2044 | `uint32 context`,                                                                                 |
+| STATESERVER_OBJECT_GET_LOCATION_RESP                  |    2045 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                            |
+| STATESERVER_OBJECT_SET_AI                             |    2050 | `uint64 ai_channel`                                                                               |
+| STATESERVER_OBJECT_CHANGING_AI                        |    2051 | `uint32 do_id`, `uint64 new_ai`, `uint64 old_ai`                                                  |
+| STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED             |    2052 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
+| STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER       |    2053 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+| STATESERVER_OBJECT_GET_AI                             |    2054 | `uint32 context`,                                                                                 |
+| STATESERVER_OBJECT_GET_AI_RESP                        |    2055 | `uint32 context`, `uint32 do_id`, `uint64 ai_channel`                                             |
+| STATESERVER_OBJECT_SET_OWNER                          |    2060 | `uint64 owner_channel`                                                                            |
+| STATESERVER_OBJECT_CHANGING_OWNER                     |    2061 | `uint32 do_id`, `uint64 new_owner`, `uint64 old_owner`                                            |
+| STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED          |    2062 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
+| STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER    |    2063 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+| STATESERVER_OBJECT_GET_OWNER                          |    2064 | `uint32 context`                                                                                  |
+| STATESERVER_OBJECT_GET_OWNER_RESP                     |    2065 | `uint32 context`, `uint32 do_id`, `uint64 owner_chanenl`                                          |
 
-### Distributed Object Entity Messages ###
-| Message                                            | Type Id | Format                                                                                            |
-| -------------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
-| STATESERVER_OBJECT_SET_AI                          |    2040 | `uint64 ai_channel`                                                                               |
-| STATESERVER_OBJECT_CHANGING_AI                     |    2041 | `uint32 do_id`, `uint64 new_ai`, `uint64 old_ai`                                                  |
-| STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED          |    2042 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
-| STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER    |    2043 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| STATESERVER_OBJECT_GET_MANAGING_AI                 |    2044 | _Internally Used_                                                                                 |
-| STATESERVER_OBJECT_CHANGING_MANAGING_AI            |    2045 | _Internally Used_ `uint32 parent_id`, `uint64 ai_channel`                                         |
-| STATESERVER_OBJECT_SET_OWNER                       |    2050 | `uint64 owner_channel`                                                                            |
-| STATESERVER_OBJECT_CHANGING_OWNER                  |    2051 | `uint32 do_id`, `uint64 new_owner`, `uint64 old_owner`                                            |
-| STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED       |    2053 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
-| STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER |    2054 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
+### Parent Object Methods ###
+| Message                                      | Type Id | Format                                                               |
+| -------------------------------------------- |:-------:| -------------------------------------------------------------------- |
+| STATESERVER_OBJECT_GET_ZONE_OBJECTS          |    2100 | `uint32 context`, `uint32 zone_id`                                   |
+| STATESERVER_OBJECT_GET_ZONES_OBJECTS         |    2102 | `uint32 context`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| STATESERVER_OBJECT_GET_CHILDREN              |    2104 | `uint32 context`                                                     |
+| STATESERVER_OBJECT_GET_ZONE_COUNT            |    2110 | `uint32 context`, `uint32 zone_id`                                   |
+| STATESERVER_OBJECT_GET_ZONE_COUNT_RESP       |    2111 | `uint32 context`, `uint32 count`                                     |
+| STATESERVER_OBJECT_GET_ZONES_COUNT           |    2112 | `uint32 context`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| STATESERVER_OBJECT_GET_ZONES_COUNT_RESP      |    2113 | `uint32 context`, `uint32 count`                                     |
+| STATESERVER_OBJECT_GET_CHILD_COUNT           |    2114 | `uint32 context`,                                                    |
+| STATESERVER_OBJECT_GET_CHILD_COUNT_RESP      |    2115 | `uint32 context`, `uint32 count`                                     |
+| STATESERVER_OBJECT_DELETE_ZONE               |    2120 | `uint32 zone_id`                                                     |
+| STATESERVER_OBJECT_DELETE_ZONES              |    2122 | `uint16 zone_count`, `[uint32 zone_id]*zone_count`                   |
+| STATESERVER_OBJECT_DELETE_CHILDREN           |    2124 |                                                                      |
 
 ### DBSS Object Messages ###
 | Message                   | Type Id | Format                                               |
 | ------------------------- |:-------:| ---------------------------------------------------- |
-| DBSS_OBJECT_ACTIVATE      |    2070 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id` |
-| DBSS_OBJECT_DELETE_DISK   |    2080 |                                                      |
+| DBSS_OBJECT_ACTIVATE      |    2200 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id` |
+| DBSS_OBJECT_DELETE_DISK   |    2208 | `uint32 do_id`                                       |
 
 ### Database Object Messages ###
 | Message                                   | Type Id | Format                                                                                                                    |
