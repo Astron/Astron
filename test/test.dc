@@ -46,3 +46,4 @@ dclass DistributedBadDBObject2
 {
 	setBadRequired(string req) required;
 };
+

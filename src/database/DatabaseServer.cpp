@@ -109,19 +109,19 @@ class DatabaseServer : public Role
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
-						if(field->is_required() && field->is_db() && !field->as_molecular_field()
-						        && dbo.fields.find(field) == dbo.fields.end())
+						if(field->is_required() && !field->as_molecular_field())
 						{
 							if(!field->has_default_value())
 							{
-								m_log->error() << "Field " << field->get_name()
-								               << " missing when trying to create object"
-								               << " of type " << dcc->get_name() << std::endl;
+								m_log->error() << "Cannot store object"
+											   << " of type '" << dcc->get_name() << "' in database:"
+								               << " field '" << field->get_name() << "' is required"
+								               << " but does not provide a default." << std::endl;
 								resp.add_uint32(INVALID_DO_ID);
 								send(resp);
 								return;
 							}
-							else
+							else if(field->is_db() && dbo.fields.find(field) == dbo.fields.end())
 							{
 								std::string val = field->get_default_value();
 								dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
