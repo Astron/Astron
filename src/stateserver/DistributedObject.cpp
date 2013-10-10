@@ -88,8 +88,8 @@ void DistributedObject::send_zone_entry(channel_t destination)
 {
 	Datagram dg(destination, m_do_id,
 	            m_ram_fields.size() ?
-	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER :
-	            STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED);
+	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED);
 	append_required_data(dg, true);
 	if(m_ram_fields.size())
 	{
@@ -119,7 +119,7 @@ void DistributedObject::handle_parent_change(uint32_t new_parent)
 	if(!m_ai_explicitly_set)
 	{
 		// Ask the new parent what its AI is.
-		Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_QUERY_MANAGING_AI);
+		Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
 		send(dg);
 	}
 }
@@ -133,7 +133,7 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 
 	if(m_ai_channel)
 	{
-		Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_LEAVING_AI_INTEREST);
+		Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_CHANGING_AI);
 		dg.add_uint32(m_do_id);
 		m_log->spam() << "Leaving AI interest" << std::endl;
 		send(dg);
@@ -142,14 +142,14 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	m_ai_channel = new_channel;
 	m_ai_explicitly_set = channel_is_explicit;
 
-	Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_RECV);
+	Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER);
 	append_required_data(dg1, false);
 	append_other_data(dg1);
 	send(dg1);
-	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_RECV to "
+	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_ to "
 	              << m_ai_channel << std::endl;
 
-	Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+	Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_CHANGING_AI);
 	dg2.add_uint32(m_do_id);
 	dg2.add_uint64(m_ai_channel);
 	send(dg2);
@@ -177,7 +177,7 @@ void DistributedObject::annihilate()
 void DistributedObject::handle_shard_reset()
 {
 	// Tell my children:
-	Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_SHARD_RESET);
+	Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_DELETE_AI_OBJECTS);
 	dg.add_uint64(m_ai_channel);
 	send(dg);
 	// Fall over dead:
@@ -254,7 +254,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	}
 	if(targets.size()) // TODO: Review this for efficiency?
 	{
-		Datagram dg(targets, sender, STATESERVER_OBJECT_UPDATE_FIELD);
+		Datagram dg(targets, sender, STATESERVER_OBJECT_SET_FIELD);
 		dg.add_uint32(m_do_id);
 		dg.add_uint16(field_id);
 		dg.add_data(data);
@@ -309,7 +309,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
-		case STATESERVER_SHARD_RESET:
+		case STATESERVER_DELETE_AI_OBJECTS:
 		{
 			if(m_ai_channel != dgi.read_uint64())
 			{
@@ -330,7 +330,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_UPDATE_FIELD:
+		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			if(m_do_id != dgi.read_uint32())
 			{
@@ -340,7 +340,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE:
+		case STATESERVER_OBJECT_SET_FIELDS:
 		{
 			if(m_do_id != dgi.read_uint32())
 			{
@@ -355,11 +355,11 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_NOTIFY_MANAGING_AI:
+		case STATESERVER_OBJECT_CHANGING_AI:
 		{
 			uint32_t r_parent_id = dgi.read_uint32();
 			channel_t r_ai_channel = dgi.read_uint64();
-			m_log->spam() << "STATESERVER_OBJECT_NOTIFY_MANAGING_AI from " << r_parent_id << std::endl;
+			m_log->spam() << "STATESERVER_OBJECT_CHANGING_AI from " << r_parent_id << std::endl;
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
@@ -374,11 +374,11 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_SET_AI_CHANNEL:
+		case STATESERVER_OBJECT_SET_AI:
 		{
 			uint32_t r_do_id = dgi.read_uint32();
 			channel_t r_ai_channel = dgi.read_uint64();
-			m_log->spam() << "STATESERVER_OBJECT_SET_AI_CHANNEL: ai_channel=" << r_ai_channel << std::endl;
+			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << r_ai_channel << std::endl;
 			if(r_do_id != m_do_id)
 			{
 				break;
@@ -387,17 +387,17 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_QUERY_MANAGING_AI:
+		case STATESERVER_OBJECT_GET_AI:
 		{
-			m_log->spam() << "STATESERVER_OBJECT_QUERY_MANAGING_AI" << std::endl;
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_NOTIFY_MANAGING_AI);
+			m_log->spam() << "STATESERVER_OBJECT_GET_AI" << std::endl;
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_CHANGING_AI);
 			dg.add_uint32(m_do_id);
 			dg.add_uint64(m_ai_channel);
 			send(dg);
 
 			break;
 		}
-		case STATESERVER_OBJECT_SET_ZONE:
+		case STATESERVER_OBJECT_SET_LOCATION:
 		{
 			uint32_t old_parent_id = m_parent_id, old_zone_id = m_zone_id;
 			uint32_t new_parent_id = dgi.read_uint32();
@@ -409,7 +409,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				targets.insert(m_ai_channel);
 			}
-			Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGE_ZONE);
+			Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
 			dg.add_uint32(m_do_id);
 			dg.add_uint32(new_parent_id);
 			dg.add_uint32(m_zone_id);
@@ -422,11 +422,11 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_LOCATE:
+		case STATESERVER_OBJECT_GET_LOCATION:
 		{
 			uint32_t context = dgi.read_uint32();
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_LOCATE_RESP);
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_LOCATION_RESP);
 			dg.add_uint32(context);
 			dg.add_uint32(m_do_id);
 			dg.add_uint32(m_parent_id);
@@ -435,9 +435,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_QUERY_ALL:
+		case STATESERVER_OBJECT_GET_ALL:
 		{
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ALL_RESP);
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
 			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
 			append_required_data(dg, false);
 			append_other_data(dg);
@@ -445,7 +445,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_QUERY_FIELD:
+		case STATESERVER_OBJECT_GET_FIELD:
 		{
 			if(dgi.read_uint32() != m_do_id)
 			{
@@ -457,7 +457,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			Datagram raw_field;
 			bool success = handle_query(raw_field, field_id);
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_FIELD_RESP);
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 			dg.add_uint32(m_do_id);
 			dg.add_uint16(field_id);
 			dg.add_uint32(context);
@@ -470,7 +470,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_QUERY_FIELDS:
+		case STATESERVER_OBJECT_GET_FIELDS:
 		{
 			if(dgi.read_uint32() != m_do_id)
 			{
@@ -491,7 +491,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				}
 			}
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_FIELDS_RESP);
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 			dg.add_uint32(m_do_id);
 			dg.add_uint32(context);
 			dg.add_uint8(success);
@@ -503,7 +503,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
-		case STATESERVER_OBJECT_SET_OWNER_RECV:
+		case STATESERVER_OBJECT_SET_OWNER:
 		{
 			channel_t owner_channel = dgi.read_uint64();
 
@@ -514,7 +514,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(m_owner_channel)
 			{
-				Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGE_OWNER_RECV);
+				Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
 				dg.add_uint32(m_do_id);
 				dg.add_uint64(owner_channel);
 				dg.add_uint64(m_owner_channel);
@@ -523,14 +523,14 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			m_owner_channel = owner_channel;
 
-			Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_RECV);
+			Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
 			append_required_data(dg1, false);
 			append_other_data(dg1);
 			send(dg1);
 
 			break;
 		}
-		case STATESERVER_OBJECT_QUERY_ZONE_ALL:
+		case STATESERVER_OBJECT_GET_ZONES_OBJECTS:
 		{
 			uint32_t queried_parent = dgi.read_uint32();
 
@@ -542,7 +542,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// whether or not to reply.
 				// TODO: Is this really that efficient?
 				Datagram dg(LOCATION2CHANNEL(4030, m_do_id), sender,
-				            STATESERVER_OBJECT_QUERY_ZONE_ALL);
+				            STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 				dg.add_uint32(queried_parent);
 				dg.add_data(queried_zones);
 				send(dg);
@@ -550,7 +550,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// FIXME: This assumes all objects process and reply before this goes
 				// out. This will typically be the case if everything is on one State
 				// Server; however, a better method should probably be used in the future.
-				Datagram done_dg(sender, m_do_id, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE);
+				Datagram done_dg(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
 				done_dg.add_uint32(queried_parent);
 				done_dg.add_data(queried_zones);
 				send(done_dg);

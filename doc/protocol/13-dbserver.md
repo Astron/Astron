@@ -17,10 +17,10 @@ This channel is used to request the Database Server to:
 ### Section 1: Database Server Messages ###
 The following is a list of database control messages:
 
-**DBSERVER_OBJECT_CREATE(3000)**  
+**DBSERVER_CREATE_OBJECT(3000)**  
     `args(uint32 context, uint16 dclass_id, uint16 field_count,
          [uint16 field_id, <VALUE>]*field_count)`  
-**DBSERVER_OBJECT_CREATE_RESP(3001)**  
+**DBSERVER_CREATE_OBJECT_RESP(3001)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
 > the given values. For required fields that are not given, the default values

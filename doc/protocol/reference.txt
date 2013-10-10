@@ -121,8 +121,8 @@
 ### Database Object Messages ###
 | Message                                   | Type Id | Format                                                                                                                    |
 | ----------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------------------------------- |
-| DBSERVER_OBJECT_CREATE                    |    3000 | `uint32 context`, `uint16 dclass_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                      |
-| DBSERVER_OBJECT_CREATE_RESP               |    3001 | `uint32 context`, `uint32 do_id`                                                                                          |
+| DBSERVER_CREATE_OBJECT                    |    3000 | `uint32 context`, `uint16 dclass_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                      |
+| DBSERVER_CREATE_OBJECT_RESP               |    3001 | `uint32 context`, `uint32 do_id`                                                                                          |
 | DBSERVER_OBJECT_DELETE                    |    3002 | `uint32 do_id`                                                                                                            |
 | DBSERVER_OBJECT_GET_FIELD                 |    3010 | `uint32 context`, `uint32 do_id`, `uint16 field_id`                                                                       |
 | DBSERVER_OBJECT_GET_FIELD_RESP            |    3011 | `uint32 context`, `uint8 success`, `[uint16 field_id, <VALUE>]`                                                           |
