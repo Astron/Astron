@@ -37,11 +37,12 @@ roles:
     # uses BerkeleyDB as a backing store.
     - type: database
       control: 402001
+      #broadcast: off # Controls whether object-updates are broadcast, default: on.
       generate:
-      # Generate defines the range of DistributedObject ids that the database can create new objects with,
-      # and is generally responsible for. Min and max are both optional fields.
-        min: 100000000 # Required (no default)
-      # max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
+          # Generate defines the range of DistributedObject ids that the database can create new objects with,
+          # and is generally responsible for. Min and max are both optional fields.
+          min: 100000000 # Required (no default)
+          #max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
       engine:
         type: bdb
         filename: main_database.db
