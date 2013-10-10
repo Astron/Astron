@@ -541,7 +541,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		}
 
 		//returns new zones
-		std::list<uint32_t> add_interest(Interest &i)
+		std::list<uint32_t> add_interest(Interest &i, uint16_t interest_id)
 		{
 			std::list<uint32_t> new_zones;
 			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
@@ -558,6 +558,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 				{
 					new_zones.remove(it2->first);
 				}
+			}
+			// Register the interest into our own map, if there's an ID:
+			if(interest_id)
+			{
+				m_interests[interest_id] = i;
 			}
 			if(!new_zones.empty())
 			{
@@ -641,8 +646,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			if(other.parent != i.parent)
 			{
 				remove_interest(other, id);
-				add_interest(i);
-				m_interests[id] = i;
+				add_interest(i, id);
 				return;
 			}
 			std::list<uint32_t> new_zones;
@@ -670,7 +674,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 			{
 				temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
 			}
-			add_interest(temp);
+			add_interest(temp, 0);
 
 			std::vector<uint32_t> removed_zones;
 			removed_zones.reserve(other.zones.size());
@@ -855,9 +859,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 				return false;//alter_interest takes care of the rest
 			}
 
-			std::list<uint32_t> new_zones = add_interest(i);
-
-			m_interests[interest_id] = i;
+			std::list<uint32_t> new_zones = add_interest(i, interest_id);
 
 			if(new_zones.empty())
 			{
