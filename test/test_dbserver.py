@@ -9,7 +9,7 @@ VERIFY_DELETE_QUERY = 0x6c6c694b
 class DatabaseBaseTests(object):
     def createTypeGetId(self, sender, context, type):
         # Create object of type
-        dg = Datagram.create([777], sender, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], sender, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(context)
         dg.add_uint16(type)
         dg.add_uint16(0) # Field count
@@ -35,7 +35,7 @@ class DatabaseBaseTests(object):
         doids = []
 
         # Create a stored DistributedTestObject1 with no initial values...
-        dg = Datagram.create([777], 20, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
@@ -44,7 +44,7 @@ class DatabaseBaseTests(object):
         # The Database should return the context and do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_OBJECT_CREATE_RESP, remaining=4+4))
+        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertTrue(dgi.read_uint32() == 1) # Check context
         doids.append(dgi.read_uint32())
         self.assertTrue(doids[0] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
@@ -64,20 +64,20 @@ class DatabaseBaseTests(object):
         self.assertTrue(self.conn.expect(dg)) # Expecting SELECT_RESP with no values
 
         # Create a stored DistributedTestObject3 missing a required value...
-        dg = Datagram.create([777], 20, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(3) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(0) # Field count
         self.conn.send(dg)
 
         # Return should be invalid because it is missing a defaultless required field
-        dg = Datagram.create([20], 777, DBSERVER_OBJECT_CREATE_RESP)
+        dg = Datagram.create([20], 777, DBSERVER_CREATE_OBJECT_RESP)
         dg.add_uint32(3) # Context
         dg.add_uint32(INVALID_DO_ID)
         self.assertTrue(self.conn.expect(dg)) # Expecting CREATE_RESP with BAD_DO_ID
 
         # Create a stored DistributedTestObject3 with an actual values...
-        dg = Datagram.create([777], 20, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(4) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(2) # Field count
@@ -90,7 +90,7 @@ class DatabaseBaseTests(object):
         # The Database should return a new do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_OBJECT_CREATE_RESP, remaining=4+4))
+        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertTrue(dgi.read_uint32() == 4) # Check context
         doids.append(dgi.read_uint32())
         self.assertTrue(doids[1] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
@@ -229,7 +229,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(50))
 
         # Create a stored DistributedTestObject3 with actual values and non-db/ram values we don't care about...
-        dg = Datagram.create([777], 50, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 50, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(5) # Field count
@@ -248,7 +248,7 @@ class DatabaseBaseTests(object):
         # The Database should return a new do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_OBJECT_CREATE_RESP))
+        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
         self.assertTrue(dgi.read_uint32() == 1) # Check context
         doid = dgi.read_uint32()
 
@@ -357,7 +357,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(60))
 
         # Create db object
-        dg = Datagram.create([777], 60, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 60, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1)
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(1) # Field count
@@ -461,7 +461,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(100))
 
         # Create db object
-        dg = Datagram.create([777], 100, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 100, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(1) # Field count
@@ -543,7 +543,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(70))
 
         # Create db object
-        dg = Datagram.create([777], 70, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 70, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(1) # Field count
@@ -724,7 +724,7 @@ class DatabaseBaseTests(object):
         self.conn.send(Datagram.create_add_channel(80))
 
         # Create object
-        dg = Datagram.create([777], 80, DBSERVER_OBJECT_CREATE)
+        dg = Datagram.create([777], 80, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(1) # Context
         dg.add_uint16(DistributedTestObject3)
         dg.add_uint16(2) # Field count
@@ -869,7 +869,7 @@ class DatabaseBaseTests(object):
 
         # Create objects
         def generic_db_obj():
-            dg = Datagram.create([777], 90, DBSERVER_OBJECT_CREATE)
+            dg = Datagram.create([777], 90, DBSERVER_CREATE_OBJECT)
             dg.add_uint32(1) # Context
             dg.add_uint16(DistributedTestObject5)
             dg.add_uint16(4) # Field count
