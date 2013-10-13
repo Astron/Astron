@@ -57,9 +57,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual void handle_pre_auth(DatagramIterator &dgi);
 		virtual void handle_authenticated(DatagramIterator &dgi);
 	private:
-		std::list<uint32_t> add_interest(Interest &i, uint16_t interest_id);
+		std::list<uint32_t> add_interest(Interest &i);
 		void remove_interest(Interest &i, uint32_t id);
 		void alter_interest(Interest &i, uint16_t id);
+		void request_zone_objects(uint32_t parent, std::list<uint32_t> new_zones);
 		bool handle_client_object_update_field(DatagramIterator &dgi);
 		bool handle_client_object_location(DatagramIterator &dgi);
 		bool handle_client_add_interest(DatagramIterator &dgi);

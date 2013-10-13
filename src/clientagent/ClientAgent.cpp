@@ -497,7 +497,7 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 }
 
 //returns new zones
-std::list<uint32_t> Client::add_interest(Interest &i, uint16_t interest_id)
+std::list<uint32_t> Client::add_interest(Interest &i)
 {
 	std::list<uint32_t> new_zones;
 	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
@@ -515,27 +515,21 @@ std::list<uint32_t> Client::add_interest(Interest &i, uint16_t interest_id)
 			new_zones.remove(it2->first);
 		}
 	}
-	// Register the interest into our own map, if there's an ID:
-	if(interest_id)
-	{
-		m_interests[interest_id] = i;
-	}
-	if(!new_zones.empty())
-	{
-		m_log->debug() << "SS query for i.context " << i.context << " zones: ";
-		Datagram resp;
-		resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
-		resp.add_uint32(i.parent);
-		resp.add_uint16(new_zones.size());
-		for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
-		{
-			m_log->debug() << *it << "," << std::endl;
-			resp.add_uint32(*it);
-			subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
-		}
-		send(resp);
-	}
 	return new_zones;
+}
+
+void Client::request_zone_objects(uint32_t parent, std::list<uint32_t> new_zones)
+{
+	Datagram resp;
+	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+	resp.add_uint32(parent);
+	resp.add_uint16(new_zones.size());
+	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
+	{
+		resp.add_uint32(*it);
+		subscribe_channel(LOCATION2CHANNEL(parent, *it));
+	}
+	send(resp);
 }
 
 void Client::remove_interest(Interest &i, uint32_t id)
@@ -602,7 +596,9 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	if(other.parent != i.parent)
 	{
 		remove_interest(other, id);
-		add_interest(i, id);
+		std::list<uint32_t> new_zones = add_interest(i);
+		m_interests[id] = i;
+		request_zone_objects(i.parent, new_zones);
 		return;
 	}
 	std::list<uint32_t> new_zones;
@@ -623,15 +619,6 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		}
 	}
 
-	Interest temp;
-	temp.parent = i.parent;
-	temp.context = i.context;
-	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
-	{
-		temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
-	}
-	add_interest(temp, 0);
-
 	std::vector<uint32_t> removed_zones;
 	removed_zones.reserve(other.zones.size());
 	for(auto it = other.zones.begin(); it != other.zones.end(); ++it)
@@ -651,7 +638,9 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		}
 	}
 
-	temp.zones.clear();
+	Interest temp;
+	temp.parent = i.parent;
+	temp.context = i.context;
 	for(auto it = removed_zones.begin(); it != removed_zones.end(); ++it)
 	{
 		temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
@@ -678,6 +667,12 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		network_send(resp);
 	}
 	m_interests[id] = i;
+	// This should be done last -- if the SS is in the same process,
+	// the response may come back instantly.
+	if(!new_zones.empty())
+	{
+		request_zone_objects(i.parent, new_zones);
+	}
 }
 
 bool Client::handle_client_object_update_field(DatagramIterator &dgi)
@@ -814,10 +809,14 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 		alter_interest(i, interest_id);
 		return false;//alter_interest takes care of the rest
 	}
+	std::list<uint32_t> new_zones = add_interest(i);
+	m_interests[interest_id] = i;
 
-	std::list<uint32_t> new_zones = add_interest(i, interest_id);
-
-	if(new_zones.empty())
+	if(!new_zones.empty())
+	{
+		request_zone_objects(i.parent, new_zones);
+	}
+	else
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
