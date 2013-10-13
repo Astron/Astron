@@ -30,6 +30,9 @@ control channel:
           uint16 dclass_id, <REQUIRED>, <OTHER>)`  
 > Create an object on the State Server, specifying its initial location as
 > (parent_id, zone_id), its class, and initial field data.
+>
+> The object then broacats an ENTER_LOCATION message to its location channel,
+> and sends a CHANGING_ZONE with old location (0,0) to its parent (if it has one).
 
 
 **STATESERVER_DELETE_AI_OBJECTS (2004)** `args(uint64 ai_channel)`  
@@ -147,7 +150,7 @@ to one object at a time.
 > The objects will first broadcast a changing location message to its old location
 > channel, as well as its AI channel, and an owner channel if one exists.
 > A changing location message should also be sent to the new and old parent if
-> the parent is different.
+> the parent and/or zone is different.
 >
 > Then the objects will broadcast one of the following enter location messages
 > to the new location.
