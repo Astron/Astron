@@ -18,6 +18,16 @@ roles:
       control: 100
 """ % test_dc
 
+def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
+    if doid is not None:
+        datagram.add_uint32(doid)
+    if parent is not None:
+        datagram.add_uint32(parent)
+    if zone is not None:
+        datagram.add_uint32(zone)
+    if dclass is not None:
+        datagram.add_uint16(dclass)
+
 class TestStateServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -37,16 +47,6 @@ class TestStateServer(unittest.TestCase):
         cls.c1.close()
         cls.c2.close()
         cls.daemon.stop()
-
-    def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
-        if doid is not None:
-            datagram.add_uint32(doid)
-        if parent is not None:
-            datagram.add_uint32(parent)
-        if zone is not None:
-            datagram.add_uint32(zone)
-        if dclass is not None:
-            datagram.add_uint16(dclass)
 
     # Tests CREATE_OBJECT_WITH_REQUIRED and OBJECT_DELETE_RAM
     def test_create_delete(self):
@@ -100,42 +100,46 @@ class TestStateServer(unittest.TestCase):
         ai.send(Datagram.create_remove_channel(5000<<32|1500))
         parent.send(Datagram.create_remove_channel(5000))
 
+    # Tests the handling of the broadcast keyword by the stateserver
     def test_broadcast(self):
-        self.c.flush()
-        self.c.send(Datagram.create_add_channel(5000<<32|1500))
+        self.c1.flush()
 
+        ai = self.c1
+        ai.send(Datagram.create_add_channel(5000<<32|1500))
+
+        ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(5000) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject2)
-        dg.add_uint32(101000005) # ID
-        self.c.send(dg)
+        appendMeta(dg, 101000005, 5000, 1500, DistributedTestObject2)
+        ai.send(dg)
 
         # Ignore the entry message, we aren't testing that here.
-        self.c.flush()
+        ai.flush()
 
         # Hit it with an update on setB2.
         dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(101000005)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
-        self.c.send(dg)
+        ai.send(dg)
 
-        # Object should broadcast that update.
+        # Object should broadcast that update (w/ sender as original sender)
         # N.B. the who field is not a mistake. This is so AI servers can see
         # who the update ultimately comes from for e.g. an airecv/clsend.
         dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(101000005)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai.expect(dg))
 
-        # Clean up.
+        ### Cleanup ###
+        # Delete object
         dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(101000005)
-        self.c.send(dg)
-        self.c.send(Datagram.create_remove_channel(5000<<32|1500))
+        ai.send(dg)
+
+        # Unsubscribe location
+        ai.send(Datagram.create_remove_channel(5000<<32|1500))
 
     def test_airecv(self):
         self.c.flush()
