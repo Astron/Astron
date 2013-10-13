@@ -26,47 +26,79 @@ class TestStateServer(unittest.TestCase):
 
         c = socket(AF_INET, SOCK_STREAM)
         c.connect(('127.0.0.1', 57123))
-        cls.c = MDConnection(c)
+        cls.c1 = MDConnection(c)
+
+        c = socket(AF_INET, SOCK_STREAM)
+        c.connect(('127.0.0.1', 57123))
+        cls.c2 = MDConnection(c)
 
     @classmethod
     def tearDownClass(cls):
-        cls.c.close()
+        cls.c1.close()
+        cls.c2.close()
         cls.daemon.stop()
 
-    def test_create_destroy(self):
-        self.c.flush()
-        self.c.send(Datagram.create_add_channel(5000<<32|1500))
+    def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
+        if doid is not None:
+            datagram.add_uint32(doid)
+        if parent is not None:
+            datagram.add_uint32(parent)
+        if zone is not None:
+            datagram.add_uint32(zone)
+        if dclass is not None:
+            datagram.add_uint16(dclass)
 
+    # Tests CREATE_OBJECT_WITH_REQUIRED and OBJECT_DELETE_RAM
+    def test_create_delete(self):
+        self.c1.flush()
+        self.c2.flush()
+
+        ai = self.c1
+        ai.send(Datagram.create_add_channel(5000<<32|1500))
+        parent = self.c2
+        parent.send(Datagram.create_add_channel(5000))
+
+        ### Test for CreateRequired with a required value ###
         # Create a DistributedTestObject1...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(5000) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(101000000) # ID
+        appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.c.send(dg)
+        ai.send(dg)
 
         # The object should announce its entry to the zone-channel...
         dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(5000) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(101000000) # ID
+        appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai.expect(dg))
 
+        # The object should tell the parent its arriving...
+        dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
+        appendMeta(dg, parent=5000, zone=1500) # New location
+        appendMeta(dg, parent=0, zone=0) # Old location
+        self.assertTrue(parent.expect(dg))
+
+
+        ### Test for DeleteRam ### (continues from previous)
         # Destroy our object...
         dg = Datagram.create([101000000], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(101000000)
-        self.c.send(dg)
+        ai.send(dg)
+
+        # Object should tell its parent it is going away...
+        dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
+        appendMeta(dg, parent=0, zone=0) # New location
+        appendMeta(dg, parent=5000, zone=1500) # Old location
+        self.assertTrue(parent.expect(dg))
 
         # Object should announce its disappearance...
         dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(101000000)
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai.expect(dg))
 
         # We're done here...
-        self.c.send(Datagram.create_remove_channel(5000<<32|1500))
+        ### Cleanup ###
+        ai.send(Datagram.create_remove_channel(5000<<32|1500))
+        parent.send(Datagram.create_remove_channel(5000))
 
     def test_broadcast(self):
         self.c.flush()
