@@ -34,29 +34,14 @@ class TestStateServer(unittest.TestCase):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
-        c = socket(AF_INET, SOCK_STREAM)
-        c.connect(('127.0.0.1', 57123))
-        cls.c1 = MDConnection(c)
-
-        c = socket(AF_INET, SOCK_STREAM)
-        c.connect(('127.0.0.1', 57123))
-        cls.c2 = MDConnection(c)
-
     @classmethod
     def tearDownClass(cls):
-        cls.c1.close()
-        cls.c2.close()
         cls.daemon.stop()
 
     # Tests CREATE_OBJECT_WITH_REQUIRED and OBJECT_DELETE_RAM
     def test_create_delete(self):
-        self.c1.flush()
-        self.c2.flush()
-
-        ai = self.c1
-        ai.send(Datagram.create_add_channel(5000<<32|1500))
-        parent = self.c2
-        parent.send(Datagram.create_add_channel(5000))
+        ai = ChannelConnection(5000<<32|1500)
+        parent = ChannelConnection(5000)
 
         ### Test for CreateRequired with a required value ###
         # Create a DistributedTestObject1...
@@ -74,7 +59,7 @@ class TestStateServer(unittest.TestCase):
         # The object should tell the parent its arriving...
         dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
         appendMeta(dg, parent=5000, zone=1500) # New location
-        appendMeta(dg, parent=0, zone=0) # Old location
+        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # Old location
         self.assertTrue(parent.expect(dg))
 
 
@@ -86,7 +71,7 @@ class TestStateServer(unittest.TestCase):
 
         # Object should tell its parent it is going away...
         dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
-        appendMeta(dg, parent=0, zone=0) # New location
+        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
         appendMeta(dg, parent=5000, zone=1500) # Old location
         self.assertTrue(parent.expect(dg))
 
@@ -97,15 +82,12 @@ class TestStateServer(unittest.TestCase):
 
         # We're done here...
         ### Cleanup ###
-        ai.send(Datagram.create_remove_channel(5000<<32|1500))
-        parent.send(Datagram.create_remove_channel(5000))
+        parent.close()
+        ai.close()
 
     # Tests the handling of the broadcast keyword by the stateserver
     def test_broadcast(self):
-        self.c1.flush()
-
-        ai = self.c1
-        ai.send(Datagram.create_add_channel(5000<<32|1500))
+        ai = ChannelConnection(5000<<32|1500)
 
         ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
@@ -123,9 +105,9 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0x31415927)
         ai.send(dg)
 
-        # Object should broadcast that update (w/ sender as original sender)
-        # N.B. the who field is not a mistake. This is so AI servers can see
-        # who the update ultimately comes from for e.g. an airecv/clsend.
+        # Object should broadcast that update
+        # Note: Sender should be original sender (in this case 5). This is so AIs
+        #       can see who the update ultimately comes from for e.g. an airecv/clsend.
         dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(101000005)
         dg.add_uint16(setB2)
@@ -139,266 +121,309 @@ class TestStateServer(unittest.TestCase):
         ai.send(dg)
 
         # Unsubscribe location
-        ai.send(Datagram.create_remove_channel(5000<<32|1500))
+        ai.close()
 
+    # Tests stateserver handling of airecv keyword and the GET_AI/SET_AI/CHANGING/ENTER messages.
     def test_airecv(self):
-        self.c.flush()
-
-        ai1 = 500
-        ai2 = 501
-        obj1 = 12345
-        obj2 = 123456
-        obj3 = 1234567
-        obj4 = 1010101
+        control = ChannelConnection(5)
 
         # So we can see airecvs...
-        self.c.send(Datagram.create_add_channel(ai1))
-        self.c.send(Datagram.create_add_channel(ai2))
-        # So we can see communications between objects...
-        self.c.send(Datagram.create_add_channel(obj1))
-        self.c.send(Datagram.create_add_channel(4030<<32|obj1))
-        self.c.send(Datagram.create_add_channel(obj2))
-        self.c.send(Datagram.create_add_channel(4030<<32|obj2))
-        self.c.send(Datagram.create_add_channel(obj3))
-        self.c.send(Datagram.create_add_channel(4030<<32|obj3))
-        self.c.send(Datagram.create_add_channel(obj4))
+        ai1chan = 500
+        ai2chan = 501
+        ai1 = ChannelConnection(ai1chan)
+        ai2 = ChannelConnection(ai2chan)
 
+        # So we can see communications between objects...
+        obj1id = 12345
+        obj2id = 123456
+        obj3id = 1234567
+        obj4id = 1010101
+        obj1 = ChannelConnection(obj1id)
+        obj2 = ChannelConnection(obj2id)
+        obj3 = ChannelConnection(obj3id)
+        obj4 = ChannelConnection(obj4id)
+        children1 = ChannelConnection(PARENT_PREFIX|obj1id)
+        children2 = ChannelConnection(PARENT_PREFIX|obj2id)
+        children3 = ChannelConnection(PARENT_PREFIX|obj3id)
+
+        ### Test for SetAI which responds ChangingAI, EnterAI ###
         # Create our first object...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(5000) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj1) # ID
+        appendMeta(dg, obj1id, 5000, 1500, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.c.send(dg)
+        control.send(dg)
 
         # First object belongs to AI1...
-        dg = Datagram.create([obj1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint32(obj1)
-        dg.add_uint64(ai1)
-        self.c.send(dg)
+        dg = Datagram.create([obj1id], 5, STATESERVER_OBJECT_SET_AI)
+        dg.add_uint64(ai1chan)
+        control.send(dg)
 
         # Object should announce its presence to AI1...
-        dg_ai = Datagram.create([ai1], obj1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
-        dg_ai.add_uint32(5000) # Parent
-        dg_ai.add_uint32(1500) # Zone
-        dg_ai.add_uint16(DistributedTestObject1)
-        dg_ai.add_uint32(obj1)
-        dg_ai.add_uint32(6789) # setRequired1
-        dg_ai.add_uint16(0) # Number of extra fields embedded in message: none
-        # ...and AI1 to its children...
-        dg_children = Datagram.create([4030<<32|obj1], obj1, STATESERVER_OBJECT_CHANGING_AI)
-        dg_children.add_uint32(obj1)
-        dg_children.add_uint64(ai1)
-        self.assertTrue(self.c.expect_multi([dg_ai, dg_children]))
+        dg = Datagram.create([ai1chan], obj1id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(dg, obj1id, 5000, 1500, DistributedTestObject1)
+        dg.add_uint32(6789) # setRequired1
+        self.assertTrue(ai1.expect(dg)) # AI recieved ENTER_AI
 
+        # ...and AI1 to its children...
+        dg = Datagram.create([PARENT_PREFIX|obj1id], obj1id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint64(ai1chan) # New AI
+        dg.add_uint64(INVALID_CHANNEL) # Old AI
+        self.assertTrue(children1.expect(dg)) # Children recieved CHANGING_AI
+
+
+
+        ### Test for child AI handling on creation ### (continues from previous)
         # Next, let's create a second object beneath it.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(obj1) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj2) # ID
+        appendMeta(dg, obj2id, obj1id, 1500, DistributedTestObject1)
         dg.add_uint32(1337) # setRequired1
-        self.c.send(dg)
+        control.send(dg)
 
         # The second object should ask its parent for the AI channel...
-        dg_query = Datagram.create([obj1], obj2, STATESERVER_OBJECT_GET_AI)
+        # The parent should is also expecting a CHANGING_LOCATION message we want to ignore...
+        while True:
+            dg = obj1.recv_maybe()
+            self.assertTrue(dg is not None) # Parent recieved messages
+            dgi = DatagramIterator(dg)
+            msgtype = dgi.read_uint16()
+            if msgtype is STATESERVER_OBJECT_GET_AI:
+                break
+            elif msgtype is STATESERVER_OBJECT_CHANGING_LOCATION:
+                continue
+            else:
+                self.fail("obj1 recieved unexpected msgtype: " + str(msgtype))
+        self.assertTrue(dgi.matches_header([obj1id], obj2id, STATESERVER_OBJECT_GET_AI))
+        context = dgi.read_uint32()
+        obj1.flush()
 
         # To which the parent should reply...
-        dg_notify = Datagram.create([obj2], obj1, STATESERVER_OBJECT_CHANGING_AI)
-        dg_notify.add_uint32(obj1)
-        dg_notify.add_uint64(ai1)
+        dg = Datagram.create([obj2id], obj1id, STATESERVER_OBJECT_GET_AI_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(obj1id)
+        dg.add_uint64(ai1chan)
+        self.assertTrue(obj2.expect(dg)) # Receiving GET_AI_RESP from parent
 
         # Then the SECOND object should announce its presence to AI1...
-        dg_ai = Datagram.create([ai1], obj2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
-        dg_ai.add_uint32(obj1) # Parent
-        dg_ai.add_uint32(1500) # Zone
-        dg_ai.add_uint16(DistributedTestObject1)
-        dg_ai.add_uint32(obj2)
-        dg_ai.add_uint32(1337) # setRequired1
-        dg_ai.add_uint16(0) # Number of extra fields embedded in message: none
+        dg = Datagram.create([ai1chan], obj2id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(dg, obj2id, obj1id, 1500, DistributedTestObject1)
+        dg.add_uint32(1337) # setRequired1
+        self.assertTrue(ai1.expect(dg)) # Obj2 enters AI1
+
         # ...and AI1 to its children...
-        dg_children = Datagram.create([4030<<32|obj2], obj2, STATESERVER_OBJECT_CHANGING_AI)
-        dg_children.add_uint32(obj2)
-        dg_children.add_uint64(ai1)
-        self.assertTrue(self.c.expect_multi([dg_query, dg_notify, dg_ai, dg_children]))
+        dg = Datagram.create([PARENT_PREFIX|obj2id], obj2id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj2id)
+        dg.add_uint64(ai1chan)
+        dg.add_uint64(INVALID_CHANNEL)
+        self.assertTrue(children2.expect(dg)) # Receiving CHANGING_AI
 
-        # Make a third object in a different zone...
+
+
+        ### Test for child AI handling on reparent ### (continues from previous)
+        # Make a third object in a different location...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(5050) # Parent
-        dg.add_uint32(1500) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj3) # ID
+        appendMeta(obj3id, 5050, 1500, DistributedTestObject1)
         dg.add_uint32(289855) # setRequired1
-        self.c.send(dg)
+        control.send(dg)
 
-        # Nothing should happen yet...
-        self.assertTrue(self.c.expect_none())
+        # Nothing should happen yet on the channels we listen to...
+        self.assertTrue(self.ai1.expect_none())
+        self.assertTrue(self.obj1.expect_none())
+        self.assertTrue(self.obj2.expect_none())
+        self.assertTrue(self.obj3.expect_none())
 
         # Slide obj3 over underneath obj2...
-        dg = Datagram.create([obj3], 5, STATESERVER_OBJECT_SET_LOCATION)
-        dg.add_uint32(obj2) # Parent
-        dg.add_uint32(1000) # Zone
-        self.c.send(dg)
+        dg = Datagram.create([obj3id], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=obj2id, zone=1000)
+        control.send(dg)
 
         # The third object should ask its new parent for the AI channel...
-        dg_query = Datagram.create([obj2], obj3, STATESERVER_OBJECT_GET_AI)
+        # The parent should is also expecting a CHANGING_LOCATION message we want to ignore...
+        while True:
+            dg = obj1.recv_maybe()
+            self.assertTrue(dg is not None) # Parent recieved messages
+            dgi = DatagramIterator(dg)
+            msgtype = dgi.read_uint16()
+            if msgtype is STATESERVER_OBJECT_GET_AI:
+                break
+            elif msgtype is STATESERVER_OBJECT_CHANGING_LOCATION:
+                continue
+            else:
+                self.fail("obj2 recieved unexpected msgtype: " + str(msgtype))
+        self.assertTrue(dgi.matches_header([obj2id], obj3id, STATESERVER_OBJECT_GET_AI))
+        context = dgi.read_uint32()
+        obj2.flush()
 
         # To which the parent should reply...
-        dg_notify = Datagram.create([obj3], obj2, STATESERVER_OBJECT_CHANGING_AI)
-        dg_notify.add_uint32(obj2)
-        dg_notify.add_uint64(ai1)
+        dg = Datagram.create([obj3id], obj2id, STATESERVER_OBJECT_GET_AI_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(obj2id)
+        dg.add_uint64(ai1chan)
+        self.assertTrue(obj3.expect(dg)) # Obj2 returns GET_AI_RESP
 
-        # And then obj3 announces to AI and its children...
-        dg_ai = Datagram.create([ai1], obj3, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
-        dg_ai.add_uint32(obj2) # Parent
-        dg_ai.add_uint32(1000) # Zone
-        dg_ai.add_uint16(DistributedTestObject1)
-        dg_ai.add_uint32(obj3)
-        dg_ai.add_uint32(289855) # setRequired1
-        dg_ai.add_uint16(0) # Number of extra fields embedded in message: none
+        # And then obj3 announces its presence to AI1...
+        dg = Datagram.create([ai1chan], obj3id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(dg, obj3id, obj2id, 1000, DistributedTestObject1)
+        dg.add_uint32(289855) # setRequired1
+        self.assertTrue(ai1.expect(dg)) # Obj3 sends ENTER_AI
+
         # ...and AI1 to its children...
-        dg_children = Datagram.create([4030<<32|obj3], obj3, STATESERVER_OBJECT_CHANGING_AI)
-        dg_children.add_uint32(obj3)
-        dg_children.add_uint64(ai1)
-        self.assertTrue(self.c.expect_multi([dg_query, dg_notify, dg_ai, dg_children]))
+        dg = Datagram.create([PARENT_PREFIX|obj3id], obj3id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj3id)
+        dg.add_uint64(ai1chan) # New AI
+        dg.add_uint16(INVALID_CHANNEL) # Old AI
+        self.assertTrue(children3.expect(dg)) # Receiving changing AI
 
-        # Test the airecv keyword...
-        dg = Datagram.create([obj3], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(obj3)
+
+
+        ### Test for the airecv keyword ### (continues from previous)
+        dg = Datagram.create([obj3id], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(obj3id)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
-        self.c.send(dg)
+        control.send(dg)
 
         # Now the AI should see it...
-        # BONUS POINTS: The broadcast should be a separate channel of the same
-        # message.
-        dg = Datagram.create([ai1, (obj2<<32|1000)], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(obj3)
+        # BONUS POINTS: The broadcast should be a separate channel of the same message.
+        dg = Datagram.create([ai1chan, (obj2id<<32|1000)], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(obj3id)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai1.expect(dg)) # Recieve a broadcasted SET_FIELD update
 
+
+
+        ### Test for advanced reparenting ###
         # Now, let's make obj4 on ai2.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(3141) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj4) # ID
+        appendMeta(dg, obj4id, 3141, 1234, DistributedTestObject1)
         dg.add_uint32(0xDECAFBAD) # setRequired1
-        self.c.send(dg)
-        dg = Datagram.create([obj4], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint32(obj4)
-        dg.add_uint64(ai2)
-        self.c.send(dg)
+        control.send(dg)
+        dg = Datagram.create([obj4id], 5, STATESERVER_OBJECT_SET_AI)
+        dg.add_uint64(ai2chan)
+        control.send(dg)
 
         # We don't care about the ai2 announcement; that's been tested already.
-        self.c.flush()
+        ai2.flush()
 
         # Now, let's pick up obj2 and move it under obj4.
-        dg = Datagram.create([obj2], 5, STATESERVER_OBJECT_SET_LOCATION)
-        dg.add_uint32(obj4) # Parent
-        dg.add_uint32(1000) # Zone
-        self.c.send(dg)
+        dg = Datagram.create([obj2id], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendData(dg, parent=obj4id, zone=1000)
+        control.send(dg)
 
-        # AMONG THE DELUGE OF MESSAGES WE RECEIVE (NOT NECESSARILY IN ORDER):
-        expected = []
-        # obj2 tells AI1 about the zone change. Like with field updates, this
+        ## AMONG THE DELUGE OF MESSAGES WE RECEIVE (NOT NECESSARILY IN ORDER) ##
+        ai1expected = []
+        ai2expected = []
+
+        # obj2 tells AI1 about the location change. Like with field updates, this
         # sets the sender field to the channel that instigated the change.
-        dg = Datagram.create([ai1], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(obj2)
-        dg.add_uint32(obj4)
-        dg.add_uint32(1000)
-        dg.add_uint32(obj1)
-        dg.add_uint32(1500)
-        expected.append(dg)
-        # obj2 asks obj4 for the AI channel.
-        dg = Datagram.create([obj4], obj2, STATESERVER_OBJECT_GET_AI)
-        expected.append(dg)
-        # obj4 tells obj2 what the AI channel is.
-        dg = Datagram.create([obj2], obj4, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj4)
-        dg.add_uint64(ai2)
-        expected.append(dg)
-        # obj2 tells its children that there's a new AI channel.
-        dg = Datagram.create([4030<<32|obj2], obj2, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj2)
-        dg.add_uint64(ai2)
-        expected.append(dg)
-        # obj3 tells its children as well.
-        dg = Datagram.create([4030<<32|obj3], obj3, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj3)
-        dg.add_uint64(ai2)
-        expected.append(dg)
-        # obj2 announces its entry into ai2's airspace...
-        dg = Datagram.create([ai2], obj2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
-        dg.add_uint32(obj4) # Parent
-        dg.add_uint32(1000) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj2)
-        dg.add_uint32(1337) # setRequired1
-        dg.add_uint16(0) # Number of extra fields embedded in message: none
-        expected.append(dg)
-        # ...and its departure from ai1's.
-        dg = Datagram.create([ai1], obj2, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj2)
-        expected.append(dg)
-        # obj3 does the same.
-        dg = Datagram.create([ai2], obj3, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
-        dg.add_uint32(obj2) # Parent
-        dg.add_uint32(1000) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(obj3)
-        dg.add_uint32(289855) # setRequired1
-        dg.add_uint16(0) # Number of extra fields embedded in message: none
-        expected.append(dg)
-        # + departure:
-        dg = Datagram.create([ai1], obj3, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj3)
-        expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
+        dg = Datagram.create([ai1chan], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_uint32(obj2id) # ID
+        dg.add_uint32(obj4id) # New parent
+        dg.add_uint32(1000) # New zone
+        dg.add_uint32(obj1id) # Old parent
+        dg.add_uint32(1500) # Old zone
+        ai1expected.append(dg)
 
+        # obj2 asks obj4 for the AI channel.
+        dg = obj4.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([obj4id], obj2id, STATESERVER_OBJECT_GET_AI))
+        context = dgi.read_uint32()
+        # obj4 tells obj2 what the AI channel is.
+        dg = Datagram.create([obj2id], obj4id, STATESERVER_OBJECT_GET_AI_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(obj4id)
+        dg.add_uint64(ai2chan)
+        obj2.expect(dg)
+
+        # obj2 tells its children and old AI that there's a new AI channel.
+        dg = Datagram.create([PARENT_PREFIX|obj2id, ai1chan], obj2id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj2id)
+        dg.add_uint64(ai2chan) # New AI
+        dg.add_uint64(ai1chan) # Old AI
+        children2.expect(dg)
+        ai1expected.append(dg)
+        # obj3 tells its children and old AI as well.
+        dg = Datagram.create([PARENT_PREFIX|obj3id, ai1chan], obj3id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj3id)
+        dg.add_uint64(ai2chan) # New AI
+        dg.add_uint64(ai1chan) # Old AI
+        children3.expect(dg)
+        ai1expected.append(dg)
+
+        # obj2 announces its entry into ai2's airspace...
+        dg = Datagram.create([ai2chan], obj2id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(dg, obj2id, obj4id, 1000, DistributedTestObject1)
+        dg.add_uint32(1337) # setRequired1
+        ai2expected.append(dg)
+        # obj3 does the same.
+        dg = Datagram.create([ai2chan], obj3id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(obj3id, obj2id, 1000, DistributedTestObject1)
+        dg.add_uint32(289855) # setRequired1
+        ai2expected.append(dg)
+
+        # Expect datagrams to be recieved
+        self.assertTrue(ai1.expect_multi(ai1expected, only=True))
+        self.assertTrue(ai2.expect_multi(ai2expected, only=True))
+
+
+
+        ### Test for AI messages with various corner cases ### (continues from previous)
         # Now let's test the verification of the AI channel notification system.
 
         # A notification with a not-current parent should do nothing:
-        dg = Datagram.create([obj3], obj1, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj1)
-        dg.add_uint64(ai1)
-        self.c.send(dg)
-        self.assertTrue(self.c.expect_none())
+        dg = Datagram.create([obj3id], obj1id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj1id)
+        dg.add_uint64(0x17FEEF71) # New AI
+        dg.add_uint64(ai1chan) # Old AI
+        obj1.send(dg)
+        self.assertTrue(ai1.expect_none())
+        self.assertTrue(obj1.expect_none())
+        self.assertTrue(children3.expect_none())
 
         # A notification with the same AI channel should also do nothing:
-        dg = Datagram.create([obj3], obj2, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj2)
-        dg.add_uint64(ai2)
-        self.c.send(dg)
-        self.assertTrue(self.c.expect_none())
+        dg = Datagram.create([obj3id], obj2id, STATESERVER_OBJECT_CHANGING_AI)
+        dg.add_uint32(obj2id)
+        dg.add_uint64(ai2chan)
+        dg.add_uint64(ai2chan)
+        obj2.send(dg)
+        self.assertTrue(ai2.expect_none())
+        self.assertTrue(obj2.expect_none())
+        self.assertTrue(children3.expect_none())
 
-        # Test that AIs are informed of object deletions...
-        dg = Datagram.create([obj3], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(obj3)
-        self.c.send(dg)
 
-        # See if it "leaves" the AI's interest.
-        dg = Datagram.create([ai2], obj3, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(obj3)
-        self.assertTrue(self.c.expect(dg))
 
-        # Cleanup time:
-        self.c.send(Datagram.create_remove_channel(ai1))
-        self.c.send(Datagram.create_remove_channel(ai2))
-        self.c.send(Datagram.create_remove_channel(obj1))
-        self.c.send(Datagram.create_remove_channel(4030<<32|obj1))
-        self.c.send(Datagram.create_remove_channel(obj2))
-        self.c.send(Datagram.create_remove_channel(4030<<32|obj2))
-        self.c.send(Datagram.create_remove_channel(obj3))
-        self.c.send(Datagram.create_remove_channel(4030<<32|obj3))
-        self.c.send(Datagram.create_remove_channel(obj4))
-        # Clean up objects:
-        for obj in [obj1, obj2, obj4]:
-            dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
-            dg.add_uint32(obj)
-            self.c.send(dg)
+        ### Test for AI notification of object deletions ###
+        # Delete the object
+        dg = Datagram.create([obj3id], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(obj3id)
+        control.send(dg)
+
+        # See if the AI recvs the delete.
+        dg = Datagram.create([ai2chan], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(obj3id)
+        self.assertTrue(ai2.expect(dg))
+
+
+        ### Cleanup ###
+        # Delete objects
+        for doid in [obj1id, obj2id, obj3id, obj4id]:
+            dg = Datagram.create([doid], 5, STATESERVER_OBJECT_DELETE_RAM)
+            dg.add_uint32(doid)
+            control.send(dg)
+
+        # Close channels
+        control.close()
+        ai1.close()
+        ai2.close()
+        obj1.close()
+        obj2.close()
+        obj3.close()
+        obj4.close()
+        children1.close()
+        children2.close()
+        children3.close()
 
     def test_ram(self):
         self.c.flush()

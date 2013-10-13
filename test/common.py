@@ -5,7 +5,7 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection', 'ChannelConnection']
 
 class Daemon(object):
     DAEMON_PATH = './astrond'
