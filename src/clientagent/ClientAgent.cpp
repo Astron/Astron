@@ -145,10 +145,17 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	break;
 	case STATESERVER_OBJECT_UPDATE_FIELD:
 	{
+		uint32_t do_id = dgi.read_uint32();
+		if(!lookup_object(do_id))
+		{
+			m_log->warning() << "Received server-side field update for unknown object " << do_id << std::endl;
+			return;
+		}
 		if(sender != m_channel)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
+			resp.add_uint32(do_id);
 			resp.add_data(dgi.read_remainder());
 			network_send(resp);
 		}
