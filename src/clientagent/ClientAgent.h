@@ -45,6 +45,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
 		std::set<uint32_t> m_owned_objects;
+		std::set<uint32_t> m_seen_objects;
 		std::map<uint16_t, Interest> m_interests;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,

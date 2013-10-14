@@ -684,7 +684,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
-        #self.server.send(dg)
+        self.server.send(dg)
 
         # But the CA should silently ignore it:
         self.assertTrue(client.expect_none())

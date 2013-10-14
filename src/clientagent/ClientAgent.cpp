@@ -80,8 +80,8 @@ std::map<uint32_t, Uberdog> uberdogs;
 Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 	ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
 		m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
-		m_is_channel_allocated(true), m_owned_objects(), m_allocated_channel(0),
-		m_interests()
+		m_is_channel_allocated(true), m_owned_objects(), m_seen_objects(),
+		m_allocated_channel(0), m_interests()
 {
 	m_channel = m_ct->alloc_channel();
 	if(!m_channel)
@@ -232,7 +232,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		uint32_t zone = dgi.read_uint32();
 		uint16_t dc_id = dgi.read_uint16();
 		uint32_t do_id = dgi.read_uint32();
-		if(m_owned_objects.find(do_id) != m_owned_objects.end())
+		if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
+		   m_seen_objects.find(do_id) != m_seen_objects.end())
 		{
 			return;
 		}
@@ -247,6 +248,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			dist_objs[do_id] = obj;
 		}
 		dist_objs[do_id].refcount++;
+		m_seen_objects.insert(do_id);
 
 		Datagram resp;
 		if(msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
