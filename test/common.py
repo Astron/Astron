@@ -79,7 +79,7 @@ CONSTANTS = {
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER':    2001,
-    'STATESERVER_DELETE_AI_OBJECTS':                    2004,
+    'STATESERVER_DELETE_AI_OBJECTS':                    2009,
     # State Server object message-type constants
     'STATESERVER_OBJECT_DELETE_RAM':        2008,
     'STATESERVER_OBJECT_GET_FIELD':         2010,

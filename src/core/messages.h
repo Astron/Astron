@@ -33,7 +33,7 @@ typedef uint64_t channel_t;
 // State Server control message-type constants
 #define STATESERVER_CREATE_OBJECT_WITH_REQUIRED			2000
 #define STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER	2001
-#define STATESERVER_DELETE_AI_OBJECTS					2004
+#define STATESERVER_DELETE_AI_OBJECTS					2009
 // State Server object message-type constants
 #define STATESERVER_OBJECT_DELETE_RAM		2008
 #define STATESERVER_OBJECT_GET_FIELD		2010

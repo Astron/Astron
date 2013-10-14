@@ -57,7 +57,7 @@
 | --------------------------------------------- |:-------:| ------------------------------------------------------------------------------------------------- |
 | STATESERVER_CREATE_OBJECT_WITH_REQUIRED       |    2000 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
 | STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER |    2001 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
-| STATESERVER_DELETE_AI_OBJECTS                 |    2004 | `uint64 ai_channel`                                                                               |
+| STATESERVER_DELETE_AI_OBJECTS                 |    2009 | `uint64 ai_channel`                                                                               |
 
 ### Distributed Object Accessor Messages ###
 | Message                            | Type Id | Format                                                                                                              |

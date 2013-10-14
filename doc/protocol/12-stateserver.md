@@ -31,11 +31,11 @@ control channel:
 > Create an object on the State Server, specifying its initial location as
 > (parent_id, zone_id), its class, and initial field data.
 >
-> The object then broacats an ENTER_LOCATION message to its location channel,
+> The object then broadcasts an ENTER_LOCATION message to its location channel,
 > and sends a CHANGING_ZONE with old location (0,0) to its parent (if it has one).
 
 
-**STATESERVER_DELETE_AI_OBJECTS (2004)** `args(uint64 ai_channel)`  
+**STATESERVER_DELETE_AI_OBJECTS(2009)** `args(uint64 ai_channel)`  
 > Used by an AI Server to inform the State Server that it is going down. The
 > State Server will then delete all objects matching the ai_channel.
 >
@@ -147,10 +147,12 @@ to one object at a time.
                         uint32 old_parent_id, uint32 old_zone_id)`  
 > A set location message moves receiving objects to a new location.
 >
-> The objects will first broadcast a changing location message to its old location
-> channel, as well as its AI channel, and an owner channel if one exists.
-> A changing location message should also be sent to the new and old parent if
-> the parent and/or zone is different.
+> If an object is not a root object (ie. has an existing location), it will broadcast
+> a changing location message to its old location channel and its parent object.
+>
+> If an object has an AI, it will also add the AI channel as a recipient.
+>
+> If the object has an owner, it will also add the owner as a recipient.
 >
 > Then the objects will broadcast one of the following enter location messages
 > to the new location.
@@ -181,8 +183,10 @@ to one object at a time.
     `args(uint32 doid_id, uint64 new_ai_channel, uint64 old_ai_channel)`  
 > A set AI message moves receiving objects to a new AI.
 >
-> The objects will first broadcast a changing AI message to its old AI channel,
-> as well as to all of its children on the parent message channel (1 << 32|parent_id).
+> If an objects has an existing AI, it will send a ChangingAI message to its old
+> AI channel.  If the object has children, it will also add its children as a
+> recipient using the parent messages channel (1 << 32|parent_id).
+>
 > Children whose AI channels have not been explicitly set will process the message
 > as if they had recieved a set AI message with ai_channel equal to the new AI;
 > their AI channel is implicitly set to that of their parent.
@@ -217,7 +221,8 @@ to one object at a time.
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 > A set owner message moves receiving object to a new owner.
 >
-> The objects will first send a change owner message to its older owner.
+> If an object has an existing owner, it will send a ChangingOwner message to
+> its old Owner channel.
 >
 > Then the objects will send one of the following enter owner messages to the
 > new owner.
