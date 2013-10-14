@@ -148,7 +148,9 @@ to one object at a time.
 > A set location message moves receiving objects to a new location.
 >
 > If an object is not a root object (ie. has an existing location), it will broadcast
-> a changing location message to its old location channel and its parent object.
+> a changing location message to its old location channel and old parent.
+>
+> If the new parent is valid (non-zero), it will also add the new parent as a recipient.
 >
 > If an object has an AI, it will also add the AI channel as a recipient.
 >

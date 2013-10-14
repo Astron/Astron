@@ -172,7 +172,7 @@ class TestStateServer(unittest.TestCase):
     # Tests the messages GET_AI, SET_AI, CHANGING_AI, and ENTER_AI.
     def test_set_ai(self):
         conn = ChannelConnection(5)
-        rootListener = ChannelConnection(0)
+        conn.add_channel(0)
 
         # So we can see airecvs...
         ai1chan = 1001
@@ -197,12 +197,13 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Object should not ask its parent (INVALID_CHANNEl) for an AI channel...
-        rootListener.expect_none()
+        self.assertTrue(conn.expect_none())
 
         # First object belongs to AI1...
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
         dg.add_uint64(ai1chan) # AI channel
         conn.send(dg)
+        obj1.flush()
 
         # Obj1 should announce its presence to AI1...
         dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
@@ -211,7 +212,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(ai1.expect(dg)) # AI recieved ENTER_AI
 
         # ... but should not tell its children (it has none) ...
-        children1.expect_none()
+        self.assertTrue(children1.expect_none())
 
 
 
@@ -220,19 +221,20 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
         dg.add_uint64(ai2chan) # AI channel
         conn.send(dg)
+        obj1.flush()
 
         # Obj1 should tell its old AI channel that it is changing AI...
-        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_CHANGING_AI)
+        dg = Datagram.create([ai1chan], 5, STATESERVER_OBJECT_CHANGING_AI)
         dg.add_uint32(doid1) # Id
         dg.add_uint64(ai2chan) # New AI
         dg.add_uint64(ai1chan) # Old AI
-        ai1.expect(dg)
+        self.assertTrue(ai1.expect(dg))
 
         # ... and its new AI channel that it is entering.
         dg = Datagram.create([ai2chan], doid1, STATESERVER_OBJECT_ENTER_AI)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        ai2.expect(dg)
+        self.assertTrue(ai2.expect(dg))
 
 
 
@@ -274,7 +276,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(ai2.expect(dg)) # Obj2 enters AI2
 
         # ... but should not tell its children because it has none.
-        children2.expect_none()
+        self.assertTrue(children2.expect_none())
 
 
 
@@ -283,6 +285,7 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, doid2)
         children2.flush() # Ignore child propogation (there shouldn't be any)
         obj1.flush() # Ignore parent notification
+        obj2.flush() # Ignore received message
         ai2.flush() # Ignore AI notifcation
 
         # Recreate the second object with no parent
@@ -292,12 +295,13 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Set the location of the second object to a zone of the first object
-        dg = Datagram.create([100], 5, STATESERVER_OBJECT_SET_LOCATION)
+        dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_LOCATION)
         appendMeta(dg, parent=doid1, zone=1500)
         conn.send(dg)
+        obj2.flush()
 
         # Ignore messages about location change, not tested here
-        rootListener.flush() # Won't exist anyways, but just in case
+        conn.flush() # Won't exist anyways, but just in case
         children2.flush()
 
         # The first object is expecting two messages from the child...
@@ -331,7 +335,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(ai2.expect(dg)) # Obj2 enters AI2
 
         # ... but should not tell its children because it has none.
-        children2.expect_none()
+        self.assertTrue(children2.expect_none())
 
 
 
@@ -339,6 +343,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
         dg.add_uint64(ai1chan) # AI channel
         conn.send(dg)
+        obj1.flush()
 
         ai1expected = []
         ai2expected = []
@@ -347,7 +352,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid1) # Id
         dg.add_uint64(ai1chan) # New AI
         dg.add_uint64(ai2chan) # Old AI
-        children1.expect(dg)
+        self.assertTrue(children1.expect(dg))
         ai2expected.append(dg)
         # ... and its new AI channel that it is entering.
         dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI)
@@ -360,7 +365,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid2) # Id
         dg.add_uint64(ai1chan) # New AI
         dg.add_uint64(ai2chan) # Old AI
-        children2.expect_none() # It has no children
+        self.assertTrue(children2.expect_none()) # It has no children
         ai2expected.append(dg)
         # ... and the new AI channel that it is entering.
         dg = Datagram.create([ai1chan], doid2, STATESERVER_OBJECT_ENTER_AI)
@@ -400,20 +405,45 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(obj1.expect_none())
         self.assertTrue(children2.expect_none())
 
+        ### Test for EnterAIWithRequiredOther ### (continues from previous)
+        # Delete the object for easy reuse
+        deleteObject(conn, 5, doid2)
+        children2.flush() # Ignore child propogation (there shouldn't be any)
+        obj1.flush() # Ignore parent notification
+        obj2.flush() # Ignore received delete
+        ai2.flush() # Ignore AI notifcation
+
+        # Recreate the second object with an optional field
+        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
+        dg.add_uint32(5773) # setRequired1
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("I should've been asleep 5 hours ago!")
+        conn.send(dg)
+
+        # Set the AI of the object
+        dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_AI)
+        dg.add_uint64(ai1chan)
+        conn.send(dg)
+        obj2.flush()
+
+        # Expect an EnterAIWithRequiredOther instead of EnterAIWithRequired
+        dg = Datagram.create([ai1chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
+        dg.add_uint32(5773) # setRequired1
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("I should've been asleep 5 hours ago!")
+        self.assertTrue(ai1.expect(dg)) # Obj2 enters AI1 w/ Required Other
+
+
 
         ### Cleanup ###
-        # Delete objects
-        for doid in [obj1id, obj2id, obj3id, obj4id]:
+        for doid in [doid1, doid2]:
             deleteObject(conn, 5, doid)
-
-        # Close channels
-        conn.close()
-        ai1.close()
-        ai2.close()
-        obj1.close()
-        obj2.close()
-        children1.close()
-        children2.close()
+        for mdconn in [conn, ai1, ai2, obj1, obj2, children1, children2]
+            mdconn.close()
 
     # Tests stateserver handling of the 'ram' keyword
     def test_ram(self):
@@ -428,7 +458,8 @@ class TestStateServer(unittest.TestCase):
         ai.send(dg)
 
         # See if it shows up...
-        dg = Datagram.create([13000<<32|6800], 102000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([13000<<32|6800], 102000000,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, 102000000, 13000, 6800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
         self.assertTrue(ai.expect(dg))
@@ -452,7 +483,8 @@ class TestStateServer(unittest.TestCase):
         ai.send(dg)
 
         # Verify that it announces its entry with the RAM field included.
-        dg = Datagram.create([13000<<32|4800], 102000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([13000<<32|4800], 102000000,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
         appendMeta(dg, 102000000, 13000, 4800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
         dg.add_uint16(1) # Other fields: 1
@@ -467,56 +499,253 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the messages SET_LOCATION, CHANGING_LOCATION, and ENTER_LOCATION
     def test_set_location(self):
-        location = ChannelConnection(14000<<32|9800)
-        location.add_channel(14000<<32|9900)
+        conn = ChannelConnection(5)
+        conn.add_channel(0)
 
-        ### Test for a call to SetLocation ###
+        doid0 = 14000
+        doid1 = 105000000
+        doid2 = 105050505
+        obj0 = ChannelConnection(doid0)
+        obj1 = ChannelConnection(doid1)
+        obj2 = ChannelConnection(doid2)
+        location0 = ChannelConnection(doid0<<32|9800)
+        location2 = ChannelConnection(doid2<<32|9800)
+
+        ### Test for a call to SetLocation on object without previous location ###
         # Create an object...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 105000000, 14000, 9800, DistributedTestObject1)
+        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        location.send(dg)
+        conn.send(dg)
+
+        # It shouldn't broadcast a location change because it doesn't have one.
+        self.assertTrue(conn.expect_none())
+
+        # Set the object's location
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(parent=doid0, zone=9800)
+        conn.send(dg)
+        obj1.flush()
 
         # See if it shows up...
-        dg = Datagram.create([14000<<32|9800], 105000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, 105000000, 14000, 9800, DistributedTestObject1)
+        dg = Datagram.create([doid0<<32|9800], doid1,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid1, doid0, 9800, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        self.assertTrue(location.expect(dg))
+        self.assertTrue(location0.expect(dg))
 
-        # Now move it over into zone 9900...
-        dg = Datagram.create([105000000], 5, STATESERVER_OBJECT_SET_LOCATION)
-        appendMeta(dg, parent=14000, zone=9900)
-        location.send(dg)
 
-        # See if it announces its departure from 9800...
-        expected = []
-        dg = Datagram.create([14000<<32|9800], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(105000000) # ID
-        appendMeta(dg, parent=14000, zone=9900) # New location
-        appendMeta(dg, parent=14000, zone=9800) # Old location
-        expected.append(dg)
-        # ...and its entry into 9900.
-        dg = Datagram.create([14000<<32|9900], 105000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, 105000000, 14000, 9900, DistributedTestObject1)
+
+        ### Test for a call to SetLocation on an object with existing location
+        ### (continues from previous)
+        # Create an object...
+        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
+        dg.add_uint32(66668888) # setRequired1
+        conn.send(dg)
+
+        # It shouldn't broadcast a location change because it doesn't have one.
+        self.assertTrue(conn.expect_none())
+
+        # Move the first object into a zone of the second
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid2, zone=9800)
+        conn.send(dg)
+        obj1.flush()
+
+        # See if it announces its departure from 14000<<32|9800...
+        dg = Datagram.create([doid0<<32|9800, doid0, doid2], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_uint32(doid1) # ID
+        appendMeta(dg, parent=doid2, zone=9900) # New location
+        appendMeta(dg, parent=doid0, zone=9800) # Old location
+        self.assertTrue(obj0.expect(dg))
+        self.assertTrue(obj2.expect(dg))
+        self.assertTrue(location0.expect(dg))
+
+        # ...and its entry into the second object.
+        dg = Datagram.create([doid2<<32|9800], doid1,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        expected.append(dg)
-
-        self.assertTrue(location.expect_multi(expected, only=True))
+        self.assertTrue(obj2.expect(dg))
 
 
 
-        #### TODO: Test more corner cases!!! See test_set_ai for inspiration ####
+        ### Test for non-propogation of SetLocation ### (continues from previous)
+        # Move the parent object (#2) to a new zone
+        conn.add_channel(PARENT_PREFIX|doid2)
+        dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid0, zone=9800)
+        conn.send(dg)
+        obj2.flush()
 
+        # Expect no messages to children
+        self.assertTrue(conn.expect_none())
+        conn.remove_channel(PARENT_PREFIX|doid2)
+
+        # Expect only the second to change zones.
+        dg = Datagram.create([doid0<<32|9800], doid2,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid2, doid0, 9800, DistributedTestObject1)
+        dg.add_uint32(66668888) # setRequired1
+        self.assertTrue(location0.expect(dg))
+        self.assertTrue(location0.expect_none())
+        self.assertTrue(location2.expect_none())
+
+
+
+        ### Test for SetLocation with an AI ### (continues from previous)
+        # Give the first object an AI channel...
+        conn.add_channel(225)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
+        dg.add_uint64(225)
+        conn.send(dg)
+        obj1.flush()
+
+        # ... and ignore any messages from that.
+        conn.flush()
+
+        # Change object location
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE)
+        conn.send(dg)
+        obj1.flush()
+
+        # Expect a ChangingLocation on the AI channel
+        dg = Datagram.create([225, doid2, doid2<<32|9800], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_uint32(doid1)
+        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New parent
+        appendMeta(dg, parent=doid2, zone=9800) # Old parent
+        self.assertTrue(conn.expect(dg))
+
+        # Ignore already tested behavior
+        conn.remove_channel(225)
+        location0.flush()
+        obj0.flush()
+
+        # Remove AI
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
+        dg.add_uint64(0)
+        conn.send(dg)
+        conn.flush()
+        obj1.flush()
+
+
+
+        ### Test for SetLocation with an Owner ### (continues from previous)
+        # Give the first object an owner...
+        conn.add_channel(230)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(230)
+        conn.send(dg)
+        obj1.flush()
+
+        # ... and ignore any messages from that.
+        conn.flush()
+
+        # Change object location
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid0, zone=9800)
+        conn.send(dg)
+        obj1.flush()
+
+        # Expect a ChangingLocation on the AI channel
+        dg = Datagram.create([230, doid0], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_uint32(doid1)
+        appendMeta(dg, parent=doid0, zone=9800) # New parent
+        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # Old parent
+        self.assertTrue(conn.expect(dg))
+
+        # Ignore already tested behavior
+        conn.remove_channel(230)
+        location0.flush()
+        obj0.flush()
+
+        # Remove Owner
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(0)
+        conn.send(dg)
+        conn.flush()
+        obj1.flush()
+
+
+
+        ### Test for SetLocation with a ram-broadcast field ### (continues from previous)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint16(setBR1)
+        dg.add_string("The Cutest Thing Ever!")
+        conn.send(dg)
+        obj1.flush()
+
+        # Ignore field broadcast, tested in test_broadcast, not here...
+        location0.flush()
+
+        # Change object location
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid2, zone=9800)
+        conn.send(dg)
+        obj1.flush()
+
+        # Ignore changing location messages, already tested...
+        obj0.flush()
+        obj2.flush()
+        location0.flush()
+
+        # Should receive EnterLocationWithRequiredOther
+        dg = Datagram.create([doid2<<32|9800], doid1,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
+        dg.add_uint32(43214321) # setRequired1
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(setBR1)
+        dg.add_string("The Cutest Thing Ever!")
+        self.assertTrue(location2.expect(dg))
+
+
+
+        ### Test for SetLocation with a non-broadcast ram field ### (continues from previous)
+        # Delete the first object for reuse
+        deleteObject(doid1)
+        obj1.flush() # Ignore received message
+        obj2.flush() # Ignore parent notification
+        location2.flush() # Ignore location notification
+
+        # Recreate the first object with a ram, non-broadcast field.
+        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, 0, 0, DistributedTestObject3)
+        dg.add_uint32(44004400) # setRequired1
+        dg.add_uint32(88008800) # setRDB3
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(setDb3)
+        dg.add_string("Danger is my middle name!") # This field should be broadcast, but not saved
+        conn.send(dg)
+
+        # Change object location
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid0, zone=9800)
+        conn.send(dg)
+        obj1.flush()
+
+        # Ignore changing location messages, already tested...
+        obj0.flush()   
+
+        # Should receive EnterLocationWithRequired (non-broadcast fields are not included)
+        dg = Datagram.create([doid2<<32|9800], doid1,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
+        dg.add_uint32(44004400) # setRequired1
+        dg.add_uint32(88008800) # setRDB3
+        location0.expect(dg)
 
 
         ### Clean up ###
-        deleteObject(location, 5, 105000000)
-        location.close()
-
+        for obj in [obj1, obj2]:
+            deleteObject(conn, 5, obj)
+        for mdconn in [conn, obj0, obj1, obj2, location0, location2]:
+            mdconn.close()
 
 
     #### TODO: Messages from here down have not been reviewed/updated and will fail with errors. ####
-
     def test_inheritance(self):
         self.c.flush()
 
