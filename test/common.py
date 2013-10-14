@@ -393,9 +393,20 @@ def ChannelConnection(MDConnection):
         c.connect(('127.0.0.1', 57123))
         MDConnection.__init__(self, c)
 
-        self.channel = MDChannel
+        self.channels = [MDChannel]
         self.send(Datagram.create_add_channel(MDChannel))
 
+    def add_channel(channel):
+        if channel not in self.channels:
+            self.channels.append(channel)
+            self.send(Datagram.create_add_channel(channel))
+
+    def remove_channel(channel):
+        if channel in self.channels:
+            self.send(Datagram.create_remove_channel(channel))
+            self.channels.remove(channel)
+
     def close(self):
-        self.send(Datagram.create_remove_channel(self.channel))
+        for chan in self.channels:
+            self.send(Datagram.create_remove_channel(chan))
         self.c.close()
