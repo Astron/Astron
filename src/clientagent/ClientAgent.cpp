@@ -783,8 +783,10 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 		return true;
 	}
 
-	//TODO: Finish this
-	dgi.read_remainder();
+	Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_ZONE);
+	dg.add_uint32(dgi.read_uint32()); // Parent
+	dg.add_uint32(dgi.read_uint32()); // Zone
+	send(dg);
 	return false;
 }
 
