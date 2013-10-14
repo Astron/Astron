@@ -55,24 +55,6 @@ These messages provide read and write access to an objects fields. Each accessor
 message requires a DistributedObject Id; this means messages can only be sent
 to one object at a time.
 
-
-**STATESERVER_OBJECT_DELETE_RAM(2008)** `args(uint32 do_id)`  
-> Delete the object from the State Server; a stored copy on the database is not
-> affected, if one exists.
->
-> The message is also used to inform others of the delete.  It is broadcast to
-> the objects location, managing AI, and also sent to the owner if one exists.
->
-> If the object has any children, it sends a STATESERVER_OBJECT_DELETE_CHILDREN
-> message over the parent messages channel (1 << 32|parent_id).
->
-> If the object recieved an explicit DELETE_RAM and not an implicit delete (such
-> as a DELETE_CHILDREN from a parent), it sends a STATSERVER_OBJECT_CHANGING_LOCATION
-> to its parent object with INVALID_PARENT and INVALID_ZONE as the new location.
->
-> The delete-notification's sender is equal to the original message's sender.
-
-
 **STATESERVER_OBJECT_GET_FIELD(2010)**  
     `args(uint32 context, uint32 do_id, uint16 field_id)`  
 **STATESERVER_OBJECT_GET_FIELD_RESP(2011)**  
@@ -120,9 +102,9 @@ to one object at a time.
 > last value in the message is used.
 
 
-**STATESERVER_OBJECT_DELETE_FIELD(2030)**  
+**STATESERVER_OBJECT_DELETE_FIELD_RAM(2030)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
-**STATESERVER_OBJECT_DELETE_FIELDS(2031)**  
+**STATESERVER_OBJECT_DELETE_FIELDS_RAM(2031)**  
     `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
 > Delete one or more field(s) of a single object.
 > Required fields with defaults will be reset.
@@ -136,6 +118,24 @@ to one object at a time.
 >
 > In DELETE_FIELDS, there are multiple field deletes in one message, which will
 > be processed as an atomic operation.
+
+
+**STATESERVER_OBJECT_DELETE_RAM(2032)** `args(uint32 do_id)`  
+> Delete the object from the State Server; a stored copy on the database is not
+> affected, if one exists.
+>
+> The message is also used to inform others of the delete.  It is broadcast to
+> the objects location, managing AI, and also sent to the owner if one exists.
+>
+> If the object has any children, it sends a STATESERVER_OBJECT_DELETE_CHILDREN
+> message over the parent messages channel (1 << 32|parent_id).
+>
+> If the object recieved an explicit DELETE_RAM and not an implicit delete (such
+> as a DELETE_CHILDREN from a parent), it sends a STATSERVER_OBJECT_CHANGING_LOCATION
+> to its parent object with INVALID_PARENT and INVALID_ZONE as the new location.
+>
+> The delete-notification's sender is equal to the original message's sender.
+
 
 
 #### Section 2.2: Object Visibility Messages ####
@@ -304,9 +304,18 @@ the database stateserver.
 The database stateserver otherwise provides equivelant StateServer-like behavior
 to stored objects in the database.
 
-**DBSS_OBJECT_ACTIVATE(2200)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`  
+**DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS(2200)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_DEFAULTS>)`  
+**DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER(2201)**  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_DEFAULTS>, <OTHER_DEFAULTS>)`  
 > Load an object into ram from disk with the given parent and zone.
+> The loaded object will use fields from the database if they exist, and only
+> use the provided defaults if the field was not set in the database.
+>
+> If the wrong dclass_id is sent, the DBSS will ignore the message.
+>
 > Once in ram, the DBSS will cache all ram and required fields, and will only
 > make requests to the Database for non-ram|non-required db fields.
 >
@@ -314,10 +323,32 @@ to stored objects in the database.
 > An activated object will also listen for broadcasted Database updates and change
 > any cached values.
 >
-> This message otherwise behaves equivalently to STATESERVER_OBJECT_SET_ZONE.
+> These messages otherwise behaves equivalently to STATESERVER_CREATE_OBJECT.
 
 
-**DBSS_OBJECT_DELETE_DISK(2208)**  
+**DBSS_OBJECT_DELETE_FIELD_DISK(2230)**  
+    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
+**DBSS_OBJECT_DELETE_FIELDS_DISK(2231)**  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+> Delete one or more db field(s) of a single object.
+>
+> The message is also used to inform others of the delete by the following:
+> - An airecv field will be sent to the object's AI channel.
+> - An ownrecv field will be sent to the owning-client's channel.
+> - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
+> The delete-notifications's sender is equal to the original message's sender.
+>
+> In DELETE_FIELDS, there are multiple field deletes in one message, which will
+> be processed as an atomic operation.
+
+
+**DBSS_OBJECT_DELETE_DISK(2232)**  
     `args(uint32 do_id)`  
 > Delete the object from the Database. The object still exists in ram, if it
 > was previously activated.
+>
+> The message is also used to inform others of the delete.  It is broadcast to
+> the objects location, managing AI, and owner if they exists.
+>
+> _Note: Currently this message does not propogate to children. This behavior
+>        should be reviewed to determine whether it is expected or not._

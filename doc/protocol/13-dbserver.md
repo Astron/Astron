@@ -23,14 +23,10 @@ The following is a list of database control messages:
 **DBSERVER_CREATE_OBJECT_RESP(3001)**  
     `args(uint32 context, uint32 do_id)`  
 > This message creates a new object in the database with the given fields set to
-> the given values. For required fields that are not given, the default values
-> are used. The return is the do_id of the object. If creation fails, 
-> INVALID_DO_ID (0) is returned.
-
-
-**DBSERVER_OBJECT_DELETE(3008)**  
-    `args(uint32 do_id)`  
-> This message removes the object with the given do_id from the server.  
+> the given values.  If a field was not given, but has a default value, the default
+> value is stored.
+> 
+> If creation fails INVALID_DO_ID (0) is returned.
 
 
 **DBSERVER_OBJECT_GET_FIELD(3010)**  
@@ -106,5 +102,10 @@ The following is a list of database control messages:
 **DBSERVER_OBJECT_DELETE_FIELDS(3031)**  
    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
 > These messages delete individual fields from a database object.
-> Required fields with defaults will be reset.
-> Required fields without defaults cannot be cleared.
+>
+> Fields with default values will be reset to the default instead.
+
+
+**DBSERVER_OBJECT_DELETE(3032)**  
+    `args(uint32 do_id)`  
+> This message removes the object with the given do_id from the server.  

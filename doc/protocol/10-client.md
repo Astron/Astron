@@ -132,12 +132,6 @@ in order to accomplish various normal game tasks.
 >        internal protocol._
 
 
-**CLIENT_OBJECT_LEAVING(108)** `args(uint32 do_id)`  
-> This is sent by the Client Agent to let the client know that an object is
-> leaving the client's visibility, either due to deletion, zone change, or
-> dropped interest.
-
-
 **CLIENT_OBJECT_SET_FIELD(120)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
 > This is sent either by the Client Agent or the client to issue a field update
@@ -150,6 +144,12 @@ in order to accomplish various normal game tasks.
 > This is sent either by the Client Agent or the client to issue a field update
 > on a given object. The format of this message is analogous to 
 > `STATESERVER_OBJECT_SET_FIELD` in the internal protocol.
+
+
+**CLIENT_OBJECT_LEAVING(132)** `args(uint32 do_id)`  
+> This is sent by the Client Agent to let the client know that an object is
+> leaving the client's visibility, either due to deletion, zone change, or
+> dropped interest.
 
 
 **CLIENT_OBJECT_LOCATION(140)**  
