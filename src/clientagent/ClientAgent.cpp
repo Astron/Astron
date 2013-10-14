@@ -741,15 +741,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 		return true;
 	}
 
-	bool is_owned = false;
-	for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
-	{
-		if(*it == do_id)
-		{
-			is_owned = true;
-			break;
-		}
-	}
+	bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
 
 	if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
 	{
