@@ -57,6 +57,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual void handle_pre_hello(DatagramIterator &dgi);
 		virtual void handle_pre_auth(DatagramIterator &dgi);
 		virtual void handle_authenticated(DatagramIterator &dgi);
+		DCClass *lookup_object(uint32_t do_id);
 	private:
 		std::list<uint32_t> add_interest(Interest &i);
 		void remove_interest(Interest &i, uint32_t id);

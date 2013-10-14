@@ -407,6 +407,29 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 	}
 }
 
+DCClass *Client::lookup_object(uint32_t do_id)
+{
+	// First see if it's an UberDOG:
+	if(uberdogs.find(do_id) != uberdogs.end())
+	{
+		return uberdogs[do_id].dcc;
+	}
+
+	// Next, check the shared object cache, but this client only knows about it
+	// if it occurs in m_seen_objects or m_owned_objects:
+	if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
+	   m_seen_objects.find(do_id) != m_seen_objects.end())
+	{
+		if(dist_objs.find(do_id) != dist_objs.end())
+		{
+			return dist_objs[do_id].dcc;
+		}
+	}
+
+	// We're at the end of our rope; we have no clue what this object is.
+	return NULL;
+}
+
 //Only handles one message type, so it does not need to be split up.
 void Client::handle_pre_hello(DatagramIterator &dgi)
 {
@@ -681,42 +704,39 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 {
 	uint32_t do_id = dgi.read_uint32();
 	uint16_t field_id = dgi.read_uint16();
-	DCClass *dcc = NULL;
-	if(uberdogs.find(do_id) != uberdogs.end())
+
+	DCClass *dcc = lookup_object(do_id);
+
+	// If the class couldn't be found, error out:
+	if(!dcc)
 	{
-		if(m_state != CLIENT_STATE_ESTABLISHED && !uberdogs[do_id].anonymous)
+		std::stringstream ss;
+		ss << "Client tried to send update to nonexistent object " << do_id;
+		send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+		return true;
+	}
+
+	// If the client is not in the ESTABLISHED state, it may only send updates
+	// to anonymous UberDOGs.
+	if(m_state != CLIENT_STATE_ESTABLISHED)
+	{
+		if(uberdogs.find(do_id) == uberdogs.end() || !uberdogs[do_id].anonymous)
 		{
 			std::stringstream ss;
-			ss << "Object " << do_id << " does not accept anonymous updates.";
+			ss << "Client tried to send update to non-anonymous object "
+			   << dcc->get_name() << "(" << do_id << ")";
 			send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str(), true);
 			return true;
 		}
-		dcc = uberdogs[do_id].dcc;
 	}
-	if(!dcc)
-	{
-		if(m_state != CLIENT_STATE_ESTABLISHED)
-		{
-			send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, "do_id is not a uberdog", true);
-			return true;
-		}
-		if(dist_objs.find(do_id) != dist_objs.end())
-		{
-			dcc = dist_objs[do_id].dcc;
-		}
-		else
-		{
-			send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, "do does not exist", true);
-			return true;
-		}
-	}
+
 
 	DCField *field = dcc->get_field_by_index(field_id);
 	if(!field)
 	{
 		std::stringstream ss;
 		ss << "Client tried to send update for nonexistent field " << field_id << " to object "
-			<< dcc->get_name() << "(" << do_id << ")";
+		   << dcc->get_name() << "(" << do_id << ")";
 		send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
 		return true;
 	}
@@ -735,7 +755,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 	{
 		std::stringstream ss;
 		ss << "Client tried to send update for non-sendable field: "
-			<< dcc->get_name() << "(" << do_id << ")." << field->get_name();
+		   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
 		send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
 		return true;
 	}
