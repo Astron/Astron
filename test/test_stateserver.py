@@ -425,63 +425,57 @@ class TestStateServer(unittest.TestCase):
         children2.close()
         children3.close()
 
+    # Tests stateserver handling of the 'ram' keyword
     def test_ram(self):
-        self.c.flush()
+        ai = ChannelConnection(13000<<22|6800)
+        ai.send(Datagram.create_add_channel(13000<<22|4800))
 
-        self.c.send(Datagram.create_add_channel(13000<<32|6800))
-        self.c.send(Datagram.create_add_channel(13000<<32|4800))
-
+        ### Test that ram fields are remembered ###
         # Create an object...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(13000) # Parent
-        dg.add_uint32(6800) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(102000000) # ID
+        appendMeta(dg, 102000000, 13000, 6800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
-        self.c.send(dg)
+        ai.send(dg)
 
         # See if it shows up...
         dg = Datagram.create([13000<<32|6800], 102000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(13000) # Parent
-        dg.add_uint32(6800) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(102000000) # ID
+        appendMeta(dg, 102000000, 13000, 6800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai.expect(dg))
 
         # At this point we don't care about zone 6800.
-        self.c.send(Datagram.create_remove_channel(13000<<32|6800))
+        ai.send(Datagram.create_remove_channel(13000<<32|6800))
 
         # Hit it with a RAM update.
         dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(102000000)
         dg.add_uint16(setBR1)
         dg.add_string("Boots of Coolness (+20%)")
-        self.c.send(dg)
+        ai.send(dg)
 
         # Now move it over into zone 4800...
         dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_SET_LOCATION)
-        dg.add_uint32(13000) # Parent
-        dg.add_uint32(4800) # Zone
-        self.c.send(dg)
+        appendMeta(dg, parent=13000, zone=4800)
+        ai.send(dg)
 
         # Verify that it announces its entry with the RAM message included.
         dg = Datagram.create([13000<<32|4800], 102000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
-        dg.add_uint32(13000) # Parent
-        dg.add_uint32(4800) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(102000000) # ID
+        appendMeta(dg, 102000000, 13000, 4800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
         dg.add_uint16(1) # Other fields: 1
         dg.add_uint16(setBR1)
         dg.add_string("Boots of Coolness (+20%)")
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(ai.expect(dg))
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(13000<<32|4800))
+
+        ### Cleanup ###
+        # Delete object
         dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(102000000)
         self.c.send(dg)
+
+        # Close connection
+        ai.close()
 
     def test_set_zone(self):
         self.c.flush()
