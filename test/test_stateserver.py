@@ -745,31 +745,25 @@ class TestStateServer(unittest.TestCase):
             mdconn.close()
 
 
-    #### TODO: Messages from here down have not been reviewed/updated and will fail with errors. ####
+    # Tests stateserver handling of DistributedClassInheritance
     def test_inheritance(self):
-        self.c.flush()
+        conn = ChannelConnection(67000<<32|2000)
 
-        self.c.send(Datagram.create_add_channel(67000<<32|2000))
-
+        ### Test for CreateObject on a subclass ###
         # Create a DTO3, which inherits from DTO1.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(67000) # Parent
-        dg.add_uint32(2000) # Zone
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint32(110000000) # ID
+        appendMeta(110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
-        self.c.send(dg)
+        conn.send(dg)
 
         # Does it show up right?
-        dg = Datagram.create([67000<<32|2000], 110000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(67000) # Parent
-        dg.add_uint32(2000) # Zone
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint32(110000000) # ID
+        dg = Datagram.create([67000<<32|2000], 110000000,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
         # Cool, now let's test the broadcast messages:
         for field in [setRDB3, setRequired1]:
@@ -777,12 +771,12 @@ class TestStateServer(unittest.TestCase):
             dg.add_uint32(110000000)
             dg.add_uint16(field)
             dg.add_uint32(0x31415927)
-            self.c.send(dg)
+            conn.send(dg)
             dg = Datagram.create([67000<<32|2000], 5, STATESERVER_OBJECT_SET_FIELD)
             dg.add_uint32(110000000)
             dg.add_uint16(field)
             dg.add_uint32(0x31415927)
-            self.assertTrue(self.c.expect(dg))
+            self.assertTrue(conn.expect(dg))
 
         # This message is NOT part of DTO1/3 and should fail.
         # Bonus points for logging an ERROR log.
@@ -790,14 +784,12 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(110000000)
         dg.add_uint16(setB2)
         dg.add_uint32(0x11225533)
-        self.c.send(dg)
-        self.assertTrue(self.c.expect_none())
+        conn.send(dg)
+        self.assertTrue(conn.expect_none())
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(67000<<32|2000))
-        dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(110000000)
-        self.c.send(dg)
+        ### Cleanup ###
+        deleteObject(conn, 5, 110000000)
+        conn.close()
 
     def test_error(self):
         self.c.flush()
