@@ -169,7 +169,7 @@ void DistributedObject::annihilate()
 
 	handle_ai_change(0, true); // Leave the AI's interest.
 
-	m_stateserver->m_objs[m_do_id] = NULL;
+	m_stateserver->m_objs.erase(m_do_id);
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
 }
