@@ -752,7 +752,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for CreateObject on a subclass ###
         # Create a DTO3, which inherits from DTO1.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(110000000, 67000, 2000, DistributedTestObject3)
+        appendMeta(dg, 110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
         conn.send(dg)
@@ -760,7 +760,7 @@ class TestStateServer(unittest.TestCase):
         # Does it show up right?
         dg = Datagram.create([67000<<32|2000], 110000000,
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(110000000, 67000, 2000, DistributedTestObject3)
+        appendMeta(dg, 110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
         self.assertTrue(conn.expect(dg))
@@ -791,93 +791,116 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 110000000)
         conn.close()
 
+    # Tests handling of various erroneous/bad/invalid messages
     def test_error(self):
-        self.c.flush()
+        conn = ChannelConnection(5)
+        conn.add_channel(80000<<32|1234)
 
-        self.c.send(Datagram.create_add_channel(80000<<32|1234))
-
+        ### Test for updating an invalid field ###
         # Create a regular object, this is not an error...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(234000000) # ID
+        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
         dg.add_uint32(819442) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
 
-        # The object should announce its entry to the zone-channel...
-        dg = Datagram.create([80000<<32|1234], 234000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(234000000) # ID
+        # The object should announce its entry to its location...
+        dg = Datagram.create([80000<<32|1234], 234000000,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
         dg.add_uint32(819442) # setRequired1
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
         # Send it an update on a bad field...
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(234000000)
         dg.add_uint16(0x1337)
         dg.add_uint32(0)
-        self.c.send(dg)
+        conn.send(dg)
 
         # Nothing should happen and the SS should log an error.
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
+
+        ### Test for updating with a truncated field ### (continues from previous)
         # How about a truncated update on a valid field?
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(234000000)
         dg.add_uint16(setRequired1)
         dg.add_uint16(0) # Whoops, 16-bit instead of 32-bit!
-        self.c.send(dg)
+        conn.send(dg)
 
         # Nothing should happen + error.
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
+
+        ### Test for creating an object with an in-use doid ### (continues from previous)
         # Let's try creating it again.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(234000000) # ID
+        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
         dg.add_uint32(1234567) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
 
         # NOTHING SHOULD HAPPEN - additionally, the SS should log either an
         # error or a warning
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
+        # Sanity check, make sure neither of the last three tests have changed any values
+        dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(0xF337) # Context
+        dg.add_uint32(234000000) # Id
+        conn.send(dg)
+
+        # Values should be unchanged
+        dg = Datagram.create([5], 234000000, STATESERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(0xF337) # Context
+        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
+        dg.add_uint32(819442) # setRequired1
+        dg.add_uint16(0) # Optional fields: 0
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for creating an object without one if its required fields ###
         # Let's try making another one, but we'll forget the setRequired1.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(235000000) # ID
-        self.c.send(dg)
+        appendMeta(dg, 235000000, 80000, 1234, DistributedTestObject1)
+        conn.send(dg)
 
         # Once again, nothing should happen and the SS should log an ERROR.
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
+        # Additionally, no object should be received on a get all
+        dg = Datagram.create([235000000], 5, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(0xF448) # Context
+        dg.add_uint32(235000000) # Id
+        conn.send(dg)
+
+        # Values should be unchanged
+        self.assertTrue(conn.expect_none())
+
+
+        ### Test for creating an object with an unrecognized DistributedClass ###
         # Let's try making a bad object.
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(1234) # Zone
-        dg.add_uint16(0x1337)
-        dg.add_uint32(236000000) # ID
-        self.c.send(dg)
+        appendMeta(dg, 236000000, 80000, 1234, 0x1337)
+        conn.send(dg)
 
         # Nothing should happen and the SS should log an ERROR.
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(80000<<32|1234))
-        dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(234000000)
-        self.c.send(dg)
-        dg = Datagram.create([235000000], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(235000000)
-        self.c.send(dg)
+        # Additionally, no object should be received on a get all
+        dg = Datagram.create([236000000], 5, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(0xF559) # Context
+        dg.add_uint32(236000000) # Id
+        conn.send(dg)
 
+        # Values should be unchanged
+        self.assertTrue(conn.expect_none())
+
+        ### Cleanup ###
+        deleteObject(conn, 5, 234000000)
+        conn.close()
+
+    #### TODO: Revise messages from here down ####
     def test_create_with_other(self):
         self.c.flush()
 
