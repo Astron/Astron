@@ -944,57 +944,46 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 545640000)
         conn.close()
 
+    # Tests for message GET_LOCATION
     def test_get_location(self):
-        self.c.flush()
-
-        self.c.send(Datagram.create_add_channel(0x4a03))
+        conn = ChannelConnection(0x4a03)
 
         # Throw a few objects out there...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(48000) # Parent
-        dg.add_uint32(624800) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(583312) # ID
+        appendMeta(dg, 583312, 48000, 624800, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(223315) # Parent
-        dg.add_uint32(61444444) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(583311) # ID
+        appendMeta(dg, 583311, 223315, 61444444, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(51792) # Parent
-        dg.add_uint32(5858182) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(583310) # ID
+        appendMeta(dg, 583310, 51792, 5858182, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
 
         # Now let's go on a treasure hunt:
-        for obj, parent, zone in [
+        for doid, parent, zone in [
             (583312, 48000, 624800),
             (583311, 223315, 61444444),
             (583310, 51792, 5858182)]:
-            context = (obj-500000)*2838
-            dg = Datagram.create([obj], 0x4a03, STATESERVER_OBJECT_GET_LOCATION)
-            dg.add_uint32(context)
-            self.c.send(dg)
 
-            dg = Datagram.create([0x4a03], obj, STATESERVER_OBJECT_GET_LOCATION_RESP)
+            # Try getting the location for each object, with some miscellaneous context
+            context = (obj-500000)*2838
+            dg = Datagram.create([doid], 0x4a03, STATESERVER_OBJECT_GET_LOCATION)
             dg.add_uint32(context)
-            dg.add_uint32(obj)
-            dg.add_uint32(parent)
-            dg.add_uint32(zone)
-            self.assertTrue(self.c.expect(dg))
+            conn.send(dg)
+
+            dg = Datagram.create([0x4a03], doid, STATESERVER_OBJECT_GET_LOCATION_RESP)
+            dg.add_uint32(context)
+            appendMeta(dg, doid, parent, zone)
+            self.assertTrue(conn.expect(dg))
 
             # Found the object! Now clean it up.
-            dg = Datagram.create([obj], 5, STATESERVER_OBJECT_DELETE_RAM)
-            dg.add_uint32(obj)
-            self.c.send(dg)
+            deleteObject(conn, 5, doid)
 
-        self.c.send(Datagram.create_remove_channel(0x4a03))
+        ### Cleanup ###
+        conn.close()
 
     def test_shard_reset(self):
         self.c.flush()
