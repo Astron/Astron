@@ -1230,75 +1230,136 @@ class TestStateServer(unittest.TestCase):
         location.close()
         conn.close()
 
+    # Tests stateserver handling of the 'ownrecv' keyword
     def test_ownrecv(self):
-        self.c.flush()
-        self.c.send(Datagram.create_add_channel(14253647))
+        conn = ChannelConnection(14253648)
 
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(88833) # Parent
-        dg.add_uint32(99922) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(74635241) # ID
-        dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
+        ### Test for broadcast of empty
+        # Create an object
+        createEmptyDTO1(conn, 5, 77878788, 88833, 99922, 0)
 
-        # Set the owner channel:
-        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(14253647)
-        self.c.send(dg)
+        # Set the object's owner
+        dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(14253648)
+        conn.send(dg)
 
-        # See if it enters OWNER_RECV.
-        dg = Datagram.create([14253647], 74635241, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
-        dg.add_uint32(88833) # Parent
-        dg.add_uint32(99922) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(74635241) # ID
-        dg.add_uint32(0) # setRequired1
-        dg.add_uint16(0) # Number of OTHER fields.
-        self.assertTrue(self.c.expect(dg))
+        # Ignore EnterOwner message, not testing that here
+        conn.flush()
 
-        # Send an ownrecv message...
-        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(74635241)
+        # Set field on an ownrecv message...
+        dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(77878788)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
-        self.c.send(dg)
+        conn.send(dg)
 
         # See if our owner channel gets it.
-        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(74635241)
+        dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(77878788)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
-        # Change away...
-        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(197519725497)
-        self.c.send(dg)
+        # Delete the object...
+        deleteObject(conn, 5, 77878788)
 
-        # See if we get a CHANGE_OWNER_RECV
-        dg = Datagram.create([14253647], 5, STATESERVER_OBJECT_CHANGING_OWNER)
-        dg.add_uint32(74635241)
-        dg.add_uint64(197519725497)
-        dg.add_uint64(14253647)
-        self.assertTrue(self.c.expect(dg))
+        # And expect to be notified
+        dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(77878788)
+        self.assertTrue(conn.expect(dg))
 
-        # Switch our channel subscription to follow it.
-        self.c.send(Datagram.create_add_channel(197519725497))
-        self.c.send(Datagram.create_remove_channel(14253647))
+        ### Cleanup ###
+        conn.close()
 
-        # Hit it with a delete.
-        dg = Datagram.create([74635241], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(74635241)
-        self.c.send(dg)
+    # Tests the message SET_OWNER, CHANGING_OWNER, ENTER_OWNER
+    def test_set_owner(self):
+        conn = ChannelConnection(5)
 
-        # Make sure the owner is notified.
-        dg = Datagram.create([197519725497], 74635241, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(74635241)
-        self.assertTrue(self.c.expect(dg))
+        owner1chan = 14253647
+        owner2chan = 22446622
+        doid1 = 74635241
+        doid2 = 0x4a0351
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(197519725497))
+        owner1 = ChannelConnection(owner1chan)
+        owner2 = ChannelConnection(owner2chan)
+
+        ### Test for SetOwner on an object with no owner ###
+        # Make an object to play around with
+        createEmptyDTO1(conn, 5, doid1, required1=0)
+
+        # Set the object's owner...
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(owner1chan)
+        conn.send(dg)
+
+        # ... and see if it enters the owner.
+        dg = Datagram.create([owner1chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        self.assertTrue(owner1.expect(dg))
+
+
+
+        ### Test for SetOwner on an object with an existing owner ### (continues from previous)
+        # Change owner to someone else...
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(owner2chan)
+        conn.send(dg)
+
+        # ... expecting a changing owner ...
+        dg = Datagram.create([owner1chan], 5, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_uint32(doid1)
+        dg.add_uint64(owner2chan) # New owner
+        dg.add_uint64(owner1chan) # Old owner
+        self.assertTrue(owner1.expect(dg))
+        # ... and see if it enters the new owner.
+        dg = Datagram.create([owner1chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        self.assertTrue(owner2.expect(dg))
+
+
+
+        ### Test for SetOwner on an object with owner fields and non-owner, non-broadcast fields ###
+        # Create an object with a bunch of types of fields
+        dg = Datagram.create([doid2], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid2, 0, 0, DistributedTestObject3)
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint32(0) # setRDB3
+        dg.add_uint16(3) # Optional fields: 3
+        dg.add_uint16(setDb3)
+        dg.add_string("Hey Princess! Want to do the SCIENCE DANCE with me?")
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0x1337)
+        dg.add_uint16(setBR1)
+        dg.add_string("I feel radder, faster... more adequate!")
+        conn.send(dg)
+
+        # Set the object's owner...
+        dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_uint64(owner1chan)
+        conn.send(dg)
+
+        # ... and see if it enters the owner with only broadcast and/or ownrecv fields.
+        dg = Datagram.create([owner1chan], doid1,
+                STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid2, 0, 0, DistributedTestObject3)
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint32(0) # setRDB3
+        dg.add_uint16(3) # Optional fields: 3
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0x1337)
+        dg.add_uint16(setBR1)
+        dg.add_string("I feel radder, faster... more adequate!")
+        self.assertTrue(owner1.expect(dg))
+
+
+        ### Cleanup ###
+        deleteObject(conn, 5, doid1)
+        deleteObject(conn, 5, doid2)
+        owner1.close()
+        owner2.close()
+        conn.close()
 
     def test_molecular(self):
         self.c.flush()
