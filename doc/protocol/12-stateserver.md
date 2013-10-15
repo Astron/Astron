@@ -69,7 +69,7 @@ to one object at a time.
           uint16 field_count, [uint16 field_id]*field_count)`  
 **STATESERVER_OBJECT_GET_FIELDS_RESP(2013)**  
     `args(uint32 context, uint8 success,
-          uint16 field_count, [uint16 field_id, <VALUE>]*field_count)`  
+          [uint16 field_count], [uint16 field_id, <VALUE>]*field_count)`  
 > Get the value of multiple fields from a single object.
 >
 > A failure is only returned if one or more of the values are invalid for the

@@ -28,6 +28,12 @@ def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if dclass is not None:
         datagram.add_uint16(dclass)
 
+def createEmptyDTO1(conn, sender, doid, parent=0, zone=0, required1=0):
+    dg = Datagram.create([100], sender, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+    appendMeta(dg, doid, parent, zone, DistributedTestObject1)
+    dg.add_uint32(required1)
+    conn.send(dg)
+
 def deleteObject(conn, sender, doid):
     dg = Datagram.create([doid], sender, STATESERVER_OBJECT_DELETE_RAM)
     dg.add_uint32(doid)
@@ -50,10 +56,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for CreateRequired with a required value ###
         # Create a DistributedTestObject1...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
-        dg.add_uint32(6789) # setRequired1
-        ai.send(dg)
+        createEmptyDTO1(ai, 5, 101000000, 5000, 1500, 6789)
 
         # The object should announce its entry to the zone-channel...
         dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
@@ -191,10 +194,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetAI on an object without children, AI, or optional fields ###
         # Create our first object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
-        dg.add_uint32(6789) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, doid1, 0, 0, 6789)
 
         # Object should not ask its parent (INVALID_CHANNEl) for an AI channel...
         self.assertTrue(conn.expect_none())
@@ -240,10 +240,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for child AI handling on creation ### (continues from previous)
         # Let's create a second object beneath the first
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, doid2, doid1, 1500, DistributedTestObject1)
-        dg.add_uint32(1337) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, doid2, doid1, 1500, 1337)
 
         # The first object is expecting two messages from the child...
         context = None
@@ -289,10 +286,7 @@ class TestStateServer(unittest.TestCase):
         ai2.flush() # Ignore AI notifcation
 
         # Recreate the second object with no parent
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
-        dg.add_uint32(1337) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, doid2, 0, 0, DistributedTestObject1, 1337)
 
         # Set the location of the second object to a zone of the first object
         dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_LOCATION)
@@ -452,10 +446,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test that ram fields are remembered ###
         # Create an object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 102000000, 13000, 6800, DistributedTestObject1)
-        dg.add_uint32(12341234) # setRequired1
-        ai.send(dg)
+        createEmptyDTO1(ai, 5, 102000000, 13000, 6800, 12341234)
 
         # See if it shows up...
         dg = Datagram.create([13000<<32|6800], 102000000,
@@ -513,10 +504,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for a call to SetLocation on object without previous location ###
         # Create an object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
-        dg.add_uint32(43214321) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, doid1, 0, 0, 43214321)
 
         # It shouldn't broadcast a location change because it doesn't have one.
         self.assertTrue(conn.expect_none())
@@ -539,10 +527,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for a call to SetLocation on an object with existing location
         ### (continues from previous)
         # Create an object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
-        dg.add_uint32(66668888) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, doid2, 0, 0, 66668888)
 
         # It shouldn't broadcast a location change because it doesn't have one.
         self.assertTrue(conn.expect_none())
@@ -798,10 +783,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for updating an invalid field ###
         # Create a regular object, this is not an error...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
-        dg.add_uint32(819442) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, 234000000, 80000, 1234, 819442)
 
         # The object should announce its entry to its location...
         dg = Datagram.create([80000<<32|1234], 234000000,
@@ -835,10 +817,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for creating an object with an in-use doid ### (continues from previous)
         # Let's try creating it again.
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
-        dg.add_uint32(1234567) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, 234000000, 80000, 1234, 1234567)
 
         # NOTHING SHOULD HAPPEN - additionally, the SS should log either an
         # error or a warning
@@ -948,18 +927,9 @@ class TestStateServer(unittest.TestCase):
         conn = ChannelConnection(0x4a03)
 
         # Throw a few objects out there...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 583312, 48000, 624800, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        conn.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 583311, 223315, 61444444, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        conn.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 583310, 51792, 5858182, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, 583312, 48000, 624800)
+        createEmptyDTO1(conn, 5, 583311, 223315, 61444444)
+        createEmptyDTO1(conn, 5, 583310, 51792, 5858182)
 
         # Now let's go on a treasure hunt:
         for doid, parent, zone in [
@@ -989,16 +959,15 @@ class TestStateServer(unittest.TestCase):
         conn = ChannelConnection(62222<<32|125)
 
         # Create an object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 201, 62222, 125, DistributedTestObject1)
-        dg.add_uint32(6789) # setRequired1
-        conn.send(dg)
+        createEmptyDTO1(conn, 5, 201, 62222, 125, 6789)
 
         # ... with an AI channel...
         dg = Datagram.create([201], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint32(201)
         dg.add_uint64(31337)
         conn.send(dg)
+
+        # Ignore any noise...
+        conn.flush()
 
         # Now let's try hitting the SS with a reset for the wrong AI:
         dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
@@ -1016,195 +985,191 @@ class TestStateServer(unittest.TestCase):
         # Then object should die:
         dg = Datagram.create([62222<<32|125], 201, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(201)
-        slef.assertTrue(conn.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
         ### Cleanup ###
         conn.close()
 
-    def test_query(self):
-        self.c.flush()
+    # Tests for messages GET_ALL, GET_FIELD, and GET_FIELDS
+    def test_get(self):
+        conn = ChannelConnection(890)
 
-        self.c.send(Datagram.create_add_channel(890))
 
-        # Make a few objects...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(4) # Parent
-        dg.add_uint32(2) # Zone
-        dg.add_uint16(DistributedTestObject1)
+        ### Test for GetAll on object with just required fields ###
+        # Make an object
+        createEmptyDTO1(conn, 5, 15000, 4, 2)
+
+        # Get all from the object
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(0x600DF00D)
+        conn.send(dg)
+
+        # Expect all data in response
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(0x600DF00D)
+        appendMeta(dg, 15000, 4, 2, DistributedTestObject1)
+        dg.add_uint16(0) # Optional fields: 0
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for GetField on a valid field with a set value ### (continues from previous)
+        # Now get just a single field
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(0xBAB55EED) # Context
+        dg.add_uint32(483312) # ID
+        dg.add_uint16(setRequired1)
+        conn.send(dg)
+
+        # Expect get field response
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(0xBAB55EED) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for GetField on a valid field with no set value ### (continues from previous)
+        # Get a field not present on the object...
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(0xBAD5EED) # Context
         dg.add_uint32(15000) # ID
-        dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483312) # ID
-        dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483311) # ID
-        dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(51792) # Parent
-        dg.add_uint32(5858182) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483310) # ID
-        dg.add_uint32(0) # setRequired1
-        self.c.send(dg)
+        dg.add_uint16(setBR1)
+        conn.send(dg)
 
-        # Query each one out of the SS:
-        dg = Datagram.create([483310, 483311, 483312], 890, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(0x600DF00D)
-        self.c.send(dg)
+        # Expect failure
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(0xBAD5EED) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(conn.expect(dg))
 
-        # The SS is a very efficient organization and will return everything
-        # promptly.
-        expected = []
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0x600DF00D)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483312) # ID
-        dg.add_uint32(0) # setRequired1
-        dg.add_uint16(0) # No extra fields
-        expected.append(dg)
-        dg = Datagram.create([890], 483311, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0x600DF00D)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483311) # ID
-        dg.add_uint32(0) # setRequired1
-        dg.add_uint16(0) # No extra fields
-        expected.append(dg)
-        dg = Datagram.create([890], 483310, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0x600DF00D)
-        dg.add_uint32(51792) # Parent
-        dg.add_uint32(5858182) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483310) # ID
-        dg.add_uint32(0) # setRequired1
-        dg.add_uint16(0) # No extra fields
-        expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
 
-        # Test zone queries...
-        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint16(1) # Only looking at one zone...
-        dg.add_uint32(1337) # Zone
-        self.c.send(dg)
+        ### Test for GetField on an invalid field ### (continues from previous)
+        # Get a field that is invalid for the object...
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(0x5EE5BAD) # Context
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(0x1337) # Field id
+        conn.send(dg)
 
-        # We should get ENTERZONEs for both objects in that zone...
-        expected = []
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483312) # ID
-        dg.add_uint32(0) # setRequired1
-        expected.append(dg)
-        dg = Datagram.create([890], 483311, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint32(1337) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(483311) # ID
-        dg.add_uint32(0) # setRequired1
-        expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
+        # Expect failure
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(0x5EE5BAD) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(conn.expect(dg))
 
-        # Next we should get the QUERY_ZONE_ALL_DONE from the parent...
-        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
-        dg.add_uint32(15000) # Parent
-        dg.add_uint16(1) # Only looking at one zone...
-        dg.add_uint32(1337) # Zone
-        self.assertTrue(self.c.expect(dg))
-        # AND NOTHING MORE:
-        self.assertTrue(self.c.expect_none())
 
-        # Now test field queries...
-        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(483312) # ID
+        ### Test for GetFields on fields with set values ### (continues from previous)
+        # First lets set a second field
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(setBR1)
+        dg.add_string("MY HAT IS AWESOME!!!")
+        conn.send(dg)
+
+        # Now let's try getting multiple fields
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(0x600D533D)
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setRequired1)
-        dg.add_uint32(0xBAB55EED)
-        self.c.send(dg)
+        dg.add_uint16(setBR1)
+        conn.send(dg)
 
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(483312)
-        dg.add_uint16(setRequired1)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint8(1)
-        dg.add_uint32(0)
-        self.assertTrue(self.c.expect(dg))
+        # Expect both fields in response
+        dg = conn.recv_maybe()
+        self.assertTrue(dg is not None) # Expected a GetFieldsResp datagram
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(dgi.read_uint32() == 0x600D533D) # Context
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
+        self.assertTrue(dgi.read_uint16() == 2) # Field count
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field is setRequired1:
+                self.assertTrue(dgi.read_uint32() == 0)
+            elif field is setBR1:
+                self.assertTrue(dgi.read_string() == "MY HAT IS AWESOME!!!")
+            else:
+                self.fail("Unexpected field type")
 
-        # Query a field not present on the object...
-        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(483312) # ID
+
+
+        ### Test for GetFields with mixed set and unset fields ### (continues from previous)
+        # Send GetFields with mixed set and unset fields
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(0x711E644E) # Context
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setBR1)
+        dg.add_uint16(setBRA1)
+        conn.send(dg)
+
+        # Expect only one field back
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0x711E644E) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setBR1)
+        dg.add_string("MY HAT IS AWESOME!!!")
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for GetFields with only unset fields ### (continues from previous)
+        # Send GetFields with unset fields
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(0x822F755F) # Context
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setBRA1)
+        dg.add_uint16(setBRO1)
+        conn.send(dg)
+
+        # Expect success with no fields back
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0x822F755F) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(0) # Field count
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for GetFields with only invalid fields ### (continues from previous)
+        # Send GetFields with unset fields
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(0x5FFC422C) # Context
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
-        dg.add_uint32(0xBAB55EED)
-        self.c.send(dg)
+        dg.add_uint16(setDb3)
+        conn.send(dg)
 
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(483312)
+        # Expect failure
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0x5FFC422C) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(conn.expect(dg))
+
+
+        ### Test for GetFields with mixed valid and invalid fields ### (continues from previous)
+        # Send GetFields with unset fields
+        dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(0x4EEB311B) # Context
+        dg.add_uint32(15000) # ID
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint8(0)
-        self.assertTrue(self.c.expect(dg))
+        dg.add_uint16(setRequired1)
+        conn.send(dg)
 
-        # Now let's try a QUERY_FIELDS.
-        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(483312)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint16(setRequired1)
-        dg.add_uint16(setRequired1)
-        dg.add_uint16(setRequired1)
-        self.c.send(dg)
+        # Expect failure
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0x4EEB311B) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(conn.expect(dg))
 
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_GET_FIELDS_RESP)
-        dg.add_uint32(483312)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint8(1)
-        dg.add_uint16(setRequired1)
-        dg.add_uint32(0)
-        dg.add_uint16(setRequired1)
-        dg.add_uint32(0)
-        dg.add_uint16(setRequired1)
-        dg.add_uint32(0)
-        self.assertTrue(self.c.expect(dg))
 
-        # Now a QUERY_FIELDS including a nonpresent field.
-        dg = Datagram.create([483312], 890, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(483312)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint16(setRequired1)
-        dg.add_uint16(setRDB3)
-        self.c.send(dg)
-
-        dg = Datagram.create([890], 483312, STATESERVER_OBJECT_GET_FIELDS_RESP)
-        dg.add_uint32(483312)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint8(0)
-        self.assertTrue(self.c.expect(dg))
-
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(890))
-        dg = Datagram.create([15000], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(15000)
-        self.c.send(dg)
-        dg = Datagram.create([483310], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(483310)
-        self.c.send(dg)
-        dg = Datagram.create([483311], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(483311)
-        self.c.send(dg)
-        dg = Datagram.create([483312], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(483312)
-        self.c.send(dg)
+        ### Cleanup ###
+        deleteObject(conn, 5, 15000)
+        conn.close()
 
     def test_update_multiple(self):
         self.c.send(Datagram.create_add_channel(5985858))
