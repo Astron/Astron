@@ -1361,10 +1361,13 @@ class TestStateServer(unittest.TestCase):
         owner2.close()
         conn.close()
 
+    # Tests stateserver handling of molecular fields
     def test_molecular(self):
         conn = ChannelConnection(13371337)
         location0 = ChannelConnection(88<<32|99)
 
+        ### Test for broadcast of a molecular SetField is molecular ###
+        # Create an object
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(13) # setX
@@ -1400,6 +1403,10 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(77) # setZ
         self.assertTrue(location0.expect(dg))
 
+
+
+        ### Test for molecular SetField properly updating the individual values
+        ### (continues from previous)
         # Look at the object and see if the requireds are updated...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0) # Context
@@ -1416,6 +1423,10 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(0) # Optional fields: 0
         self.assertTrue(conn.expect(dg))
 
+
+
+        ### Test for molecular SetField with a ram, not-required, fields
+        ### (continues from previous)
         # Now try a RAM update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(73317331)
@@ -1456,6 +1467,9 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(3)
         self.assertTrue(conn.expect(dg))
 
+
+
+        ### Test for GetFields on mixed molecular and atomic fields ### (continues from previous)
         # Now let's test querying individual fields...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0xBAB55EED) # Context
@@ -1494,9 +1508,73 @@ class TestStateServer(unittest.TestCase):
             else:
                 self.fail("Received unexpected field in GET_FIELDS_RESP.")
 
+
         ### Cleanup ###
         deleteObject(conn, 5, 73317331)
         location0.close()
+        conn.close()
+
+    # Tests the message GET_ZONES_OBJECTS
+    def test_get_zones_objects(self):
+        conn = ChannelConnection(5)
+
+        doid0 = 1000 # Root object
+        doid1 = 2001
+        doid2 = 2002
+        doid3 = 2003
+        doid4 = 2004
+        doid5 = 2005
+        doid6 = 3006 # Child of child
+
+        ### Test for GetZonesObjects ###
+        # Make a bunch of objects
+        createEmptyDTO1(conn, 5, doid0)
+        createEmptyDTO1(conn, 5, doid1, doid0, 912)
+        createEmptyDTO1(conn, 5, doid2, doid0, 912)
+        createEmptyDTO1(conn, 5, doid3, doid0, 930)
+        createEmptyDTO1(conn, 5, doid4, doid0, 940)
+        createEmptyDTO1(conn, 5, doid5, doid0, 950)
+        createEmptyDTO1(conn, 5, doid6, doid1, 860)
+
+        # Ask for objects from some of the zones...
+        dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
+        dg.add_uint32(0xF337) # Context
+        dg.add_uint32(doid0) # Parent Id
+        dg.add_uint16(2) # Zone count
+        dg.add_uint32(912)
+        dg.add_uint32(930)
+        conn.send(dg)
+
+        expected = []
+        # ... expecting the count of objects in the zone...
+        dg = Datagram.create([5], doid0, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(0xF337) # Context
+        dg.add_uint32(3) # Count of objects [(912, [obj1, obj2]), (930, [obj3])]
+        expected.append(dg)
+        # ... and object1's enter zone message...
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        appendMeta(dg, doid1, doid0, 912, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        # ... and object2's enter zone message...
+        dg = Datagram.create([5], doid2, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        appendMeta(dg, doid2, doid0, 912, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        # ... and object3's enter zone message...
+        dg = Datagram.create([5], doid3, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        appendMeta(dg, doid3, doid0, 930, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+        self.assertTrue(conn.expect_multi(expected, only=True))
+
+        # Shouldn't receive messages from any of the other objects
+        self.assertTrue(conn.expect_none())
+
+
+        ### Cleanup ###
+        for doid in (doid0, doid1, doid2, doid3, doid4, doid5, doid6):
+            deleteObject(conn, 5, doid)
         conn.close()
 
 if __name__ == '__main__':
