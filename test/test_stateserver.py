@@ -1171,25 +1171,24 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 15000)
         conn.close()
 
-    def test_update_multiple(self):
-        self.c.send(Datagram.create_add_channel(5985858))
-        self.c.send(Datagram.create_add_channel(12512<<32|66161))
+    # Tests the message SET_FIELDS
+    def test_set_fields(self):
+        conn = ChannelConnection(5985858)
+        location = ChannelConnection(12512<<32|66161)
 
+        ### Test for SetFields with broadcast and ram filds ###
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(12512) # Parent
-        dg.add_uint32(66161) # Zone
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint32(55555) # ID
+        appendMeta(dg, 55555, 66161, 12512, DistributedTestObject3)
         dg.add_uint32(0) # setRequired1
         dg.add_uint32(0) # setRDB3
-        self.c.send(dg)
+        conn.send(dg)
 
         # Ignore the entry message...
-        self.c.flush()
+        location.flush()
 
         # Send a multi-field update with two broadcast fields and one ram.
         dg = Datagram.create([55555], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(55555)
+        dg.add_uint32(55555) # ID
         dg.add_uint16(3) # 3 fields:
         dg.add_uint16(setDb3)
         dg.add_string('Time is candy')
@@ -1197,45 +1196,39 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0xD00D)
         dg.add_uint16(setB1)
         dg.add_uint8(118)
-        self.c.send(dg)
+        conn.send(dg)
 
-        # TODO: Reenable this test once atomic updates are implemented.
-        # Verify that the broadcasts go out, in order...
+        # Verify that the broadcasts go out, in order... (these must be in the correct order)
         dg = Datagram.create([12512<<32|66161], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(55555)
-        dg.add_uint16(2) # 3 fields:
+        dg.add_uint32(55555) # ID
+        dg.add_uint16(2) # 2 fields:
         dg.add_uint16(setRequired1)
         dg.add_uint32(0xD00D)
         dg.add_uint16(setB1)
         dg.add_uint8(118)
-        #self.assertTrue(self.c.expect(dg))
-        self.c.flush()
+        self.assertTrue(location.expect(dg))
 
-        # Query the ram/required...
+        # Get the ram fields to make sure they're set
         dg = Datagram.create([55555], 5985858, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(0)
-        self.c.send(dg)
+        dg.add_uint32(0x5111) # Context
+        dg.add_uint32(55555) #ID
+        conn.send(dg)
 
         # See if those updates have properly gone through...
         dg = Datagram.create([5985858], 55555, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0)
-        dg.add_uint32(12512) # Parent
-        dg.add_uint32(66161) # Zone
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint32(55555) # ID
+        dg.add_uint32(0x5111) # Context
+        appendMeta(dg, 55555, 12512, 66161, DistributedTestObject3)
         dg.add_uint32(0xD00D) # setRequired1
         dg.add_uint32(0) # setRDB3
         dg.add_uint16(1) # 1 extra field:
         dg.add_uint16(setDb3)
         dg.add_string('Time is candy')
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(5985858))
-        self.c.send(Datagram.create_remove_channel(12512<<32|66161))
-        dg = Datagram.create([55555], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(55555)
-        self.c.send(dg)
+        ### Cleanup ###
+        deleteObject(conn, 5985858, 55555)
+        location.close()
+        conn.close()
 
     def test_ownrecv(self):
         self.c.flush()
