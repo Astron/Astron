@@ -900,7 +900,6 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 234000000)
         conn.close()
 
-    #### TODO: Revise messages from here down ####
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
     def test_create_with_other(self):
         conn = ChannelConnection(90000<<32|4321)
@@ -985,75 +984,42 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         conn.close()
 
-    def test_shard_reset(self):
-        self.c.flush()
+    # Tests for DELETE_AI_OBJECTS
+    def test_delete_ai_objects(self):
+        conn = ChannelConnection(62222<<32|125)
 
-        self.c.send(Datagram.create_add_channel(4030<<32|201))
-        self.c.send(Datagram.create_add_channel(4030<<32|202))
-        self.c.send(Datagram.create_add_channel(45543<<32|6868))
-        self.c.send(Datagram.create_add_channel(201<<32|4444))
-
-        # Create a pair of objects...
+        # Create an object...
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(45543) # Parent
-        dg.add_uint32(6868) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(201) # ID
+        appendMeta(dg, 201, 62222, 125, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.c.send(dg)
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(201) # Parent
-        dg.add_uint32(4444) # Zone
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(202) # ID
-        dg.add_uint32(6789) # setRequired1
-        self.c.send(dg)
+        conn.send(dg)
 
-        # Parent has an AI channel...
+        # ... with an AI channel...
         dg = Datagram.create([201], 5, STATESERVER_OBJECT_SET_AI)
         dg.add_uint32(201)
         dg.add_uint64(31337)
-        self.c.send(dg)
-
-        # The notifications trickle down to the children; disregard.
-        self.c.flush()
+        conn.send(dg)
 
         # Now let's try hitting the SS with a reset for the wrong AI:
         dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
         dg.add_uint64(41337)
-        self.c.send(dg)
+        conn.send(dg)
 
         # Nothing should happen:
-        self.assertTrue(self.c.expect_none())
+        self.assertTrue(conn.expect_none())
 
-        # Now the right AI:
+        # Now the correct AI:
         dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
         dg.add_uint64(31337)
-        self.c.send(dg)
+        conn.send(dg)
 
-        expected = []
-        # The parent should relay down to its children:
-        dg = Datagram.create([4030<<32|201], 201, STATESERVER_DELETE_AI_OBJECTS)
-        dg.add_uint64(31337)
-        expected.append(dg)
-        # ...which should relay down to its children:
-        dg = Datagram.create([4030<<32|202], 202, STATESERVER_DELETE_AI_OBJECTS)
-        dg.add_uint64(31337)
-        expected.append(dg)
-        # Then both objects should die:
-        dg = Datagram.create([45543<<32|6868], 201, STATESERVER_OBJECT_DELETE_RAM)
+        # Then object should die:
+        dg = Datagram.create([62222<<32|125], 201, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(201)
-        expected.append(dg)
-        dg = Datagram.create([201<<32|4444], 202, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(202)
-        expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected))
+        slef.assertTrue(conn.expect(dg))
 
-        # Clean up.
-        self.c.send(Datagram.create_remove_channel(4030<<32|201))
-        self.c.send(Datagram.create_remove_channel(4030<<32|202))
-        self.c.send(Datagram.create_remove_channel(45543<<32|6868))
-        self.c.send(Datagram.create_remove_channel(201<<32|4444))
+        ### Cleanup ###
+        conn.close()
 
     def test_query(self):
         self.c.flush()
