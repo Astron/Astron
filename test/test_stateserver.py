@@ -1362,32 +1362,25 @@ class TestStateServer(unittest.TestCase):
         conn.close()
 
     def test_molecular(self):
-        self.c.flush()
-        self.c.send(Datagram.create_add_channel(13371337))
-        self.c.send(Datagram.create_add_channel(88<<32|99))
+        conn = ChannelConnection(13371337)
+        location0 = ChannelConnection(88<<32|99)
 
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        dg.add_uint32(88) # Parent
-        dg.add_uint32(99) # Zone
-        dg.add_uint16(DistributedTestObject4)
-        dg.add_uint32(73317331) # ID
+        appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(13) # setX
         dg.add_uint32(37) # setY
         dg.add_uint32(999999) # setUnrelated
         dg.add_uint32(11) # setZ
-        self.c.send(dg)
+        conn.send(dg)
 
         # Verify its entry...
         dg = Datagram.create([88<<32|99], 73317331, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(88) # Parent
-        dg.add_uint32(99) # Zone
-        dg.add_uint16(DistributedTestObject4)
-        dg.add_uint32(73317331) # ID
+        appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(13) # setX
         dg.add_uint32(37) # setY
         dg.add_uint32(999999) # setUnrelated
         dg.add_uint32(11) # setZ
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(location0.expect(dg))
 
         # Send a molecular update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -1396,7 +1389,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
         dg.add_uint32(77) # setZ
-        self.c.send(dg)
+        conn.send(dg)
 
         # See if the MOLECULAR (not the individual fields) is broadcast.
         dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -1405,25 +1398,23 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
         dg.add_uint32(77) # setZ
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(location0.expect(dg))
 
         # Look at the object and see if the requireds are updated...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(0)
-        self.c.send(dg)
+        dg.add_uint32(0) # Context
+        dg.add_uint32(73317331)
+        conn.send(dg)
 
         dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0)
-        dg.add_uint32(88) # Parent
-        dg.add_uint32(99) # Zone
-        dg.add_uint16(DistributedTestObject4)
-        dg.add_uint32(73317331) # ID
+        dg.add_uint32(0) # Context
+        appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
         dg.add_uint32(999999) # setUnrelated
         dg.add_uint32(77) # setZ
-        dg.add_uint16(0) # 0 extra fields.
-        self.assertTrue(self.c.expect(dg))
+        dg.add_uint16(0) # Optional fields: 0
+        self.assertTrue(conn.expect(dg))
 
         # Now try a RAM update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -1441,19 +1432,17 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(1) # setOne
         dg.add_uint8(2) # setTwo
         dg.add_uint8(3) # setThree
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(location0.expect(dg))
 
         # A query should have all of the individual fields, not the molecular.
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(0)
-        self.c.send(dg)
+        dg.add_uint32(1) # Context
+        dg.add_uint32(73317331) # ID
+        conn.send(dg)
 
         dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0)
-        dg.add_uint32(88) # Parent
-        dg.add_uint32(99) # Zone
-        dg.add_uint16(DistributedTestObject4)
-        dg.add_uint32(73317331) # ID
+        dg.add_uint32(1) # Context
+        appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
         dg.add_uint32(999999) # setUnrelated
@@ -1465,45 +1454,50 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(2)
         dg.add_uint16(setThree)
         dg.add_uint8(3)
-        self.assertTrue(self.c.expect(dg))
+        self.assertTrue(conn.expect(dg))
 
         # Now let's test querying individual fields...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(73317331)
-        dg.add_uint32(0xBAB55EED)
+        dg.add_uint32(0xBAB55EED) # Context
+        dg.add_uint32(73317331) # ID
+        dg.add_uint16(5) # Field count: 5
         dg.add_uint16(setXyz)
         dg.add_uint16(setOne)
         dg.add_uint16(setUnrelated)
         dg.add_uint16(set123)
         dg.add_uint16(setX)
-        self.c.send(dg)
+        conn.send(dg)
 
-        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP)
-        dg.add_uint32(73317331)
-        dg.add_uint32(0xBAB55EED)
-        dg.add_uint8(1)
-        dg.add_uint16(setXyz)
-        dg.add_uint32(55)
-        dg.add_uint32(66)
-        dg.add_uint32(77)
-        dg.add_uint16(setOne)
-        dg.add_uint8(1)
-        dg.add_uint16(setUnrelated)
-        dg.add_uint32(999999)
-        dg.add_uint16(set123)
-        dg.add_uint8(1)
-        dg.add_uint8(2)
-        dg.add_uint8(3)
-        dg.add_uint16(setX)
-        dg.add_uint32(55)
-        self.assertTrue(self.c.expect(dg))
+        dg = conn.recv_maybe()
+        self.assertTrue(dg is not None) # Expected to receive get all response
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(dgi.read_uint32() == 0xBAB55EED) # Context
+        self.assertTrue(dgi.read_uint8() == SUCCESS)
+        self.assertTrue(dgi.read_uint16() == 5) # Field count: 5
+        for x in xrange(5):
+            field = dgi.read_uint16()
+            if field is setXyz:
+                self.assertTrue(dgi.read_uint32() == 55)
+                self.assertTrue(dgi.read_uint32() == 66)
+                self.assertTrue(dgi.read_uint32() == 77)
+            elif field is setOne:
+                self.assertTrue(dgi.read_uint8 == 1)
+            elif field is setUnrelated:
+                self.assertTrue(dgi.read_uint32 == 999999)
+            elif field is set123:
+                self.assertTrue(dgi.read_uint8 == 1)
+                self.assertTrue(dgi.read_uint8 == 2)
+                self.assertTrue(dgi.read_uint8 == 3)
+            elif field is setX:
+                self.assertTrue(dgi.read_uint32 == 55)
+            else:
+                self.fail("Received unexpected field in GET_FIELDS_RESP.")
 
-        # Clean up.
-        dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(73317331)
-        self.c.send(dg)
-        self.c.send(Datagram.create_remove_channel(13371337))
-        self.c.send(Datagram.create_remove_channel(88<<32|99))
+        ### Cleanup ###
+        deleteObject(conn, 5, 73317331)
+        location0.close()
+        conn.close()
 
 if __name__ == '__main__':
     unittest.main()
