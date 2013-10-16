@@ -27,10 +27,10 @@ StateServer::~StateServer()
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 {
+	uint32_t do_id = dgi.read_uint32();
 	uint32_t parent_id = dgi.read_uint32();
 	uint32_t zone_id = dgi.read_uint32();
 	uint16_t dc_id = dgi.read_uint16();
-	uint32_t do_id = dgi.read_uint32();
 
 	if(dc_id >= g_dcf->get_num_classes())
 	{

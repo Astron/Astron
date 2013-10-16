@@ -58,10 +58,10 @@ DistributedObject::~DistributedObject()
 
 void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
 {
+	dg.add_uint32(m_do_id);
 	dg.add_uint32(m_parent_id);
 	dg.add_uint32(m_zone_id);
 	dg.add_uint16(m_dclass->get_number());
-	dg.add_uint32(m_do_id);
 	uint32_t field_count = m_dclass->get_num_inherited_fields();
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
