@@ -1437,7 +1437,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(1) # setOne
         dg.add_uint8(2) # setTwo
         dg.add_uint8(3) # setThree
-        self.c.send(dg)
+        conn.send(dg)
 
         # See if the MOLECULAR (not the individual fields) is broadcast.
         dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_SET_FIELD)
