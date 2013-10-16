@@ -76,10 +76,10 @@ class MessageDirector : public NetworkClient
 		std::list<MDParticipantInterface*> m_participants;
 
 		// Single channel subscriptions
-		std::unordered_map<channel_t, std::set<MDParticipantInterface*>> m_channel_subscriptions;
+		std::unordered_map< channel_t, std::set<MDParticipantInterface*> > m_channel_subscriptions;
 
 		// Range channel subscriptions
-		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*>> m_range_subscriptions;
+		boost::icl::interval_map< channel_t, std::set<MDParticipantInterface*> > m_range_subscriptions;
 
 
 		friend class MDParticipantInterface;
