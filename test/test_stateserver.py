@@ -1037,15 +1037,17 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(0x600DF00D)
         appendMeta(dg, 15000, 4, 2, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
         dg.add_uint16(0) # Optional fields: 0
         self.assertTrue(conn.expect(dg))
+
 
 
         ### Test for GetField on a valid field with a set value ### (continues from previous)
         # Now get just a single field
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(0xBAB55EED) # Context
-        dg.add_uint32(483312) # ID
+        dg.add_uint32(15000) # ID
         dg.add_uint16(setRequired1)
         conn.send(dg)
 
@@ -1056,7 +1058,6 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(setRequired1)
         dg.add_uint32(0)
         self.assertTrue(conn.expect(dg))
-
 
         ### Test for GetField on a valid field with no set value ### (continues from previous)
         # Get a field not present on the object...
@@ -1113,15 +1114,19 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(dgi.read_uint32() == 0x600D533D) # Context
         self.assertTrue(dgi.read_uint8() == SUCCESS)
         self.assertTrue(dgi.read_uint16() == 2) # Field count
+        hasRequired1 = False
+        hasBR1 = False
         for x in xrange(2):
             field = dgi.read_uint16()
             if field is setRequired1:
+                hasRequired1 = True
                 self.assertTrue(dgi.read_uint32() == 0)
             elif field is setBR1:
+                hasBR1 = True
                 self.assertTrue(dgi.read_string() == "MY HAT IS AWESOME!!!")
             else:
                 self.fail("Unexpected field type")
-
+        self.assertTrue(hasRequired1 and hasBR1)
 
 
         ### Test for GetFields with mixed set and unset fields ### (continues from previous)

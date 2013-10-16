@@ -336,7 +336,8 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	return true;
 }
 
-bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
+bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
+	                                   uint16_t succeed_if_unset)
 {
 	DCField *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
@@ -352,7 +353,7 @@ bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
 		int n = molecular->get_num_atomics();
 		for(int i = 0; i < n; ++i)
 		{
-			if(!handle_query(out, molecular->get_atomic(i)->get_number()))
+			if(!handle_one_get(out, molecular->get_atomic(i)->get_number(), succeed_if_unset))
 			{
 				return false;
 			}
@@ -362,15 +363,17 @@ bool DistributedObject::handle_query(Datagram &out, uint16_t field_id)
 
 	if(m_required_fields.count(field))
 	{
+		out.add_uint16(field_id);
 		out.add_data(m_required_fields[field]);
 	}
 	else if(m_ram_fields.count(field))
 	{
+		out.add_uint16(field_id);
 		out.add_data(m_ram_fields[field]);
 	}
 	else
 	{
-		return false;
+		return succeed_if_unset;
 	}
 
 	return true;
@@ -501,19 +504,17 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_GET_FIELD:
 		{
+			uint32_t context = dgi.read_uint32();
 			if(dgi.read_uint32() != m_do_id)
 			{
 				return;    // Not meant for this object!
 			}
 			uint16_t field_id = dgi.read_uint16();
-			uint32_t context = dgi.read_uint32();
 
 			Datagram raw_field;
-			bool success = handle_query(raw_field, field_id);
+			bool success = handle_one_get(raw_field, field_id);
 
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
-			dg.add_uint32(m_do_id);
-			dg.add_uint16(field_id);
 			dg.add_uint32(context);
 			dg.add_uint8(success);
 			if(success)
@@ -526,31 +527,36 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_GET_FIELDS:
 		{
+			uint32_t context = dgi.read_uint32();
 			if(dgi.read_uint32() != m_do_id)
 			{
 				return;    // Not meant for this object!
 			}
-			uint32_t context = dgi.read_uint32();
 
 			Datagram raw_fields;
 			bool success = true;
+			uint16_t fields_found = 0;
 			while(dgi.tell() != in_dg.size())
 			{
 				uint16_t field_id = dgi.read_uint16();
-				raw_fields.add_uint16(field_id);
-				if(!handle_query(raw_fields, field_id))
+				uint16_t length = raw_fields.size();
+				if(!handle_one_get(raw_fields, field_id, true))
 				{
 					success = false;
 					break;
 				}
+				if(raw_fields.size() > length)
+				{
+					fields_found++;
+				}
 			}
 
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
-			dg.add_uint32(m_do_id);
 			dg.add_uint32(context);
 			dg.add_uint8(success);
 			if(success)
 			{
+				dg.add_uint16(fields_found);
 				dg.add_datagram(raw_fields);
 			}
 			send(dg);
