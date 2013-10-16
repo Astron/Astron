@@ -61,17 +61,32 @@ class TestStateServer(unittest.TestCase):
         # Create a DistributedTestObject1...
         createEmptyDTO1(ai, 5, 101000000, 5000, 1500, 6789)
 
+        # The parent is expecting two messages...
+        received = False
+        for x in xrange(2):
+            dg = parent.recv_maybe()
+            self.assertTrue(dg is not None) # Parent expecting ChangingLocation and GetAI
+            dgi = DatagramIterator(dg)
+            # The object should tell the parent its arriving...
+            if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
+                received = True
+                self.assertTrue(dgi.read_uint32() == 101000000) # Id
+                self.assertTrue(dgi.read_uint32() == 5000) # New parent
+                self.assertTrue(dgi.read_uint32() == 1500) # New zone
+                self.assertTrue(dgi.read_uint32() == INVALID_DO_ID) # Old parent
+                self.assertTrue(dgi.read_uint32() == INVALID_ZONE) # Old zone
+            # .. and ask it for its AI, which we're not testing here and can ignore
+            elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI):
+                continue
+            else:
+                self.fail("Received header did not match expected for msgtype: " + str(msgtype))
+        self.assertTrue(received) # Parent received ChangingLocation
+
         # The object should announce its entry to the zone-channel...
         dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
         self.assertTrue(ai.expect(dg))
-
-        # The object should tell the parent its arriving...
-        dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
-        appendMeta(dg, parent=5000, zone=1500) # New location
-        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # Old location
-        self.assertTrue(parent.expect(dg))
 
 
         ### Test for DeleteRam ### (continues from previous)
@@ -79,7 +94,8 @@ class TestStateServer(unittest.TestCase):
         deleteObject(ai, 5, 101000000)
 
         # Object should tell its parent it is going away...
-        dg = Datagram.create([5000], 101000000, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg = Datagram.create([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_uint32(101000000)
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
         appendMeta(dg, parent=5000, zone=1500) # Old location
         self.assertTrue(parent.expect(dg))

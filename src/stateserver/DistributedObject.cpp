@@ -8,9 +8,11 @@
 #include "DistributedObject.h"
 
 DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass,
-                                     uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi, bool has_other) :
-	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_zone_id(zone_id),
-	m_ai_channel(0), m_owner_channel(0), m_ai_explicitly_set(false)
+                                     uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi,
+                                     bool has_other) :
+	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_parent_id(INVALID_DO_ID),
+	m_zone_id(INVALID_ZONE), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
+	m_ai_explicitly_set(false), m_next_context(0)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -46,9 +48,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, D
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 
-	m_parent_id = 0;
-	handle_parent_change(parent_id);
-	send_zone_entry(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+	dgi.seek_payload(); // Seek back to front of payload, to read sender
+	handle_location_change(parent_id, zone_id, dgi.read_uint64());
 }
 
 DistributedObject::~DistributedObject()
@@ -74,54 +75,118 @@ void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
 	}
 }
 
-void DistributedObject::append_other_data(Datagram &dg)
+void DistributedObject::append_other_data(Datagram &dg, bool broadcast_only)
 {
 	dg.add_uint16(m_ram_fields.size());
-	for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
+	if(broadcast_only)
 	{
-		dg.add_uint16(it->first->get_number());
-		dg.add_data(it->second);
+		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
+		{
+			if(it->first->is_broadcast())
+			{
+				dg.add_uint16(it->first->get_number());
+				dg.add_data(it->second);
+			}
+		}
+	}
+	else
+	{
+		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
+		{
+			dg.add_uint16(it->first->get_number());
+			dg.add_data(it->second);
+		}
 	}
 }
 
-void DistributedObject::send_zone_entry(channel_t destination)
+void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new_zone, uint64_t sender)
 {
-	Datagram dg(destination, m_do_id,
-	            m_ram_fields.size() ?
+	uint32_t old_parent = m_parent_id;
+	uint32_t old_zone = m_zone_id;
+
+	// Set of channels that must be notified about location_change
+	std::set<channel_t> targets;
+	
+	// Notify AI of changing location
+	if(m_ai_channel)
+	{
+		targets.insert(m_ai_channel);
+	}
+
+	// Handle parent change
+	if(new_parent != old_parent)
+	{
+    	// Unsubscribe from the old parent's child-broadcast channel.
+        if(old_parent) // If we have an old parent
+        {
+			MessageDirector::singleton.unsubscribe_channel(this, PARENT2CHILDREN(m_parent_id));
+			// Notify old parent of changing location
+			targets.insert(old_parent);
+			// Notify old location of changing location
+			targets.insert(LOCATION2CHANNEL(old_parent, old_zone));
+        }
+
+        m_parent_id = new_parent;
+        m_zone_id = new_zone;
+
+        // Subscribe to new one...
+        if(new_parent) // If we have a new parent
+        {
+			MessageDirector::singleton.subscribe_channel(this, PARENT2CHILDREN(m_parent_id));
+	        if(!m_ai_explicitly_set)
+        	{
+				// Ask the new parent what its AI is.
+				Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
+				dg.add_uint32(m_next_context++);
+				send(dg);
+        	}
+			targets.insert(new_parent); // Notify new parent of changing location
+		}
+		else if(!m_ai_explicitly_set)
+		{
+			m_ai_channel = 0;
+		}
+	}
+	else if(new_zone != old_zone)
+	{
+		m_zone_id = new_zone;
+		// Notify parent of changing zone
+		targets.insert(m_parent_id);
+		// Notify old location of changing location
+		targets.insert(LOCATION2CHANNEL(m_parent_id, old_zone));
+	}
+	else
+	{
+		return; // Not actually changing location, no need to handle.
+	}
+
+	// Send changing location message
+	Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
+	dg.add_uint32(m_do_id);
+	dg.add_uint32(new_parent);
+	dg.add_uint32(new_zone);
+	dg.add_uint32(old_parent);
+	dg.add_uint32(old_zone);
+	send(dg);
+
+	// Send enter location message
+	if(new_parent)
+	{
+		send_location_entry(LOCATION2CHANNEL(new_parent, new_zone));
+	}
+}
+
+void DistributedObject::send_location_entry(uint64_t location)
+{
+	Datagram dg(location, m_do_id, m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
 	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED);
 	append_required_data(dg, true);
 	if(m_ram_fields.size())
 	{
-		append_other_data(dg);
+		append_other_data(dg, true);
 	}
 	send(dg);
-}
-
-void DistributedObject::handle_parent_change(uint32_t new_parent)
-{
-	if(new_parent == m_parent_id)
-	{
-		return;    // Not actually changing parent, no need to handle.
-	}
-
-	// Unsubscribe from the old parent's child-broadcast channel.
-	if(m_parent_id)
-	{
-		MessageDirector::singleton.unsubscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
-	}
-
-	m_parent_id = new_parent;
-
-	// Subscribe to new one...
-	MessageDirector::singleton.subscribe_channel(this, LOCATION2CHANNEL(4030, m_parent_id));
-
-	if(!m_ai_explicitly_set)
-	{
-		// Ask the new parent what its AI is.
-		Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
-		send(dg);
-	}
 }
 
 void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_explicit)
@@ -143,7 +208,7 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	m_ai_explicitly_set = channel_is_explicit;
 
 	Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER);
-	append_required_data(dg1, false);
+	append_required_data(dg1);
 	append_other_data(dg1);
 	send(dg1);
 	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_ to "
@@ -326,6 +391,20 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				break;    // Not meant for me!
 			}
+
+			// Leave parent on explicit delete ram
+			if(m_parent_id)
+			{
+				Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
+				dg.add_uint32(m_do_id);
+				dg.add_uint32(INVALID_DO_ID);
+				dg.add_uint32(INVALID_ZONE);
+				dg.add_uint32(m_parent_id);
+				dg.add_uint32(m_zone_id);
+				send(dg);
+			}
+
+			// Delete object
 			annihilate();
 
 			break;
@@ -399,26 +478,10 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_SET_LOCATION:
 		{
-			uint32_t old_parent_id = m_parent_id, old_zone_id = m_zone_id;
 			uint32_t new_parent_id = dgi.read_uint32();
-			m_zone_id = dgi.read_uint32();
+			uint32_t new_zone_id = dgi.read_uint32();
 
-			std::set <channel_t> targets;
-			targets.insert(LOCATION2CHANNEL(old_parent_id, old_zone_id));
-			if(m_ai_channel)
-			{
-				targets.insert(m_ai_channel);
-			}
-			Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
-			dg.add_uint32(m_do_id);
-			dg.add_uint32(new_parent_id);
-			dg.add_uint32(m_zone_id);
-			dg.add_uint32(old_parent_id);
-			dg.add_uint32(old_zone_id);
-			send(dg);
-
-			handle_parent_change(new_parent_id);
-			send_zone_entry(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+			handle_location_change(new_parent_id, new_zone_id, sender);
 
 			break;
 		}
@@ -439,7 +502,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
 			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
-			append_required_data(dg, false);
+			append_required_data(dg);
 			append_other_data(dg);
 			send(dg);
 
@@ -524,7 +587,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_owner_channel = owner_channel;
 
 			Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
-			append_required_data(dg1, false);
+			append_required_data(dg1);
 			append_other_data(dg1);
 			send(dg1);
 
@@ -567,7 +630,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					if(dgi.read_uint32() == m_zone_id)
 					{
-						send_zone_entry(sender);
+						send_location_entry(sender);
 						break;
 					}
 				}

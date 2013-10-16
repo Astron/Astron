@@ -199,4 +199,12 @@ class DatagramIterator
 		{
 			m_offset = to;
 		}
+
+		// seek_payload seeks to immediately after the list of receivers
+		void seek_payload()
+		{
+			m_offset = 0;
+			uint8_t recv_count = read_uint8();
+			m_offset = 1 + recv_count * 8;
+		}
 };
