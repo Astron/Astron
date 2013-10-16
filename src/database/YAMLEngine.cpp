@@ -278,7 +278,7 @@ class YAMLEngine : public IDatabaseEngine
 
 
 #define val_t std::vector<uint8_t>
-#define map_t std::map<DCField*, std::vector<uint8_t>>
+#define map_t std::map< DCField*, std::vector<uint8_t> >
 		void del_field(uint32_t do_id, DCField* field)
 		{
 			yamldb_log.spam() << "Deleting field on obj-" << do_id << std::endl;

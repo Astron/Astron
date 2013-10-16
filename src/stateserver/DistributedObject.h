@@ -19,8 +19,8 @@ class DistributedObject : public MDParticipantInterface
 		DCClass *m_dclass;
 		uint32_t m_parent_id;
 		uint32_t m_zone_id;
-		std::map<DCField*, std::vector<uint8_t>> m_ram_fields; // TODO: Fix for std::unordered_map
-		std::unordered_map<DCField*, std::vector<uint8_t>> m_required_fields;
+		std::map< DCField*, std::vector<uint8_t> > m_ram_fields; // TODO: Fix for std::unordered_map
+		std::unordered_map< DCField*, std::vector<uint8_t> > m_required_fields;
 		channel_t m_ai_channel;
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;

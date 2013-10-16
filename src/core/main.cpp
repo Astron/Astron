@@ -9,7 +9,7 @@
 
 LogCategory mainlog("main", "Main");
 
-ConfigVariable<std::vector<std::string>> dc_files("general/dc_files", std::vector<std::string>());
+ConfigVariable< std::vector<std::string> > dc_files("general/dc_files", std::vector<std::string>());
 
 int main(int argc, char *argv[])
 {

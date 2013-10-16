@@ -229,7 +229,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					std::map<DCField*, std::vector<uint8_t>> fields;
+					std::map< DCField*, std::vector<uint8_t> > fields;
 					uint16_t field_count = dgi.read_uint16();
 					m_log->spam() << "Unpacking fields..." << std::endl;
 					try
@@ -369,8 +369,8 @@ class DatabaseServer : public Role
 					}
 
 					// Unpack fields from datagram
-					std::map<DCField*, std::vector<uint8_t>> equals;
-					std::map<DCField*, std::vector<uint8_t>> values;
+					std::map< DCField*, std::vector<uint8_t> > equals;
+					std::map< DCField*, std::vector<uint8_t> > values;
 					uint16_t field_count = dgi.read_uint16();
 					try
 					{
@@ -515,7 +515,7 @@ class DatabaseServer : public Role
 					}
 
 					// Get values from database
-					std::map<DCField*, std::vector<uint8_t>> values;
+					std::map< DCField*, std::vector<uint8_t> > values;
 					if(!m_db_engine->get_fields(do_id, fields, values))
 					{
 						m_log->spam() << "... failure." << std::endl;
@@ -601,7 +601,7 @@ class DatabaseServer : public Role
 
 					uint16_t field_count = dgi.read_uint16();
 					std::vector<DCField*> del_fields;
-					std::map<DCField*, std::vector<uint8_t>> set_fields;
+					std::map< DCField*, std::vector<uint8_t> > set_fields;
 					for(uint16_t i = 0; i < field_count; ++i)
 					{
 						uint16_t field_id = dgi.read_uint16();
