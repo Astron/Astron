@@ -101,7 +101,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(parent.expect(dg))
 
         # Object should announce its disappearance...
-        dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(101000000)
         self.assertTrue(ai.expect(dg))
 
@@ -147,6 +147,7 @@ class TestStateServer(unittest.TestCase):
     # Tests stateserver handling of 'airecv' keyword 
     def test_airecv(self):
         conn = connection(5)
+        conn.add_channel(1300)
 
         ### Test for the airecv keyword ###
         # Create an object...
@@ -156,7 +157,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         dg = Datagram.create([100010], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(5)
+        dg.add_uint64(1300)
         conn.send(dg)
 
         # Ignore EnterAI message, not testing that here
@@ -171,7 +172,7 @@ class TestStateServer(unittest.TestCase):
         # Now the AI should see it...
         # Note: The ai should be a separate recipient of the same message sent
         #       to the objects location channel.
-        dg = Datagram.create([5, (5000<<32|1500)], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg = Datagram.create([1300, (5000<<32|1500)], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(100010)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
@@ -183,10 +184,19 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 100010)
 
         # See if the AI receives the delete.
-        dg = Datagram.create([ai1chan], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg = conn.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.read_uint8() == 2)
+        self.assertTrue(dgi.read_uint64() == 1300)
+        self.assertTrue(dgi.read_uint64() == (5000<<32|1500))
+        self.assertTrue(dgi.read_uint64() == 5)
+        self.assertTrue(dgi.read_uint16() == STATESERVER_OBJECT_DELETE_RAM)
+        self.assertTrue(dgi.read_uint32() == 100010)
+        '''
+        dg = Datagram.create([1300, (5000<<32|1500)], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(100010)
         self.assertTrue(conn.expect(dg))
-
+        '''
 
         ### Cleanup ###
         conn.close()

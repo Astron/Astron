@@ -95,7 +95,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
-> The change-notification's sender is equal to the original message's sender.
+> The broadcast's "sender" is set to the original message's sender.
 >
 > In SET_FIELDS, there are multiple field updates in one message, which will be
 > processed as an atomic operation. Note, in the case of field duplicates, the
@@ -114,7 +114,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
-> The delete-notifications's sender is equal to the original message's sender.
+> The broadcast's "sender" is set to the original message's sender.
 >
 > In DELETE_FIELDS, there are multiple field deletes in one message, which will
 > be processed as an atomic operation.
@@ -124,8 +124,11 @@ to one object at a time.
 > Delete the object from the State Server; a stored copy on the database is not
 > affected, if one exists.
 >
-> The message is also used to inform others of the delete.  It is broadcast to
-> the objects location, managing AI, and also sent to the owner if one exists.
+> The message is also used to inform others of the delete.
+>  - If it has a parent, it is broadcast to the object's location.
+>  - If it has a managing AI, it is broadcast to the object' AI.
+>  - If it has an owner, it is broadcast to the object's owner.
+> The broadcast's "sender" is set to the original message's sender.
 >
 > If the object has any children, it sends a STATESERVER_OBJECT_DELETE_CHILDREN
 > message over the parent messages channel (1 << 32|parent_id).
@@ -134,7 +137,6 @@ to one object at a time.
 > as a DELETE_CHILDREN from a parent), it sends a STATSERVER_OBJECT_CHANGING_LOCATION
 > to its parent object with INVALID_PARENT and INVALID_ZONE as the new location.
 >
-> The delete-notification's sender is equal to the original message's sender.
 
 
 
@@ -147,17 +149,13 @@ to one object at a time.
                         uint32 old_parent_id, uint32 old_zone_id)`  
 > A set location message moves receiving objects to a new location.
 >
-> If an object is not a root object (ie. has an existing location), it will broadcast
-> a changing location message to its old location channel and old parent.
+> A changing location message is sent to notify others of the change:
+>  - If an object had an old parent, it is broadcast to the object's location and the old parent.
+>  - If an object a new parent, it is broadcast to the new parent.
+>  - If an object has an AI, it is broadcast to the AI.
+>  - If an object has an owner, it is broadcast to the owner.
 >
-> If the new parent is valid (non-zero), it will also add the new parent as a recipient.
->
-> If an object has an AI, it will also add the AI channel as a recipient.
->
-> If the object has an owner, it will also add the owner as a recipient.
->
-> Then the objects will broadcast one of the following enter location messages
-> to the new location.
+> Then the objects will broadcast one of the following enter location messages to the new location.
 
 
 **STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED(2042)**  

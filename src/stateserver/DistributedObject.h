@@ -30,13 +30,12 @@ class DistributedObject : public MDParticipantInterface
 		void append_required_data(Datagram &dg, bool broadcast_only = false);
 		void append_other_data(Datagram &dg, bool broadcast_only = false);
 
-		void send_location_entry(uint64_t location);
+		void send_location_entry(channel_t location);
 
 		void handle_location_change(uint32_t new_parent, uint32_t new_zone, uint64_t sender);
 		void handle_ai_change(channel_t new_channel, bool channel_is_explicit);
-		void handle_shard_reset();
 
-		void annihilate();
+		void annihilate(channel_t sender);
 
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);

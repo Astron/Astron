@@ -176,7 +176,7 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 	}
 }
 
-void DistributedObject::send_location_entry(uint64_t location)
+void DistributedObject::send_location_entry(channel_t location)
 {
 	Datagram dg(location, m_do_id, m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
@@ -220,33 +220,39 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	send(dg2);
 }
 
-void DistributedObject::annihilate()
+void DistributedObject::annihilate(channel_t sender)
 {
 	std::set<channel_t> targets;
-	targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+	if(m_parent_id)
+	{
+		targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+		// Leave parent on explicit delete ram
+		if(m_parent_id != sender)
+		{
+			Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
+			dg.add_uint32(m_do_id);
+			dg.add_uint32(INVALID_DO_ID);
+			dg.add_uint32(INVALID_ZONE);
+			dg.add_uint32(m_parent_id);
+			dg.add_uint32(m_zone_id);
+			send(dg);
+		}
+	}
 	if(m_owner_channel)
 	{
 		targets.insert(m_owner_channel);
 	}
-	Datagram dg(targets, m_do_id, STATESERVER_OBJECT_DELETE_RAM);
+	if(m_ai_channel)
+	{
+		targets.insert(m_ai_channel);
+	}
+	Datagram dg(targets, sender, STATESERVER_OBJECT_DELETE_RAM);
 	dg.add_uint32(m_do_id);
 	send(dg);
-
-	handle_ai_change(0, true); // Leave the AI's interest.
 
 	m_stateserver->m_objs[m_do_id] = NULL;
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
-}
-
-void DistributedObject::handle_shard_reset()
-{
-	// Tell my children:
-	Datagram dg(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_DELETE_AI_OBJECTS);
-	dg.add_uint64(m_ai_channel);
-	send(dg);
-	// Fall over dead:
-	annihilate();
 }
 
 void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
@@ -272,6 +278,8 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		               << field_id << std::endl;
 		return false;
 	}
+
+	m_log->spam() << "Handling update for '" << field->get_name() << "'." << std::endl;
 
 	uint32_t field_start = dgi.tell();
 
@@ -381,7 +389,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				m_log->warning() << " received reset for wrong AI channel" << std::endl;
 				break; // Not my AI!
 			}
-			handle_shard_reset();
+			annihilate(sender);
 
 			break;
 		}
@@ -392,20 +400,8 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;    // Not meant for me!
 			}
 
-			// Leave parent on explicit delete ram
-			if(m_parent_id)
-			{
-				Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
-				dg.add_uint32(m_do_id);
-				dg.add_uint32(INVALID_DO_ID);
-				dg.add_uint32(INVALID_ZONE);
-				dg.add_uint32(m_parent_id);
-				dg.add_uint32(m_zone_id);
-				send(dg);
-			}
-
 			// Delete object
-			annihilate();
+			annihilate(sender);
 
 			break;
 		}
@@ -455,13 +451,8 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_SET_AI:
 		{
-			uint32_t r_do_id = dgi.read_uint32();
 			channel_t r_ai_channel = dgi.read_uint64();
 			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << r_ai_channel << std::endl;
-			if(r_do_id != m_do_id)
-			{
-				break;
-			}
 			handle_ai_change(r_ai_channel, true);
 
 			break;
