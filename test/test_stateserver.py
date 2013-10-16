@@ -18,6 +18,9 @@ roles:
       control: 100
 """ % test_dc
 
+def connection(channel):
+    return ChannelConnection('127.0.0.1', 57123, channel)
+
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:
         datagram.add_uint32(doid)
@@ -51,8 +54,8 @@ class TestStateServer(unittest.TestCase):
 
     # Tests CREATE_OBJECT_WITH_REQUIRED and OBJECT_DELETE_RAM
     def test_create_delete(self):
-        ai = ChannelConnection(5000<<32|1500)
-        parent = ChannelConnection(5000)
+        ai = connection(5000<<32|1500)
+        parent = connection(5000)
 
         ### Test for CreateRequired with a required value ###
         # Create a DistributedTestObject1...
@@ -93,7 +96,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the handling of the broadcast keyword by the stateserver
     def test_broadcast(self):
-        ai = ChannelConnection(5000<<32|1500)
+        ai = connection(5000<<32|1500)
 
         ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
@@ -127,7 +130,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests stateserver handling of 'airecv' keyword 
     def test_airecv(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
 
         ### Test for the airecv keyword ###
         # Create an object...
@@ -152,7 +155,7 @@ class TestStateServer(unittest.TestCase):
         # Now the AI should see it...
         # Note: The ai should be a separate recipient of the same message sent
         #       to the objects location channel.
-        dg = Datagram.create([ai1chan, (5000<<1500|1000)], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg = Datagram.create([5, (5000<<32|1500)], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(100010)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
@@ -174,22 +177,22 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the messages GET_AI, SET_AI, CHANGING_AI, and ENTER_AI.
     def test_set_ai(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
         conn.add_channel(0)
 
         # So we can see airecvs...
         ai1chan = 1001
         ai2chan = 2002
-        ai1 = ChannelConnection(ai1chan)
-        ai2 = ChannelConnection(ai2chan)
+        ai1 = connection(ai1chan)
+        ai2 = connection(ai2chan)
 
         # So we can see communications between objects...
         doid1 = 1010101
         doid2 = 2020202
-        obj1 = ChannelConnection(doid1)
-        obj2 = ChannelConnection(doid2)
-        children1 = ChannelConnection(PARENT_PREFIX|doid1)
-        children2 = ChannelConnection(PARENT_PREFIX|doid2)
+        obj1 = connection(doid1)
+        obj2 = connection(doid2)
+        children1 = connection(PARENT_PREFIX|doid1)
+        children2 = connection(PARENT_PREFIX|doid2)
 
 
         ### Test for SetAI on an object without children, AI, or optional fields ###
@@ -436,12 +439,12 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         for doid in [doid1, doid2]:
             deleteObject(conn, 5, doid)
-        for mdconn in [conn, ai1, ai2, obj1, obj2, children1, children2]
+        for mdconn in [conn, ai1, ai2, obj1, obj2, children1, children2]:
             mdconn.close()
 
     # Tests stateserver handling of the 'ram' keyword
     def test_ram(self):
-        ai = ChannelConnection(13000<<22|6800)
+        ai = connection(13000<<22|6800)
         ai.add_channel(13000<<22|4800)
 
         ### Test that ram fields are remembered ###
@@ -490,17 +493,17 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the messages SET_LOCATION, CHANGING_LOCATION, and ENTER_LOCATION
     def test_set_location(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
         conn.add_channel(0)
 
         doid0 = 14000
         doid1 = 105000000
         doid2 = 105050505
-        obj0 = ChannelConnection(doid0)
-        obj1 = ChannelConnection(doid1)
-        obj2 = ChannelConnection(doid2)
-        location0 = ChannelConnection(doid0<<32|9800)
-        location2 = ChannelConnection(doid2<<32|9800)
+        obj0 = connection(doid0)
+        obj1 = connection(doid1)
+        obj2 = connection(doid2)
+        location0 = connection(doid0<<32|9800)
+        location2 = connection(doid2<<32|9800)
 
         ### Test for a call to SetLocation on object without previous location ###
         # Create an object...
@@ -511,7 +514,7 @@ class TestStateServer(unittest.TestCase):
 
         # Set the object's location
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
-        appendMeta(parent=doid0, zone=9800)
+        appendMeta(dg, parent=doid0, zone=9800)
         conn.send(dg)
         obj1.flush()
 
@@ -732,7 +735,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests stateserver handling of DistributedClassInheritance
     def test_inheritance(self):
-        conn = ChannelConnection(67000<<32|2000)
+        conn = connection(67000<<32|2000)
 
         ### Test for CreateObject on a subclass ###
         # Create a DTO3, which inherits from DTO1.
@@ -778,7 +781,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests handling of various erroneous/bad/invalid messages
     def test_error(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
         conn.add_channel(80000<<32|1234)
 
         ### Test for updating an invalid field ###
@@ -881,7 +884,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
     def test_create_with_other(self):
-        conn = ChannelConnection(90000<<32|4321)
+        conn = connection(90000<<32|4321)
 
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, 545630000, 90000, 4321, DistributedTestObject1)
@@ -924,7 +927,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests for message GET_LOCATION
     def test_get_location(self):
-        conn = ChannelConnection(0x4a03)
+        conn = connection(0x4a03)
 
         # Throw a few objects out there...
         createEmptyDTO1(conn, 5, 583312, 48000, 624800)
@@ -938,7 +941,7 @@ class TestStateServer(unittest.TestCase):
             (583310, 51792, 5858182)]:
 
             # Try getting the location for each object, with some miscellaneous context
-            context = (obj-500000)*2838
+            context = (doid-500000)*2838
             dg = Datagram.create([doid], 0x4a03, STATESERVER_OBJECT_GET_LOCATION)
             dg.add_uint32(context)
             conn.send(dg)
@@ -956,7 +959,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests for DELETE_AI_OBJECTS
     def test_delete_ai_objects(self):
-        conn = ChannelConnection(62222<<32|125)
+        conn = connection(62222<<32|125)
 
         # Create an object...
         createEmptyDTO1(conn, 5, 201, 62222, 125, 6789)
@@ -992,7 +995,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests for messages GET_ALL, GET_FIELD, and GET_FIELDS
     def test_get(self):
-        conn = ChannelConnection(890)
+        conn = connection(890)
 
 
         ### Test for GetAll on object with just required fields ###
@@ -1173,8 +1176,8 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the message SET_FIELDS
     def test_set_fields(self):
-        conn = ChannelConnection(5985858)
-        location = ChannelConnection(12512<<32|66161)
+        conn = connection(5985858)
+        location = connection(12512<<32|66161)
 
         ### Test for SetFields with broadcast and ram filds ###
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
@@ -1232,7 +1235,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests stateserver handling of the 'ownrecv' keyword
     def test_ownrecv(self):
-        conn = ChannelConnection(14253648)
+        conn = connection(14253648)
 
         ### Test for broadcast of empty
         # Create an object
@@ -1273,15 +1276,15 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the message SET_OWNER, CHANGING_OWNER, ENTER_OWNER
     def test_set_owner(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
 
         owner1chan = 14253647
         owner2chan = 22446622
         doid1 = 74635241
         doid2 = 0x4a0351
 
-        owner1 = ChannelConnection(owner1chan)
-        owner2 = ChannelConnection(owner2chan)
+        owner1 = connection(owner1chan)
+        owner2 = connection(owner2chan)
 
         ### Test for SetOwner on an object with no owner ###
         # Make an object to play around with
@@ -1363,8 +1366,8 @@ class TestStateServer(unittest.TestCase):
 
     # Tests stateserver handling of molecular fields
     def test_molecular(self):
-        conn = ChannelConnection(13371337)
-        location0 = ChannelConnection(88<<32|99)
+        conn = connection(13371337)
+        location0 = connection(88<<32|99)
 
         ### Test for broadcast of a molecular SetField is molecular ###
         # Create an object
@@ -1516,7 +1519,7 @@ class TestStateServer(unittest.TestCase):
 
     # Tests the message GET_ZONES_OBJECTS
     def test_get_zones_objects(self):
-        conn = ChannelConnection(5)
+        conn = connection(5)
 
         doid0 = 1000 # Root object
         doid1 = 2001
@@ -1552,17 +1555,17 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(3) # Count of objects [(912, [obj1, obj2]), (930, [obj3])]
         expected.append(dg)
         # ... and object1's enter zone message...
-        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid1, doid0, 912, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         expected.append(dg)
         # ... and object2's enter zone message...
-        dg = Datagram.create([5], doid2, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        dg = Datagram.create([5], doid2, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid2, doid0, 912, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         expected.append(dg)
         # ... and object3's enter zone message...
-        dg = Datagram.create([5], doid3, STATESERVER_OBJECT_ENTER_ZONE_WITH_REQUIRED)
+        dg = Datagram.create([5], doid3, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid3, doid0, 930, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         expected.append(dg)

@@ -390,21 +390,21 @@ class MDConnection(object):
     def expect_none(self):
         return self._read() == None
 
-def ChannelConnection(MDConnection):
+class ChannelConnection(MDConnection):
     def __init__(self, connAddr, connPort, MDChannel):
-        c = socket(AF_INET, SOCK_STREAM)
-        c.connect(('127.0.0.1', 57123))
+        c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        c.connect((connAddr, connPort))
         MDConnection.__init__(self, c)
 
         self.channels = [MDChannel]
         self.send(Datagram.create_add_channel(MDChannel))
 
-    def add_channel(channel):
+    def add_channel(self, channel):
         if channel not in self.channels:
             self.channels.append(channel)
             self.send(Datagram.create_add_channel(channel))
 
-    def remove_channel(channel):
+    def remove_channel(self, channel):
         if channel in self.channels:
             self.send(Datagram.create_remove_channel(channel))
             self.channels.remove(channel)
