@@ -412,4 +412,4 @@ class ChannelConnection(MDConnection):
     def close(self):
         for chan in self.channels:
             self.send(Datagram.create_remove_channel(chan))
-        self.c.close()
+        MDConnection.close(self)

@@ -121,7 +121,16 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
 		DatagramIterator msg_dgi(dg, 1 + channels * 8);
-		(*it)->handle_datagram(dg, msg_dgi);
+		try
+		{
+			(*it)->handle_datagram(dg, msg_dgi);
+		}
+		catch(DatagramIteratorEOF &e)
+		{
+			m_log.error() << "Detected truncated datagram in handle_datagram()"
+			                 "... aborting!" << std::endl;
+			return;
+		}
 	}
 
 	if(p && is_client)  // Send message upstream
