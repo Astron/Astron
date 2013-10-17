@@ -27,13 +27,16 @@ class DistributedObject : public MDParticipantInterface
 		uint32_t m_next_context;
 		LogCategory *m_log;
 
-		void append_required_data(Datagram &dg, bool broadcast_only = false);
-		void append_other_data(Datagram &dg, bool broadcast_only = false);
+		void append_required_data(Datagram &dg, bool broadcast_only = false, bool also_owner = false);
+		void append_other_data(Datagram &dg, bool broadcast_only = false, bool also_owner = false);
 
 		void send_location_entry(channel_t location);
+		void send_ai_entry(channel_t location);
+		void send_owner_entry(channel_t location);
 
 		void handle_location_change(uint32_t new_parent, uint32_t new_zone, channel_t sender);
-		void handle_ai_change(channel_t new_channel, bool channel_is_explicit, channel_t sender);
+		void handle_ai_change(channel_t new_ai, channel_t old_ai, channel_t sender,
+			                  bool channel_is_explicit);
 
 		void annihilate(channel_t sender);
 

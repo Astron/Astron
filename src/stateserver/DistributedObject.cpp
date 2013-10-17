@@ -57,7 +57,7 @@ DistributedObject::~DistributedObject()
 	delete m_log;
 }
 
-void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
+void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only, bool also_owner)
 {
 	dg.add_uint32(m_do_id);
 	dg.add_uint32(m_parent_id);
@@ -68,35 +68,83 @@ void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only)
 	{
 		DCField *field = m_dclass->get_inherited_field(i);
 		if(field->is_required() && !field->as_molecular_field() && (!broadcast_only
-		        || field->is_broadcast()))
+		        || field->is_broadcast() || (also_owner && field->is_ownrecv())))
 		{
 			dg.add_data(m_required_fields[field]);
 		}
 	}
 }
 
-void DistributedObject::append_other_data(Datagram &dg, bool broadcast_only)
+void DistributedObject::append_other_data(Datagram &dg, bool broadcast_only, bool also_owner)
 {
-	dg.add_uint16(m_ram_fields.size());
 	if(broadcast_only)
 	{
+		std::list<DCField*> broadcast_fields;
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
-			if(it->first->is_broadcast())
+			if(it->first->is_broadcast() || (also_owner && it->first->is_ownrecv()))
 			{
-				dg.add_uint16(it->first->get_number());
-				dg.add_data(it->second);
+				broadcast_fields.push_back(it->first);
 			}
+		}
+
+		dg.add_uint16(broadcast_fields.size());
+		for(auto it = broadcast_fields.begin(); it != broadcast_fields.end(); ++it)
+		{
+			dg.add_uint16((*it)->get_number());
+			dg.add_data(m_ram_fields[*it]);
 		}
 	}
 	else
 	{
+		dg.add_uint16(m_ram_fields.size());
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
 			dg.add_uint16(it->first->get_number());
 			dg.add_data(it->second);
 		}
 	}
+}
+
+
+
+void DistributedObject::send_location_entry(channel_t location)
+{
+	Datagram dg(location, m_do_id, m_ram_fields.size() ?
+	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED);
+	append_required_data(dg, true);
+	if(m_ram_fields.size())
+	{
+		append_other_data(dg, true);
+	}
+	send(dg);
+}
+
+void DistributedObject::send_ai_entry(channel_t ai)
+{
+	Datagram dg(ai, m_do_id, m_ram_fields.size() ?
+	            STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED);
+	append_required_data(dg);
+	if(m_ram_fields.size())
+	{
+		append_other_data(dg);
+	}
+	send(dg);
+}
+
+void DistributedObject::send_owner_entry(channel_t owner)
+{
+	Datagram dg(owner, m_do_id, m_ram_fields.size() ?
+	            STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER :
+	            STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED);
+	append_required_data(dg, true, true);
+	if(m_ram_fields.size())
+	{
+		append_other_data(dg, true, true);
+	}
+	send(dg);
 }
 
 void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new_zone,
@@ -183,21 +231,8 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 	}
 }
 
-void DistributedObject::send_location_entry(channel_t location)
-{
-	Datagram dg(location, m_do_id, m_ram_fields.size() ?
-	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
-	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED);
-	append_required_data(dg, true);
-	if(m_ram_fields.size())
-	{
-		append_other_data(dg, true);
-	}
-	send(dg);
-}
-
-void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_explicit,
-	                                     channel_t sender)
+void DistributedObject::handle_ai_change(channel_t new_channel, channel_t old_channel,
+	                                     channel_t sender, bool channel_is_explicit)
 {
 	if(new_channel == m_ai_channel)
 	{
@@ -217,12 +252,9 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 
 	if(m_ai_channel)
 	{
-		Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER);
-		append_required_data(dg1);
-		append_other_data(dg1);
-		send(dg1);
-		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_ to "
+		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI to "
 		              << m_ai_channel << std::endl;
+		send_ai_entry(m_ai_channel);
 	}
 
 	Datagram dg2(PARENT2CHILDREN(m_do_id), sender, STATESERVER_OBJECT_CHANGING_AI);
@@ -452,7 +484,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_CHANGING_AI:
 		{
 			uint32_t r_parent_id = dgi.read_uint32();
-			channel_t r_ai_channel = dgi.read_uint64();
+			channel_t new_channel = dgi.read_uint64();
 			m_log->spam() << "STATESERVER_OBJECT_CHANGING_AI from " << r_parent_id << std::endl;
 			if(r_parent_id != m_parent_id)
 			{
@@ -464,15 +496,15 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				break;
 			}
-			handle_ai_change(r_ai_channel, false, sender);
+			handle_ai_change(new_channel, m_ai_channel, sender, false);
 
 			break;
 		}
 		case STATESERVER_OBJECT_SET_AI:
 		{
-			channel_t r_ai_channel = dgi.read_uint64();
-			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << r_ai_channel << std::endl;
-			handle_ai_change(r_ai_channel, true, sender);
+			channel_t new_channel = dgi.read_uint64();
+			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << new_channel << std::endl;
+			handle_ai_change(new_channel, m_ai_channel, sender, true);
 
 			break;
 		}
@@ -582,29 +614,33 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_SET_OWNER:
 		{
-			channel_t owner_channel = dgi.read_uint64();
-
-			if(owner_channel == m_owner_channel)
+			channel_t new_owner = dgi.read_uint64();
+			m_log->spam() << "Updating owner to " << new_owner << "..." << std::endl;
+			if(new_owner == m_owner_channel)
 			{
+				m_log->spam() << "... owner is the same, do nothing." << std::endl;
 				return;
 			}
 
 			if(m_owner_channel)
 			{
+				m_log->spam() << "... broadcasting changing owner..." << std::endl;
 				Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
 				dg.add_uint32(m_do_id);
-				dg.add_uint64(owner_channel);
+				dg.add_uint64(new_owner);
 				dg.add_uint64(m_owner_channel);
 				send(dg);
 			}
 
-			m_owner_channel = owner_channel;
+			m_owner_channel = new_owner;
 
-			Datagram dg1(m_owner_channel, m_do_id, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
-			append_required_data(dg1);
-			append_other_data(dg1);
-			send(dg1);
+			if(new_owner)
+			{
+				m_log->spam() << "... sending owner entry..." << std::endl;
+				send_owner_entry(new_owner);
+			}
 
+			m_log->spam() << "... updated owner." << std::endl;
 			break;
 		}
 		case STATESERVER_OBJECT_GET_ZONES_OBJECTS:

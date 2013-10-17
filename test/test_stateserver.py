@@ -1355,7 +1355,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint64(owner1chan) # Old owner
         self.assertTrue(owner1.expect(dg))
         # ... and see if it enters the new owner.
-        dg = Datagram.create([owner1chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg = Datagram.create([owner2chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         self.assertTrue(owner2.expect(dg))
@@ -1364,7 +1364,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetOwner on an object with owner fields and non-owner, non-broadcast fields ###
         # Create an object with a bunch of types of fields
-        dg = Datagram.create([doid2], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid2, 0, 0, DistributedTestObject3)
         dg.add_uint32(0) # setRequired1
         dg.add_uint32(0) # setRDB3
@@ -1383,18 +1383,29 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # ... and see if it enters the owner with only broadcast and/or ownrecv fields.
-        dg = Datagram.create([owner1chan], doid1,
-                STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
-        appendMeta(dg, doid2, 0, 0, DistributedTestObject3)
-        dg.add_uint32(0) # setRequired1
-        dg.add_uint32(0) # setRDB3
-        dg.add_uint16(3) # Optional fields: 3
-        dg.add_uint16(setBRO1)
-        dg.add_uint32(0x1337)
-        dg.add_uint16(setBR1)
-        dg.add_string("I feel radder, faster... more adequate!")
-        self.assertTrue(owner1.expect(dg))
-
+        dg = owner1.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting object entry packet
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([owner1chan], doid2,
+                STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER))
+        self.assertTrue(dgi.read_uint32() == doid2) # Id
+        self.assertTrue(dgi.read_uint64() == 0) # Location (parent<<32|zone)
+        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
+        self.assertTrue(dgi.read_uint32() == 0) # setRequired1
+        self.assertTrue(dgi.read_uint32() == 0) # setRDB3
+        self.assertTrue(dgi.read_uint16() == 2) # Optional fields: 2
+        hasBR1, hasBRO1 = False, False
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field is setBR1:
+                hasBR1 = True
+                self.assertTrue(dgi.read_string() == "I feel radder, faster... more adequate!")
+            elif field is setBRO1:
+                hasBRO1 = True
+                self.assertTrue(dgi.read_uint32() == 0x1337)
+            else:
+                self.fail("Received unexpected field: " + str(field))
+        self.assertTrue(hasBR1 and hasBRO1) # setBR1 and setBRO1 in ENTER_OWNER_WITH_REQUIRED_OTHER
 
         ### Cleanup ###
         deleteObject(conn, 5, doid1)
