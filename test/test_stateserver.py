@@ -470,8 +470,8 @@ class TestStateServer(unittest.TestCase):
 
     # Tests stateserver handling of the 'ram' keyword
     def test_ram(self):
-        ai = connection(13000<<22|6800)
-        ai.add_channel(13000<<22|4800)
+        ai = connection(13000<<32|6800)
+        ai.add_channel(13000<<32|4800)
 
         ### Test that ram fields are remembered ###
         # Create an object...
