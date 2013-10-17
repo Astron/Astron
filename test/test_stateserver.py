@@ -301,7 +301,6 @@ class TestStateServer(unittest.TestCase):
         createEmptyDTO1(conn, 5, doid2, doid1, 1500, 1337)
 
         # The first object is expecting two messages from the child...
-        obj1.flush()
         context = None
         for x in xrange(2):
             dg = obj1.recv_maybe()
