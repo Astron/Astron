@@ -170,6 +170,12 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 		targets.insert(m_owner_channel);
 	}
 
+	if(new_parent == m_do_id)
+	{
+		m_log->warning() << "Object cannot be parented to itself." << std::endl;
+		return;
+	}
+
 	// Handle parent change
 	if(new_parent != old_parent)
 	{
@@ -715,38 +721,20 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_GET_ZONES_OBJECTS:
 		{
+			uint32_t context  = dgi.read_uint32();
 			uint32_t queried_parent = dgi.read_uint32();
 
-			if(queried_parent == m_do_id)
-			{
-				std::vector<uint8_t> queried_zones = dgi.read_remainder();
 
-				// Bounce the message down to all children and have them decide
-				// whether or not to reply.
-				// TODO: Is this really that efficient?
-				Datagram dg(LOCATION2CHANNEL(4030, m_do_id), sender,
-				            STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-				dg.add_uint32(queried_parent);
-				dg.add_data(queried_zones);
-				send(dg);
-
-				// FIXME: This assumes all objects process and reply before this goes
-				// out. This will typically be the case if everything is on one State
-				// Server; however, a better method should probably be used in the future.
-				Datagram done_dg(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
-				done_dg.add_uint32(queried_parent);
-				done_dg.add_data(queried_zones);
-				send(done_dg);
-
-				break;
-			}
+			m_log->spam() << "Handling get_zones_objects with parent '" << queried_parent <<"'"
+			              << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
+			              << "." << std::endl;
 
 			if(queried_parent == m_parent_id)
 			{
 				// Query was relayed from parent! See if we match any of the zones
 				// and if so, reply:
-				uint16_t zones = dgi.read_uint16();
-				for(uint16_t i = 0; i < zones; ++i)
+				uint16_t zone_count = dgi.read_uint16();
+				for(uint16_t i = 0; i < zone_count; ++i)
 				{
 					if(dgi.read_uint32() == m_zone_id)
 					{
@@ -754,6 +742,45 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 						break;
 					}
 				}
+
+				break;
+			}
+
+			if(queried_parent == m_do_id)
+			{
+				uint32_t child_count = 0;
+				uint16_t zone_count = dgi.read_uint16();
+
+				// Start datagram to relay to children
+				Datagram child_dg(PARENT2CHILDREN(m_do_id), sender,
+				            STATESERVER_OBJECT_GET_ZONES_OBJECTS);
+				child_dg.add_uint32(context);
+				child_dg.add_uint32(queried_parent);
+				child_dg.add_uint16(zone_count);
+
+				// Get all zones requested
+				for(int i=0; i < zone_count; ++i)
+				{
+					uint32_t zone = dgi.read_uint32();
+					child_count += m_zone_count[zone];
+					child_dg.add_uint32(zone);
+				}
+
+				// Reply to requestor with count of objects expected
+				Datagram count_dg(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
+				count_dg.add_uint32(context);
+				count_dg.add_uint32(child_count);
+				send(count_dg);
+
+				// Bounce the message down to all children and have them decide
+				// whether or not to reply.
+				// TODO: Is this really that efficient?
+				if(child_count > 0)
+				{
+					send(child_dg);
+				}
+
+				break;
 			}
 
 			break;

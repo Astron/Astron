@@ -211,8 +211,8 @@ class TestStateServer(unittest.TestCase):
         conn.add_channel(0)
 
         # So we can see airecvs...
-        ai1chan = 1001
-        ai2chan = 2002
+        ai1chan = 1011
+        ai2chan = 2202
         ai1 = connection(ai1chan)
         ai2 = connection(ai2chan)
 
