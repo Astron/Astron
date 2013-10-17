@@ -1532,17 +1532,17 @@ class TestStateServer(unittest.TestCase):
                 self.assertTrue(dgi.read_uint32() == 66)
                 self.assertTrue(dgi.read_uint32() == 77)
             elif field is setOne:
-                self.assertTrue(dgi.read_uint8 == 1)
+                self.assertTrue(dgi.read_uint8() == 1)
             elif field is setUnrelated:
-                self.assertTrue(dgi.read_uint32 == 999999)
+                self.assertTrue(dgi.read_uint32() == 999999)
             elif field is set123:
-                self.assertTrue(dgi.read_uint8 == 1)
-                self.assertTrue(dgi.read_uint8 == 2)
-                self.assertTrue(dgi.read_uint8 == 3)
+                self.assertTrue(dgi.read_uint8() == 1)
+                self.assertTrue(dgi.read_uint8() == 2)
+                self.assertTrue(dgi.read_uint8() == 3)
             elif field is setX:
-                self.assertTrue(dgi.read_uint32 == 55)
+                self.assertTrue(dgi.read_uint32() == 55)
             else:
-                self.fail("Received unexpected field in GET_FIELDS_RESP.")
+                self.fail("Received unexpected field ("+str(field)+") in GET_FIELDS_RESP.")
 
 
         ### Cleanup ###

@@ -337,23 +337,25 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 }
 
 bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
-	                                   uint16_t succeed_if_unset)
+	                                   bool succeed_if_unset, bool is_subfield)
 {
 	DCField *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
 	{
-		m_log->error() << "Received query for missing field ID="
-		               << field_id << std::endl;
+		m_log->error() << "Received get_field for field: " << field_id
+		               << ", not valid for class: " << m_dclass->get_name() << std::endl;
 		return false;
 	}
+	m_log->spam() << "Handling query for '" << field->get_name() << "'." << std::endl;
 
 	DCMolecularField *molecular = field->as_molecular_field();
 	if(molecular)
 	{
 		int n = molecular->get_num_atomics();
+		out.add_uint16(field_id);
 		for(int i = 0; i < n; ++i)
 		{
-			if(!handle_one_get(out, molecular->get_atomic(i)->get_number(), succeed_if_unset))
+			if(!handle_one_get(out, molecular->get_atomic(i)->get_number(), succeed_if_unset, true))
 			{
 				return false;
 			}
@@ -363,12 +365,14 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 
 	if(m_required_fields.count(field))
 	{
-		out.add_uint16(field_id);
+		if(!is_subfield)
+			out.add_uint16(field_id);
 		out.add_data(m_required_fields[field]);
 	}
 	else if(m_ram_fields.count(field))
 	{
-		out.add_uint16(field_id);
+		if(!is_subfield)
+			out.add_uint16(field_id);
 		out.add_data(m_ram_fields[field]);
 	}
 	else
@@ -533,11 +537,12 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				return;    // Not meant for this object!
 			}
+			uint16_t field_count = dgi.read_uint16();
 
 			Datagram raw_fields;
 			bool success = true;
 			uint16_t fields_found = 0;
-			while(dgi.tell() != in_dg.size())
+			for(int i=0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
 				uint16_t length = raw_fields.size();
