@@ -529,7 +529,7 @@ class TestStateServer(unittest.TestCase):
         obj1 = connection(doid1)
         obj2 = connection(doid2)
         location0 = connection(doid0<<32|9800)
-        location2 = connection(doid2<<32|9800)
+        location2 = connection(doid2<<32|9900)
 
         ### Test for a call to SetLocation on object without previous location ###
         # Create an object...
@@ -543,6 +543,9 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, parent=doid0, zone=9800)
         conn.send(dg)
         obj1.flush()
+
+        # Ignore changing_location and get_ai on parent
+        obj0.flush()
 
         # See if it shows up...
         dg = Datagram.create([doid0<<32|9800], doid1,
@@ -563,7 +566,7 @@ class TestStateServer(unittest.TestCase):
 
         # Move the first object into a zone of the second
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
-        appendMeta(dg, parent=doid2, zone=9800)
+        appendMeta(dg, parent=doid2, zone=9900)
         conn.send(dg)
         obj1.flush()
 
@@ -572,16 +575,17 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid1) # ID
         appendMeta(dg, parent=doid2, zone=9900) # New location
         appendMeta(dg, parent=doid0, zone=9800) # Old location
-        self.assertTrue(obj0.expect(dg))
-        self.assertTrue(obj2.expect(dg))
         self.assertTrue(location0.expect(dg))
+        self.assertTrue(obj0.expect(dg))
+        self.assertTrue(obj2.expect_multi([dg], only=False)) # Expect changing_location, ignore get_ai
+        obj2.flush()
 
-        # ...and its entry into the second object.
-        dg = Datagram.create([doid2<<32|9800], doid1,
+        # ...and its entry into the new location
+        dg = Datagram.create([doid2<<32|9900], doid1,
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
+        appendMeta(dg, doid1, doid2, 9900, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        self.assertTrue(obj2.expect(dg))
+        self.assertTrue(location2.expect(dg))
 
 
 
@@ -626,10 +630,10 @@ class TestStateServer(unittest.TestCase):
         obj1.flush()
 
         # Expect a ChangingLocation on the AI channel
-        dg = Datagram.create([225, doid2, doid2<<32|9800], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg = Datagram.create([225, doid2, doid2<<32|9900], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_uint32(doid1)
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New parent
-        appendMeta(dg, parent=doid2, zone=9800) # Old parent
+        appendMeta(dg, parent=doid2, zone=9900) # Old parent
         self.assertTrue(conn.expect(dg))
 
         # Ignore already tested behavior
@@ -643,6 +647,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
         conn.flush()
         obj1.flush()
+        location2.flush()
 
 
 
@@ -663,7 +668,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
         obj1.flush()
 
-        # Expect a ChangingLocation on the AI channel
+        # Expect a ChangingLocation on the Owner channel
         dg = Datagram.create([230, doid0], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_uint32(doid1)
         appendMeta(dg, parent=doid0, zone=9800) # New parent
@@ -686,6 +691,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetLocation with a ram-broadcast field ### (continues from previous)
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(doid1)
         dg.add_uint16(setBR1)
         dg.add_string("The Cutest Thing Ever!")
         conn.send(dg)
@@ -696,7 +702,7 @@ class TestStateServer(unittest.TestCase):
 
         # Change object location
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
-        appendMeta(dg, parent=doid2, zone=9800)
+        appendMeta(dg, parent=doid2, zone=9900)
         conn.send(dg)
         obj1.flush()
 
@@ -706,9 +712,9 @@ class TestStateServer(unittest.TestCase):
         location0.flush()
 
         # Should receive EnterLocationWithRequiredOther
-        dg = Datagram.create([doid2<<32|9800], doid1,
+        dg = Datagram.create([doid2<<32|9900], doid1,
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
-        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
+        appendMeta(dg, doid1, doid2, 9900, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
         dg.add_uint16(1) # Optional fields: 1
         dg.add_uint16(setBR1)
@@ -719,7 +725,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetLocation with a non-broadcast ram field ### (continues from previous)
         # Delete the first object for reuse
-        deleteObject(doid1)
+        deleteObject(conn, 5, doid1)
         obj1.flush() # Ignore received message
         obj2.flush() # Ignore parent notification
         location2.flush() # Ignore location notification
@@ -744,17 +750,17 @@ class TestStateServer(unittest.TestCase):
         obj0.flush()   
 
         # Should receive EnterLocationWithRequired (non-broadcast fields are not included)
-        dg = Datagram.create([doid2<<32|9800], doid1,
+        dg = Datagram.create([doid2<<32|9900], doid1,
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid1, doid2, 9800, DistributedTestObject1)
+        appendMeta(dg, doid1, doid2, 9900, DistributedTestObject1)
         dg.add_uint32(44004400) # setRequired1
         dg.add_uint32(88008800) # setRDB3
         location0.expect(dg)
 
 
         ### Clean up ###
-        for obj in [obj1, obj2]:
-            deleteObject(conn, 5, obj)
+        for doid in [doid1, doid2]:
+            deleteObject(conn, 5, doid)
         for mdconn in [conn, obj0, obj1, obj2, location0, location2]:
             mdconn.close()
 

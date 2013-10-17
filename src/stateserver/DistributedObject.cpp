@@ -99,7 +99,8 @@ void DistributedObject::append_other_data(Datagram &dg, bool broadcast_only)
 	}
 }
 
-void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new_zone, uint64_t sender)
+void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new_zone,
+	                                           channel_t sender)
 {
 	uint32_t old_parent = m_parent_id;
 	uint32_t old_zone = m_zone_id;
@@ -111,6 +112,12 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 	if(m_ai_channel)
 	{
 		targets.insert(m_ai_channel);
+	}
+
+	// Notify Owner of changing location
+	if(m_owner_channel)
+	{
+		targets.insert(m_owner_channel);
 	}
 
 	// Handle parent change
@@ -189,7 +196,8 @@ void DistributedObject::send_location_entry(channel_t location)
 	send(dg);
 }
 
-void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_explicit)
+void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_explicit,
+	                                     channel_t sender)
 {
 	if(new_channel == m_ai_channel)
 	{
@@ -207,14 +215,17 @@ void DistributedObject::handle_ai_change(channel_t new_channel, bool channel_is_
 	m_ai_channel = new_channel;
 	m_ai_explicitly_set = channel_is_explicit;
 
-	Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER);
-	append_required_data(dg1);
-	append_other_data(dg1);
-	send(dg1);
-	m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_ to "
-	              << m_ai_channel << std::endl;
+	if(m_ai_channel)
+	{
+		Datagram dg1(m_ai_channel, m_do_id, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER);
+		append_required_data(dg1);
+		append_other_data(dg1);
+		send(dg1);
+		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI_ to "
+		              << m_ai_channel << std::endl;
+	}
 
-	Datagram dg2(LOCATION2CHANNEL(4030, m_do_id), m_do_id, STATESERVER_OBJECT_CHANGING_AI);
+	Datagram dg2(PARENT2CHILDREN(m_do_id), sender, STATESERVER_OBJECT_CHANGING_AI);
 	dg2.add_uint32(m_do_id);
 	dg2.add_uint64(m_ai_channel);
 	send(dg2);
@@ -453,7 +464,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				break;
 			}
-			handle_ai_change(r_ai_channel, false);
+			handle_ai_change(r_ai_channel, false, sender);
 
 			break;
 		}
@@ -461,7 +472,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			channel_t r_ai_channel = dgi.read_uint64();
 			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << r_ai_channel << std::endl;
-			handle_ai_change(r_ai_channel, true);
+			handle_ai_change(r_ai_channel, true, sender);
 
 			break;
 		}

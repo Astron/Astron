@@ -32,8 +32,8 @@ class DistributedObject : public MDParticipantInterface
 
 		void send_location_entry(channel_t location);
 
-		void handle_location_change(uint32_t new_parent, uint32_t new_zone, uint64_t sender);
-		void handle_ai_change(channel_t new_channel, bool channel_is_explicit);
+		void handle_location_change(uint32_t new_parent, uint32_t new_zone, channel_t sender);
+		void handle_ai_change(channel_t new_channel, bool channel_is_explicit, channel_t sender);
 
 		void annihilate(channel_t sender);
 
