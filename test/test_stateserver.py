@@ -57,53 +57,57 @@ class TestStateServer(unittest.TestCase):
         ai = connection(5000<<32|1500)
         parent = connection(5000)
 
-        ### Test for CreateRequired with a required value ###
-        # Create a DistributedTestObject1...
-        createEmptyDTO1(ai, 5, 101000000, 5000, 1500, 6789)
-
-        # The parent is expecting two messages...
-        received = False
+        # Repeat tests twice to verify doids can be reused
         for x in xrange(2):
-            dg = parent.recv_maybe()
-            self.assertTrue(dg is not None) # Parent expecting ChangingLocation and GetAI
-            dgi = DatagramIterator(dg)
-            # The object should tell the parent its arriving...
-            if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
-                received = True
-                self.assertTrue(dgi.read_uint32() == 101000000) # Id
-                self.assertTrue(dgi.read_uint32() == 5000) # New parent
-                self.assertTrue(dgi.read_uint32() == 1500) # New zone
-                self.assertTrue(dgi.read_uint32() == INVALID_DO_ID) # Old parent
-                self.assertTrue(dgi.read_uint32() == INVALID_ZONE) # Old zone
-            # .. and ask it for its AI, which we're not testing here and can ignore
-            elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI):
-                continue
-            else:
-                self.fail("Received header did not match expected for msgtype: " + str(msgtype))
-        self.assertTrue(received) # Parent received ChangingLocation
 
-        # The object should announce its entry to the zone-channel...
-        dg = Datagram.create([5000<<32|1500], 101000000, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
-        dg.add_uint32(6789) # setRequired1
-        self.assertTrue(ai.expect(dg))
+            ### Test for CreateRequired with a required value ###
+            # Create a DistributedTestObject1...
+            createEmptyDTO1(ai, 5, 101000000, 5000, 1500, 6789)
+
+            # The parent is expecting two messages...
+            received = False
+            for x in xrange(2):
+                dg = parent.recv_maybe()
+                self.assertTrue(dg is not None) # Parent expecting ChangingLocation and GetAI
+                dgi = DatagramIterator(dg)
+                # The object should tell the parent its arriving...
+                if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
+                    received = True
+                    self.assertTrue(dgi.read_uint32() == 101000000) # Id
+                    self.assertTrue(dgi.read_uint32() == 5000) # New parent
+                    self.assertTrue(dgi.read_uint32() == 1500) # New zone
+                    self.assertTrue(dgi.read_uint32() == INVALID_DO_ID) # Old parent
+                    self.assertTrue(dgi.read_uint32() == INVALID_ZONE) # Old zone
+                # .. and ask it for its AI, which we're not testing here and can ignore
+                elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI):
+                    continue
+                else:
+                    self.fail("Received header did not match expected for msgtype: " + str(msgtype))
+            self.assertTrue(received) # Parent received ChangingLocation
+
+            # The object should announce its entry to the zone-channel...
+            dg = Datagram.create([5000<<32|1500], 101000000,
+                                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+            appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
+            dg.add_uint32(6789) # setRequired1
+            self.assertTrue(ai.expect(dg))
 
 
-        ### Test for DeleteRam ### (continues from previous)
-        # Destroy our object...
-        deleteObject(ai, 5, 101000000)
+            ### Test for DeleteRam ### (continues from previous)
+            # Destroy our object...
+            deleteObject(ai, 5, 101000000)
 
-        # Object should tell its parent it is going away...
-        dg = Datagram.create([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(101000000)
-        appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
-        appendMeta(dg, parent=5000, zone=1500) # Old location
-        self.assertTrue(parent.expect(dg))
+            # Object should tell its parent it is going away...
+            dg = Datagram.create([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
+            dg.add_uint32(101000000)
+            appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
+            appendMeta(dg, parent=5000, zone=1500) # Old location
+            self.assertTrue(parent.expect(dg))
 
-        # Object should announce its disappearance...
-        dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(101000000)
-        self.assertTrue(ai.expect(dg))
+            # Object should announce its disappearance...
+            dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_DELETE_RAM)
+            dg.add_uint32(101000000)
+            self.assertTrue(ai.expect(dg))
 
         # We're done here...
         ### Cleanup ###
@@ -260,7 +264,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(ai1.expect(dg))
 
         # ... and its new AI channel that it is entering.
-        dg = Datagram.create([ai2chan], doid1, STATESERVER_OBJECT_ENTER_AI)
+        dg = Datagram.create([ai2chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
         self.assertTrue(ai2.expect(dg))
@@ -277,16 +281,14 @@ class TestStateServer(unittest.TestCase):
             dg = obj1.recv_maybe()
             self.assertTrue(dg is not None) # Parent recieved messages
             dgi = DatagramIterator(dg)
-            msgtype = dgi.read_uint16()
             # ... the second object should ask its parent for the AI channel...
-            if msgtype is STATESERVER_OBJECT_GET_AI:
-                self.assertTrue(dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI))
+            if dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI):
                 context = dgi.read_uint32()
             # ... the second object notifies the parent it has changed location, which we ignore...
-            elif msgtype is STATESERVER_OBJECT_CHANGING_LOCATION:
+            elif dgi.matches_header([doid1], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
                 continue
             else:
-                self.fail("obj1 recieved unexpected msgtype: " + str(msgtype))
+                self.fail("Received unexpected or non-matching header.")
 
         # ... and the parent should reply with its AI server.
         dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_GET_AI_RESP)
@@ -315,13 +317,13 @@ class TestStateServer(unittest.TestCase):
         ai2.flush() # Ignore AI notifcation
 
         # Recreate the second object with no parent
-        createEmptyDTO1(conn, 5, doid2, 0, 0, DistributedTestObject1, 1337)
+        createEmptyDTO1(conn, 5, doid2, 0, 0, 1337)
 
         # Set the location of the second object to a zone of the first object
         dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_LOCATION)
         appendMeta(dg, parent=doid1, zone=1500)
         conn.send(dg)
-        obj2.flush()
+        obj2.expect(dg)
 
         # Ignore messages about location change, not tested here
         conn.flush() # Won't exist anyways, but just in case
@@ -333,16 +335,14 @@ class TestStateServer(unittest.TestCase):
             dg = obj1.recv_maybe()
             self.assertTrue(dg is not None) # Parent recieved messages
             dgi = DatagramIterator(dg)
-            msgtype = dgi.read_uint16()
             # ... the second object should ask its parent for the AI channel...
-            if msgtype is STATESERVER_OBJECT_GET_AI:
-                self.assertTrue(dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI))
+            if dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI):
                 context = dgi.read_uint32()
             # ... the second object notifies the parent it has changed location, which we ignore...
-            elif msgtype is STATESERVER_OBJECT_CHANGING_LOCATION:
+            elif dgi.matches_header([doid1], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
                 continue
             else:
-                self.fail("obj1 recieved unexpected msgtype: " + str(msgtype))
+                self.fail("Received unexpected message header.")
 
         # ... and the parent should reply with its AI server.
         dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_GET_AI_RESP)
@@ -378,7 +378,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(children1.expect(dg))
         ai2expected.append(dg)
         # ... and its new AI channel that it is entering.
-        dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI)
+        dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
         ai1expected.append(dg)
@@ -391,13 +391,13 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(children2.expect_none()) # It has no children
         ai2expected.append(dg)
         # ... and the new AI channel that it is entering.
-        dg = Datagram.create([ai1chan], doid2, STATESERVER_OBJECT_ENTER_AI)
-        appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
-        dg.add_uint32(6789) # setRequired1
+        dg = Datagram.create([ai1chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
+        appendMeta(dg, doid2, doid1, 1500, DistributedTestObject1)
+        dg.add_uint32(1337) # setRequired1
         ai1expected.append(dg)
 
         self.assertTrue(ai1.expect_multi(ai1expected, only=True))
-        self.assertTrue(ai2.expect_multi(ai1expected, only=True))
+        self.assertTrue(ai2.expect_multi(ai2expected, only=True))
 
 
 
@@ -434,7 +434,8 @@ class TestStateServer(unittest.TestCase):
         children2.flush() # Ignore child propogation (there shouldn't be any)
         obj1.flush() # Ignore parent notification
         obj2.flush() # Ignore received delete
-        ai2.flush() # Ignore AI notifcation
+        ai2.flush() # Ignore AI notification
+        ai1.flush() # Ignore AI notification
 
         # Recreate the second object with an optional field
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)

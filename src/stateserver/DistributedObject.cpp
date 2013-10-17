@@ -12,7 +12,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, D
                                      bool has_other) :
 	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_parent_id(INVALID_DO_ID),
 	m_zone_id(INVALID_ZONE), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-	m_ai_explicitly_set(false), m_next_context(0)
+	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -47,6 +47,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, D
 	}
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
+
+	m_log->debug() << "Object created..." << std::endl;
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
 	handle_location_change(parent_id, zone_id, dgi.read_uint64());
@@ -231,36 +233,43 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 	}
 }
 
-void DistributedObject::handle_ai_change(channel_t new_channel, channel_t old_channel,
-	                                     channel_t sender, bool channel_is_explicit)
+void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
+	                                     bool channel_is_explicit)
 {
-	if(new_channel == m_ai_channel)
+	uint64_t old_ai = m_ai_channel;
+	if(new_ai == old_ai)
 	{
 		return;
 	}
 
-	if(m_ai_channel)
+	// Set of channels that must be notified about ai_change
+	std::set<channel_t> targets;
+
+	if(old_ai)
 	{
-		Datagram dg(m_ai_channel, m_do_id, STATESERVER_OBJECT_CHANGING_AI);
-		dg.add_uint32(m_do_id);
-		m_log->spam() << "Leaving AI interest" << std::endl;
-		send(dg);
+		targets.insert(old_ai);
+	}
+	if(m_child_count)
+	{
+		targets.insert(PARENT2CHILDREN(m_do_id));
 	}
 
-	m_ai_channel = new_channel;
+	m_ai_channel = new_ai;
 	m_ai_explicitly_set = channel_is_explicit;
 
-	if(m_ai_channel)
+	Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_AI);
+	dg.add_uint32(m_do_id);
+	dg.add_uint64(new_ai);
+	dg.add_uint64(old_ai);
+	send(dg);
+
+	if(new_ai)
 	{
-		m_log->spam() << "Sending STATESERVER_OBJECT_ENTER_AI to "
-		              << m_ai_channel << std::endl;
-		send_ai_entry(m_ai_channel);
+		m_log->spam() << "Sending AI entry to "
+		              << new_ai << std::endl;
+		send_ai_entry(new_ai);
 	}
 
-	Datagram dg2(PARENT2CHILDREN(m_do_id), sender, STATESERVER_OBJECT_CHANGING_AI);
-	dg2.add_uint32(m_do_id);
-	dg2.add_uint64(m_ai_channel);
-	send(dg2);
 }
 
 void DistributedObject::annihilate(channel_t sender)
@@ -293,7 +302,7 @@ void DistributedObject::annihilate(channel_t sender)
 	dg.add_uint32(m_do_id);
 	send(dg);
 
-	m_stateserver->m_objs[m_do_id] = NULL;
+	m_stateserver->m_objs.erase(m_do_id);
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
 }
@@ -485,7 +494,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			uint32_t r_parent_id = dgi.read_uint32();
 			channel_t new_channel = dgi.read_uint64();
-			m_log->spam() << "STATESERVER_OBJECT_CHANGING_AI from " << r_parent_id << std::endl;
+			m_log->spam() << "Received ChangingAI notification from " << r_parent_id << std::endl;
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
@@ -496,34 +505,95 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				break;
 			}
-			handle_ai_change(new_channel, m_ai_channel, sender, false);
+			handle_ai_change(new_channel, sender, false);
 
 			break;
 		}
 		case STATESERVER_OBJECT_SET_AI:
 		{
 			channel_t new_channel = dgi.read_uint64();
-			m_log->spam() << "STATESERVER_OBJECT_SET_AI: ai_channel=" << new_channel << std::endl;
-			handle_ai_change(new_channel, m_ai_channel, sender, true);
+			m_log->spam() << "Updating AI to " << new_channel << std::endl;
+			handle_ai_change(new_channel, sender, true);
 
 			break;
 		}
 		case STATESERVER_OBJECT_GET_AI:
 		{
-			m_log->spam() << "STATESERVER_OBJECT_GET_AI" << std::endl;
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_CHANGING_AI);
+			m_log->spam() << "Received AI query from " << sender << std::endl;
+			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_AI_RESP);
+			dg.add_uint32(dgi.read_uint32()); // Get context
 			dg.add_uint32(m_do_id);
 			dg.add_uint64(m_ai_channel);
 			send(dg);
 
 			break;
 		}
+		case STATESERVER_OBJECT_GET_AI_RESP:
+		{
+			dgi.read_uint32(); // Discard context
+			uint32_t r_parent_id = dgi.read_uint32();
+			m_log->spam() << "Received AI query response from " << r_parent_id << std::endl;
+			if(r_parent_id != m_parent_id)
+			{
+				m_log->warning() << "Received AI channel from " << r_parent_id
+				                 << " but my parent_id is " << m_parent_id << std::endl;
+				break;
+			}
+
+			channel_t new_ai = dgi.read_uint64();
+			if(m_ai_explicitly_set)
+			{
+				break;
+			}
+			handle_ai_change(new_ai, sender, false);
+
+			break;
+		}
+		case STATESERVER_OBJECT_CHANGING_LOCATION:
+		{
+			uint32_t child_id = dgi.read_uint32();
+			uint32_t new_parent = dgi.read_uint32();
+			uint32_t new_zone = dgi.read_uint32();
+			uint32_t r_do_id = dgi.read_uint32();
+			uint32_t r_zone = dgi.read_uint32();
+			if(new_parent == m_do_id)
+			{
+				if(new_parent != r_do_id)
+				{
+					m_child_count++;
+				}
+				else
+				{
+					if(new_zone == r_zone)
+					{
+						break; // No change, so do nothing.
+					}
+
+					m_zone_count[r_zone] = m_zone_count[r_zone] - 1;
+				}
+
+				m_zone_count[new_zone] = m_zone_count[new_zone] + 1;
+			}
+			else if(r_do_id == m_do_id)
+			{
+				m_zone_count[r_zone] = m_zone_count[r_zone] - 1;
+				m_child_count--;
+			}
+			else
+			{
+				m_log->warning() << "Received changing location from " << child_id
+				                 << " for " << r_do_id << ", but my id is " << m_do_id << std::endl;
+				break;
+			}
+		}
 		case STATESERVER_OBJECT_SET_LOCATION:
 		{
-			uint32_t new_parent_id = dgi.read_uint32();
-			uint32_t new_zone_id = dgi.read_uint32();
+			uint32_t new_parent = dgi.read_uint32();
+			uint32_t new_zone = dgi.read_uint32();
+			m_log->spam() << "Updating location to Parent: " << new_parent
+			              << ", Zone: " << new_zone << std::endl;
 
-			handle_location_change(new_parent_id, new_zone_id, sender);
+			handle_location_change(new_parent, new_zone, sender);
 
 			break;
 		}

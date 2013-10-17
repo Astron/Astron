@@ -25,6 +25,8 @@ class DistributedObject : public MDParticipantInterface
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;
 		uint32_t m_next_context;
+		uint32_t m_child_count;
+		std::unordered_map<uint32_t, uint32_t> m_zone_count;
 		LogCategory *m_log;
 
 		void append_required_data(Datagram &dg, bool broadcast_only = false, bool also_owner = false);
@@ -35,8 +37,7 @@ class DistributedObject : public MDParticipantInterface
 		void send_owner_entry(channel_t location);
 
 		void handle_location_change(uint32_t new_parent, uint32_t new_zone, channel_t sender);
-		void handle_ai_change(channel_t new_ai, channel_t old_ai, channel_t sender,
-			                  bool channel_is_explicit);
+		void handle_ai_change(channel_t new_ai, channel_t sender, bool channel_is_explicit);
 
 		void annihilate(channel_t sender);
 

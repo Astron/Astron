@@ -154,6 +154,7 @@ to one object at a time.
 >  - If an object a new parent, it is broadcast to the new parent.
 >  - If an object has an AI, it is broadcast to the AI.
 >  - If an object has an owner, it is broadcast to the owner.
+> The notification's "sender" is set to the original message's sender.
 >
 > Then the objects will broadcast one of the following enter location messages to the new location.
 
@@ -183,9 +184,10 @@ to one object at a time.
     `args(uint32 doid_id, uint64 new_ai_channel, uint64 old_ai_channel)`  
 > A set AI message moves receiving objects to a new AI.
 >
-> If an objects has an existing AI, it will send a ChangingAI message to its old
-> AI channel.  If the object has children, it will also add its children as a
-> recipient using the parent messages channel (1 << 32|parent_id).
+> A changing location message is sent to notify others of the change:
+>  - If an object had an old ai, notify the object's old ai.
+>  - If an object has children, notify the children using the parent channel (1 << 32|parent_id).
+> The notification's "sender" is set to the original message's sender.
 >
 > Children whose AI channels have not been explicitly set will process the message
 > as if they had recieved a set AI message with ai_channel equal to the new AI;
@@ -221,8 +223,9 @@ to one object at a time.
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 > A set owner message moves receiving object to a new owner.
 >
-> If an object has an existing owner, it will send a ChangingOwner message to
-> its old Owner channel.
+> A changing location message is sent to notify others of the change:
+>  - If an object had an old owner, notify the object's old owner.
+> The notification's "sender" is set to the original message's sender.
 >
 > Then the objects will send one of the following enter owner messages to the
 > new owner.
