@@ -1019,7 +1019,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Then object should die:
-        dg = Datagram.create([62222<<32|125], 201, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([62222<<32|125], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(201)
         self.assertTrue(conn.expect(dg))
 
