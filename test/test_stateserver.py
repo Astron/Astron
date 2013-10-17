@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import unittest
+import unittest, time
 from socket import *
 
 from common import *
@@ -18,7 +18,7 @@ roles:
       control: 100
 """ % test_dc
 
-def connection(channel):
+def connect(channel):
     return ChannelConnection('127.0.0.1', 57123, channel)
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
@@ -42,20 +42,52 @@ def deleteObject(conn, sender, doid):
     dg.add_uint32(doid)
     conn.send(dg)
 
+CONN_POOL_SIZE = 8
 class TestStateServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
+        cls.conn_pool = []
+        cls.conn_used = []
+        for x in xrange(CONN_POOL_SIZE):
+            conn = connect(0)
+            conn.remove_channel(0)
+            cls.conn_pool.append(conn)
+
     @classmethod
     def tearDownClass(cls):
+        for conn in cls.conn_used:
+            self.disconnect(conn)
+        for conn in cls.conn_pool:
+            conn.close()
         cls.daemon.stop()
+
+    def connect(self, channel):
+        conn = self.conn_pool.pop()
+        conn.add_channel(channel)
+        self.conn_used.append(conn)
+        return conn
+
+    def disconnect(self, conn):
+        conn.clear_channels()
+        conn.flush()
+        self.conn_used.remove(conn)
+        self.conn_pool.append(conn)
+
+    def flush_failed(self):
+        for conn in self.conn_pool:
+            conn.clear_channels()
+            conn.flush()
+        for conn in self.conn_used:
+            self.disconnect(conn)
 
     # Tests CREATE_OBJECT_WITH_REQUIRED and OBJECT_DELETE_RAM
     def test_create_delete(self):
-        ai = connection(5000<<32|1500)
-        parent = connection(5000)
+        self.flush_failed()
+        ai = self.connect(5000<<32|1500)
+        parent = self.connect(5000)
 
         # Repeat tests twice to verify doids can be reused
         for x in xrange(2):
@@ -111,12 +143,13 @@ class TestStateServer(unittest.TestCase):
 
         # We're done here...
         ### Cleanup ###
-        parent.close()
-        ai.close()
+        self.disconnect(parent)
+        self.disconnect(ai)
 
     # Tests the handling of the broadcast keyword by the stateserver
     def test_broadcast(self):
-        ai = connection(5000<<32|1500)
+        self.flush_failed()
+        ai = self.connect(5000<<32|1500)
 
         ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
@@ -146,11 +179,12 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         # Delete object
         deleteObject(ai, 5, 101000005)
-        ai.close()
+        self.disconnect(ai)
 
     # Tests stateserver handling of 'airecv' keyword 
     def test_airecv(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
         conn.add_channel(1300)
 
         ### Test for the airecv keyword ###
@@ -188,41 +222,32 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 100010)
 
         # See if the AI receives the delete.
-        dg = conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.read_uint8() == 2)
-        self.assertTrue(dgi.read_uint64() == 1300)
-        self.assertTrue(dgi.read_uint64() == (5000<<32|1500))
-        self.assertTrue(dgi.read_uint64() == 5)
-        self.assertTrue(dgi.read_uint16() == STATESERVER_OBJECT_DELETE_RAM)
-        self.assertTrue(dgi.read_uint32() == 100010)
-        '''
         dg = Datagram.create([1300, (5000<<32|1500)], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(100010)
         self.assertTrue(conn.expect(dg))
-        '''
 
         ### Cleanup ###
-        conn.close()
+        self.disconnect(conn)
 
     # Tests the messages GET_AI, SET_AI, CHANGING_AI, and ENTER_AI.
     def test_set_ai(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
         conn.add_channel(0)
 
         # So we can see airecvs...
         ai1chan = 1011
         ai2chan = 2202
-        ai1 = connection(ai1chan)
-        ai2 = connection(ai2chan)
+        ai1 = self.connect(ai1chan)
+        ai2 = self.connect(ai2chan)
 
         # So we can see communications between objects...
         doid1 = 1010101
         doid2 = 2020202
-        obj1 = connection(doid1)
-        obj2 = connection(doid2)
-        children1 = connection(PARENT_PREFIX|doid1)
-        children2 = connection(PARENT_PREFIX|doid2)
+        obj1 = self.connect(doid1)
+        obj2 = self.connect(doid2)
+        children1 = self.connect(PARENT_PREFIX|doid1)
+        children2 = self.connect(PARENT_PREFIX|doid2)
 
 
         ### Test for SetAI on an object without children, AI, or optional fields ###
@@ -276,6 +301,7 @@ class TestStateServer(unittest.TestCase):
         createEmptyDTO1(conn, 5, doid2, doid1, 1500, 1337)
 
         # The first object is expecting two messages from the child...
+        obj1.flush()
         context = None
         for x in xrange(2):
             dg = obj1.recv_maybe()
@@ -323,7 +349,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_LOCATION)
         appendMeta(dg, parent=doid1, zone=1500)
         conn.send(dg)
-        obj2.expect(dg)
+        obj2.flush()
 
         # Ignore messages about location change, not tested here
         conn.flush() # Won't exist anyways, but just in case
@@ -344,12 +370,8 @@ class TestStateServer(unittest.TestCase):
             else:
                 self.fail("Received unexpected message header.")
 
-        # ... and the parent should reply with its AI server.
-        dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_GET_AI_RESP)
-        dg.add_uint32(context)
-        dg.add_uint32(doid1)
-        dg.add_uint64(ai2chan)
-        self.assertTrue(obj2.expect(dg)) # Receiving GET_AI_RESP from parent
+        # ... and we don't care about the reply from the parent (tested elsewhere)
+        obj2.flush()
 
         # Then the second object should announce its presence to AI2...
         dg = Datagram.create([ai2chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
@@ -467,11 +489,12 @@ class TestStateServer(unittest.TestCase):
         for doid in [doid1, doid2]:
             deleteObject(conn, 5, doid)
         for mdconn in [conn, ai1, ai2, obj1, obj2, children1, children2]:
-            mdconn.close()
+            self.disconnect(mdconn)
 
     # Tests stateserver handling of the 'ram' keyword
     def test_ram(self):
-        ai = connection(13000<<32|6800)
+        self.flush_failed()
+        ai = self.connect(13000<<32|6800)
         ai.add_channel(13000<<32|4800)
 
         ### Test that ram fields are remembered ###
@@ -516,21 +539,22 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(ai, 5, 102000000)
-        ai.close()
+        self.disconnect(ai)
 
     # Tests the messages SET_LOCATION, CHANGING_LOCATION, and ENTER_LOCATION
     def test_set_location(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
         conn.add_channel(0)
 
         doid0 = 14000
         doid1 = 105000000
         doid2 = 105050505
-        obj0 = connection(doid0)
-        obj1 = connection(doid1)
-        obj2 = connection(doid2)
-        location0 = connection(doid0<<32|9800)
-        location2 = connection(doid2<<32|9900)
+        obj0 = self.connect(doid0)
+        obj1 = self.connect(doid1)
+        obj2 = self.connect(doid2)
+        location0 = self.connect(doid0<<32|9800)
+        location2 = self.connect(doid2<<32|9900)
 
         ### Test for a call to SetLocation on object without previous location ###
         # Create an object...
@@ -763,12 +787,13 @@ class TestStateServer(unittest.TestCase):
         for doid in [doid1, doid2]:
             deleteObject(conn, 5, doid)
         for mdconn in [conn, obj0, obj1, obj2, location0, location2]:
-            mdconn.close()
+            self.disconnect(mdconn)
 
 
     # Tests stateserver handling of DistributedClassInheritance
     def test_inheritance(self):
-        conn = connection(67000<<32|2000)
+        self.flush_failed()
+        conn = self.connect(67000<<32|2000)
 
         ### Test for CreateObject on a subclass ###
         # Create a DTO3, which inherits from DTO1.
@@ -810,11 +835,12 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(conn, 5, 110000000)
-        conn.close()
+        self.disconnect(conn)
 
     # Tests handling of various erroneous/bad/invalid messages
     def test_error(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
         conn.add_channel(80000<<32|1234)
 
         ### Test for updating an invalid field ###
@@ -913,11 +939,12 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(conn, 5, 234000000)
-        conn.close()
+        self.disconnect(conn)
 
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
     def test_create_with_other(self):
-        conn = connection(90000<<32|4321)
+        self.flush_failed()
+        conn = self.connect(90000<<32|4321)
 
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, 545630000, 90000, 4321, DistributedTestObject1)
@@ -956,11 +983,12 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         deleteObject(conn, 5, 545630000)
         deleteObject(conn, 5, 545640000)
-        conn.close()
+        self.disconnect(conn)
 
     # Tests for message GET_LOCATION
     def test_get_location(self):
-        conn = connection(0x4a03)
+        self.flush_failed()
+        conn = self.connect(0x4a03)
 
         # Throw a few objects out there...
         createEmptyDTO1(conn, 5, 583312, 48000, 624800)
@@ -988,11 +1016,12 @@ class TestStateServer(unittest.TestCase):
             deleteObject(conn, 5, doid)
 
         ### Cleanup ###
-        conn.close()
+        self.disconnect(conn)
 
     # Tests for DELETE_AI_OBJECTS
     def test_delete_ai_objects(self):
-        conn = connection(62222<<32|125)
+        self.flush_failed()
+        conn = self.connect(62222<<32|125)
 
         # Create an object...
         createEmptyDTO1(conn, 5, 201, 62222, 125, 6789)
@@ -1024,11 +1053,12 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(conn.expect(dg))
 
         ### Cleanup ###
-        conn.close()
+        self.disconnect(conn)
 
     # Tests for messages GET_ALL, GET_FIELD, and GET_FIELDS
     def test_get(self):
-        conn = connection(890)
+        self.flush_failed()
+        conn = self.connect(890)
 
 
         ### Test for GetAll on object with just required fields ###
@@ -1210,12 +1240,13 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(conn, 5, 15000)
-        conn.close()
+        self.disconnect(conn)
 
     # Tests the message SET_FIELDS
     def test_set_fields(self):
-        conn = connection(5985858)
-        location = connection(12512<<32|66161)
+        self.flush_failed()
+        conn = self.connect(5985858)
+        location = self.connect(12512<<32|66161)
 
         ### Test for SetFields with broadcast and ram filds ###
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
@@ -1270,12 +1301,13 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(conn, 5985858, 55555)
-        location.close()
-        conn.close()
+        self.disconnect(location)
+        self.disconnect(conn)
 
     # Tests stateserver handling of the 'ownrecv' keyword
     def test_ownrecv(self):
-        conn = connection(14253648)
+        self.flush_failed()
+        conn = self.connect(14253648)
 
         ### Test for broadcast of empty
         # Create an object
@@ -1312,19 +1344,20 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(conn.expect(dg))
 
         ### Cleanup ###
-        conn.close()
+        self.disconnect(conn)
 
     # Tests the message SET_OWNER, CHANGING_OWNER, ENTER_OWNER
     def test_set_owner(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
 
         owner1chan = 14253647
         owner2chan = 22446622
         doid1 = 74635241
         doid2 = 0x4a0351
 
-        owner1 = connection(owner1chan)
-        owner2 = connection(owner2chan)
+        owner1 = self.connect(owner1chan)
+        owner2 = self.connect(owner2chan)
 
         ### Test for SetOwner on an object with no owner ###
         # Make an object to play around with
@@ -1411,14 +1444,15 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         deleteObject(conn, 5, doid1)
         deleteObject(conn, 5, doid2)
-        owner1.close()
-        owner2.close()
-        conn.close()
+        self.disconnect(owner1)
+        self.disconnect(owner2)
+        self.disconnect(conn)
 
     # Tests stateserver handling of molecular fields
     def test_molecular(self):
-        conn = connection(13371337)
-        location0 = connection(88<<32|99)
+        self.flush_failed()
+        conn = self.connect(13371337)
+        location0 = self.connect(88<<32|99)
 
         ### Test for broadcast of a molecular SetField is molecular ###
         # Create an object
@@ -1565,12 +1599,13 @@ class TestStateServer(unittest.TestCase):
 
         ### Cleanup ###
         deleteObject(conn, 5, 73317331)
-        location0.close()
-        conn.close()
+        self.disconnect(location0)
+        self.disconnect(conn)
 
     # Tests the message GET_ZONES_OBJECTS
     def test_get_zones_objects(self):
-        conn = connection(5)
+        self.flush_failed()
+        conn = self.connect(5)
 
         doid0 = 1000 # Root object
         doid1 = 2001
@@ -1629,7 +1664,7 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###
         for doid in (doid0, doid1, doid2, doid3, doid4, doid5, doid6):
             deleteObject(conn, 5, doid)
-        conn.close()
+        self.disconnect(conn)
 
 if __name__ == '__main__':
     unittest.main()

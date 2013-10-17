@@ -37,6 +37,7 @@ class Daemon(object):
         time.sleep(1.0) # Allow some time for daemon to initialize...
 
     def stop(self):
+        time.sleep(1.0) # Allow some time for daemon to finish up...
         if self.daemon is not None:
             self.daemon.kill()
         if self.config_file is not None:
@@ -261,20 +262,16 @@ class DatagramIterator(object):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
         if len(channels) != len(recipients):
-            print "Channels don't match"
             return False
 
         self.seek(8*ord(self._data[0])+1)
         if sender != self.read_uint64():
-            print "Sender doesn't match"
             return False
 
         if msgtype != self.read_uint16():
-            print "MsgType doesn't match"
             return False
 
         if remaining != -1 and remaining != len(self._data) - self._offset:
-            print "Remaining doesn't match"
             return False
 
         return True
@@ -412,6 +409,11 @@ class ChannelConnection(MDConnection):
 
     def remove_channel(self, channel):
         if channel in self.channels:
+            self.send(Datagram.create_remove_channel(channel))
+            self.channels.remove(channel)
+
+    def clear_channels(self):
+        for channel in self.channels:
             self.send(Datagram.create_remove_channel(channel))
             self.channels.remove(channel)
 
