@@ -24,20 +24,25 @@ class DistributedObject : public MDParticipantInterface
 		channel_t m_ai_channel;
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;
+		uint32_t m_next_context;
+		uint32_t m_child_count;
+		std::unordered_map<uint32_t, uint32_t> m_zone_count;
 		LogCategory *m_log;
 
-		void append_required_data(Datagram &dg, bool broadcast_only);
-		void append_other_data(Datagram &dg);
+		void append_required_data(Datagram &dg, bool broadcast_only = false, bool also_owner = false);
+		void append_other_data(Datagram &dg, bool broadcast_only = false, bool also_owner = false);
 
-		void send_zone_entry(channel_t destination);
+		void send_location_entry(channel_t location);
+		void send_ai_entry(channel_t location);
+		void send_owner_entry(channel_t location);
 
-		void handle_parent_change(uint32_t new_parent);
-		void handle_ai_change(channel_t new_channel, bool channel_is_explicit);
-		void handle_shard_reset();
+		void handle_location_change(uint32_t new_parent, uint32_t new_zone, channel_t sender);
+		void handle_ai_change(channel_t new_ai, channel_t sender, bool channel_is_explicit);
 
-		void annihilate();
+		void annihilate(channel_t sender);
 
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);
-		bool handle_query(Datagram &out, uint16_t field_id);
+		bool handle_one_get(Datagram &out, uint16_t field_id,
+		                    bool succeed_if_unset = false, bool is_subfield = false);
 };

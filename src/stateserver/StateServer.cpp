@@ -27,10 +27,10 @@ StateServer::~StateServer()
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 {
+	uint32_t do_id = dgi.read_uint32();
 	uint32_t parent_id = dgi.read_uint32();
 	uint32_t zone_id = dgi.read_uint32();
 	uint16_t dc_id = dgi.read_uint16();
-	uint32_t do_id = dgi.read_uint32();
 
 	if(dc_id >= g_dcf->get_num_classes())
 	{
@@ -65,17 +65,17 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
-		case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED:
+		case STATESERVER_CREATE_OBJECT_WITH_REQUIRED:
 		{
 			handle_generate(dgi, false);
 			break;
 		}
-		case STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER:
+		case STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER:
 		{
 			handle_generate(dgi, true);
 			break;
 		}
-		case STATESERVER_SHARD_RESET:
+		case STATESERVER_DELETE_AI_OBJECTS:
 		{
 			channel_t ai_channel = dgi.read_uint64();
 			std::set <channel_t> targets;
@@ -87,7 +87,7 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(targets.size())
 			{
-				Datagram dg(targets, sender, STATESERVER_SHARD_RESET);
+				Datagram dg(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
 				dg.add_uint64(ai_channel);
 				send(dg);
 			}
