@@ -18,7 +18,7 @@ void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	catch(boost::system::system_error &e)
 	{
 		logger().warning() << "Received a system error while sending a datagram to a network "
-		                      "participant (the participant may have lost connection)." << std::endl;
+		                   "participant (the participant may have lost connection)." << std::endl;
 		return;
 	}
 }

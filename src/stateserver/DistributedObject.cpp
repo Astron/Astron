@@ -150,14 +150,14 @@ void DistributedObject::send_owner_entry(channel_t owner)
 }
 
 void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new_zone,
-	                                           channel_t sender)
+        channel_t sender)
 {
 	uint32_t old_parent = m_parent_id;
 	uint32_t old_zone = m_zone_id;
 
 	// Set of channels that must be notified about location_change
 	std::set<channel_t> targets;
-	
+
 	// Notify AI of changing location
 	if(m_ai_channel)
 	{
@@ -179,30 +179,30 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 	// Handle parent change
 	if(new_parent != old_parent)
 	{
-    	// Unsubscribe from the old parent's child-broadcast channel.
-        if(old_parent) // If we have an old parent
-        {
+		// Unsubscribe from the old parent's child-broadcast channel.
+		if(old_parent) // If we have an old parent
+		{
 			MessageDirector::singleton.unsubscribe_channel(this, PARENT2CHILDREN(m_parent_id));
 			// Notify old parent of changing location
 			targets.insert(old_parent);
 			// Notify old location of changing location
 			targets.insert(LOCATION2CHANNEL(old_parent, old_zone));
-        }
+		}
 
-        m_parent_id = new_parent;
-        m_zone_id = new_zone;
+		m_parent_id = new_parent;
+		m_zone_id = new_zone;
 
-        // Subscribe to new one...
-        if(new_parent) // If we have a new parent
-        {
+		// Subscribe to new one...
+		if(new_parent) // If we have a new parent
+		{
 			MessageDirector::singleton.subscribe_channel(this, PARENT2CHILDREN(m_parent_id));
-	        if(!m_ai_explicitly_set)
-        	{
+			if(!m_ai_explicitly_set)
+			{
 				// Ask the new parent what its AI is.
 				Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
 				dg.add_uint32(m_next_context++);
 				send(dg);
-        	}
+			}
 			targets.insert(new_parent); // Notify new parent of changing location
 		}
 		else if(!m_ai_explicitly_set)
@@ -240,7 +240,7 @@ void DistributedObject::handle_location_change(uint32_t new_parent, uint32_t new
 }
 
 void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
-	                                     bool channel_is_explicit)
+        bool channel_is_explicit)
 {
 	uint64_t old_ai = m_ai_channel;
 	if(new_ai == old_ai)
@@ -395,7 +395,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 }
 
 bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
-	                                   bool succeed_if_unset, bool is_subfield)
+                                       bool succeed_if_unset, bool is_subfield)
 {
 	DCField *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
@@ -424,13 +424,17 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	if(m_required_fields.count(field))
 	{
 		if(!is_subfield)
+		{
 			out.add_uint16(field_id);
+		}
 		out.add_data(m_required_fields[field]);
 	}
 	else if(m_ram_fields.count(field))
 	{
 		if(!is_subfield)
+		{
 			out.add_uint16(field_id);
+		}
 		out.add_data(m_ram_fields[field]);
 	}
 	else
@@ -661,7 +665,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			Datagram raw_fields;
 			bool success = true;
 			uint16_t fields_found = 0;
-			for(int i=0; i < field_count; ++i)
+			for(int i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
 				uint16_t length = raw_fields.size();
@@ -725,7 +729,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t queried_parent = dgi.read_uint32();
 
 
-			m_log->spam() << "Handling get_zones_objects with parent '" << queried_parent <<"'"
+			m_log->spam() << "Handling get_zones_objects with parent '" << queried_parent << "'"
 			              << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
 			              << "." << std::endl;
 
@@ -753,13 +757,13 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 				// Start datagram to relay to children
 				Datagram child_dg(PARENT2CHILDREN(m_do_id), sender,
-				            STATESERVER_OBJECT_GET_ZONES_OBJECTS);
+				                  STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 				child_dg.add_uint32(context);
 				child_dg.add_uint32(queried_parent);
 				child_dg.add_uint16(zone_count);
 
 				// Get all zones requested
-				for(int i=0; i < zone_count; ++i)
+				for(int i = 0; i < zone_count; ++i)
 				{
 					uint32_t zone = dgi.read_uint32();
 					child_count += m_zone_count[zone];

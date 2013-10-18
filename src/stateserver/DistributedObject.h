@@ -44,5 +44,5 @@ class DistributedObject : public MDParticipantInterface
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);
 		bool handle_one_get(Datagram &out, uint16_t field_id,
-			                bool succeed_if_unset = false, bool is_subfield = false);
+		                    bool succeed_if_unset = false, bool is_subfield = false);
 };
