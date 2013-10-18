@@ -34,6 +34,15 @@ struct Interest
 	}
 };
 
+struct DistributedObject
+{
+	uint32_t id;
+	uint32_t parent;
+	uint32_t zone;
+	DCClass *dcc;
+	uint32_t refcount;
+};
+
 class Client : public NetworkClient, public MDParticipantInterface
 {
 	private:
@@ -47,6 +56,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		std::set<uint32_t> m_owned_objects;
 		std::set<uint32_t> m_seen_objects;
 		std::map<uint16_t, Interest> m_interests;
+		std::map<uint32_t, DistributedObject> m_dist_objs;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct);

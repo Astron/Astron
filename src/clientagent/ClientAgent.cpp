@@ -22,17 +22,6 @@ static ConfigVariable<std::string> server_version("version", "dev");
 static ConfigVariable<channel_t> min_channel("channels/min", 0);
 static ConfigVariable<channel_t> max_channel("channels/max", 0);
 
-struct DistributedObject
-{
-	uint32_t id;
-	uint32_t parent;
-	uint32_t zone;
-	DCClass *dcc;
-	uint32_t refcount;
-};
-
-std::map<uint32_t, DistributedObject> dist_objs;
-
 class ChannelTracker
 {
 	private:
@@ -105,7 +94,7 @@ Client::~Client()
 		for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 		{
 			uint32_t zone = it->first;
-			for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+			for(auto it = m_dist_objs.begin(); it != m_dist_objs.end(); ++it)
 			{
 				if(it->second.refcount)
 				{
@@ -169,7 +158,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		uint32_t do_id = dgi.read_uint32();
 		m_owned_objects.insert(do_id);
 
-		if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
+		if(m_dist_objs.find(do_id) == m_dist_objs.end() || m_dist_objs[do_id].refcount == 0)
 		{
 			DistributedObject obj;
 			obj.id = do_id;
@@ -177,9 +166,9 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			obj.zone = zone;
 			obj.dcc = g_dcf->get_class(dc_id);
 			obj.refcount = 0;
-			dist_objs[do_id] = obj;
+			m_dist_objs[do_id] = obj;
 		}
-		dist_objs[do_id].refcount++;
+		m_dist_objs[do_id].refcount++;
 
 		Datagram resp;
 		resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER);
@@ -244,7 +233,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
 			return;
 		}
-		if(dist_objs.find(do_id) == dist_objs.end() || dist_objs[do_id].refcount == 0)
+		if(m_dist_objs.find(do_id) == m_dist_objs.end() || m_dist_objs[do_id].refcount == 0)
 		{
 			DistributedObject obj;
 			obj.id = do_id;
@@ -252,9 +241,9 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			obj.parent = parent;
 			obj.refcount = 0;
 			obj.zone = zone;
-			dist_objs[do_id] = obj;
+			m_dist_objs[do_id] = obj;
 		}
-		dist_objs[do_id].refcount++;
+		m_dist_objs[do_id].refcount++;
 		m_seen_objects.insert(do_id);
 
 		Datagram resp;
@@ -336,12 +325,12 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			}
 		}
 
-		if(dist_objs.find(do_id) != dist_objs.end())
+		if(m_dist_objs.find(do_id) != m_dist_objs.end())
 		{
-			dist_objs[do_id].zone = n_zone;
+			m_dist_objs[do_id].zone = n_zone;
 			if(disable)
 			{
-				dist_objs[do_id].refcount--;
+				m_dist_objs[do_id].refcount--;
 			}
 		}
 
@@ -427,9 +416,9 @@ DCClass *Client::lookup_object(uint32_t do_id)
 	if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
 	   m_seen_objects.find(do_id) != m_seen_objects.end())
 	{
-		if(dist_objs.find(do_id) != dist_objs.end())
+		if(m_dist_objs.find(do_id) != m_dist_objs.end())
 		{
-			return dist_objs[do_id].dcc;
+			return m_dist_objs[do_id].dcc;
 		}
 	}
 
@@ -597,7 +586,7 @@ void Client::remove_interest(Interest &i, uint32_t id)
 			unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
 		}
 	}
-	for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+	for(auto it = m_dist_objs.begin(); it != m_dist_objs.end(); ++it)
 	{
 		if(it->second.parent == i.parent)
 		{
@@ -780,7 +769,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 bool Client::handle_client_object_location(DatagramIterator &dgi)
 {
 	uint32_t do_id = dgi.read_uint32();
-	if(dist_objs.find(do_id) == dist_objs.end())
+	if(m_dist_objs.find(do_id) == m_dist_objs.end())
 	{
 		std::stringstream ss;
 		ss << "Client tried to manipulate unknown object " << do_id;
