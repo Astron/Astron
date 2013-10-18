@@ -163,6 +163,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			resp.add_uint32(do_id);
 			network_send(resp);
 		}
+
+		m_dist_objs.erase(do_id);
 	}
 	break;
 	case STATESERVER_OBJECT_ENTER_OWNER_RECV:
@@ -346,6 +348,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
 			resp.add_uint16(CLIENT_OBJECT_DISABLE);
 			resp.add_uint32(do_id);
+
+			m_dist_objs.erase(do_id);
 		}
 		else
 		{
@@ -593,6 +597,8 @@ void Client::remove_interest(Interest &i, uint32_t id)
 			unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
 		}
 	}
+
+	std::list<uint32_t> to_remove;
 	for(auto it = m_dist_objs.begin(); it != m_dist_objs.end(); ++it)
 	{
 		if(it->second.parent == i.parent)
@@ -612,8 +618,15 @@ void Client::remove_interest(Interest &i, uint32_t id)
 				resp.add_uint16(CLIENT_OBJECT_DISABLE);
 				resp.add_uint32(it->second.id);
 				network_send(resp);
+
+				to_remove.push_back(it->second.id);
 			}
 		}
+	}
+
+	for(auto it = to_remove.begin(); it != to_remove.end(); ++it)
+	{
+		m_dist_objs.erase(*it);
 	}
 }
 
