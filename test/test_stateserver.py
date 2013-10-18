@@ -77,9 +77,6 @@ class TestStateServer(unittest.TestCase):
         self.conn_pool.append(conn)
 
     def flush_failed(self):
-        for conn in self.conn_pool:
-            conn.clear_channels()
-            conn.flush()
         for conn in self.conn_used:
             self.disconnect(conn)
 
