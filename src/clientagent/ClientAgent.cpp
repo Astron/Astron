@@ -88,21 +88,6 @@ Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfi
 
 Client::~Client()
 {
-	for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
-	{
-		Interest &i = it->second;
-		for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-		{
-			uint32_t zone = it->first;
-			for(auto it = m_dist_objs.begin(); it != m_dist_objs.end(); ++it)
-			{
-				if(it->second.refcount)
-				{
-					it->second.refcount--;
-				}
-			}
-		}
-	}
 	m_ct->free_channel(m_allocated_channel);
 }
 
@@ -158,17 +143,15 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		uint32_t do_id = dgi.read_uint32();
 		m_owned_objects.insert(do_id);
 
-		if(m_dist_objs.find(do_id) == m_dist_objs.end() || m_dist_objs[do_id].refcount == 0)
+		if(m_dist_objs.find(do_id) == m_dist_objs.end())
 		{
 			DistributedObject obj;
 			obj.id = do_id;
 			obj.parent = parent;
 			obj.zone = zone;
 			obj.dcc = g_dcf->get_class(dc_id);
-			obj.refcount = 0;
 			m_dist_objs[do_id] = obj;
 		}
-		m_dist_objs[do_id].refcount++;
 
 		Datagram resp;
 		resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER);
@@ -233,17 +216,15 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
 			return;
 		}
-		if(m_dist_objs.find(do_id) == m_dist_objs.end() || m_dist_objs[do_id].refcount == 0)
+		if(m_dist_objs.find(do_id) == m_dist_objs.end())
 		{
 			DistributedObject obj;
 			obj.id = do_id;
 			obj.dcc = g_dcf->get_class(dc_id);
 			obj.parent = parent;
-			obj.refcount = 0;
 			obj.zone = zone;
 			m_dist_objs[do_id] = obj;
 		}
-		m_dist_objs[do_id].refcount++;
 		m_seen_objects.insert(do_id);
 
 		Datagram resp;
@@ -328,10 +309,6 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		if(m_dist_objs.find(do_id) != m_dist_objs.end())
 		{
 			m_dist_objs[do_id].zone = n_zone;
-			if(disable)
-			{
-				m_dist_objs[do_id].refcount--;
-			}
 		}
 
 		Datagram resp;
@@ -605,7 +582,6 @@ void Client::remove_interest(Interest &i, uint32_t id)
 				resp.add_uint16(CLIENT_OBJECT_DISABLE);
 				resp.add_uint32(it->second.id);
 				network_send(resp);
-				it->second.refcount--;
 			}
 		}
 	}

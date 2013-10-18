@@ -40,7 +40,6 @@ struct DistributedObject
 	uint32_t parent;
 	uint32_t zone;
 	DCClass *dcc;
-	uint32_t refcount;
 };
 
 class Client : public NetworkClient, public MDParticipantInterface
