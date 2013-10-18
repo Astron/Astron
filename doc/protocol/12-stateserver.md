@@ -306,16 +306,17 @@ The database stateserver otherwise provides equivelant StateServer-like behavior
 to stored objects in the database.
 
 **DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS(2200)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 dclass_id, <REQUIRED_DEFAULTS>)`  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id)`  
 **DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER(2201)**  
-    `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 dclass_id, <REQUIRED_DEFAULTS>, <OTHER_DEFAULTS>)`  
+    `args(uint32 do_id, uint32 parent_id, uint32 zone_id, uint16 dclass_id,
+          uint16 field_count, uint<OTHER_UPDATES>)`  
 > Load an object into ram from disk with the given parent and zone.
-> The loaded object will use fields from the database if they exist, and only
-> use the provided defaults if the field was not set in the database.
+> The loaded object will use fields from the database if they exist, and will use
+> the defaults provided by the dc file for required values if the value is not
+> available in the database.
 >
-> If the wrong dclass_id is sent, the DBSS will ignore the message.
+> _Note: If no default was provided, the dcparser sets that default to the null-
+>        value for that data-type; typically 0.
 >
 > Once in ram, the DBSS will cache all ram and required fields, and will only
 > make requests to the Database for non-ram|non-required db fields.
@@ -324,7 +325,12 @@ to stored objects in the database.
 > An activated object will also listen for broadcasted Database updates and change
 > any cached values.
 >
-> These messages otherwise behaves equivalently to STATESERVER_CREATE_OBJECT.
+> These message will broadcast ENTER_LOCATION and CHANGING_ZONE messages as if the
+> object had just been generated with STATESERVER_CREATE_OBJECT.
+>
+> In the case of `_OTHER`, fields can be manually provided that override values
+> from the databases and/or defaults from the DC file.  
+> If the wrong dclass_id is sent, the DBSS will ignore the message.
 
 
 **DBSS_OBJECT_DELETE_FIELD_DISK(2230)**  
