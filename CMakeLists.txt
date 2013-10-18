@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
-project (OOTP)
+project (Astron)
 
 if (WIN32)
 	add_definitions (-D_WIN32_WINDOWS)
@@ -34,6 +34,8 @@ endif()
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 	set (CMAKE_CXX_FLAGS "-pthread")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 else ()
 	set (YAMLCPP_LIBNAME "libyaml-cppmd" CACHE STRING "Name of YAML library")
 	set (YAMLCPP_LIBNAME optimized ${YAMLCPP_LIBNAME} debug ${YAMLCPP_LIBNAME}d)
@@ -139,7 +141,7 @@ if(BUILD_EVENTLOGGER)
 endif()
 
 include_directories (src)
-add_executable (openotpd
+add_executable (astrond
 	src/core/main.cpp 
 	src/core/config.cpp 
 	src/core/logger.cpp 
@@ -176,5 +178,5 @@ add_library (dcparser
 	src/dcparser/dcParser.cxx
 )
 
-add_dependencies (openotpd dcparser)
-target_link_libraries (openotpd dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+add_dependencies (astrond dcparser)
+target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})

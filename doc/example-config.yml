@@ -1,27 +1,31 @@
-# This is an example configuration file for configuring an OpenOTP daemon.
-
-general:
+daemon:
     name: Core Message Director # To be used in page titles and intra-MD links.
     url: http://123.45.67.89/coremd/ # URL where the web interface may be located. Defaults to:
                                      # http://<web/bind>/
+
+globals:
     eventlogger: 127.0.0.1:9090 # The IP:port of the Event Logger to be used when logging global events.
     dc_files: # A list of DC files to be loaded. ORDER IS SENSITIVE!
         - core.dc
         - game.dc
         - minigames.dc
+    # This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
+    # anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
+    uberdogs:
+      - id: 1234
+        class: LoginManager
+        anonymous: true #Default: false
 
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
-    authentication: # HTTP authentication should expect a single username/password, which grants all privileges.
-        method: single
-        username: foo
-        password: bar
-    #authentication: # A separate file is used, listing username+password+access level.
-    #   method: file
-    #   filename: foo.yml
+    # Authentication enables a BASIC authentication mechanism for the website
+    #authentication:
+    #    username: foo
+    #    password: bar
 
 messagedirector:
     bind: 0.0.0.0:6660
+    #connect: 127.0.0.1:5555
 
 roles:
     # This section allows specifying roles that we would like this daemon to perform.
@@ -67,5 +71,5 @@ roles:
     # separate UDP socket to listen for log events.
     - type: eventlogger
       bind: 0.0.0.0:9090 # REMEMBER: UDP
-      output: /var/log/openotp/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
+      output: /var/log/astron/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
       rotate_interval: 1d # Rotate the logs daily.

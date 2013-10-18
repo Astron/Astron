@@ -9,6 +9,12 @@
 #include <fstream>
 #endif
 
+class DatagramIteratorEOF : public std::runtime_error
+{
+	public:
+		DatagramIteratorEOF(const string &what) : std::runtime_error(what) { }
+};
+
 class DatagramIterator
 {
 	private:
@@ -27,7 +33,7 @@ class DatagramIterator
 				test.write(m_dg.get_data(), m_dg.get_buf_end());
 				test.close();
 #endif
-				throw std::runtime_error(error.str());
+				throw DatagramIteratorEOF(error.str());
 			};
 		}
 	public:
@@ -192,5 +198,13 @@ class DatagramIterator
 		void seek(uint16_t to)
 		{
 			m_offset = to;
+		}
+
+		// seek_payload seeks to immediately after the list of receivers
+		void seek_payload()
+		{
+			m_offset = 0;
+			uint8_t recv_count = read_uint8();
+			m_offset = 1 + recv_count * 8;
 		}
 };

@@ -37,7 +37,7 @@ class DBStateServer : public StateServer
 			uint16_t msgtype = dgi.read_uint16();
 			switch(msgtype)
 			{
-				case DBSS_OBJECT_ACTIVATE:
+				case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS:
 				{
 					break;
 				}

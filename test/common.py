@@ -5,10 +5,10 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection', 'ChannelConnection']
 
 class Daemon(object):
-    DAEMON_PATH = './openotpd'
+    DAEMON_PATH = './astrond'
 
     def __init__(self, config):
         self.config = config
@@ -18,7 +18,7 @@ class Daemon(object):
 
     def start(self):
         if 'MANUAL_LAUNCH_CONFIG' in os.environ:
-            # User wants to manually launch their OpenOTP daemon, so we'll write
+            # User wants to manually launch their Astron daemon, so we'll write
             # out the config for them and prompt them to
             with open(os.environ['MANUAL_LAUNCH_CONFIG'], 'wb') as config:
                 config.write(self.config)
@@ -37,6 +37,7 @@ class Daemon(object):
         time.sleep(1.0) # Allow some time for daemon to initialize...
 
     def stop(self):
+        time.sleep(1.0) # Allow some time for daemon to finish up...
         if self.daemon is not None:
             self.daemon.kill()
         if self.config_file is not None:
@@ -55,7 +56,6 @@ DATATYPES = {
 
 CONSTANTS = {
     # Reserved Values
-    'INVALID_CHANNEL': 0,
     'INVALID_DO_ID': 0,
     'INVALID_ZONE': 0,
     'RESERVED_MSG_TYPE': 0,
@@ -64,72 +64,94 @@ CONSTANTS = {
     'SUCCESS': 1,
     'FAILURE': 0,
 
-    # Control Channels
-    'CONTROL_CHANNEL': 4001,
-    'CONTROL_ADD_CHANNEL': 2001,
-    'CONTROL_REMOVE_CHANNEL': 2002,
+    # Reserved Channels
+    'INVALID_CHANNEL': 0,
+    'CONTROL_CHANNEL': 1,
+    'PARENT_PREFIX': 1 << 32,
 
-    'CONTROL_ADD_RANGE': 2008,
-    'CONTROL_REMOVE_RANGE': 2009,
+    # Control message-type constants
+    'CONTROL_ADD_CHANNEL':          9000,
+    'CONTROL_REMOVE_CHANNEL':       9001,
+    'CONTROL_ADD_RANGE':            9002,
+    'CONTROL_REMOVE_RANGE':         9003,
+    'CONTROL_ADD_POST_REMOVE':      9010,
+    'CONTROL_CLEAR_POST_REMOVE':    9011,
 
-    'CONTROL_ADD_POST_REMOVE': 2010,
-    'CONTROL_CLEAR_POST_REMOVE': 2011,
-
-
-    # State Server
-    'STATESERVER_OBJECT_GENERATE_WITH_REQUIRED': 2001,
-    'STATESERVER_OBJECT_GENERATE_WITH_REQUIRED_OTHER': 2003,
-    'STATESERVER_OBJECT_UPDATE_FIELD': 2004,
-    'STATESERVER_OBJECT_UPDATE_FIELD_MULTIPLE': 2005,
-    'STATESERVER_OBJECT_DELETE_RAM': 2007,
-    'STATESERVER_OBJECT_SET_ZONE': 2008,
-    'STATESERVER_OBJECT_CHANGE_ZONE': 2009,
-    'STATESERVER_OBJECT_LOCATE': 2022,
-    'STATESERVER_OBJECT_LOCATE_RESP': 2023,
-    'STATESERVER_OBJECT_SET_AI_CHANNEL': 2045,
-    'STATESERVER_OBJECT_QUERY_ALL': 2020,
-    'STATESERVER_OBJECT_QUERY_FIELD': 2024,
-    'STATESERVER_OBJECT_QUERY_FIELD_RESP': 2062,
-    'STATESERVER_OBJECT_QUERY_FIELDS': 2080,
-    'STATESERVER_OBJECT_QUERY_FIELDS_RESP': 2081,
-    'STATESERVER_OBJECT_QUERY_ALL_RESP': 2030,
-    'STATESERVER_OBJECT_QUERY_ZONE_ALL': 2021,
-    'STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE': 2046,
-    'STATESERVER_SHARD_RESET': 2061,
-    'STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED': 2065,
-    'STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER': 2066,
-    'STATESERVER_OBJECT_ENTER_AI_RECV': 2067,
-    'STATESERVER_OBJECT_SET_OWNER_RECV': 2070,
-    'STATESERVER_OBJECT_CHANGE_OWNER_RECV': 2069,
-    'STATESERVER_OBJECT_ENTER_OWNER_RECV': 2068,
-    'STATESERVER_OBJECT_LEAVING_AI_INTEREST': 2033,
-    'STATESERVER_OBJECT_QUERY_MANAGING_AI': 2083,
-    'STATESERVER_OBJECT_NOTIFY_MANAGING_AI': 2047,
-
-    # DBSS Messages
-    'DBSS_OBJECT_ACTIVATE': 2090,
-    'DBSS_OBJECT_DELETE_DISK': 2091,
+    # State Server control message-type constants
+    'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
+    'STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER':    2001,
+    'STATESERVER_DELETE_AI_OBJECTS':                    2009,
+    # State Server object message-type constants
+    'STATESERVER_OBJECT_GET_FIELD':         2010,
+    'STATESERVER_OBJECT_GET_FIELD_RESP':    2011,
+    'STATESERVER_OBJECT_GET_FIELDS':        2012,
+    'STATESERVER_OBJECT_GET_FIELDS_RESP':   2013,
+    'STATESERVER_OBJECT_GET_ALL':           2014,
+    'STATESERVER_OBJECT_GET_ALL_RESP':      2015,
+    'STATESERVER_OBJECT_SET_FIELD':         2020,
+    'STATESERVER_OBJECT_SET_FIELDS':        2021,
+    'STATESERVER_OBJECT_DELETE_FIELD_RAM':  2030,
+    'STATESERVER_OBJECT_DELETE_FIELDS_RAM': 2031,
+    'STATESERVER_OBJECT_DELETE_RAM':        2032,
+    # State Server visibility message-type constants
+    'STATESERVER_OBJECT_SET_LOCATION':                          2040,
+    'STATESERVER_OBJECT_CHANGING_LOCATION':                     2041,
+    'STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED':          2042,
+    'STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER':    2043,
+    'STATESERVER_OBJECT_GET_LOCATION':                          2044,
+    'STATESERVER_OBJECT_GET_LOCATION_RESP':                     2045,
+    'STATESERVER_OBJECT_SET_AI':                                2050,
+    'STATESERVER_OBJECT_CHANGING_AI':                           2051,
+    'STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED':                2052,
+    'STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER':          2053,
+    'STATESERVER_OBJECT_GET_AI':                                2054,
+    'STATESERVER_OBJECT_GET_AI_RESP':                           2055,
+    'STATESERVER_OBJECT_SET_OWNER':                             2060,
+    'STATESERVER_OBJECT_CHANGING_OWNER':                        2061,
+    'STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED':             2062,
+    'STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER':       2063,
+    'STATESERVER_OBJECT_GET_OWNER':                             2064,
+    'STATESERVER_OBJECT_GET_OWNER_RESP':                        2065,
+    # State Server parent methods message-type constants
+    'STATESERVER_OBJECT_GET_ZONE_OBJECTS':      2100,
+    'STATESERVER_OBJECT_GET_ZONES_OBJECTS':     2102,
+    'STATESERVER_OBJECT_GET_CHILDREN':          2104,
+    'STATESERVER_OBJECT_GET_ZONE_COUNT':        2110,
+    'STATESERVER_OBJECT_GET_ZONE_COUNT_RESP':   2111,
+    'STATESERVER_OBJECT_GET_ZONES_COUNT':       2112,
+    'STATESERVER_OBJECT_GET_ZONES_COUNT_RESP':  2113,
+    'STATESERVER_OBJECT_GET_CHILD_COUNT':       2114,
+    'STATESERVER_OBJECT_GET_CHILD_COUNT_RESP':  2115,
+    'STATESERVER_OBJECT_DELETE_ZONE':           2120,
+    'STATESERVER_OBJECT_DELETE_ZONES':          2122,
+    'STATESERVER_OBJECT_DELETE_CHILDREN':       2124,
+    # DBSS object message-type constants
+    'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS':        2200,
+    'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER':  2201,
+    'DBSS_OBJECT_DELETE_FIELD_DISK':             2230,
+    'DBSS_OBJECT_DELETE_FIELDS_DISK':            2231,
+    'DBSS_OBJECT_DELETE_DISK':                   2232,
 
     # Database Server
-    'DBSERVER_OBJECT_CREATE': 4000,
-    'DBSERVER_OBJECT_CREATE_RESP': 4001,
-    'DBSERVER_OBJECT_DELETE': 4002,
-    'DBSERVER_OBJECT_GET_FIELD': 4010,
-    'DBSERVER_OBJECT_GET_FIELD_RESP': 4011,
-    'DBSERVER_OBJECT_GET_FIELDS': 4012,
-    'DBSERVER_OBJECT_GET_FIELDS_RESP': 4013,
-    'DBSERVER_OBJECT_GET_ALL': 4014,
-    'DBSERVER_OBJECT_GET_ALL_RESP': 4015,
-    'DBSERVER_OBJECT_SET_FIELD': 4020,
-    'DBSERVER_OBJECT_SET_FIELDS': 4021,
-    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS': 4022,
-    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP': 4023,
-    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS': 4024,
-    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP': 4025,
-    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY': 4026,
-    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP': 4027,
-    'DBSERVER_OBJECT_DELETE_FIELD': 4030,
-    'DBSERVER_OBJECT_DELETE_FIELDS': 4031,
+    'DBSERVER_CREATE_OBJECT':                       3000,
+    'DBSERVER_CREATE_OBJECT_RESP':                  3001,
+    'DBSERVER_OBJECT_GET_FIELD':                    3010,
+    'DBSERVER_OBJECT_GET_FIELD_RESP':               3011,
+    'DBSERVER_OBJECT_GET_FIELDS':                   3012,
+    'DBSERVER_OBJECT_GET_FIELDS_RESP':              3013,
+    'DBSERVER_OBJECT_GET_ALL':                      3014,
+    'DBSERVER_OBJECT_GET_ALL_RESP':                 3015,
+    'DBSERVER_OBJECT_SET_FIELD':                    3020,
+    'DBSERVER_OBJECT_SET_FIELDS':                   3021,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS':          3022,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP':     3023,
+    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS':         3024,
+    'DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP':    3025,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY':           3026,
+    'DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP':      3027,
+    'DBSERVER_OBJECT_DELETE_FIELD':                 3030,
+    'DBSERVER_OBJECT_DELETE_FIELDS':                3031,
+    'DBSERVER_OBJECT_DELETE':                       3032,
 
 }
 
@@ -240,20 +262,16 @@ class DatagramIterator(object):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
         if len(channels) != len(recipients):
-            print "Channels don't match"
             return False
 
         self.seek(8*ord(self._data[0])+1)
         if sender != self.read_uint64():
-            print "Sender doesn't match"
             return False
 
         if msgtype != self.read_uint16():
-            print "MsgType doesn't match"
             return False
 
         if remaining != -1 and remaining != len(self._data) - self._offset:
-            print "Remaining doesn't match"
             return False
 
         return True
@@ -374,3 +392,32 @@ class MDConnection(object):
 
     def expect_none(self):
         return self._read() == None
+
+class ChannelConnection(MDConnection):
+    def __init__(self, connAddr, connPort, MDChannel):
+        c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        c.connect((connAddr, connPort))
+        MDConnection.__init__(self, c)
+
+        self.channels = [MDChannel]
+        self.send(Datagram.create_add_channel(MDChannel))
+
+    def add_channel(self, channel):
+        if channel not in self.channels:
+            self.channels.append(channel)
+            self.send(Datagram.create_add_channel(channel))
+
+    def remove_channel(self, channel):
+        if channel in self.channels:
+            self.send(Datagram.create_remove_channel(channel))
+            self.channels.remove(channel)
+
+    def clear_channels(self):
+        for channel in self.channels:
+            self.send(Datagram.create_remove_channel(channel))
+            self.channels.remove(channel)
+
+    def close(self):
+        for chan in self.channels:
+            self.send(Datagram.create_remove_channel(chan))
+        MDConnection.close(self)
