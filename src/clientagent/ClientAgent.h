@@ -2,6 +2,8 @@
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 
+#include <unordered_set>
+
 enum ClientState
 {
 	CLIENT_STATE_NEW,
@@ -52,10 +54,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 		channel_t m_channel;
 		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
-		std::set<uint32_t> m_owned_objects;
-		std::set<uint32_t> m_seen_objects;
-		std::map<uint16_t, Interest> m_interests;
-		std::map<uint32_t, DistributedObject> m_dist_objs;
+		std::unordered_set<uint32_t> m_owned_objects;
+		std::unordered_set<uint32_t> m_seen_objects;
+		std::unordered_map<uint16_t, Interest> m_interests;
+		std::unordered_map<uint32_t, DistributedObject> m_dist_objs;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 			ChannelTracker *ct);
