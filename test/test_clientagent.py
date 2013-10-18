@@ -732,6 +732,104 @@ class TestClientAgent(unittest.TestCase):
 
         client.close()
 
+    def test_delete(self):
+        client = self.connect()
+        id = self.identify(client)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Open interest on a zone:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
+        dg.add_uint32(1235)
+        dg.add_uint32(111111) # Zone 1
+        client.send(dg)
+
+        # CA, of course, asks for objects:
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg.add_uint32(1235)
+        dg.add_uint16(1)
+        dg.add_uint32(111111) # Zone 1
+        self.assertTrue(self.server.expect(dg))
+
+        # We'll give them one:
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(111111) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(777711) # do_id
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string("It's true some days are dark and lonely...")
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER)
+        dg.add_uint32(1235) # parent_id
+        dg.add_uint32(111111) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(777711) # do_id
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string("It's true some days are dark and lonely...")
+        self.assertTrue(client.expect(dg))
+
+        # Now let's nuke it from orbit!
+        dg = Datagram.create([id], 777711, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(777711)
+        self.server.send(dg)
+
+        # Now the client should receive the deletion:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint32(777711)
+        self.assertTrue(client.expect(dg))
+
+        # Next, we throw an owner object their way:
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg.add_uint32(1235) # Parent
+        dg.add_uint32(6161) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_uint32(55446651)
+        dg.add_string('Alicorn Amulet')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        self.server.send(dg)
+
+        # The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint32(1235) # Parent
+        dg.add_uint32(6161) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_uint32(55446651)
+        dg.add_string('Alicorn Amulet')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        self.assertTrue(client.expect(dg))
+
+        # Bye, owned object!
+        dg = Datagram.create([id], 55446651, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(55446651)
+        self.server.send(dg)
+
+        # Now the client should record an owner delete:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_DISABLE_OWNER)
+        dg.add_uint32(55446651)
+        self.assertTrue(client.expect(dg))
+
+        # That's all folks!
+        client.close()
+
     def test_interest_overlap(self):
         client = self.connect()
         id = self.identify(client)

@@ -135,6 +135,36 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 	}
 	break;
+	case STATESERVER_OBJECT_DELETE_RAM:
+	{
+		uint32_t do_id = dgi.read_uint32();
+		if(!lookup_object(do_id))
+		{
+			m_log->warning() << "Received server-side object delete for unknown object " << do_id << std::endl;
+			return;
+		}
+
+		if(m_seen_objects.find(do_id) != m_seen_objects.end())
+		{
+			m_seen_objects.erase(do_id);
+
+			Datagram resp;
+			resp.add_uint16(CLIENT_OBJECT_DISABLE);
+			resp.add_uint32(do_id);
+			network_send(resp);
+		}
+
+		if(m_owned_objects.find(do_id) != m_owned_objects.end())
+		{
+			m_owned_objects.erase(do_id);
+
+			Datagram resp;
+			resp.add_uint16(CLIENT_OBJECT_DISABLE_OWNER);
+			resp.add_uint32(do_id);
+			network_send(resp);
+		}
+	}
+	break;
 	case STATESERVER_OBJECT_ENTER_OWNER_RECV:
 	{
 		uint32_t parent = dgi.read_uint32();
