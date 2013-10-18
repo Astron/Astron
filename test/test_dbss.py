@@ -23,6 +23,16 @@ roles:
 
 CONTEXT_OFFSET = 1 + 8 + 8 + 2
 
+def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
+    if doid is not None:
+        datagram.add_uint32(doid)
+    if parent is not None:
+        datagram.add_uint32(parent)
+    if zone is not None:
+        datagram.add_uint32(zone)
+    if dclass is not None:
+        datagram.add_uint16(dclass)
+
 class TestStateServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -47,30 +57,32 @@ class TestStateServer(unittest.TestCase):
         cls.shard.close()
         cls.daemon.stop()
 
-   # Tests the message OBJECT_ACTIVATE
+   # Tests the message OBJECT_ACTIVATE_WITH_DEFAULTS{_OTHER,}
     def test_activate(self):
         self.database.flush()
         self.shard.flush()
         self.shard.send(Datagram.create_add_channel(80000<<32|100))
+        self.shard.send(Datagram.create_add_channel(80000<<32|101))
+
+        doid1 = 9001
+        doid2 = 9002
 
         ### Test for Activate while object is not loaded into ram ###
         # Enter an object into ram from the disk by Activating it
-        dg = Datagram.create([9010], 5, DBSS_OBJECT_ACTIVATE)
-        dg.add_uint32(9010) # Id
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(100) # Zone
+        dg = Datagram.create([doid1], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        appendMeta(dg, doid1, 80000, 100)
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9010, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9010) # object Id
+        self.assertTrue(dgi.read_uint32() == doid1) # object Id
 
         # Send back to the DBSS with some required values
-        dg = Datagram.create([9010], 200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject5)
@@ -82,11 +94,8 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # See if it announces its entry into 100.
-        dg = Datagram.create([80000<<32|100], 9010, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(100) # Zone
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint32(9000) # ID
+        dg = Datagram.create([80000<<32|100], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid1, 80000, 100, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(3117) # setRDB3
         dg.add_uint8(97) # setRDbD5
@@ -95,37 +104,18 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for Activate while object is already loaded into ram
         ### (continues from above)
-        # Move an object in ram to a different zone with DBSS_OBJECT_ACTIVATE
-        dg = Datagram.create([9010], 5, DBSS_OBJECT_ACTIVATE)
-        dg.add_uint32(9010) # Id
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(101) # Zone
+        # Try to reactivate an active object
+        dg = Datagram.create([doid1], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        appendMeta(dg, doid1, 80000, 101)
         self.shard.send(dg)
 
-        # See if it announces its departure from 100...
-        expected = []
-        dg = Datagram.create([80000<<32|100], 5, STATESERVER_OBJECT_CHANGE_ZONE)
-        dg.add_uint32(9010)
-        dg.add_uint32(80000)
-        dg.add_uint32(101)
-        dg.add_uint32(80000)
-        dg.add_uint32(100)
-        expected.append(dg)
-        # ...and its entry into 101.
-        dg = Datagram.create([80000<<32|101], 9010, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(101) # Zone
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint32(9010) # ID
-        dg.add_uint32(setRequired1DefaultValue) # setRequired1
-        dg.add_uint32(3117) # setRDB3
-        dg.add_uint8(97) # setRDbD5
-        expected.append(dg)
-        self.assertTrue(self.c.expect_multi(expected, only=True))
+        # The object is already activated, so this should be ignored
+        self.shard.expect_none()
+        self.database.expect_none()
 
         # Remove object from ram
-        dg = Datagram.create([9010], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(9010)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid1)
         self.shard.send(dg)
         self.shard.flush()
 
@@ -133,22 +123,20 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for Activate on non-existant Database object ###
         # Enter an object into ram with activate
-        dg = Datagram.create([9012], 5, DBSS_OBJECT_ACTIVATE)
-        dg.add_uint32(9012) # Id
-        dg.add_uint32(80000) # Parent
-        dg.add_uint32(100) # Zone
+        dg = Datagram.create([doid2], 5, DBSS_OBJECT_ACTIVATE)
+        appendMeta(dg, doid2, 80000, 100)
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9012, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9012) # object Id
+        self.assertTrue(dgi.read_uint32() == doid2) # object Id
 
         # Send back to the DBSS with failed-to-find object
-        dg = Datagram.create([9012], 200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([doid2], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(FAILURE)
         self.database.send(dg)
@@ -161,27 +149,30 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(Datagram.create_remove_channel(80000<<32|100))
         self.shard.send(Datagram.create_remove_channel(80000<<32|101))
 
-    # Tests the messages OBJECT_QUERY_ALL
-    def test_query_all(self):
+    # Tests the messages OBJECT_GET_ALL
+    def test_get_all(self):
         self.database.flush()
         self.shard.flush()
 
-        ### Test for QueryAll while object exists in Database ###
+        doid1 = 9011
+
+        ### Test for GetAll while object exists in Database ###
         # Query all from an object which hasn't been loaded into ram
-        dg = Datagram.create([9000], 5, STATESERVER_OBJECT_QUERY_ALL)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(1) # Context
+        dg.add_uint32(doid1) # Id
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9000, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9000) # object Id
+        self.assertTrue(dgi.read_uint32() == doid1) # object Id
 
         # Send back to the DBSS with some required values
-        dg = Datagram.create([9000], 200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject5)
@@ -193,12 +184,9 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Values should be returned from DBSS with INVALID_LOCATION
-        dg = Datagram.create([5], 9000, STATESERVER_OBJECT_QUERY_ALL_RESP)
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(1) # Context
-        dg.add_uint32(INVALID_DO_ID) # Parent
-        dg.add_uint32(INVALID_ZONE) # Zone
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint32(9000) # ID
+        appendMeta(dg, doid1, INVALID_DO_ID, INVALID_ZONE, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(23) # setRDbD5
@@ -207,9 +195,10 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for QueryAll while object DOES NOT exist in Database ###
+        ### Test for GetAll while object DOES NOT exist in Database ###
         # Query all from an object which hasn't been loaded into ram
-        dg = Datagram.create([9000], 5, STATESERVER_OBJECT_QUERY_ALL)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(doid1) # Id
         dg.add_uint32(2) # Context
         self.shard.send(dg)
 
@@ -217,12 +206,12 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9000, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9000) # object Id
+        self.assertTrue(dgi.read_uint32() == doid1) # object Id
 
         # This time pretend the object doesn't exist
-        dg = Datagram.create([9000], 200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(FAILURE)
         self.database.send(dg)
