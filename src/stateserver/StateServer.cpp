@@ -51,7 +51,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	DistributedObject *obj;
 	try
 	{
-		obj = new DistributedObject(this, do_id, dclass, parent_id, zone_id, dgi, has_other);
+		obj = new DistributedObject(this, do_id, parent_id, zone_id, dclass, dgi, has_other);
 	}
 	catch(std::exception &e)
 	{

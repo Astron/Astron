@@ -125,7 +125,10 @@ if(BUILD_STATESERVER)
 	if(BUILD_STATESERVER_DBSS)
 		set(STATESERVER_FILES
 			${STATESERVER_FILES}
+			src/stateserver/DBStateServer.h
 			src/stateserver/DBStateServer.cpp
+			src/stateserver/LoadingObject.h
+			src/stateserver/LoadingObject.cpp
 		)
 	endif()
 else()
