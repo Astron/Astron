@@ -476,7 +476,7 @@ class TestStateServer(unittest.TestCase):
         self.assertFalse(probe(99990))
 
     # Tests the message STATESERVER_OBJECT_SET_FIELD, STATESERVER_OBJECT_SET_FIELDS
-    def test_update(self):
+    def test_set(self):
         self.shard.flush()
         self.database.flush()
         self.shard.send(Datagram.create_add_channel(70000<<32|300))
@@ -773,84 +773,143 @@ class TestStateServer(unittest.TestCase):
         ### Cleanup ###.
         self.shard.send(Datagram.create_remove_channel(70000<<32|300))
 
-    def test_query_fields(self):
+    def test_get_fields(self):
         self.shard.flush()
         self.database.flush()
 
-        ### Test for QueryField with existing db field ###
+        doid1 = 9040
+
+        ### Test for GetField with required db field on inactive object###
         # Query field from StateServer object
-        dg = Datagram.create([9040], 5, STATESERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(9040) # ID
-        dg.add_uint16(setFoo)
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(1) # Context
+        dg.add_uint32(doid1) # ID
+        dg.add_uint16(setDb3)
+
+        # Expect database query
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting DBGetField
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_FIELD))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), doid1)
+        self.assertEquals(dgi.read_uint16(), setDb3)
+
+        # Return field value to DBSS
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setDb3)
+        dg.add_string("Slam-bam-in-a-can!")
+        self.database.send(dg)
+
+        # Expect field sent back to caller
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setDb3)
+        dg.add_string("Slam-bam-in-a-can!")
+        self.assertTrue(self.shard.expect(dg)) # Expecting GetField success
+
+
+
+        ### Test for GetField with existing non-ram db field ###
+        # Query field from StateServer object
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid1) # ID
+        dg.add_uint16(setFoo)
+        self.shard.send(dg)
+
+        # Expect nothing at database, DBSS only returns ram/required db fields
+        self.database.expect_none()
+
+        # Expect failure resp sent to caller
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(FAILURE)
+        self.assertTrue(self.shard.expect(dg)) # Expecting GetField failure
+
+
+
+        ### Test for GetFields with ram fields on inactive object ###
+        # Query field from StateServer object
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid1) # ID
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
         self.shard.send(dg)
 
         # Expect database query
         dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None)
+        self.assertTrue(dg is not None) #Expecting DBGetFields
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9040, DBSERVER_OBJECT_GET_FIELD))
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_FIELDS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 9040)
-        self.assertEquals(dgi.read_uint16(), setFoo)
+        self.assertEquals(dgi.read_uint32(), doid1) # ID
+        self.assertEquals(dgi.read_uint16(), 2) # Field count
+        self.assertEquals(dgi.read_uint16(), setDb3)
+        self.assertEquals(dgi.read_uint16(), setRDB3)
 
         # Return field value to DBSS
-        dg = Datagram.create([9040], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
-        dg.add_uint16(setFoo)
-        dg.add_uint16(16006)
+        dg.add_uint32(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(99911)
+        dg.add_uint16(setDb3)
+        dg.add_string("He just really likes ice cream.")
         self.database.send(dg)
 
         # Expect field value from DBSS
-        dg = Datagram.create([5], 9040, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(9040) # ID
-        dg.add_uint16(setFoo)
-        dg.add_uint32(1) # Context
-        dg.add_uint8(SUCCESS)
-        dg.add_uint16(16006)
-        self.shard.expect()
-
-
-
-        ### Test for QueryFields with db fields ###
-        # Query field from StateServer object
-        dg = Datagram.create([9040], 5, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(9040) # ID
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(2) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint32(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint16(99911)
+        dg.add_uint16(setDb3)
+        dg.add_string("He just really likes ice cream.")
+        self.shard.expect(dg)
+
+
+
+        ### Test for GetFields with mixed ram/non-ram db fields on inactive object ###
+        # Query field from StateServer object
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(2) # Context
+        dg.add_uint32(doid1) # ID
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setFoo)
         dg.add_uint16(setRDB3)
         self.shard.send(dg)
 
         # Expect database query
         dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None)
+        self.assertTrue(dg is not None) #Expecting DBGetFields
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([200], 9040, DBSERVER_OBJECT_GET_FIELDS))
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_FIELDS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 9040) # ID
-        self.assertEquals(dgi.read_uint16(), 2) # Field count
-        self.assertEquals(dgi.read_uint16(), setFoo)
+        self.assertEquals(dgi.read_uint32(), doid1) # ID
+        self.assertEquals(dgi.read_uint16(), 1) # Field count
         self.assertEquals(dgi.read_uint16(), setRDB3)
 
         # Return field value to DBSS
-        dg = Datagram.create([9040], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
-        dg.add_uint32(2) # Field count
-        dg.add_uint16(setFoo)
-        dg.add_uint16(14004)
+        dg.add_uint32(1) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(99911)
         self.database.send(dg)
 
         # Expect field value from DBSS
-        dg = Datagram.create([5], 9040, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(9040) # ID
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(SUCCESS)
-        dg.add_uint16(setFoo)
-        dg.add_uint16(16006)
         dg.add_uint16(setRDB3)
         dg.add_uint16(99911)
 

@@ -316,11 +316,9 @@ to stored objects in the database.
 > available in the database.
 >
 > _Note: If no default was provided, the dcparser sets that default to the null-
->        value for that data-type; typically 0.
+>        value for that data-type; typically 0._
 >
-> Once in ram, the DBSS will cache all ram and required fields, and will only
-> make requests to the Database for non-ram|non-required db fields.
->
+> Once in ram, the DBSS will cache all ram and required fields.
 > When the fields are updated on the DBSS, they will be written back to the database.
 > An activated object will also listen for broadcasted Database updates and change
 > any cached values.
