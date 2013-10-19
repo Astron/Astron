@@ -99,7 +99,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(3117) # setRDB3
         dg.add_uint8(97) # setRDbD5
-        self.shard.expect(dg)
+        self.assertTrue(self.shard.expect(dg))
 
 
         ### Test for Activate while object is already loaded into ram
@@ -110,8 +110,8 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # The object is already activated, so this should be ignored
-        self.shard.expect_none()
-        self.database.expect_none()
+        self.assertTrue(self.shard.expect_none())
+        self.assertTrue(self.database.expect_none())
 
         # Remove object from ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_DELETE_RAM)
@@ -142,7 +142,7 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect no entry messages
-        self.shard.expect_none()
+        self.assertTrue(self.shard.expect_none())
 
 
         ### Clean up ###
@@ -191,7 +191,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(23) # setRDbD5
         dg.add_uint16(0) # Optional field count
-        self.shard.expect(dg)
+        self.assertTrue(self.shard.expect(dg))
 
 
 
@@ -217,7 +217,7 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Should recieve no stateserver object response
-        self.shard.expect_none()
+        self.assertTrue(self.shard.expect_none())
 
     # Tests the messages OBJECT_DELETE_DISK, OBJECT_DELETE_RAM
     def test_delete(self):
@@ -235,13 +235,13 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid1) # Object Id
         self.shard.send(dg)
 
-        # Object doesn't have a location and so shouldn't announcet its disappearance...
-        self.shard.expect_none()
+        # Object doesn't have a location and so shouldn't announce its disappearance...
+        self.assertTrue(self.shard.expect_none())
 
         # Database should expect a delete message
         dg = Datagram.create([200], doid1, DBSERVER_OBJECT_DELETE)
         dg.add_uint32(doid1) # Object Id
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -257,7 +257,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9021) # Id
+        self.assertTrue(dgi.read_uint32() == doid2) # Id
 
         # Tell it the object exists
         dg = Datagram.create([doid2], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -289,12 +289,12 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object no longer has a location and so shouldn't announce its disappearance...
-        self.shard.expect_none()
+        self.assertTrue(self.shard.expect_none())
 
         # Database should expect a delete message
         dg = Datagram.create([200], doid2, DBSERVER_OBJECT_DELETE)
         dg.add_uint32(doid2) # Object Id
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -340,7 +340,7 @@ class TestStateServer(unittest.TestCase):
         # Database should expect a delete message
         dg = Datagram.create([200], doid3, DBSERVER_OBJECT_DELETE)
         dg.add_uint32(doid3) # Object Id
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
         # Check that Ram/Requried fields still exist in ram still
         dg = Datagram.create([doid3], 5, STATESERVER_OBJECT_GET_ALL)
@@ -385,7 +385,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(333444) # setRDB3
         dg.add_uint8(34) # setRDbD5
         dg.add_uint16(0) # Optional field count
-        self.shard.expect(dg)
+        self.assertTrue(self.shard.expect(dg))
 
 
 
@@ -418,7 +418,7 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect no response
-        self.shard.expect_none()
+        self.assertTrue(self.shard.expect_none())
 
 
         ### Clean Up ###
@@ -493,7 +493,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(9030) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(4096)
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -516,7 +516,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(4096)
         dg.add_uint16(setRDB3)
         dg.add_uint32(8192)
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -529,7 +529,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
         ### Test for UpdateFieldMultiple with all non-db fields on unloaded object ###
         # Update fields on stateserver object
@@ -542,7 +542,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
 
 
@@ -588,7 +588,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(9031) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(6604)
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -612,7 +612,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(7722)
         dg.add_uint16(setRDB3)
         dg.add_uint32(18811881)
-        self.database.expect(dg)
+        self.assertTrue(self.database.expect(dg))
 
 
 
@@ -626,7 +626,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
@@ -681,7 +681,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Optional fields count
         dg.add_uint16(setFoo)
         dg.add_uint16(7722)
-        self.shard.expect(dg)
+        self.assertTrue(self.shard.expect(dg))
 
 
 
@@ -697,7 +697,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
