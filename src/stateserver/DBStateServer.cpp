@@ -1,4 +1,5 @@
 #include "core/global.h"
+#include <unordered_set>
 
 #include "DBStateServer.h"
 #include "LoadingObject.h"
@@ -85,12 +86,39 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case DBSS_OBJECT_DELETE_DISK:
 		{
 			uint32_t do_id = dgi.read_uint32();
+
+			// If object exists broadcast the delete message
 			auto obj_keyval = m_objs.find(do_id);
 			if(obj_keyval != m_objs.end())
 			{
-				// TODO: Handle broadcast behavior
+				DistributedObject* obj = obj_keyval->second;
+				std::set<channel_t> targets;
+
+				// Add location to broadcast
+				if(obj->get_location())
+				{
+					targets.insert(obj->get_location());
+				}
+
+				// Add AI to broadcast
+				if(obj->get_ai())
+				{
+					targets.insert(obj->get_ai());
+				}
+
+				// Add owner to broadcast
+				if(obj->get_owner())
+				{
+					targets.insert(obj->get_owner());
+				}
+
+				// Build and send datagram
+				Datagram dg(targets, sender, DBSS_OBJECT_DELETE_DISK);
+				dg.add_uint32(do_id);
+				send(dg);
 			}
 
+			// Send delete to database
 			Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
 			dg.add_uint32(do_id);
 			send(dg);

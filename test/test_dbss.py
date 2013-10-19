@@ -270,12 +270,12 @@ class TestStateServer(unittest.TestCase):
         self.shard.flush()
 
         # Destroy our object in ram...
-        dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([doid2], 13, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(doid2) # Object Id
         self.shard.send(dg)
 
         # Object should announce its disappearance...
-        dg = Datagram.create([90000<<32|200], doid2, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([90000<<32|200], 13, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_uint32(doid2)
         self.assertTrue(self.shard.expect(dg))
 
@@ -327,12 +327,12 @@ class TestStateServer(unittest.TestCase):
         self.shard.flush()
 
         # Destroy our object on disk...
-        dg = Datagram.create([doid3], 5, DBSS_OBJECT_DELETE_DISK)
+        dg = Datagram.create([doid3], 13, DBSS_OBJECT_DELETE_DISK)
         dg.add_uint32(doid3)
         self.shard.send(dg)
 
         # Object should announce its disappearance...
-        dg = Datagram.create([90000<<32|200], doid3, DBSS_OBJECT_DELETE_DISK)
+        dg = Datagram.create([90000<<32|200], 13, DBSS_OBJECT_DELETE_DISK)
         dg.add_uint32(doid3)
         self.assertTrue(self.shard.expect(dg))
 
@@ -347,15 +347,17 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # DBSS should request the value of foo from the DBSS
-        msgtype = None
-        context = None
-        dg = self.database.recv(dg)
+        msgtype, context = None, None
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting DB_GET_FIELD(S)
         dgi = DatagramIterator(dg)
+        # Will expect either GET_FIELD...
         if dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_FIELD, 4+2):
             msgtype = DBSERVER_OBJECT_GET_FIELD
             context = dgi.read_uint32()
             self.assertTrue(dgi.read_uint32() == doid3)
             self.assertTrue(dgi.read_uint16() == setFoo)
+        # ... or GET_FIELDS with 1 field, both satisify the protocol
         elif dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
             msgtype = DBSERVER_OBJECT_GET_FIELDS
             context = dgi.read_uint32()

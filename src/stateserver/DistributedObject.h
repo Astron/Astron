@@ -21,6 +21,26 @@ class DistributedObject : public MDParticipantInterface
 		{
 			return m_do_id;
 		}
+		inline uint32_t get_parent()
+		{
+			return m_parent_id;
+		}
+		inline uint32_t get_zone()
+		{
+			return m_zone_id;
+		}
+		inline uint64_t get_location()
+		{
+			return LOCATION2CHANNEL(m_parent_id, m_zone_id);
+		}
+		inline uint64_t get_ai()
+		{
+			return m_ai_channel;
+		}
+		inline uint64_t get_owner()
+		{
+			return m_owner_channel;
+		}
 
 	private:
 		StateServer *m_stateserver;
