@@ -198,8 +198,8 @@ class TestStateServer(unittest.TestCase):
         ### Test for GetAll while object DOES NOT exist in Database ###
         # Query all from an object which hasn't been loaded into ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(doid1) # Id
         dg.add_uint32(2) # Context
+        dg.add_uint32(doid1) # Id
         self.shard.send(dg)
 
         # Expect values to be retrieved from database

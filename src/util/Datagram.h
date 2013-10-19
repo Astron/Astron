@@ -97,6 +97,13 @@ class Datagram
 			buf_end += data.size();
 		}
 
+		void add_data(const std::string &str)
+		{
+			check_add_length(str.length());
+			memcpy(buf + buf_end, str.c_str(), str.length());
+			buf_end += str.length();
+		}
+
 		void add_datagram(const Datagram &dg)
 		{
 			check_add_length(dg.buf_end);

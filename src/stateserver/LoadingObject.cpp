@@ -2,11 +2,10 @@
 
 #include "LoadingObject.h"
 
-uint32_t LoadingObject::cls_next_context = 0;
-
 LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
                              uint32_t parent_id, uint32_t zone_id) :
-	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id)
+	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
+	m_context(stateserver->m_next_context++)
 {
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
@@ -31,8 +30,6 @@ LoadingObject::~LoadingObject()
 
 void LoadingObject::send_get_object(uint32_t do_id)
 {
-	m_context = cls_next_context++;
-
 	Datagram dg(m_dbss->m_db_channel, do_id, DBSERVER_OBJECT_GET_ALL);
 	dg.add_uint32(m_context); // Context
 	dg.add_uint32(do_id);
@@ -62,7 +59,7 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 
 void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_uint64();
+	/*channel_t sender =*/ dgi.read_uint64(); // sender not used
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
@@ -100,29 +97,10 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Get fields from database
-			uint16_t db_field_count = dgi.read_uint16();
-			for(uint16_t i = 0; i < db_field_count; ++i)
+			if(!unpack_db_fields(dgi, r_dclass, m_required_fields, m_ram_fields))
 			{
-				uint16_t field_id = dgi.read_uint16();
-				DCField *field = r_dclass->get_field_by_index(field_id);
-				if(!field)
-				{
-					m_log->error() << "Unrecognized field in database values"
-					               << " with index " << field_id << std::endl;
-					break;
-				}
-				if(field->is_ram())
-				{
-					dgi.unpack_field(field, m_ram_fields[field]);
-				}
-				else if(field->is_required())
-				{
-					dgi.unpack_field(field, m_required_fields[field]);
-				}
-				else
-				{
-					dgi.skip_field(field);
-				}
+				m_log->error() << "Error while unpacking fields from database." << std::endl;
+				break;
 			}
 
 			// Add default values and updated values
@@ -138,7 +116,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 						{
 							m_required_fields[field] = m_field_updates[field];
 						}
-						else
+						else if(m_required_fields.find(field) == m_required_fields.end())
 						{
 							std::string val = field->get_default_value();
 							m_required_fields[field] = std::vector<uint8_t>(val.begin(), val.end());
@@ -149,11 +127,6 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 						if(m_field_updates.find(field) != m_field_updates.end())
 						{
 							m_ram_fields[field] = m_field_updates[field];
-						}
-						else
-						{
-							std::string val = field->get_default_value();
-							m_ram_fields[field] = std::vector<uint8_t>(val.begin(), val.end());
 						}
 					}
 				}

@@ -5,8 +5,6 @@
 
 class LoadingObject : public MDParticipantInterface
 {
-	static uint32_t cls_next_context;
-
 	friend class DBStateServer;
 
 	public:
