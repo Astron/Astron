@@ -349,6 +349,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			resp.add_uint16(CLIENT_OBJECT_DISABLE);
 			resp.add_uint32(do_id);
 
+			m_seen_objects.erase(do_id);
 			m_dist_objs.erase(do_id);
 		}
 		else
@@ -619,6 +620,7 @@ void Client::remove_interest(Interest &i, uint32_t id)
 				resp.add_uint32(it->second.id);
 				network_send(resp);
 
+				m_seen_objects.erase(it->second.id);
 				to_remove.push_back(it->second.id);
 			}
 		}
