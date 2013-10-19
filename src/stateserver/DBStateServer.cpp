@@ -169,6 +169,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Prepare SSGetAllResp
 			Datagram dg(caller.sender, caller.do_id, STATESERVER_OBJECT_GET_ALL_RESP);
+			dg.add_uint32(caller.context);
 			dg.add_uint32(caller.do_id);
 			dg.add_uint32(INVALID_DO_ID);
 			dg.add_uint32(INVALID_ZONE);
