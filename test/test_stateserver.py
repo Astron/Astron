@@ -102,11 +102,11 @@ class TestStateServer(unittest.TestCase):
                 # The object should tell the parent its arriving...
                 if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
                     received = True
-                    self.assertTrue(dgi.read_uint32() == 101000000) # Id
-                    self.assertTrue(dgi.read_uint32() == 5000) # New parent
-                    self.assertTrue(dgi.read_uint32() == 1500) # New zone
-                    self.assertTrue(dgi.read_uint32() == INVALID_DO_ID) # Old parent
-                    self.assertTrue(dgi.read_uint32() == INVALID_ZONE) # Old zone
+                    self.assertEquals(dgi.read_uint32(), 101000000) # Id
+                    self.assertEquals(dgi.read_uint32(), 5000) # New parent
+                    self.assertEquals(dgi.read_uint32(), 1500) # New zone
+                    self.assertEquals(dgi.read_uint32(), INVALID_DO_ID) # Old parent
+                    self.assertEquals(dgi.read_uint32(), INVALID_ZONE) # Old zone
                 # .. and ask it for its AI, which we're not testing here and can ignore
                 elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI):
                     continue
@@ -1144,16 +1144,16 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(dg is not None) # Expected a GetFieldsResp datagram
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertTrue(dgi.read_uint32() == 0x600D533D) # Context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == 2) # Field count
+        self.assertEquals(dgi.read_uint32(), 0x600D533D) # Context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), 2) # Field count
         hasRequired1 = False
         hasBR1 = False
         for x in xrange(2):
             field = dgi.read_uint16()
             if field is setRequired1:
                 hasRequired1 = True
-                self.assertTrue(dgi.read_uint32() == 0)
+                self.assertEquals(dgi.read_uint32(), 0)
             elif field is setBR1:
                 hasBR1 = True
                 self.assertTrue(dgi.read_string() == "MY HAT IS AWESOME!!!")
@@ -1418,12 +1418,12 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([owner1chan], doid2,
                 STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER))
-        self.assertTrue(dgi.read_uint32() == doid2) # Id
-        self.assertTrue(dgi.read_uint64() == 0) # Location (parent<<32|zone)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint32() == 0) # setRequired1
-        self.assertTrue(dgi.read_uint32() == 0) # setRDB3
-        self.assertTrue(dgi.read_uint16() == 2) # Optional fields: 2
+        self.assertEquals(dgi.read_uint32(), doid2) # Id
+        self.assertEquals(dgi.read_uint64(), 0) # Location (parent<<32|zone)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint32(), 0) # setRequired1
+        self.assertEquals(dgi.read_uint32(), 0) # setRDB3
+        self.assertEquals(dgi.read_uint16(), 2) # Optional fields: 2
         hasBR1, hasBRO1 = False, False
         for x in xrange(2):
             field = dgi.read_uint16()
@@ -1432,7 +1432,7 @@ class TestStateServer(unittest.TestCase):
                 self.assertTrue(dgi.read_string() == "I feel radder, faster... more adequate!")
             elif field is setBRO1:
                 hasBRO1 = True
-                self.assertTrue(dgi.read_uint32() == 0x1337)
+                self.assertEquals(dgi.read_uint32(), 0x1337)
             else:
                 self.fail("Received unexpected field: " + str(field))
         self.assertTrue(hasBR1 and hasBRO1) # setBR1 and setBRO1 in ENTER_OWNER_WITH_REQUIRED_OTHER
@@ -1535,6 +1535,35 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(73317331) # ID
         conn.send(dg)
 
+        dg = conn.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting GetAllResp
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
+        self.assertEquals(dgi.read_uint32(), 1) # Context
+        self.assertEquals(dgi.read_uint32(), 73317331) # Id
+        self.assertEquals(dgi.read_uint32(), 88) # Parent
+        self.assertEquals(dgi.read_uint32(), 99) # Zone
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject4)
+        self.assertEquals(dgi.read_uint32(), 55) # SetX
+        self.assertEquals(dgi.read_uint32(), 66) # SetY
+        self.assertEquals(dgi.read_uint32(), 999999) # SetUnrelated
+        self.assertEquals(dgi.read_uint32(), 77) # SetZ
+        self.assertEquals(dgi.read_uint16(), 3) # Optional fields: 3
+        hasOne, hasTwo, hasThree = False, False, False
+        for x in xrange(3):
+            field = dgi.read_uint16()
+            if field is setOne:
+                hasOne = True
+                self.assertEquals(dgi.read_uint8(), 1)
+            elif field is setTwo:
+                hasTwo = True
+                self.assertEquals(dgi.read_uint8(), 2)
+            elif field is setThree:
+                hasThree = True
+                self.assertEquals(dgi.read_uint8(), 3)
+        self.assertTrue(hasOne and hasTwo and hasThree)
+
+        '''
         dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(1) # Context
         appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
@@ -1550,6 +1579,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(setThree)
         dg.add_uint8(3)
         self.assertTrue(conn.expect(dg))
+        '''
 
 
 
@@ -1570,25 +1600,25 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(dg is not None) # Expected to receive get all response
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertTrue(dgi.read_uint32() == 0xBAB55EED) # Context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == 5) # Field count: 5
+        self.assertEquals(dgi.read_uint32(), 0xBAB55EED) # Context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), 5) # Field count: 5
         for x in xrange(5):
             field = dgi.read_uint16()
             if field is setXyz:
-                self.assertTrue(dgi.read_uint32() == 55)
-                self.assertTrue(dgi.read_uint32() == 66)
-                self.assertTrue(dgi.read_uint32() == 77)
+                self.assertEquals(dgi.read_uint32(), 55)
+                self.assertEquals(dgi.read_uint32(), 66)
+                self.assertEquals(dgi.read_uint32(), 77)
             elif field is setOne:
-                self.assertTrue(dgi.read_uint8() == 1)
+                self.assertEquals(dgi.read_uint8(), 1)
             elif field is setUnrelated:
-                self.assertTrue(dgi.read_uint32() == 999999)
+                self.assertEquals(dgi.read_uint32(), 999999)
             elif field is set123:
-                self.assertTrue(dgi.read_uint8() == 1)
-                self.assertTrue(dgi.read_uint8() == 2)
-                self.assertTrue(dgi.read_uint8() == 3)
+                self.assertEquals(dgi.read_uint8(), 1)
+                self.assertEquals(dgi.read_uint8(), 2)
+                self.assertEquals(dgi.read_uint8(), 3)
             elif field is setX:
-                self.assertTrue(dgi.read_uint32() == 55)
+                self.assertEquals(dgi.read_uint32(), 55)
             else:
                 self.fail("Received unexpected field ("+str(field)+") in GET_FIELDS_RESP.")
 
