@@ -56,8 +56,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, u
 
 DistributedObject::DistributedObject(StateServer *stateserver, uint64_t sender, uint32_t do_id,
 	                                 uint32_t parent_id, uint32_t zone_id, DCClass *dclass,
-		                             std::unordered_map<DCField*, std::vector<uint8_t>> req_fields,
-		                             std::unordered_map<DCField*, std::vector<uint8_t>> ram_fields) :
+		                             std::unordered_map<DCField*, std::vector<uint8_t>> required,
+		                             std::unordered_map<DCField*, std::vector<uint8_t>> ram) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
@@ -65,6 +65,9 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint64_t sender, 
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
 	m_log = new LogCategory("object", name.str());
+
+	m_required_fields = required;
+	m_ram_fields = ram;
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 	handle_location_change(parent_id, zone_id, sender);

@@ -71,6 +71,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
+			m_log->spam() << "Received GetAllResp from database." << std::endl;
+
 			if(dgi.read_uint8() != true)
 			{
 				m_log->debug() << "Object not found in database." << std::endl;
@@ -78,7 +80,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			uint16_t dc_id = dgi.read_uint32();
+			uint16_t dc_id = dgi.read_uint16();
 			if(dc_id >= g_dcf->get_num_classes())
 			{
 				m_log->error() << "Received object from database with unknown dclass"

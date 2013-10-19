@@ -98,7 +98,6 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, doid1, 80000, 100, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(3117) # setRDB3
-        dg.add_uint8(97) # setRDbD5
         self.assertTrue(self.shard.expect(dg))
 
 

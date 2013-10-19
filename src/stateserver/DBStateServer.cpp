@@ -38,7 +38,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	uint32_t zone_id = dgi.read_uint32();
 
 	// Check object is not already active
-	if(m_objs.find(do_id) != m_objs.end() && m_loading.find(do_id) != m_loading.end())
+	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())
 	{
 		m_log->warning() << "Received activate for already-active object"
 		                 << " - id:" << do_id << std::endl;
@@ -84,6 +84,17 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case DBSS_OBJECT_DELETE_DISK:
 		{
+			uint32_t do_id = dgi.read_uint32();
+			auto obj_keyval = m_objs.find(do_id);
+			if(obj_keyval != m_objs.end())
+			{
+				// TODO: Handle broadcast behavior
+			}
+
+			Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
+			dg.add_uint32(do_id);
+			send(dg);
+
 			break;
 		}
 		case STATESERVER_OBJECT_GET_ALL:
@@ -118,12 +129,12 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t db_context = dgi.read_uint32();
 
 			// Check context
-			auto found = m_resp_context.find(db_context);
-			if(found == m_resp_context.end())
+			auto caller_keyval = m_resp_context.find(db_context);
+			if(caller_keyval == m_resp_context.end())
 			{
 				break; // Not meant for me, handled by LoadingObject
 			}
-			GetRecord caller = found->second;
+			GetRecord caller = caller_keyval->second;
 
 			m_log->spam() << "Received GetAllResp from database"
 			              " for object with id " << caller.do_id << std::endl;
