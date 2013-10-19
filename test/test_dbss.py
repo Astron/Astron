@@ -123,7 +123,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for Activate on non-existant Database object ###
         # Enter an object into ram with activate
-        dg = Datagram.create([doid2], 5, DBSS_OBJECT_ACTIVATE)
+        dg = Datagram.create([doid2], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
         appendMeta(dg, doid2, 80000, 100)
         self.shard.send(dg)
 

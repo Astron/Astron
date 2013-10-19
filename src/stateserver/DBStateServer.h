@@ -13,7 +13,6 @@ class DBStateServer : public StateServer
 		DBStateServer(RoleConfig roleconfig);
 		~DBStateServer();
 
-
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
 	private:

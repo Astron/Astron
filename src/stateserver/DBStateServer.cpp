@@ -4,7 +4,7 @@
 #include "LoadingObject.h"
 
 // RoleConfig
-static ConfigVariable<channel_t> database_channel("control", INVALID_CHANNEL);
+static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL);
 
 // RangesConfig
 static ConfigVariable<uint32_t> range_min("min", INVALID_DO_ID);
@@ -24,6 +24,11 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 	std::stringstream name;
 	name << "DBSS(Database: " << m_db_channel << ")";
 	m_log = new LogCategory("dbss", name.str());
+}
+
+DBStateServer::~DBStateServer()
+{
+	delete m_log;
 }
 
 void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
@@ -46,7 +51,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	}
 	else
 	{
-		uint32_t dc_id = dgi.read_uint16();
+		uint16_t dc_id = dgi.read_uint16();
 
 		// Check dclass is valid
 		if(dc_id >= g_dcf->get_num_classes())
@@ -63,7 +68,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
 void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_uint64();
+	/*channel_t sender = */dgi.read_uint64(); //sender not used
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
@@ -80,6 +85,18 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case DBSS_OBJECT_DELETE_DISK:
 		{
 			break;
+		}
+		default:
+		{
+			if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > DBSERVER_MSGTYPE_MAX)
+			{
+				m_log->warning() << "Received unknown message of type " << msgtype << std::endl;
+			}
+			else
+			{
+				m_log->spam() << "Ignoring stateserver or database message"
+				              << " of type " << msgtype << std::endl;
+			}
 		}
 	}
 }

@@ -24,6 +24,11 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_
 	// TODO: Implement
 }
 
+LoadingObject::~LoadingObject()
+{
+	delete m_log;
+}
+
 void LoadingObject::send_get_object(uint32_t do_id)
 {
 	m_context = cls_next_context++;
@@ -100,6 +105,12 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				uint16_t field_id = dgi.read_uint16();
 				DCField *field = r_dclass->get_field_by_index(field_id);
+				if(!field)
+				{
+					m_log->error() << "Unrecognized field in database values"
+					               << " with index " << field_id << std::endl;
+					break;
+				}
 				if(field->is_ram())
 				{
 					dgi.unpack_field(field, m_ram_fields[field]);
@@ -118,7 +129,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			int dcc_field_count = r_dclass->get_num_inherited_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				DCField *field = m_dclass->get_inherited_field(i);
+				DCField *field = r_dclass->get_inherited_field(i);
 				if(!field->as_molecular_field())
 				{
 					if(field->is_required())
