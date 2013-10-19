@@ -45,7 +45,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
-        self.assertTrue(dgi.read_uint32() == 1) # Check context
+        self.assertEquals(dgi.read_uint32(), 1) # Check context
         doids.append(dgi.read_uint32())
         self.assertTrue(doids[0] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
 
@@ -91,7 +91,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
-        self.assertTrue(dgi.read_uint32() == 4) # Check context
+        self.assertEquals(dgi.read_uint32(), 4) # Check context
         doids.append(dgi.read_uint32())
         self.assertTrue(doids[1] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
         self.assertTrue(doids[0] != doids[1]) # do_ids should be different
@@ -106,16 +106,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 5) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 5) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 91849)
+                self.assertEquals(dgi.read_uint32(), 91849)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "You monster...")
+                self.assertEquals(dgi.read_string(), "You monster...")
             else:
                 self.fail("Bad field type")
 
@@ -249,7 +249,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
-        self.assertTrue(dgi.read_uint32() == 1) # Check context
+        self.assertEquals(dgi.read_uint32(), 1) # Check context
         doid = dgi.read_uint32()
 
         def assert_no_change(context):
@@ -263,16 +263,16 @@ class DatabaseBaseTests(object):
             dg = self.conn.recv()
             dgi = DatagramIterator(dg)
             self.assertTrue(dgi.matches_header([50], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-            self.assertTrue(dgi.read_uint32() == context) # Check context
-            self.assertTrue(dgi.read_uint8() == SUCCESS)
-            self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-            self.assertTrue(dgi.read_uint16() == 2) # Check field count
+            self.assertEquals(dgi.read_uint32(), context) # Check context
+            self.assertEquals(dgi.read_uint8(), SUCCESS)
+            self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+            self.assertEquals(dgi.read_uint16(), 2) # Check field count
             for x in xrange(2):
                 field = dgi.read_uint16()
                 if field == setRDB3:
-                    self.assertTrue(dgi.read_uint32() == 91849)
+                    self.assertEquals(dgi.read_uint32(), 91849)
                 elif field == setDb3:
-                    self.assertTrue(dgi.read_string() == "You monster...")
+                    self.assertEquals(dgi.read_string(), "You monster...")
                 else:
                     self.fail("Bad field type")
 
@@ -405,16 +405,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 3) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 3) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 54231)
+                self.assertEquals(dgi.read_uint32(), 54231)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "Oh my gosh! Oh my gosh!! OMG! OMG!!!")
+                self.assertEquals(dgi.read_string(), "Oh my gosh! Oh my gosh!! OMG! OMG!!!")
             else:
                 self.fail("Bad field type")
 
@@ -439,16 +439,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 4) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 4) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 9999)
+                self.assertEquals(dgi.read_uint32(), 9999)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "... can you make me a sandwich?")
+                self.assertEquals(dgi.read_string(), "... can you make me a sandwich?")
             else:
                 self.fail("Bad field type")
 
@@ -659,16 +659,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 10) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 10) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 787878)
+                self.assertEquals(dgi.read_uint32(), 787878)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "Daddy... why did you eat my fries? I bought them... and they were mine.")
+                self.assertEquals(dgi.read_string(), "Daddy... why did you eat my fries? I bought them... and they were mine.")
             else:
                 self.fail("Bad field type")
 
@@ -702,16 +702,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 10) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject3)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 10) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 919191)
+                self.assertEquals(dgi.read_uint32(), 919191)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "Mind if I... take a look inside the barn?!")
+                self.assertEquals(dgi.read_string(), "Mind if I... take a look inside the barn?!")
             else:
                 self.fail("Bad field type")
 
@@ -767,15 +767,15 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertTrue(dgi.read_uint32() == 3) # Check context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == 2) # Check field count
+        self.assertEquals(dgi.read_uint32(), 3) # Check context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), 2) # Check field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 1337)
+                self.assertEquals(dgi.read_uint32(), 1337)
             elif field == setDb3:
-                self.assertTrue(dgi.read_string() == "Uppercut! Downercut! Fireball! Bowl of Punch!")
+                self.assertEquals(dgi.read_string(), "Uppercut! Downercut! Fireball! Bowl of Punch!")
             else:
                 self.fail("Bad field type")
 
@@ -974,16 +974,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([90], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 5) # Context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject5)
-        self.assertTrue(dgi.read_uint16() == 2) # Field count
+        self.assertEquals(dgi.read_uint32(), 5) # Context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
+        self.assertEquals(dgi.read_uint16(), 2) # Field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 5337)
+                self.assertEquals(dgi.read_uint32(), 5337)
             elif field == setRDbD5:
-                self.assertTrue(dgi.read_uint8() == setRDbD5DefaultValue)
+                self.assertEquals(dgi.read_uint8(), setRDbD5DefaultValue)
             else:
                 self.fail("Bad field type")
 
@@ -1013,16 +1013,16 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([90], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 6) # Context
-        self.assertTrue(dgi.read_uint8() == SUCCESS)
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject5)
-        self.assertTrue(dgi.read_uint16() == 2) # Field count
+        self.assertEquals(dgi.read_uint32(), 6) # Context
+        self.assertEquals(dgi.read_uint8(), SUCCESS)
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
+        self.assertEquals(dgi.read_uint16(), 2) # Field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setRDB3:
-                self.assertTrue(dgi.read_uint32() == 5337)
+                self.assertEquals(dgi.read_uint32(), 5337)
             elif field == setRDbD5:
-                self.assertTrue(dgi.read_uint8() == setRDbD5DefaultValue)
+                self.assertEquals(dgi.read_uint8(), setRDbD5DefaultValue)
             else:
                 self.fail("Bad field type")
 

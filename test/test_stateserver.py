@@ -1156,7 +1156,7 @@ class TestStateServer(unittest.TestCase):
                 self.assertEquals(dgi.read_uint32(), 0)
             elif field is setBR1:
                 hasBR1 = True
-                self.assertTrue(dgi.read_string() == "MY HAT IS AWESOME!!!")
+                self.assertEquals(dgi.read_string(), "MY HAT IS AWESOME!!!")
             else:
                 self.fail("Unexpected field type")
         self.assertTrue(hasRequired1 and hasBR1)
@@ -1429,7 +1429,7 @@ class TestStateServer(unittest.TestCase):
             field = dgi.read_uint16()
             if field is setBR1:
                 hasBR1 = True
-                self.assertTrue(dgi.read_string() == "I feel radder, faster... more adequate!")
+                self.assertEquals(dgi.read_string(), "I feel radder, faster... more adequate!")
             elif field is setBRO1:
                 hasBRO1 = True
                 self.assertEquals(dgi.read_uint32(), 0x1337)

@@ -79,7 +79,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid1) # object Id
+        self.assertEquals(dgi.read_uint32(), doid1) # object Id
 
         # Send back to the DBSS with some required values
         dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -132,7 +132,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid2) # object Id
+        self.assertEquals(dgi.read_uint32(), doid2) # object Id
 
         # Send back to the DBSS with failed-to-find object
         dg = Datagram.create([doid2], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -168,7 +168,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid1) # object Id
+        self.assertEquals(dgi.read_uint32(), doid1) # object Id
 
         # Send back to the DBSS with some required values
         dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -207,7 +207,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid1) # object Id
+        self.assertEquals(dgi.read_uint32(), doid1) # object Id
 
         # This time pretend the object doesn't exist
         dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -256,7 +256,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid2) # Id
+        self.assertEquals(dgi.read_uint32(), doid2) # Id
 
         # Tell it the object exists
         dg = Datagram.create([doid2], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -309,7 +309,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid3) # object Id
+        self.assertEquals(dgi.read_uint32(), doid3) # object Id
         dg = Datagram.create([doid3], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
@@ -355,15 +355,15 @@ class TestStateServer(unittest.TestCase):
         if dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_FIELD, 4+2):
             msgtype = DBSERVER_OBJECT_GET_FIELD
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == doid3)
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), doid3)
+            self.assertEquals(dgi.read_uint16(), setFoo)
         # ... or GET_FIELDS with 1 field, both satisify the protocol
         elif dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
             msgtype = DBSERVER_OBJECT_GET_FIELDS
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == doid3)
-            self.assertTrue(dgi.read_uint16() == 1) # Field count
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), doid3)
+            self.assertEquals(dgi.read_uint16(), 1) # Field count
+            self.assertEquals(dgi.read_uint16(), setFoo)
         else:
             self.fail("Unexpected message type.")
 
@@ -412,7 +412,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == doid3) # object Id
+        self.assertEquals(dgi.read_uint32(), doid3) # object Id
         dg = Datagram.create([doid3], 200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(FAILURE)
@@ -560,7 +560,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_ALL, 4+4))
         context = dgi.read_uint32() # Get context
-        self.assertTrue(dgi.read_uint32() == 9031) # object Id
+        self.assertEquals(dgi.read_uint32(), 9031) # object Id
 
         # Send back to the DBSS with some required values
         dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -642,14 +642,14 @@ class TestStateServer(unittest.TestCase):
         if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
             msgtype = DBSERVER_OBJECT_GET_FIELD
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == 9031)
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), 9031)
+            self.assertEquals(dgi.read_uint16(), setFoo)
         elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
             msgtype = DBSERVER_OBJECT_GET_FIELDS
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == 9031)
-            self.assertTrue(dgi.read_uint16() == 1) # Field count
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), 9031)
+            self.assertEquals(dgi.read_uint16(), 1) # Field count
+            self.assertEquals(dgi.read_uint16(), setFoo)
         else:
             self.fail("Unexpected message type.")
 
@@ -713,14 +713,14 @@ class TestStateServer(unittest.TestCase):
         if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
             msgtype = DBSERVER_OBJECT_GET_FIELD
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == 9031)
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), 9031)
+            self.assertEquals(dgi.read_uint16(), setFoo)
         elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
             msgtype = DBSERVER_OBJECT_GET_FIELDS
             context = dgi.read_uint32()
-            self.assertTrue(dgi.read_uint32() == 9031)
-            self.assertTrue(dgi.read_uint16() == 1) # Field count
-            self.assertTrue(dgi.read_uint16() == setFoo)
+            self.assertEquals(dgi.read_uint32(), 9031)
+            self.assertEquals(dgi.read_uint16(), 1) # Field count
+            self.assertEquals(dgi.read_uint16(), setFoo)
         else:
             self.fail("Unexpected message type.")
 
@@ -744,21 +744,21 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([5], 9031, STATESERVER_OBJECT_GET_ALL_RESP))
-        self.assertTrue(dgi.read_uint32() == 2) # Context
-        self.assertTrue(dgi.read_uint32() == 70000) # Parent
-        self.assertTrue(dgi.read_uint32() == 300) # Zone
-        self.assertTrue(dgi.read_uint16() == DistributedTestObject5)
-        self.assertTrue(dgi.read_uint32() == 9031) # ID
-        self.assertTrue(dgi.read_uint32() == 393939) # setRequired1
-        self.assertTrue(dgi.read_uint32() == 18811881) # setRDB3
-        self.assertTrue(dgi.read_uint8() == 222) # setRDbD5
-        self.assertTrue(dgi.read_uint16() == 2) # Optional field count
+        self.assertEquals(dgi.read_uint32(), 2) # Context
+        self.assertEquals(dgi.read_uint32(), 70000) # Parent
+        self.assertEquals(dgi.read_uint32(), 300) # Zone
+        self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
+        self.assertEquals(dgi.read_uint32(), 9031) # ID
+        self.assertEquals(dgi.read_uint32(), 393939) # setRequired1
+        self.assertEquals(dgi.read_uint32(), 18811881) # setRDB3
+        self.assertEquals(dgi.read_uint8(), 222) # setRDbD5
+        self.assertEquals(dgi.read_uint16(), 2) # Optional field count
         for x in xrange(2):
             field = dgi.read_uint16()
             if field == setFoo:
-                self.assertTrue(dgi.read_uint16() == 7722)
+                self.assertEquals(dgi.read_uint16(), 7722)
             elif field == setBR1:
-                self.assertTrue(dgi.read_string() == "Sleeping in the middle of a summer afternoon.")
+                self.assertEquals(dgi.read_string(), "Sleeping in the middle of a summer afternoon.")
             else:
                 self.fail("Bad field type")
 
@@ -791,8 +791,8 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], 9040, DBSERVER_OBJECT_GET_FIELD))
         context = dgi.read_uint32()
-        self.assertTrue(dgi.read_uint32() == 9040)
-        self.assertTrue(dgi.read_uint16() == setFoo)
+        self.assertEquals(dgi.read_uint32(), 9040)
+        self.assertEquals(dgi.read_uint16(), setFoo)
 
         # Return field value to DBSS
         dg = Datagram.create([9040], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
@@ -828,10 +828,10 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([200], 9040, DBSERVER_OBJECT_GET_FIELDS))
         context = dgi.read_uint32()
-        self.assertTrue(dgi.read_uint32() == 9040) # ID
-        self.assertTrue(dgi.read_uint16() == 2) # Field count
-        self.assertTrue(dgi.read_uint16() == setFoo)
-        self.assertTrue(dgi.read_uint16() == setRDB3)
+        self.assertEquals(dgi.read_uint32(), 9040) # ID
+        self.assertEquals(dgi.read_uint16(), 2) # Field count
+        self.assertEquals(dgi.read_uint16(), setFoo)
+        self.assertEquals(dgi.read_uint16(), setRDB3)
 
         # Return field value to DBSS
         dg = Datagram.create([9040], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
