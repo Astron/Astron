@@ -76,6 +76,8 @@ CONSTANTS = {
     'CONTROL_REMOVE_RANGE':         9003,
     'CONTROL_ADD_POST_REMOVE':      9010,
     'CONTROL_CLEAR_POST_REMOVE':    9011,
+    'CONTROL_SET_CON_NAME':         9012,
+    'CONTROL_SET_CON_URL':          9013,
 
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
@@ -250,6 +252,20 @@ class Datagram(object):
     def create_clear_post_remove(cls):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        return dg
+
+    @classmethod
+    def create_set_con_name(cls, name):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_SET_CON_NAME)
+        dg.add_string(name)
+        return dg
+
+    @classmethod
+    def create_set_con_url(cls, name):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_SET_CON_URL)
+        dg.add_string(name)
         return dg
 
 class DatagramIterator(object):
