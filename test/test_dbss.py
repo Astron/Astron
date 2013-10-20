@@ -438,6 +438,7 @@ class TestStateServer(unittest.TestCase):
             # Try a query all on the id
             dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_ALL)
             dg.add_uint32(++probe_context) # Context
+            dg.add_uint32(doid)
             self.shard.send(dg)
 
             # Check if recieved database query
@@ -455,9 +456,10 @@ class TestStateServer(unittest.TestCase):
             dg.add_uint16(DistributedTestObject3)
             dg.add_uint16(1)
             dg.add_uint16(setRDB3)
-            dg.add_uint32(setRDB3DefaultValue)
+            dg.add_uint32(200)
             self.database.send(dg)
             self.shard.flush()
+            return True
 
         self.assertFalse(probe(900))
         self.assertFalse(probe(999))
