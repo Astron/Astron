@@ -142,9 +142,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_log->spam() << "Received GetField for field with id " << field_id
 			              << " on inactive object with id " << r_do_id << std::endl;
 
-			// Get context for db query
-			uint32_t db_context = m_next_context++;
-
+			// Check field is "ram db" or "required"
 			DCField* field = g_dcf->get_field_by_index(field_id);
 			if(!field || !(field->is_required() ||
 			   (field->is_ram() && field->is_db())))
@@ -157,7 +155,13 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(field->is_db())
 			{
-				m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP));
+				// Get context for db query
+				uint32_t db_context = m_next_context++;
+
+				// Prepare reponse datagram
+				/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
+					                                      STATESERVER_OBJECT_GET_FIELD_RESP));//->first;
+
 				m_context_datagrams[db_context].add_uint32(r_context);
 
 				// Send query to database
@@ -192,13 +196,162 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			m_log->spam() << "Received GetFieldResp from database." << std::endl;
 
-			// Add database field payload to response (don't know dclass, so must copy payload).
+			// Get the datagram from the db_context
 			Datagram dg(dg_keyval->second);
-			dg.add_data(dgi.read_remainder());
-			send(dg);
 
 			// Cleanup the context
 			m_context_datagrams.erase(db_context);
+
+			// Check to make sure the datagram is appropriate
+			DatagramIterator check_dgi = DatagramIterator(dg);
+			uint16_t resp_type = check_dgi.get_msg_type();
+			if(resp_type != STATESERVER_OBJECT_GET_FIELD_RESP)
+			{
+				if(resp_type == STATESERVER_OBJECT_GET_FIELDS_RESP)
+				{
+					m_log->warning() << "Received GetFieldsResp, but expecting GetFieldResp." << std::endl;
+				}
+				else if(resp_type == STATESERVER_OBJECT_GET_ALL_RESP)
+				{
+					m_log->warning() << "Received GetAllResp, but expecting GetFieldResp." << std::endl;
+				}
+				break;
+			}
+
+			// Add database field payload to response (don't know dclass, so must copy payload) and send
+			dg.add_data(dgi.read_remainder());
+			send(dg);
+
+			break;
+		}
+		case STATESERVER_OBJECT_GET_FIELDS:
+		{
+			uint32_t r_context = dgi.read_uint32();
+			uint32_t r_do_id = dgi.read_uint32();
+			uint16_t field_count = dgi.read_uint16();
+
+			// If object is active or loading, the Object or Loader will handle it
+			if(m_objs.find(r_do_id) != m_objs.end() ||
+			   m_loading.find(r_do_id) != m_loading.end())
+			{
+				break;
+			}
+
+			m_log->spam() << "Received GetFields for inactive object with id " << r_do_id << std::endl;
+
+			// Read requested fields from datagram
+			std::list<DCField*> db_fields; // Ram|required db fields in request
+			std::list<DCField*> ram_fields; // Ram|required but not-db fields in request
+			for(uint16_t i=0; i<field_count; ++i)
+			{
+				uint16_t field_id = dgi.read_uint16();
+				DCField* field = g_dcf->get_field_by_index(field_id);
+				if(!field)
+				{
+					Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
+					dg.add_uint32(r_context);
+					dg.add_uint8(false);
+					send(dg);
+				}
+				else if(field->is_ram() || field->is_required())
+				{
+					if(field->is_db())
+					{
+						db_fields.push_back(field);
+					}
+					else
+					{
+						ram_fields.push_back(field);
+					}
+				}
+			}
+
+			if(db_fields.size())
+			{
+				// Get context for db query
+				uint32_t db_context = m_next_context++;
+
+				// Prepare reponse datagram
+				/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
+					                                      STATESERVER_OBJECT_GET_FIELDS_RESP));//->first;
+				m_context_datagrams[db_context].add_uint32(r_context);
+				m_context_datagrams[db_context].add_uint8(true);
+				m_context_datagrams[db_context].add_uint16(ram_fields.size() + db_fields.size());
+				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
+				{
+					m_context_datagrams[db_context].add_uint16((*it)->get_number());
+					m_context_datagrams[db_context].add_data((*it)->get_default_value());
+				}
+
+				// Send query to database
+				Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELDS);
+				dg.add_uint32(db_context);
+				dg.add_uint32(r_do_id);
+				dg.add_uint16(db_fields.size());
+				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
+				{
+					dg.add_uint16((*it)->get_number());					
+				}
+				send(dg);
+			}
+			else // If no database fields exist
+			{
+				Datagram dg = Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
+				dg.add_uint32(r_context);
+				dg.add_uint8(true);
+				dg.add_uint16(ram_fields.size());
+				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
+				{
+					dg.add_uint16((*it)->get_number());
+					dg.add_data((*it)->get_default_value());
+				}
+				send(dg);
+			}
+
+			break;
+		}
+		case DBSERVER_OBJECT_GET_FIELDS_RESP:
+		{
+			uint32_t db_context = dgi.read_uint32();
+
+			// Check context
+			auto dg_keyval = m_context_datagrams.find(db_context);
+			if(dg_keyval == m_context_datagrams.end())
+			{
+				break; // Not meant for me, handled by LoadingObject
+			}
+
+			// Get the datagram from the db_context
+			Datagram dg(dg_keyval->second);
+
+			// Cleanup the context
+			m_context_datagrams.erase(db_context);
+
+			// Check to make sure the datagram is appropriate
+			DatagramIterator check_dgi = DatagramIterator(dg);
+			uint16_t resp_type = check_dgi.get_msg_type();
+			if(resp_type != STATESERVER_OBJECT_GET_FIELDS_RESP)
+			{
+				if(resp_type == STATESERVER_OBJECT_GET_FIELD_RESP)
+				{
+					m_log->warning() << "Received GetFieldResp, but expecting GetFieldsResp." << std::endl;
+				}
+				else if(resp_type == STATESERVER_OBJECT_GET_ALL_RESP)
+				{
+					m_log->warning() << "Received GetAllResp, but expecting GetFieldsResp." << std::endl;
+				}
+				break;
+			}
+
+			m_log->spam() << "Received GetFieldResp from database." << std::endl;
+
+			// Add database field payload to response (don't know dclass, so must copy payload).
+			if(dgi.read_uint8() == true)
+			{
+				dgi.read_uint16(); // Discard field count
+				dg.add_data(dgi.read_remainder());
+			}
+			send(dg);
 
 			break;
 		}
@@ -218,11 +371,13 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get context for db query, and remember caller with it
 			uint32_t db_context = m_next_context++;
-			m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_ALL_RESP));
+
+			/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
+					                                  STATESERVER_OBJECT_GET_ALL_RESP));//->first;
+
 			m_context_datagrams[db_context].add_uint32(r_context);
 			m_context_datagrams[db_context].add_uint32(r_do_id);
 			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
-
 
 			// Send query to database
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
@@ -242,10 +397,28 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				break; // Not meant for me, handled by LoadingObject
 			}
+
+			// Get the datagram from the db_context
 			Datagram dg(dg_keyval->second);
 
-			// Cleanup the context first, so it is removed if any exceptions occur
+			// Cleanup the context
 			m_context_datagrams.erase(db_context);
+
+			// Check to make sure the datagram is appropriate
+			DatagramIterator check_dgi = DatagramIterator(dg);
+			uint16_t resp_type = check_dgi.get_msg_type();
+			if(resp_type != STATESERVER_OBJECT_GET_ALL_RESP)
+			{
+				if(resp_type == STATESERVER_OBJECT_GET_FIELD_RESP)
+				{
+					m_log->warning() << "Received GetFieldResp, but expecting GetAllResp." << std::endl;
+				}
+				else if(resp_type == STATESERVER_OBJECT_GET_FIELDS_RESP)
+				{
+					m_log->warning() << "Received GetFieldsResp, but expecting GetAllResp." << std::endl;
+				}
+				break;
+			}
 
 			m_log->spam() << "Received GetAllResp from database." << std::endl;
 

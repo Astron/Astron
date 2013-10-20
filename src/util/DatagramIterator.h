@@ -225,7 +225,7 @@ class DatagramIterator
 			uint16_t offset = m_offset; // save offset
 
 			m_offset = 9 + get_recipient_count() * 8; // seek message type
-			uint64_t msg_type = read_uint64(); // read message type
+			uint16_t msg_type = read_uint16(); // read message type
 
 			m_offset = offset; // restore offset
 			return msg_type;

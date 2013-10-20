@@ -874,7 +874,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(SUCCESS)
         dg.add_uint32(2) # Field count
         dg.add_uint16(setRDB3)
-        dg.add_uint16(99911)
+        dg.add_uint32(99911)
         dg.add_uint16(setDb3)
         dg.add_string("He just really likes ice cream.")
         self.shard.expect(dg)
@@ -905,17 +905,19 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
-        dg.add_uint32(1) # Field count
+        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
-        dg.add_uint32(99911)
+        dg.add_uint32(99922)
         self.database.send(dg)
 
         # Expect field value from DBSS
-        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(SUCCESS)
+        dg.add_uint16(1)
         dg.add_uint16(setRDB3)
-        dg.add_uint16(99911)
+        dg.add_uint32(99922)
+        self.assertTrue(self.shard.expect(dg))
 
 if __name__ == '__main__':
     unittest.main()
