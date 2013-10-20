@@ -486,7 +486,7 @@ class TestStateServer(unittest.TestCase):
         self.database.flush()
         self.shard.send(Datagram.create_add_channel(70000<<32|300))
 
-        ### Test for UpdateField with db field on unloaded object###
+        ### Test for SetField with db field on unloaded object###
         # Update field on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(9030) # id
@@ -503,7 +503,7 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for UpdateFieldMultiple with all db fields on unloaded object ###
+        ### Test for SetFields with all db fields on unloaded object ###
         # Update field multiple on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(9030) # id
@@ -515,18 +515,25 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect database fields to be sent to database
-        dg = Datagram.create([200], 9030, DBSERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9030) # id
-        dg.add_uint16(2) # field count
-        dg.add_uint16(setFoo)
-        dg.add_uint16(4096)
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(8192)
-        self.assertTrue(self.database.expect(dg))
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting DBSetFields
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9030, DBSERVER_OBJECT_SET_FIELDS))
+        self.assertEquals(dgi.read_uint32(), 9030) # Id
+        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
+        hasFoo, hasRDB3 = False, False
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field is setFoo:
+                hasFoo = True
+                self.assertEquals(dgi.read_uint16(), 4096)
+            elif field is setRDB3:
+                hasRDB3 = True
+                self.assertEquals(dgi.read_uint32(), 8192)
+        self.assertTrue(hasFoo and hasRDB3)
 
 
-
-        ### Test for UpdateField with non-db field on unloaded object ###
+        ### Test for SetField with non-db field on unloaded object ###
         # Update field on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(9030) # id
@@ -537,7 +544,7 @@ class TestStateServer(unittest.TestCase):
         # Expect none at database
         self.assertTrue(self.database.expect_none())
 
-        ### Test for UpdateFieldMultiple with all non-db fields on unloaded object ###
+        ### Test for SetFields with all non-db fields on unloaded object ###
         # Update fields on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(9030) # id
@@ -552,9 +559,10 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for UpdateField with db field on loaded object ###
-        # Enter an object into ram from the disk by setting its zone
-        dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_LOCATION)
+        ### Test for SetField with db field on loaded object ###
+        # Activate object with defaults
+        dg = Datagram.create([9031], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        dg.add_uint32(9031) # Id
         dg.add_uint32(70000) # Parent
         dg.add_uint32(300) # Zone
         self.shard.send(dg)
@@ -598,7 +606,7 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for UpdateFieldMultiple with all db fields on loaded object
+        ### Test for SetFields with all db fields on loaded object
         ### (continues from previous)
         # Update field multiple on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELDS)
@@ -611,18 +619,26 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect database fields to be sent to database
-        dg = Datagram.create([200], 9031, DBSERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9031) # id
-        dg.add_uint16(2) # field count
-        dg.add_uint16(setFoo)
-        dg.add_uint16(7722)
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(18811881)
-        self.assertTrue(self.database.expect(dg))
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting DBSetFields
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9031, DBSERVER_OBJECT_SET_FIELDS))
+        self.assertEquals(dgi.read_uint32(), 9031) # Id
+        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
+        hasFoo, hasRDB3 = False, False
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field is setFoo:
+                hasFoo = True
+                self.assertEquals(dgi.read_uint16(), 7722)
+            elif field is setRDB3:
+                hasRDB3 = True
+                self.assertEquals(dgi.read_uint32(), 18811881)
+        self.assertTrue(hasFoo and hasRDB3)
 
 
 
-        ### Test for UpdateField with non-db field on loaded object
+        ### Test for SetField with non-db field on loaded object
         ### (continues from previous)
         # Update field on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -634,68 +650,36 @@ class TestStateServer(unittest.TestCase):
         # Expect none at database
         self.assertTrue(self.database.expect_none())
 
+        # Ignore any previous setField broadcasts
+        self.shard.flush()
+
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(1) # Context
+        dg.add_uint32(9031) # Id
         self.shard.send(dg)
 
-        # DBSS should request the value of foo from the DBSS
-        msgtype = None
-        context = None
-        dg = self.database.recv(dg)
-        dgi = DatagramIterator(dg)
-        if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
-            msgtype = DBSERVER_OBJECT_GET_FIELD
-            context = dgi.read_uint32()
-            self.assertEquals(dgi.read_uint32(), 9031)
-            self.assertEquals(dgi.read_uint16(), setFoo)
-        elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
-            msgtype = DBSERVER_OBJECT_GET_FIELDS
-            context = dgi.read_uint32()
-            self.assertEquals(dgi.read_uint32(), 9031)
-            self.assertEquals(dgi.read_uint16(), 1) # Field count
-            self.assertEquals(dgi.read_uint16(), setFoo)
-        else:
-            self.fail("Unexpected message type.")
-
-        # Return values to DBSS
-        if msgtype is DBSERVER_OBJECT_GET_FIELD:
-            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
-            dg.add_uint32(context)
-            dg.add_uint8(SUCCESS)
-            dg.add_uint16(setFoo)
-            dg.add_uint16(7722)
-        else:
-            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
-            dg.add_uint32(context)
-            dg.add_uint8(SUCCESS)
-            dg.add_uint16(1) # Field coutn
-            dg.add_uint16(setFoo)
-            dg.add_uint16(7722)
-
+        # Expect none at database
+        self.assertTrue(self.database.expect_none())
 
         # Updated values should be returned from DBSS
         dg = Datagram.create([5], 9031, STATESERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(1) # Context
-        dg.add_uint32(70000) # Parent
-        dg.add_uint32(300) # Zone
-        dg.add_uint16(DistributedTestObject5)
-        dg.add_uint32(9031) # ID
+        appendMeta(dg, 9031, 70000, 300, DistributedTestObject5)
         dg.add_uint32(512) # setRequired1
         dg.add_uint32(18811881) #setRDB3
         dg.add_uint8(222) # setRDbD5
-        dg.add_uint16(1) # Optional fields count
-        dg.add_uint16(setFoo)
-        dg.add_uint16(7722)
+        dg.add_uint16(0) # Optional fields count
         self.assertTrue(self.shard.expect(dg))
 
 
 
-        ### Test for UpdateFieldMultiple with all non-db fields on loaded object
+        ### Test for SetFields with all non-db fields on loaded object
         ### (continues from previous)
         # Update fields on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(9031) # id
+        dg.add_uint16(2) # Field count: 2
         dg.add_uint16(setRequired1)
         dg.add_uint32(393939)
         dg.add_uint16(setBR1)
@@ -705,44 +689,17 @@ class TestStateServer(unittest.TestCase):
         # Expect none at database
         self.assertTrue(self.database.expect_none())
 
+        # Ignore broadcast
+        self.shard.flush()
+
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
+        dg.add_uint32(9031)
         self.shard.send(dg)
 
-        # DBSS should request the value of foo from the DBSS
-        msgtype = None
-        context = None
-        dg = self.database.recv(dg)
-        dgi = DatagramIterator(dg)
-        if dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELD, 4+2):
-            msgtype = DBSERVER_OBJECT_GET_FIELD
-            context = dgi.read_uint32()
-            self.assertEquals(dgi.read_uint32(), 9031)
-            self.assertEquals(dgi.read_uint16(), setFoo)
-        elif dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_FIELDS, 4+2+2):
-            msgtype = DBSERVER_OBJECT_GET_FIELDS
-            context = dgi.read_uint32()
-            self.assertEquals(dgi.read_uint32(), 9031)
-            self.assertEquals(dgi.read_uint16(), 1) # Field count
-            self.assertEquals(dgi.read_uint16(), setFoo)
-        else:
-            self.fail("Unexpected message type.")
-
-        # Return values to DBSS
-        if msgtype is DBSERVER_OBJECT_GET_FIELD:
-            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELD_RESP)
-            dg.add_uint32(context)
-            dg.add_uint8(SUCCESS)
-            dg.add_uint16(setFoo)
-            dg.add_uint16(7722)
-        else:
-            dg = Datagram.create([9031], 200, DBSERVER_OBJECT_GET_FIELDS_RESP)
-            dg.add_uint32(context)
-            dg.add_uint8(SUCCESS)
-            dg.add_uint16(1) # Field coutn
-            dg.add_uint16(setFoo)
-            dg.add_uint16(7722)
+        # DBSS should expect none
+        self.database.expect_none()
 
         # Updated values should be returned from DBSS
         dg = self.shard.recv_maybe()
@@ -750,22 +707,16 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([5], 9031, STATESERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 2) # Context
+        self.assertEquals(dgi.read_uint32(), 9031) # ID
         self.assertEquals(dgi.read_uint32(), 70000) # Parent
         self.assertEquals(dgi.read_uint32(), 300) # Zone
         self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
-        self.assertEquals(dgi.read_uint32(), 9031) # ID
         self.assertEquals(dgi.read_uint32(), 393939) # setRequired1
         self.assertEquals(dgi.read_uint32(), 18811881) # setRDB3
         self.assertEquals(dgi.read_uint8(), 222) # setRDbD5
-        self.assertEquals(dgi.read_uint16(), 2) # Optional field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setFoo:
-                self.assertEquals(dgi.read_uint16(), 7722)
-            elif field == setBR1:
-                self.assertEquals(dgi.read_string(), "Sleeping in the middle of a summer afternoon.")
-            else:
-                self.fail("Bad field type")
+        self.assertEquals(dgi.read_uint16(), 1) # Optional field count
+        self.assertEquals(dgi.read_uint16(), setBR1)
+        self.assertEquals(dgi.read_string(), "Sleeping in the middle of a summer afternoon.")
 
         # Remove object from ram after tests
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_DELETE_RAM)

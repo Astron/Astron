@@ -126,6 +126,64 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
+		case STATESERVER_OBJECT_SET_FIELD:
+		{
+			uint32_t do_id = dgi.read_uint32();
+			uint32_t field_id = dgi.read_uint16();
+
+			DCField* field = g_dcf->get_field_by_index(field_id);
+			if(field && field->is_db())
+			{
+				m_log->spam() << "Forwarding SetField for field with id " << field_id
+				              << ", on object " << do_id << " to database." << std::endl;
+
+				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
+				dg.add_uint32(do_id);
+				dg.add_uint16(field_id);
+				dg.add_data(dgi.read_remainder());
+				send(dg);
+			}
+			break;
+		}
+		case STATESERVER_OBJECT_SET_FIELDS:
+		{
+			uint32_t do_id = dgi.read_uint32();
+			uint16_t field_count = dgi.read_uint16();
+
+			std::unordered_map<DCField*, std::vector<uint8_t>> db_fields;
+			for(uint16_t i=0; i<field_count; ++i)
+			{
+				uint16_t field_id = dgi.read_uint16();
+				DCField* field = g_dcf->get_field_by_index(field_id);
+				if(!field)
+				{
+					m_log->warning() << "Received invalid field in SetFields"
+					                 " with id " << field_id << std::endl;
+					break;
+				}
+				if(field->is_db())
+				{
+					dgi.unpack_field(field, db_fields[field]);
+				}
+			}
+
+			if(db_fields.size() > 0)
+			{
+				m_log->spam() << "Forwarding SetFields on object " << do_id << " to database." << std::endl;
+
+				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
+				dg.add_uint32(do_id);
+				dg.add_uint16(field_count);
+				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
+				{
+					dg.add_uint16(it->first->get_number());
+					dg.add_data(it->second);
+				}
+				send(dg);
+			}
+
+			break;
+		}
 		case STATESERVER_OBJECT_GET_FIELD:
 		{
 			uint32_t r_context = dgi.read_uint32();
