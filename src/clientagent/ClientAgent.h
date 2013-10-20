@@ -29,6 +29,7 @@ struct Interest
 	uint32_t context;
 	bool has_total;
 	uint32_t total;
+	bool has_announced;
 
 	Interest() : id(0), parent(0), zones(0), context(0), has_total(false), total(0)
 	{

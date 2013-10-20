@@ -276,13 +276,14 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		network_send(resp);
 
 		Interest *i = lookup_interest(parent, zone);
-		if(i && i->is_ready(m_dist_objs))
+		if(i && i->is_ready(m_dist_objs) && !i->has_announced)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
 			resp.add_uint16(i->id);
 			resp.add_uint32(i->context);
 			network_send(resp);
+			i->has_announced = true;
 		}
 	}
 	break;
@@ -310,13 +311,14 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		i.total = count;
 		i.has_total = true;
 
-		if(i.is_ready(m_dist_objs))
+		if(i.is_ready(m_dist_objs) && !i.has_announced)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
 			resp.add_uint16(i.id);
 			resp.add_uint32(i.context);
 			network_send(resp);
+			i.has_announced = true;
 		}
 	}
 	break;
@@ -704,13 +706,14 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	}
 	remove_interest(temp, id);
 
-	if(i.is_ready(m_dist_objs))
+	if(i.is_ready(m_dist_objs) && !i.has_announced)
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
 		resp.add_uint16(id);
 		resp.add_uint32(i.context);
 		network_send(resp);
+		i.has_announced = true;
 	}
 	m_interests[id] = i;
 	// This should be done last -- if the SS is in the same process,
