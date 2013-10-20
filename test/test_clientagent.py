@@ -752,13 +752,21 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA, of course, asks for objects:
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1235)
-        dg.add_uint16(1)
-        dg.add_uint32(111111) # Zone 1
-        self.assertTrue(self.server.expect(dg))
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_uint32(), 111111)
 
-        # We'll give them one:
+        # The SS replies immediately with the count:
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(1)
+        self.server.send(dg)
+
+        # We'll give them the object:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(111111) # zone_id
@@ -781,6 +789,13 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
         dg.add_string("It's true some days are dark and lonely...")
+        self.assertTrue(client.expect(dg))
+
+        # And the client's interest op is done:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint16(5)
+        dg.add_uint32(6)
         self.assertTrue(client.expect(dg))
 
         # Now let's nuke it from orbit!
@@ -853,12 +868,20 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA asks for objects...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1235)
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 2)
         dg.add_uint16(2)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
-        self.assertTrue(self.server.expect(dg))
+        self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
+
+        # There is one object:
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(1)
+        self.server.send(dg)
 
         # Let's give 'em one...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
@@ -878,14 +901,6 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(client.expect(dg))
-
-        # Nothing else!
-        dg = Datagram.create([id], 1, 0) # TODO
-        dg.add_uint32(1235)
-        dg.add_uint16(2)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
-        self.server.send(dg)
 
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
