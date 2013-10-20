@@ -127,8 +127,9 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		}
 		catch(DatagramIteratorEOF &e)
 		{
+			// Log error with receivers output
 			m_log.error() << "Detected truncated datagram in handle_datagram()"
-			              "... aborting!" << std::endl;
+			              " for participant '" << (*it)->m_name << "'." << std::endl;
 			return;
 		}
 	}

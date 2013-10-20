@@ -105,6 +105,8 @@ class MessageDirector : public NetworkClient
 //     be an MDParticipant.
 class MDParticipantInterface
 {
+	friend class MessageDirector;
+
 	public:
 		MDParticipantInterface()
 		{
@@ -170,6 +172,14 @@ class MDParticipantInterface
 			logger().spam() << "MDParticipant cleared post removes " << std::endl;
 			m_post_removes.clear();
 		}
+		inline void set_con_name(const std::string &name)
+		{
+			m_name = name;
+		}
+		inline void set_con_url(const std::string &url)
+		{
+			m_url = url;
+		}
 		inline LogCategory logger()
 		{
 			return MessageDirector::singleton.logger();
@@ -179,4 +189,7 @@ class MDParticipantInterface
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 		std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
+		std::string m_name;
+		std::string m_url;
+
 };

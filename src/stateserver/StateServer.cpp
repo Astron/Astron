@@ -20,6 +20,7 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 		std::stringstream name;
 		name << "StateServer(" << channel << ")";
 		m_log = new LogCategory("stateserver", name.str());
+		set_con_name(name.str());
 	}
 }
 

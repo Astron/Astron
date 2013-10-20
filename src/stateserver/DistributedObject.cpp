@@ -17,6 +17,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, u
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
 	m_log = new LogCategory("object", name.str());
+	set_con_name(name.str());
 
 	for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
 	{
@@ -809,6 +810,13 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			break;
 		}
 		default:
-			m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
+			if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX)
+			{
+				m_log->warning() << "Received unknown message of type " << msgtype << std::endl;
+			}
+			else
+			{
+				m_log->spam() << "Ignoring stateserver message of type " << msgtype << std::endl;
+			}
 	}
 }

@@ -785,6 +785,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         dg.add_uint32(doid1) # ID
         dg.add_uint16(setDb3)
+        self.shard.send(dg)
 
         # Expect database query
         dg = self.database.recv_maybe()

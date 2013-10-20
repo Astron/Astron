@@ -10,6 +10,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
 	m_log = new LogCategory("dbobject", name.str());
+	set_con_name(name.str());
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 
