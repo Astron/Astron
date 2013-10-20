@@ -28,6 +28,12 @@ class Datagram
 		{
 		}
 
+		Datagram(const Datagram &dg) : buf(new uint8_t[dg.size()]), buf_size(dg.size()),
+			buf_end(dg.size())
+		{
+			memcpy(buf, dg.buf, dg.size());
+		}
+
 		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_size(data.length()),
 			buf_end(data.length())
 		{

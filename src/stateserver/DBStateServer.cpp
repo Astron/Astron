@@ -142,47 +142,65 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_log->spam() << "Received GetField for field with id " << field_id
 			              << " on inactive object with id " << r_do_id << std::endl;
 
-			// Get context for db query, and remember caller with it
+			// Get context for db query
 			uint32_t db_context = m_next_context++;
-			m_resp_context[db_context] = GetRecord(sender, r_context, r_do_id);
 
-			// Send query to database
-			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
-			dg.add_uint32(r_context);
-			dg.add_uint32(r_do_id);
-			dg.add_uint16(field_id);
-			send(dg);
+			DCField* field = g_dcf->get_field_by_index(field_id);
+			if(!field || !(field->is_required() ||
+			   (field->is_ram() && field->is_db())))
+			{
+				Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+				dg.add_uint32(r_context);
+				dg.add_uint8(false);
+				send(dg);
+			}
+
+			if(field->is_db())
+			{
+				m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP));
+				m_context_datagrams[db_context].add_uint32(r_context);
+
+				// Send query to database
+				Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
+				dg.add_uint32(db_context);
+				dg.add_uint32(r_do_id);
+				dg.add_uint16(field_id);
+				send(dg);
+			}
+			else // Field is required and not-db
+			{
+				Datagram dg = Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+				dg.add_uint32(r_context);
+				dg.add_uint8(true);
+				dg.add_uint16(field_id);
+				dg.add_data(field->get_default_value());
+				send(dg);
+			}
+
+			break;
 		}
 		case DBSERVER_OBJECT_GET_FIELD_RESP:
 		{
 			uint32_t db_context = dgi.read_uint32();
 
 			// Check context
-			auto caller_keyval = m_resp_context.find(db_context);
-			if(caller_keyval == m_resp_context.end())
+			auto dg_keyval = m_context_datagrams.find(db_context);
+			if(dg_keyval == m_context_datagrams.end())
 			{
 				break; // Not meant for me, handled by LoadingObject
 			}
-			GetRecord caller = caller_keyval->second;
 
-			m_log->spam() << "Received GetFieldResp from database"
-			              " for object with id " << caller.do_id << std::endl;
-
-			// Cleanup the context first, so it is removed if any exceptions occur
-			m_resp_context.erase(db_context);
-
-			// If object not found, just cleanup the context map
-			if(dgi.read_uint8() != true)
-			{
-				break; // Object not found
-			}
+			m_log->spam() << "Received GetFieldResp from database." << std::endl;
 
 			// Add database field payload to response (don't know dclass, so must copy payload).
-			Datagram dg(caller.sender, caller.do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
-			dg.add_uint32(caller.context);
-			dg.add_uint32(caller.do_id);
+			Datagram dg(dg_keyval->second);
 			dg.add_data(dgi.read_remainder());
 			send(dg);
+
+			// Cleanup the context
+			m_context_datagrams.erase(db_context);
+
+			break;
 		}
 		case STATESERVER_OBJECT_GET_ALL:
 		{
@@ -200,7 +218,11 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get context for db query, and remember caller with it
 			uint32_t db_context = m_next_context++;
-			m_resp_context[db_context] = GetRecord(sender, r_context, r_do_id);
+			m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_ALL_RESP));
+			m_context_datagrams[db_context].add_uint32(r_context);
+			m_context_datagrams[db_context].add_uint32(r_do_id);
+			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
+
 
 			// Send query to database
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
@@ -215,18 +237,17 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t db_context = dgi.read_uint32();
 
 			// Check context
-			auto caller_keyval = m_resp_context.find(db_context);
-			if(caller_keyval == m_resp_context.end())
+			auto dg_keyval = m_context_datagrams.find(db_context);
+			if(dg_keyval == m_context_datagrams.end())
 			{
 				break; // Not meant for me, handled by LoadingObject
 			}
-			GetRecord caller = caller_keyval->second;
-
-			m_log->spam() << "Received GetAllResp from database"
-			              " for object with id " << caller.do_id << std::endl;
+			Datagram dg(dg_keyval->second);
 
 			// Cleanup the context first, so it is removed if any exceptions occur
-			m_resp_context.erase(db_context);
+			m_context_datagrams.erase(db_context);
+
+			m_log->spam() << "Received GetAllResp from database." << std::endl;
 
 			// If object not found, just cleanup the context map
 			if(dgi.read_uint8() != true)
@@ -253,12 +274,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			// Prepare SSGetAllResp
-			Datagram dg(caller.sender, caller.do_id, STATESERVER_OBJECT_GET_ALL_RESP);
-			dg.add_uint32(caller.context);
-			dg.add_uint32(caller.do_id);
-			dg.add_uint32(INVALID_DO_ID);
-			dg.add_uint32(INVALID_ZONE);
+			// Add class to response
 			dg.add_uint16(r_dclass->get_number());
 
 			// Add required fields to datagram
@@ -290,6 +306,8 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Send response back to caller
 			send(dg);
+
+			break;
 		}
 		default:
 		{

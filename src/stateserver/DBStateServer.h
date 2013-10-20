@@ -3,24 +3,6 @@
 
 #include "StateServer.h"
 
-/* Helper objects */
-// A GetRecord is a helper object used by the DBSS to track metadata
-// with the GET_FIELD(S) and GET_ALL messages.
-struct GetRecord {
-	uint64_t sender;
-	uint32_t context;
-	uint32_t do_id;
-
-	GetRecord() : sender(0), context(0), do_id(0)
-	{
-	}
-
-	GetRecord(uint64_t sender, uint32_t context, uint32_t do_id) :
-		sender(sender), context(context), do_id(do_id)
-	{
-	}
-};
-
 /* Helper Functions */
 // unpack_db_fields reads the field_count and following fields into a required map and ram map
 // from a DBSERVER_GET_ALL_RESP or DBSERVER_GET_FIELDS_RESP message.
@@ -47,9 +29,10 @@ class DBStateServer : public StateServer
 
 		// m_next_context is the next context to send to the db. Invariant: always post-increment.
 		uint32_t m_next_context;
-		// m_resp_context is a map of "context sent to db" to sender, context, and do_id from caller.
-		// It is used to ensure the response from the DB results in a response to the correct caller.
-		std::unordered_map<uint32_t, GetRecord> m_resp_context;
+		// m_context_datagrams is a map of "context sent to db" to datagram response stubs to send
+		// back to the caller. It stores the data used to correctly route the response while the
+		// dbss is waiting on the db.
+		std::unordered_map<uint32_t, Datagram> m_context_datagrams;
 
 		// handle_activate parses any DBSS_ACTIVATE_* message and spawns a LoadingObject to handle it.
 		void handle_activate(DatagramIterator &dgi, bool has_other);

@@ -124,7 +124,7 @@ class MDParticipantInterface
 		// post_remove tells the MDParticipant to handle all of its post remove packets.
 		inline void post_remove()
 		{
-			logger().debug() << "MDParticipant sending post removes..." << std::endl;
+			logger().debug() << "MDParticipant '" << m_name << "' sending post removes..." << std::endl;
 			for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 			{
 				Datagram dg(*it);
