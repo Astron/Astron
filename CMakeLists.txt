@@ -34,6 +34,8 @@ endif()
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 	set (CMAKE_CXX_FLAGS "-pthread")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 else ()
 	set (YAMLCPP_LIBNAME "libyaml-cppmd" CACHE STRING "Name of YAML library")
 	set (YAMLCPP_LIBNAME optimized ${YAMLCPP_LIBNAME} debug ${YAMLCPP_LIBNAME}d)
@@ -118,6 +120,19 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
+
+	set (BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
+	if(BUILD_STATESERVER_DBSS)
+		set(STATESERVER_FILES
+			${STATESERVER_FILES}
+			src/stateserver/DBStateServer.h
+			src/stateserver/DBStateServer.cpp
+			src/stateserver/LoadingObject.h
+			src/stateserver/LoadingObject.cpp
+		)
+	endif()
+else()
+	set(BUILD_STATESERVER_DBSS OFF)
 endif()
 
 set (BUILD_EVENTLOGGER ON CACHE BOOL "If on, Event Logger will be built into binary")

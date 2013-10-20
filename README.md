@@ -1,29 +1,30 @@
-# Astron project
+Astron Project
+--------------
 _A Server Technology for Realtime Object Networking_
 
 Astron is an open-source, distributed server suite particularily well-suited for powering MMO games.
 The design is inspired by a similar unrelated project developed at the Disney Interactive Media
 Group, and used in-house from 2001 until 2013.
 
-The game server suite consists of many components, which handle separate tasks in order to distribute
-the workload of managing a multi-sharded game environment with many objects and clients.
+The suite consists of many components, which handle separate tasks in order to distribute
+the workload of managing a multi-sharded game/application environment with many objects and clients.
 
-# Overview
+## Overview ##
 
-## Objects
+### Objects ###
 The core concept in an Astron environment is a DistributedObject. These represent individual game
 objects that clients may know of and/or control. Every DistributedObject (or "DO" for short) contains
 one or more "fields" - simple properties, like the position or appearance of an object - which may be
 "updated" periodically. DOs are hierarchical: Each DO contains many "zones" (unsigned 32-bit integers)
 which can contain child DOs. This makes up the basis of the visibility system.
 
-## Visibility system
+### Visibility System ###
 As stated before, every DO lives beneath a parent, with the exception of the root object. If a client
 can see a DO, it may request to be informed of objects beneath that object within a zone.
 It will continue to be informed of objects (and their updates) as long as the request remains active.
 Such a request is called **interest**.
 
-## DC files
+### DC Files ###
 DC files (short for "distributed class" files) are the core protocol description for a game built
 upon Astron. A DC file is a pre-agreed list of dclasses (object types which may be created) and
 fields for each one. The ordering in a DC file is used to convert the human-readable dclass/field
@@ -51,26 +52,33 @@ receive the last update sent for this field.
 field's value is fundamental to the existence of the object. It is therefore incorporated into all
 most(it needs broadcast for some) object snapshots, sent when the object is created or visible.
 
-## Game-specific components
+
+
+## Application-specific components ##
 
 The Astron server is only an environment for keeping track of clients and game objects. The behavior
-of most of these game objects is not the concern of Astron. Rather, there are game-specific components
-that a developer wishing to use Astron must implement in order to update game behavior.
+of most of these game objects is not the concern of Astron. Rather, there are application-specific
+components that a developer wishing to use Astron must implement in order to update game behavior.
 
 The first, and most obvious, component that a developer must provide is a **client**. Clients are
-participants in an Astron world. The client can connect to the server and create an object (usually
-an avatar) and has limited control over that object.
-The client can then use that object to interact with the rest of the game world.
+participants in an Astron world. The client can connect to the server and communicate with objects
+(in games: usually an avatar) and has limited control over those objects.
+The client can then use that object to interact with the rest of the application.
 
-The second component is an implementation of a game's sharding logic. In Astron terminology, this is
-known as an **AI server**. An AI server has complete control over all objects in its shard. It may
-create objects and perform privileged updates on them.
+The second component is an implementation of the applications's sharding logic. In Astron terminology,
+this is known as an **AI server**. An AI server has complete control over all objects in its shard.
+It may create objects and perform privileged updates on them.
 
 The third component is similar to an AI, but manages game-global objects. We call this an **UberDOG**,
 or UD for short. An UberDOG is allowed to create and manage DistributedObjectGlobals, which are
 unique in that they have no defined place within the visibility graph.  
 Instead, a DistributedObjectGlobal's existence is hard-coded into all clients. There is no dynamic
-discovery mechanism for DOGs, nor can they have any persistent fields on them.
+discovery mechanism for DOGs, nor can they have any persistent fields on them.  
+
+DOGs are primarily used for RPC-like operations.  For most Distributed Objects, interaction is prohibited
+to unauthenticated clients.  UberDOGs can be additionally configured to allow these clients to interact with
+them. It is typical to use such an UberDOG to handle Authentication, but it can also be used to provide a
+public RPC-based API to anonymous users.
 
 Each component may have its own **perspective** onto a DO. This allows different logic to exist, for
 the same object, for the client, AI, and UD. The perspectives are distinguished by a conventional notation:  
@@ -89,44 +97,48 @@ The ScratchCardManager would have the following two representations:
 ScratchCardManagerUD: The UD-side representation of the object. The object's doId is hard coded.  
 ScratchCardManager: The client-side representation of the same. The client would be aware of this object because the object type and ID would be hard-coded into the code. The client can send updates on this object to request to redeem codes.
 
-# Astron roles
+
+
+## Astron Roles ##
 Within the Astron cluster, Astron daemons are configured to serve certain roles in the cluster. Astron daemons may serve one or more roles. Here we describe some of them in loose detail:
 
-## Message Director
+### Message Director ###
 The message director receives messages from other daemons, and routes them. A "message" is just an atomic blob, with a maximum size of approximately 64kB, sent from one daemon to another. The routing is performed by means of routing identifiers called **channels**, where a message contains any number of destination channels, and most messages include a source channel. Each component tells the MD which channels it would like to subscribe to, and receives messages sent to its subscribed channels. In this manner, the messaging architecture of Astron is actually a very simple publish-subscribe system. The message director is the simplest component of Astron.
 
-## Client Agent
+### Client Agent ###
 The client agent handles communication with the game client. Game clients do not directly communicate with Astron. Rather, they communicate with the client agent, which in turn communicates with Astron. Most of the security is implemented in the client agent, which enforces the clsend and ownsend keyword restrictions. For example, if a client tries to update a field that is not marked clsend, or ownsend on an object it controls, the client agent will automatically disconnect the client and log a security violation. Since the client agent may have game-specific code, Astron provides a very simple reference implementation. You may want to subclass this base implementation to implement certain game-specific logic, such as allowing clients to create their own avatars directly, without relying on an UberDOG.
 
-## State Server
+### State Server ###
 The state server manages the short-term state of all DistributedObjects. It stores information such as what type of object it is, what its object ID is, and where it's located within the visibility tree. It is also responsible for persisting the value of "ram" fields. Other components may commuicate with the state server to manipulate the object, query the object's state, and query the existence of all objects in a given location.
 
-## Database Server
+### Database Server ###
 The database server handles long term persistance of "db" fields. It stores these fields in a database of some sort, and can update them, or retreive their value.
 
-## Database-State Server
+### Database-State Server ###
 This is a specialized State Server for tracking the short-term state of objects that exist in the database. A DB-SS behaves exactly the same as a State Server, however, it also listens for updates to "db"-keyworded fields and informs the database of the change.  
 In addition, a DB-SS listens on the entire range of object IDs that it manages. If it sees a location update for an object in its range, it will automatically fetch the object out of the database and convert it into a state-server-object.
 
-# Development
 
-## The team
+
+## Development ##
+
+### The Team ###
 * **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
 * **MMavipc** is our incredibly awesome codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
 * **Kestred** is our secondary architect. He writes a lot of documentation and does some development. Responsibilities include reviewing and adding system architecture, with a focus on maintaining code flexibility.
 * **jjkoletar** manages our Jenkins build system.
 
-## License
+### License ###
 The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
 
-## Contributing
+### Contributing ###
 We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
 Please come in and tell us what you'd like to do, or ask what we could use help on.
 
 #### Join us at: [#Astron on irc.freenode.net](irc://irc.freenode.net/Astron)
 
 
-### Building in Development
+#### Building in Development ####
 Astron has a number of dependencies including libyaml-cpp and boost.
 
 Get the boost library from http://www.boost.org/users/download/, or install from a package on linux.  Very old versions of the boost library may not work as there are dependencies on some features of boost::asio and boost::icl.
@@ -139,13 +151,13 @@ We use CMAKE to handle cross-platform compiling.
 
 On a linux system, build for development with:  
 
-    cmake -DCMAKE_BUILD_TYPE=Debug && make
+    cmake -DCMAKE_BUILD_TYPE=Debug . && make
 
 On other systems, make sure DCMAKE_BUILD_TYPE is included with your CMAKE flags.  
 This compiles in debug logging and adds debug flags to your compiler.
 
 
-### OTP Architecture resources
+#### OTP Architecture resources ####
 There are a lot of resources we use as a guide and for inspiration while building Astron.  New contributors might find them to be very informative, both about how the server works and in thinking about what direction Astron wants to go in.  
 **NOTE** - These materials are about the original OTP server at Disney, and only used for inspiration here.
 

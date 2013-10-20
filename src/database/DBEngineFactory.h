@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <stdint.h>
+#include <cstdint>
 #include "core/config.h"
 
 class IDatabaseEngine;

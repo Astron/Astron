@@ -31,6 +31,7 @@ class DatabaseServer : public Role
 			std::stringstream log_title;
 			log_title << "Database(" << m_control_channel << ")";
 			m_log = new LogCategory("db", log_title.str());
+			set_con_name(log_title.str());
 
 			// Check to see the engine was instantiated
 			if(!m_db_engine)
@@ -50,13 +51,13 @@ class DatabaseServer : public Role
 			uint16_t msg_type = dgi.read_uint16();
 			switch(msg_type)
 			{
-				case DBSERVER_OBJECT_CREATE:
+				case DBSERVER_CREATE_OBJECT:
 				{
 					uint32_t context = dgi.read_uint32();
 
 					// Start response with generic header
 					Datagram resp;
-					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_CREATE_RESP);
+					resp.add_server_header(sender, m_control_channel, DBSERVER_CREATE_OBJECT_RESP);
 					resp.add_uint32(context);
 
 					// Get DistributedClass

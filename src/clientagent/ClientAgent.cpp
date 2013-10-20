@@ -98,7 +98,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
-	case CLIENTAGENT_DISCONNECT:
+	case CLIENTAGENT_EJECT:
 	{
 		uint16_t reason = dgi.read_uint16();
 		std::string error_string = dgi.read_string();
@@ -117,7 +117,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		m_state = (ClientState)dgi.read_uint16();
 	}
 	break;
-	case STATESERVER_OBJECT_UPDATE_FIELD:
+	case STATESERVER_OBJECT_SET_FIELD:
 	{
 		uint32_t do_id = dgi.read_uint32();
 		if(!lookup_object(do_id))
@@ -167,7 +167,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		m_dist_objs.erase(do_id);
 	}
 	break;
-	case STATESERVER_OBJECT_ENTER_OWNER_RECV:
+	case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
 	{
 		uint32_t parent = dgi.read_uint32();
 		uint32_t zone = dgi.read_uint32();
@@ -195,7 +195,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		network_send(resp);
 	}
 	break;
-	case CLIENTAGENT_SET_SENDER_ID:
+	case CLIENTAGENT_SET_CLIENT_ID:
 	{
 		if(m_is_channel_allocated)
 		{
@@ -231,13 +231,13 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		add_post_remove(dgi.read_string());
 	}
 	break;
-	case CLIENTAGENT_CLEAR_POST_REMOVE:
+	case CLIENTAGENT_CLEAR_POST_REMOVES:
 	{
 		clear_post_removes();
 	}
 	break;
-	case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED:
-	case STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER:
+	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
+	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
 	{
 		uint32_t parent = dgi.read_uint32();
 		uint32_t zone = dgi.read_uint32();
@@ -260,7 +260,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		m_seen_objects.insert(do_id);
 
 		Datagram resp;
-		if(msgtype == STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+		if(msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
 		{
 			resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED);
 		}
@@ -276,7 +276,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		network_send(resp);
 	}
 	break;
-	case STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE:
+    case 0://STATESERVER_OBJECT_GET_ZONES_OBJECTS_DONE:
 	{
 		uint32_t parent = dgi.read_uint32();
 		uint16_t n_zones = dgi.read_uint16();
@@ -317,7 +317,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 	}
 	break;
-	case STATESERVER_OBJECT_CHANGE_ZONE:
+	case STATESERVER_OBJECT_CHANGING_LOCATION:
 	{
 		uint32_t do_id = dgi.read_uint32();
 		uint32_t n_parent = dgi.read_uint32();
@@ -554,7 +554,7 @@ std::list<uint32_t> Client::add_interest(Interest &i)
 void Client::request_zone_objects(uint32_t parent, std::list<uint32_t> new_zones)
 {
 	Datagram resp;
-	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_QUERY_ZONE_ALL);
+	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 	resp.add_uint32(parent);
 	resp.add_uint16(new_zones.size());
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
@@ -774,7 +774,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 	//and client will be dc'd for truncated datagram
 
 	Datagram resp;
-	resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_UPDATE_FIELD);
+	resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
 	resp.add_uint32(do_id);
 	resp.add_uint16(field_id);
 	if(data.size() > 65535u-resp.size())
@@ -814,7 +814,7 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 		return true;
 	}
 
-	Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_ZONE);
+	Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
 	dg.add_uint32(dgi.read_uint32()); // Parent
 	dg.add_uint32(dgi.read_uint32()); // Zone
 	send(dg);

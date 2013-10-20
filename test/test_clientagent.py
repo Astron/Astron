@@ -162,7 +162,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint8(), 1)
         self.assertEqual(dgi.read_uint64(), 1234)
         dgi.read_uint64() # Sender ID; we don't know this.
-        self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_UPDATE_FIELD)
+        self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
         self.assertEqual(dgi.read_uint32(), 1234)
         self.assertEqual(dgi.read_uint16(), request)
         self.assertEqual(dgi.read_string(), '[month of winter coolness]*3')
@@ -188,7 +188,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         # Send a CLIENTAGENT_DISCONNECT to the session...
-        dg = Datagram.create([id], 1, CLIENTAGENT_DISCONNECT)
+        dg = Datagram.create([id], 1, CLIENTAGENT_EJECT)
         dg.add_uint16(999)
         dg.add_string('ERROR: The night... will last... forever!')
         self.server.send(dg)
@@ -251,7 +251,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint8(), 1)
         self.assertEqual(dgi.read_uint64(), 1235)
         dgi.read_uint64() # Sender ID; we don't know this.
-        self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_UPDATE_FIELD)
+        self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
         self.assertEqual(dgi.read_uint32(), 1235)
         self.assertEqual(dgi.read_uint16(), foo)
         self.assertEqual(dgi.read_uint8(), 0xBE)
@@ -281,7 +281,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         id = self.identify(client)
 
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(response)
         dg.add_string('It... is... ON!')
@@ -300,7 +300,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         id = self.identify(client)
 
-        dg = Datagram.create([id], 1, CLIENTAGENT_SET_SENDER_ID)
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_CLIENT_ID)
         dg.add_uint64(555566667777)
         self.server.send(dg)
 
@@ -308,7 +308,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(self.identify(client), 555566667777)
 
         # The client should have a subscription on the new sender channel automatically:
-        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0xF00D)
@@ -323,12 +323,12 @@ class TestClientAgent(unittest.TestCase):
 
         # Change the sender ID again... This is still being sent to the session
         # channel, which the client should always have a subscription on.
-        dg = Datagram.create([id], 1, CLIENTAGENT_SET_SENDER_ID)
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_CLIENT_ID)
         dg.add_uint64(777766665555)
         self.server.send(dg)
 
         # Ensure that 555566667777 has been dropped...
-        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0x7AB)
@@ -419,7 +419,7 @@ class TestClientAgent(unittest.TestCase):
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         # Give it an object that it owns.
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
         dg.add_uint32(1234) # Parent
         dg.add_uint32(5678) # Zone
         dg.add_uint16(DistributedClientTestObject)
@@ -428,6 +428,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint8(11)
         dg.add_uint8(22)
         dg.add_uint8(33)
+        dg.add_uint16(0)
         self.server.send(dg)
 
         # The client should receive the new object.
@@ -441,6 +442,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint8(11)
         dg.add_uint8(22)
         dg.add_uint8(33)
+        dg.add_uint16(0)
         self.assertTrue(client.expect(dg))
 
         # ownsend should be okay...
@@ -494,7 +496,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         # Clear the post-removes...
-        dg = Datagram.create([id], 1, CLIENTAGENT_CLEAR_POST_REMOVE)
+        dg = Datagram.create([id], 1, CLIENTAGENT_CLEAR_POST_REMOVES)
         self.server.send(dg)
 
         # Add two different ones...
@@ -545,7 +547,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         # Sending things to the ID channel should no longer work...
-        dg = Datagram.create([id], 1, CLIENTAGENT_DISCONNECT)
+        dg = Datagram.create([id], 1, CLIENTAGENT_EJECT)
         dg.add_uint16(1234)
         dg.add_string('What fun is there in making sense?')
         self.server.send(dg)
@@ -554,7 +556,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect_none())
 
         # But the new channel is now valid!
-        dg = Datagram.create([66778899], 1, CLIENTAGENT_DISCONNECT)
+        dg = Datagram.create([66778899], 1, CLIENTAGENT_EJECT)
         dg.add_uint16(4321)
         dg.add_string('What fun is there in making cents?')
         self.server.send(dg)
@@ -579,7 +581,7 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # Server should ask for the objects:
-        dg = Datagram.create([1234], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1234)
         dg.add_uint16(2)
         dg.add_uint32(5555) # Zone 1
@@ -587,7 +589,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(self.server.expect(dg))
 
         # We'll throw a couple its way:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(5555) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -606,7 +608,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Now the CA discovers the second object...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -631,7 +633,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # And the CA is done opening the interest.
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1, 0) # TODO
         dg.add_uint32(1234)
         dg.add_uint16(2)
         dg.add_uint32(5555) # Zone 1
@@ -646,7 +648,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # One of the objects broadcasts!
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_UPDATE_FIELD)
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(7777) # do_id
         dg.add_uint16(setBR1)
         dg.add_string("I've built my life on judgement and causing pain...")
@@ -661,7 +663,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Now, let's move the objects around...
-        dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # new_parent
         dg.add_uint32(4444) # new_zone
@@ -678,7 +680,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Realistically, object 8888 would send an enterzone on the new location:
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -690,7 +692,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect_none())
 
         # How about moving the other object outside of interest?
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGE_ZONE)
+        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_uint32(7777) # do_id
         dg.add_uint32(1234) # new_parent
         dg.add_uint32(1111) # new_zone
@@ -749,14 +751,14 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA, of course, asks for objects:
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1235)
         dg.add_uint16(1)
         dg.add_uint32(111111) # Zone 1
         self.assertTrue(self.server.expect(dg))
 
         # We'll give them one:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(111111) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -792,7 +794,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Next, we throw an owner object their way:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_RECV)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
         dg.add_uint32(1235) # Parent
         dg.add_uint32(6161) # Zone
         dg.add_uint16(DistributedClientTestObject)
@@ -801,6 +803,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint8(11)
         dg.add_uint8(22)
         dg.add_uint8(33)
+        dg.add_uint16(0)
         self.server.send(dg)
 
         # The client should receive the new object.
@@ -814,6 +817,7 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint8(11)
         dg.add_uint8(22)
         dg.add_uint8(33)
+        dg.add_uint16(0)
         self.assertTrue(client.expect(dg))
 
         # Bye, owned object!
@@ -848,7 +852,7 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA asks for objects...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1235)
         dg.add_uint16(2)
         dg.add_uint32(1111) # Zone 1
@@ -856,7 +860,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(self.server.expect(dg))
 
         # Let's give 'em one...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -875,7 +879,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Nothing else!
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1, 0) # TODO
         dg.add_uint32(1235)
         dg.add_uint16(2)
         dg.add_uint32(1111) # Zone 1
@@ -970,7 +974,7 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA asks for objects...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1235)
         dg.add_uint16(2)
         dg.add_uint32(1111) # Zone 1
@@ -978,7 +982,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(self.server.expect(dg))
 
         # Let's give 'em one...
-        dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -997,7 +1001,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect(dg))
 
         # Nothing else!
-        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1235, 0) # TODO
         dg.add_uint32(1235)
         dg.add_uint16(2)
         dg.add_uint32(1111) # Zone 1
@@ -1023,14 +1027,14 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The CA should ask for JUST the difference...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1235)
         dg.add_uint16(1)
         dg.add_uint32(5555)
         self.assertTrue(self.server.expect(dg))
 
         # We'll pretend 1235,5555 is empty, so:
-        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1235, 0) # TODO
         dg.add_uint32(1235)
         dg.add_uint16(1)
         dg.add_uint32(5555)
@@ -1055,14 +1059,14 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The CA should ask for stuff in 8888...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1235)
         dg.add_uint16(1)
         dg.add_uint32(8888)
         self.assertTrue(self.server.expect(dg))
 
         # We'll pretend there's something in there this time:
-        dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTERZONE_WITH_REQUIRED)
+        dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
@@ -1071,7 +1075,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         # End of query...
-        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1235, 0) # TODO
         dg.add_uint32(1235)
         dg.add_uint16(1)
         dg.add_uint32(8888)
@@ -1113,14 +1117,14 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The query goes out to the SS...
-        dg = Datagram.create([1234], id, STATESERVER_OBJECT_QUERY_ZONE_ALL)
+        dg = Datagram.create([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(1234)
         dg.add_uint16(1)
         dg.add_uint32(1111)
         self.assertTrue(self.server.expect(dg))
 
         # We'll pretend 1234,1111 is empty, so:
-        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_QUERY_ZONE_ALL_DONE)
+        dg = Datagram.create([id], 1234, 0) # TODO
         dg.add_uint32(1234)
         dg.add_uint16(1)
         dg.add_uint32(1111)

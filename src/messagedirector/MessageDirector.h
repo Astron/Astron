@@ -105,6 +105,8 @@ class MessageDirector : public NetworkClient
 //     be an MDParticipant.
 class MDParticipantInterface
 {
+	friend class MessageDirector;
+
 	public:
 		MDParticipantInterface()
 		{
@@ -122,7 +124,7 @@ class MDParticipantInterface
 		// post_remove tells the MDParticipant to handle all of its post remove packets.
 		inline void post_remove()
 		{
-			logger().debug() << "MDParticipant sending post removes..." << std::endl;
+			logger().debug() << "MDParticipant '" << m_name << "' sending post removes..." << std::endl;
 			for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 			{
 				Datagram dg(*it);
@@ -146,29 +148,43 @@ class MDParticipantInterface
 		}
 		inline void subscribe_channel(channel_t c)
 		{
+			logger().spam() << "MDParticipant '" << m_name << "' subscribed channel: " << c << std::endl;
 			MessageDirector::singleton.subscribe_channel(this, c);
 		}
 		inline void unsubscribe_channel(channel_t c)
 		{
+			logger().spam() << "MDParticipant '" << m_name << "' unsubscribed channel: " << c << std::endl;
 			MessageDirector::singleton.unsubscribe_channel(this, c);
 		}
 		inline void subscribe_range(channel_t lo, channel_t hi)
 		{
+			logger().spam() << "MDParticipant '" << m_name << "' subscribed range, "
+			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.subscribe_range(this, lo, hi);
 		}
 		inline void unsubscribe_range(channel_t lo, channel_t hi)
 		{
+			logger().spam() << "MDParticipant '" << m_name << "' unsubscribed range, "
+			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
 		}
 		inline void add_post_remove(const std::string &post)
 		{
-			logger().debug() << "MDParticipant added post remove: " << post << std::endl;
+			logger().debug() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(post);
 		}
 		inline void clear_post_removes()
 		{
-			logger().spam() << "MDParticipant cleared post removes " << std::endl;
+			logger().spam() << "MDParticipant '" << m_name << "' cleared post removes." << std::endl;
 			m_post_removes.clear();
+		}
+		inline void set_con_name(const std::string &name)
+		{
+			m_name = name;
+		}
+		inline void set_con_url(const std::string &url)
+		{
+			m_url = url;
 		}
 		inline LogCategory logger()
 		{
@@ -179,4 +195,7 @@ class MDParticipantInterface
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 		std::vector<std::string> m_post_removes; // The messages to be distributed on unexpected disconnect.
+		std::string m_name;
+		std::string m_url;
+
 };
