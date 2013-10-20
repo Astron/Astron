@@ -580,6 +580,7 @@ void Client::request_zone_objects(uint32_t context, uint32_t parent, std::list<u
 	Datagram resp;
 	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 	resp.add_uint32(context);
+	resp.add_uint32(parent);
 	resp.add_uint16(new_zones.size());
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{

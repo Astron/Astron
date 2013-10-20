@@ -586,6 +586,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1234)
         self.assertEquals(dgi.read_uint16(), 2)
         self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([5555, 4444]))
 
@@ -757,6 +758,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1235)
         self.assertEquals(dgi.read_uint16(), 1)
         self.assertEquals(dgi.read_uint32(), 111111)
 
@@ -873,6 +875,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1235)
         self.assertEquals(dgi.read_uint16(), 2)
         dg.add_uint16(2)
         self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
@@ -995,6 +998,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1235)
         self.assertEquals(dgi.read_uint16(), 2)
         self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
 
@@ -1047,6 +1051,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1235)
         self.assertEquals(dgi.read_uint16(), 1)
         self.assertEquals(dgi.read_uint32(), 5555)
 
@@ -1080,6 +1085,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1235)
         self.assertEquals(dgi.read_uint16(), 1)
         self.assertEquals(dgi.read_uint32(), 8888)
 
@@ -1138,6 +1144,7 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint32(), 1234)
         self.assertEquals(dgi.read_uint16(), 1)
         self.assertEquals(dgi.read_uint32(), 1111)
 
