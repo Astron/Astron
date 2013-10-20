@@ -128,7 +128,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		if(sender != m_channel)
 		{
 			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_UPDATE_FIELD);
+			resp.add_uint16(CLIENT_OBJECT_SET_FIELD);
 			resp.add_uint32(do_id);
 			resp.add_data(dgi.read_remainder());
 			network_send(resp);
@@ -149,7 +149,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			m_seen_objects.erase(do_id);
 
 			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_DISABLE);
+			resp.add_uint16(CLIENT_OBJECT_LEAVING);
 			resp.add_uint32(do_id);
 			network_send(resp);
 		}
@@ -159,7 +159,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			m_owned_objects.erase(do_id);
 
 			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_DISABLE_OWNER);
+			resp.add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
 			resp.add_uint32(do_id);
 			network_send(resp);
 		}
@@ -169,10 +169,10 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	break;
 	case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
 	{
+		uint32_t do_id = dgi.read_uint32();
 		uint32_t parent = dgi.read_uint32();
 		uint32_t zone = dgi.read_uint32();
 		uint16_t dc_id = dgi.read_uint16();
-		uint32_t do_id = dgi.read_uint32();
 		m_owned_objects.insert(do_id);
 
 		if(m_dist_objs.find(do_id) == m_dist_objs.end())
@@ -186,11 +186,11 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 
 		Datagram resp;
-		resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER);
+		resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER);
+		resp.add_uint32(do_id);
 		resp.add_uint32(parent);
 		resp.add_uint32(zone);
 		resp.add_uint16(dc_id);
-		resp.add_uint32(do_id);
 		resp.add_data(dgi.read_remainder());
 		network_send(resp);
 	}
@@ -239,10 +239,10 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
 	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
 	{
+		uint32_t do_id = dgi.read_uint32();
 		uint32_t parent = dgi.read_uint32();
 		uint32_t zone = dgi.read_uint32();
 		uint16_t dc_id = dgi.read_uint16();
-		uint32_t do_id = dgi.read_uint32();
 		if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
 		   m_seen_objects.find(do_id) != m_seen_objects.end())
 		{
@@ -262,16 +262,16 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		Datagram resp;
 		if(msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
 		{
-			resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED);
+			resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED);
 		}
 		else
 		{
-			resp.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER);
+			resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER);
 		}
+		resp.add_uint32(do_id);
 		resp.add_uint32(parent);
 		resp.add_uint32(zone);
 		resp.add_uint16(dc_id);
-		resp.add_uint32(do_id);
 		resp.add_data(dgi.read_remainder());
 		network_send(resp);
 
@@ -357,7 +357,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		Datagram resp;
 		if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
 		{
-			resp.add_uint16(CLIENT_OBJECT_DISABLE);
+			resp.add_uint16(CLIENT_OBJECT_LEAVING);
 			resp.add_uint32(do_id);
 
 			m_seen_objects.erase(do_id);
@@ -418,7 +418,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 				<< error_string << std::endl;
 
 		Datagram resp;
-		resp.add_uint16(CLIENT_GO_GET_LOST);
+		resp.add_uint16(CLIENT_EJECT);
 		resp.add_uint16(reason);
 		resp.add_string(error_string);
 		network_send(resp);
@@ -505,7 +505,7 @@ void Client::handle_pre_auth(DatagramIterator &dgi)
 	bool should_die = false;
 	switch(msg_type)
 	{
-	case CLIENT_OBJECT_UPDATE_FIELD:
+	case CLIENT_OBJECT_SET_FIELD:
 	{
 		should_die = handle_client_object_update_field(dgi);
 	}
@@ -528,7 +528,7 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 	bool should_die = false;
 	switch(msg_type)
 	{
-	case CLIENT_OBJECT_UPDATE_FIELD:
+	case CLIENT_OBJECT_SET_FIELD:
 		should_die = handle_client_object_update_field(dgi);
 		break;
 	case CLIENT_OBJECT_LOCATION:
@@ -641,7 +641,7 @@ void Client::remove_interest(Interest &i, uint32_t id)
 			if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
 			{
 				Datagram resp;
-				resp.add_uint16(CLIENT_OBJECT_DISABLE);
+				resp.add_uint16(CLIENT_OBJECT_LEAVING);
 				resp.add_uint32(it->second.id);
 				network_send(resp);
 

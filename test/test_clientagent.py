@@ -53,7 +53,7 @@ class TestClientAgent(unittest.TestCase):
         while True:
             dg = s.recv()
             dgi = DatagramIterator(dg)
-            if dgi.read_uint16() == CLIENT_GO_GET_LOST:
+            if dgi.read_uint16() == CLIENT_EJECT:
                 self.assertEqual(dgi.read_uint16(), reason_code)
                 # According to client_protocol.md, the string must provide some explanation, so
                 # ensure that it is there.
@@ -82,7 +82,7 @@ class TestClientAgent(unittest.TestCase):
         # Figure out the sender ID for a given client connection.
 
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
         dg.add_string('What... am I?')
@@ -148,7 +148,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Now, we should be able to send an update to the anonymous UD...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
         dg.add_string('[month of winter coolness]*3')
@@ -169,7 +169,7 @@ class TestClientAgent(unittest.TestCase):
 
         # However, if we send an update to the non-anonymous UD...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(foo)
         dg.add_uint8(1)
@@ -195,7 +195,7 @@ class TestClientAgent(unittest.TestCase):
 
         # See if the client dies with that exact error...
         dg = Datagram()
-        dg.add_uint16(CLIENT_GO_GET_LOST)
+        dg.add_uint16(CLIENT_EJECT)
         dg.add_uint16(999)
         dg.add_string('ERROR: The night... will last... forever!')
         self.assertTrue(client.expect(dg))
@@ -222,7 +222,7 @@ class TestClientAgent(unittest.TestCase):
         # Since it's in the NEW state, sending something should cause a HELLO
         # error.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
         dg.add_string('I wish to be an Oompa Loompa. Take me to them so the deed may be done.')
@@ -238,7 +238,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Try to send an update to UberDog2.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(foo)
         dg.add_uint8(0xBE)
@@ -263,7 +263,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Try again:
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(foo)
         dg.add_uint8(0xBE)
@@ -288,7 +288,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(response)
         dg.add_string('It... is... ON!')
@@ -315,7 +315,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0xF00D)
@@ -361,7 +361,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         self.set_state(client, CLIENT_STATE_ESTABLISHED) # Let it out of the sandbox for this test.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(0xDECAFBAD)
         dg.add_uint16(request)
         dg.add_string('Hello? Anyone there?')
@@ -371,7 +371,7 @@ class TestClientAgent(unittest.TestCase):
         # Send a field update to a non-present field:
         client = self.connect()
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(foo)
         dg.add_uint8(5)
@@ -383,7 +383,7 @@ class TestClientAgent(unittest.TestCase):
         # Send a field update to a non-clsend field:
         client = self.connect()
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(response)
         dg.add_string('Bizaam!')
@@ -393,7 +393,7 @@ class TestClientAgent(unittest.TestCase):
         # Send a truncated field update:
         client = self.connect()
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
         dg.add_uint16(16) # Faking the string length...
@@ -404,7 +404,7 @@ class TestClientAgent(unittest.TestCase):
         # Send an oversized field update:
         client = self.connect()
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
         dg.add_string('F'*65525) # This will fit inside the client dg, but be too big for the server.
@@ -420,10 +420,10 @@ class TestClientAgent(unittest.TestCase):
 
         # Give it an object that it owns.
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_uint32(55446655)
         dg.add_uint32(1234) # Parent
         dg.add_uint32(5678) # Zone
         dg.add_uint16(DistributedClientTestObject)
-        dg.add_uint32(55446655)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
         dg.add_uint8(22)
@@ -433,11 +433,11 @@ class TestClientAgent(unittest.TestCase):
 
         # The client should receive the new object.
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint32(55446655)
         dg.add_uint32(1234) # Parent
         dg.add_uint32(5678) # Zone
         dg.add_uint16(DistributedClientTestObject)
-        dg.add_uint32(55446655)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
         dg.add_uint8(22)
@@ -447,7 +447,7 @@ class TestClientAgent(unittest.TestCase):
 
         # ownsend should be okay...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(55446655)
         dg.add_uint16(setColor)
         dg.add_uint8(44)
@@ -458,7 +458,7 @@ class TestClientAgent(unittest.TestCase):
 
         # clsend as well...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(55446655)
         dg.add_uint16(requestKill)
         client.send(dg)
@@ -475,7 +475,7 @@ class TestClientAgent(unittest.TestCase):
 
         # But anything else is a no-no.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(55446655)
         dg.add_uint16(setName)
         dg.add_string('Alicorn Amulet')
@@ -598,29 +598,29 @@ class TestClientAgent(unittest.TestCase):
 
         # We'll throw a couple objects its way:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(5555) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
         # Does the client see it?
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(5555) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(client.expect(dg))
 
         # Now the CA discovers the second object...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg.add_uint32(7777) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(7777) # do_id
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
@@ -629,11 +629,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Does the client see it?
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
+        dg.add_uint32(7777) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(7777) # do_id
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
@@ -658,7 +658,7 @@ class TestClientAgent(unittest.TestCase):
 
         # And the client is informed.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_UPDATE_FIELD)
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(7777)
         dg.add_uint16(setBR1)
         dg.add_string("I've built my life on judgement and causing pain...")
@@ -683,10 +683,10 @@ class TestClientAgent(unittest.TestCase):
 
         # Realistically, object 8888 would send an enterzone on the new location:
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_uint32(8888) # do_id
         dg.add_uint32(1234) # parent_id
         dg.add_uint32(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(8888) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
@@ -704,7 +704,7 @@ class TestClientAgent(unittest.TestCase):
 
         # This time the client should have the object disabled.
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(7777)
         self.assertTrue(client.expect(dg))
 
@@ -717,7 +717,7 @@ class TestClientAgent(unittest.TestCase):
 
         # The remaining seen object should die...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(8888)
         self.assertTrue(client.expect(dg))
 
@@ -770,10 +770,10 @@ class TestClientAgent(unittest.TestCase):
 
         # We'll give them the object:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg.add_uint32(777711) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(111111) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(777711) # do_id
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
@@ -782,11 +782,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Does the client see it?
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
+        dg.add_uint32(777711) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(111111) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(777711) # do_id
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
         dg.add_uint16(setBR1)
@@ -807,16 +807,16 @@ class TestClientAgent(unittest.TestCase):
 
         # Now the client should receive the deletion:
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(777711)
         self.assertTrue(client.expect(dg))
 
         # Next, we throw an owner object their way:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_uint32(55446651)
         dg.add_uint32(1235) # Parent
         dg.add_uint32(6161) # Zone
         dg.add_uint16(DistributedClientTestObject)
-        dg.add_uint32(55446651)
         dg.add_string('Alicorn Amulet')
         dg.add_uint8(11)
         dg.add_uint8(22)
@@ -826,11 +826,11 @@ class TestClientAgent(unittest.TestCase):
 
         # The client should receive the new object.
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_uint32(55446651)
         dg.add_uint32(1235) # Parent
         dg.add_uint32(6161) # Zone
         dg.add_uint16(DistributedClientTestObject)
-        dg.add_uint32(55446651)
         dg.add_string('Alicorn Amulet')
         dg.add_uint8(11)
         dg.add_uint8(22)
@@ -845,7 +845,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Now the client should record an owner delete:
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE_OWNER)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
         dg.add_uint32(55446651)
         self.assertTrue(client.expect(dg))
 
@@ -888,20 +888,20 @@ class TestClientAgent(unittest.TestCase):
 
         # Let's give 'em one...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_uint32(54321) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
         # Does the client see it?
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_uint32(54321) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(client.expect(dg))
 
@@ -957,7 +957,7 @@ class TestClientAgent(unittest.TestCase):
 
         # ...the object dies...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(54321)
         self.assertTrue(client.expect(dg))
 
@@ -1010,20 +1010,20 @@ class TestClientAgent(unittest.TestCase):
 
         # Let's give 'em one...
         dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_uint32(54321) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
         # Does the client see it?
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_uint32(54321) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(54321) # do_id
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(client.expect(dg))
 
@@ -1096,10 +1096,10 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_uint32(23239) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(23239) # do_id
         dg.add_uint32(31416) # setRequired1
         self.server.send(dg)
 
@@ -1107,16 +1107,16 @@ class TestClientAgent(unittest.TestCase):
         expected = []
         # 1. Object 54321 is dead:
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(54321)
         expected.append(dg)
         # 2. Object 23239 is alive:
         dg = Datagram()
-        dg.add_uint16(CLIENT_CREATE_OBJECT_REQUIRED)
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_uint32(23239) # do_id
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(23239) # do_id
         dg.add_uint32(31416) # setRequired1
         expected.append(dg)
         # Let's see if the CA does as it's supposed to:
@@ -1156,7 +1156,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Now the CA destroys object 23239...
         dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_DISABLE)
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
         dg.add_uint32(23239)
         self.assertTrue(client.expect(dg))
 
