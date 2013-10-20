@@ -20,6 +20,9 @@ typedef uint64_t channel_t;
 // Reserve message-type 0
 #define RESERVED_MSG_TYPE 0
 
+// Control range
+#define CONTROL_MSGTYPE_MIN         9000
+#define CONTROL_MSGTYPE_MAX         9999
 // Control message-type constants
 #define CONTROL_ADD_CHANNEL         9000
 #define CONTROL_REMOVE_CHANNEL      9001
@@ -28,8 +31,11 @@ typedef uint64_t channel_t;
 #define CONTROL_ADD_POST_REMOVE     9010
 #define CONTROL_CLEAR_POST_REMOVE   9011
 #define CONTROL_SET_CON_NAME        9012
-#define CONTROL_SET_CON_URL         2013
+#define CONTROL_SET_CON_URL         9013
 
+// State Server range
+#define STATESERVER_MSGTYPE_MIN 2000
+#define STATESERVER_MSGTYPE_MAX 2999
 // State Server control message-type constants
 #define STATESERVER_CREATE_OBJECT_WITH_REQUIRED         2000
 #define STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER   2001
@@ -79,15 +85,18 @@ typedef uint64_t channel_t;
 #define STATESERVER_OBJECT_DELETE_ZONES         2122
 #define STATESERVER_OBJECT_DELETE_CHILDREN      2124
 // DBSS object message-type constants
-#define DBSS_OBJECT_ACTIVATE_DEFAULTS       2200
-#define DBSS_OBJECT_ACTIVATE_DEFAULTS_OTHER 2201
-#define DBSS_OBJECT_DELETE_FIELD_RAM        2230
-#define DBSS_OBJECT_DELETE_FIELDS_RAM       2231
-#define DBSS_OBJECT_DELETE_DISK             2232
+#define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS       2200
+#define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER 2201
+#define DBSS_OBJECT_DELETE_FIELD_RAM             2230
+#define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
+#define DBSS_OBJECT_DELETE_DISK                  2232
 // Stateserver macros
 #define LOCATION2CHANNEL(p, z) ((channel_t)(p)<<32|(channel_t)(z))
 #define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
 
+// Database Server range
+#define DBSERVER_MSGTYPE_MIN 3000
+#define DBSERVER_MSGTYPE_MAX 3999
 // Database Server message-type constants
 #define DBSERVER_CREATE_OBJECT                      3000
 #define DBSERVER_CREATE_OBJECT_RESP                 3001

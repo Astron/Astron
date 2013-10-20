@@ -120,6 +120,19 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
+
+	set (BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
+	if(BUILD_STATESERVER_DBSS)
+		set(STATESERVER_FILES
+			${STATESERVER_FILES}
+			src/stateserver/DBStateServer.h
+			src/stateserver/DBStateServer.cpp
+			src/stateserver/LoadingObject.h
+			src/stateserver/LoadingObject.cpp
+		)
+	endif()
+else()
+	set(BUILD_STATESERVER_DBSS OFF)
 endif()
 
 set (BUILD_EVENTLOGGER ON CACHE BOOL "If on, Event Logger will be built into binary")

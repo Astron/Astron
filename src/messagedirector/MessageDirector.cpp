@@ -88,30 +88,41 @@ void MessageDirector::init_network()
 void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 {
 	m_log.spam() << "Processing datagram...." << std::endl;
+
+	uint8_t channels = 0;
 	DatagramIterator dgi(dg);
-	uint8_t channels = dgi.read_uint8();
-
-	// Route messages to participants
-	auto &recieve_log = m_log.spam();
-	recieve_log << "Recievers: ";
 	std::set<MDParticipantInterface*> receiving_participants;
-	for(uint8_t i = 0; i < channels; ++i)
+	try
 	{
-		channel_t channel = dgi.read_uint64();
-		recieve_log << channel << ", ";
-		auto &subscriptions = m_channel_subscriptions[channel];
-		for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
-		{
-			receiving_participants.insert(receiving_participants.end(), *it);
-		}
+		channels = dgi.read_uint8();
 
-		auto range = boost::icl::find(m_range_subscriptions, channel);
-		if(range != m_range_subscriptions.end())
+		// Route messages to participants
+		auto &recieve_log = m_log.spam();
+		recieve_log << "Recievers: ";
+		for(uint8_t i = 0; i < channels; ++i)
 		{
-			receiving_participants.insert(range->second.begin(), range->second.end());
+			channel_t channel = dgi.read_uint64();
+			recieve_log << channel << ", ";
+			auto &subscriptions = m_channel_subscriptions[channel];
+			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
+			{
+				receiving_participants.insert(receiving_participants.end(), *it);
+			}
+
+			auto range = boost::icl::find(m_range_subscriptions, channel);
+			if(range != m_range_subscriptions.end())
+			{
+				receiving_participants.insert(range->second.begin(), range->second.end());
+			}
 		}
+		recieve_log << std::endl;
 	}
-	recieve_log << std::endl;
+	catch(DatagramIteratorEOF &e)
+	{
+		// Log error with receivers output
+		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." << std::endl;
+		return;
+	}
 
 	if(p)
 	{
@@ -127,8 +138,9 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		}
 		catch(DatagramIteratorEOF &e)
 		{
-			m_log.error() << "Detected truncated datagram in handle_datagram()"
-			              "... aborting!" << std::endl;
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
+			              " from participant '" << p->m_name << "' ." << std::endl;
 			return;
 		}
 	}

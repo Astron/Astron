@@ -7,16 +7,17 @@
 
 #include "DistributedObject.h"
 
-DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, DCClass *dclass,
-                                     uint32_t parent_id, uint32_t zone_id, DatagramIterator &dgi,
+DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, uint32_t parent_id,
+                                     uint32_t zone_id, DCClass *dclass, DatagramIterator &dgi,
                                      bool has_other) :
-	m_stateserver(stateserver), m_do_id(do_id), m_dclass(dclass), m_parent_id(INVALID_DO_ID),
-	m_zone_id(INVALID_ZONE), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
 	m_log = new LogCategory("object", name.str());
+	set_con_name(name.str());
 
 	for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
 	{
@@ -52,6 +53,25 @@ DistributedObject::DistributedObject(StateServer *stateserver, uint32_t do_id, D
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
 	handle_location_change(parent_id, zone_id, dgi.read_uint64());
+}
+
+DistributedObject::DistributedObject(StateServer *stateserver, uint64_t sender, uint32_t do_id,
+	                                 uint32_t parent_id, uint32_t zone_id, DCClass *dclass,
+		                             std::unordered_map<DCField*, std::vector<uint8_t>> required,
+		                             std::unordered_map<DCField*, std::vector<uint8_t>> ram) :
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
+	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
+{
+	std::stringstream name;
+	name << dclass->get_name() << "(" << do_id << ")";
+	m_log = new LogCategory("object", name.str());
+
+	m_required_fields = required;
+	m_ram_fields = ram;
+
+	MessageDirector::singleton.subscribe_channel(this, do_id);
+	handle_location_change(parent_id, zone_id, sender);
 }
 
 DistributedObject::~DistributedObject()
@@ -790,6 +810,13 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			break;
 		}
 		default:
-			m_log->warning() << "Received unknown message: msgtype=" << msgtype << std::endl;
+			if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX)
+			{
+				m_log->warning() << "Received unknown message of type " << msgtype << std::endl;
+			}
+			else
+			{
+				m_log->spam() << "Ignoring stateserver message of type " << msgtype << std::endl;
+			}
 	}
 }

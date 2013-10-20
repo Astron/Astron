@@ -8,16 +8,20 @@
 #include "StateServer.h"
 
 
-static ConfigVariable<channel_t> control_channel("control", 0);
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
 	channel_t channel = control_channel.get_rval(m_roleconfig);
-	MessageDirector::singleton.subscribe_channel(this, channel);
+	if(channel != INVALID_CHANNEL)
+	{
+		MessageDirector::singleton.subscribe_channel(this, channel);
 
-	std::stringstream name;
-	name << "StateServer(" << channel << ")";
-	m_log = new LogCategory("stateserver", name.str());
+		std::stringstream name;
+		name << "StateServer(" << channel << ")";
+		m_log = new LogCategory("stateserver", name.str());
+		set_con_name(name.str());
+	}
 }
 
 StateServer::~StateServer()
@@ -48,7 +52,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	DistributedObject *obj;
 	try
 	{
-		obj = new DistributedObject(this, do_id, dclass, parent_id, zone_id, dgi, has_other);
+		obj = new DistributedObject(this, do_id, parent_id, zone_id, dclass, dgi, has_other);
 	}
 	catch(std::exception &e)
 	{

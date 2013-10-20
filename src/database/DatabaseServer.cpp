@@ -31,6 +31,7 @@ class DatabaseServer : public Role
 			std::stringstream log_title;
 			log_title << "Database(" << m_control_channel << ")";
 			m_log = new LogCategory("db", log_title.str());
+			set_con_name(log_title.str());
 
 			// Check to see the engine was instantiated
 			if(!m_db_engine)

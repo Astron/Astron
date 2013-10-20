@@ -76,6 +76,8 @@ CONSTANTS = {
     'CONTROL_REMOVE_RANGE':         9003,
     'CONTROL_ADD_POST_REMOVE':      9010,
     'CONTROL_CLEAR_POST_REMOVE':    9011,
+    'CONTROL_SET_CON_NAME':         9012,
+    'CONTROL_SET_CON_URL':          9013,
 
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
@@ -126,11 +128,11 @@ CONSTANTS = {
     'STATESERVER_OBJECT_DELETE_ZONES':          2122,
     'STATESERVER_OBJECT_DELETE_CHILDREN':       2124,
     # DBSS object message-type constants
-    'DBSS_OBJECT_ACTIVATE_DEFAULTS':        2200,
-    'DBSS_OBJECT_ACTIVATE_DEFAULTS_OTHER':  2201,
-    'DBSS_OBJECT_DELETE_FIELD_DISK':        2230,
-    'DBSS_OBJECT_DELETE_FIELDS_DISK':       2231,
-    'DBSS_OBJECT_DELETE_DISK':              2232,
+    'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS':        2200,
+    'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER':  2201,
+    'DBSS_OBJECT_DELETE_FIELD_DISK':             2230,
+    'DBSS_OBJECT_DELETE_FIELDS_DISK':            2231,
+    'DBSS_OBJECT_DELETE_DISK':                   2232,
 
     # Database Server
     'DBSERVER_CREATE_OBJECT':                       3000,
@@ -250,6 +252,20 @@ class Datagram(object):
     def create_clear_post_remove(cls):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        return dg
+
+    @classmethod
+    def create_set_con_name(cls, name):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_SET_CON_NAME)
+        dg.add_string(name)
+        return dg
+
+    @classmethod
+    def create_set_con_url(cls, name):
+        dg = cls.create_control()
+        dg.add_uint16(CONTROL_SET_CON_URL)
+        dg.add_string(name)
         return dg
 
 class DatagramIterator(object):
