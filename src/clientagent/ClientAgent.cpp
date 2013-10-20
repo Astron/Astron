@@ -274,46 +274,49 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		resp.add_uint32(do_id);
 		resp.add_data(dgi.read_remainder());
 		network_send(resp);
+
+		Interest *i = lookup_interest(parent, zone);
+		if(i && i->is_ready(m_dist_objs))
+		{
+			Datagram resp;
+			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+			resp.add_uint16(i->id);
+			resp.add_uint32(i->context);
+			network_send(resp);
+		}
 	}
 	break;
-    case 0://STATESERVER_OBJECT_GET_ZONES_OBJECTS_DONE:
+    case STATESERVER_OBJECT_GET_ZONES_COUNT_RESP:
 	{
-		uint32_t parent = dgi.read_uint32();
-		uint16_t n_zones = dgi.read_uint16();
-		std::vector<uint32_t> zones(0);
-		zones.reserve(n_zones);
-		for(uint16_t i = 0; i < n_zones; ++i)
+		uint32_t context = dgi.read_uint32();
+		uint32_t count = dgi.read_uint32();
+
+		if(m_interests.find(context) == m_interests.end())
 		{
-			zones.insert(zones.end(), dgi.read_uint32());
+			m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
+			               << context << std::endl;
+			return;
 		}
-		for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+
+		Interest &i = m_interests[context];
+
+		if(i.has_total)
 		{
-			Interest &i = it->second;
-			if(!i.is_ready())
-			{
-				for(auto it2 = i.zones.begin();  it2 != i.zones.end(); ++it2)
-				{
-					if(!it2->second)
-					{
-						for(auto it3 = zones.begin(); it3 != zones.end(); ++it3)
-						{
-							if(it2->first == *it3)
-							{
-								it2->second = true;
-								break;
-							}
-						}
-					}
-				}
-				if(i.is_ready())
-				{
-					Datagram resp;
-					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-					resp.add_uint16(it->first);
-					resp.add_uint32(i.context);
-					network_send(resp);
-				}
-			}
+			m_log->error() << "Received duplicate zone count reply on interest "
+			               << context << std::endl;
+			return;
+		}
+
+		i.total = count;
+		i.has_total = true;
+
+		if(i.is_ready(m_dist_objs))
+		{
+			Datagram resp;
+			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+			resp.add_uint16(i.id);
+			resp.add_uint32(i.context);
+			network_send(resp);
 		}
 	}
 	break;
@@ -330,7 +333,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			Interest &i = it->second;
 			for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
 			{
-				if(it2->first == n_zone)
+				if(*it2 == n_zone)
 				{
 					disable = false;
 					break;
@@ -438,6 +441,18 @@ DCClass *Client::lookup_object(uint32_t do_id)
 	return NULL;
 }
 
+Interest *Client::lookup_interest(uint32_t parent_id, uint32_t zone_id)
+{
+	for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+	{
+		if(parent_id == it->second.parent && (it->second.zones.find(zone_id) != it->second.zones.end()))
+		{
+			return &it->second;
+		}
+	}
+	return NULL;
+}
+
 //Only handles one message type, so it does not need to be split up.
 void Client::handle_pre_hello(DatagramIterator &dgi)
 {
@@ -535,7 +550,7 @@ std::list<uint32_t> Client::add_interest(Interest &i)
 	std::list<uint32_t> new_zones;
 	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 	{
-		new_zones.insert(new_zones.end(), it->first);
+		new_zones.insert(new_zones.end(), *it);
 	}
 	for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
 	{
@@ -545,17 +560,17 @@ std::list<uint32_t> Client::add_interest(Interest &i)
 		}
 		for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
 		{
-			new_zones.remove(it2->first);
+			new_zones.remove(*it2);
 		}
 	}
 	return new_zones;
 }
 
-void Client::request_zone_objects(uint32_t parent, std::list<uint32_t> new_zones)
+void Client::request_zone_objects(uint32_t context, uint32_t parent, std::list<uint32_t> new_zones)
 {
 	Datagram resp;
 	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-	resp.add_uint32(parent);
+	resp.add_uint32(context);
 	resp.add_uint16(new_zones.size());
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{
@@ -571,7 +586,7 @@ void Client::remove_interest(Interest &i, uint32_t id)
 	removed_zones.reserve(i.zones.size());
 	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 	{
-		uint32_t zone = it->first;
+		uint32_t zone = *it;
 		bool found = false;
 		for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
 		{
@@ -581,7 +596,7 @@ void Client::remove_interest(Interest &i, uint32_t id)
 			}
 			for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
 			{
-				if(it3->first == zone)
+				if(*it3 == zone)
 				{
 					found = true;
 					break;
@@ -640,7 +655,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		remove_interest(other, id);
 		std::list<uint32_t> new_zones = add_interest(i);
 		m_interests[id] = i;
-		request_zone_objects(i.parent, new_zones);
+		request_zone_objects(id, i.parent, new_zones);
 		return;
 	}
 	std::list<uint32_t> new_zones;
@@ -649,7 +664,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		bool found = false;
 		for(auto it2 = other.zones.begin(); it2 != other.zones.end(); ++it2)
 		{
-			if(it->first == it2->first)
+			if(*it == *it2)
 			{
 				found = true;
 				break;
@@ -657,7 +672,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		}
 		if(!found)
 		{
-			new_zones.insert(new_zones.end(), it->first);
+			new_zones.insert(new_zones.end(), *it);
 		}
 	}
 
@@ -668,7 +683,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		bool found = false;
 		for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
 		{
-			if(it2->first == it->first)
+			if(*it2 == *it)
 			{
 				found = true;
 				break;
@@ -676,7 +691,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 		}
 		if(!found)
 		{
-			removed_zones.insert(removed_zones.end(), it->first);
+			removed_zones.insert(removed_zones.end(), *it);
 		}
 	}
 
@@ -685,22 +700,11 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	temp.context = i.context;
 	for(auto it = removed_zones.begin(); it != removed_zones.end(); ++it)
 	{
-		temp.zones.insert(temp.zones.end(), std::pair<uint32_t, bool>(*it, false));
+		temp.zones.insert(temp.zones.end(), *it);
 	}
 	remove_interest(temp, id);
 
-	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-	{
-		for(auto it2 = other.zones.begin(); it2 != other.zones.end(); ++it2)
-		{
-			if(it->first == it2->first)
-			{
-				it->second = it2->second;
-				break;
-			}
-		}
-	}
-	if(i.is_ready())
+	if(i.is_ready(m_dist_objs))
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
@@ -713,7 +717,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	// the response may come back instantly.
 	if(!new_zones.empty())
 	{
-		request_zone_objects(i.parent, new_zones);
+		request_zone_objects(id, i.parent, new_zones);
 	}
 }
 
@@ -827,6 +831,7 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 	uint32_t context = dgi.read_uint32();
 	uint32_t parent = dgi.read_uint32();
 	Interest i;
+	i.id = interest_id;
 	i.context = context;
 	i.parent = parent;
 
@@ -834,7 +839,7 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 	while(dgi.get_remaining())
 	{
 		uint32_t zone = dgi.read_uint32();
-		i.zones.insert(i.zones.end(), std::pair<uint32_t, bool>(zone, false));
+		i.zones.insert(i.zones.end(), zone);
 	}
 
 	if(m_interests.find(interest_id) != m_interests.end())
@@ -847,7 +852,7 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 
 	if(!new_zones.empty())
 	{
-		request_zone_objects(i.parent, new_zones);
+		request_zone_objects(interest_id, i.parent, new_zones);
 	}
 	else
 	{

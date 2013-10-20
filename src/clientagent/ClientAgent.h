@@ -12,29 +12,6 @@ enum ClientState
 };
 
 class ChannelTracker;
-struct Interest
-{
-	uint32_t parent;
-	std::vector<std::pair<uint32_t, bool>> zones; //bool = readiness state
-	uint32_t context;
-
-	Interest() : parent(0),
-		zones(0), context(0)
-	{
-	}
-
-	bool is_ready()
-	{
-		for(auto it = zones.begin(); it != zones.end(); ++it)
-		{
-			if(!it->second)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-};
 
 struct DistributedObject
 {
@@ -42,6 +19,41 @@ struct DistributedObject
 	uint32_t parent;
 	uint32_t zone;
 	DCClass *dcc;
+};
+
+struct Interest
+{
+	uint16_t id;
+	uint32_t parent;
+	std::unordered_set<uint32_t> zones;
+	uint32_t context;
+	bool has_total;
+	uint32_t total;
+
+	Interest() : id(0), parent(0), zones(0), context(0), has_total(false), total(0)
+	{
+	}
+
+	bool is_ready(const std::unordered_map<uint32_t, DistributedObject> &dist_objs)
+	{
+		if(!has_total)
+		{
+			return false;
+		}
+
+		uint32_t count = 0;
+		for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+		{
+			const DistributedObject &distobj = it->second;
+			if(distobj.parent == parent &&
+			   (zones.find(distobj.zone) != zones.end()))
+			{
+				count++;
+			}
+		}
+
+		return count == total;
+	}
 };
 
 class Client : public NetworkClient, public MDParticipantInterface
@@ -69,11 +81,12 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual void handle_pre_auth(DatagramIterator &dgi);
 		virtual void handle_authenticated(DatagramIterator &dgi);
 		DCClass *lookup_object(uint32_t do_id);
+		Interest *lookup_interest(uint32_t parent_id, uint32_t zone_id);
 	private:
 		std::list<uint32_t> add_interest(Interest &i);
 		void remove_interest(Interest &i, uint32_t id);
 		void alter_interest(Interest &i, uint16_t id);
-		void request_zone_objects(uint32_t parent, std::list<uint32_t> new_zones);
+		void request_zone_objects(uint32_t context, uint32_t parent, std::list<uint32_t> new_zones);
 		bool handle_client_object_update_field(DatagramIterator &dgi);
 		bool handle_client_object_location(DatagramIterator &dgi);
 		bool handle_client_add_interest(DatagramIterator &dgi);
