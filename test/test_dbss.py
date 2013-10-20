@@ -433,11 +433,13 @@ class TestStateServer(unittest.TestCase):
         self.database.flush()
         self.shard.flush()
 
-        probe_context = 0
+        self.probe_context = 0
         def probe(doid):
+            self.probe_context += 1
+
             # Try a query all on the id
             dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_ALL)
-            dg.add_uint32(++probe_context) # Context
+            dg.add_uint32(self.probe_context) # Context
             dg.add_uint32(doid)
             self.shard.send(dg)
 
