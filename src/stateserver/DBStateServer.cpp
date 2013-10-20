@@ -217,8 +217,11 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				uint32_t db_context = m_next_context++;
 
 				// Prepare reponse datagram
-				/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
-					                                      STATESERVER_OBJECT_GET_FIELD_RESP));//->first;
+				if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
+				{
+					m_context_datagrams[db_context].add_server_header(sender, r_do_id,
+						STATESERVER_OBJECT_GET_FIELD_RESP);
+				}
 
 				m_context_datagrams[db_context].add_uint32(r_context);
 
@@ -330,8 +333,11 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				uint32_t db_context = m_next_context++;
 
 				// Prepare reponse datagram
-				/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
-					                                      STATESERVER_OBJECT_GET_FIELDS_RESP));//->first;
+				if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
+				{
+					m_context_datagrams[db_context].add_server_header(sender, r_do_id,
+						STATESERVER_OBJECT_GET_FIELDS_RESP);
+				}
 				m_context_datagrams[db_context].add_uint32(r_context);
 				m_context_datagrams[db_context].add_uint8(true);
 				m_context_datagrams[db_context].add_uint16(ram_fields.size() + db_fields.size());
@@ -430,8 +436,11 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Get context for db query, and remember caller with it
 			uint32_t db_context = m_next_context++;
 
-			/*bool ok = */m_context_datagrams.emplace(db_context, Datagram(sender, r_do_id,
-					                                  STATESERVER_OBJECT_GET_ALL_RESP));//->first;
+			if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
+			{
+				m_context_datagrams[db_context].add_server_header(sender, r_do_id, 
+					STATESERVER_OBJECT_GET_ALL_RESP);
+			}
 
 			m_context_datagrams[db_context].add_uint32(r_context);
 			m_context_datagrams[db_context].add_uint32(r_do_id);

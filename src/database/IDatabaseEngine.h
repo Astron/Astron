@@ -2,6 +2,7 @@
 #include "core/config.h"
 #include "dcparser/dcField.h"
 #include <vector>
+#include <cstdint>
 
 
 struct DatabaseObject

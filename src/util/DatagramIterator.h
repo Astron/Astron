@@ -28,11 +28,6 @@ class DatagramIterator
 				std::stringstream error;
 				error << "dgi tried to read past dg end, offset+length(" << m_offset + length << ")"
 				      << " buf_size(" << m_dg.size() << ")" << std::endl;
-#ifdef _DEBUG
-				std::fstream test("test", std::ios_base::out | std::ios_base::binary);
-				test.write(m_dg.get_data(), m_dg.get_buf_end());
-				test.close();
-#endif
 				throw DatagramIteratorEOF(error.str());
 			};
 		}

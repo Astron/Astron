@@ -5,7 +5,7 @@
 LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
                              uint32_t parent_id, uint32_t zone_id) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-	m_context(stateserver->m_next_context++)
+	m_context(stateserver->m_next_context++), m_dclass(NULL)
 {
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
