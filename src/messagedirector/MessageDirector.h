@@ -170,12 +170,12 @@ class MDParticipantInterface
 		}
 		inline void add_post_remove(const std::string &post)
 		{
-			logger().debug() << "MDParticipant '" << m_name << "' added post remove: " << post << std::endl;
+			logger().debug() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(post);
 		}
 		inline void clear_post_removes()
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' cleared post removes " << std::endl;
+			logger().spam() << "MDParticipant '" << m_name << "' cleared post removes." << std::endl;
 			m_post_removes.clear();
 		}
 		inline void set_con_name(const std::string &name)
