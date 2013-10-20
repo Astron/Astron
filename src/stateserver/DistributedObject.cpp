@@ -613,8 +613,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_log->warning() << "Received changing location from " << child_id
 				                 << " for " << r_do_id << ", but my id is " << m_do_id << std::endl;
-				break;
 			}
+
+			break;
 		}
 		case STATESERVER_OBJECT_SET_LOCATION:
 		{
