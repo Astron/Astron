@@ -275,15 +275,21 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		resp.add_data(dgi.read_remainder());
 		network_send(resp);
 
-		Interest *i = lookup_interest(parent, zone);
-		if(i && i->is_ready(m_dist_objs) && !i->has_announced)
+		std::list<Interest> interests = lookup_interests(parent, zone);
+		for(auto it = interests.begin(); it != interests.end(); ++it)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-			resp.add_uint16(i->id);
-			resp.add_uint32(i->context);
-			network_send(resp);
-			i->has_announced = true;
+			if(!it->has_announced)
+			{
+				if(it->is_ready(m_dist_objs))
+				{
+					Datagram resp;
+					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+					resp.add_uint16(it->id);
+					resp.add_uint32(it->context);
+					network_send(resp);
+					it->has_announced = true;
+				}
+			}
 		}
 	}
 	break;
@@ -311,7 +317,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		i.total = count;
 		i.has_total = true;
 
-		if(i.is_ready(m_dist_objs) && !i.has_announced)
+		if(!i.has_announced && i.is_ready(m_dist_objs))
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
@@ -443,16 +449,17 @@ DCClass *Client::lookup_object(uint32_t do_id)
 	return NULL;
 }
 
-Interest *Client::lookup_interest(uint32_t parent_id, uint32_t zone_id)
+std::list<Interest> Client::lookup_interests(uint32_t parent_id, uint32_t zone_id)
 {
+	std::list<Interest> interests;
 	for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
 	{
 		if(parent_id == it->second.parent && (it->second.zones.find(zone_id) != it->second.zones.end()))
 		{
-			return &it->second;
+			interests.push_back(it->second);
 		}
 	}
-	return NULL;
+	return interests;
 }
 
 //Only handles one message type, so it does not need to be split up.
@@ -706,7 +713,7 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	}
 	remove_interest(temp, id);
 
-	if(i.is_ready(m_dist_objs) && !i.has_announced)
+	if(!i.has_announced && i.is_ready(m_dist_objs))
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);

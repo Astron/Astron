@@ -990,12 +990,19 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # CA asks for objects...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1235)
-        dg.add_uint16(2)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
-        self.assertTrue(self.server.expect(dg))
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
+
+        # There is one object:
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(1)
+        self.server.send(dg)
 
         # Let's give 'em one...
         dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
@@ -1016,14 +1023,6 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(client.expect(dg))
 
-        # Nothing else!
-        dg = Datagram.create([id], 1235, 0) # TODO
-        dg.add_uint32(1235)
-        dg.add_uint16(2)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
-        self.server.send(dg)
-
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
@@ -1043,17 +1042,18 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The CA should ask for JUST the difference...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1235)
-        dg.add_uint16(1)
-        dg.add_uint32(5555)
-        self.assertTrue(self.server.expect(dg))
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_uint32(), 5555)
 
         # We'll pretend 1235,5555 is empty, so:
-        dg = Datagram.create([id], 1235, 0) # TODO
-        dg.add_uint32(1235)
-        dg.add_uint16(1)
-        dg.add_uint32(5555)
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(0)
         self.server.send(dg)
 
         # And the CA should tell the client the handle/context operation is done:
@@ -1075,26 +1075,26 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The CA should ask for stuff in 8888...
-        dg = Datagram.create([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1235)
-        dg.add_uint16(1)
-        dg.add_uint32(8888)
-        self.assertTrue(self.server.expect(dg))
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_uint32(), 8888)
 
         # We'll pretend there's something in there this time:
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(1)
+        self.server.send(dg)
+
         dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_uint32(1235) # parent_id
         dg.add_uint32(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(23239) # do_id
         dg.add_uint32(31416) # setRequired1
-        self.server.send(dg)
-
-        # End of query...
-        dg = Datagram.create([id], 1235, 0) # TODO
-        dg.add_uint32(1235)
-        dg.add_uint16(1)
-        dg.add_uint32(8888)
         self.server.send(dg)
 
         # Now, the CA should say two things (not necessarily in order):
@@ -1133,17 +1133,18 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The query goes out to the SS...
-        dg = Datagram.create([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(1234)
-        dg.add_uint16(1)
-        dg.add_uint32(1111)
-        self.assertTrue(self.server.expect(dg))
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_uint32(), 1111)
 
         # We'll pretend 1234,1111 is empty, so:
-        dg = Datagram.create([id], 1234, 0) # TODO
-        dg.add_uint32(1234)
-        dg.add_uint16(1)
-        dg.add_uint32(1111)
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_uint32(0)
         self.server.send(dg)
 
         # Now the CA destroys object 23239...

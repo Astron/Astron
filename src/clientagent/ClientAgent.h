@@ -31,7 +31,8 @@ struct Interest
 	uint32_t total;
 	bool has_announced;
 
-	Interest() : id(0), parent(0), zones(0), context(0), has_total(false), total(0)
+	Interest() : id(0), parent(0), zones(0), context(0), has_total(false),
+	             total(0), has_announced(false)
 	{
 	}
 
@@ -53,7 +54,7 @@ struct Interest
 			}
 		}
 
-		return count == total;
+		return count >= total;
 	}
 };
 
@@ -82,7 +83,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual void handle_pre_auth(DatagramIterator &dgi);
 		virtual void handle_authenticated(DatagramIterator &dgi);
 		DCClass *lookup_object(uint32_t do_id);
-		Interest *lookup_interest(uint32_t parent_id, uint32_t zone_id);
+		std::list<Interest> lookup_interests(uint32_t parent_id, uint32_t zone_id);
 	private:
 		std::list<uint32_t> add_interest(Interest &i);
 		void remove_interest(Interest &i, uint32_t id);
