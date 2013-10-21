@@ -80,6 +80,7 @@ Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfi
 	}
 	m_allocated_channel = m_channel;
 	subscribe_channel(m_channel);
+	subscribe_channel(BCHAN_CLIENTS);
 	std::stringstream ss;
 	ss << "Client (" << socket->remote_endpoint().address().to_string() << ":"
 		<< socket->remote_endpoint().port() << ")";
