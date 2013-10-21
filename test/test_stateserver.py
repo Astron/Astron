@@ -1563,24 +1563,6 @@ class TestStateServer(unittest.TestCase):
                 self.assertEquals(dgi.read_uint8(), 3)
         self.assertTrue(hasOne and hasTwo and hasThree)
 
-        '''
-        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(1) # Context
-        appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
-        dg.add_uint32(55) # setX
-        dg.add_uint32(66) # setY
-        dg.add_uint32(999999) # setUnrelated
-        dg.add_uint32(77) # setZ
-        dg.add_uint16(3) # 3 extra fields:
-        dg.add_uint16(setOne)
-        dg.add_uint8(1)
-        dg.add_uint16(setTwo)
-        dg.add_uint8(2)
-        dg.add_uint16(setThree)
-        dg.add_uint8(3)
-        self.assertTrue(conn.expect(dg))
-        '''
-
 
 
         ### Test for GetFields on mixed molecular and atomic fields ### (continues from previous)
@@ -1691,6 +1673,81 @@ class TestStateServer(unittest.TestCase):
         for doid in (doid0, doid1, doid2, doid3, doid4, doid5, doid6):
             deleteObject(conn, 5, doid)
         self.disconnect(conn)
+
+    # Tests the OBJECT_DELETE_CHILDREN message and propogation of delete ram
+    def test_delete_children(self):
+        self.flush_failed()
+        conn = self.connect(5)
+
+        doid0 = 101100 # Root object
+        doid1 = 202200
+        doid2 = 203300
+
+        children0 = self.connect(PARENT_PREFIX|doid0)
+        location1 = self.connect(doid0<<32|710)
+        location20 = self.connect(doid0<<32|720)
+        location21 = self.connect(doid1<<32|720)
+
+        ### Test for ObjectDeleteChildren ###
+        # Create an object tree
+        createEmptyDTO1(conn, 5, doid0)
+        createEmptyDTO1(conn, 5, doid1, doid0, 710)
+        createEmptyDTO1(conn, 5, doid2, doid0, 720)
+
+        # Ignore entry broadcasts
+        location1.flush()
+        location20.flush()
+
+        # Send delete children
+        dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
+        dg.add_uint32(doid0)
+        conn.send(dg)
+
+        # Expect children to receive delete children...
+        dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
+        dg.add_uint32(doid0)
+        children0.expect(dg)
+        # ... and then broadcast their own deletion
+        dg = Datagram.create([doid0<<32|710], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid1)
+        location1.expect(dg)
+        dg = Datagram.create([doid0<<32|720], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid2)
+        location20.expect(dg)
+
+
+
+        ### Test for DeleteRam propogation to children ###
+        # Add our children in multi-tier tree
+        createEmptyDTO1(conn, 5, doid1, doid0, 710)
+        createEmptyDTO1(conn, 5, doid2, doid1, 720)
+
+        # Ignore entry broadcasts
+        location1.flush()
+        location21.flush()
+
+        # Delete the root object
+        dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid0)
+        conn.send(dg)
+
+        # Expect the first object to receive delete children from object zero...
+        dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
+        dg.add_uint32(doid0)
+        children0.expect(dg)
+        # ... and delete itself...
+        dg = Datagram.create([doid0<<32|710], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid1)
+        location1.expect(dg)
+        # ... and propogate the deletion to its child...
+        dg = Datagram.create([doid1<<32|720], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_uint32(doid2)
+        location21.expect(dg)
+
+
+        ### Cleanup ###
+        for mdconn in [conn, children0, location1, location20, location21]:
+            self.disconnect(mdconn)
 
 if __name__ == '__main__':
     unittest.main()
