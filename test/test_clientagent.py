@@ -573,8 +573,8 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1234:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(1)
         dg.add_uint32(2)
+        dg.add_uint16(1)
         dg.add_uint32(1234)
         dg.add_uint32(5555) # Zone 1
         dg.add_uint32(4444) # Zone 2
@@ -645,8 +645,8 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(1)
         dg.add_uint32(2)
+        dg.add_uint16(1)
         self.assertTrue(client.expect(dg))
 
         # One of the objects broadcasts!
@@ -711,8 +711,8 @@ class TestClientAgent(unittest.TestCase):
         # Now, kill the interest!
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint16(1)
         dg.add_uint32(55)
+        dg.add_uint16(1)
         client.send(dg)
 
         # The remaining seen object should die...
@@ -724,8 +724,8 @@ class TestClientAgent(unittest.TestCase):
         # The server should say it's done being interesting...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(1)
         dg.add_uint32(55)
+        dg.add_uint16(1)
         self.assertTrue(client.expect(dg))
 
         # And NOTHING ELSE:
@@ -746,8 +746,8 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on a zone:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         dg.add_uint32(1235)
         dg.add_uint32(111111) # Zone 1
         client.send(dg)
@@ -796,8 +796,8 @@ class TestClientAgent(unittest.TestCase):
         # And the client's interest op is done:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Now let's nuke it from orbit!
@@ -862,8 +862,8 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1235:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         dg.add_uint32(1235)
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
@@ -908,15 +908,15 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Now, open a second, overlapping interest:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(7)
         dg.add_uint32(8)
+        dg.add_uint16(7)
         dg.add_uint32(1235)
         dg.add_uint32(2222) # Zone 2 from interest above.
         client.send(dg)
@@ -927,22 +927,22 @@ class TestClientAgent(unittest.TestCase):
         # And it tells the client that the interest is open:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(7)
         dg.add_uint32(8)
+        dg.add_uint16(7)
         self.assertTrue(client.expect(dg))
 
         # Now, the client asks to kill the first interest...
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(88)
+        dg.add_uint16(5)
         client.send(dg)
 
         # And only the interest dies...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(88)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # ...with no activity happening on the server.
@@ -951,8 +951,8 @@ class TestClientAgent(unittest.TestCase):
         # But if we kill the SECOND interest...
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint16(7)
         dg.add_uint32(99)
+        dg.add_uint16(7)
         client.send(dg)
 
         # ...the object dies...
@@ -964,8 +964,8 @@ class TestClientAgent(unittest.TestCase):
         # ...the operation completes...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(7)
         dg.add_uint32(99)
+        dg.add_uint16(7)
         self.assertTrue(client.expect(dg))
 
         # ...but still nothing on the server:
@@ -985,8 +985,8 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1235:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         dg.add_uint32(1235)
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
@@ -1030,15 +1030,15 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(6)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Now the client alters the interest to add a third zone:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(9)
+        dg.add_uint16(5)
         dg.add_uint32(1235)
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
@@ -1064,15 +1064,15 @@ class TestClientAgent(unittest.TestCase):
         # And the CA should tell the client the handle/context operation is done:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(9)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Now let's alter to add another zone, but remove 2222:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(10)
+        dg.add_uint16(5)
         dg.add_uint32(1235)
         dg.add_uint32(5555) # zones requested out of their original order,
         dg.add_uint32(1111) # because ordering is for suckers
@@ -1125,15 +1125,15 @@ class TestClientAgent(unittest.TestCase):
         # And the CA should tell the client the handle/context operation is finished:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(10)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Now let's alter the interest to a different parent entirely:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint16(5)
         dg.add_uint32(119)
+        dg.add_uint16(5)
         dg.add_uint32(1234)
         dg.add_uint32(1111)
         client.send(dg)
@@ -1163,8 +1163,8 @@ class TestClientAgent(unittest.TestCase):
         # Interest operation finished:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint16(5)
         dg.add_uint32(119)
+        dg.add_uint16(5)
         self.assertTrue(client.expect(dg))
 
         # Cave Johnson, we're done here.

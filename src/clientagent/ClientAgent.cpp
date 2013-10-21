@@ -284,8 +284,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 				{
 					Datagram resp;
 					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-					resp.add_uint16(it->id);
 					resp.add_uint32(it->context);
+					resp.add_uint16(it->id);
 					network_send(resp);
 					it->has_announced = true;
 				}
@@ -321,8 +321,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-			resp.add_uint16(i.id);
 			resp.add_uint32(i.context);
+			resp.add_uint16(i.id);
 			network_send(resp);
 			i.has_announced = true;
 		}
@@ -718,8 +718,8 @@ void Client::alter_interest(Interest &i, uint16_t id)
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint16(id);
 		resp.add_uint32(i.context);
+		resp.add_uint16(id);
 		network_send(resp);
 		i.has_announced = true;
 	}
@@ -838,8 +838,8 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 
 bool Client::handle_client_add_interest(DatagramIterator &dgi)
 {
-	uint16_t interest_id = dgi.read_uint16();
 	uint32_t context = dgi.read_uint32();
+	uint16_t interest_id = dgi.read_uint16();
 	uint32_t parent = dgi.read_uint32();
 	Interest i;
 	i.id = interest_id;
@@ -869,8 +869,8 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint16(interest_id);
 		resp.add_uint32(context);
+		resp.add_uint16(interest_id);
 		network_send(resp);
 	}
 	return false;
@@ -878,12 +878,8 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 
 bool Client::handle_client_remove_interest(DatagramIterator &dgi)
 {
+	uint32_t context = dgi.read_uint32();
 	uint16_t id = dgi.read_uint16();
-	uint32_t context = 0;
-	if(dgi.get_remaining())
-	{
-		context = dgi.read_uint32();
-	}
 	if(m_interests.find(id) == m_interests.end())
 	{
 		send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest", true);
@@ -897,8 +893,8 @@ bool Client::handle_client_remove_interest(DatagramIterator &dgi)
 	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint16(id);
 		resp.add_uint32(context);
+		resp.add_uint16(id);
 		network_send(resp);
 	}
 	return false;
