@@ -9,6 +9,7 @@
 #include "util/Role.h"
 #include "core/RoleFactory.h"
 #include "util/Datagram.h"
+#include "util/EventSender.h"
 
 #include <queue>
 #include <set>
@@ -85,6 +86,16 @@ Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfi
 	ss << "Client (" << socket->remote_endpoint().address().to_string() << ":"
 		<< socket->remote_endpoint().port() << ")";
 	m_log = new LogCategory("client", ss.str());
+
+	std::list<std::string> event;
+	event.push_back("client-connected");
+	ss.str("");
+	ss << socket->remote_endpoint().address().to_string() << ":" << socket->remote_endpoint().port();
+	event.push_back(ss.str());
+	ss.str("");
+	ss << socket->local_endpoint().address().to_string() << ":" << socket->local_endpoint().port();
+	event.push_back(ss.str());
+	send_event(event);
 }
 
 Client::~Client()
@@ -407,6 +418,22 @@ void Client::network_datagram(Datagram &dg)
 	}
 }
 
+void Client::send_event(const std::list<std::string> &event)
+{
+	Datagram dg;
+
+	std::stringstream ss;
+	ss << "Client:" << m_allocated_channel;
+	dg.add_string(ss.str());
+
+	for(auto it = event.begin(); it != event.end(); ++it)
+	{
+		dg.add_string(*it);
+	}
+
+	g_eventsender.send(dg);
+}
+
 void Client::send_disconnect(uint16_t reason, const std::string &error_string, bool security)
 {
 	if(is_connected())
@@ -414,6 +441,12 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 		(security ? m_log->security() : m_log->error())
 				<< "Terminating client connection (" << reason << "): "
 				<< error_string << std::endl;
+
+		std::list<std::string> event;
+		event.push_back(security ? "client-eject-security" : "client-eject");
+		event.push_back(std::to_string(reason));
+		event.push_back(error_string);
+		send_event(event);
 
 		Datagram resp;
 		resp.add_uint16(CLIENT_EJECT);

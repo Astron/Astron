@@ -99,6 +99,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual ~Client();
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi);
 	protected:
+		void send_event(const std::list<std::string> &event);
 		void send_disconnect(uint16_t reason, const std::string &error_string, bool security=false);
 		virtual void handle_pre_hello(DatagramIterator &dgi);
 		virtual void handle_pre_auth(DatagramIterator &dgi);
