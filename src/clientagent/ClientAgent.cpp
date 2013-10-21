@@ -68,10 +68,9 @@ std::map<uint32_t, Uberdog> uberdogs;
 
 Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 	ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
-		m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
+		m_roleconfig(roleconfig), m_ct(ct), m_channel(0), m_allocated_channel(0),
 		m_is_channel_allocated(true), m_next_context(0), m_owned_objects(),
-		m_seen_objects(), m_allocated_channel(0), m_interests(),
-		m_pending_interests()
+		m_seen_objects(), m_interests(), m_pending_interests()
 {
 	m_channel = m_ct->alloc_channel();
 	if(!m_channel)
@@ -330,8 +329,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		uint32_t do_id = dgi.read_uint32();
 		uint32_t n_parent = dgi.read_uint32();
 		uint32_t n_zone = dgi.read_uint32();
-		uint32_t o_parent = dgi.read_uint32();
-		uint32_t o_zone = dgi.read_uint32();
+		dgi.read_uint32(); // Old parent; we don't care about this.
+		dgi.read_uint32(); // Old zone; we don't care about this.
 		bool disable = true;
 		for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
 		{
