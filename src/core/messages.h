@@ -7,6 +7,9 @@ typedef uint64_t channel_t;
 // Channel constants
 #define INVALID_CHANNEL 0
 #define CONTROL_MESSAGE 1
+#define BCHAN_CLIENTS 10
+#define BCHAN_STATESERVERS 12
+#define BCHAN_DBSERVERS 13
 #define PARENT_PREFIX ((channel_t)(1) << 32)
 
 // DO ID Constants
