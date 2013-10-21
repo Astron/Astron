@@ -298,14 +298,14 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 
 }
 
-void DistributedObject::annihilate(channel_t sender)
+void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 {
 	std::set<channel_t> targets;
 	if(m_parent_id)
 	{
 		targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
 		// Leave parent on explicit delete ram
-		if(m_parent_id != sender)
+		if(notify_parent)
 		{
 			Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
 			dg.add_uint32(m_do_id);
@@ -328,9 +328,22 @@ void DistributedObject::annihilate(channel_t sender)
 	dg.add_uint32(m_do_id);
 	send(dg);
 
+	delete_children(sender);
+
 	m_stateserver->m_objs.erase(m_do_id);
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
+}
+
+void DistributedObject::delete_children(channel_t sender)
+{
+	if(m_child_count)
+	{
+		Datagram dg(PARENT2CHILDREN(m_do_id), sender,
+	                STATESERVER_OBJECT_DELETE_CHILDREN);
+		dg.add_uint32(m_do_id);
+		send(dg);
+	}
 }
 
 void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
@@ -494,6 +507,19 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
+		case STATESERVER_OBJECT_DELETE_CHILDREN:
+		{
+			uint32_t r_do_id = dgi.read_uint32();
+			if(r_do_id == m_do_id)
+			{
+				delete_children(sender);
+			}
+			else if(r_do_id == m_parent_id)
+			{
+				annihilate(sender, false);
+			}
+			break;
+		}
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			if(m_do_id != dgi.read_uint32())
@@ -613,8 +639,9 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_log->warning() << "Received changing location from " << child_id
 				                 << " for " << r_do_id << ", but my id is " << m_do_id << std::endl;
-				break;
 			}
+
+			break;
 		}
 		case STATESERVER_OBJECT_SET_LOCATION:
 		{
