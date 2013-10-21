@@ -589,6 +589,12 @@ void Client::close_zones(uint32_t parent, const std::unordered_set<uint32_t> &ki
 	{
 		m_dist_objs.erase(*it);
 	}
+
+	// Close all of the channels:
+	for(auto it = killed_zones.begin(); it != killed_zones.end(); ++it)
+	{
+		unsubscribe_channel(LOCATION2CHANNEL(parent, *it));
+	}
 }
 
 void Client::add_interest(Interest &i, uint32_t context)
