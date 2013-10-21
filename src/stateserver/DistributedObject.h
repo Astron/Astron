@@ -69,6 +69,7 @@ class DistributedObject : public MDParticipantInterface
 		void handle_ai_change(channel_t new_ai, channel_t sender, bool channel_is_explicit);
 
 		void annihilate(channel_t sender);
+		void delete_children();
 
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);
