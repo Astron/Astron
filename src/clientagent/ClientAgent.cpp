@@ -36,7 +36,6 @@ class ChannelTracker
 
 		channel_t alloc_channel()
 		{
-			channel_t ret;
 			if(m_next <= m_max)
 			{
 				return m_next++;
@@ -45,8 +44,9 @@ class ChannelTracker
 			{
 				if(!m_unused_channels.empty())
 				{
-					ret = m_unused_channels.front();
+					channel_t c = m_unused_channels.front();
 					m_unused_channels.pop();
+					return c;
 				}
 			}
 			return 0;
@@ -69,8 +69,9 @@ std::map<uint32_t, Uberdog> uberdogs;
 Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 	ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
 		m_roleconfig(roleconfig), m_ct(ct), m_channel(0),
-		m_is_channel_allocated(true), m_owned_objects(), m_seen_objects(),
-		m_allocated_channel(0), m_interests()
+		m_is_channel_allocated(true), m_next_context(0), m_owned_objects(),
+		m_seen_objects(), m_allocated_channel(0), m_interests(),
+		m_pending_interests()
 {
 	m_channel = m_ct->alloc_channel();
 	if(!m_channel)
@@ -275,21 +276,26 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		resp.add_data(dgi.read_remainder());
 		network_send(resp);
 
-		std::list<Interest> interests = lookup_interests(parent, zone);
-		for(auto it = interests.begin(); it != interests.end(); ++it)
+		// TODO: This is a tad inefficient as it checks every pending interest.
+		// In practice, there shouldn't be many add-interest operations active
+		// at once, however.
+		std::list<uint32_t> deferred_deletes;
+		for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it)
 		{
-			if(!it->has_announced)
+			if(it->second->is_ready(m_dist_objs))
 			{
-				if(it->is_ready(m_dist_objs))
-				{
-					Datagram resp;
-					resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-					resp.add_uint32(it->context);
-					resp.add_uint16(it->id);
-					network_send(resp);
-					it->has_announced = true;
-				}
+				Datagram resp;
+				resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+				resp.add_uint32(it->second->m_client_context);
+				resp.add_uint16(it->second->m_interest_id);
+				network_send(resp);
+
+				deferred_deletes.push_back(it->first);
 			}
+		}
+		for(auto it = deferred_deletes.begin(); it != deferred_deletes.end(); ++it)
+		{
+			m_pending_interests.erase(*it);
 		}
 	}
 	break;
@@ -298,33 +304,24 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		uint32_t context = dgi.read_uint32();
 		uint32_t count = dgi.read_uint32();
 
-		if(m_interests.find(context) == m_interests.end())
+		if(m_pending_interests.find(context) == m_pending_interests.end())
 		{
 			m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
 			               << context << std::endl;
 			return;
 		}
 
-		Interest &i = m_interests[context];
+		m_pending_interests[context]->store_total(count);
 
-		if(i.has_total)
-		{
-			m_log->error() << "Received duplicate zone count reply on interest "
-			               << context << std::endl;
-			return;
-		}
-
-		i.total = count;
-		i.has_total = true;
-
-		if(!i.has_announced && i.is_ready(m_dist_objs))
+		if(m_pending_interests[context]->is_ready(m_dist_objs))
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-			resp.add_uint32(i.context);
-			resp.add_uint16(i.id);
+			resp.add_uint32(m_pending_interests[context]->m_client_context);
+			resp.add_uint16(m_pending_interests[context]->m_interest_id);
 			network_send(resp);
-			i.has_announced = true;
+
+			m_pending_interests.erase(context);
 		}
 	}
 	break;
@@ -556,101 +553,35 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 	}
 }
 
-//returns new zones
-std::list<uint32_t> Client::add_interest(Interest &i)
+void Client::close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones)
 {
-	std::list<uint32_t> new_zones;
-	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-	{
-		new_zones.insert(new_zones.end(), *it);
-	}
-	for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
-	{
-		if(it->second.parent != i.parent)
-		{
-			continue;
-		}
-		for(auto it2 = it->second.zones.begin(); it2 != it->second.zones.end(); ++it2)
-		{
-			new_zones.remove(*it2);
-		}
-	}
-	return new_zones;
-}
-
-void Client::request_zone_objects(uint32_t context, uint32_t parent, std::list<uint32_t> new_zones)
-{
-	Datagram resp;
-	resp.add_server_header(parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-	resp.add_uint32(context);
-	resp.add_uint32(parent);
-	resp.add_uint16(new_zones.size());
-	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
-	{
-		resp.add_uint32(*it);
-		subscribe_channel(LOCATION2CHANNEL(parent, *it));
-	}
-	send(resp);
-}
-
-void Client::remove_interest(Interest &i, uint32_t id)
-{
-	std::vector<uint32_t> removed_zones(0);
-	removed_zones.reserve(i.zones.size());
-	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
-	{
-		uint32_t zone = *it;
-		bool found = false;
-		for(auto it2 = m_interests.begin(); it2 != m_interests.end(); ++it2)
-		{
-			if(it2->first == id || it2->second.parent != i.parent)
-			{
-				continue;
-			}
-			for(auto it3 = it2->second.zones.begin(); it3 != it2->second.zones.end(); ++it3)
-			{
-				if(*it3 == zone)
-				{
-					found = true;
-					break;
-				}
-			}
-			if(found)
-			{
-				break;
-			}
-		}
-		if(!found)
-		{
-			removed_zones.insert(removed_zones.end(), zone);
-			unsubscribe_channel(LOCATION2CHANNEL(i.parent, zone));
-		}
-	}
+	// Kill off all objects that are in the matched parent/zones:
 
 	std::list<uint32_t> to_remove;
 	for(auto it = m_dist_objs.begin(); it != m_dist_objs.end(); ++it)
 	{
-		if(it->second.parent == i.parent)
+		if(it->second.parent != parent)
 		{
-			bool found = false;
-			for(auto it2 = removed_zones.begin(); it2 != removed_zones.end(); ++it2)
-			{
-				if(it->second.zone == *it2)
-				{
-					found = true;
-					break;
-				}
-			}
-			if(found && m_owned_objects.find(it->second.id) == m_owned_objects.end())
-			{
-				Datagram resp;
-				resp.add_uint16(CLIENT_OBJECT_LEAVING);
-				resp.add_uint32(it->second.id);
-				network_send(resp);
+			// Object does not belong to the parent in question; ignore.
+			continue;
+		}
 
-				m_seen_objects.erase(it->second.id);
-				to_remove.push_back(it->second.id);
+		if(killed_zones.find(it->second.zone) != killed_zones.end())
+		{
+			if(m_owned_objects.find(it->second.id) != m_owned_objects.end())
+			{
+				// Owned objects are always zone-visible. I think.
+				// TODO: Is this assumption correct?
+				continue;
 			}
+
+			Datagram resp;
+			resp.add_uint16(CLIENT_OBJECT_LEAVING);
+			resp.add_uint32(it->second.id);
+			network_send(resp);
+
+			m_seen_objects.erase(it->second.id);
+			to_remove.push_back(it->second.id);
 		}
 	}
 
@@ -660,79 +591,105 @@ void Client::remove_interest(Interest &i, uint32_t id)
 	}
 }
 
-void Client::alter_interest(Interest &i, uint16_t id)
+void Client::add_interest(Interest &i, uint32_t context)
 {
-	Interest &other = m_interests[id];
-	if(other.parent != i.parent)
-	{
-		remove_interest(other, id);
-		std::list<uint32_t> new_zones = add_interest(i);
-		m_interests[id] = i;
-		request_zone_objects(id, i.parent, new_zones);
-		return;
-	}
-	std::list<uint32_t> new_zones;
+	std::unordered_set<uint32_t> new_zones;
+
 	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 	{
-		bool found = false;
-		for(auto it2 = other.zones.begin(); it2 != other.zones.end(); ++it2)
+		if(lookup_interests(i.parent, *it).empty())
 		{
-			if(*it == *it2)
+			new_zones.insert(*it);
+		}
+	}
+
+	if(m_interests.find(i.id) != m_interests.end())
+	{
+		// This is an already-open interest that is actually being altered.
+		// Therefore, we need to delete the objects that the client can see
+		// through this interest only.
+
+		Interest previous_interest = m_interests[i.id];
+		std::unordered_set<uint32_t> killed_zones;
+
+		for(auto it = previous_interest.zones.begin(); it != previous_interest.zones.end(); ++it)
+		{
+			if(lookup_interests(previous_interest.parent, *it).size() > 1)
 			{
-				found = true;
-				break;
+				// An interest other than the altered one can see this parent/zone,
+				// so we don't care about it.
+				continue;
+			}
+
+			// If we've gotten here: parent,*it is unique, so if the new interest
+			// doesn't cover it, we add it to the killed zones.
+			if(i.parent != previous_interest.parent || i.zones.find(*it) == i.zones.end())
+			{
+				killed_zones.insert(*it);
 			}
 		}
-		if(!found)
-		{
-			new_zones.insert(new_zones.end(), *it);
-		}
-	}
 
-	std::vector<uint32_t> removed_zones;
-	removed_zones.reserve(other.zones.size());
-	for(auto it = other.zones.begin(); it != other.zones.end(); ++it)
-	{
-		bool found = false;
-		for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
-		{
-			if(*it2 == *it)
-			{
-				found = true;
-				break;
-			}
-		}
-		if(!found)
-		{
-			removed_zones.insert(removed_zones.end(), *it);
-		}
+		// Now that we know what zones to kill, let's get to it:
+		close_zones(previous_interest.parent, killed_zones);
 	}
+	m_interests[i.id] = i;
 
-	Interest temp;
-	temp.parent = i.parent;
-	temp.context = i.context;
-	for(auto it = removed_zones.begin(); it != removed_zones.end(); ++it)
+	if(new_zones.empty())
 	{
-		temp.zones.insert(temp.zones.end(), *it);
-	}
-	remove_interest(temp, id);
+		// We aren't requesting any new zones with this operation, so don't
+		// bother firing off a State Server request. Instead, let the client
+		// know we're already done:
 
-	if(!i.has_announced && i.is_ready(m_dist_objs))
-	{
 		Datagram resp;
 		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint32(i.context);
-		resp.add_uint16(id);
+		resp.add_uint32(context);
+		resp.add_uint16(i.id);
 		network_send(resp);
-		i.has_announced = true;
+
+		return;
 	}
-	m_interests[id] = i;
-	// This should be done last -- if the SS is in the same process,
-	// the response may come back instantly.
-	if(!new_zones.empty())
+
+	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones);
+
+	uint32_t request_context = m_next_context++;
+	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
+
+	Datagram resp;
+	resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
+	resp.add_uint32(request_context);
+	resp.add_uint32(i.parent);
+	resp.add_uint16(new_zones.size());
+	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{
-		request_zone_objects(id, i.parent, new_zones);
+		resp.add_uint32(*it);
+		subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
 	}
+	send(resp);
+}
+
+void Client::remove_interest(Interest &i, uint32_t context)
+{
+	std::unordered_set<uint32_t> killed_zones;
+
+	for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+	{
+		if(lookup_interests(i.parent, *it).size() == 1)
+		{
+			// We're the only interest who can see this zone, so let's kill it.
+			killed_zones.insert(*it);
+		}
+	}
+
+	// Now that we know what zones to kill, let's get to it:
+	close_zones(i.parent, killed_zones);
+
+	Datagram resp;
+	resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
+	resp.add_uint32(context);
+	resp.add_uint16(i.id);
+	network_send(resp);
+
+	m_interests.erase(i.id);
 }
 
 bool Client::handle_client_object_update_field(DatagramIterator &dgi)
@@ -844,9 +801,9 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 	uint32_t context = dgi.read_uint32();
 	uint16_t interest_id = dgi.read_uint16();
 	uint32_t parent = dgi.read_uint32();
+
 	Interest i;
 	i.id = interest_id;
-	i.context = context;
 	i.parent = parent;
 
 	uint16_t count = 1;
@@ -854,7 +811,6 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 	{
 		count = dgi.read_uint16();
 	}
-
 	i.zones.reserve(count);
 	for(int x = 0; x < count; ++x)
 	{
@@ -862,26 +818,8 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 		i.zones.insert(i.zones.end(), zone);
 	}
 
-	if(m_interests.find(interest_id) != m_interests.end())
-	{
-		alter_interest(i, interest_id);
-		return false;//alter_interest takes care of the rest
-	}
-	std::list<uint32_t> new_zones = add_interest(i);
-	m_interests[interest_id] = i;
+	add_interest(i, context);
 
-	if(!new_zones.empty())
-	{
-		request_zone_objects(interest_id, i.parent, new_zones);
-	}
-	else
-	{
-		Datagram resp;
-		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint32(context);
-		resp.add_uint16(interest_id);
-		network_send(resp);
-	}
 	return false;
 }
 
@@ -895,17 +833,8 @@ bool Client::handle_client_remove_interest(DatagramIterator &dgi)
 		return true;
 	}
 	Interest &i = m_interests[id];
-	remove_interest(i, id);
-	m_interests.erase(m_interests.find(id));
+	remove_interest(i, context);
 
-	if(context)
-	{
-		Datagram resp;
-		resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-		resp.add_uint32(context);
-		resp.add_uint16(id);
-		network_send(resp);
-	}
 	return false;
 }
 

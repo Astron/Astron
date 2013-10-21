@@ -26,36 +26,55 @@ struct Interest
 	uint16_t id;
 	uint32_t parent;
 	std::unordered_set<uint32_t> zones;
-	uint32_t context;
-	bool has_total;
-	uint32_t total;
-	bool has_announced;
+};
 
-	Interest() : id(0), parent(0), zones(0), context(0), has_total(false),
-	             total(0), has_announced(false)
-	{
-	}
+class InterestOperation
+{
+	public:
+		uint16_t m_interest_id;
+		uint32_t m_client_context;
+		uint32_t m_parent;
+		std::unordered_set<uint32_t> m_zones;
 
-	bool is_ready(const std::unordered_map<uint32_t, DistributedObject> &dist_objs)
-	{
-		if(!has_total)
+		bool m_has_total;
+		uint32_t m_total;
+
+		InterestOperation(uint16_t interest_id, uint32_t client_context,
+						uint32_t parent, std::unordered_set<uint32_t> zones) :
+				m_interest_id(interest_id), m_client_context(client_context),
+				m_parent(parent), m_zones(zones)
 		{
-			return false;
 		}
 
-		uint32_t count = 0;
-		for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+		bool is_ready(const std::unordered_map<uint32_t, DistributedObject> &dist_objs)
 		{
-			const DistributedObject &distobj = it->second;
-			if(distobj.parent == parent &&
-			   (zones.find(distobj.zone) != zones.end()))
+			if(!m_has_total)
 			{
-				count++;
+				return false;
+			}
+
+			uint32_t count = 0;
+			for(auto it = dist_objs.begin(); it != dist_objs.end(); ++it)
+			{
+				const DistributedObject &distobj = it->second;
+				if(distobj.parent == m_parent &&
+				(m_zones.find(distobj.zone) != m_zones.end()))
+				{
+					count++;
+				}
+			}
+
+			return count >= m_total;
+		}
+
+		void store_total(uint32_t total)
+		{
+			if(!m_has_total)
+			{
+				m_total = total;
+				m_has_total = true;
 			}
 		}
-
-		return count >= total;
-	}
 };
 
 class Client : public NetworkClient, public MDParticipantInterface
@@ -68,9 +87,11 @@ class Client : public NetworkClient, public MDParticipantInterface
 		channel_t m_channel;
 		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
+		uint32_t m_next_context;
 		std::unordered_set<uint32_t> m_owned_objects;
 		std::unordered_set<uint32_t> m_seen_objects;
 		std::unordered_map<uint16_t, Interest> m_interests;
+		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
 		std::unordered_map<uint32_t, DistributedObject> m_dist_objs;
 	public:
 		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
@@ -84,11 +105,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 		virtual void handle_authenticated(DatagramIterator &dgi);
 		DCClass *lookup_object(uint32_t do_id);
 		std::list<Interest> lookup_interests(uint32_t parent_id, uint32_t zone_id);
+		void close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones);
+		void add_interest(Interest &i, uint32_t context);
+		void remove_interest(Interest &i, uint32_t context);
 	private:
-		std::list<uint32_t> add_interest(Interest &i);
-		void remove_interest(Interest &i, uint32_t id);
-		void alter_interest(Interest &i, uint16_t id);
-		void request_zone_objects(uint32_t context, uint32_t parent, std::list<uint32_t> new_zones);
 		bool handle_client_object_update_field(DatagramIterator &dgi);
 		bool handle_client_object_location(DatagramIterator &dgi);
 		bool handle_client_add_interest(DatagramIterator &dgi, bool multiple);
