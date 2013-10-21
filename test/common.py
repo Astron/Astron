@@ -188,6 +188,7 @@ CONSTANTS = {
     'CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER':      173,
     'CLIENT_DONE_INTEREST_RESP':                     204,
     'CLIENT_ADD_INTEREST':                           200,
+    'CLIENT_ADD_INTEREST_MULTIPLE':                  201,
     'CLIENT_REMOVE_INTEREST':                        203,
     'CLIENT_OBJECT_LOCATION':                        140,
     # Client DC reasons

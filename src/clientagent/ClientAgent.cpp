@@ -535,7 +535,10 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 		should_die = handle_client_object_location(dgi);
 		break;
 	case CLIENT_ADD_INTEREST:
-		should_die = handle_client_add_interest(dgi);
+		should_die = handle_client_add_interest(dgi, false);
+		break;
+	case CLIENT_ADD_INTEREST_MULTIPLE:
+		should_die = handle_client_add_interest(dgi, true);
 		break;
 	case CLIENT_REMOVE_INTEREST:
 		should_die = handle_client_remove_interest(dgi);
@@ -836,7 +839,7 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 	return false;
 }
 
-bool Client::handle_client_add_interest(DatagramIterator &dgi)
+bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 {
 	uint32_t context = dgi.read_uint32();
 	uint16_t interest_id = dgi.read_uint16();
@@ -846,8 +849,14 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi)
 	i.context = context;
 	i.parent = parent;
 
-	i.zones.reserve(dgi.get_remaining()/sizeof(uint32_t));
-	while(dgi.get_remaining())
+	uint16_t count = 1;
+	if(multiple)
+	{
+		count = dgi.read_uint16();
+	}
+
+	i.zones.reserve(count);
+	for(int x = 0; x < count; ++x)
 	{
 		uint32_t zone = dgi.read_uint32();
 		i.zones.insert(i.zones.end(), zone);

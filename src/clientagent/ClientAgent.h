@@ -91,7 +91,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		void request_zone_objects(uint32_t context, uint32_t parent, std::list<uint32_t> new_zones);
 		bool handle_client_object_update_field(DatagramIterator &dgi);
 		bool handle_client_object_location(DatagramIterator &dgi);
-		bool handle_client_add_interest(DatagramIterator &dgi);
+		bool handle_client_add_interest(DatagramIterator &dgi, bool multiple);
 		bool handle_client_remove_interest(DatagramIterator &dgi);
 		virtual void network_datagram(Datagram &dg);
 		virtual void network_disconnect();

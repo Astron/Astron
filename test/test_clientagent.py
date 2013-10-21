@@ -572,10 +572,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Open interest on two zones in 1234:
         dg = Datagram()
-        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
         dg.add_uint32(2)
         dg.add_uint16(1)
         dg.add_uint32(1234)
+        dg.add_uint16(2)
         dg.add_uint32(5555) # Zone 1
         dg.add_uint32(4444) # Zone 2
         client.send(dg)
@@ -861,10 +862,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Open interest on two zones in 1235:
         dg = Datagram()
-        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
         dg.add_uint32(6)
         dg.add_uint16(5)
         dg.add_uint32(1235)
+        dg.add_uint16(2) # Zone count...
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
         client.send(dg)
@@ -984,10 +986,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Open interest on two zones in 1235:
         dg = Datagram()
-        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
         dg.add_uint32(6)
         dg.add_uint16(5)
         dg.add_uint32(1235)
+        dg.add_uint16(2)
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
         client.send(dg)
@@ -1036,10 +1039,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Now the client alters the interest to add a third zone:
         dg = Datagram()
-        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
         dg.add_uint32(9)
         dg.add_uint16(5)
         dg.add_uint32(1235)
+        dg.add_uint16(3)
         dg.add_uint32(1111) # Zone 1
         dg.add_uint32(2222) # Zone 2
         dg.add_uint32(5555) # Zone 5--er, 3...
@@ -1070,10 +1074,11 @@ class TestClientAgent(unittest.TestCase):
 
         # Now let's alter to add another zone, but remove 2222:
         dg = Datagram()
-        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
         dg.add_uint32(10)
         dg.add_uint16(5)
         dg.add_uint32(1235)
+        dg.add_uint16(3)
         dg.add_uint32(5555) # zones requested out of their original order,
         dg.add_uint32(1111) # because ordering is for suckers
         dg.add_uint32(8888)
