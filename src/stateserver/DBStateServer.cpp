@@ -50,6 +50,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	if(!has_other)
 	{
 		m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id);
+		m_loading[do_id]->begin();
 	}
 	else
 	{
@@ -65,6 +66,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
 		DCClass *dclass = g_dcf->get_class(dc_id);
 		m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi);
+		m_loading[do_id]->begin();
 	}
 }
 

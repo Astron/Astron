@@ -13,6 +13,8 @@ class LoadingObject : public MDParticipantInterface
 		              DCClass *dclass, DatagramIterator &dgi);
 		~LoadingObject();
 
+		void begin();
+
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
 	private:

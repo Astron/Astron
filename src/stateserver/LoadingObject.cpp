@@ -13,8 +13,6 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
 	set_con_name(name.str());
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
-
-	send_get_object(do_id);
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_t parent_id,
@@ -27,6 +25,11 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_
 LoadingObject::~LoadingObject()
 {
 	delete m_log;
+}
+
+void LoadingObject::begin()
+{
+	send_get_object(m_do_id);
 }
 
 void LoadingObject::send_get_object(uint32_t do_id)
