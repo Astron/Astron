@@ -87,6 +87,7 @@ class Client : public NetworkClient, public MDParticipantInterface
 		channel_t m_channel;
 		channel_t m_allocated_channel;
 		bool m_is_channel_allocated;
+		bool m_clean_disconnect;
 		uint32_t m_next_context;
 		std::unordered_set<uint32_t> m_owned_objects;
 		std::unordered_set<uint32_t> m_seen_objects;

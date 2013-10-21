@@ -70,8 +70,8 @@ std::map<uint32_t, Uberdog> uberdogs;
 Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, RoleConfig roleconfig,
 	ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
 		m_roleconfig(roleconfig), m_ct(ct), m_channel(0), m_allocated_channel(0),
-		m_is_channel_allocated(true), m_next_context(0), m_owned_objects(),
-		m_seen_objects(), m_interests(), m_pending_interests()
+		m_is_channel_allocated(true), m_clean_disconnect(false), m_next_context(0),
+		m_owned_objects(), m_seen_objects(), m_interests(), m_pending_interests()
 {
 	m_channel = m_ct->alloc_channel();
 	if(!m_channel)
@@ -120,6 +120,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	break;
 	case CLIENTAGENT_DROP:
 	{
+		m_clean_disconnect = true;
 		do_disconnect();
 		return;
 	}
@@ -453,6 +454,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 		resp.add_uint16(reason);
 		resp.add_string(error_string);
 		network_send(resp);
+		m_clean_disconnect = true;
 		do_disconnect();
 	}
 }
@@ -541,6 +543,7 @@ void Client::handle_pre_auth(DatagramIterator &dgi)
 		event.push_back("client-disconnected");
 		send_event(event);
 
+		m_clean_disconnect = true;
 		do_disconnect();
 	}
 	break;
@@ -568,6 +571,7 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 		event.push_back("client-disconnected");
 		send_event(event);
 
+		m_clean_disconnect = true;
 		do_disconnect();
 	}
 	break;
@@ -881,6 +885,12 @@ void Client::handle_client_remove_interest(DatagramIterator &dgi)
 
 void Client::network_disconnect()
 {
+	if(!m_clean_disconnect)
+	{
+		std::list<std::string> event;
+		event.push_back("client-lost");
+		send_event(event);
+	}
 	delete this;
 }
 
