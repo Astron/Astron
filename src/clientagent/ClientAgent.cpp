@@ -347,6 +347,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 
 		if(m_dist_objs.find(do_id) != m_dist_objs.end())
 		{
+			m_dist_objs[do_id].parent = n_parent;
 			m_dist_objs[do_id].zone = n_zone;
 		}
 
