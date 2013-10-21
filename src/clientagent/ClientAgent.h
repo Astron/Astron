@@ -110,10 +110,10 @@ class Client : public NetworkClient, public MDParticipantInterface
 		void add_interest(Interest &i, uint32_t context);
 		void remove_interest(Interest &i, uint32_t context);
 	private:
-		bool handle_client_object_update_field(DatagramIterator &dgi);
-		bool handle_client_object_location(DatagramIterator &dgi);
-		bool handle_client_add_interest(DatagramIterator &dgi, bool multiple);
-		bool handle_client_remove_interest(DatagramIterator &dgi);
+		void handle_client_object_update_field(DatagramIterator &dgi);
+		void handle_client_object_location(DatagramIterator &dgi);
+		void handle_client_add_interest(DatagramIterator &dgi, bool multiple);
+		void handle_client_remove_interest(DatagramIterator &dgi);
 		virtual void network_datagram(Datagram &dg);
 		virtual void network_disconnect();
 };

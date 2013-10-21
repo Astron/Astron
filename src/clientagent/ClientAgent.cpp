@@ -533,12 +533,11 @@ void Client::handle_pre_hello(DatagramIterator &dgi)
 void Client::handle_pre_auth(DatagramIterator &dgi)
 {
 	uint16_t msg_type = dgi.read_uint16();
-	bool should_die = false;
 	switch(msg_type)
 	{
 	case CLIENT_OBJECT_SET_FIELD:
 	{
-		should_die = handle_client_object_update_field(dgi);
+		handle_client_object_update_field(dgi);
 	}
 	break;
 	default:
@@ -547,42 +546,32 @@ void Client::handle_pre_auth(DatagramIterator &dgi)
 		send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
 		return;
 	}
-	if(should_die)
-	{
-		return;
-	}
 }
 
 void Client::handle_authenticated(DatagramIterator &dgi)
 {
 	uint16_t msg_type = dgi.read_uint16();
-	bool should_die = false;
 	switch(msg_type)
 	{
 	case CLIENT_OBJECT_SET_FIELD:
-		should_die = handle_client_object_update_field(dgi);
+		handle_client_object_update_field(dgi);
 		break;
 	case CLIENT_OBJECT_LOCATION:
-		should_die = handle_client_object_location(dgi);
+		handle_client_object_location(dgi);
 		break;
 	case CLIENT_ADD_INTEREST:
-		should_die = handle_client_add_interest(dgi, false);
+		handle_client_add_interest(dgi, false);
 		break;
 	case CLIENT_ADD_INTEREST_MULTIPLE:
-		should_die = handle_client_add_interest(dgi, true);
+		handle_client_add_interest(dgi, true);
 		break;
 	case CLIENT_REMOVE_INTEREST:
-		should_die = handle_client_remove_interest(dgi);
+		handle_client_remove_interest(dgi);
 		break;
 	default:
 		std::stringstream ss;
 		ss << "Message type " << msg_type << " not valid.";
 		send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
-		return;
-	}
-
-	if(should_die)
-	{
 		return;
 	}
 }
@@ -732,7 +721,7 @@ void Client::remove_interest(Interest &i, uint32_t context)
 	m_interests.erase(i.id);
 }
 
-bool Client::handle_client_object_update_field(DatagramIterator &dgi)
+void Client::handle_client_object_update_field(DatagramIterator &dgi)
 {
 	uint32_t do_id = dgi.read_uint32();
 	uint16_t field_id = dgi.read_uint16();
@@ -745,7 +734,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 		std::stringstream ss;
 		ss << "Client tried to send update to nonexistent object " << do_id;
 		send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
-		return true;
+		return;
 	}
 
 	// If the client is not in the ESTABLISHED state, it may only send updates
@@ -758,7 +747,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 			ss << "Client tried to send update to non-anonymous object "
 			   << dcc->get_name() << "(" << do_id << ")";
 			send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str(), true);
-			return true;
+			return;
 		}
 	}
 
@@ -770,7 +759,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 		ss << "Client tried to send update for nonexistent field " << field_id << " to object "
 		   << dcc->get_name() << "(" << do_id << ")";
 		send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
-		return true;
+		return;
 	}
 
 	bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
@@ -781,7 +770,7 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 		ss << "Client tried to send update for non-sendable field: "
 		   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
 		send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
-		return true;
+		return;
 	}
 
 	std::vector<uint8_t> data;
@@ -795,14 +784,13 @@ bool Client::handle_client_object_update_field(DatagramIterator &dgi)
 	if(data.size() > 65535u-resp.size())
 	{
 		send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field update too large to be routed on MD.", true);
-		return true;
+		return;
 	}
 	resp.add_data(data);
 	send(resp);
-	return false;
 }
 
-bool Client::handle_client_object_location(DatagramIterator &dgi)
+void Client::handle_client_object_location(DatagramIterator &dgi)
 {
 	uint32_t do_id = dgi.read_uint32();
 	if(m_dist_objs.find(do_id) == m_dist_objs.end())
@@ -810,7 +798,7 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 		std::stringstream ss;
 		ss << "Client tried to manipulate unknown object " << do_id;
 		send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
-		return true;
+		return;
 	}
 	bool is_owned = false;
 	for(auto it = m_owned_objects.begin(); it != m_owned_objects.end(); ++it)
@@ -826,17 +814,16 @@ bool Client::handle_client_object_location(DatagramIterator &dgi)
 	{
 		send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE, 
 			"Can't relocate an object the client doesn't own", true);
-		return true;
+		return;
 	}
 
 	Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
 	dg.add_uint32(dgi.read_uint32()); // Parent
 	dg.add_uint32(dgi.read_uint32()); // Zone
 	send(dg);
-	return false;
 }
 
-bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
+void Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 {
 	uint32_t context = dgi.read_uint32();
 	uint16_t interest_id = dgi.read_uint16();
@@ -859,23 +846,19 @@ bool Client::handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 	}
 
 	add_interest(i, context);
-
-	return false;
 }
 
-bool Client::handle_client_remove_interest(DatagramIterator &dgi)
+void Client::handle_client_remove_interest(DatagramIterator &dgi)
 {
 	uint32_t context = dgi.read_uint32();
 	uint16_t id = dgi.read_uint16();
 	if(m_interests.find(id) == m_interests.end())
 	{
 		send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest", true);
-		return true;
+		return;
 	}
 	Interest &i = m_interests[id];
 	remove_interest(i, context);
-
-	return false;
 }
 
 void Client::network_disconnect()
