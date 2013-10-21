@@ -42,7 +42,7 @@ class InterestOperation
 		InterestOperation(uint16_t interest_id, uint32_t client_context,
 						uint32_t parent, std::unordered_set<uint32_t> zones) :
 				m_interest_id(interest_id), m_client_context(client_context),
-				m_parent(parent), m_zones(zones)
+				m_parent(parent), m_zones(zones), m_has_total(false), m_total(0)
 		{
 		}
 
@@ -58,7 +58,7 @@ class InterestOperation
 			{
 				const DistributedObject &distobj = it->second;
 				if(distobj.parent == m_parent &&
-				(m_zones.find(distobj.zone) != m_zones.end()))
+				   (m_zones.find(distobj.zone) != m_zones.end()))
 				{
 					count++;
 				}
