@@ -535,6 +535,15 @@ void Client::handle_pre_auth(DatagramIterator &dgi)
 	uint16_t msg_type = dgi.read_uint16();
 	switch(msg_type)
 	{
+	case CLIENT_DISCONNECT:
+	{
+		std::list<std::string> event;
+		event.push_back("client-disconnected");
+		send_event(event);
+
+		do_disconnect();
+	}
+	break;
 	case CLIENT_OBJECT_SET_FIELD:
 	{
 		handle_client_object_update_field(dgi);
@@ -553,6 +562,15 @@ void Client::handle_authenticated(DatagramIterator &dgi)
 	uint16_t msg_type = dgi.read_uint16();
 	switch(msg_type)
 	{
+	case CLIENT_DISCONNECT:
+	{
+		std::list<std::string> event;
+		event.push_back("client-disconnected");
+		send_event(event);
+
+		do_disconnect();
+	}
+	break;
 	case CLIENT_OBJECT_SET_FIELD:
 		handle_client_object_update_field(dgi);
 		break;
