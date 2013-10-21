@@ -328,9 +328,22 @@ void DistributedObject::annihilate(channel_t sender)
 	dg.add_uint32(m_do_id);
 	send(dg);
 
+	delete_children();
+
 	m_stateserver->m_objs.erase(m_do_id);
 	m_log->debug() << "Deleted." << std::endl;
 	delete this;
+}
+
+void DistributedObject::delete_children()
+{
+	if(m_child_count)
+	{
+		Datagram dg(PARENT2CHILDREN(m_do_id), m_do_id,
+	                STATESERVER_OBJECT_DELETE_CHILDREN);
+		dg.add_uint32(m_do_id);
+		send(dg);
+	}
 }
 
 void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
@@ -492,6 +505,19 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Delete object
 			annihilate(sender);
 
+			break;
+		}
+		case STATESERVER_OBJECT_DELETE_CHILDREN:
+		{
+			uint32_t r_do_id = dgi.read_uint32();
+			if(r_do_id == m_do_id)
+			{
+				delete_children();
+			}
+			else if(r_do_id == m_parent_id)
+			{
+				annihilate(m_parent_id);
+			}
 			break;
 		}
 		case STATESERVER_OBJECT_SET_FIELD:
