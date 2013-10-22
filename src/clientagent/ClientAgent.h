@@ -8,6 +8,7 @@ class ClientAgent : public Role
 {
 	private:
 		boost::asio::ip::tcp::acceptor *m_acceptor;
+		std::string m_client_type;
 		std::string m_server_version;
 		ChannelTracker m_ct;
 		LogCategory *m_log;

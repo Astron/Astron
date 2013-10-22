@@ -1,33 +1,27 @@
 #pragma once
+#include "Client.h"
 #include <boost/asio.hpp>
-
-#include "core/global.h"
-
-class Client;
-class ChannelTracker;
-class LogCategory;
+#include <unordered_map>
 
 class BaseClientType
 {
 	public:
-		BaseClientType(unsigned char priority);
 		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log, 
-                                    std::string server_version, ChannelTracker *ct) = 0;
-		unsigned char priority();
-	private:
-		unsigned char m_priority;
+		                            const std::string &server_version, ChannelTracker *ct) = 0;
+	protected:
+		BaseClientType(const std::string &name);
 };
 
 template <class T>
 class ClientType : public BaseClientType
 {
 	public:
-		ClientType(unsigned char priority) : BaseClientType(priority)
+		ClientType(const std::string &name) : BaseClientType(name)
 		{
 		}
 
 		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-                                    std::string server_version, ChannelTracker *ct)
+		                            const std::string &server_version, ChannelTracker *ct)
 		{
 			return new T(socket, log, server_version, ct);
 		}
@@ -36,12 +30,11 @@ class ClientType : public BaseClientType
 class ClientFactory
 {
 	public:
-		static ClientFactory& get_singleton();
-		void set_client_type(BaseClientType *client_type);
-		Client* create(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-                       std::string server_version, ChannelTracker *ct);
-	private:
-		ClientFactory();
+		Client* instantiate_client(const std::string &client_type, boost::asio::ip::tcp::socket *socket,
+		                     LogCategory *log, const std::string &server_version, ChannelTracker *ct);
+		static ClientFactory singleton;
 
-		BaseClientType* m_client_type;
+		void add_client_type(const std::string &name, BaseClientType *factory);
+	private:
+		std::unordered_map<std::string, BaseClientType*> m_factories;
 };

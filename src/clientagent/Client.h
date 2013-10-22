@@ -78,8 +78,8 @@ class Client : public NetworkClient, public MDParticipantInterface
 		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
 		std::unordered_map<uint32_t, VisibleObject> m_dist_objs;
 	public:
-		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, std::string server_version,
-		       ChannelTracker *ct);
+		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, 
+		       const std::string &server_version, ChannelTracker *ct);
 		virtual ~Client();
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi);
 	protected:

@@ -9,13 +9,15 @@
 using boost::asio::ip::tcp;
 
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
+static ConfigVariable<std::string> client_type("client", "libastron");
 static ConfigVariable<std::string> server_version("version", "dev");
 static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
 static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
-	m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig)),
-	m_server_version(server_version.get_rval(roleconfig))
+	m_client_type(client_type.get_rval(roleconfig)),
+	m_server_version(server_version.get_rval(roleconfig)),
+	m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig))
 {
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
@@ -73,7 +75,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
 	m_log->info() << "Got an incoming connection from "
 				 << remote.address() << ":" << remote.port() << std::endl;
-	ClientFactory::get_singleton().create(socket, m_log, m_server_version, &m_ct);
+	ClientFactory::singleton.instantiate_client(m_client_type, socket, m_log, m_server_version, &m_ct);
 	start_accept();
 }
 

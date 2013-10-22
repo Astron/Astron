@@ -4,7 +4,7 @@
 
 #include "core/global.h"
 
-Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, std::string server_version,
+Client::Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, const std::string &server_version,
 	ChannelTracker *ct) : NetworkClient(socket), m_state(CLIENT_STATE_NEW),
 		m_server_version(server_version), m_ct(ct), m_channel(0), m_allocated_channel(0),
 		m_is_channel_allocated(true), m_clean_disconnect(false), m_next_context(0),
@@ -830,7 +830,7 @@ void Client::network_disconnect()
 	delete this;
 }
 
-static ClientType<Client> client_type(0);
+static ClientType<Client> client_fact("libastron");
 
 
 

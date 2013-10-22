@@ -1,41 +1,24 @@
 #include "ClientFactory.h"
-static LogCategory cf_log("clientfactory", "clientfactory");
 
-ClientFactory::ClientFactory() : m_client_type(NULL)
+ClientFactory ClientFactory::singleton;
+
+BaseClientType::BaseClientType(const std::string &name)
 {
+	ClientFactory::singleton.add_client_type(name, this);
 }
 
-ClientFactory& ClientFactory::get_singleton()
+void ClientFactory::add_client_type(const std::string &name, BaseClientType *factory)
 {
-	static ClientFactory cf;
-	return cf;
+	m_factories[name] = factory;
 }
 
-void ClientFactory::set_client_type(BaseClientType *client_type)
+Client* ClientFactory::instantiate_client(const std::string &client_type, 
+                                          boost::asio::ip::tcp::socket *socket, LogCategory *log,
+                                          const std::string &server_version, ChannelTracker *ct)
 {
-	if(!m_client_type || client_type->priority() > m_client_type->priority())
+	if(m_factories.find(client_type) != m_factories.end())
 	{
-		m_client_type = client_type;
+		return m_factories[client_type]->instantiate(socket, log, server_version, ct);
 	}
-}
-
-Client* ClientFactory::create(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-	std::string server_version, ChannelTracker *ct)
-{
-	if(!m_client_type)
-	{
-		cf_log.fatal() << "m_client_type was never set.";
-		exit(1);
-	}
-	return m_client_type->instantiate(socket, log, server_version, ct);
-}
-
-BaseClientType::BaseClientType(unsigned char priority) : m_priority(priority)
-{
-	ClientFactory::get_singleton().set_client_type(this);
-}
-
-unsigned char BaseClientType::priority()
-{
-	return m_priority;
+	return NULL;
 }
