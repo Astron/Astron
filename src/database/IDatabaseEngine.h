@@ -8,7 +8,7 @@
 struct DatabaseObject
 {
 	uint16_t dc_id;
-	std::map<DCField*, std::vector<uint8_t>> fields;
+	std::map<DCField*, std::vector<uint8_t> > fields;
 
 	DatabaseObject()
 	{
@@ -32,7 +32,7 @@ class IDatabaseEngine
 		virtual DCClass* get_class(uint32_t do_id) = 0;
 
 #define val_t std::vector<uint8_t>
-#define map_t std::map<DCField*, std::vector<uint8_t>>
+#define map_t std::map<DCField*, std::vector<uint8_t> >
 		virtual void del_field(uint32_t do_id, DCField* field) = 0;
 		virtual void del_fields(uint32_t do_id, const std::vector<DCField*> &fields) = 0;
 
