@@ -1,2 +1,9 @@
 # Ignore Mac's directory info
 .DS_Store
+Astron.build
+CMakeFiles
+Astron.xcodeproj
+CMakeScripts
+Debug
+CMakeCache.txt
+cmake_install.cmake
