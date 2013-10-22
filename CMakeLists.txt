@@ -146,6 +146,8 @@ endif()
 set (BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
 if(BUILD_CLIENTAGENT)
 	set (CLIENTAGENT_FILES
+		src/clientagent/Client.h
+		src/clientagent/Client.cpp
 		src/clientagent/ClientAgent.h
 		src/clientagent/ClientAgent.cpp
 		src/clientagent/ClientMessages.h

@@ -19,5 +19,3 @@ class EventSender
 		udp::endpoint m_target;
 		bool m_enabled;
 };
-
-extern EventSender g_eventsender;

@@ -12,7 +12,7 @@ class BaseClientType
 	public:
 		BaseClientType(unsigned char priority);
 		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log, 
-			RoleConfig roleconfig, ChannelTracker *ct) = 0;
+                                    std::string server_version, ChannelTracker *ct) = 0;
 		unsigned char priority();
 	private:
 		unsigned char m_priority;
@@ -27,9 +27,9 @@ class ClientType : public BaseClientType
 		}
 
 		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-			RoleConfig roleconfig, ChannelTracker *ct)
+                                    std::string server_version, ChannelTracker *ct)
 		{
-			return new T(socket, log, roleconfig, ct);
+			return new T(socket, log, server_version, ct);
 		}
 };
 
@@ -39,7 +39,7 @@ class ClientFactory
 		static ClientFactory& get_singleton();
 		void set_client_type(BaseClientType *client_type);
 		Client* create(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-			RoleConfig roleconfig, ChannelTracker *ct);
+                       std::string server_version, ChannelTracker *ct);
 	private:
 		ClientFactory();
 
