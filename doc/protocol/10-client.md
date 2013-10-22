@@ -1,6 +1,6 @@
 Astron Client Protocol Documentation
 ---------------------------------------
-**Author**
+**Author**  
 Sam "CFSworks" Edwards (09-17-2013)  
 Kevin "Kestred" Stenerson (10-08-2013)
 
