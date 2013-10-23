@@ -123,7 +123,12 @@ class Client : public MDParticipantInterface
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
 		virtual void handle_add_object(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
-		                               uint16_t dc_id, DatagramIterator &dgi) = 0;
+		                               uint16_t dc_id, DatagramIterator &dgi, bool other=false) = 0;
+
+		// handle_add_ownership should inform the client it has control of a new object. The datagram
+		// iterator provided starts at the 'required fields' data, and may have 'optional fields'.
+		virtual void handle_add_ownership(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
+		                                  uint16_t dc_id, DatagramIterator &dgi, bool other=false) = 0;
 
 		// handle_set_field should inform the client that the field has been updated
 		virtual void handle_set_field(uint32_t do_id, uint16_t field_id, const std::vector<uint8_t> &value) = 0;

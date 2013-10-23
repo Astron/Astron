@@ -102,10 +102,24 @@ public:
 	}
 
 	void handle_add_object(uint32_t do_id, uint32_t parent_id, uint32_t zone_id, uint16_t dc_id,
-	                       DatagramIterator &dgi)
+	                       DatagramIterator &dgi, bool other)
 	{
 		Datagram resp;
-		resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER);
+		resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER : CLIENT_ENTER_OBJECT_REQUIRED);
+		resp.add_uint32(do_id);
+		resp.add_uint32(parent_id);
+		resp.add_uint32(zone_id);
+		resp.add_uint16(dc_id);
+		resp.add_data(dgi.read_remainder());
+		network_send(resp);
+	}
+
+	void handle_add_ownership(uint32_t do_id, uint32_t parent_id, uint32_t zone_id, uint16_t dc_id,
+	                          DatagramIterator &dgi, bool other)
+	{
+		Datagram resp;
+		resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER
+		                      : CLIENT_ENTER_OBJECT_REQUIRED_OWNER);
 		resp.add_uint32(do_id);
 		resp.add_uint32(parent_id);
 		resp.add_uint32(zone_id);

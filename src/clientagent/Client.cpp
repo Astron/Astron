@@ -313,7 +313,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			m_dist_objs[do_id] = obj;
 		}
 
-		handle_add_object(do_id, parent, zone, dc_id, dgi);
+		handle_add_ownership(do_id, parent, zone, dc_id, dgi, true);
 	}
 	break;
 	case CLIENTAGENT_SET_CLIENT_ID:
@@ -377,16 +377,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 		m_seen_objects.insert(do_id);
 
-		Datagram resp;
-		if(msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-		{
-			resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED);
-		}
-		else
-		{
-			resp.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER);
-		}
-		handle_add_object(do_id, parent, zone, dc_id, dgi);
+		handle_add_object(do_id, parent, zone, dc_id, dgi,
+		                  msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER);
 
 		// TODO: This is a tad inefficient as it checks every pending interest.
 		// In practice, there shouldn't be many add-interest operations active
