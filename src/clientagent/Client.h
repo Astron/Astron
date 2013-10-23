@@ -6,6 +6,8 @@
 #include <unordered_set>
 #include <unordered_map>
 
+class ClientAgent; // Forward declaration
+
 enum ClientState
 {
 	CLIENT_STATE_NEW,
@@ -60,44 +62,82 @@ class ChannelTracker
 		std::queue<channel_t> m_unused_channels;
 };
 
-class Client : public NetworkClient, public MDParticipantInterface
+class Client : public MDParticipantInterface
 {
-	private:
-		ClientState m_state;
-		LogCategory *m_log;
-		std::string m_server_version;
-		ChannelTracker *m_ct;
-		channel_t m_channel;
-		channel_t m_allocated_channel;
-		bool m_is_channel_allocated;
-		bool m_clean_disconnect;
+	public:
+		~Client();
+
+		// handle_datagram is the handler for datagrams received from the server
+		void handle_datagram(Datagram &dg, DatagramIterator &dgi);
+	protected:
+		ClientAgent* m_client_agent; // The client_agent handling this client
+		ClientState m_state; // current state of the Client state machine
+		channel_t m_channel; // current channel client is listening on
+		channel_t m_allocated_channel; // channel assigned to client at creation time
 		uint32_t m_next_context;
 		std::unordered_set<uint32_t> m_owned_objects;
 		std::unordered_set<uint32_t> m_seen_objects;
 		std::unordered_map<uint16_t, Interest> m_interests;
 		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
 		std::unordered_map<uint32_t, VisibleObject> m_dist_objs;
-	public:
-		Client(boost::asio::ip::tcp::socket *socket, LogCategory *log, 
-		       const std::string &server_version, ChannelTracker *ct);
-		virtual ~Client();
-		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi);
-	protected:
-		void send_event(const std::list<std::string> &event);
-		void send_disconnect(uint16_t reason, const std::string &error_string, bool security=false);
-		virtual void handle_pre_hello(DatagramIterator &dgi);
-		virtual void handle_pre_auth(DatagramIterator &dgi);
-		virtual void handle_authenticated(DatagramIterator &dgi);
-		DCClass *lookup_object(uint32_t do_id);
+		LogCategory *m_log;
+
+		Client(ClientAgent* client_agent);
+
+		// log_event sends an event to the EventLogger
+		void log_event(const std::list<std::string> &event);
+
+		// lookup_object returns the class of the object with a do_id.
+		// If that object is not visible to the client, NULL will be returned instead.
+		DCClass* lookup_object(uint32_t do_id);
+
+		// lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
 		std::list<Interest> lookup_interests(uint32_t parent_id, uint32_t zone_id);
-		void close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones);
+
+		// add_interest will start a new interest operation and retrieve all the objects an interest
+		// from the server, subscribing to each zone in the interest.  If the interest already
+		// exists, the interest will be updated with the new zones passed in by the argument.
 		void add_interest(Interest &i, uint32_t context);
+
+		// remove_interest find each zone an interest which is not part of another interest and
+		// passes it to close_zones() to be removed from the client's visibility.
 		void remove_interest(Interest &i, uint32_t context);
-	private:
-		void handle_client_object_update_field(DatagramIterator &dgi);
-		void handle_client_object_location(DatagramIterator &dgi);
-		void handle_client_add_interest(DatagramIterator &dgi, bool multiple);
-		void handle_client_remove_interest(DatagramIterator &dgi);
-		virtual void network_datagram(Datagram &dg);
-		virtual void network_disconnect();
+
+		// cloze_zones removes objects visible through the zones from the client and unsubscribes
+		// from the associated location channels for those objects.
+		void close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones);
+
+
+		/* Client Interface */
+		// send_disconnect must close any connections with a connected client; the given reason and
+		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
+		virtual void send_disconnect(uint16_t reason, const std::string &error_string, bool security=false);
+
+		// send_datagram should foward the datagram to the client, or where appopriate parse
+		// the packet and send the appropriate equivalent data.
+		virtual void send_datagram(Datagram &dg) = 0;
+
+		// handle_drop should immediately disconnect the client without sending any more data.
+		virtual void handle_drop() = 0;
+
+		// handle_add_object should inform the client of a new object. The datagram iterator
+		// provided starts at the 'required fields' data, and may have optional fields following.
+		virtual void handle_add_object(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
+		                               uint16_t dc_id, DatagramIterator &dgi) = 0;
+
+		// handle_set_field should inform the client that the field has been updated
+		virtual void handle_set_field(uint32_t do_id, uint16_t field_id, const std::vector<uint8_t> &value) = 0;
+
+		// handle_change_location should inform the client that the objects location has changed
+		virtual void handle_change_location(uint32_t do_id, uint32_t new_parent, uint32_t new_zone) = 0;
+
+		// handle_remove_object should send a mesage to remove the object from the connected client.
+		virtual void handle_remove_object(uint32_t do_id) = 0;
+
+		// handle_remove_ownership should notify the client it no has control of the object.
+		virtual void handle_remove_ownership(uint32_t do_id) = 0;
+
+		// handle_interest_done is called when all of the objects from an opened interest have been
+		// received. Typically, informs the client that a particular group of objects is loaded.
+		virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
 };

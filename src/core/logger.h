@@ -80,6 +80,11 @@ class LogCategory
 		{
 		}
 
+		void set_name(const std::string &name)
+		{
+			m_name = name;
+		}
+
 #define F(level, severity) \
 	std::ostream &level() \
 	{ \

@@ -153,6 +153,7 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientMessages.h
 		src/clientagent/ClientFactory.cpp
 		src/clientagent/ClientFactory.h
+		src/clientagent/AstronClient.cpp
 	)
 endif()
 

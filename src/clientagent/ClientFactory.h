@@ -6,8 +6,7 @@
 class BaseClientType
 {
 	public:
-		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log, 
-		                            const std::string &server_version, ChannelTracker *ct) = 0;
+		virtual Client* instantiate(ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket) = 0;
 	protected:
 		BaseClientType(const std::string &name);
 };
@@ -20,18 +19,17 @@ class ClientType : public BaseClientType
 		{
 		}
 
-		virtual Client* instantiate(boost::asio::ip::tcp::socket *socket, LogCategory *log,
-		                            const std::string &server_version, ChannelTracker *ct)
+		virtual Client* instantiate(ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket)
 		{
-			return new T(socket, log, server_version, ct);
+			return new T(client_agent, socket);
 		}
 };
 
 class ClientFactory
 {
 	public:
-		Client* instantiate_client(const std::string &client_type, boost::asio::ip::tcp::socket *socket,
-		                     LogCategory *log, const std::string &server_version, ChannelTracker *ct);
+		Client* instantiate_client(const std::string &client_type, ClientAgent* client_agent,
+		                           boost::asio::ip::tcp::socket *socket);
 		static ClientFactory singleton;
 
 		void add_client_type(const std::string &name, BaseClientType *factory);

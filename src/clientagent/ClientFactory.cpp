@@ -12,13 +12,12 @@ void ClientFactory::add_client_type(const std::string &name, BaseClientType *fac
 	m_factories[name] = factory;
 }
 
-Client* ClientFactory::instantiate_client(const std::string &client_type, 
-                                          boost::asio::ip::tcp::socket *socket, LogCategory *log,
-                                          const std::string &server_version, ChannelTracker *ct)
+Client* ClientFactory::instantiate_client(const std::string &client_type, ClientAgent* client_agent,
+                                          boost::asio::ip::tcp::socket *socket)
 {
 	if(m_factories.find(client_type) != m_factories.end())
 	{
-		return m_factories[client_type]->instantiate(socket, log, server_version, ct);
+		return m_factories[client_type]->instantiate(client_agent, socket);
 	}
 	return NULL;
 }
