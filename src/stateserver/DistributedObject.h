@@ -11,8 +11,8 @@ class DistributedObject : public MDParticipantInterface
 		                  uint32_t zone_id, DCClass *dclass, DatagramIterator &dgi, bool has_other);
 		DistributedObject(StateServer *stateserver, uint64_t sender, uint32_t do_id,
 		                  uint32_t parent_id, uint32_t zone_id, DCClass *dclass,
-		                  std::unordered_map<DCField*, std::vector<uint8_t>> req_fields,
-		                  std::unordered_map<DCField*, std::vector<uint8_t>> ram_fields);
+		                  std::unordered_map<DCField*, std::vector<uint8_t> > req_fields,
+		                  std::unordered_map<DCField*, std::vector<uint8_t> > ram_fields);
 		~DistributedObject();
 
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
@@ -48,8 +48,8 @@ class DistributedObject : public MDParticipantInterface
 		uint32_t m_parent_id;
 		uint32_t m_zone_id;
 		DCClass *m_dclass;
-		std::unordered_map<DCField*, std::vector<uint8_t>> m_required_fields;
-		std::unordered_map<DCField*, std::vector<uint8_t>> m_ram_fields; // TODO: Fix for std::unordered_map
+		std::unordered_map<DCField*, std::vector<uint8_t> > m_required_fields;
+		std::unordered_map<DCField*, std::vector<uint8_t> > m_ram_fields; // TODO: Fix for std::unordered_map
 		channel_t m_ai_channel;
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;
