@@ -760,7 +760,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(88008800) # setRDB3
         dg.add_uint16(1) # Optional fields: 1
         dg.add_uint16(setDb3)
-        dg.add_string("Danger is my middle name!") # This field should be broadcast, but not saved
+        dg.add_string("Danger is my middle name!") # This field should be saved, but not broadcast
         conn.send(dg)
 
         # Change object location
@@ -770,14 +770,15 @@ class TestStateServer(unittest.TestCase):
         obj1.flush()
 
         # Ignore changing location messages, already tested...
-        obj0.flush()   
+        obj0.flush()
 
-        # Should receive EnterLocationWithRequired (non-broadcast fields are not included)
-        dg = Datagram.create([doid2<<32|9900], doid1,
-                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid1, doid2, 9900, DistributedTestObject1)
+        # Should receive EnterLocationWithRequired|Other (non-broadcast fields are not included)
+        dg = Datagram.create([doid0<<32|9800], doid1,
+                STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, doid0, 9800, DistributedTestObject3)
         dg.add_uint32(44004400) # setRequired1
         dg.add_uint32(88008800) # setRDB3
+        dg.add_uint16(0) # Optional fields: 0
         self.assertTrue(*location0.expect(dg))
 
 
