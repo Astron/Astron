@@ -51,7 +51,8 @@ class TestClientAgent(unittest.TestCase):
 
     def assertDisconnect(self, s, reason_code):
         while True:
-            dg = s.recv()
+            dg = s.recv_maybe()
+            self.assertTrue(dg is not None, "No datagram received while expecting ClientEject")
             dgi = DatagramIterator(dg)
             if dgi.read_uint16() == CLIENT_EJECT:
                 self.assertEqual(dgi.read_uint16(), reason_code)
@@ -88,7 +89,9 @@ class TestClientAgent(unittest.TestCase):
         dg.add_string('What... am I?')
         client.send(dg)
 
-        dgi = DatagramIterator(self.server.recv())
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received when attempting identify()")
+        dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
         self.assertEqual(dgi.read_uint64(), 1234)
         sender_id = dgi.read_uint64()
@@ -158,7 +161,9 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect_none())
 
         # And the server should see the update...
-        dgi = DatagramIterator(self.server.recv())
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting SSObjectSetField")
+        dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
         self.assertEqual(dgi.read_uint64(), 1234)
         dgi.read_uint64() # Sender ID; we don't know this.
@@ -247,7 +252,9 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
 
         # The update should show up inside the server:
-        dgi = DatagramIterator(self.server.recv())
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting SSObjectSetField")
+        dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
         self.assertEqual(dgi.read_uint64(), 1235)
         dgi.read_uint64() # Sender ID; we don't know this.
