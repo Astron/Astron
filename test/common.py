@@ -448,11 +448,16 @@ class MDConnection(object):
     def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
+        numIn = 0
+        numE = len(datagrams)
         while datagrams:
             dg = self._read()
             if dg is None:
-                print "No Datagram Recv'd"
-                return False # Augh, we didn't see all the dgs yet!
+                if numIn is 0:
+                    return (False, "No datagram received.")
+                else:
+                    return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))
+            numIn += 1
             dg = Datagram(dg)
 
             for datagram in datagrams:
@@ -461,16 +466,15 @@ class MDConnection(object):
                     break
             else:
                 if only:
-                    print "Wrong Datagram Recv'd"
-                    f = open("test.x", "wb")
+                    f = open("test.received", "wb")
                     f.write(dg.get_data())
                     f.close()
-                    f = open("test.y", "wb")
+                    f = open("test.expected", "wb")
                     f.write(datagram.get_data())
                     f.close()
-                    return False
+                    return (False, "Received wrong datagram; written to test.{expected,received}.")
 
-        return True
+        return (True, "")
 
 
     def expect_none(self):
@@ -509,11 +513,16 @@ class ClientConnection(MDConnection):
     def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
+        numIn = 0
+        numE = len(datagrams)
         while datagrams:
             dg = self._read()
             if dg is None:
-                print "No Datagram Recv'd"
-                return False # Augh, we didn't see all the dgs yet!
+                if numIn is 0:
+                    return (False, "No datagram received.")
+                else:
+                    return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))
+            numIn += 1
             dg = Datagram(dg)
 
             for datagram in datagrams:
@@ -522,7 +531,12 @@ class ClientConnection(MDConnection):
                     break
             else:
                 if only:
-                    print "Wrong Datagram Recv'd"
-                    return False
+                    f = open("test.received", "wb")
+                    f.write(dg.get_data())
+                    f.close()
+                    f = open("test.expected", "wb")
+                    f.write(datagram.get_data())
+                    f.close()
+                    return (False, "Received wrong datagram; written to test.{expected,received}.")
 
-        return True
+        return (True, "")
