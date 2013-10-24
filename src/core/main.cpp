@@ -5,8 +5,6 @@
 
 #include "global.h"
 #include "RoleFactory.h"
-#include "util/EventSender.h"
-
 LogCategory mainlog("main", "Main");
 
 ConfigVariable<std::vector<std::string>> dc_files("general/dc_files", std::vector<std::string>());

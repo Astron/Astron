@@ -98,9 +98,12 @@ class Datagram
 
 		void add_data(const std::vector<uint8_t> &data)
 		{
-			check_add_length(data.size());
-			memcpy(buf + buf_end, &data[0], data.size());
-			buf_end += data.size();
+			if(data.size())
+			{
+				check_add_length(data.size());
+				memcpy(buf + buf_end, &data[0], data.size());
+				buf_end += data.size();
+			}
 		}
 
 		void add_data(const std::string &str)
@@ -151,12 +154,12 @@ class Datagram
 			add_uint16(message_type);
 		}
 
-		uint16_t size() const
+		const uint16_t size() const
 		{
 			return buf_end;
 		}
 
-		uint8_t* get_data() const
+		const uint8_t* get_data() const
 		{
 			return buf;
 		}

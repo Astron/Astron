@@ -15,7 +15,7 @@
 | ---------------------------------------- |:-------:| -------------------------------------------------------------------------------------------------------------- |
 | CLIENT_HELLO                             |    0001 | `uint32 dc_hash`, `string version`                                                                             |
 | CLIENT_HELLO_RESP                        |    0002 |                                                                                                                |
-| CLIENT_GOODBYE                           |    0003 |                                                                                                                |
+| CLIENT_DISCONNECT                        |    0003 |                                                                                                                |
 | CLIENT_EJECT                             |    0004 | `uint16 error_code`, `string reason`                                                                           |
 | CLIENT_HEARTBEAT                         |    0005 |                                                                                                                |
 | CLIENT_ENTER_OBJECT_REQUIRED             |    0142 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |

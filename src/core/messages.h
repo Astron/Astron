@@ -7,6 +7,9 @@ typedef uint64_t channel_t;
 // Channel constants
 #define INVALID_CHANNEL 0
 #define CONTROL_MESSAGE 1
+#define BCHAN_CLIENTS 10
+#define BCHAN_STATESERVERS 12
+#define BCHAN_DBSERVERS 13
 #define PARENT_PREFIX ((channel_t)(1) << 32)
 
 // DO ID Constants
@@ -32,6 +35,28 @@ typedef uint64_t channel_t;
 #define CONTROL_CLEAR_POST_REMOVE   9011
 #define CONTROL_SET_CON_NAME        9012
 #define CONTROL_SET_CON_URL         9013
+
+// Client Agent range
+#define CLIENTAGENT_MSGTYPE_MIN 1000
+#define CLIENTAGENT_MSGTYPE_MAX 1999
+// Client Agent control message-type constants
+#define CLIENTAGENT_SET_STATE                   1000
+#define CLIENTAGENT_SET_CLIENT_ID               1001
+#define CLIENTAGENT_SEND_DATAGRAM               1002
+#define CLIENTAGENT_EJECT                       1004
+#define CLIENTAGENT_DROP                        1005
+#define CLIENTAGENT_DECLARE_OBJECT              1010
+#define CLIENTAGENT_UNDECLARE_OBJECT            1011
+#define CLIENTAGENT_ADD_SESSION_OBJECT          1012
+#define CLIENTAGENT_REMOVE_SESSION_OBJECT       1013
+#define CLIENTAGENT_SET_FIELDS_SENDABLE         1014
+#define CLIENTAGENT_OPEN_CHANNEL                1100
+#define CLIENTAGENT_CLOSE_CHANNEL               1101
+#define CLIENTAGENT_ADD_POST_REMOVE             1110
+#define CLIENTAGENT_CLEAR_POST_REMOVES          1111
+#define CLIENTAGENT_ADD_INTEREST                1200
+#define CLIENTAGENT_ADD_INTEREST_MULTIPLE       1201
+#define CLIENTAGENT_REMOVE_INTEREST             1203
 
 // State Server range
 #define STATESERVER_MSGTYPE_MIN 2000

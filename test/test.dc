@@ -33,6 +33,23 @@ dclass DistributedTestObject4 {
 };
 
 dclass DistributedTestObject5 : DistributedTestObject3 {
-	setRDbD5(uint8 rdbd = 20) required db;
-	setFoo(uint16 foo) db;
+    setRDbD5(uint8 rdbd = 20) required db;
+    setFoo(uint16 foo) db;
+}
+
+dclass UberDog1 {
+	request(string what) clsend;
+	response(string what);
+};
+
+dclass UberDog2 {
+	foo(uint8 a, uint8 b, uint8 c) clsend;
+	bar(uint16 d);
+};
+
+dclass DistributedClientTestObject {
+	setName(string name) required;
+	setColor(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) required broadcast ownsend;
+	requestKill() clsend airecv;
+	sendMessage(string msg) clsend ownrecv;
 };

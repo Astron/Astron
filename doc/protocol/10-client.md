@@ -79,7 +79,7 @@ in order to accomplish various normal game tasks.
 > is accepted.
 
 
-**CLIENT_GOODBYE(3)** `args()`
+**CLIENT_DISCONNECT(3)** `args()`
 > This is sent by the client to the Client Agent to notify that it is going
 > to close the connection.
 

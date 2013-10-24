@@ -232,6 +232,12 @@ class DatagramIterator
 			return m_offset;
 		}
 
+		// get_remaining returns the number of unread bytes left
+		uint16_t get_remaining() const
+		{
+			return m_dg.size() - m_offset;
+		}
+
 		// seek sets the current message offset in std::vector<uint8_t>
 		void seek(uint16_t to)
 		{

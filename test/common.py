@@ -5,7 +5,7 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection', 'ChannelConnection']
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection', 'ChannelConnection', 'ClientConnection']
 
 class Daemon(object):
     DAEMON_PATH = './astrond'
@@ -155,6 +155,61 @@ CONSTANTS = {
     'DBSERVER_OBJECT_DELETE_FIELDS':                3031,
     'DBSERVER_OBJECT_DELETE':                       3032,
 
+    # Client Agent
+    'CLIENTAGENT_SET_STATE':                        1000,
+    'CLIENTAGENT_SET_CLIENT_ID':                    1001,
+    'CLIENTAGENT_SEND_DATAGRAM':                    1002,
+    'CLIENTAGENT_EJECT':                            1004,
+    'CLIENTAGENT_DROP':                             1005,
+    'CLIENTAGENT_DECLARE_OBJECT':                   1010,
+    'CLIENTAGENT_UNDECLARE_OBJECT':                 1011,
+    'CLIENTAGENT_ADD_SESSION_OBJECT':               1012,
+    'CLIENTAGENT_REMOVE_SESSION_OBJECT':            1013,
+    'CLIENTAGENT_SET_FIELDS_SENDABLE':              1014,
+    'CLIENTAGENT_OPEN_CHANNEL':                     1100,
+    'CLIENTAGENT_CLOSE_CHANNEL':                    1101,
+    'CLIENTAGENT_ADD_POST_REMOVE':                  1110,
+    'CLIENTAGENT_CLEAR_POST_REMOVES':               1111,
+    'CLIENTAGENT_ADD_INTEREST':                     1200,
+    'CLIENTAGENT_ADD_INTEREST_MULTIPLE':            1201,
+    'CLIENTAGENT_REMOVE_INTEREST':                  1203,
+
+    # Client
+    'CLIENT_HELLO':                                  1,
+    'CLIENT_HELLO_RESP':                             2,
+    'CLIENT_DISCONNECT':                             3,
+    'CLIENT_EJECT':                                  4,
+    'CLIENT_HEARTBEAT':                              5,
+    'CLIENT_OBJECT_SET_FIELD':                       120,
+    'CLIENT_OBJECT_LEAVING':                         132,
+    'CLIENT_OBJECT_LEAVING_OWNER':                   161,
+    'CLIENT_ENTER_OBJECT_REQUIRED':                  142,
+    'CLIENT_ENTER_OBJECT_REQUIRED_OTHER':            143,
+    'CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER':      173,
+    'CLIENT_DONE_INTEREST_RESP':                     204,
+    'CLIENT_ADD_INTEREST':                           200,
+    'CLIENT_ADD_INTEREST_MULTIPLE':                  201,
+    'CLIENT_REMOVE_INTEREST':                        203,
+    'CLIENT_OBJECT_LOCATION':                        140,
+    # Client DC reasons
+    'CLIENT_DISCONNECT_OVERSIZED_DATAGRAM': 106,
+    'CLIENT_DISCONNECT_NO_HELLO': 107,
+    'CLIENT_DISCONNECT_INVALID_MSGTYPE': 108,
+    'CLIENT_DISCONNECT_TRUNCATED_DATAGRAM': 109,
+    'CLIENT_DISCONNECT_ANONYMOUS_VIOLATION': 113,
+    'CLIENT_DISCONNECT_MISSING_OBJECT': 117,
+    'CLIENT_DISCONNECT_FORBIDDEN_FIELD': 118,
+    'CLIENT_DISCONNECT_FORBIDDEN_RELOCATE': 119,
+    'CLIENT_DISCONNECT_BAD_VERSION': 124,
+    'CLIENT_DISCONNECT_BAD_DCHASH': 125,
+    'CLIENT_DISCONNECT_SESSION_OBJECT_DELETED': 153,
+    'CLIENT_DISCONNECT_NO_HEARTBEAT': 345,
+    'CLIENT_DISCONNECT_NETWORK_WRITE_ERROR': 347,
+    'CLIENT_DISCONNECT_NETWORK_READ_ERROR': 348,
+    # Client state codes
+    'CLIENT_STATE_NEW': 0,
+    'CLIENT_STATE_ANONYMOUS': 1,
+    'CLIENT_STATE_ESTABLISHED': 2,
 }
 
 locals().update(CONSTANTS)
@@ -193,6 +248,9 @@ class Datagram(object):
     def is_subset_of(self, other):
         return self.get_payload() == other.get_payload() and \
                self.get_channels() <= other.get_channels()
+
+    def equals(self, other):
+        return self.get_data() == other.get_data()
 
     # Common datagram type helpers:
     @classmethod
@@ -390,9 +448,16 @@ class MDConnection(object):
     def expect_multi(self, datagrams, only=False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
 
+        numIn = 0
+        numE = len(datagrams)
         while datagrams:
             dg = self._read()
-            if dg is None: return False # Augh, we didn't see all the dgs yet!
+            if dg is None:
+                if numIn is 0:
+                    return (False, "No datagram received.")
+                else:
+                    return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))
+            numIn += 1
             dg = Datagram(dg)
 
             for datagram in datagrams:
@@ -401,9 +466,15 @@ class MDConnection(object):
                     break
             else:
                 if only:
-                    return False
+                    f = open("test.received", "wb")
+                    f.write(dg.get_data())
+                    f.close()
+                    f = open("test.expected", "wb")
+                    f.write(datagram.get_data())
+                    f.close()
+                    return (False, "Received wrong datagram; written to test.{expected,received}.")
 
-        return True
+        return (True, "")
 
 
     def expect_none(self):
@@ -437,3 +508,35 @@ class ChannelConnection(MDConnection):
         for chan in self.channels:
             self.send(Datagram.create_remove_channel(chan))
         MDConnection.close(self)
+
+class ClientConnection(MDConnection):
+    def expect_multi(self, datagrams, only=False):
+        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
+
+        numIn = 0
+        numE = len(datagrams)
+        while datagrams:
+            dg = self._read()
+            if dg is None:
+                if numIn is 0:
+                    return (False, "No datagram received.")
+                else:
+                    return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))
+            numIn += 1
+            dg = Datagram(dg)
+
+            for datagram in datagrams:
+                if datagram.equals(dg):
+                    datagrams.remove(datagram)
+                    break
+            else:
+                if only:
+                    f = open("test.received", "wb")
+                    f.write(dg.get_data())
+                    f.close()
+                    f = open("test.expected", "wb")
+                    f.write(datagram.get_data())
+                    f.close()
+                    return (False, "Received wrong datagram; written to test.{expected,received}.")
+
+        return (True, "")

@@ -143,6 +143,20 @@ if(BUILD_EVENTLOGGER)
 	)
 endif()
 
+set (BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
+if(BUILD_CLIENTAGENT)
+	set (CLIENTAGENT_FILES
+		src/clientagent/Client.h
+		src/clientagent/Client.cpp
+		src/clientagent/ClientAgent.h
+		src/clientagent/ClientAgent.cpp
+		src/clientagent/ClientMessages.h
+		src/clientagent/ClientFactory.cpp
+		src/clientagent/ClientFactory.h
+		src/clientagent/AstronClient.cpp
+	)
+endif()
+
 include_directories (src)
 add_executable (astrond
 	src/core/main.cpp 
@@ -168,6 +182,7 @@ add_executable (astrond
 	src/util/EventSender.h
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
+	${CLIENTAGENT_FILES}
 	${TEST_FILES}
 	${DBSERVER_FILES}
 )

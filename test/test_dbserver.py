@@ -61,7 +61,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
-        self.assertTrue(self.conn.expect(dg)) # Expecting SELECT_RESP with no values
+        self.assertTrue(*self.conn.expect(dg)) # Expecting SELECT_RESP with no values
 
         # Create a stored DistributedTestObject3 missing a required value...
         dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
@@ -74,7 +74,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([20], 777, DBSERVER_CREATE_OBJECT_RESP)
         dg.add_uint32(3) # Context
         dg.add_uint32(INVALID_DO_ID)
-        self.assertTrue(self.conn.expect(dg)) # Expecting CREATE_RESP with BAD_DO_ID
+        self.assertTrue(*self.conn.expect(dg)) # Expecting CREATE_RESP with BAD_DO_ID
 
         # Create a stored DistributedTestObject3 with an actual values...
         dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
@@ -129,7 +129,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([20], 777, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(6) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Cleanup
         for doid in doids:
@@ -156,7 +156,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([30], 777, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg)) # object deleted
+        self.assertTrue(*self.conn.expect(dg)) # object deleted
 
         # Create some other objects
         doidA = self.createGenericGetId(30, 3)
@@ -177,7 +177,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint16(0) # Field count
-        self.assertTrue(self.conn.expect(dg)) # object "B" not deleted
+        self.assertTrue(*self.conn.expect(dg)) # object "B" not deleted
 
         # Cleanup
         self.deleteObject(30, doidB)
@@ -385,7 +385,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(54231)
-        self.assertTrue(self.conn.expect(dg)) # Expecting SELECT_RESP with RDB3
+        self.assertTrue(*self.conn.expect(dg)) # Expecting SELECT_RESP with RDB3
 
         # Update single value
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_SET_FIELD)
@@ -486,7 +486,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([100], 777, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(SUCCESS)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
@@ -501,7 +501,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!")
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Update field with existing value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
@@ -517,7 +517,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(FAILURE)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!")
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select object
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
@@ -532,7 +532,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!")
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Cleanup
         self.deleteObject(100, doid)
@@ -569,7 +569,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(SUCCESS)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
@@ -585,7 +585,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(1) # Field Count
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Update field with incorrect old value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
@@ -602,7 +602,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(FAILURE)
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878) # Correct value
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
         self.conn.flush()
 
         # Comparison existing value to non existing value in update
@@ -618,7 +618,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Update object with partially empty values
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
@@ -640,7 +640,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Set the empty value to an actual value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD)
@@ -690,7 +690,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([70], 777, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
         dg.add_uint32(9) # Context
         dg.add_uint8(SUCCESS)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
@@ -752,7 +752,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setDb3)
         dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select multiple fields
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
@@ -790,7 +790,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(4) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select invalid object, multiple fields
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
@@ -805,7 +805,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Clear one field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_DELETE_FIELD)
@@ -824,7 +824,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([80], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(6) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select the cleared field, with multiple message
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
@@ -839,7 +839,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(7) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(0) # Field count
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Select a cleared and non-cleared field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
@@ -857,7 +857,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(1337)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Cleanup
         self.deleteObject(80, doid)
@@ -909,7 +909,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Clear a required field with a default
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
@@ -930,7 +930,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
-        self.assertTrue(self.conn.expect(dg)) #Field setRDbD5 should be default
+        self.assertTrue(*self.conn.expect(dg)) #Field setRDbD5 should be default
 
         # Clear a defaultless required field
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
@@ -951,7 +951,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRDB3)
         dg.add_uint32(5337)
-        self.assertTrue(self.conn.expect(dg))
+        self.assertTrue(*self.conn.expect(dg))
 
         # Clearing multiple fields should behave as expected per field
         doidB = generic_db_obj()
