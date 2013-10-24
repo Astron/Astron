@@ -8,8 +8,8 @@
 // from a DBSERVER_GET_ALL_RESP or DBSERVER_GET_FIELDS_RESP message.
 // Returns false if unpacking failed for some reason.
 bool unpack_db_fields(DatagramIterator &dg, DCClass* dclass,
-                      std::unordered_map<DCField*, std::vector<uint8_t>> &required,
-                      std::unordered_map<DCField*, std::vector<uint8_t>> &ram);
+                      std::unordered_map<DCField*, std::vector<uint8_t> > &required,
+                      std::unordered_map<DCField*, std::vector<uint8_t> > &ram);
 
 class LoadingObject;
 
