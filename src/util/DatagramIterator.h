@@ -9,6 +9,12 @@
 #include <fstream>
 #endif
 
+class DatagramIteratorEOF : public std::runtime_error
+{
+	public:
+		DatagramIteratorEOF(const string &what) : std::runtime_error(what) { }
+};
+
 class DatagramIterator
 {
 	private:
@@ -22,12 +28,7 @@ class DatagramIterator
 				std::stringstream error;
 				error << "dgi tried to read past dg end, offset+length(" << m_offset + length << ")"
 				      << " buf_size(" << m_dg.size() << ")" << std::endl;
-#ifdef _DEBUG
-				std::fstream test("test", std::ios_base::out | std::ios_base::binary);
-				test.write(m_dg.get_data(), m_dg.get_buf_end());
-				test.close();
-#endif
-				throw std::runtime_error(error.str());
+				throw DatagramIteratorEOF(error.str());
 			};
 		}
 	public:
@@ -182,15 +183,79 @@ class DatagramIterator
 			}
 		}
 
+		// get_msg_type returns the datagram's recipient count. Does not advance the offset.
+		// Should be used when the current offset needs to be saved and/or if the next field in the
+		//     datagram is not the recipient_count. If stepping through a fresh datagram, use read_uint8().
+		uint8_t get_recipient_count()
+		{
+			if(m_dg.size() > 0)
+			{
+				return *(uint8_t*)(m_dg.get_data());
+			}
+			else
+			{
+				throw DatagramIteratorEOF("Cannot read header from empty datagram.");
+			}
+		}
+
+		// get_sender returns the datagram's sender. Does not advance the offset.
+		// Should be used when the current offset needs to be saved and/or if the next field in the
+		//     datagram is not the sender. If stepping through a fresh datagram, use read_uint64().
+		uint64_t get_sender()
+		{
+			uint16_t offset = m_offset; // save offset
+
+			m_offset = 1 + get_recipient_count() * 8; // seek sender
+			uint64_t sender = read_uint64(); // read sender
+
+			m_offset = offset; // restore offset
+			return sender;
+		}
+
+		// get_msg_type returns the datagram's message type. Does not advance the offset.
+		// Should be used when the current offset needs to be saved and/or if the next field in the
+		//     datagram is not the msg_type. If stepping through a fresh datagram, use read_uint16().
+		uint16_t get_msg_type()
+		{
+			uint16_t offset = m_offset; // save offset
+
+			m_offset = 9 + get_recipient_count() * 8; // seek message type
+			uint16_t msg_type = read_uint16(); // read message type
+
+			m_offset = offset; // restore offset
+			return msg_type;
+		}
+
 		// tell returns the current message offset in std::vector<uint8_t>
 		uint16_t tell()
 		{
 			return m_offset;
 		}
 
+		// get_remaining returns the number of unread bytes left
+		uint16_t get_remaining() const
+		{
+			return m_dg.size() - m_offset;
+		}
+
 		// seek sets the current message offset in std::vector<uint8_t>
 		void seek(uint16_t to)
 		{
 			m_offset = to;
+		}
+
+		// seek_payload seeks to immediately after the list of receivers
+		void seek_payload()
+		{
+			m_offset = 0; // Seek to start
+			m_offset = 1 + get_recipient_count() * 8;
+		}
+
+		// skip increments the current message offset by a length.
+		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
+		void skip(uint16_t length)
+		{
+			check_read_length(length);
+			m_offset += length;
 		}
 };

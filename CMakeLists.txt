@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
-project (OOTP)
+project (Astron)
 
 if (WIN32)
 	add_definitions (-D_WIN32_WINDOWS)
@@ -34,6 +34,8 @@ endif()
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 	set (CMAKE_CXX_FLAGS "-pthread")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set (YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
 else ()
 	set (YAMLCPP_LIBNAME "libyaml-cppmd" CACHE STRING "Name of YAML library")
 	set (YAMLCPP_LIBNAME optimized ${YAMLCPP_LIBNAME} debug ${YAMLCPP_LIBNAME}d)
@@ -118,6 +120,19 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
+
+	set (BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
+	if(BUILD_STATESERVER_DBSS)
+		set(STATESERVER_FILES
+			${STATESERVER_FILES}
+			src/stateserver/DBStateServer.h
+			src/stateserver/DBStateServer.cpp
+			src/stateserver/LoadingObject.h
+			src/stateserver/LoadingObject.cpp
+		)
+	endif()
+else()
+	set(BUILD_STATESERVER_DBSS OFF)
 endif()
 
 set (BUILD_EVENTLOGGER ON CACHE BOOL "If on, Event Logger will be built into binary")
@@ -128,8 +143,22 @@ if(BUILD_EVENTLOGGER)
 	)
 endif()
 
+set (BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
+if(BUILD_CLIENTAGENT)
+	set (CLIENTAGENT_FILES
+		src/clientagent/Client.h
+		src/clientagent/Client.cpp
+		src/clientagent/ClientAgent.h
+		src/clientagent/ClientAgent.cpp
+		src/clientagent/ClientMessages.h
+		src/clientagent/ClientFactory.cpp
+		src/clientagent/ClientFactory.h
+		src/clientagent/AstronClient.cpp
+	)
+endif()
+
 include_directories (src)
-add_executable (openotpd
+add_executable (astrond
 	src/core/main.cpp 
 	src/core/config.cpp 
 	src/core/logger.cpp 
@@ -153,6 +182,7 @@ add_executable (openotpd
 	src/util/EventSender.h
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
+	${CLIENTAGENT_FILES}
 	${TEST_FILES}
 	${DBSERVER_FILES}
 )
@@ -166,5 +196,5 @@ add_library (dcparser
 	src/dcparser/dcParser.cxx
 )
 
-add_dependencies (openotpd dcparser)
-target_link_libraries (openotpd dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+add_dependencies (astrond dcparser)
+target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})

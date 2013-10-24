@@ -24,8 +24,8 @@ roles:
         max: 1000010
       storage:
         type: mongodb
-        connection: mongodb://openotp_test:sudowoodo@localhost
-        database: openotp_test
+        connection: mongodb://astron_test:sudowoodo@localhost
+        database: astron_test
 """ % test_dc
 
 class TestDatabaseServerMongo(unittest.TestCase, DatabaseBaseTests):
