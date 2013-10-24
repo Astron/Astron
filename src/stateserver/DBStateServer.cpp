@@ -509,7 +509,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get fields from database
 			std::unordered_map<DCField*, std::vector<uint8_t>> required_fields;
-			std::unordered_map<DCField*, std::vector<uint8_t>> ram_fields;
+			std::map<DCField*, std::vector<uint8_t>> ram_fields;
 			if(!unpack_db_fields(dgi, r_dclass, required_fields, ram_fields))
 			{
 				m_log->error() << "Error while unpacking fields from database." << std::endl;
@@ -577,7 +577,7 @@ void DBStateServer::discard_loader(uint32_t do_id)
 
 bool unpack_db_fields(DatagramIterator &dgi, DCClass* dclass,
                       std::unordered_map<DCField*, std::vector<uint8_t>> &required,
-                      std::unordered_map<DCField*, std::vector<uint8_t>> &ram)
+                      std::map<DCField*, std::vector<uint8_t>> &ram)
 {
 	// Unload ram and required fields from database resp
 	uint16_t db_field_count = dgi.read_uint16();

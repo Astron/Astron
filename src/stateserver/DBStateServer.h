@@ -9,7 +9,7 @@
 // Returns false if unpacking failed for some reason.
 bool unpack_db_fields(DatagramIterator &dg, DCClass* dclass,
                       std::unordered_map<DCField*, std::vector<uint8_t>> &required,
-                      std::unordered_map<DCField*, std::vector<uint8_t>> &ram);
+                      std::map<DCField*, std::vector<uint8_t>> &ram);
 
 class LoadingObject;
 
