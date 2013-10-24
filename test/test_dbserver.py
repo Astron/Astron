@@ -421,11 +421,13 @@ class DatabaseBaseTests(object):
         # Update multiple values
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doid)
-        dg.add_uint16(2) # Field count
+        dg.add_uint16(3) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(9999)
         dg.add_uint16(setDb3)
         dg.add_string("... can you make me a sandwich?")
+        dg.add_uint16(setADb3)
+        dg.add_string("sudo make me a sandwich")
         self.conn.send(dg)
 
         # Select all fields from the stored object
@@ -442,13 +444,15 @@ class DatabaseBaseTests(object):
         self.assertEquals(dgi.read_uint32(), 4) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
+        self.assertEquals(dgi.read_uint16(), 3) # Check field count
+        for x in xrange(3):
             field = dgi.read_uint16()
             if field == setRDB3:
                 self.assertEquals(dgi.read_uint32(), 9999)
             elif field == setDb3:
                 self.assertEquals(dgi.read_string(), "... can you make me a sandwich?")
+            elif field == setADb3:
+                self.assertEquals(dgi.read_string(), "sudo make me a sandwich")
             else:
                 self.fail("Bad field type")
 
