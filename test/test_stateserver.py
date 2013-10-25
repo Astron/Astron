@@ -1821,5 +1821,10 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(393) # lastBlock.z
         self.assertTrue(*conn.expect(dg))
 
+
+        ### Cleanup ###
+        deleteObject(conn, 5, doid1)
+        self.disconnect(conn)
+
 if __name__ == '__main__':
     unittest.main()
