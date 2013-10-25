@@ -4,7 +4,7 @@ Building with GNU _Make_ on Linux
 ### Dependencies ###
 You will need to, of-course, clone the repository.
 After you have the repository you will need to download and build Astron's
-dependencies.  See the building readme [link-to-readme] for instructions.
+dependencies.  See the [building readme](https://github.com/Astron/Astron/blob/build-instructions/doc/building/readme.md) for instructions.
 
 
 ### Compiling ###
@@ -32,12 +32,12 @@ included in the `.gitignore` file.
 Instead, edit the `.git/info/exclude` file for your local clone.
 
 The following should be added for GNU Make on Linux:  
-'''
-# Compilation Artifacts
+```
+## Compilation Artifacts ##
 astrond
 *.[oa]
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
-'''
+```
