@@ -424,10 +424,12 @@ class YAMLEngine : public IDatabaseEngine
 					}
 					dbo.fields[field] = read_yaml_field(field, it->second);
 				}
-				else
-				{
-					dbo.fields[field] = found->second;
-				}
+			}
+
+			// Add in the fields that are being updated:
+			for(auto it = fields.begin(); it != fields.end(); ++it)
+			{
+				dbo.fields[it->first] = it->second;
 			}
 
 			write_yaml_object(do_id, dcc, dbo);
