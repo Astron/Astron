@@ -1812,9 +1812,8 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Expect only the broadcast field to be sent to the location
-        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([0xBAD << 32 | 0xF001], 5, STATESERVER_OBJECT_SET_FIELD)
         dg.add_uint32(doid1) # Id
-        dg.add_uint16(1) # Num fields: 2
         dg.add_uint16(newBlock)
         dg.add_uint32(171) # lastBlock.x
         dg.add_uint32(282) # lastBlock.y
