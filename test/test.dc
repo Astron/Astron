@@ -15,6 +15,7 @@ dclass DistributedTestObject2 {
 dclass DistributedTestObject3 : DistributedTestObject1 {
 	setDb3(string data) ram db;
 	setRDB3(uint32 rdb) required broadcast db;
+	setADb3(string data) ram db airecv;
 };
 
 dclass DistributedTestObject4 {

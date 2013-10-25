@@ -26,33 +26,35 @@ setBRam2 = 7
 
 setDb3 = 8
 setRDB3 = 9
-setX = 10
-setY = 11
-setUnrelated = 12
-setZ = 13
-setXyz = 14
-setOne = 15
-setTwo = 16
-setThree = 17
-set123 = 18
-setRDbD5 = 19
-setFoo = 20
+setADb3 = 10
 
-request = 21
-response = 22
+setX = 11
+setY = 12
+setUnrelated = 13
+setZ = 14
+setXyz = 15
+setOne = 16
+setTwo = 17
+setThree = 18
+set123 = 19
+setRDbD5 = 20
+setFoo = 21
 
-foo = 23
-bar = 24
+request = 22
+response = 23
 
-setName = 25
-setColor = 26
-requestKill = 27
-sendMessage = 28
+foo = 24
+bar = 25
+
+setName = 26
+setColor = 27
+requestKill = 28
+sendMessage = 29
 
 setRequired1DefaultValue = 78
 
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
-DC_HASH = 0x53c5b3b
+DC_HASH = 0x57b2b45
 
 setRDbD5DefaultValue = 20
