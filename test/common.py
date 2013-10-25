@@ -503,6 +503,7 @@ class ChannelConnection(MDConnection):
         for channel in self.channels:
             self.send(Datagram.create_remove_channel(channel))
             self.channels.remove(channel)
+        self.channels = []
 
     def close(self):
         for chan in self.channels:
