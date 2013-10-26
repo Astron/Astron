@@ -54,3 +54,15 @@ dclass DistributedClientTestObject {
 	requestKill() clsend airecv;
 	sendMessage(string msg) clsend ownrecv;
 };
+
+struct Block {
+	uint32 blockX;
+	uint32 blockY;
+	uint32 blockZ;
+};
+
+dclass DistributedChunk {
+	blockList(Block blocks[]) required clrecv;
+	lastBlock(Block block) ram clrecv airecv;
+	newBlock(Block block) broadcast;
+};

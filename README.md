@@ -36,21 +36,46 @@ In addition, every field in a DC file may contain one or more **keywords**. Thes
 routing/behavior of a field update as it passes through the Astron cluster.  
 Some keywords are listed below:
 
-* broadcast: Any updates on this field should be sent to all clients that can see the object.
-* airecv: Any updates on this field should be sent to any AI servers that know about this object.
-* ownrecv: Certain objects may be "owned" by a client. This client has special privileges for the
-object,and may change the object's zone at will. This keyword means that the owning client should
-receive any updates for this field.
-* ownsend: A client is allowed to update this field if it owns the object.
-* clsend: All clients that can see the object are allowed to update this field.
-* db: The field contains some information that should persist long-term. If the object exists in a
-database, the database will automatically remember this update and reapply it when the object is loaded next.
-* ram: The field contains some information that should persis short term. If the object is disabled,
-the information will be lost. When this object enters a client's interest, it will automatically
-receive the last update sent for this field.
-* required: This field must be present at all times. The server will interpret this to mean that the
-field's value is fundamental to the existence of the object. It is therefore incorporated into all
-most(it needs broadcast for some) object snapshots, sent when the object is created or visible.
+> ### Persistence ###
+>
+> **ram**  
+> The field contains some information that should persist short term.
+> If the object is disabled, the information will be lost.
+>
+> **required** _implies **ram**_  
+> This field must be present at all times. The server will interpret this to mean that the
+> field's value is fundamental to the existence of the object.  Therefore, an object must be given
+> required values on creation, and required values will reset to defaults when indvidually cleared.
+> The field is included in all object snapshots to the AI, and all snapshots to the client if it is
+> also visible to the client through ownrecv or clrecv.
+>
+> **db**  
+> The field contains some information that should persist long-term. If the object exists in a
+> database, the database will remember updates to this field and restore them on object activation.
+>
+> ### Publication | Subscription ###
+>
+> **airecv**  
+> Any updates on this field should be sent to the object's managing AI.
+>
+> **ownrecv**  
+> Objects may be "owned" by a client.
+> This owner may change the object's parent and zone at will (unless disabled by the ClientAgent).
+> The owner should receive this field when it gains ownership of the object.
+> Additionally, any updates on this field should be sent to the object's owner.
+>
+> **clrecv**  
+> The client should receive this field when the object becomes visible to the client.
+>
+> **broadcast** _implies **clrecv**_  
+> Any updates on this field should be sent to all clients that can see the object.
+>
+> **ownsend**  
+> Objects may be "owned" by a client.
+> A client is allowed to update this field if it owns the object.
+>
+> **clsend**  
+> All clients that can see the object are allowed to update this field.
 
 
 

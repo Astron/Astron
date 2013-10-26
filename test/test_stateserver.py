@@ -1752,5 +1752,78 @@ class TestStateServer(unittest.TestCase):
         for mdconn in [conn, children0, location1, location20, location21]:
             self.disconnect(mdconn)
 
+    # Tests the keyword clrecv
+    def test_clrecv(self):
+        self.flush_failed()
+        conn = self.connect(0xBAD << 32 | 0xF001)
+
+        doid1 = 0xF00
+
+        ### Test for clrecv keyword ###
+        # Created a distributed chunk
+        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, 0xBAD, 0xF001, DistributedChunk)
+        dg.add_uint16(12) # blockList size in bytes (contains 1 element)
+        dg.add_uint32(43) # blockList[0].x
+        dg.add_uint32(54) # blockList[0].y
+        dg.add_uint32(65) # blockList[0].z
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(lastBlock)
+        dg.add_uint32(0) # lastBlock.x
+        dg.add_uint32(0) # lastBlock.y
+        dg.add_uint32(0) # lastBlock.z
+        conn.send(dg)
+
+        # Expect entry message
+        dg = Datagram.create([0xBAD << 32 | 0xF001], doid1,
+            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, 0xBAD, 0xF001, DistributedChunk)
+        dg.add_uint16(12) # blockList size in bytes (contains 1 element)
+        dg.add_uint32(43) # blockList[0].x
+        dg.add_uint32(54) # blockList[0].y
+        dg.add_uint32(65) # blockList[0].z
+        dg.add_uint16(1) # Optional fields: 1
+        dg.add_uint16(lastBlock)
+        dg.add_uint32(0) # lastBlock.x
+        dg.add_uint32(0) # lastBlock.y
+        dg.add_uint32(0) # lastBlock.z
+        self.assertTrue(*conn.expect(dg))
+
+        # Update the object with some new values
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELDS)
+        dg.add_uint32(doid1) # Id
+        dg.add_uint16(3) # Num fields: 3
+        dg.add_uint16(blockList)
+        dg.add_uint16(24) # blockList size in bytes (contains 2 elements)
+        dg.add_uint32(43) # blockList[0].x
+        dg.add_uint32(54) # blockList[0].y
+        dg.add_uint32(65) # blockList[0].z
+        dg.add_uint32(171) # blockList[1].x
+        dg.add_uint32(282) # blockList[1].y
+        dg.add_uint32(393) # blockList[1].z
+        dg.add_uint16(lastBlock)
+        dg.add_uint32(43) # lastBlock.x
+        dg.add_uint32(54) # lastBlock.y
+        dg.add_uint32(65) # lastBlock.z
+        dg.add_uint16(newBlock)
+        dg.add_uint32(171) # lastBlock.x
+        dg.add_uint32(282) # lastBlock.y
+        dg.add_uint32(393) # lastBlock.z
+        conn.send(dg)
+
+        # Expect only the broadcast field to be sent to the location
+        dg = Datagram.create([0xBAD << 32 | 0xF001], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_uint32(doid1) # Id
+        dg.add_uint16(newBlock)
+        dg.add_uint32(171) # lastBlock.x
+        dg.add_uint32(282) # lastBlock.y
+        dg.add_uint32(393) # lastBlock.z
+        self.assertTrue(*conn.expect(dg))
+
+
+        ### Cleanup ###
+        deleteObject(conn, 5, doid1)
+        self.disconnect(conn)
+
 if __name__ == '__main__':
     unittest.main()

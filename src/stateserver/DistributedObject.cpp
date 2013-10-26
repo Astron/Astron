@@ -79,7 +79,7 @@ DistributedObject::~DistributedObject()
 	delete m_log;
 }
 
-void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only, bool also_owner)
+void DistributedObject::append_required_data(Datagram &dg, bool client_only, bool also_owner)
 {
 	dg.add_uint32(m_do_id);
 	dg.add_uint32(m_parent_id);
@@ -89,22 +89,22 @@ void DistributedObject::append_required_data(Datagram &dg, bool broadcast_only, 
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
 		DCField *field = m_dclass->get_inherited_field(i);
-		if(field->is_required() && !field->as_molecular_field() && (!broadcast_only
-		        || field->is_broadcast() || (also_owner && field->is_ownrecv())))
+		if(field->is_required() && !field->as_molecular_field() && (!client_only
+		        || field->is_broadcast() || field->is_clrecv() || (also_owner && field->is_ownrecv())))
 		{
 			dg.add_data(m_required_fields[field]);
 		}
 	}
 }
 
-void DistributedObject::append_other_data(Datagram &dg, bool broadcast_only, bool also_owner)
+void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool also_owner)
 {
-	if(broadcast_only)
+	if(client_only)
 	{
 		std::list<DCField*> broadcast_fields;
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
-			if(it->first->is_broadcast() || (also_owner && it->first->is_ownrecv()))
+			if(it->first->is_broadcast() || it->first->is_clrecv() || (also_owner && it->first->is_ownrecv()))
 			{
 				broadcast_fields.push_back(it->first);
 			}
