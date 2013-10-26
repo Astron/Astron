@@ -120,6 +120,11 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 
+## Building ##
+See the build instructions at https://github.com/Astron/Astron/tree/build-instructions/doc/building.
+
+
+
 ## Development ##
 
 ### The Team ###
@@ -136,25 +141,6 @@ We welcome any potential contributers! Don't just start coding though; we all ta
 Please come in and tell us what you'd like to do, or ask what we could use help on.
 
 #### Join us at: [#Astron on irc.freenode.net](irc://irc.freenode.net/Astron)
-
-
-#### Building in Development ####
-Astron has a number of dependencies including libyaml-cpp and boost.
-
-Get the boost library from http://www.boost.org/users/download/, or install from a package on linux.  Very old versions of the boost library may not work as there are dependencies on some features of boost::asio and boost::icl.
-In some environments, you may have to set the BOOST_ROOT or BOOSTROOT environment variable to the root of your compiled boost libraries.
-
-You can download the libyaml-cpp dependency directly from https://yaml-cpp.googlecode.com/files/yaml-cpp-0.5.1.tar.gz.  This dependency should typically be compiled and placed directly underneath the Astron/dependencies folder.
-
-Now that you have the depencies you can build!
-We use CMAKE to handle cross-platform compiling.
-
-On a linux system, build for development with:  
-
-    cmake -DCMAKE_BUILD_TYPE=Debug . && make
-
-On other systems, make sure DCMAKE_BUILD_TYPE is included with your CMAKE flags.  
-This compiles in debug logging and adds debug flags to your compiler.
 
 
 #### OTP Architecture resources ####
