@@ -11,12 +11,12 @@ dependencies.  See the [building readme](https://github.com/Astron/Astron/blob/b
 _Preparing Astron for VisualStudio requires CMake. It is recommend to use the
 cmake-gui. (Download from http://www.cmake.org/cmake/resources/software.html)_
 
-Under `Where is the source code:` Enter the path to your clone of Astron, then
-hit the `Configure` button.
+Under `Where is the source code:` Enter the path to your clone of Astron.
 
 For `Where to build the binaries:` it is recommended to use a directory outside
-of the repository such as `<ASTRON_PATH>/../build` or one for each release type
-`../Debug/`, `../RelWithDebInfo`, and `../Release`.
+of the repository like `<ASTRON_PATH>/../build` or `../AstronBuild`.
+
+After filling those two in hit the `Configure` button.
 
  - To build Astron for release, set the value named `CMAKE_BUILD_TYPE` to `Release`.
  - For developing with Trace and Debug messages, set it to `Debug`.
