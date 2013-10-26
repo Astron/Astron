@@ -28,3 +28,4 @@ We use CMAKE to handle cross-platform compiling.
 See the individual guides for the compiler you intend on using:
 
  - Linux/Make : [instructions](https://github.com/Astron/Astron/blob/build-instructions/doc/building/linux-gnu-make.md)
+ - Windows/VisualStudio : [instructions](https://github.com/Astron/Astron/blob/build-instructions/doc/building/windows-visualstudio.md)
