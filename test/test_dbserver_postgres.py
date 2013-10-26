@@ -23,9 +23,7 @@ roles:
         min: 1000000
         max: 1000010
       storage:
-        type: postgres
-        user: astron_test
-        pass: sudowoodo
+        type: postgresql
         database: astron_test
 """ % test_dc
 
