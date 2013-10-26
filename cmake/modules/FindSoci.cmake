@@ -6,6 +6,7 @@
 # This module defines:
 #  SOCI_INCLUDE_DIRS        = include dirs to be used when using the soci library
 #  SOCI_LIBRARY             = full path to the soci library
+#  SOCI_LIBRARY_DIR         = full path to directory containing soci library
 #  SOCI_VERSION             = the soci version found (not yet. soci does not provide that info.)
 #  SOCI_FOUND               = true if soci was found
 #

@@ -2,6 +2,10 @@
 #include "DBEngineFactory.h"
 
 #include "core/global.h"
+#include "dcparser/hashGenerator.h"
+#include "dcparser/dcFile.h"
+#include "dcparser/dcClass.h"
+#include "dcparser/dcField.h"
 
 #include <soci.h>
 
@@ -17,45 +21,116 @@ class SociSQLEngine : public IDatabaseEngine
 {
 	public:
 		SociSQLEngine(DBEngineConfig dbeconfig, uint32_t min_id, uint32_t max_id) :
-			(dbeconfig, min_id, max_id), m_backend(engine_type.get_rval()),
-			m_db_name(database_name.get_rval()), m_sess_user(session_user.get_rval()),
-			m_sess_passwd(session_passwd.get_rval())
+			IDatabaseEngine(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
+			m_backend(engine_type.get_rval(dbeconfig)),
+			m_db_name(database_name.get_rval(dbeconfig)),
+			m_sess_user(session_user.get_rval(dbeconfig)),
+			m_sess_passwd(session_passwd.get_rval(dbeconfig))
 		{
 			stringstream log_name;
 			log_name << "Database-" << m_backend << "(Range: [" << min_id << ", " << max_id << "])";
-			m_log = new LogCategory(m_backend, log_name.string);
+			m_log = new LogCategory(m_backend, log_name.str());
 
 			connect();
 			check_tables();
 			check_classes();
 		}
+
+#define val_t std::vector<uint8_t>
+#define map_t std::map<DCField*, std::vector<uint8_t>>
+		uint32_t create_object(const DatabaseObject& dbo)
+		{
+			return 0;
+		}
+		void delete_object(uint32_t do_id)
+		{
+		}
+		bool get_object(uint32_t do_id, DatabaseObject& dbo)
+		{
+
+		}
+		DCClass* get_class(uint32_t do_id)
+		{
+			return NULL;
+		}
+		void del_field(uint32_t do_id, DCField* field)
+		{
+		}
+		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
+		{
+		}
+		void set_field(uint32_t do_id, DCField* field, const val_t &value)
+		{
+		}
+		void set_fields(uint32_t do_id, const map_t &fields)
+		{
+		}
+		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
+		{
+			return false;
+		}
+		bool set_fields_if_empty(uint32_t do_id, map_t &values)
+		{
+			return false;
+		}
+		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
+		{
+			return false;
+		}
+		bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
+		{
+			return false;
+		}
+
+		bool get_field(uint32_t do_id, const DCField* field, val_t &value)
+		{
+			return false;
+		}
+		bool get_fields(uint32_t do_id,  const std::vector<DCField*> &fields, map_t &values)
+		{
+			return false;
+		}
+#undef map_t
+#undef val_t
+
 	protected:
 		void connect()
 		{
+			// Prepare database, username, password, etc for connection
 			stringstream connstring;
-			if(backend == "postgresql")
+			if(m_backend == "postgresql")
 			{
 				connstring << "dbname=" << m_db_name;
-				m_sql.open(postgresql, connstring.str());
 			}
-			else if(backend == "mysql")
+			else if(m_backend == "mysql")
 			{
 				connstring << "db=" << m_db_name << " "
 				           << "user=" << m_sess_user << " "
 				           << "pass='" << m_sess_passwd << "'";
-				m_sql.open(mysql, connstring.str());
 			}
-			else if(backend == "sqlite")
+			else if(m_backend == "sqlite")
 			{
-				m_sql.open(sqlite3, m_db_name);
+				connstring << m_db_name;
 			}
+
+			// Connect to database
+			m_sql.open(m_backend, connstring.str());
 		}
 
 		void check_tables()
 		{
-			m_sql << "CREATE TABLE IF NOT EXISTS objects ("
-			      "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, class_id INT NOT NULL,"
-			      "CONSTRAINT check_object CHECK (id BETWEEN " << min_id << "AND" << max_id "));";
+			if(m_backend == "postgresql")
+			{
+				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
+				      "id SERIAL NOT NULL PRIMARY KEY, class_id INT NOT NULL,"
+				      "CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			}
+			else
+			{
+				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
+				      "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, class_id INT NOT NULL,"
+				      "CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			}
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
 			      "CONSTRAINT check_class CHECK (id BETWEEN 0 AND " << g_dcf->get_num_classes()-1 << "));";
@@ -77,7 +152,7 @@ class SociSQLEngine : public IDatabaseEngine
 			for(dc_id = 0; dc_id < g_dcf->get_num_classes(); ++dc_id)
 			{
 				get_row_by_id.execute(true);
-				if(sql.got_data())
+				if(m_sql.got_data())
 				{
 					check_class(dc_id, dc_name, dc_hash);
 				}
@@ -89,7 +164,7 @@ class SociSQLEngine : public IDatabaseEngine
 					if(create_fields_table(dcc))
 					{
 						// Create class row in classes table
-						HashGenerator gen();
+						HashGenerator gen;
 						dcc->generate_hash(gen);
 						dc_hash = gen.get_hash();
 						dc_name = dcc->get_name();
@@ -101,28 +176,29 @@ class SociSQLEngine : public IDatabaseEngine
 	private:
 		string m_backend, m_db_name;
 		string m_sess_user, m_sess_passwd;
+		int m_min_id, m_max_id;
 		session m_sql;
 		LogCategory* m_log;
 
 		void check_class(uint16_t id, string name, unsigned long hash)
 		{
-			DCClass* dcc = g_dcf->get_class(dc_id);
-			if(dc_name != dcc->get_name())
+			DCClass* dcc = g_dcf->get_class(id);
+			if(name != dcc->get_name())
 			{
 				// TODO: Try and update the database instead of exiting
 				m_log->fatal() << "Class name '" << dcc->get_name() << "' from DCFile does not match"
-				               " name '" << dc_name << "' in database, for dc_id " << dc_id << std::endl;
+				               " name '" << name << "' in database, for dc_id " << id << std::endl;
 				m_log->fatal() << "Database must be rebuilt." << std::endl;
 				exit(1);
 			}
 
-			HashGenerator gen();
+			HashGenerator gen;
 			dcc->generate_hash(gen);
-			if(dc_hash != gen.get_hash())
+			if(hash != gen.get_hash())
 			{
 				// TODO: Try and update the database instead of exiting
 				m_log->fatal() << "Class hash '" << gen.get_hash() << "' from DCFile does not match"
-				               " hash '" << dc_hash << "' in database, for dc_id " << dc_id << std::endl;
+				               " hash '" << hash << "' in database, for dc_id " << id << std::endl;
 				m_log->fatal() << "Database must be rebuilt." << std::endl;
 				exit(1);
 			}
@@ -146,9 +222,18 @@ class SociSQLEngine : public IDatabaseEngine
 				{
 					db_field_count += 1;
 					ss << "," << field->get_name() << " "; // column name
+					if(field->has_fixed_byte_size())
+					{
+						ss << "INT"; //column type
+						continue;
+					}
+
 					switch(field->get_pack_type())
 					{
-						case PT_int, PT_uint, PT_int64, PT_uint64:
+						case PT_int:
+						case PT_uint:
+						case PT_int64:
+						case PT_uint64:
 						{
 							ss << "INT"; //column type
 						}
@@ -164,7 +249,7 @@ class SociSQLEngine : public IDatabaseEngine
 						{
 							// TODO: See if its possible to get the parameter range limits,
 							//       then use VARBINARY(n) for smaller range limits.
-							if(backend == "postgresql")
+							if(m_backend == "postgresql")
 							{
 								ss << "BYTEA";
 							}
@@ -179,6 +264,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			if(db_field_count > 0)
 			{
+				ss << ");";
 				m_sql << ss.str();
 				return true;
 			}
@@ -187,6 +273,6 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 };
 
-DBEngineCreator<SociEngine> mysqlengine_creator("mysql");
-DBEngineCreator<SociEngine> postgresqlengine_creator("postgresql");
-DBEngineCreator<SociEngine> sqliteengine_creator("sqlite");
+DBEngineCreator<SociSQLEngine> mysqlengine_creator("mysql");
+DBEngineCreator<SociSQLEngine> postgresqlengine_creator("postgresql");
+DBEngineCreator<SociSQLEngine> sqliteengine_creator("sqlite");

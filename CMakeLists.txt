@@ -176,7 +176,15 @@ if(BUILD_DBSERVER)
 		### Add files to compiler and linker ###
 		if(BUILD_DB_SQLITE OR BUILD_DB_MYSQL OR BUILD_DB_POSTGRESQL)
 			include_directories (${SOCI_INCLUDE_DIRS})
-			link_directories (${SOCI_LIBRARY})
+			link_directories (${SOCI_LIBRARY_DIR})
+			set (DBSERVER_FILES
+				${DBSERVER_FILES}
+				src/database/SociSQLEngine.cpp
+			)
+			set (SOCI_LIBRARY_NAMES soci_core dl)
+			if(BUILD_DB_POSTGRESQL)
+				set (SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
+			endif()
 		endif()
 	else ()
 		message (STATUS "Soci not found")
@@ -278,4 +286,4 @@ add_library (dcparser
 )
 
 add_dependencies (astrond dcparser)
-target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES})
+target_link_libraries (astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})

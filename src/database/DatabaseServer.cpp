@@ -6,7 +6,7 @@
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 static ConfigVariable<uint32_t> min_id("generate/min", INVALID_DO_ID);
 static ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
-static ConfigVariable<std::string> engine_type("engine/type", "filesystem");
+static ConfigVariable<std::string> engine_type("engine/type", "yaml");
 
 class DatabaseServer : public Role
 {
