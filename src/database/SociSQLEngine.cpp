@@ -12,7 +12,9 @@
 
 using namespace std;
 using namespace soci;
-using namespace boost::icl;
+
+typedef boost::icl::discrete_interval<uint32_t> interval_t;
+typedef boost::icl::interval_set<uint32_t> set_t;
 
 static ConfigVariable<std::string> engine_type("type", "null");
 static ConfigVariable<std::string> database_name("database", "null");
@@ -39,12 +41,10 @@ class SociSQLEngine : public IDatabaseEngine
 			check_ids();
 		}
 
-#define val_t std::vector<uint8_t>
-#define map_t std::map<DCField*, std::vector<uint8_t>>
 		uint32_t create_object(const DatabaseObject& dbo)
 		{
 			string field_name;
-			val_t field_value;
+			vector<uint8_t> field_value;
 			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
 			bool storable = is_storable(dbo.dc_id);
 
@@ -108,7 +108,24 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 		bool get_object(uint32_t do_id, DatabaseObject& dbo)
 		{
-			return false;
+			m_log->spam() << "Getting obj-" << do_id << " ..." << std::endl;
+
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+			dbo.dc_id = dcc->get_number();
+
+
+			bool stored = is_storable(dcc->get_number());
+			if(stored)
+			{
+				get_fields_from_table(do_id, dcc, dbo.fields);
+			}
+
+			return true;
 		}
 		DCClass* get_class(uint32_t do_id)
 		{
@@ -131,39 +148,37 @@ class SociSQLEngine : public IDatabaseEngine
 		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
 		{
 		}
-		void set_field(uint32_t do_id, DCField* field, const val_t &value)
+		void set_field(uint32_t do_id, DCField* field, const vector<uint8_t> &value)
 		{
 		}
-		void set_fields(uint32_t do_id, const map_t &fields)
+		void set_fields(uint32_t do_id, const map<DCField*, vector<uint8_t>> &fields)
 		{
 		}
-		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
-		{
-			return false;
-		}
-		bool set_fields_if_empty(uint32_t do_id, map_t &values)
+		bool set_field_if_empty(uint32_t do_id, DCField* field, vector<uint8_t> &value)
 		{
 			return false;
 		}
-		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
+		bool set_fields_if_empty(uint32_t do_id, map<DCField*, vector<uint8_t>> &values)
 		{
 			return false;
 		}
-		bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
+		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal, vector<uint8_t> &value)
+		{
+			return false;
+		}
+		bool set_fields_if_equals(uint32_t do_id, const map<DCField*, vector<uint8_t>> &equals, map<DCField*, vector<uint8_t>> &values)
 		{
 			return false;
 		}
 
-		bool get_field(uint32_t do_id, const DCField* field, val_t &value)
+		bool get_field(uint32_t do_id, const DCField* field, vector<uint8_t> &value)
 		{
 			return false;
 		}
-		bool get_fields(uint32_t do_id,  const std::vector<DCField*> &fields, map_t &values)
+		bool get_fields(uint32_t do_id,  const std::vector<DCField*> &fields, map<DCField*, vector<uint8_t>> &values)
 		{
 			return false;
 		}
-#undef map_t
-#undef val_t
 
 	protected:
 		void connect()
@@ -240,8 +255,8 @@ class SociSQLEngine : public IDatabaseEngine
 		void check_ids()
 		{
 			// Set all ids as free ids
-			m_free_ids = interval_set<uint32_t>();
-			m_free_ids += discrete_interval<uint32_t>::closed(m_min_id, m_max_id);
+			m_free_ids = set_t();
+			m_free_ids += interval_t::closed(m_min_id, m_max_id);
 
 			uint32_t id;
 
@@ -252,7 +267,7 @@ class SociSQLEngine : public IDatabaseEngine
 			// Iterate through the result set, removing used ids from the free ids
 			while(st.fetch())
 			{
-			    m_free_ids -= discrete_interval<uint32_t>::closed(id, id);
+			    m_free_ids -= interval_t::closed(id, id);
 			}
 		}
 
@@ -265,7 +280,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 
 			// Get next available id from m_free_ids set
-			discrete_interval<uint32_t> first = *m_free_ids.begin();
+			interval_t first = *m_free_ids.begin();
 			uint32_t id = first.lower();
 			if(!(first.bounds().bits() & BOOST_BINARY(10)))
 			{
@@ -279,21 +294,21 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 
 			// Remove it from the free ids
-		    m_free_ids -= discrete_interval<uint32_t>::closed(id, id);
+		    m_free_ids -= interval_t::closed(id, id);
 
 		    return id;
 		}
 
 		void push_id(uint32_t id)
 		{
-		    m_free_ids += discrete_interval<uint32_t>::closed(id, id);
+		    m_free_ids += interval_t::closed(id, id);
 		}
 	private:
 		uint32_t m_min_id, m_max_id;
 		string m_backend, m_db_name;
 		string m_sess_user, m_sess_passwd;
 		session m_sql;
-		interval_set<uint32_t> m_free_ids;
+		set_t m_free_ids;
 		LogCategory* m_log;
 
 		void check_class(uint16_t id, string name, unsigned long hash)
@@ -338,43 +353,39 @@ class SociSQLEngine : public IDatabaseEngine
 				{
 					db_field_count += 1;
 					ss << "," << field->get_name() << " "; // column name
-					if(field->has_fixed_byte_size())
+
+					DCPackerInterface* packer;
+					if(field->has_nested_fields() && field->get_num_nested_fields() == 1)
 					{
-						ss << "INT"; //column type
-						continue;
+						packer = field->get_nested_field(0);
+					}
+					else
+					{
+						packer = field;
 					}
 
 					// TODO: fix this switch, somehow it always reaches defualt
-					switch(field->get_pack_type())
+					switch(packer->get_pack_type())
 					{
 						case PT_int:
 						case PT_uint:
 						case PT_int64:
 						case PT_uint64:
-						{
 							ss << "INT"; //column type
-						}
-						break;
+							break;
+						case PT_double:
+							ss << "FLOAT"; //column type
+							break;
 						case PT_string:
-						{
 							// TODO: See if its possible to get the parameter range limits,
 							//       then use VARCHAR(n) for smaller range limits.
 							ss << "TEXT"; //column type
-						}
-						break;
+							break;
 						default:
-						{
 							// TODO: See if its possible to get the parameter range limits,
 							//       then use VARBINARY(n) for smaller range limits.
-							if(m_backend == "postgresql")
-							{
-								ss << "BYTEA";
-							}
-							else
-							{
-								ss << "BLOB";
-							}
-						}
+							if(m_backend == "postgresql") { ss << "BYTEA"; }
+							else { ss << "BLOB"; }
 					}
 				}
 			}
@@ -389,12 +400,15 @@ class SociSQLEngine : public IDatabaseEngine
 			return false;
 		}
 
-
 		bool is_storable(uint16_t dc_id)
 		{
 			uint8_t storable;
 			m_sql << "SELECT storable FROM classes WHERE id=:id", into(storable), use(dc_id);
 			return storable;
+		}
+
+		void get_fields_from_table(uint32_t id, DCClass* dcc, map<DCField*, vector<uint8_t>> &fields)
+		{
 		}
 };
 
