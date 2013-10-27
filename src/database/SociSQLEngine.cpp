@@ -40,18 +40,82 @@ class SociSQLEngine : public IDatabaseEngine
 #define map_t std::map<DCField*, std::vector<uint8_t>>
 		uint32_t create_object(const DatabaseObject& dbo)
 		{
-			return 0;
+			uint32_t do_id = 0;
+			string field_name;
+			val_t field_value;
+			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
+			bool storable = is_storable(dbo.dc_id);
+
+			try
+			{
+				m_sql.begin(); // Start transaction
+
+				m_sql << "INSERT INTO objects (class_id) VALUES (:class) RETURNING id;", into(do_id), use(dbo.dc_id);
+
+				if(storable)
+				{
+					// TODO: This would probably be a lot faster if it was all one statement.
+					//       Go ahead and simplify to one statement if you see a good way to do so.
+					m_sql << "INSERT INTO fields_" << dcc->get_name() << " VALUES (:id);", into(do_id);
+
+					statement set_field = (m_sql.prepare << "UPDATE fields_" << dcc->get_name()
+					                                     << " SET :name=:value WHERE object_id=:id;",
+					                                     use(field_name), use(field_value), use(do_id));
+					for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
+					{
+						field_name = it->first->get_name();
+						field_value = it->second;
+						set_field.execute();
+					}
+				}
+
+				m_sql.commit(); // End transaction
+			}
+			catch (const exception &e)
+			{
+				m_sql.rollback(); // End transaction
+				return 0;
+			}
+
+			return do_id;
 		}
 		void delete_object(uint32_t do_id)
 		{
+			bool storable = false;
+			DCClass* dcc = get_class(do_id);
+			if(dcc)
+			{   // Note: needs to be called outside the transaction so it doesn't prevent deletion
+			    //       of the object in the `objects` table
+				storable = is_storable(dcc->get_number());
+			}
+
+			m_log->debug() << "Deleting object with id " << do_id << "..." << endl;
+			m_sql << "DELETE FROM objects WHERE id=" << do_id;
+
+			if(dcc && storable)
+			{
+				m_log->spam() << "... object has stored field, also deleted." << endl;
+				m_sql << "DELETE FROM fields_" << dcc->get_name() << " WHERE object_id=:id;", use(do_id);
+			}
 		}
 		bool get_object(uint32_t do_id, DatabaseObject& dbo)
 		{
-
+			return false;
 		}
 		DCClass* get_class(uint32_t do_id)
 		{
-			return NULL;
+			uint16_t dc_id;
+
+			try
+			{
+				m_sql << "SELECT class_id FROM objects WHERE id=:id;", into(dc_id), use(do_id);
+			}
+			catch(const exception &e)
+			{
+				return NULL;
+			}
+
+			return g_dcf->get_class(dc_id);
 		}
 		void del_field(uint32_t do_id, DCField* field)
 		{
@@ -124,6 +188,17 @@ class SociSQLEngine : public IDatabaseEngine
 				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
 				      "id SERIAL NOT NULL PRIMARY KEY, class_id INT NOT NULL,"
 				      "CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+				try
+				{
+					m_sql << "ALTER SEQUENCE objects_id_seq START " << m_min_id
+					      << " RESTART WITH " << m_min_id << ";";
+					m_sql << "ALTER SEQUENCE objects_id_seq MINVALUE " << m_min_id
+					      << " MAXVALUE " << m_max_id << " CYCLE;";
+				}
+				catch (const exception &e)
+				{
+					m_log->debug() << "Object id sequence already exists." << std::endl;
+				}
 			}
 			else
 			{
@@ -133,20 +208,22 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
-			      "CONSTRAINT check_class CHECK (id BETWEEN 0 AND " << g_dcf->get_num_classes()-1 << "));";
+			      "storable BOOLEAN NOT NULL, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
+			      << g_dcf->get_num_classes()-1 << "));";
 		}
 
 		void check_classes()
 		{
 			int dc_id;
+			uint8_t storable;
 			string dc_name;
 			unsigned long dc_hash;
 
 			// Prepare sql statements
 			statement get_row_by_id = (m_sql.prepare << "SELECT hash, name FROM classes WHERE id=:id",
 			                          into(dc_hash), into(dc_name), use(dc_id));
-			statement insert_class = (m_sql.prepare << "INSERT INTO classes VALUES (:id,:hash,:name)",
-			                          use(dc_id), use(dc_hash), use(dc_name));
+			statement insert_class = (m_sql.prepare << "INSERT INTO classes VALUES (:id,:hash,:name,:stored)",
+			                          use(dc_id), use(dc_hash), use(dc_name), use(storable));
 
 			// For each class, verify an entry exists and has the correct name and value
 			for(dc_id = 0; dc_id < g_dcf->get_num_classes(); ++dc_id)
@@ -161,22 +238,21 @@ class SociSQLEngine : public IDatabaseEngine
 					DCClass* dcc = g_dcf->get_class(dc_id);
 
 					// Create fields table for the class
-					if(create_fields_table(dcc))
-					{
-						// Create class row in classes table
-						HashGenerator gen;
-						dcc->generate_hash(gen);
-						dc_hash = gen.get_hash();
-						dc_name = dcc->get_name();
-						insert_class.execute(true);
-					}
+					storable = create_fields_table(dcc);
+
+					// Create class row in classes table
+					HashGenerator gen;
+					dcc->generate_hash(gen);
+					dc_hash = gen.get_hash();
+					dc_name = dcc->get_name();
+					insert_class.execute(true);
 				}
 			}
 		}
 	private:
+		int m_min_id, m_max_id;
 		string m_backend, m_db_name;
 		string m_sess_user, m_sess_passwd;
-		int m_min_id, m_max_id;
 		session m_sql;
 		LogCategory* m_log;
 
@@ -228,6 +304,7 @@ class SociSQLEngine : public IDatabaseEngine
 						continue;
 					}
 
+					// TODO: fix this switch, somehow it always reaches defualt
 					switch(field->get_pack_type())
 					{
 						case PT_int:
@@ -270,6 +347,14 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 
 			return false;
+		}
+
+
+		bool is_storable(uint16_t dc_id)
+		{
+			uint8_t storable;
+			m_sql << "SELECT storable FROM classes WHERE id=:id", into(storable), use(dc_id);
+			return storable;
 		}
 };
 

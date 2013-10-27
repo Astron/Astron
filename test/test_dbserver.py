@@ -47,7 +47,8 @@ class DatabaseBaseTests(object):
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
         doids.append(dgi.read_uint32())
-        self.assertTrue(doids[0] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
+        self.assertGreaterEqual(doids[0], 1000000) # do_id in valid range
+        self.assertLessEqual(doids[0], 1000010) # do_id in valid range
 
         # Select all fields from the stored object
         dg = Datagram.create([777], 20, DBSERVER_OBJECT_GET_ALL)
@@ -195,16 +196,16 @@ class DatabaseBaseTests(object):
             doids.append(doid)
             doid = self.createGenericGetId(40, len(doids))
 
-        self.assertTrue(len(set(doids)) == len(doids)) # Check if duplicate do_ids exist
-        self.assertTrue(len(doids) == 11) # Check we recieved the max do_ids we requested
-        self.assertTrue(doid == INVALID_DO_ID) # Check the last object returned was BAD_DO_ID (0x0)
+        self.assertEquals(len(set(doids)), len(doids)) # Check if duplicate do_ids exist
+        self.assertEquals(len(doids), 11) # Check we recieved the max do_ids we requested
+        self.assertEquals(doid, INVALID_DO_ID) # Check the last object returned was BAD_DO_ID (0x0)
 
         # Delete an object
         self.deleteObject(40, doids[6])
 
         # Get new object with the last remaining id
         newdoid = self.createGenericGetId(40, 16)
-        self.assertTrue(newdoid == doids[6])
+        self.assertEquals(newdoid, doids[6])
 
         # Delete multiple objects
         self.deleteObject(40, doids[0])
@@ -215,7 +216,7 @@ class DatabaseBaseTests(object):
         # Create an object, it shouldn't collide
         doid = self.createGenericGetId(40, 17)
         for do in doids:
-            self.assertTrue(do != doid)
+            self.assertNotEqual(do, doid)
 
         # Cleanup
         self.deleteObject(40, doid)
