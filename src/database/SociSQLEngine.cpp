@@ -8,9 +8,11 @@
 #include "dcparser/dcField.h"
 
 #include <soci.h>
+#include <boost/icl/interval_set.hpp>
 
 using namespace std;
 using namespace soci;
+using namespace boost::icl;
 
 static ConfigVariable<std::string> engine_type("type", "null");
 static ConfigVariable<std::string> database_name("database", "null");
@@ -34,29 +36,33 @@ class SociSQLEngine : public IDatabaseEngine
 			connect();
 			check_tables();
 			check_classes();
+			check_ids();
 		}
 
 #define val_t std::vector<uint8_t>
 #define map_t std::map<DCField*, std::vector<uint8_t>>
 		uint32_t create_object(const DatabaseObject& dbo)
 		{
-			uint32_t do_id = 0;
 			string field_name;
 			val_t field_value;
 			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
 			bool storable = is_storable(dbo.dc_id);
 
-			try
+			uint32_t do_id = pop_next_id();
+			if(!do_id)
 			{
-				m_sql.begin(); // Start transaction
+				return 0;
+			}
 
-				m_sql << "INSERT INTO objects (class_id) VALUES (:class) RETURNING id;", into(do_id), use(dbo.dc_id);
+			try {
+				m_sql.begin(); // Start transaction
+				m_sql << "INSERT INTO objects VALUES (" << do_id << "," << dbo.dc_id << ");";
 
 				if(storable)
 				{
 					// TODO: This would probably be a lot faster if it was all one statement.
 					//       Go ahead and simplify to one statement if you see a good way to do so.
-					m_sql << "INSERT INTO fields_" << dcc->get_name() << " VALUES (:id);", into(do_id);
+					m_sql << "INSERT INTO fields_" << dcc->get_name() << " VALUES (:id);", use(do_id);
 
 					statement set_field = (m_sql.prepare << "UPDATE fields_" << dcc->get_name()
 					                                     << " SET :name=:value WHERE object_id=:id;",
@@ -73,7 +79,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 			catch (const exception &e)
 			{
-				m_sql.rollback(); // End transaction
+				m_sql.rollback(); // Revert transaction
 				return 0;
 			}
 
@@ -97,6 +103,8 @@ class SociSQLEngine : public IDatabaseEngine
 				m_log->spam() << "... object has stored field, also deleted." << endl;
 				m_sql << "DELETE FROM fields_" << dcc->get_name() << " WHERE object_id=:id;", use(do_id);
 			}
+
+			push_id(do_id);
 		}
 		bool get_object(uint32_t do_id, DatabaseObject& dbo)
 		{
@@ -183,33 +191,13 @@ class SociSQLEngine : public IDatabaseEngine
 
 		void check_tables()
 		{
-			if(m_backend == "postgresql")
-			{
-				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
-				      "id SERIAL NOT NULL PRIMARY KEY, class_id INT NOT NULL,"
-				      "CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
-				try
-				{
-					m_sql << "ALTER SEQUENCE objects_id_seq START " << m_min_id
-					      << " RESTART WITH " << m_min_id << ";";
-					m_sql << "ALTER SEQUENCE objects_id_seq MINVALUE " << m_min_id
-					      << " MAXVALUE " << m_max_id << " CYCLE;";
-				}
-				catch (const exception &e)
-				{
-					m_log->debug() << "Object id sequence already exists." << std::endl;
-				}
-			}
-			else
-			{
-				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
-				      "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, class_id INT NOT NULL,"
-				      "CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
-			}
+			m_sql << "CREATE TABLE IF NOT EXISTS objects ("
+			      "id INT NOT NULL PRIMARY KEY, class_id INT NOT NULL);";
+			      //"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
-			      "storable BOOLEAN NOT NULL, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
-			      << g_dcf->get_num_classes()-1 << "));";
+			      "storable BOOLEAN NOT NULL);";//, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
+			      //<< g_dcf->get_num_classes()-1 << "));";
 		}
 
 		void check_classes()
@@ -249,11 +237,63 @@ class SociSQLEngine : public IDatabaseEngine
 				}
 			}
 		}
+		void check_ids()
+		{
+			// Set all ids as free ids
+			m_free_ids = interval_set<uint32_t>();
+			m_free_ids += discrete_interval<uint32_t>::closed(m_min_id, m_max_id);
+
+			uint32_t id;
+
+			// Get all ids from the database at once
+			statement st = (m_sql.prepare << "SELECT id FROM objects;", into(id));
+			st.execute();
+
+			// Iterate through the result set, removing used ids from the free ids
+			while(st.fetch())
+			{
+			    m_free_ids -= discrete_interval<uint32_t>::closed(id, id);
+			}
+		}
+
+		uint32_t pop_next_id()
+		{
+			// Check to make sure any free ids exist
+			if(!m_free_ids.size())
+			{
+				return INVALID_DO_ID;
+			}
+
+			// Get next available id from m_free_ids set
+			discrete_interval<uint32_t> first = *m_free_ids.begin();
+			uint32_t id = first.lower();
+			if(!(first.bounds().bits() & BOOST_BINARY(10)))
+			{
+				id += 1;
+			}
+
+			// Check if its within range
+			if(id > m_max_id)
+			{
+				return INVALID_DO_ID;
+			}
+
+			// Remove it from the free ids
+		    m_free_ids -= discrete_interval<uint32_t>::closed(id, id);
+
+		    return id;
+		}
+
+		void push_id(uint32_t id)
+		{
+		    m_free_ids += discrete_interval<uint32_t>::closed(id, id);
+		}
 	private:
-		int m_min_id, m_max_id;
+		uint32_t m_min_id, m_max_id;
 		string m_backend, m_db_name;
 		string m_sess_user, m_sess_passwd;
 		session m_sql;
+		interval_set<uint32_t> m_free_ids;
 		LogCategory* m_log;
 
 		void check_class(uint16_t id, string name, unsigned long hash)
