@@ -364,7 +364,6 @@ class SociSQLEngine : public IDatabaseEngine
 						packer = field;
 					}
 
-					// TODO: fix this switch, somehow it always reaches defualt
 					switch(packer->get_pack_type())
 					{
 						case PT_int:
