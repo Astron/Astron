@@ -62,25 +62,17 @@ class SociSQLEngine : public IDatabaseEngine
 				{
 					// TODO: This would probably be a lot faster if it was all one statement.
 					//       Go ahead and simplify to one statement if you see a good way to do so.
-					m_sql << "INSERT INTO fields_" << dcc->get_name() << " VALUES (:id);", use(do_id);
-
-					statement set_field = (m_sql.prepare << "UPDATE fields_" << dcc->get_name()
-					                                     << " SET :name=:value WHERE object_id=:id;",
-					                                     use(field_name), use(field_value), use(do_id));
-					for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
-					{
-						field_name = it->first->get_name();
-						field_value = it->second;
-						set_field.execute();
-					}
+					m_sql << "INSERT INTO fields_" << dcc->get_name() << "(object_id)"
+					      " VALUES(" << do_id << ");";
+					set_fields_in_table(do_id, dcc, dbo.fields);
 				}
 
 				m_sql.commit(); // End transaction
 			}
 			catch (const exception &e)
 			{
-				m_sql.rollback(); // Revert transaction
-				return 0;
+				//m_sql.rollback(); // Revert transaction
+				//return 0;
 			}
 
 			return do_id;
@@ -118,7 +110,6 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 			dbo.dc_id = dcc->get_number();
 
-
 			bool stored = is_storable(dcc->get_number());
 			if(stored)
 			{
@@ -129,13 +120,19 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 		DCClass* get_class(uint32_t do_id)
 		{
-			uint16_t dc_id;
+			int dc_id = -1;
+			indicator ind;
 
 			try
 			{
-				m_sql << "SELECT class_id FROM objects WHERE id=:id;", into(dc_id), use(do_id);
+				m_sql << "SELECT class_id FROM objects WHERE id=" << do_id << ";", into(dc_id, ind);
 			}
 			catch(const exception &e)
+			{
+				return NULL;
+			}
+
+			if(ind != i_ok || dc_id == -1)
 			{
 				return NULL;
 			}
@@ -352,40 +349,15 @@ class SociSQLEngine : public IDatabaseEngine
 				if(field->is_db() && !field->as_molecular_field())
 				{
 					db_field_count += 1;
-					ss << "," << field->get_name() << " "; // column name
-
-					DCPackerInterface* packer;
-					if(field->has_nested_fields() && field->get_num_nested_fields() == 1)
-					{
-						packer = field->get_nested_field(0);
-					}
-					else
-					{
-						packer = field;
-					}
-
-					switch(packer->get_pack_type())
-					{
-						case PT_int:
-						case PT_uint:
-						case PT_int64:
-						case PT_uint64:
-							ss << "INT"; //column type
-							break;
-						case PT_double:
-							ss << "FLOAT"; //column type
-							break;
-						case PT_string:
-							// TODO: See if its possible to get the parameter range limits,
-							//       then use VARCHAR(n) for smaller range limits.
-							ss << "TEXT"; //column type
-							break;
-						default:
-							// TODO: See if its possible to get the parameter range limits,
-							//       then use VARBINARY(n) for smaller range limits.
-							if(m_backend == "postgresql") { ss << "BYTEA"; }
-							else { ss << "BLOB"; }
-					}
+					// TODO: Store SimpleParameters and fields with 1 SimpleParameter
+					//       as a simpler type.
+					// NOTE: This might be a lot easier if the DCParser was modified
+					//       such that atomic fields containing only 1 DCSimpleParameter
+					//       element are initialized as a DCSimpleField subclass of DCAtomicField.
+					// TODO: Also see if you can't find a convenient way to get the max length of
+					//       for example a string field, and use a VARCHAR(len) instead of TEXT.
+					//       Same for blobs with VARBINARY.
+					ss << "," << field->get_name() << " TEXT";
 				}
 			}
 
@@ -408,6 +380,37 @@ class SociSQLEngine : public IDatabaseEngine
 
 		void get_fields_from_table(uint32_t id, DCClass* dcc, map<DCField*, vector<uint8_t>> &fields)
 		{
+			string value;
+			indicator ind;
+			for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
+			{
+				DCField* field = dcc->get_inherited_field(i);
+				if(field->is_db())
+				{
+					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+					      << " WHERE object_id=" << id << ";", into(value, ind);
+
+					if(ind == i_ok)
+					{
+						string packed_data = field->parse_string(value);
+						fields[field] = vector<uint8_t>(packed_data.begin(), packed_data.end());
+					}
+				}
+			}
+		}
+		void set_fields_in_table(uint32_t id, DCClass* dcc, const map<DCField*, vector<uint8_t>> &fields)
+		{
+			string name, value;
+			for(auto it = fields.begin(); it != fields.end(); ++it)
+			{
+				name = it->first->get_name();
+
+				string packed_data(it->second.begin(), it->second.end());
+				value = it->first->format_data(packed_data, false);
+
+				m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << name << "='" << value
+				      << "' WHERE object_id=" << id << ";";
+			}
 		}
 };
 

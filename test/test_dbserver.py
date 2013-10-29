@@ -94,7 +94,8 @@ class DatabaseBaseTests(object):
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
         doids.append(dgi.read_uint32())
-        self.assertTrue(doids[1] >= 1000000 and doids[0] <= 1000010) # do_id in valid range
+        self.assertGreaterEqual(doids[1], 1000000) # do_id in valid range
+        self.assertLessEqual(doids[1], 1000010) # do_id in valid range
         self.assertTrue(doids[0] != doids[1]) # do_ids should be different
 
         # Retrieve object from the database...
