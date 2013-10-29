@@ -5,13 +5,12 @@
 
 using boost::asio::ip::tcp;
 
-NetworkClient::NetworkClient() : m_socket(NULL), m_buffer(new uint8_t[2]),
-	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0), m_is_data(false)
 {
 }
 
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new uint8_t[2]),
-	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
+NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
+	m_data_size(0), m_is_data(false)
 {
 	start_receive();
 }
@@ -23,7 +22,7 @@ NetworkClient::~NetworkClient()
 		m_socket->close();
 	}
 	delete m_socket;
-	delete m_buffer;
+	delete [] m_buffer;
 }
 
 void NetworkClient::set_socket(tcp::socket *socket)
@@ -38,14 +37,20 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::start_receive()
 {
-	uint16_t offset = m_bufsize - m_bytes_to_go;
-	async_receive(m_socket, boost::asio::buffer(m_buffer + offset, m_bufsize - offset),
-	              boost::bind(&NetworkClient::read_complete, this,
-	                          boost::asio::placeholders::error,
-	                          boost::asio::placeholders::bytes_transferred),
-	              boost::bind(&NetworkClient::read_handler, this,
-	                          boost::asio::placeholders::error,
-	                          boost::asio::placeholders::bytes_transferred));
+	if(m_is_data) // Read data
+	{
+		async_read(m_socket, boost::asio::buffer(m_data_buf, m_data_size),
+	               boost::bind(&NetworkClient::read_handler, this,
+	                           boost::asio::placeholders::error,
+	                           boost::asio::placeholders::bytes_transferred));
+	}
+	else // Read length
+	{
+		async_read(m_socket, boost::asio::buffer(m_size_buf, 2),
+	               boost::bind(&NetworkClient::read_handler, this,
+	                           boost::asio::placeholders::error,
+	                           boost::asio::placeholders::bytes_transferred));
+	}
 }
 
 void NetworkClient::network_send(Datagram &dg)
@@ -66,43 +71,37 @@ void NetworkClient::do_disconnect()
 	m_socket->close();
 }
 
-std::size_t NetworkClient::read_complete(const boost::system::error_code &ec, size_t bytes_transferred)
-{
-	// ... TODO: implement
-}
-
-void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::handle_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
 	{
 		network_disconnect();
+		return;
 	}
-	else
+
+	uint16_t old_size = m_data_size;
+	m_data_size = *(uint16_t*)m_size_buf;
+	if(m_data_size > old_size)
 	{
-		m_bytes_to_go -= bytes_transferred;
-		if(m_bytes_to_go <= 0)
-		{
-			if(!m_is_data)
-			{
-				m_bufsize = *(uint16_t*)m_buffer;
-				delete [] m_buffer;
-				m_buffer = new uint8_t[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = true;
-			}
-			else
-			{
-				Datagram dg(m_buffer, m_bufsize);
-				delete [] m_buffer;//dg makes a copy
-				m_bufsize = 2;
-				m_buffer = new uint8_t[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = false;
-				network_datagram(dg);
-			}
-		}
-		start_receive();
+		delete [] m_data_buf;
+		m_data_buf = new uint8_t[m_data_size];
 	}
+	m_is_data = true;
+	start_receive();
+}
+
+void NetworkClient::handle_data(const boost::system::error_code &ec, size_t bytes_transferred)
+{
+	if(ec.value() != 0)
+	{
+		network_disconnect();
+		return;
+	}
+
+	Datagram dg(m_buffer, m_bufsize); // Datagram makes a copy
+	m_is_data = false;
+	network_datagram(dg);
+	start_receive();
 }
 
 bool NetworkClient::is_connected()

@@ -17,11 +17,12 @@ class NetworkClient
 		bool is_connected();
 	private:
 		void start_receive();
-		void read_handler(const boost::system::error_code &ec, size_t bytes_transferred);
+		void handle_size(const boost::system::error_code &ec, size_t bytes_transferred);
+		void handle_data(const boost::system::error_code &ec, size_t bytes_transferred);
 		boost::asio::ip::tcp::socket *m_socket;
 
-		uint8_t* m_buffer;
-		uint16_t m_bytes_to_go;
-		uint16_t m_bufsize;
+		uint8_t m_size_buf[2];
+		uint8_t* m_data_buf;
+		uint16_t m_data_size;
 		bool m_is_data;
 };
