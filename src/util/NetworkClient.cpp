@@ -39,10 +39,13 @@ void NetworkClient::set_socket(tcp::socket *socket)
 void NetworkClient::start_receive()
 {
 	uint16_t offset = m_bufsize - m_bytes_to_go;
-	m_socket->async_receive(boost::asio::buffer(m_buffer + offset, m_bufsize - offset),
-	                        boost::bind(&NetworkClient::read_handler, this,
-	                                    boost::asio::placeholders::error,
-	                                    boost::asio::placeholders::bytes_transferred));
+	async_receive(m_socket, boost::asio::buffer(m_buffer + offset, m_bufsize - offset),
+	              boost::bind(&NetworkClient::read_complete, this,
+	                          boost::asio::placeholders::error,
+	                          boost::asio::placeholders::bytes_transferred),
+	              boost::bind(&NetworkClient::read_handler, this,
+	                          boost::asio::placeholders::error,
+	                          boost::asio::placeholders::bytes_transferred));
 }
 
 void NetworkClient::network_send(Datagram &dg)
@@ -63,6 +66,11 @@ void NetworkClient::do_disconnect()
 	m_socket->close();
 }
 
+std::size_t NetworkClient::read_complete(const boost::system::error_code &ec, size_t bytes_transferred)
+{
+	// ... TODO: implement
+}
+
 void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
@@ -72,7 +80,7 @@ void NetworkClient::read_handler(const boost::system::error_code &ec, size_t byt
 	else
 	{
 		m_bytes_to_go -= bytes_transferred;
-		if(m_bytes_to_go == 0)
+		if(m_bytes_to_go <= 0)
 		{
 			if(!m_is_data)
 			{
