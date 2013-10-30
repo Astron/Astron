@@ -202,12 +202,101 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 		bool set_field_if_empty(uint32_t do_id, DCField* field, vector<uint8_t> &value)
-		{
-			return false;
+		{			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				return false; // Class has no database fields
+			}
+
+			if(!field->is_db())
+			{
+				return false;
+			}
+
+			string val;
+			indicator ind;
+			m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+			      << " WHERE object_id=" << do_id << ";", into(val, ind);
+			if(ind != i_null)
+			{
+				string packed_data = field->parse_string(val);
+				value = vector<uint8_t>(packed_data.begin(), packed_data.end());
+				return false;
+			}
+
+			string packed_data(value.begin(), value.end());
+			val = field->format_data(packed_data, false);
+			m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
+			      << "='" << val << "' WHERE object_id=" << do_id << ";";
+			return true;
 		}
 		bool set_fields_if_empty(uint32_t do_id, map<DCField*, vector<uint8_t> > &values)
 		{
-			return false;
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				values.clear();
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				values.clear();
+				return false; // Class has no database fields
+			}
+
+			bool failed = false;
+			string value;
+			indicator ind;
+			try
+			{
+				m_sql.begin(); // Start transaction
+				for(auto it = values.begin(); it != values.end(); ++it)
+				{
+					DCField* field = it->first;
+					if(field->is_db())
+					{
+						m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+						      << " WHERE object_id=" << do_id << ";", into(value, ind);
+						if(ind != i_null)
+						{
+							failed = true;
+							string packed_data = field->parse_string(value);
+							values[field] = vector<uint8_t>(packed_data.begin(), packed_data.end());
+							continue;
+						}
+
+						string packed_data(it->second.begin(), it->second.end());
+						value = it->first->format_data(packed_data, false);
+						m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
+						      << "='" << value << "' WHERE object_id=" << do_id << ";";
+					}
+				}
+
+				if(failed)
+				{
+					m_sql.rollback(); // Revert transaction
+				}
+				else
+				{
+					m_sql.commit(); // End transaction
+				}
+			}
+			catch(const exception &e)
+			{
+				m_sql.rollback(); // Revert transaction
+				values.clear();
+				return false;
+			}
 		}
 		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal,
 		                         vector<uint8_t> &value)
