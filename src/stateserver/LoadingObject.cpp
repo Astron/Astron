@@ -142,8 +142,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Create object on stateserver
 			DistributedObject* obj = new DistributedObject(m_dbss, m_dbss->m_db_channel, m_do_id,
-			                                               m_parent_id, m_zone_id, r_dclass,
-				                                           m_required_fields, m_ram_fields);
+			        m_parent_id, m_zone_id, r_dclass,
+			        m_required_fields, m_ram_fields);
 
 			// Tell DBSS about object and handle datagram queue
 			m_dbss->receive_object(obj);

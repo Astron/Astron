@@ -5,7 +5,7 @@
 
 class LoadingObject : public MDParticipantInterface
 {
-	friend class DBStateServer;
+		friend class DBStateServer;
 
 	public:
 		LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_t parent_id, uint32_t zone_id);

@@ -105,7 +105,7 @@ class MessageDirector : public NetworkClient
 //     be an MDParticipant.
 class MDParticipantInterface
 {
-	friend class MessageDirector;
+		friend class MessageDirector;
 
 	public:
 		MDParticipantInterface()

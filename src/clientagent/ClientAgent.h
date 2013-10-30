@@ -6,7 +6,7 @@
 
 class ClientAgent : public Role
 {
-	friend class Client;
+		friend class Client;
 
 	public:
 		ClientAgent(RoleConfig rolconfig);
@@ -16,7 +16,8 @@ class ClientAgent : public Role
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 		void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
-		const std::string& get_version() {
+		const std::string& get_version()
+		{
 			return m_server_version;
 		}
 

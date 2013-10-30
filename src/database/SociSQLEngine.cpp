@@ -54,7 +54,8 @@ class SociSQLEngine : public IDatabaseEngine
 				return 0;
 			}
 
-			try {
+			try
+			{
 				m_sql.begin(); // Start transaction
 				m_sql << "INSERT INTO objects VALUES (" << do_id << "," << dbo.dc_id << ");";
 
@@ -69,7 +70,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 				m_sql.commit(); // End transaction
 			}
-			catch (const exception &e)
+			catch(const exception &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				return 0;
@@ -82,8 +83,9 @@ class SociSQLEngine : public IDatabaseEngine
 			bool storable = false;
 			DCClass* dcc = get_class(do_id);
 			if(dcc)
-			{   // Note: needs to be called outside the transaction so it doesn't prevent deletion
-			    //       of the object in the `objects` table
+			{
+				// Note: needs to be called outside the transaction so it doesn't prevent deletion
+				//       of the object in the `objects` table
 				storable = is_storable(dcc->get_number());
 			}
 
@@ -176,7 +178,7 @@ class SociSQLEngine : public IDatabaseEngine
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch (const exception &e)
+				catch(const exception &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -195,7 +197,7 @@ class SociSQLEngine : public IDatabaseEngine
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch (const exception &e)
+				catch(const exception &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -392,7 +394,8 @@ class SociSQLEngine : public IDatabaseEngine
 							string packed_data(values[field].begin(), values[field].end());
 							string insert = field->format_data(packed_data, false);
 							m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
-							      << "='" << insert << "' WHERE object_id=" << do_id << ";";\
+							      << "='" << insert << "' WHERE object_id=" << do_id << ";";
+							\
 						}
 						else
 						{
@@ -506,11 +509,11 @@ class SociSQLEngine : public IDatabaseEngine
 		{
 			m_sql << "CREATE TABLE IF NOT EXISTS objects ("
 			      "id INT NOT NULL PRIMARY KEY, class_id INT NOT NULL);";
-			      //"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			//"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
 			      "storable BOOLEAN NOT NULL);";//, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
-			      //<< g_dcf->get_num_classes()-1 << "));";
+			//<< g_dcf->get_num_classes()-1 << "));";
 		}
 
 		void check_classes()
@@ -522,7 +525,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			// Prepare sql statements
 			statement get_row_by_id = (m_sql.prepare << "SELECT hash, name FROM classes WHERE id=:id",
-			                          into(dc_hash), into(dc_name), use(dc_id));
+			                           into(dc_hash), into(dc_name), use(dc_id));
 			statement insert_class = (m_sql.prepare << "INSERT INTO classes VALUES (:id,:hash,:name,:stored)",
 			                          use(dc_id), use(dc_hash), use(dc_name), use(storable));
 
@@ -565,7 +568,7 @@ class SociSQLEngine : public IDatabaseEngine
 			// Iterate through the result set, removing used ids from the free ids
 			while(st.fetch())
 			{
-			    m_free_ids -= interval_t::closed(id, id);
+				m_free_ids -= interval_t::closed(id, id);
 			}
 		}
 
@@ -592,14 +595,14 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 
 			// Remove it from the free ids
-		    m_free_ids -= interval_t::closed(id, id);
+			m_free_ids -= interval_t::closed(id, id);
 
-		    return id;
+			return id;
 		}
 
 		void push_id(uint32_t id)
 		{
-		    m_free_ids += interval_t::closed(id, id);
+			m_free_ids += interval_t::closed(id, id);
 		}
 	private:
 		uint32_t m_min_id, m_max_id;
@@ -616,7 +619,7 @@ class SociSQLEngine : public IDatabaseEngine
 			{
 				// TODO: Try and update the database instead of exiting
 				m_log->fatal() << "Class name '" << dcc->get_name() << "' from DCFile does not match"
-				               " name '" << name << "' in database, for dc_id " << id <<endl;
+				               " name '" << name << "' in database, for dc_id " << id << endl;
 				m_log->fatal() << "Database must be rebuilt." << endl;
 				exit(1);
 			}
@@ -743,7 +746,7 @@ class SociSQLEngine : public IDatabaseEngine
 		void del_fields_in_table(uint32_t id, DCClass* dcc, const vector<DCField*> &fields)
 		{
 			string name;
-			for(auto it = fields.begin(); it!= fields.end(); ++it)
+			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
 				DCField* field = *it;
 				if(field->is_db())
