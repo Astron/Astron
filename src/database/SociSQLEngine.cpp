@@ -16,10 +16,10 @@ using namespace soci;
 typedef boost::icl::discrete_interval<uint32_t> interval_t;
 typedef boost::icl::interval_set<uint32_t> set_t;
 
-static ConfigVariable<std::string> engine_type("type", "null");
-static ConfigVariable<std::string> database_name("database", "null");
-static ConfigVariable<std::string> session_user("username", "null");
-static ConfigVariable<std::string> session_passwd("password", "null");
+static ConfigVariable<string> engine_type("type", "null");
+static ConfigVariable<string> database_name("database", "null");
+static ConfigVariable<string> session_user("username", "null");
+static ConfigVariable<string> session_passwd("password", "null");
 
 class SociSQLEngine : public IDatabaseEngine
 {
@@ -71,8 +71,8 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 			catch (const exception &e)
 			{
-				//m_sql.rollback(); // Revert transaction
-				//return 0;
+				m_sql.rollback(); // Revert transaction
+				return 0;
 			}
 
 			return do_id;
@@ -100,7 +100,7 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 		bool get_object(uint32_t do_id, DatabaseObject& dbo)
 		{
-			m_log->spam() << "Getting obj-" << do_id << " ..." << std::endl;
+			m_log->spam() << "Getting object with id" << do_id << endl;
 
 			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);
@@ -113,7 +113,7 @@ class SociSQLEngine : public IDatabaseEngine
 			bool stored = is_storable(dcc->get_number());
 			if(stored)
 			{
-				get_fields_from_table(do_id, dcc, dbo.fields);
+				get_all_from_table(do_id, dcc, dbo.fields);
 			}
 
 			return true;
@@ -142,39 +142,118 @@ class SociSQLEngine : public IDatabaseEngine
 		void del_field(uint32_t do_id, DCField* field)
 		{
 		}
-		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
+		void del_fields(uint32_t do_id, const vector<DCField*> &fields)
 		{
 		}
 		void set_field(uint32_t do_id, DCField* field, const vector<uint8_t> &value)
 		{
+			DCClass *dcc = get_class(do_id);
+			bool storable = is_storable(dcc->get_number());
+
+			if(storable)
+			{
+				map<DCField*, vector<uint8_t> > fields;
+				fields[field] = value;
+				try
+				{
+					m_sql.begin(); // Start transaction
+					set_fields_in_table(do_id, dcc, fields);
+					m_sql.commit(); // End transaction
+				}
+				catch (const exception &e)
+				{
+					m_sql.rollback(); // Revert transaction
+				}
+			}
 		}
-		void set_fields(uint32_t do_id, const map<DCField*, vector<uint8_t>> &fields)
+		void set_fields(uint32_t do_id, const map<DCField*, vector<uint8_t> > &fields)
 		{
+			DCClass *dcc = get_class(do_id);
+			bool storable = is_storable(dcc->get_number());
+
+			if(storable)
+			{
+				try
+				{
+					m_sql.begin(); // Start transaction
+					set_fields_in_table(do_id, dcc, fields);
+					m_sql.commit(); // End transaction
+				}
+				catch (const exception &e)
+				{
+					m_sql.rollback(); // Revert transaction
+				}
+			}
 		}
 		bool set_field_if_empty(uint32_t do_id, DCField* field, vector<uint8_t> &value)
 		{
 			return false;
 		}
-		bool set_fields_if_empty(uint32_t do_id, map<DCField*, vector<uint8_t>> &values)
+		bool set_fields_if_empty(uint32_t do_id, map<DCField*, vector<uint8_t> > &values)
 		{
 			return false;
 		}
-		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal, vector<uint8_t> &value)
+		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal,
+		                         vector<uint8_t> &value)
 		{
 			return false;
 		}
-		bool set_fields_if_equals(uint32_t do_id, const map<DCField*, vector<uint8_t>> &equals, map<DCField*, vector<uint8_t>> &values)
+		bool set_fields_if_equals(uint32_t do_id, const map<DCField*, vector<uint8_t> > &equals,
+		                          map<DCField*, vector<uint8_t> > &values)
 		{
 			return false;
 		}
 
 		bool get_field(uint32_t do_id, const DCField* field, vector<uint8_t> &value)
 		{
-			return false;
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				return false; // Class has no database fields
+			}
+
+			vector<DCField*> fields;
+			fields.push_back(const_cast<DCField*>(field));
+			map<DCField*, vector<uint8_t> > values;
+
+			get_fields_from_table(do_id, dcc, fields, values);
+
+			auto val_it = values.find(const_cast<DCField*>(field));
+			if(val_it == values.end())
+			{
+				return false;
+			}
+
+			value = val_it->second;
+
+			return true;
 		}
-		bool get_fields(uint32_t do_id,  const std::vector<DCField*> &fields, map<DCField*, vector<uint8_t>> &values)
+		bool get_fields(uint32_t do_id, const vector<DCField*> &fields,
+		                map<DCField*, vector<uint8_t> > &values)
 		{
-			return false;
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				return false; // Class has no database fields
+			}
+
+			get_fields_from_table(do_id, dcc, fields, values);
+
+			return true;
 		}
 
 	protected:
@@ -315,8 +394,8 @@ class SociSQLEngine : public IDatabaseEngine
 			{
 				// TODO: Try and update the database instead of exiting
 				m_log->fatal() << "Class name '" << dcc->get_name() << "' from DCFile does not match"
-				               " name '" << name << "' in database, for dc_id " << id << std::endl;
-				m_log->fatal() << "Database must be rebuilt." << std::endl;
+				               " name '" << name << "' in database, for dc_id " << id <<endl;
+				m_log->fatal() << "Database must be rebuilt." << endl;
 				exit(1);
 			}
 
@@ -326,8 +405,8 @@ class SociSQLEngine : public IDatabaseEngine
 			{
 				// TODO: Try and update the database instead of exiting
 				m_log->fatal() << "Class hash '" << gen.get_hash() << "' from DCFile does not match"
-				               " hash '" << hash << "' in database, for dc_id " << id << std::endl;
-				m_log->fatal() << "Database must be rebuilt." << std::endl;
+				               " hash '" << hash << "' in database, for dc_id " << id << endl;
+				m_log->fatal() << "Database must be rebuilt." << endl;
 				exit(1);
 			}
 
@@ -378,7 +457,7 @@ class SociSQLEngine : public IDatabaseEngine
 			return storable;
 		}
 
-		void get_fields_from_table(uint32_t id, DCClass* dcc, map<DCField*, vector<uint8_t>> &fields)
+		void get_all_from_table(uint32_t id, DCClass* dcc, map<DCField*, vector<uint8_t> > &fields)
 		{
 			string value;
 			indicator ind;
@@ -398,7 +477,30 @@ class SociSQLEngine : public IDatabaseEngine
 				}
 			}
 		}
-		void set_fields_in_table(uint32_t id, DCClass* dcc, const map<DCField*, vector<uint8_t>> &fields)
+
+		void get_fields_from_table(uint32_t id, DCClass* dcc, const vector<DCField*> &fields,
+		                           map<DCField*, vector<uint8_t> > &values)
+		{
+			string value;
+			indicator ind;
+			for(auto it = fields.begin(); it != fields.end(); ++it)
+			{
+				DCField* field = *it;
+				if(field->is_db())
+				{
+					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+					      << " WHERE object_id=" << id << ";", into(value, ind);
+
+					if(ind == i_ok)
+					{
+						string packed_data = field->parse_string(value);
+						values[field] = vector<uint8_t>(packed_data.begin(), packed_data.end());
+					}
+				}
+			}
+		}
+
+		void set_fields_in_table(uint32_t id, DCClass* dcc, const map<DCField*, vector<uint8_t> > &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
