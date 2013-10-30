@@ -10,9 +10,9 @@ class ClientAgent; // Forward declaration
 
 enum ClientState
 {
-	CLIENT_STATE_NEW,
-	CLIENT_STATE_ANONYMOUS,
-	CLIENT_STATE_ESTABLISHED
+    CLIENT_STATE_NEW,
+    CLIENT_STATE_ANONYMOUS,
+    CLIENT_STATE_ESTABLISHED
 };
 
 struct VisibleObject
@@ -111,7 +111,8 @@ class Client : public MDParticipantInterface
 		/* Client Interface */
 		// send_disconnect must close any connections with a connected client; the given reason and
 		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
-		virtual void send_disconnect(uint16_t reason, const std::string &error_string, bool security=false);
+		virtual void send_disconnect(uint16_t reason, const std::string &error_string,
+		                             bool security = false);
 
 		// send_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
@@ -123,15 +124,16 @@ class Client : public MDParticipantInterface
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
 		virtual void handle_add_object(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
-		                               uint16_t dc_id, DatagramIterator &dgi, bool other=false) = 0;
+		                               uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
 		// handle_add_ownership should inform the client it has control of a new object. The datagram
 		// iterator provided starts at the 'required fields' data, and may have 'optional fields'.
 		virtual void handle_add_ownership(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
-		                                  uint16_t dc_id, DatagramIterator &dgi, bool other=false) = 0;
+		                                  uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
 		// handle_set_field should inform the client that the field has been updated
-		virtual void handle_set_field(uint32_t do_id, uint16_t field_id, const std::vector<uint8_t> &value) = 0;
+		virtual void handle_set_field(uint32_t do_id, uint16_t field_id,
+		                              const std::vector<uint8_t> &value) = 0;
 
 		// handle_change_location should inform the client that the objects location has changed
 		virtual void handle_change_location(uint32_t do_id, uint32_t new_parent, uint32_t new_zone) = 0;

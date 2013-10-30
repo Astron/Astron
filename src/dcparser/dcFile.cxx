@@ -184,7 +184,6 @@ read(Filename filename) {
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
 read(istream &in, const string &filename) {
-  cerr << "DCFile::read of " << filename << "\n";
   dc_init_parser(in, filename, *this);
   dcyyparse();
   dc_cleanup_parser();

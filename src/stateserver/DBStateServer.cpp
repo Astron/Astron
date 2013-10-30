@@ -60,7 +60,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 		if(dc_id >= g_dcf->get_num_classes())
 		{
 			m_log->error() << "Received activate_other with unknown dclass"
-		                 << " - id:" << dc_id << std::endl;
+			               << " - id:" << dc_id << std::endl;
 			return;
 		}
 
@@ -153,7 +153,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint16_t field_count = dgi.read_uint16();
 
 			std::unordered_map<DCField*, std::vector<uint8_t> > db_fields;
-			for(uint16_t i=0; i<field_count; ++i)
+			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
 				DCField* field = g_dcf->get_field_by_index(field_id);
@@ -194,7 +194,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// If object is active or loading, the Object or Loader will handle it
 			if(m_objs.find(r_do_id) != m_objs.end() ||
-			   m_loading.find(r_do_id) != m_loading.end())
+			        m_loading.find(r_do_id) != m_loading.end())
 			{
 				break;
 			}
@@ -205,7 +205,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Check field is "ram db" or "required"
 			DCField* field = g_dcf->get_field_by_index(field_id);
 			if(!field || !(field->is_required() ||
-			   (field->is_ram() && field->is_db())))
+			               (field->is_ram() && field->is_db())))
 			{
 				Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 				dg.add_uint32(r_context);
@@ -222,7 +222,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 				{
 					m_context_datagrams[db_context].add_server_header(sender, r_do_id,
-						STATESERVER_OBJECT_GET_FIELD_RESP);
+					        STATESERVER_OBJECT_GET_FIELD_RESP);
 				}
 
 				m_context_datagrams[db_context].add_uint32(r_context);
@@ -295,7 +295,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// If object is active or loading, the Object or Loader will handle it
 			if(m_objs.find(r_do_id) != m_objs.end() ||
-			   m_loading.find(r_do_id) != m_loading.end())
+			        m_loading.find(r_do_id) != m_loading.end())
 			{
 				break;
 			}
@@ -305,7 +305,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Read requested fields from datagram
 			std::list<DCField*> db_fields; // Ram|required db fields in request
 			std::list<DCField*> ram_fields; // Ram|required but not-db fields in request
-			for(uint16_t i=0; i<field_count; ++i)
+			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
 				DCField* field = g_dcf->get_field_by_index(field_id);
@@ -338,7 +338,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 				{
 					m_context_datagrams[db_context].add_server_header(sender, r_do_id,
-						STATESERVER_OBJECT_GET_FIELDS_RESP);
+					        STATESERVER_OBJECT_GET_FIELDS_RESP);
 				}
 				m_context_datagrams[db_context].add_uint32(r_context);
 				m_context_datagrams[db_context].add_uint8(true);
@@ -356,7 +356,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint16(db_fields.size());
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
-					dg.add_uint16((*it)->get_number());					
+					dg.add_uint16((*it)->get_number());
 				}
 				send(dg);
 			}
@@ -428,7 +428,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// If object is active or loading, the Object or Loader will handle it
 			if(m_objs.find(r_do_id) != m_objs.end() ||
-			   m_loading.find(r_do_id) != m_loading.end())
+			        m_loading.find(r_do_id) != m_loading.end())
 			{
 				break;
 			}
@@ -440,8 +440,8 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 			{
-				m_context_datagrams[db_context].add_server_header(sender, r_do_id, 
-					STATESERVER_OBJECT_GET_ALL_RESP);
+				m_context_datagrams[db_context].add_server_header(sender, r_do_id,
+				        STATESERVER_OBJECT_GET_ALL_RESP);
 			}
 
 			m_context_datagrams[db_context].add_uint32(r_context);

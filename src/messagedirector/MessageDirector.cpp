@@ -120,7 +120,8 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	catch(DatagramIteratorEOF &e)
 	{
 		// Log error with receivers output
-		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." << std::endl;
+		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." <<
+		              std::endl;
 		return;
 	}
 

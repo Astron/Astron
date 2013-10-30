@@ -58,7 +58,7 @@ DCClass *Client::lookup_object(uint32_t do_id)
 	// Next, check the object cache, but this client only knows about it
 	// if it occurs in m_seen_objects or m_owned_objects:
 	if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
-	   m_seen_objects.find(do_id) != m_seen_objects.end())
+	        m_seen_objects.find(do_id) != m_seen_objects.end())
 	{
 		if(m_dist_objs.find(do_id) != m_dist_objs.end())
 		{
@@ -220,8 +220,8 @@ void Client::close_zones(uint32_t parent, const std::unordered_set<uint32_t> &ki
 void Client::send_disconnect(uint16_t reason, const std::string &error_string, bool security)
 {
 	(security ? m_log->security() : m_log->error())
-		<< "Ejecting client (" << reason << "): "
-		<< error_string << std::endl;
+	        << "Ejecting client (" << reason << "): "
+	        << error_string << std::endl;
 
 	std::list<std::string> event;
 	event.push_back(security ? "client-ejected-security" : "client-ejected");
@@ -237,237 +237,238 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
-	case CLIENTAGENT_EJECT:
-	{
-		uint16_t reason = dgi.read_uint16();
-		std::string error_string = dgi.read_string();
-		send_disconnect(reason, error_string);
-		return;
-	}
-	break;
-	case CLIENTAGENT_DROP:
-	{
-		handle_drop();
-		return;
-	}
-	break;
-	case CLIENTAGENT_SET_STATE:
-	{
-		m_state = (ClientState)dgi.read_uint16();
-	}
-	break;
-	case STATESERVER_OBJECT_SET_FIELD:
-	{
-		uint32_t do_id = dgi.read_uint32();
-		if(!lookup_object(do_id))
+		case CLIENTAGENT_EJECT:
 		{
-			m_log->warning() << "Received server-side field update for unknown object " << do_id << std::endl;
+			uint16_t reason = dgi.read_uint16();
+			std::string error_string = dgi.read_string();
+			send_disconnect(reason, error_string);
 			return;
 		}
-		if(sender != m_channel)
+		break;
+		case CLIENTAGENT_DROP:
 		{
-			uint16_t field_id = dgi.read_uint16();
-			handle_set_field(do_id, field_id, dgi.read_remainder());
-		}
-	}
-	break;
-	case STATESERVER_OBJECT_DELETE_RAM:
-	{
-		uint32_t do_id = dgi.read_uint32();
-		if(!lookup_object(do_id))
-		{
-			m_log->warning() << "Received server-side object delete for unknown object " << do_id << std::endl;
+			handle_drop();
 			return;
 		}
-
-		if(m_seen_objects.find(do_id) != m_seen_objects.end())
+		break;
+		case CLIENTAGENT_SET_STATE:
 		{
-			m_seen_objects.erase(do_id);
-			handle_remove_object(do_id);
+			m_state = (ClientState)dgi.read_uint16();
 		}
-
-		if(m_owned_objects.find(do_id) != m_owned_objects.end())
+		break;
+		case STATESERVER_OBJECT_SET_FIELD:
 		{
-			m_owned_objects.erase(do_id);
-			handle_remove_ownership(do_id);
-		}
-
-		m_dist_objs.erase(do_id);
-	}
-	break;
-	case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
-	{
-		uint32_t do_id = dgi.read_uint32();
-		uint32_t parent = dgi.read_uint32();
-		uint32_t zone = dgi.read_uint32();
-		uint16_t dc_id = dgi.read_uint16();
-		m_owned_objects.insert(do_id);
-
-		if(m_dist_objs.find(do_id) == m_dist_objs.end())
-		{
-			VisibleObject obj;
-			obj.id = do_id;
-			obj.parent = parent;
-			obj.zone = zone;
-			obj.dcc = g_dcf->get_class(dc_id);
-			m_dist_objs[do_id] = obj;
-		}
-
-		handle_add_ownership(do_id, parent, zone, dc_id, dgi, true);
-	}
-	break;
-	case CLIENTAGENT_SET_CLIENT_ID:
-	{
-		if(m_channel != m_allocated_channel)
-		{
-			unsubscribe_channel(m_channel);
-		}
-
-		m_channel = dgi.read_uint64();
-		subscribe_channel(m_channel);
-	}
-	break;
-	case CLIENTAGENT_SEND_DATAGRAM:
-	{
-		Datagram forward;
-		forward.add_data(dgi.read_string());
-		send_datagram(forward);
-	}
-	break;
-	case CLIENTAGENT_OPEN_CHANNEL:
-	{
-		subscribe_channel(dgi.read_uint64());
-	}
-	break;
-	case CLIENTAGENT_CLOSE_CHANNEL:
-	{
-		unsubscribe_channel(dgi.read_uint64());
-	}
-	break;
-	case CLIENTAGENT_ADD_POST_REMOVE:
-	{
-		add_post_remove(dgi.read_string());
-	}
-	break;
-	case CLIENTAGENT_CLEAR_POST_REMOVES:
-	{
-		clear_post_removes();
-	}
-	break;
-	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
-	case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
-	{
-		uint32_t do_id = dgi.read_uint32();
-		uint32_t parent = dgi.read_uint32();
-		uint32_t zone = dgi.read_uint32();
-		uint16_t dc_id = dgi.read_uint16();
-		if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
-		   m_seen_objects.find(do_id) != m_seen_objects.end())
-		{
-			return;
-		}
-		if(m_dist_objs.find(do_id) == m_dist_objs.end())
-		{
-			VisibleObject obj;
-			obj.id = do_id;
-			obj.dcc = g_dcf->get_class(dc_id);
-			obj.parent = parent;
-			obj.zone = zone;
-			m_dist_objs[do_id] = obj;
-		}
-		m_seen_objects.insert(do_id);
-
-		handle_add_object(do_id, parent, zone, dc_id, dgi,
-		                  msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER);
-
-		// TODO: This is a tad inefficient as it checks every pending interest.
-		// In practice, there shouldn't be many add-interest operations active
-		// at once, however.
-		std::list<uint32_t> deferred_deletes;
-		for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it)
-		{
-			if(it->second->is_ready(m_dist_objs))
+			uint32_t do_id = dgi.read_uint32();
+			if(!lookup_object(do_id))
 			{
-				handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
-				deferred_deletes.push_back(it->first);
+				m_log->warning() << "Received server-side field update for unknown object " << do_id << std::endl;
+				return;
+			}
+			if(sender != m_channel)
+			{
+				uint16_t field_id = dgi.read_uint16();
+				handle_set_field(do_id, field_id, dgi.read_remainder());
 			}
 		}
-		for(auto it = deferred_deletes.begin(); it != deferred_deletes.end(); ++it)
+		break;
+		case STATESERVER_OBJECT_DELETE_RAM:
 		{
-			m_pending_interests.erase(*it);
-		}
-	}
-	break;
-    case STATESERVER_OBJECT_GET_ZONES_COUNT_RESP:
-	{
-		uint32_t context = dgi.read_uint32();
-		uint32_t count = dgi.read_uint32();
-
-		if(m_pending_interests.find(context) == m_pending_interests.end())
-		{
-			m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
-			               << context << std::endl;
-			return;
-		}
-
-		m_pending_interests[context]->store_total(count);
-
-		if(m_pending_interests[context]->is_ready(m_dist_objs))
-		{
-			handle_interest_done(m_pending_interests[context]->m_interest_id,
-			                     m_pending_interests[context]->m_client_context);
-			m_pending_interests.erase(context);
-		}
-	}
-	break;
-	case STATESERVER_OBJECT_CHANGING_LOCATION:
-	{
-		uint32_t do_id = dgi.read_uint32();
-		uint32_t n_parent = dgi.read_uint32();
-		uint32_t n_zone = dgi.read_uint32();
-		dgi.read_uint32(); // Old parent; we don't care about this.
-		dgi.read_uint32(); // Old zone; we don't care about this.
-		bool disable = true;
-		for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
-		{
-			Interest &i = it->second;
-			for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
+			uint32_t do_id = dgi.read_uint32();
+			if(!lookup_object(do_id))
 			{
-				if(*it2 == n_zone)
-				{
-					disable = false;
-					break;
-				}
+				m_log->warning() << "Received server-side object delete for unknown object " << do_id << std::endl;
+				return;
 			}
-		}
 
-		if(m_dist_objs.find(do_id) != m_dist_objs.end())
-		{
-			m_dist_objs[do_id].parent = n_parent;
-			m_dist_objs[do_id].zone = n_zone;
-		}
+			if(m_seen_objects.find(do_id) != m_seen_objects.end())
+			{
+				m_seen_objects.erase(do_id);
+				handle_remove_object(do_id);
+			}
 
-		if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
-		{
-			handle_remove_object(do_id);
-			m_seen_objects.erase(do_id);
+			if(m_owned_objects.find(do_id) != m_owned_objects.end())
+			{
+				m_owned_objects.erase(do_id);
+				handle_remove_ownership(do_id);
+			}
+
 			m_dist_objs.erase(do_id);
 		}
-		else
+		break;
+		case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
 		{
-			handle_change_location(do_id, n_parent, n_zone);
+			uint32_t do_id = dgi.read_uint32();
+			uint32_t parent = dgi.read_uint32();
+			uint32_t zone = dgi.read_uint32();
+			uint16_t dc_id = dgi.read_uint16();
+			m_owned_objects.insert(do_id);
+
+			if(m_dist_objs.find(do_id) == m_dist_objs.end())
+			{
+				VisibleObject obj;
+				obj.id = do_id;
+				obj.parent = parent;
+				obj.zone = zone;
+				obj.dcc = g_dcf->get_class(dc_id);
+				m_dist_objs[do_id] = obj;
+			}
+
+			handle_add_ownership(do_id, parent, zone, dc_id, dgi, true);
 		}
-	}
-	break;
-	default:
-		m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
+		break;
+		case CLIENTAGENT_SET_CLIENT_ID:
+		{
+			if(m_channel != m_allocated_channel)
+			{
+				unsubscribe_channel(m_channel);
+			}
+
+			m_channel = dgi.read_uint64();
+			subscribe_channel(m_channel);
+		}
+		break;
+		case CLIENTAGENT_SEND_DATAGRAM:
+		{
+			Datagram forward;
+			forward.add_data(dgi.read_string());
+			send_datagram(forward);
+		}
+		break;
+		case CLIENTAGENT_OPEN_CHANNEL:
+		{
+			subscribe_channel(dgi.read_uint64());
+		}
+		break;
+		case CLIENTAGENT_CLOSE_CHANNEL:
+		{
+			unsubscribe_channel(dgi.read_uint64());
+		}
+		break;
+		case CLIENTAGENT_ADD_POST_REMOVE:
+		{
+			add_post_remove(dgi.read_string());
+		}
+		break;
+		case CLIENTAGENT_CLEAR_POST_REMOVES:
+		{
+			clear_post_removes();
+		}
+		break;
+		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
+		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
+		{
+			uint32_t do_id = dgi.read_uint32();
+			uint32_t parent = dgi.read_uint32();
+			uint32_t zone = dgi.read_uint32();
+			uint16_t dc_id = dgi.read_uint16();
+			if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
+			        m_seen_objects.find(do_id) != m_seen_objects.end())
+			{
+				return;
+			}
+			if(m_dist_objs.find(do_id) == m_dist_objs.end())
+			{
+				VisibleObject obj;
+				obj.id = do_id;
+				obj.dcc = g_dcf->get_class(dc_id);
+				obj.parent = parent;
+				obj.zone = zone;
+				m_dist_objs[do_id] = obj;
+			}
+			m_seen_objects.insert(do_id);
+
+			handle_add_object(do_id, parent, zone, dc_id, dgi,
+			                  msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER);
+
+			// TODO: This is a tad inefficient as it checks every pending interest.
+			// In practice, there shouldn't be many add-interest operations active
+			// at once, however.
+			std::list<uint32_t> deferred_deletes;
+			for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it)
+			{
+				if(it->second->is_ready(m_dist_objs))
+				{
+					handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
+					deferred_deletes.push_back(it->first);
+				}
+			}
+			for(auto it = deferred_deletes.begin(); it != deferred_deletes.end(); ++it)
+			{
+				m_pending_interests.erase(*it);
+			}
+		}
+		break;
+		case STATESERVER_OBJECT_GET_ZONES_COUNT_RESP:
+		{
+			uint32_t context = dgi.read_uint32();
+			uint32_t count = dgi.read_uint32();
+
+			if(m_pending_interests.find(context) == m_pending_interests.end())
+			{
+				m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
+				               << context << std::endl;
+				return;
+			}
+
+			m_pending_interests[context]->store_total(count);
+
+			if(m_pending_interests[context]->is_ready(m_dist_objs))
+			{
+				handle_interest_done(m_pending_interests[context]->m_interest_id,
+				                     m_pending_interests[context]->m_client_context);
+				m_pending_interests.erase(context);
+			}
+		}
+		break;
+		case STATESERVER_OBJECT_CHANGING_LOCATION:
+		{
+			uint32_t do_id = dgi.read_uint32();
+			uint32_t n_parent = dgi.read_uint32();
+			uint32_t n_zone = dgi.read_uint32();
+			dgi.read_uint32(); // Old parent; we don't care about this.
+			dgi.read_uint32(); // Old zone; we don't care about this.
+			bool disable = true;
+			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
+			{
+				Interest &i = it->second;
+				for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2)
+				{
+					if(*it2 == n_zone)
+					{
+						disable = false;
+						break;
+					}
+				}
+			}
+
+			if(m_dist_objs.find(do_id) != m_dist_objs.end())
+			{
+				m_dist_objs[do_id].parent = n_parent;
+				m_dist_objs[do_id].zone = n_zone;
+			}
+
+			if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
+			{
+				handle_remove_object(do_id);
+				m_seen_objects.erase(do_id);
+				m_dist_objs.erase(do_id);
+			}
+			else
+			{
+				handle_change_location(do_id, n_parent, n_zone);
+			}
+		}
+		break;
+		default:
+			m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
 	}
 }
 
 /* ========================== *
  *       HELPER CLASSES       *
  * ========================== */
-ChannelTracker::ChannelTracker(channel_t min, channel_t max) : m_next(min), m_max(max), m_unused_channels()
+ChannelTracker::ChannelTracker(channel_t min, channel_t max) : m_next(min), m_max(max),
+	m_unused_channels()
 {
 }
 
@@ -513,7 +514,7 @@ bool InterestOperation::is_ready(const std::unordered_map<uint32_t, VisibleObjec
 	{
 		const VisibleObject &distobj = it->second;
 		if(distobj.parent == m_parent &&
-		   (m_zones.find(distobj.zone) != m_zones.end()))
+		        (m_zones.find(distobj.zone) != m_zones.end()))
 		{
 			count++;
 		}

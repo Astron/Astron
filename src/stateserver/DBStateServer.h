@@ -15,7 +15,7 @@ class LoadingObject;
 
 class DBStateServer : public StateServer
 {
-	friend class LoadingObject;
+		friend class LoadingObject;
 
 	public:
 		DBStateServer(RoleConfig roleconfig);
@@ -38,7 +38,7 @@ class DBStateServer : public StateServer
 		void handle_activate(DatagramIterator &dgi, bool has_other);
 
 		// receive_object gives responsibility of a DistributedObject to the dbss
-		// primarily used by a LoadingObject when the object is finished loading. 
+		// primarily used by a LoadingObject when the object is finished loading.
 		void receive_object(DistributedObject* obj);
 		// discard_loader tells the dbss to forget about a LoadingObject, either
 		// because the object finished loading, or because the object failed to load.

@@ -1,13 +1,13 @@
 #!/usr/bin/env python2
 import unittest
+import os, time
 from socket import *
 
-from common import *
-from testdc import *
-
+from testdc import test_dc
+from common import Daemon, MDConnection
 from test_dbserver import DatabaseBaseTests
 
-'''
+
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -22,10 +22,8 @@ roles:
       generate:
         min: 1000000
         max: 1000010
-      storage:
-        type: postgres
-        user: astron_test
-        pass: sudowoodo
+      engine:
+        type: postgresql
         database: astron_test
 """ % test_dc
 
@@ -39,6 +37,11 @@ class TestDatabaseServerPostgres(unittest.TestCase, DatabaseBaseTests):
         sock.connect(('127.0.0.1', 57123))
         cls.conn = MDConnection(sock)
 
+    @classmethod
+    def tearDownClass(cls):
+        time.sleep(0.25) # Wait for database to finish any operations
+        cls.conn.close()
+        cls.daemon.stop()
+
 if __name__ == '__main__':
     unittest.main()
-'''

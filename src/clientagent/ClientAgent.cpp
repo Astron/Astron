@@ -25,7 +25,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);
-	std::string str_port = str_ip.substr(str_ip.find(':', 0)+1, std::string::npos);
+	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
 	str_ip = str_ip.substr(0, str_ip.find(':', 0));
 	tcp::resolver resolver(io_service);
 	tcp::resolver::query query(str_ip, str_port);
@@ -45,7 +45,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 				if(!ud.dcc)
 				{
 					m_log->fatal() << "DCClass " << udnode["class"].as<std::string>()
-						<< "Does not exist!" << std::endl;
+					               << "Does not exist!" << std::endl;
 					exit(1);
 				}
 				ud.anonymous = udnode["anonymous"].as<bool>();
@@ -66,15 +66,15 @@ void ClientAgent::start_accept()
 {
 	tcp::socket *socket = new tcp::socket(io_service);
 	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*socket, boost::bind(&ClientAgent::handle_accept, 
-		this, socket, boost::asio::placeholders::error));
+	m_acceptor->async_accept(*socket, boost::bind(&ClientAgent::handle_accept,
+	                         this, socket, boost::asio::placeholders::error));
 }
 
 void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
 	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
 	m_log->debug() << "Got an incoming connection from "
-				 << remote.address() << ":" << remote.port() << std::endl;
+	               << remote.address() << ":" << remote.port() << std::endl;
 	ClientFactory::singleton.instantiate_client(m_client_type, this, socket);
 	start_accept();
 }

@@ -24,8 +24,8 @@ roles:
         max: 1000010
       storage:
         type: mysql
-        user: astron_test
-        pass: sudowoodo
+        username: astron_test
+        password: sudowoodo
         database: astron_test
 """ % test_dc
 
