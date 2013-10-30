@@ -141,9 +141,25 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 		void del_field(uint32_t do_id, DCField* field)
 		{
+			DCClass *dcc = get_class(do_id);
+			bool storable = is_storable(dcc->get_number());
+
+			if(storable)
+			{
+				vector<DCField*> fields;
+				fields.push_back(field);
+				del_fields_in_table(do_id, dcc, fields);
+			}
 		}
 		void del_fields(uint32_t do_id, const vector<DCField*> &fields)
 		{
+			DCClass *dcc = get_class(do_id);
+			bool storable = is_storable(dcc->get_number());
+
+			if(storable)
+			{
+				del_fields_in_table(do_id, dcc, fields);
+			}
 		}
 		void set_field(uint32_t do_id, DCField* field, const vector<uint8_t> &value)
 		{
@@ -505,13 +521,30 @@ class SociSQLEngine : public IDatabaseEngine
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
-				name = it->first->get_name();
+				if(it->first->is_db())
+				{
+					name = it->first->get_name();
 
-				string packed_data(it->second.begin(), it->second.end());
-				value = it->first->format_data(packed_data, false);
+					string packed_data(it->second.begin(), it->second.end());
+					value = it->first->format_data(packed_data, false);
 
-				m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << name << "='" << value
-				      << "' WHERE object_id=" << id << ";";
+					m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << name << "='" << value
+					      << "' WHERE object_id=" << id << ";";
+				}
+			}
+		}
+
+		void del_fields_in_table(uint32_t id, DCClass* dcc, const vector<DCField*> &fields)
+		{
+			string name;
+			for(auto it = fields.begin(); it!= fields.end(); ++it)
+			{
+				DCField* field = *it;
+				if(field->is_db())
+				{
+					m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
+					      << "=NULL WHERE object_id=" << id << ";";
+				}
 			}
 		}
 };
