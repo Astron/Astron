@@ -40,16 +40,16 @@ void NetworkClient::start_receive()
 	if(m_is_data) // Read data
 	{
 		async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
-	               boost::bind(&NetworkClient::handle_data, this,
-	                           boost::asio::placeholders::error,
-	                           boost::asio::placeholders::bytes_transferred));
+		           boost::bind(&NetworkClient::handle_data, this,
+		                       boost::asio::placeholders::error,
+		                       boost::asio::placeholders::bytes_transferred));
 	}
 	else // Read length
 	{
 		async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
-	               boost::bind(&NetworkClient::handle_size, this,
-	                           boost::asio::placeholders::error,
-	                           boost::asio::placeholders::bytes_transferred));
+		           boost::bind(&NetworkClient::handle_size, this,
+		                       boost::asio::placeholders::error,
+		                       boost::asio::placeholders::bytes_transferred));
 	}
 }
 
@@ -57,10 +57,13 @@ void NetworkClient::network_send(Datagram &dg)
 {
 	//TODO: make this asynch if necessary
 	uint16_t len = dg.size();
-	try {
+	try
+	{
 		m_socket->send(boost::asio::buffer((uint8_t*)&len, 2));
 		m_socket->send(boost::asio::buffer(dg.get_data(), dg.size()));
-	} catch (std::exception &e) {
+	}
+	catch(std::exception &e)
+	{
 		// Do nothing: We assume that the message just got dropped if the remote
 		// end died before we could send it.
 	}

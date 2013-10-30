@@ -15,11 +15,13 @@ class NetworkClient
 		void network_send(Datagram &dg);
 		void do_disconnect();
 		bool is_connected();
+
+		boost::asio::ip::tcp::socket *m_socket;
+
 	private:
 		void start_receive();
 		void handle_size(const boost::system::error_code &ec, size_t bytes_transferred);
 		void handle_data(const boost::system::error_code &ec, size_t bytes_transferred);
-		boost::asio::ip::tcp::socket *m_socket;
 
 		uint8_t m_size_buf[2];
 		uint8_t* m_data_buf;
