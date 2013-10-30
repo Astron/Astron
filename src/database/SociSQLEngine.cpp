@@ -202,21 +202,25 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 		bool set_field_if_empty(uint32_t do_id, DCField* field, vector<uint8_t> &value)
-		{			// Get class from the objects table
+		{
+			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);
 			if(!dcc)
 			{
+				value.clear();
 				return false; // Object does not exist
 			}
 
 			bool stored = is_storable(dcc->get_number());
 			if(!stored)
 			{
+				value.clear();
 				return false; // Class has no database fields
 			}
 
 			if(!field->is_db())
 			{
+				value.clear();
 				return false;
 			}
 
@@ -301,12 +305,125 @@ class SociSQLEngine : public IDatabaseEngine
 		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal,
 		                         vector<uint8_t> &value)
 		{
-			return false;
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				return false; // Class has no database fields
+			}
+
+			if(!field->is_db())
+			{
+				return false;
+			}
+
+			string val;
+			indicator ind;
+			m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+			      << " WHERE object_id=" << do_id << ";", into(val, ind);
+			if(ind != i_ok)
+			{
+				value.clear();
+				return false;
+			}
+
+			string packed_equal(equal.begin(), equal.end());
+			string eql = field->format_data(packed_equal, false);
+			if(val != eql)
+			{
+				val = field->parse_string(val);
+				value = vector<uint8_t>(val.begin(), val.end());
+				return false;
+			}
+
+			string packed_data(value.begin(), value.end());
+			val = field->format_data(packed_data, false);
+			m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
+			      << "='" << val << "' WHERE object_id=" << do_id << ";";
+			return true;
 		}
 		bool set_fields_if_equals(uint32_t do_id, const map<DCField*, vector<uint8_t> > &equals,
 		                          map<DCField*, vector<uint8_t> > &values)
 		{
-			return false;
+			// Get class from the objects table
+			DCClass* dcc = get_class(do_id);
+			if(!dcc)
+			{
+				return false; // Object does not exist
+			}
+
+			bool stored = is_storable(dcc->get_number());
+			if(!stored)
+			{
+				return false; // Class has no database fields
+			}
+
+			bool failed = false;
+			string value;
+			indicator ind;
+			vector<DCField*> null_fields;
+			try
+			{
+				m_sql.begin(); // Start transaction
+				for(auto it = equals.begin(); it != equals.end(); ++it)
+				{
+					DCField* field = it->first;
+					if(field->is_db())
+					{
+						m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+						      << " WHERE object_id=" << do_id << ";", into(value, ind);
+						if(ind != i_ok)
+						{
+							null_fields.push_back(field);
+							failed = true;
+							continue;
+						}
+
+						string packed_equal(it->second.begin(), it->second.end());
+						string equal = field->format_data(packed_equal, false);
+						if(value == equal)
+						{
+							string packed_data(values[field].begin(), values[field].end());
+							string insert = field->format_data(packed_data, false);
+							m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
+							      << "='" << insert << "' WHERE object_id=" << do_id << ";";\
+						}
+						else
+						{
+							failed = true;
+						}
+						value = field->parse_string(value);
+						values[field] = vector<uint8_t>(value.begin(), value.end());
+					}
+				}
+
+				if(failed)
+				{
+					for(auto it = null_fields.begin(); it != null_fields.end(); ++it)
+					{
+						values.erase(*it);
+					}
+					m_sql.rollback(); // Revert transaction
+					return false;
+				}
+				else
+				{
+					m_sql.commit(); // End transaction
+					return true;
+				}
+			}
+			catch(const exception &e)
+			{
+				m_sql.rollback(); // Revert transaction
+				values.clear();
+				return false;
+			}
 		}
 
 		bool get_field(uint32_t do_id, const DCField* field, vector<uint8_t> &value)
