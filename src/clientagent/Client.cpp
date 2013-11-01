@@ -296,6 +296,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 		break;
 		case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
+        case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED:
 		{
 			uint32_t do_id = dgi.read_uint32();
 			uint32_t parent = dgi.read_uint32();
