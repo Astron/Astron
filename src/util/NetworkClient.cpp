@@ -59,8 +59,10 @@ void NetworkClient::network_send(Datagram &dg)
 	uint16_t len = dg.size();
 	try
 	{
-		m_socket->send(boost::asio::buffer((uint8_t*)&len, 2));
-		m_socket->send(boost::asio::buffer(dg.get_data(), dg.size()));
+		std::list<boost::asio::const_buffer> gather;
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, 2));
+		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
+		m_socket->send(gather);
 	}
 	catch(std::exception &e)
 	{
