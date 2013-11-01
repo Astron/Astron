@@ -20,6 +20,7 @@ class LoggerBuf : public std::streambuf
 
 enum LogSeverity
 {
+    LSEVERITY_PACKET,
     LSEVERITY_SPAM,
     LSEVERITY_DEBUG,
     LSEVERITY_INFO,
@@ -93,6 +94,16 @@ class LogCategory
 		return out; \
 	}
 
+
+#ifdef PACKET_DEBUG
+    F(packet, LSEVERITY_PACKET)
+#else
+    inline NullStream &packet()
+    {
+        return null_stream;
+    }
+#endif
+
 #ifdef DEBUG_MESSAGES
 		F(spam, LSEVERITY_SPAM)
 		F(debug, LSEVERITY_DEBUG)
@@ -105,6 +116,7 @@ class LogCategory
 		{
 			return null_stream;
 		}
+
 #endif
 		F(info, LSEVERITY_INFO)
 		F(warning, LSEVERITY_WARNING)

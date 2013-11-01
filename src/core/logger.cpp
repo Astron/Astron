@@ -60,6 +60,9 @@ std::ostream &Logger::log(LogSeverity sev)
 
 	switch(sev)
 	{
+        case LSEVERITY_PACKET:
+			sevtext = "PACKET";
+			break;
 		case LSEVERITY_SPAM:
 			sevtext = "SPAM";
 			break;
