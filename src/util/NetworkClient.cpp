@@ -32,24 +32,40 @@ void NetworkClient::set_socket(tcp::socket *socket)
 		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
 	}
 	m_socket = socket;
+
+	boost::asio::socket_base::keep_alive keepalive(true);
+	m_socket->set_option(keepalive);
+
+	boost::asio::ip::tcp::no_delay nodelay(true);
+	m_socket->set_option(nodelay);
+
 	start_receive();
 }
 
 void NetworkClient::start_receive()
 {
-	if(m_is_data) // Read data
+	try
 	{
-		async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
-		           boost::bind(&NetworkClient::handle_data, this,
-		                       boost::asio::placeholders::error,
-		                       boost::asio::placeholders::bytes_transferred));
+		if(m_is_data) // Read data
+		{
+			async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
+			           boost::bind(&NetworkClient::handle_data, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
+		else // Read length
+		{
+			async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
+			           boost::bind(&NetworkClient::handle_size, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
 	}
-	else // Read length
+	catch(std::exception &e)
 	{
-		async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
-		           boost::bind(&NetworkClient::handle_size, this,
-		                       boost::asio::placeholders::error,
-		                       boost::asio::placeholders::bytes_transferred));
+		// An exception happening when trying to initiate a read is a clear
+		// indicator that something happened to the connection. Therefore:
+		do_disconnect();
 	}
 }
 
@@ -59,13 +75,18 @@ void NetworkClient::network_send(Datagram &dg)
 	uint16_t len = dg.size();
 	try
 	{
-		m_socket->send(boost::asio::buffer((uint8_t*)&len, 2));
-		m_socket->send(boost::asio::buffer(dg.get_data(), dg.size()));
+		m_socket->non_blocking(true);
+		m_socket->native_non_blocking(true);
+		std::list<boost::asio::const_buffer> gather;
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, 2));
+		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
+		m_socket->send(gather);
 	}
 	catch(std::exception &e)
 	{
-		// Do nothing: We assume that the message just got dropped if the remote
-		// end died before we could send it.
+		// We assume that the message just got dropped if the remote end died
+		// before we could send it.
+		do_disconnect();
 	}
 }
 

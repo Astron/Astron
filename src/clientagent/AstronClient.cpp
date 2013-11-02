@@ -15,16 +15,30 @@ class AstronClient : public Client, public NetworkClient
 			Client(client_agent), NetworkClient(socket), m_clean_disconnect(false)
 		{
 			std::stringstream ss;
-			ss << "Client (" << socket->remote_endpoint().address().to_string()
-			   << ":" << socket->remote_endpoint().port() << ", " << m_channel << ")";
+			boost::asio::ip::tcp::endpoint remote;
+			try
+			{
+				remote = socket->remote_endpoint();
+			}
+			catch (std::exception &e)
+			{
+				// A client might disconnect immediately after connecting.
+				// If this happens, do nothing. Resolves #122.
+				// N.B. due to a Boost.Asio bug, the socket will (may?) still have
+				// is_open() == true, so we just catch the exception on remote_endpoint
+				// instead.
+				return;
+			}
+			ss << "Client (" << remote.address().to_string()
+			   << ":" << remote.port() << ", " << m_channel << ")";
 			m_log->set_name(ss.str());
 			set_con_name(ss.str());
 
 			std::list<std::string> event;
 			event.push_back("client-connected");
 			ss.str("");
-			ss << socket->remote_endpoint().address().to_string()
-			   << ":" << socket->remote_endpoint().port();
+			ss << remote.address().to_string()
+			   << ":" << remote.port();
 			event.push_back(ss.str());
 			ss.str("");
 			ss << socket->local_endpoint().address().to_string()
