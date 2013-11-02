@@ -125,9 +125,17 @@ sizedType ::= "string" | "blob"
 
 ### Grammar ###
 
+### DC File ###
+The DCFile is the root production of the grammar.  A valid DistributedClass file
+must satisify the "DCFile" production.
+```
+DCFile ::= TypeDecl { TypeDecl }
+TypeDecl ::= KeywordType | StructType | ClassType
+```
+
 #### Keywords ####
 ```
-KeywordDecl ::= "keyword" identifier
+KeywordType ::= "keyword" identifier
 KeywordList ::= identifier { "," identifier }
 ```
 
