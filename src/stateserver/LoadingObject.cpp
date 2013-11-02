@@ -50,9 +50,6 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 			DatagramIterator dgi(*it);
 			dgi.seek_payload();
 			obj->handle_datagram(*it, dgi);
-
-			dgi.seek_payload();
-			m_dbss->handle_datagram(*it, dgi);
 		}
 		catch(DatagramIteratorEOF &e)
 		{
