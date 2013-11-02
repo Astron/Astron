@@ -145,7 +145,6 @@ class TestStateServer(unittest.TestCase):
         # Expect no entry messages
         self.assertTrue(self.shard.expect_none())
 
-
         ### Clean up ###
         self.shard.send(Datagram.create_remove_channel(80000<<32|100))
         self.shard.send(Datagram.create_remove_channel(80000<<32|101))
@@ -219,6 +218,67 @@ class TestStateServer(unittest.TestCase):
 
         # Should recieve no stateserver object response
         self.assertTrue(self.shard.expect_none())
+
+
+
+        ### Test for caching of GetAll for Activate messages ###
+        self.shard.send(Datagram.create_add_channel(33000<<32|33))
+        # Get all from an object
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
+        dg.add_uint32(3) # Context
+        dg.add_uint32(doid1) # Id
+        self.shard.send(dg)
+
+        # Expect values to be retrieved from database
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
+        context = dgi.read_uint32() # Get context
+        self.assertEquals(dgi.read_uint32(), doid1) # object Id
+
+        # Try to activate the object
+        dg = Datagram.create([doid1], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        appendMeta(dg, doid1, 33000, 33)
+        self.shard.send(dg)
+
+        # Expect not to receive another request at the database
+        self.assertTrue(self.database.expect_none())
+
+        # Send back to the DBSS with some required values
+        dg = Datagram.create([doid1], 200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(2)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(32144123)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(23)
+        self.database.send(dg)
+
+        expected = []
+        # Expect to receive a reply to the original message ...
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(3) # Context
+        appendMeta(dg, doid1, INVALID_DO_ID, INVALID_ZONE, DistributedTestObject5)
+        dg.add_uint32(setRequired1DefaultValue) # setRequired1
+        dg.add_uint32(32144123) # setRDB3
+        dg.add_uint8(23) # setRDbD5
+        dg.add_uint16(0) # Optional field count
+        expected.append(dg)
+        # As well as the object's entry into the location
+        dg = Datagram.create([33000<<32|33], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid1, 33000, 33, DistributedTestObject5)
+        dg.add_uint32(setRequired1DefaultValue) # setRequired1
+        dg.add_uint32(32144123) # setRDB3
+        dg.add_uint8(23) # setRDbD5
+        expected.append(dg)
+        self.assertTrue(self.shard.expect_multi(expected))
+
+
+        ### Cleanup ###
+        self.shard.send(Datagram.create_remove_channel(33000<<32|33))
 
     # Tests the messages OBJECT_DELETE_DISK, OBJECT_DELETE_RAM
     def test_delete(self):
