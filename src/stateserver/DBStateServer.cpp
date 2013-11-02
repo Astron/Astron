@@ -49,7 +49,15 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
 	if(!has_other)
 	{
-		m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id);
+		auto load_it = m_inactive_loads.find(do_id);
+		if(load_it == m_inactive_loads.end())
+		{
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id);
+		}
+		else
+		{
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, load_it->second);
+		}
 		m_loading[do_id]->begin();
 	}
 	else
@@ -65,7 +73,15 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 		}
 
 		DCClass *dclass = g_dcf->get_class(dc_id);
-		m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi);
+		auto load_it = m_inactive_loads.find(do_id);
+		if(load_it == m_inactive_loads.end())
+		{
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi);
+		}
+		else
+		{
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi, load_it->second);
+		}
 		m_loading[do_id]->begin();
 	}
 }
@@ -448,6 +464,9 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_context_datagrams[db_context].add_uint32(r_do_id);
 			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
 
+			// Cache the do_id --> context in case we get a dbss_activate
+			m_inactive_loads[r_do_id].insert(r_context);
+
 			// Send query to database
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
 			dg.add_uint32(db_context);
@@ -487,6 +506,21 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					m_log->warning() << "Received GetFieldsResp, but expecting GetAllResp." << std::endl;
 				}
 				break;
+			}
+
+			// Get do_id from datagram
+			check_dgi.seek_payload();
+			check_dgi.skip(8 + 4); // skip over sender and context to do_id;
+			uint32_t do_id = check_dgi.read_uint32();
+
+			// Remove cached loading operation
+			if(m_inactive_loads[do_id].size() > 1)
+			{
+				m_inactive_loads[do_id].erase(db_context);
+			}
+			else
+			{
+				m_inactive_loads.erase(do_id);
 			}
 
 			m_log->spam() << "Received GetAllResp from database." << std::endl;

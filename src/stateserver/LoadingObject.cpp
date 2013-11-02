@@ -3,9 +3,10 @@
 #include "LoadingObject.h"
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
-                             uint32_t parent_id, uint32_t zone_id) :
+                             uint32_t parent_id, uint32_t zone_id,
+                             const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-	m_context(stateserver->m_next_context++), m_dclass(NULL)
+	m_context(stateserver->m_next_context++), m_dclass(NULL), m_valid_contexts(contexts)
 {
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
@@ -16,8 +17,10 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_t parent_id,
-                             uint32_t zone_id, DCClass *dclass, DatagramIterator &dgi) :
-	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id), m_dclass(dclass)
+                             uint32_t zone_id, DCClass *dclass, DatagramIterator &dgi,
+                             const std::unordered_set<uint32_t> &contexts) :
+	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
+	m_dclass(dclass), m_valid_contexts(contexts)
 {
 	// TODO: Implement
 }
@@ -29,7 +32,10 @@ LoadingObject::~LoadingObject()
 
 void LoadingObject::begin()
 {
-	send_get_object(m_do_id);
+	if(!m_valid_contexts.size())
+	{
+		send_get_object(m_do_id);
+	}
 }
 
 void LoadingObject::send_get_object(uint32_t do_id)
@@ -68,11 +74,20 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 	{
 		case DBSERVER_OBJECT_GET_ALL_RESP:
 		{
-			if(dgi.read_uint32() != m_context)
+			if(m_is_loaded)
+			{
+				break; // Don't care about these message any more if loaded
+			}
+
+			uint32_t db_context = dgi.read_uint32();
+			if(db_context != m_context &&
+			   m_valid_contexts.find(db_context) != m_valid_contexts.end())
 			{
 				m_log->warning() << "Received get_all_resp with incorrect context" << std::endl;
 				break;
 			}
+
+			m_is_loaded = true;
 
 			m_log->spam() << "Received GetAllResp from database." << std::endl;
 

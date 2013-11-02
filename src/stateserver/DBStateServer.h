@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <unordered_set>
 
 #include "StateServer.h"
 
@@ -33,6 +34,8 @@ class DBStateServer : public StateServer
 		// back to the caller. It stores the data used to correctly route the response while the
 		// dbss is waiting on the db.
 		std::unordered_map<uint32_t, Datagram> m_context_datagrams;
+
+		std::unordered_map<uint32_t, std::unordered_set<uint32_t> > m_inactive_loads;
 
 		// handle_activate parses any DBSS_ACTIVATE_* message and spawns a LoadingObject to handle it.
 		void handle_activate(DatagramIterator &dgi, bool has_other);
