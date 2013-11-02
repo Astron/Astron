@@ -57,16 +57,17 @@ hexDigit ::= "0" ... "9" | "A" ... "F" | "a" ... "f"
 binDigit ::= "0" | "1"
 ```
 
+#### Operators ####
+```
+operator ::= "%" | "*" | "+" | "-" | "/"
+```
+
 #### Delimiters ####
 Delimiters are used to seperate other lexical tokens, and may have additional special
 meaning in **Grammar** productions.
 ```
-delimiter ::= "(" | ")" | "{" | "}" | "[" | "]" | "," | ";" | "=" | <spaces or tabs>
-```
-
-#### Operators ####
-```
-operator ::= "%" | "*" | "+" | "-" | "/"
+delimiter ::= "(" | ")" | "{" | "}" | "[" | "]" | "," | ";" | "=" | ":"
+              | <spaces or tabs> | operator
 ```
 
 #### Number Literals ####
@@ -112,11 +113,11 @@ keyword ::= "dclass" | "struct" | "keyword"
 #### Data Types ####
 The following identifiers are reserved for datatypes and may not be used as identifiers.
 ```
-dataType  ::= intType | floatType | charType | sizedType
+dataType  ::= charType | intType | floatType | sizedType
+charType  ::= "char"
 intType   ::= "int8" | "int16" | "int32" | "int64"
               | "uint8" | "uint16" | "uint32" | "uint64"
 floatType ::= "float64"
-charType  ::= "char"
 sizedType ::= "string" | "blob"
 ```
 
@@ -124,12 +125,75 @@ sizedType ::= "string" | "blob"
 
 ### Grammar ###
 
-#### Value Ranges ####
+#### Keywords ####
 ```
-integerRange   ::= "(" intLiteral "-" intLiteral ")"
-floatRange     ::= "(" floatLiteral "-" floatLiteral ")"
-arrayRange     ::= "[" [ intLiteral [ "-" intLiteral ] ] "]"
-sizeConstraint ::= "(" intLiteral ")"
+KeywordDecl := "keyword" identifier
+KeywordList := identifier { "," identifier }
+```
+
+#### Struct Type ####
+```
+StructType ::= "struct" identifier "{" Parameter ";" { Parameter ";" } "}" ";"
+```
+
+#### Class Type ####
+```
+ClassType ::= "dclass" identifier "{" { FieldDecl ";" } "}" ";"
+```
+
+#### Field Types ####
+```
+FieldDecl ::= MolecularField | AtomicField | ParameterField
+```
+
+```
+MolecularField ::= identifier ":" ( AtomicField | ParameterField )
+                                  { "," ( AtomicField | ParameterField ) }
+AtomicField    ::= identifier "(" Parameter { "," Parameter } ")" [ KeywordList ]
+ParameterField ::= Parameter [ KeywordList ]
+```
+
+#### Parameter Types ####
+```
+Parameter ::= CharParameter | IntParameter | FloatParameter | SizedParameter | ArrayParameter
+```
+
+**Char Parameter**
+```
+CharParameter ::= charType [ identifier ] [ "=" charLiteral ]
+```
+
+**Integer Parameter**
+```
+IntParameter ::= intType [ IntRange ] [ IntTransform ] [ identifier ] [ "=" IntConstant ] 
+IntConstant  ::= intLiteral | "{" intLiteral IntTransform "}"
+IntTransform ::= operator intLiteral { IntTransform } | "(" IntTransform ")"
+IntRange     ::= "(" intLiteral "-" intLiteral ")"
+```
+
+**Float Parameter**
+```
+FloatParameter ::= floatType [ FloatRange ] [ FloatTransform ] [ identifier ] [ "=" FloatConstant ]
+FloatConstant  ::= numLiteral | "{" numLiteral FloatTransform "}"
+FloatTransform ::= operator numLiteral { FloatTransform } | "(" FloatTransform ")"
+FloatRange     ::= "(" floatLiteral "-" floatLiteral ")"
+```
+
+**Sized Parameter**
+```
+SizedParameter ::= sizedType [ SizeConstraint ] [ identifier ] [ "=" stringLiteral ]
+SizeConstraint ::= "(" intLiteral ")"
+```
+
+**Struct Parameter**
+```
+StructParameter ::= identifier [ identifier ]
+```
+
+**Array Parameter**
+```
+ArrayParameter ::= ( dataType | identifier ) [ identifier ] ArrayRange
+ArrayRange     ::= "[" [ intLiteral [ "-" intLiteral ] ] "]"
 ```
 
 Example array ranges are `[]`, `[5]`, `[0-11]`, or `[2 - 24]`.
