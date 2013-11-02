@@ -44,19 +44,28 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::start_receive()
 {
-	if(m_is_data) // Read data
+	try
 	{
-		async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
-		           boost::bind(&NetworkClient::handle_data, this,
-		                       boost::asio::placeholders::error,
-		                       boost::asio::placeholders::bytes_transferred));
+		if(m_is_data) // Read data
+		{
+			async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
+			           boost::bind(&NetworkClient::handle_data, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
+		else // Read length
+		{
+			async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
+			           boost::bind(&NetworkClient::handle_size, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
 	}
-	else // Read length
+	catch(std::exception &e)
 	{
-		async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
-		           boost::bind(&NetworkClient::handle_size, this,
-		                       boost::asio::placeholders::error,
-		                       boost::asio::placeholders::bytes_transferred));
+		// An exception happening when trying to initiate a read is a clear
+		// indicator that something happened to the connection. Therefore:
+		network_disconnect();
 	}
 }
 

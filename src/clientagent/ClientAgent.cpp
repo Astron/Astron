@@ -72,7 +72,21 @@ void ClientAgent::start_accept()
 
 void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
-	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
+	boost::asio::ip::tcp::endpoint remote;
+	try
+	{
+		remote = socket->remote_endpoint();
+	}
+	catch (std::exception &e)
+	{
+		// A client might disconnect immediately after connecting.
+		// If this happens, do nothing. Resolves #122.
+		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
+		// is_open() == true, so we just catch the exception on remote_endpoint
+		// instead.
+		start_accept();
+		return;
+	}
 	m_log->debug() << "Got an incoming connection from "
 	               << remote.address() << ":" << remote.port() << std::endl;
 	ClientFactory::singleton.instantiate_client(m_client_type, this, socket);

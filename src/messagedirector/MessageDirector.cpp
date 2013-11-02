@@ -407,10 +407,24 @@ void MessageDirector::start_accept()
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
-	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
+	boost::asio::ip::tcp::endpoint remote;
+	try
+	{
+		remote = socket->remote_endpoint();
+	}
+	catch (std::exception &e)
+	{
+		// A client might disconnect immediately after connecting.
+		// If this happens, do nothing. Resolves #122.
+		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
+		// is_open() == true, so we just catch the exception on remote_endpoint
+		// instead.
+		start_accept();
+		return;
+	}
 	m_log.info() << "Got an incoming connection from "
 	             << remote.address() << ":" << remote.port() << std::endl;
-	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
+	new MDNetworkParticipant(socket); // It deletes itself when connection is lost
 	start_accept();
 }
 
