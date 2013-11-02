@@ -201,6 +201,7 @@ void Client::close_zones(uint32_t parent, const std::unordered_set<uint32_t> &ki
 			handle_remove_object(it->second.id);
 
 			m_seen_objects.erase(it->second.id);
+			m_id_history.insert(it->second.id);
 			to_remove.push_back(it->second.id);
 		}
 	}
@@ -215,6 +216,15 @@ void Client::close_zones(uint32_t parent, const std::unordered_set<uint32_t> &ki
 	{
 		unsubscribe_channel(LOCATION2CHANNEL(parent, *it));
 	}
+}
+
+bool Client::is_historical_object(uint32_t do_id)
+{
+	if(m_id_history.find(do_id) != m_id_history.end())
+	{
+		return true;
+	}
+	return false;
 }
 
 void Client::send_disconnect(uint16_t reason, const std::string &error_string, bool security)

@@ -286,9 +286,16 @@ class AstronClient : public Client, public NetworkClient
 			// If the class couldn't be found, error out:
 			if(!dcc)
 			{
-				std::stringstream ss;
-				ss << "Client tried to send update to nonexistent object " << do_id;
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				if(is_historical_object(do_id))
+				{
+					dgi.skip(dgi.get_remaining());
+				}
+				else
+				{
+					std::stringstream ss;
+					ss << "Client tried to send update to nonexistent object " << do_id;
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				}
 				return;
 			}
 
