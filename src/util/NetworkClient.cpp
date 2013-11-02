@@ -65,7 +65,7 @@ void NetworkClient::start_receive()
 	{
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection. Therefore:
-		network_disconnect();
+		do_disconnect();
 	}
 }
 
@@ -75,6 +75,8 @@ void NetworkClient::network_send(Datagram &dg)
 	uint16_t len = dg.size();
 	try
 	{
+		m_socket->non_blocking(true);
+		m_socket->native_non_blocking(true);
 		std::list<boost::asio::const_buffer> gather;
 		gather.push_back(boost::asio::buffer((uint8_t*)&len, 2));
 		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
@@ -82,8 +84,9 @@ void NetworkClient::network_send(Datagram &dg)
 	}
 	catch(std::exception &e)
 	{
-		// Do nothing: We assume that the message just got dropped if the remote
-		// end died before we could send it.
+		// We assume that the message just got dropped if the remote end died
+		// before we could send it.
+		do_disconnect();
 	}
 }
 
