@@ -32,6 +32,13 @@ void NetworkClient::set_socket(tcp::socket *socket)
 		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
 	}
 	m_socket = socket;
+
+	boost::asio::socket_base::keep_alive keepalive(true);
+	m_socket->set_option(keepalive);
+
+	boost::asio::ip::tcp::no_delay nodelay(true);
+	m_socket->set_option(nodelay);
+
 	start_receive();
 }
 
