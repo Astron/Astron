@@ -80,6 +80,7 @@ class Client : public MDParticipantInterface
 		std::unordered_map<uint16_t, Interest> m_interests;
 		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
 		std::unordered_map<uint32_t, VisibleObject> m_dist_objs;
+		std::unordered_set<uint32_t> m_id_history;
 		LogCategory *m_log;
 
 		Client(ClientAgent* client_agent);
@@ -107,6 +108,9 @@ class Client : public MDParticipantInterface
 		// from the associated location channels for those objects.
 		void close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones);
 
+		// is_historical_object returns true if the object was once visible to the client, but has
+		// since been deleted.  The return is still true even if the object has become visible again.
+		bool is_historical_object(uint32_t do_id);
 
 		/* Client Interface */
 		// send_disconnect must close any connections with a connected client; the given reason and

@@ -742,6 +742,18 @@ class TestClientAgent(unittest.TestCase):
         # Meanwhile, nothing happens on the server either:
         self.assertTrue(self.server.expect_none())
 
+        # Additionally, if we try to twiddle with a previously visible object...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_uint32(8888)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(232323)
+        client.send(dg)
+
+        # We shouldn't get kicked...
+        self.assertTrue(client.expect_none())
+
+        self.server.flush()
         client.close()
 
     def test_delete(self):
