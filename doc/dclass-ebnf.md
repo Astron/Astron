@@ -1,6 +1,6 @@
 DistributedClass Language Specification
 ---------------------------------------
-**Author:** Kevin "Kestred" Stenerson
+**Author:** Kevin "Kestred" Stenerson  
 **Version:** 2013, November 2nd
 
 ### Introduction ###
@@ -17,13 +17,13 @@ The object satisfying this interface is referred to as a "distributed object".
 The syntax is specified using Extended Backus-Naur Form (EBNF):
 
 ```
-Production  = production_name "=" [ Expression ] "." .
-Expression  = Alternative { "|" Alternative } .
-Alternative = Term { Term } .
-Term        = production_name | token [ "…" token ] | Group | Option | Repetition .
-Group       = "(" Expression ")" .
-Option      = "[" Expression "]" .
-Repetition  = "{" Expression "}" .
+Production  ::= production_name "::=" [ Expression ]
+Expression  ::= Alternative { "|" Alternative }
+Alternative ::= Term { Term }
+Term        ::= production_name | token [ "…" token ] | Group | Option | Repetition
+Group       ::= "(" Expression ")"
+Option      ::= "[" Expression "]"
+Repetition  ::= "{" Expression "}"
 ```
 
 Productions are expressions constructed from terms and the following operators, in increasing precedence:
