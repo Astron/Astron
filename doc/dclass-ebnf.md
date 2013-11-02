@@ -127,8 +127,8 @@ sizedType ::= "string" | "blob"
 
 #### Keywords ####
 ```
-KeywordDecl := "keyword" identifier
-KeywordList := identifier { "," identifier }
+KeywordDecl ::= "keyword" identifier
+KeywordList ::= identifier { "," identifier }
 ```
 
 #### Struct Type ####
@@ -155,7 +155,8 @@ ParameterField ::= Parameter [ KeywordList ]
 
 #### Parameter Types ####
 ```
-Parameter ::= CharParameter | IntParameter | FloatParameter | SizedParameter | ArrayParameter
+Parameter ::= CharParameter | IntParameter | FloatParameter | SizedParameter
+              | StructParameter | ArrayParameter
 ```
 
 **Char Parameter**
