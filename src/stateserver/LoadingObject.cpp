@@ -32,10 +32,7 @@ LoadingObject::~LoadingObject()
 
 void LoadingObject::begin()
 {
-	if(!m_valid_contexts.size())
-	{
-		send_get_object(m_do_id);
-	}
+	send_get_object(m_do_id);
 }
 
 void LoadingObject::send_get_object(uint32_t do_id)
