@@ -125,7 +125,7 @@ sizedType ::= "string" | "blob"
 
 ### Grammar ###
 
-### DC File ###
+#### DC File ####
 The DCFile is the root production of the grammar.  A valid DistributedClass file
 must satisify the "DCFile" production.
 ```
