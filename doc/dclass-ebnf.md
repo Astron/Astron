@@ -119,3 +119,17 @@ floatType ::= "float64"
 charType  ::= "char"
 sizedType ::= "string" | "blob"
 ```
+
+
+
+### Grammar ###
+
+#### Value Ranges ####
+```
+integerRange   ::= "(" intLiteral "-" intLiteral ")"
+floatRange     ::= "(" floatLiteral "-" floatLiteral ")"
+arrayRange     ::= "[" [ intLiteral [ "-" intLiteral ] ] "]"
+sizeConstraint ::= "(" intLiteral ")"
+```
+
+Example array ranges are `[]`, `[5]`, `[0-11]`, or `[2 - 24]`.
