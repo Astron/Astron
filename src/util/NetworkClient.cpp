@@ -72,7 +72,7 @@ void NetworkClient::start_receive()
 void NetworkClient::network_send(Datagram &dg)
 {
 	//TODO: make this asynch if necessary
-	uint16_t len = dg.size();
+	dgsize_t len = dg.size();
 	try
 	{
 		m_socket->non_blocking(true);
@@ -103,8 +103,8 @@ void NetworkClient::handle_size(const boost::system::error_code &ec, size_t byte
 		return;
 	}
 
-	uint16_t old_size = m_data_size;
-	m_data_size = *(uint16_t*)m_size_buf;
+	dgsize_t old_size = m_data_size;
+	m_data_size = *(dgsize_t*)m_size_buf;
 	if(m_data_size > old_size)
 	{
 		delete [] m_data_buf;

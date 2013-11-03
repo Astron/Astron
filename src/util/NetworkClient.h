@@ -25,6 +25,6 @@ class NetworkClient
 
 		uint8_t m_size_buf[2];
 		uint8_t* m_data_buf;
-		uint16_t m_data_size;
+		dgsize_t m_data_size;
 		bool m_is_data;
 };
