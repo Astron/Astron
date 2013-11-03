@@ -28,32 +28,32 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 {
 	DatagramIterator dgi(dg);
 	uint16_t channels = dgi.read_uint8();
-	if(channels == 1 && dgi.read_uint64() == CONTROL_MESSAGE)
+	if(channels == 1 && dgi.read_channel() == CONTROL_MESSAGE)
 	{
 		uint16_t msg_type = dgi.read_uint16();
 		switch(msg_type)
 		{
 			case CONTROL_ADD_CHANNEL:
 			{
-				subscribe_channel(dgi.read_uint64());
+				subscribe_channel(dgi.read_channel());
 				break;
 			}
 			case CONTROL_REMOVE_CHANNEL:
 			{
-				unsubscribe_channel(dgi.read_uint64());
+				unsubscribe_channel(dgi.read_channel());
 				break;
 			}
 			case CONTROL_ADD_RANGE:
 			{
-				channel_t lo = dgi.read_uint64();
-				channel_t hi = dgi.read_uint64();
+				channel_t lo = dgi.read_channel();
+				channel_t hi = dgi.read_channel();
 				subscribe_range(lo, hi);
 				break;
 			}
 			case CONTROL_REMOVE_RANGE:
 			{
-				channel_t lo = dgi.read_uint64();
-				channel_t hi = dgi.read_uint64();
+				channel_t lo = dgi.read_channel();
+				channel_t hi = dgi.read_channel();
 				unsubscribe_range(lo, hi);
 				break;
 			}
