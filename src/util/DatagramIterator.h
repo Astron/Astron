@@ -19,9 +19,9 @@ class DatagramIterator
 {
 	private:
 		const Datagram &m_dg;
-		uint16_t m_offset;
+		dgsize_t m_offset;
 
-		void check_read_length(uint16_t length)
+		void check_read_length(dgsize_t length)
 		{
 			if(m_offset + length > m_dg.size())
 			{
@@ -32,9 +32,15 @@ class DatagramIterator
 			};
 		}
 	public:
-		DatagramIterator(const Datagram &dg, uint16_t offset = 0) : m_dg(dg), m_offset(offset)
+		DatagramIterator(const Datagram &dg, dgsize_t offset = 0) : m_dg(dg), m_offset(offset)
 		{
 			check_read_length(0); //shortcuts, yay
+		}
+
+		bool read_bool()
+		{
+			uint8_t val = read_uint8();
+			return val != false; // returns either 1 or 0
 		}
 
 		uint8_t read_uint8()
@@ -69,19 +75,60 @@ class DatagramIterator
 			return r;
 		}
 
-		// read_string reads a string from the datagram in format [len][<string-std::vector<uint8_t>>].
-		// OTP messages are prefixed with a length, so this can be used to read the entire
-		//     datagram, primarily useful to archive a datagram for later processing.
+		channel_t read_channel()
+		{
+			check_read_length(CHANNEL_SIZE_BYTES);
+			channel_t r = *(channel_t*)(m_dg.get_data() + m_offset);
+			m_offset += CHANNEL_SIZE_BYTES;
+			return r;
+		}
+
+		doid_t read_doid()
+		{
+			check_read_length(DOID_SIZE_BYTES);
+			doid_t r = *(doid_t*)(m_dg.get_data() + m_offset);
+			m_offset += DOID_SIZE_BYTES;
+		}
+
+		zone_t read_zone()
+		{
+			check_read_length(ZONE_SIZE_BYTES);
+			zone_t r = *(zone_t*)(m_dg.get_data() + m_offset);
+			m_offset += ZONE_SIZE_BYTES;
+		}
+
+		// read_string reads a string from the datagram in the format
+		//     {uint16 length; char[length] characters}.
 		std::string read_string()
 		{
-			uint32_t length = read_uint16();
+			uint16_t length = read_uint16();
 			check_read_length(length);
 			std::string str((char*)(m_dg.get_data() + m_offset), length);
 			m_offset += length;
 			return str;
 		}
 
-		std::vector<uint8_t> read_data(uint32_t length)
+		// read_blob reads a blob from the datagram in the format
+		//     {uint16 length; uint8[length] binary}.
+		std::vector<uint8_t> read_blob()
+		{
+			uint16_t length = read_uint16();
+			return read_data(length);
+		}
+
+		// read_all reads the datagram into a vector<uint8_t> excluding the dgsize_t length prefix
+		std::vector<uint8_t> read_all()
+		{
+			seek(0);
+
+			check_read_length(DGSIZE_SIZE_BYTES);
+			dgsize_t length = *(dgsize_t*)(m_dg.get_data() + m_offset);
+			m_offset += DGSIZE_SIZE_BYTES;
+
+			return read_data(length);
+		}
+
+		std::vector<uint8_t> read_data(dgsize_t length)
 		{
 			check_read_length(length);
 			std::vector<uint8_t> data(m_dg.get_data() + m_offset, m_dg.get_data() + m_offset + length);
@@ -201,12 +248,12 @@ class DatagramIterator
 		// get_sender returns the datagram's sender. Does not advance the offset.
 		// Should be used when the current offset needs to be saved and/or if the next field in the
 		//     datagram is not the sender. If stepping through a fresh datagram, use read_uint64().
-		uint64_t get_sender()
+		channel_t get_sender()
 		{
 			uint16_t offset = m_offset; // save offset
 
 			m_offset = 1 + get_recipient_count() * 8; // seek sender
-			uint64_t sender = read_uint64(); // read sender
+			channel_t sender = read_channel(); // read sender
 
 			m_offset = offset; // restore offset
 			return sender;
@@ -239,7 +286,7 @@ class DatagramIterator
 		}
 
 		// seek sets the current message offset in std::vector<uint8_t>
-		void seek(uint16_t to)
+		void seek(dgsize_t to)
 		{
 			m_offset = to;
 		}
@@ -253,7 +300,7 @@ class DatagramIterator
 
 		// skip increments the current message offset by a length.
 		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip(uint16_t length)
+		void skip(dgsize_t length)
 		{
 			check_read_length(length);
 			m_offset += length;

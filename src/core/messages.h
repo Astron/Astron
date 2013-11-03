@@ -3,6 +3,12 @@
 
 // Defined types
 typedef uint64_t channel_t;
+typedef uint32_t doid_t;
+typedef uint32_t zone_t;
+
+#define CHANNEL_SIZE_BYTES 8
+#define DOID_SIZE_BYTES 4
+#define ZONE_SIZE_BYTES 4
 
 // Channel constants
 #define INVALID_CHANNEL 0

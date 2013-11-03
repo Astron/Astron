@@ -5,60 +5,63 @@
 #include <string.h> // memcpy
 #include "core/messages.h"
 
+#define DGSIZE_SIZE_BYTES 4
+typedef uint16_t dgsize_t;
+
 class Datagram
 {
 	private:
 		uint8_t* buf;
-		uint32_t buf_size;
-		uint32_t buf_end;
+		dgsize_t buf_cap;
+		dgsize_t buf_end;
 
-		void check_add_length(uint32_t len)
+		void check_add_length(dgsize_t len)
 		{
-			if(buf_end + len > buf_size)
+			if(buf_end + len > buf_cap)
 			{
-				uint8_t *tmp_buf = new uint8_t[buf_size + len + 64];
-				memcpy(tmp_buf, buf, buf_size);
+				uint8_t *tmp_buf = new uint8_t[buf_cap + len + 64];
+				memcpy(tmp_buf, buf, buf_cap);
 				delete [] buf;
 				buf = tmp_buf;
-				buf_size = buf_size + len + 64;
+				buf_cap = buf_cap + len + 64;
 			}
 		}
 	public:
-		Datagram() : buf(new uint8_t[64]), buf_size(64), buf_end(0)
+		Datagram() : buf(new uint8_t[64]), buf_cap(64), buf_end(0)
 		{
 		}
 
-		Datagram(const Datagram &dg) : buf(new uint8_t[dg.size()]), buf_size(dg.size()),
+		Datagram(const Datagram &dg) : buf(new uint8_t[dg.size()]), buf_cap(dg.size()),
 			buf_end(dg.size())
 		{
 			memcpy(buf, dg.buf, dg.size());
 		}
 
-		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_size(data.length()),
+		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_cap(data.length()),
 			buf_end(data.length())
 		{
 			memcpy(buf, data.c_str(), data.length());
 		}
 
-		Datagram(const uint8_t *data, size_t length) : buf(new uint8_t[length]), buf_size(length),
+		Datagram(const uint8_t *data, dgsize_t length) : buf(new uint8_t[length]), buf_cap(length),
 			buf_end(length)
 		{
 			memcpy(buf, data, length);
 		}
 
 		Datagram(uint64_t to_channel, uint64_t from_channel, uint16_t message_type) :
-			buf(new uint8_t[64]), buf_size(64), buf_end(0)
+			buf(new uint8_t[64]), buf_cap(64), buf_end(0)
 		{
 			add_server_header(to_channel, from_channel, message_type);
 		}
 
 		Datagram(const std::set<uint64_t> &to_channels, uint64_t from_channel,
-		         uint16_t message_type) : buf(new uint8_t[64]), buf_size(64), buf_end(0)
+		         uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_end(0)
 		{
 			add_server_header(to_channels, from_channel, message_type);
 		}
 
-		Datagram(uint16_t message_type) : buf(new uint8_t[64]), buf_size(64), buf_end(0)
+		Datagram(uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_end(0)
 		{
 			add_control_header(message_type);
 		}
@@ -66,6 +69,12 @@ class Datagram
 		~Datagram()
 		{
 			delete [] buf;
+		}
+
+		void add_bool(const bool &v)
+		{
+			if(v) add_uint8(1);
+			else add_uint8(0);
 		}
 
 		void add_uint8(const uint8_t &v)
@@ -94,6 +103,27 @@ class Datagram
 			check_add_length(8);
 			memcpy(buf + buf_end, &v, 8);
 			buf_end += 8;
+		}
+
+		void add_channel(const channel_t &v)
+		{
+			check_add_length(CHANNEL_SIZE_BYTES);
+			memcpy(buf + buf_end, &v, CHANNEL_SIZE_BYTES);
+			buf_end += CHANNEL_SIZE_BYTES;
+		}
+
+		void add_doid(const doid_t &v)
+		{
+			check_add_length(DOID_SIZE_BYTES);
+			memcpy(buf + buf_end, &v, DOID_SIZE_BYTES);
+			buf_end += DOID_SIZE_BYTES;
+		}
+
+		void add_zone(const zone_t &v)
+		{
+			check_add_length(ZONE_SIZE_BYTES);
+			memcpy(buf + buf_end, &v, ZONE_SIZE_BYTES);
+			buf_end += ZONE_SIZE_BYTES;
 		}
 
 		void add_data(const std::vector<uint8_t> &data)
@@ -128,11 +158,19 @@ class Datagram
 			buf_end += str.length();
 		}
 
+		void add_blob(const std::vector<uint8_t> &blob)
+		{
+			add_uint16(blob.size());
+			check_add_length(blob.size());
+			memcpy(buf + buf_end, &blob[0], blob.size());
+			buf_end += blob.size();
+		}
+
 		void add_server_header(channel_t to, channel_t from, uint16_t message_type)
 		{
 			add_uint8(1);
-			add_uint64(to);
-			add_uint64(from);
+			add_channel(to);
+			add_channel(from);
 			add_uint16(message_type);
 		}
 
@@ -141,20 +179,20 @@ class Datagram
 			add_uint8(to.size());
 			for(auto it = to.begin(); it != to.end(); ++it)
 			{
-				add_uint64(*it);
+				add_channel(*it);
 			}
-			add_uint64(from);
+			add_channel(from);
 			add_uint16(message_type);
 		}
 
 		void add_control_header(uint16_t message_type)
 		{
 			add_uint8(1);
-			add_uint64(CONTROL_MESSAGE);
+			add_channel(CONTROL_MESSAGE);
 			add_uint16(message_type);
 		}
 
-		const uint16_t size() const
+		const dgsize_t size() const
 		{
 			return buf_end;
 		}
