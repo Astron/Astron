@@ -6,7 +6,8 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
                              uint32_t parent_id, uint32_t zone_id,
                              const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-	m_context(stateserver->m_next_context++), m_dclass(NULL), m_valid_contexts(contexts)
+	m_context(stateserver->m_next_context++), m_dclass(NULL), m_valid_contexts(contexts),
+	m_is_loaded(false)
 {
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
@@ -87,9 +88,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_is_loaded = true;
-
 			m_log->spam() << "Received GetAllResp from database." << std::endl;
+			m_is_loaded = true;
 
 			if(dgi.read_uint8() != true)
 			{
