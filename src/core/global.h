@@ -13,7 +13,7 @@
 //     similar to how an AI server would be connected.
 struct Uberdog
 {
-	uint32_t do_id;
+	doid_t do_id;
 	DCClass *dcc;
 	bool anonymous;
 };
@@ -23,4 +23,4 @@ extern ConfigFile *g_config;
 extern DCFile *g_dcf;
 extern EventSender g_eventsender;
 extern boost::asio::io_service io_service;
-extern std::unordered_map<uint32_t, Uberdog> g_uberdogs;
+extern std::unordered_map<doid_t, Uberdog> g_uberdogs;
