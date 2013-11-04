@@ -255,7 +255,7 @@ class DatagramIterator
 		{
 			uint16_t offset = m_offset; // save offset
 
-			m_offset = 1 + get_recipient_count() * 8; // seek sender
+			m_offset = 1 + get_recipient_count() * CHANNEL_SIZE_BYTES; // seek sender
 			channel_t sender = read_channel(); // read sender
 
 			m_offset = offset; // restore offset
@@ -269,7 +269,7 @@ class DatagramIterator
 		{
 			uint16_t offset = m_offset; // save offset
 
-			m_offset = 9 + get_recipient_count() * 8; // seek message type
+			m_offset = 9 + get_recipient_count() * CHANNEL_SIZE_BYTES; // seek message type
 			uint16_t msg_type = read_uint16(); // read message type
 
 			m_offset = offset; // restore offset
@@ -298,7 +298,7 @@ class DatagramIterator
 		void seek_payload()
 		{
 			m_offset = 0; // Seek to start
-			m_offset = 1 + get_recipient_count() * 8;
+			m_offset = 1 + get_recipient_count() * CHANNEL_SIZE_BYTES;
 		}
 
 		// skip increments the current message offset by a length.
