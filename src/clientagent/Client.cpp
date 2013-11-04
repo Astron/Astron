@@ -356,7 +356,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		break;
 		case CLIENTAGENT_ADD_POST_REMOVE:
 		{
-			add_post_remove(dgi.read_string());
+			add_post_remove(dgi.read_datagram());
 		}
 		break;
 		case CLIENTAGENT_CLEAR_POST_REMOVES:

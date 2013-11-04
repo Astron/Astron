@@ -5,7 +5,7 @@
 #include <string.h> // memcpy
 #include "core/messages.h"
 
-#define DGSIZE_SIZE_BYTES 4
+#define DGSIZE_SIZE_BYTES 2
 typedef uint16_t dgsize_t;
 
 class Datagram
@@ -35,6 +35,12 @@ class Datagram
 			buf_end(dg.size())
 		{
 			memcpy(buf, dg.buf, dg.size());
+		}
+
+		Datagram(const std::vector<uint8_t> &data) : buf(new uint8_t[data.size()]),
+			buf_cap(data.size()), buf_end(data.size())
+		{
+			memcpy(buf, &data[0], data.size());
 		}
 
 		Datagram(const std::string &data) : buf(new uint8_t[data.length()]), buf_cap(data.length()),

@@ -88,6 +88,7 @@ class DatagramIterator
 			check_read_length(DOID_SIZE_BYTES);
 			doid_t r = *(doid_t*)(m_dg.get_data() + m_offset);
 			m_offset += DOID_SIZE_BYTES;
+			return r;
 		}
 
 		zone_t read_zone()
@@ -95,6 +96,7 @@ class DatagramIterator
 			check_read_length(ZONE_SIZE_BYTES);
 			zone_t r = *(zone_t*)(m_dg.get_data() + m_offset);
 			m_offset += ZONE_SIZE_BYTES;
+			return r;
 		}
 
 		// read_string reads a string from the datagram in the format
@@ -116,11 +118,12 @@ class DatagramIterator
 			return read_data(length);
 		}
 
-		// read_all reads the datagram into a vector<uint8_t> excluding the dgsize_t length prefix
-		std::vector<uint8_t> read_all()
+		// read_datagram reads a nested datagram from the datagram in the format
+		//     {dgsize_t length; uint8[length] binary}.
+		// This is also useful to read the whole datagram, because the beginning of the datagram
+		// looks exactly the same as a nested datagram.
+		std::vector<uint8_t> read_datagram()
 		{
-			seek(0);
-
 			check_read_length(DGSIZE_SIZE_BYTES);
 			dgsize_t length = *(dgsize_t*)(m_dg.get_data() + m_offset);
 			m_offset += DGSIZE_SIZE_BYTES;
