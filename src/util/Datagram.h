@@ -132,6 +132,15 @@ class Datagram
 			buf_end += ZONE_SIZE_BYTES;
 		}
 
+		void add_location(const doid_t &parent, const zone_t &zone)
+		{
+			check_add_length(DOID_SIZE_BYTES + ZONE_SIZE_BYTES);
+			memcpy(buf + buf_end, &parent, DOID_SIZE_BYTES);
+			buf_end += DOID_SIZE_BYTES;
+			memcpy(buf + buf_end, &zone, ZONE_SIZE_BYTES);
+			buf_end += ZONE_SIZE_BYTES;
+		}
+
 		void add_data(const std::vector<uint8_t> &data)
 		{
 			if(data.size())

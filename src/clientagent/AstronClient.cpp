@@ -116,66 +116,63 @@ class AstronClient : public Client, public NetworkClient
 			do_disconnect();
 		}
 
-		void handle_add_object(uint32_t do_id, uint32_t parent_id, uint32_t zone_id, uint16_t dc_id,
+		void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                       DatagramIterator &dgi, bool other)
 		{
 			Datagram resp;
 			resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER : CLIENT_ENTER_OBJECT_REQUIRED);
-			resp.add_uint32(do_id);
-			resp.add_uint32(parent_id);
-			resp.add_uint32(zone_id);
+			resp.add_doid(do_id);
+			resp.add_location(parent_id, zone_id);
 			resp.add_uint16(dc_id);
 			resp.add_data(dgi.read_remainder());
 			network_send(resp);
 		}
 
-		void handle_add_ownership(uint32_t do_id, uint32_t parent_id, uint32_t zone_id, uint16_t dc_id,
+		void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                          DatagramIterator &dgi, bool other)
 		{
 			Datagram resp;
 			resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER
 			                : CLIENT_ENTER_OBJECT_REQUIRED_OWNER);
-			resp.add_uint32(do_id);
-			resp.add_uint32(parent_id);
-			resp.add_uint32(zone_id);
+			resp.add_doid(do_id);
+			resp.add_location(parent_id, zone_id);
 			resp.add_uint16(dc_id);
 			resp.add_data(dgi.read_remainder());
 			network_send(resp);
 		}
 
-		void handle_set_field(uint32_t do_id, uint16_t field_id, const std::vector<uint8_t> &value)
+		void handle_set_field(doid_t do_id, uint16_t field_id, const std::vector<uint8_t> &value)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_SET_FIELD);
-			resp.add_uint32(do_id);
+			resp.add_doid(do_id);
 			resp.add_uint16(field_id);
 			resp.add_data(value);
 			network_send(resp);
 		}
 
-		void handle_change_location(uint32_t do_id, uint32_t new_parent, uint32_t new_zone)
+		void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_LOCATION);
-			resp.add_uint32(do_id);
-			resp.add_uint32(new_parent);
-			resp.add_uint32(new_zone);
+			resp.add_doid(do_id);
+			resp.add_location(new_parent, new_zone);
 			network_send(resp);
 		}
 
-		void handle_remove_object(uint32_t do_id)
+		void handle_remove_object(doid_t do_id)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_LEAVING);
-			resp.add_uint32(do_id);
+			resp.add_doid(do_id);
 			network_send(resp);
 		}
 
-		void handle_remove_ownership(uint32_t do_id)
+		void handle_remove_ownership(doid_t do_id)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
-			resp.add_uint32(do_id);
+			resp.add_doid(do_id);
 			network_send(resp);
 		}
 
@@ -292,7 +289,7 @@ class AstronClient : public Client, public NetworkClient
 
 		void handle_client_object_update_field(DatagramIterator &dgi)
 		{
-			uint32_t do_id = dgi.read_uint32();
+			doid_t do_id = dgi.read_doid();
 			uint16_t field_id = dgi.read_uint16();
 
 			DCClass *dcc = lookup_object(do_id);
@@ -355,7 +352,7 @@ class AstronClient : public Client, public NetworkClient
 
 			Datagram resp;
 			resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
-			resp.add_uint32(do_id);
+			resp.add_doid(do_id);
 			resp.add_uint16(field_id);
 			if(data.size() > 65535u - resp.size())
 			{
@@ -369,7 +366,7 @@ class AstronClient : public Client, public NetworkClient
 
 		void handle_client_object_location(DatagramIterator &dgi)
 		{
-			uint32_t do_id = dgi.read_uint32();
+			doid_t do_id = dgi.read_doid();
 			if(m_dist_objs.find(do_id) == m_dist_objs.end())
 			{
 				std::stringstream ss;
@@ -395,8 +392,8 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
-			dg.add_uint32(dgi.read_uint32()); // Parent
-			dg.add_uint32(dgi.read_uint32()); // Zone
+			dg.add_doid(dgi.read_doid()); // Parent
+			dg.add_zone(dgi.read_zone()); // Zone
 			send(dg);
 		}
 
@@ -404,7 +401,7 @@ class AstronClient : public Client, public NetworkClient
 		{
 			uint32_t context = dgi.read_uint32();
 			uint16_t interest_id = dgi.read_uint16();
-			uint32_t parent = dgi.read_uint32();
+			doid_t parent = dgi.read_doid();
 
 			Interest i;
 			i.id = interest_id;
@@ -418,7 +415,7 @@ class AstronClient : public Client, public NetworkClient
 			i.zones.reserve(count);
 			for(int x = 0; x < count; ++x)
 			{
-				uint32_t zone = dgi.read_uint32();
+				zone_t zone = dgi.read_zone();
 				i.zones.insert(i.zones.end(), zone);
 			}
 
