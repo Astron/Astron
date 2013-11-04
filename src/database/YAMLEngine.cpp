@@ -12,28 +12,24 @@
 #include <fstream>
 #include <list>
 
-
-#define AS_BYTES(value, len) std::vector<uint8_t>((uint8_t*)&value, (uint8_t*)&value + len)
-
-
 static ConfigVariable<std::string> foldername("foldername", "yaml_db");
 LogCategory yamldb_log("yamldb", "YAML Database Engine");
 
 class YAMLEngine : public IDatabaseEngine
 {
 	private:
-		uint32_t m_next_id;
-		std::list<uint32_t> m_free_ids;
+		doid_t m_next_id;
+		std::list<doid_t> m_free_ids;
 		std::string m_foldername;
 
-		inline std::string filename(uint32_t do_id)
+		inline std::string filename(doid_t do_id)
 		{
 			std::stringstream filename;
 			filename << m_foldername << "/" << do_id << ".yaml";
 			return filename.str();
 		}
 
-		inline bool load(uint32_t do_id, YAML::Node &document)
+		inline bool load(doid_t do_id, YAML::Node &document)
 		{
 			std::ifstream stream(filename(do_id));
 			document = YAML::Load(stream);
@@ -93,9 +89,9 @@ class YAMLEngine : public IDatabaseEngine
 		}
 
 		// get_next_id returns the next available id to be used in object creation
-		uint32_t get_next_id()
+		doid_t get_next_id()
 		{
-			uint32_t do_id;
+			doid_t do_id;
 			if(m_next_id <= m_max_id)
 			{
 				do_id = m_next_id++;
@@ -132,7 +128,7 @@ class YAMLEngine : public IDatabaseEngine
 			out << const_cast<DCField*>(field)->format_data(packed_data, false);
 		}
 
-		bool write_yaml_object(uint32_t do_id, DCClass* dcc, const DatabaseObject &dbo)
+		bool write_yaml_object(doid_t do_id, DCClass* dcc, const DatabaseObject &dbo)
 		{
 			// Build object as YAMl output
 			YAML::Emitter out;
@@ -162,7 +158,7 @@ class YAMLEngine : public IDatabaseEngine
 			return false;
 		}
 	public:
-		YAMLEngine(DBEngineConfig dbeconfig, uint32_t min_id, uint32_t max_id) :
+		YAMLEngine(DBEngineConfig dbeconfig, doid_t min_id, doid_t max_id) :
 			IDatabaseEngine(dbeconfig, min_id, max_id),
 			m_next_id(min_id),
 			m_free_ids(),
@@ -178,16 +174,16 @@ class YAMLEngine : public IDatabaseEngine
 				YAML::Node key_next = document["next"];
 				if(key_next.IsDefined() && !key_next.IsNull())
 				{
-					m_next_id = document["next"].as<uint32_t>();
+					m_next_id = document["next"].as<doid_t>();
 				}
 
 				// Read available freed ids
 				YAML::Node key_free = document["free"];
 				if(key_free.IsDefined() && !key_free.IsNull())
 				{
-					for(uint32_t i = 0; i < key_free.size(); i++)
+					for(doid_t i = 0; i < key_free.size(); i++)
 					{
-						m_free_ids.push_back(key_free[i].as<uint32_t>());
+						m_free_ids.push_back(key_free[i].as<doid_t>());
 					}
 				}
 			}
@@ -196,9 +192,9 @@ class YAMLEngine : public IDatabaseEngine
 			infostream.close();
 		}
 
-		uint32_t create_object(const DatabaseObject &dbo)
+		doid_t create_object(const DatabaseObject &dbo)
 		{
-			uint32_t do_id = get_next_id();
+			doid_t do_id = get_next_id();
 			if(do_id == 0)
 			{
 				return 0;
@@ -214,7 +210,7 @@ class YAMLEngine : public IDatabaseEngine
 			return 0;
 		}
 
-		void delete_object(uint32_t do_id)
+		void delete_object(doid_t do_id)
 		{
 			yamldb_log.debug() << "Deleting file: " << filename(do_id) << std::endl;
 			if(!std::remove(filename(do_id).c_str()))
@@ -224,7 +220,7 @@ class YAMLEngine : public IDatabaseEngine
 			}
 		}
 
-		bool get_object(uint32_t do_id, DatabaseObject &dbo)
+		bool get_object(doid_t do_id, DatabaseObject &dbo)
 		{
 			yamldb_log.spam() << "Getting obj-" << do_id << " ..." << std::endl;
 
@@ -262,7 +258,7 @@ class YAMLEngine : public IDatabaseEngine
 			return true;
 		}
 
-		DCClass* get_class(uint32_t do_id)
+		DCClass* get_class(doid_t do_id)
 		{
 			yamldb_log.spam() << "Getting dclass of obj-" << do_id << std::endl;
 
@@ -279,7 +275,7 @@ class YAMLEngine : public IDatabaseEngine
 
 #define val_t std::vector<uint8_t>
 #define map_t std::map<DCField*, std::vector<uint8_t> >
-		void del_field(uint32_t do_id, DCField* field)
+		void del_field(doid_t do_id, DCField* field)
 		{
 			yamldb_log.spam() << "Deleting field on obj-" << do_id << std::endl;
 
@@ -317,7 +313,7 @@ class YAMLEngine : public IDatabaseEngine
 			// Write out new object to file
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
+		void del_fields(doid_t do_id, const std::vector<DCField*> &fields)
 		{
 			yamldb_log.spam() << "Deleting fields on obj-" << do_id << std::endl;
 
@@ -354,7 +350,7 @@ class YAMLEngine : public IDatabaseEngine
 			}
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void set_field(uint32_t do_id, DCField* field, const val_t &value)
+		void set_field(doid_t do_id, DCField* field, const val_t &value)
 		{
 			yamldb_log.spam() << "Setting field on obj-" << do_id << std::endl;
 
@@ -389,7 +385,7 @@ class YAMLEngine : public IDatabaseEngine
 			write_yaml_object(do_id, dcc, dbo);
 		}
 
-		void set_fields(uint32_t do_id, const map_t &fields)
+		void set_fields(doid_t do_id, const map_t &fields)
 		{
 			yamldb_log.spam() << "Setting fields on obj-" << do_id << std::endl;
 
@@ -434,7 +430,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
+		bool set_field_if_empty(doid_t do_id, DCField* field, val_t &value)
 		{
 			yamldb_log.spam() << "Setting field if empty on obj-" << do_id << std::endl;
 
@@ -477,7 +473,7 @@ class YAMLEngine : public IDatabaseEngine
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
+		bool set_field_if_equals(doid_t do_id, DCField* field, const val_t &equal, val_t &value)
 		{
 			yamldb_log.spam() << "Setting field if equal on obj-" << do_id << std::endl;
 
@@ -520,7 +516,7 @@ class YAMLEngine : public IDatabaseEngine
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
+		bool set_fields_if_equals(doid_t do_id, const map_t &equals, map_t &values)
 		{
 			yamldb_log.spam() << "Setting fields if equals on obj-" << do_id << std::endl;
 
@@ -587,7 +583,7 @@ class YAMLEngine : public IDatabaseEngine
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool get_field(uint32_t do_id, const DCField* field, val_t &value)
+		bool get_field(doid_t do_id, const DCField* field, val_t &value)
 		{
 			yamldb_log.spam() << "Getting field on obj-" << do_id << std::endl;
 
@@ -614,7 +610,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			return false;
 		}
-		bool get_fields(uint32_t do_id, const std::vector<DCField*> &fields, map_t &values)
+		bool get_fields(doid_t do_id, const std::vector<DCField*> &fields, map_t &values)
 		{
 			yamldb_log.spam() << "Getting fields on obj-" << do_id << std::endl;
 
