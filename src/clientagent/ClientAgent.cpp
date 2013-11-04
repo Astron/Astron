@@ -49,7 +49,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 					exit(1);
 				}
 				ud.anonymous = udnode["anonymous"].as<bool>();
-				g_uberdogs[udnode["id"].as<uint32_t>()] = ud;
+				g_uberdogs[udnode["id"].as<doid_t>()] = ud;
 			}
 		}
 	}

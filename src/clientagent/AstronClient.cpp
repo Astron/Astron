@@ -367,7 +367,7 @@ class AstronClient : public Client, public NetworkClient
 		void handle_client_object_location(DatagramIterator &dgi)
 		{
 			doid_t do_id = dgi.read_doid();
-			if(m_dist_objs.find(do_id) == m_dist_objs.end())
+			if(m_visible_objects.find(do_id) == m_visible_objects.end())
 			{
 				std::stringstream ss;
 				ss << "Client tried to manipulate unknown object " << do_id;

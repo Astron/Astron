@@ -17,17 +17,17 @@ enum ClientState
 
 struct VisibleObject
 {
-	uint32_t id;
-	uint32_t parent;
-	uint32_t zone;
+	doid_t id;
+	doid_t parent;
+	zone_t zone;
 	DCClass *dcc;
 };
 
 struct Interest
 {
 	uint16_t id;
-	uint32_t parent;
-	std::unordered_set<uint32_t> zones;
+	doid_t parent;
+	std::unordered_set<zone_t> zones;
 };
 
 class InterestOperation
@@ -35,17 +35,17 @@ class InterestOperation
 	public:
 		uint16_t m_interest_id;
 		uint32_t m_client_context;
-		uint32_t m_parent;
-		std::unordered_set<uint32_t> m_zones;
+		doid_t m_parent;
+		std::unordered_set<zone_t> m_zones;
 
 		bool m_has_total;
-		uint32_t m_total;
+		doid_t m_total; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
 		InterestOperation(uint16_t interest_id, uint32_t client_context,
-		                  uint32_t parent, std::unordered_set<uint32_t> zones);
+		                  doid_t parent, std::unordered_set<zone_t> zones);
 
-		bool is_ready(const std::unordered_map<uint32_t, VisibleObject> &dist_objs);
-		void store_total(uint32_t total);
+		bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects);
+		void store_total(doid_t total);
 };
 
 class ChannelTracker
@@ -75,12 +75,21 @@ class Client : public MDParticipantInterface
 		channel_t m_channel; // current channel client is listening on
 		channel_t m_allocated_channel; // channel assigned to client at creation time
 		uint32_t m_next_context;
-		std::unordered_set<uint32_t> m_owned_objects;
-		std::unordered_set<uint32_t> m_seen_objects;
+
+		// m_owned_objects is a list of all objects visible through ownership
+		std::unordered_set<doid_t> m_owned_objects;
+		// m_seen_objects is a list of all objects visible through interests
+		std::unordered_set<doid_t> m_seen_objects;
+		// m_historical_objects is a list of all objects which where previously visible, but have
+		// had their visibility removed; a historical object may have become visible again
+		std::unordered_set<doid_t> m_historical_objects;
+		// m_visible_objects is a map which relates all visible objects to VisibleObject metadata.
+		std::unordered_map<doid_t, VisibleObject> m_visible_objects;
+
+		// m_interests is a map of interest ids to interests.
 		std::unordered_map<uint16_t, Interest> m_interests;
+		// m_pending_interests is a map of contexts to in-progress interests.
 		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
-		std::unordered_map<uint32_t, VisibleObject> m_dist_objs;
-		std::unordered_set<uint32_t> m_id_history;
 		LogCategory *m_log;
 
 		Client(ClientAgent* client_agent);
@@ -90,10 +99,10 @@ class Client : public MDParticipantInterface
 
 		// lookup_object returns the class of the object with a do_id.
 		// If that object is not visible to the client, NULL will be returned instead.
-		DCClass* lookup_object(uint32_t do_id);
+		DCClass* lookup_object(doid_t do_id);
 
 		// lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
-		std::list<Interest> lookup_interests(uint32_t parent_id, uint32_t zone_id);
+		std::list<Interest> lookup_interests(doid_t parent_id, zone_t zone_id);
 
 		// add_interest will start a new interest operation and retrieve all the objects an interest
 		// from the server, subscribing to each zone in the interest.  If the interest already
@@ -106,11 +115,11 @@ class Client : public MDParticipantInterface
 
 		// cloze_zones removes objects visible through the zones from the client and unsubscribes
 		// from the associated location channels for those objects.
-		void close_zones(uint32_t parent, const std::unordered_set<uint32_t> &killed_zones);
+		void close_zones(doid_t parent, const std::unordered_set<zone_t> &killed_zones);
 
 		// is_historical_object returns true if the object was once visible to the client, but has
 		// since been deleted.  The return is still true even if the object has become visible again.
-		bool is_historical_object(uint32_t do_id);
+		bool is_historical_object(doid_t do_id);
 
 		/* Client Interface */
 		// send_disconnect must close any connections with a connected client; the given reason and
@@ -127,26 +136,26 @@ class Client : public MDParticipantInterface
 
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
-		virtual void handle_add_object(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
+		virtual void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id,
 		                               uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
 		// handle_add_ownership should inform the client it has control of a new object. The datagram
 		// iterator provided starts at the 'required fields' data, and may have 'optional fields'.
-		virtual void handle_add_ownership(uint32_t do_id, uint32_t paren_id, uint32_t zone_id,
+		virtual void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id,
 		                                  uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
 		// handle_set_field should inform the client that the field has been updated
-		virtual void handle_set_field(uint32_t do_id, uint16_t field_id,
+		virtual void handle_set_field(doid_t do_id, uint16_t field_id,
 		                              const std::vector<uint8_t> &value) = 0;
 
 		// handle_change_location should inform the client that the objects location has changed
-		virtual void handle_change_location(uint32_t do_id, uint32_t new_parent, uint32_t new_zone) = 0;
+		virtual void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone) = 0;
 
 		// handle_remove_object should send a mesage to remove the object from the connected client.
-		virtual void handle_remove_object(uint32_t do_id) = 0;
+		virtual void handle_remove_object(doid_t do_id) = 0;
 
 		// handle_remove_ownership should notify the client it no has control of the object.
-		virtual void handle_remove_ownership(uint32_t do_id) = 0;
+		virtual void handle_remove_ownership(doid_t do_id) = 0;
 
 		// handle_interest_done is called when all of the objects from an opened interest have been
 		// received. Typically, informs the client that a particular group of objects is loaded.
