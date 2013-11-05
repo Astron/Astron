@@ -17,7 +17,7 @@ class DatagramIteratorEOF : public std::runtime_error
 
 class DatagramIterator
 {
-	private:
+	protected:
 		const Datagram &m_dg;
 		uint16_t m_offset;
 
@@ -69,12 +69,38 @@ class DatagramIterator
 			return r;
 		}
 
+		double read_float64()
+		{
+			check_read_length(8);
+			double r = *(double*)(m_dg.get_data() + m_offset);
+			m_offset += 8;
+			return r;
+		}
+
+		float read_float32()
+		{
+			check_read_length(4);
+			float r = *(float*)(m_dg.get_data() + m_offset);
+			m_offset += 4;
+			return r;
+		}
+
+
+
 		// read_string reads a string from the datagram in format [len][<string-std::vector<uint8_t>>].
 		// OTP messages are prefixed with a length, so this can be used to read the entire
 		//     datagram, primarily useful to archive a datagram for later processing.
 		std::string read_string()
 		{
 			uint32_t length = read_uint16();
+			check_read_length(length);
+			std::string str((char*)(m_dg.get_data() + m_offset), length);
+			m_offset += length;
+			return str;
+		}
+
+		std::string read_string(uint32_t length)
+		{
 			check_read_length(length);
 			std::string str((char*)(m_dg.get_data() + m_offset), length);
 			m_offset += length;
