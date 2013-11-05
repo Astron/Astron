@@ -92,11 +92,15 @@ decimals     ::= decDigit { decDigit }
 
 #### Text Literals ####
 ```
-charLiteral    ::= "'" nonSingleQuote "'" 
-stringLiteral  ::= `"` nonDoubleQuote { nonDoubleQuote } `"`
-nonSingleQuote ::= <any character except "'" or newline>
-nonDoubleQuote ::= <any character except `"` or newline>
+charLiteral     ::= "'" ( nonSingleQuote | escapeCharacter ) "'" 
+stringLiteral   ::= `"` { stringCharacter } `"`
+stringCharacter ::= nonDoubleQuote | escapeSequence
+nonSingleQuote  ::= <any printable character except "'" or newline>
+nonDoubleQuote  ::= <any printable character except `"` or newline>
+escapeSequence  ::= "\" ( <any character> | "x" hexDigit { hexDigit } )
 ```
+The escape characters `\n`, `\r`, `\t` translate into newline, carriage-return, and tab.  
+Other ascii characters can be specified via `\x<hex-code>`.
 
 #### Identifiers ####
 Identifiers are used to name arguments, fields, and types.
