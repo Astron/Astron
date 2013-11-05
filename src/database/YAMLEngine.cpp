@@ -226,7 +226,7 @@ class YAMLEngine : public IDatabaseEngine
 
 		bool get_object(uint32_t do_id, DatabaseObject &dbo)
 		{
-			yamldb_log.spam() << "Getting obj-" << do_id << " ..." << std::endl;
+			yamldb_log.trace() << "Getting obj-" << do_id << " ..." << std::endl;
 
 			// Open file for object
 			YAML::Node document;
@@ -264,7 +264,7 @@ class YAMLEngine : public IDatabaseEngine
 
 		DCClass* get_class(uint32_t do_id)
 		{
-			yamldb_log.spam() << "Getting dclass of obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Getting dclass of obj-" << do_id << std::endl;
 
 			// Open file for object
 			YAML::Node document;
@@ -281,7 +281,7 @@ class YAMLEngine : public IDatabaseEngine
 #define map_t std::map<DCField*, std::vector<uint8_t> >
 		void del_field(uint32_t do_id, DCField* field)
 		{
-			yamldb_log.spam() << "Deleting field on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Deleting field on obj-" << do_id << std::endl;
 
 			// Read object from database
 			YAML::Node document;
@@ -319,7 +319,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		void del_fields(uint32_t do_id, const std::vector<DCField*> &fields)
 		{
-			yamldb_log.spam() << "Deleting fields on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Deleting fields on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -356,7 +356,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		void set_field(uint32_t do_id, DCField* field, const val_t &value)
 		{
-			yamldb_log.spam() << "Setting field on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Setting field on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -391,7 +391,7 @@ class YAMLEngine : public IDatabaseEngine
 
 		void set_fields(uint32_t do_id, const map_t &fields)
 		{
-			yamldb_log.spam() << "Setting fields on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Setting fields on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -436,7 +436,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool set_field_if_empty(uint32_t do_id, DCField* field, val_t &value)
 		{
-			yamldb_log.spam() << "Setting field if empty on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Setting field if empty on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -479,7 +479,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool set_field_if_equals(uint32_t do_id, DCField* field, const val_t &equal, val_t &value)
 		{
-			yamldb_log.spam() << "Setting field if equal on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Setting field if equal on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -522,7 +522,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool set_fields_if_equals(uint32_t do_id, const map_t &equals, map_t &values)
 		{
-			yamldb_log.spam() << "Setting fields if equals on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Setting fields if equals on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -589,7 +589,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool get_field(uint32_t do_id, const DCField* field, val_t &value)
 		{
-			yamldb_log.spam() << "Getting field on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Getting field on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -604,7 +604,7 @@ class YAMLEngine : public IDatabaseEngine
 				return false;
 			}
 
-			yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
+			yamldb_log.trace() << "Found requested field: " + field->get_name() << std::endl;
 
 			value = read_yaml_field(field, node);
 			if(value.size() > 0)
@@ -616,7 +616,7 @@ class YAMLEngine : public IDatabaseEngine
 		}
 		bool get_fields(uint32_t do_id, const std::vector<DCField*> &fields, map_t &values)
 		{
-			yamldb_log.spam() << "Getting fields on obj-" << do_id << std::endl;
+			yamldb_log.trace() << "Getting fields on obj-" << do_id << std::endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -628,7 +628,7 @@ class YAMLEngine : public IDatabaseEngine
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
 				DCField* field = *it;
-				yamldb_log.spam() << "Searching for field: " << field->get_name() << std::endl;
+				yamldb_log.trace() << "Searching for field: " << field->get_name() << std::endl;
 				YAML::Node existing = document["fields"];
 				for(auto it2 = existing.begin(); it2 != existing.end(); ++it2)
 				{
@@ -638,7 +638,7 @@ class YAMLEngine : public IDatabaseEngine
 						if(value.size() > 0)
 						{
 							values[*it] = value;
-							yamldb_log.spam() << "Found requested field: " + field->get_name() << std::endl;
+							yamldb_log.trace() << "Found requested field: " + field->get_name() << std::endl;
 						}
 					}
 				}

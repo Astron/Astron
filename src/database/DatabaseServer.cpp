@@ -74,7 +74,7 @@ class DatabaseServer : public Role
 					// Unpack fields to be passed to database
 					DatabaseObject dbo(dc_id);
 					uint16_t field_count = dgi.read_uint16();
-					m_log->spam() << "Unpacking fields..." << std::endl;
+					m_log->trace() << "Unpacking fields..." << std::endl;
 					try
 					{
 						for(uint32_t i = 0; i < field_count; ++i)
@@ -106,7 +106,7 @@ class DatabaseServer : public Role
 					}
 
 					// Check for required fields, and populate with defaults
-					m_log->spam() << "Checking all required fields exist..." << std::endl;
+					m_log->trace() << "Checking all required fields exist..." << std::endl;
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
@@ -145,7 +145,7 @@ class DatabaseServer : public Role
 					}
 
 					// Create object in database
-					m_log->spam() << "Creating stored object..." << std::endl;
+					m_log->trace() << "Creating stored object..." << std::endl;
 					uint32_t do_id = m_db_engine->create_object(dbo);
 					if(do_id == INVALID_DO_ID || do_id < m_min_id || do_id > m_max_id)
 					{
@@ -155,7 +155,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					m_log->spam() << "... created with ID: " << do_id << std::endl;
+					m_log->trace() << "... created with ID: " << do_id << std::endl;
 					resp.add_uint32(do_id);
 					send(resp);
 				}
@@ -170,12 +170,12 @@ class DatabaseServer : public Role
 
 					uint32_t do_id = dgi.read_uint32();
 
-					m_log->spam() << "Selecting all from do_id: " << do_id << "... " << std::endl;
+					m_log->trace() << "Selecting all from do_id: " << do_id << "... " << std::endl;
 
 					DatabaseObject dbo;
 					if(m_db_engine->get_object(do_id, dbo))
 					{
-						m_log->spam() << "... object found!" << std::endl;
+						m_log->trace() << "... object found!" << std::endl;
 						resp.add_uint8(SUCCESS);
 						resp.add_uint16(dbo.dc_id);
 						resp.add_uint16(dbo.fields.size());
@@ -183,13 +183,13 @@ class DatabaseServer : public Role
 						{
 							resp.add_uint16(it->first->get_number());
 							resp.add_data(it->second);
-							m_log->spam() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
+							m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
 							                  it->second.begin(), it->second.end()) << std::endl;
 						}
 					}
 					else
 					{
-						m_log->spam() << "... object not found." << std::endl;
+						m_log->trace() << "... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
 					}
 					send(resp);
@@ -232,7 +232,7 @@ class DatabaseServer : public Role
 
 					std::map<DCField*, std::vector<uint8_t> > fields;
 					uint16_t field_count = dgi.read_uint16();
-					m_log->spam() << "Unpacking fields..." << std::endl;
+					m_log->trace() << "Unpacking fields..." << std::endl;
 					try
 					{
 						for(uint32_t i = 0; i < field_count; ++i)
@@ -434,13 +434,13 @@ class DatabaseServer : public Role
 
 					// Get object id from datagram
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Reading field from obj-" << do_id << "..." << std::endl;
+					m_log->trace() << "Reading field from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
-						m_log->spam() << "... object not found in database." << std::endl;
+						m_log->trace() << "... object not found in database." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
@@ -462,7 +462,7 @@ class DatabaseServer : public Role
 					std::vector<uint8_t> value;
 					if(!m_db_engine->get_field(do_id, field, value))
 					{
-						m_log->spam() << "... field not set." << std::endl;
+						m_log->trace() << "... field not set." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
@@ -473,7 +473,7 @@ class DatabaseServer : public Role
 					resp.add_uint16(field_id);
 					resp.add_data(value);
 					send(resp);
-					m_log->spam() << "... success." << std::endl;
+					m_log->trace() << "... success." << std::endl;
 				}
 				break;
 				case DBSERVER_OBJECT_GET_FIELDS:
@@ -486,7 +486,7 @@ class DatabaseServer : public Role
 
 					// Get object id from datagram
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Reading fields from obj-" << do_id << "..." << std::endl;
+					m_log->trace() << "Reading fields from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
 					DCClass *dcc = m_db_engine->get_class(do_id);
@@ -519,7 +519,7 @@ class DatabaseServer : public Role
 					std::map<DCField*, std::vector<uint8_t> > values;
 					if(!m_db_engine->get_fields(do_id, fields, values))
 					{
-						m_log->spam() << "... failure." << std::endl;
+						m_log->trace() << "... failure." << std::endl;
 						resp.add_uint8(FAILURE);
 						send(resp);
 						return;
@@ -534,18 +534,18 @@ class DatabaseServer : public Role
 						resp.add_data(it->second);
 					}
 					send(resp);
-					m_log->spam() << "... success." << std::endl;
+					m_log->trace() << "... success." << std::endl;
 				}
 				break;
 				case DBSERVER_OBJECT_DELETE_FIELD:
 				{
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Deleting field of obj-" << do_id << "..." << std::endl;
+					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					DCClass* dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
-						m_log->spam() << "... object does not exist." << std::endl;
+						m_log->trace() << "... object does not exist." << std::endl;
 						return;
 					}
 
@@ -568,12 +568,12 @@ class DatabaseServer : public Role
 							//std::vector<uint8_t> value(str.length());
 							//memcpy(&value[0], str.c_str(), str.length());
 							m_db_engine->set_field(do_id, field, value);
-							m_log->spam() << "... field set to default." << std::endl;
+							m_log->trace() << "... field set to default." << std::endl;
 						}
 						else if(!field->is_required())
 						{
 							m_db_engine->del_field(do_id, field);
-							m_log->spam() << "... field deleted." << std::endl;
+							m_log->trace() << "... field deleted." << std::endl;
 						}
 						else
 						{
@@ -591,12 +591,12 @@ class DatabaseServer : public Role
 				case DBSERVER_OBJECT_DELETE_FIELDS:
 				{
 					uint32_t do_id = dgi.read_uint32();
-					m_log->spam() << "Deleting field of obj-" << do_id << "..." << std::endl;
+					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					DCClass* dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
-						m_log->spam() << "... object does not exist." << std::endl;
+						m_log->trace() << "... object does not exist." << std::endl;
 						return;
 					}
 
@@ -623,12 +623,12 @@ class DatabaseServer : public Role
 								//std::vector<uint8_t> value(str.length());
 								//memcpy(&value[0], str.c_str(), str.length());
 								set_fields[field] = value;
-								m_log->spam() << "... field set to default ..." << std::endl;
+								m_log->trace() << "... field set to default ..." << std::endl;
 							}
 							else if(!field->is_required())
 							{
 								del_fields.push_back(field);
-								m_log->spam() << "... field deleted ..." << std::endl;
+								m_log->trace() << "... field deleted ..." << std::endl;
 							}
 							else
 							{
@@ -646,12 +646,12 @@ class DatabaseServer : public Role
 					if(del_fields.size() > 0)
 					{
 						m_db_engine->del_fields(do_id, del_fields);
-						m_log->spam() << "... fields deleted." << std::endl;
+						m_log->trace() << "... fields deleted." << std::endl;
 					}
 					if(set_fields.size() > 0)
 					{
 						m_db_engine->set_fields(do_id, set_fields);
-						m_log->spam() << "... fields deleted." << std::endl;
+						m_log->trace() << "... fields deleted." << std::endl;
 					}
 				}
 				break;

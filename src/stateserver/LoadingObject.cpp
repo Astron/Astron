@@ -49,7 +49,7 @@ void LoadingObject::send_get_object(uint32_t do_id)
 
 void LoadingObject::replay_datagrams(DistributedObject* obj)
 {
-	m_log->spam() << "Replaying datagrams received while loading..." << std::endl;
+	m_log->trace() << "Replaying datagrams received while loading..." << std::endl;
 	for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it)
 	{
 		try
@@ -64,7 +64,7 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 			               " datagrams to object and dbss. Skipped." << std::endl;
 		}
 	}
-	m_log->spam() << "... replay finished." << std::endl;
+	m_log->trace() << "... replay finished." << std::endl;
 }
 
 void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
@@ -88,7 +88,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_log->spam() << "Received GetAllResp from database." << std::endl;
+			m_log->trace() << "Received GetAllResp from database." << std::endl;
 			m_is_loaded = true;
 
 			if(dgi.read_uint8() != true)

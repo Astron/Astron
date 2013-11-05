@@ -4,7 +4,8 @@
 
 #include "logger.h"
 
-NullStream null_stream;
+NullStream null_stream; // used to print nothing by compiling out the unwanted messages
+NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messages
 
 LoggerBuf::LoggerBuf() : std::streambuf(), m_has_file(false), m_output_to_console(true)
 {
@@ -45,12 +46,16 @@ std::streamsize LoggerBuf::xsputn(const char* s, std::streamsize n)
 	return n;
 }
 
-Logger::Logger(const std::string &log_file, bool console_output) : m_buf(log_file, console_output),
-	m_output(&m_buf)
-{
+Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output) :
+	m_buf(log_file, console_output), m_severity(sev), m_output(&m_buf), m_null(&null_buffer)
+{	
 }
 
-Logger::Logger() : m_buf(), m_output(&m_buf)
+#ifdef DEBUG_MESSAGES
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_null(&null_buffer)
+#else
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_null(&null_buffer)
+#endif
 {
 }
 
@@ -58,13 +63,18 @@ std::ostream &Logger::log(LogSeverity sev)
 {
 	const char *sevtext;
 
+	if(sev < m_severity)
+	{
+		return m_null;
+	}
+
 	switch(sev)
 	{
         case LSEVERITY_PACKET:
 			sevtext = "PACKET";
 			break;
-		case LSEVERITY_SPAM:
-			sevtext = "SPAM";
+		case LSEVERITY_TRACE:
+			sevtext = "TRACE";
 			break;
 		case LSEVERITY_DEBUG:
 			sevtext = "DEBUG";
@@ -93,4 +103,14 @@ std::ostream &Logger::log(LogSeverity sev)
 
 	m_output << "[" << timetext << "] " << sevtext << ": ";
 	return m_output;
+}
+
+void Logger::set_min_severity(LogSeverity sev)
+{
+	m_severity = sev;
+}
+
+LogSeverity Logger::get_min_severity()
+{
+	return m_severity;
 }
