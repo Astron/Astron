@@ -105,6 +105,7 @@ class TestClientAgent(unittest.TestCase):
         dg = Datagram.create([self.identify(client)], 1, CLIENTAGENT_SET_STATE)
         dg.add_uint16(state)
         self.server.send(dg)
+        time.sleep(0.1) # Mitigate race condition with set_state
 
     def test_hello(self):
         # First, see if the CA ensures that the first datagram is a HELLO.
