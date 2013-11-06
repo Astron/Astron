@@ -7,7 +7,7 @@
 
 class Datagram
 {
-	private:
+	protected:
 		uint8_t* buf;
 		uint32_t buf_size;
 		uint32_t buf_end;
@@ -96,6 +96,20 @@ class Datagram
 			buf_end += 8;
 		}
 
+		void add_float64(const double &v)
+		{
+			check_add_length(8);
+			memcpy(buf + buf_end, &v, 8);
+			buf_end += 8;
+		}
+
+		void add_float32(const float &v)
+		{
+			check_add_length(4);
+			memcpy(buf + buf_end, &v, 4);
+			buf_end += 4;
+		}
+
 		void add_data(const std::vector<uint8_t> &data)
 		{
 			if(data.size())
@@ -127,6 +141,7 @@ class Datagram
 			memcpy(buf + buf_end, str.c_str(), str.length());
 			buf_end += str.length();
 		}
+
 
 		void add_server_header(channel_t to, channel_t from, uint16_t message_type)
 		{
