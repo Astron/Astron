@@ -277,7 +277,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			if(sender != m_channel)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				handle_set_field(do_id, field_id, dgi.read_remainder());
+				handle_set_field(do_id, field_id, dgi);
 			}
 		}
 		break;

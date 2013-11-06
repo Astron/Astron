@@ -143,13 +143,13 @@ class AstronClient : public Client, public NetworkClient
 			network_send(resp);
 		}
 
-		void handle_set_field(uint32_t do_id, uint16_t field_id, const std::vector<uint8_t> &value)
+		void handle_set_field(uint32_t do_id, uint16_t field_id, DatagramIterator &dgi)
 		{
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_SET_FIELD);
 			resp.add_uint32(do_id);
 			resp.add_uint16(field_id);
-			resp.add_data(value);
+			resp.add_data(dgi.read_remainder());
 			network_send(resp);
 		}
 
