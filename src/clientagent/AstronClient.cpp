@@ -199,21 +199,22 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			uint32_t dc_hash = dgi.read_uint32();
+			std::string version = dgi.read_string();
+
+			if(version != m_client_agent->get_version())
+			{
+				std::stringstream ss;
+				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
+				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
+				return;
+			}
+
 			const static uint32_t expected_hash = g_dcf->get_hash();
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;
 				ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
-				return;
-			}
-
-			std::string version = dgi.read_string();
-			if(version != m_client_agent->get_version())
-			{
-				std::stringstream ss;
-				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
-				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
 				return;
 			}
 
@@ -372,9 +373,16 @@ class AstronClient : public Client, public NetworkClient
 			uint32_t do_id = dgi.read_uint32();
 			if(m_dist_objs.find(do_id) == m_dist_objs.end())
 			{
-				std::stringstream ss;
-				ss << "Client tried to manipulate unknown object " << do_id;
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				if(is_historical_object(do_id))
+				{
+					dgi.skip(dgi.get_remaining());
+				}
+				else
+				{
+					std::stringstream ss;
+					ss << "Client tried to manipulate unknown object " << do_id;
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				}
 				return;
 			}
 			bool is_owned = false;
