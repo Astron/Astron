@@ -372,9 +372,16 @@ class AstronClient : public Client, public NetworkClient
 			uint32_t do_id = dgi.read_uint32();
 			if(m_dist_objs.find(do_id) == m_dist_objs.end())
 			{
-				std::stringstream ss;
-				ss << "Client tried to manipulate unknown object " << do_id;
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				if(is_historical_object(do_id))
+				{
+					dgi.skip(dgi.get_remaining());
+				}
+				else
+				{
+					std::stringstream ss;
+					ss << "Client tried to manipulate unknown object " << do_id;
+					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+				}
 				return;
 			}
 			bool is_owned = false;
