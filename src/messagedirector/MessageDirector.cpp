@@ -87,7 +87,7 @@ void MessageDirector::init_network()
 
 void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 {
-	m_log.spam() << "Processing datagram...." << std::endl;
+	m_log.trace() << "Processing datagram...." << std::endl;
 
 	uint8_t channels = 0;
 	DatagramIterator dgi(dg);
@@ -97,7 +97,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		channels = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &recieve_log = m_log.spam();
+		auto &recieve_log = m_log.trace();
 		recieve_log << "Recievers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
@@ -149,15 +149,15 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 	if(p && is_client)  // Send message upstream
 	{
 		network_send(dg);
-		m_log.spam() << "...routing upstream." << std::endl;
+		m_log.trace() << "...routing upstream." << std::endl;
 	}
 	else if(!p) // If there is no participant, then it came from the upstream
 	{
-		m_log.spam() << "...not routing upstream: It came from there." << std::endl;
+		m_log.trace() << "...not routing upstream: It came from there." << std::endl;
 	}
 	else // Otherwise is root node
 	{
-		m_log.spam() << "...not routing upstream: There is none." << std::endl;
+		m_log.trace() << "...not routing upstream: There is none." << std::endl;
 	}
 }
 

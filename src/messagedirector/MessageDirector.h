@@ -148,34 +148,34 @@ class MDParticipantInterface
 		}
 		inline void subscribe_channel(channel_t c)
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' subscribed channel: " << c << std::endl;
+			logger().trace() << "MDParticipant '" << m_name << "' subscribed channel: " << c << std::endl;
 			MessageDirector::singleton.subscribe_channel(this, c);
 		}
 		inline void unsubscribe_channel(channel_t c)
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' unsubscribed channel: " << c << std::endl;
+			logger().trace() << "MDParticipant '" << m_name << "' unsubscribed channel: " << c << std::endl;
 			MessageDirector::singleton.unsubscribe_channel(this, c);
 		}
 		inline void subscribe_range(channel_t lo, channel_t hi)
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' subscribed range, "
+			logger().trace() << "MDParticipant '" << m_name << "' subscribed range, "
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.subscribe_range(this, lo, hi);
 		}
 		inline void unsubscribe_range(channel_t lo, channel_t hi)
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' unsubscribed range, "
+			logger().trace() << "MDParticipant '" << m_name << "' unsubscribed range, "
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
 		}
 		inline void add_post_remove(const std::string &post)
 		{
-			logger().debug() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
+			logger().trace() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(post);
 		}
 		inline void clear_post_removes()
 		{
-			logger().spam() << "MDParticipant '" << m_name << "' cleared post removes." << std::endl;
+			logger().trace() << "MDParticipant '" << m_name << "' cleared post removes." << std::endl;
 			m_post_removes.clear();
 		}
 		inline void set_con_name(const std::string &name)

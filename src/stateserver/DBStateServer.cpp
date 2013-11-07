@@ -152,7 +152,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			DCField* field = g_dcf->get_field_by_index(field_id);
 			if(field && field->is_db())
 			{
-				m_log->spam() << "Forwarding SetField for field with id " << field_id
+				m_log->trace() << "Forwarding SetField for field with id " << field_id
 				              << ", on object " << do_id << " to database." << std::endl;
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
@@ -187,7 +187,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(db_fields.size() > 0)
 			{
-				m_log->spam() << "Forwarding SetFields on object " << do_id << " to database." << std::endl;
+				m_log->trace() << "Forwarding SetFields on object " << do_id << " to database." << std::endl;
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
 				dg.add_uint32(do_id);
@@ -215,7 +215,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_log->spam() << "Received GetField for field with id " << field_id
+			m_log->trace() << "Received GetField for field with id " << field_id
 			              << " on inactive object with id " << r_do_id << std::endl;
 
 			// Check field is "ram db" or "required"
@@ -273,7 +273,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break; // Not meant for me, handled by LoadingObject
 			}
 
-			m_log->spam() << "Received GetFieldResp from database." << std::endl;
+			m_log->trace() << "Received GetFieldResp from database." << std::endl;
 
 			// Get the datagram from the db_context
 			Datagram dg(dg_keyval->second);
@@ -316,7 +316,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_log->spam() << "Received GetFields for inactive object with id " << r_do_id << std::endl;
+			m_log->trace() << "Received GetFields for inactive object with id " << r_do_id << std::endl;
 
 			// Read requested fields from datagram
 			std::list<DCField*> db_fields; // Ram|required db fields in request
@@ -425,7 +425,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_log->spam() << "Received GetFieldResp from database." << std::endl;
+			m_log->trace() << "Received GetFieldResp from database." << std::endl;
 
 			// Add database field payload to response (don't know dclass, so must copy payload).
 			if(dgi.read_uint8() == true)
@@ -449,7 +449,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			m_log->spam() << "Received GetAll for inactive object with id " << r_do_id << std::endl;
+			m_log->trace() << "Received GetAll for inactive object with id " << r_do_id << std::endl;
 
 			// Get context for db query, and remember caller with it
 			uint32_t db_context = m_next_context++;
@@ -523,7 +523,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				m_inactive_loads.erase(do_id);
 			}
 
-			m_log->spam() << "Received GetAllResp from database." << std::endl;
+			m_log->trace() << "Received GetAllResp from database." << std::endl;
 
 			// If object not found, just cleanup the context map
 			if(dgi.read_uint8() != true)
@@ -593,7 +593,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 			else
 			{
-				m_log->spam() << "Ignoring stateserver or database message"
+				m_log->trace() << "Ignoring stateserver or database message"
 				              << " of type " << msgtype << std::endl;
 			}
 		}

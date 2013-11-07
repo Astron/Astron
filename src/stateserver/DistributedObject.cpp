@@ -291,7 +291,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 
 	if(new_ai)
 	{
-		m_log->spam() << "Sending AI entry to "
+		m_log->trace() << "Sending AI entry to "
 		              << new_ai << std::endl;
 		send_ai_entry(new_ai);
 	}
@@ -370,7 +370,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		return false;
 	}
 
-	m_log->spam() << "Handling update for '" << field->get_name() << "'." << std::endl;
+	m_log->trace() << "Handling update for '" << field->get_name() << "'." << std::endl;
 
 	uint32_t field_start = dgi.tell();
 
@@ -437,7 +437,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 		               << ", not valid for class: " << m_dclass->get_name() << std::endl;
 		return false;
 	}
-	m_log->spam() << "Handling query for '" << field->get_name() << "'." << std::endl;
+	m_log->trace() << "Handling query for '" << field->get_name() << "'." << std::endl;
 
 	DCMolecularField *molecular = field->as_molecular_field();
 	if(molecular)
@@ -550,7 +550,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			uint32_t r_parent_id = dgi.read_uint32();
 			channel_t new_channel = dgi.read_uint64();
-			m_log->spam() << "Received ChangingAI notification from " << r_parent_id << std::endl;
+			m_log->trace() << "Received ChangingAI notification from " << r_parent_id << std::endl;
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
@@ -568,14 +568,14 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_AI:
 		{
 			channel_t new_channel = dgi.read_uint64();
-			m_log->spam() << "Updating AI to " << new_channel << std::endl;
+			m_log->trace() << "Updating AI to " << new_channel << std::endl;
 			handle_ai_change(new_channel, sender, true);
 
 			break;
 		}
 		case STATESERVER_OBJECT_GET_AI:
 		{
-			m_log->spam() << "Received AI query from " << sender << std::endl;
+			m_log->trace() << "Received AI query from " << sender << std::endl;
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_AI_RESP);
 			dg.add_uint32(dgi.read_uint32()); // Get context
 			dg.add_uint32(m_do_id);
@@ -588,7 +588,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			dgi.read_uint32(); // Discard context
 			uint32_t r_parent_id = dgi.read_uint32();
-			m_log->spam() << "Received AI query response from " << r_parent_id << std::endl;
+			m_log->trace() << "Received AI query response from " << r_parent_id << std::endl;
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
@@ -647,7 +647,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			uint32_t new_parent = dgi.read_uint32();
 			uint32_t new_zone = dgi.read_uint32();
-			m_log->spam() << "Updating location to Parent: " << new_parent
+			m_log->trace() << "Updating location to Parent: " << new_parent
 			              << ", Zone: " << new_zone << std::endl;
 
 			handle_location_change(new_parent, new_zone, sender);
@@ -742,16 +742,16 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_OWNER:
 		{
 			channel_t new_owner = dgi.read_uint64();
-			m_log->spam() << "Updating owner to " << new_owner << "..." << std::endl;
+			m_log->trace() << "Updating owner to " << new_owner << "..." << std::endl;
 			if(new_owner == m_owner_channel)
 			{
-				m_log->spam() << "... owner is the same, do nothing." << std::endl;
+				m_log->trace() << "... owner is the same, do nothing." << std::endl;
 				return;
 			}
 
 			if(m_owner_channel)
 			{
-				m_log->spam() << "... broadcasting changing owner..." << std::endl;
+				m_log->trace() << "... broadcasting changing owner..." << std::endl;
 				Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
 				dg.add_uint32(m_do_id);
 				dg.add_uint64(new_owner);
@@ -763,11 +763,11 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(new_owner)
 			{
-				m_log->spam() << "... sending owner entry..." << std::endl;
+				m_log->trace() << "... sending owner entry..." << std::endl;
 				send_owner_entry(new_owner);
 			}
 
-			m_log->spam() << "... updated owner." << std::endl;
+			m_log->trace() << "... updated owner." << std::endl;
 			break;
 		}
 		case STATESERVER_OBJECT_GET_ZONES_OBJECTS:
@@ -776,7 +776,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t queried_parent = dgi.read_uint32();
 
 
-			m_log->spam() << "Handling get_zones_objects with parent '" << queried_parent << "'"
+			m_log->trace() << "Handling get_zones_objects with parent '" << queried_parent << "'"
 			              << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
 			              << "." << std::endl;
 
@@ -843,7 +843,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 			else
 			{
-				m_log->spam() << "Ignoring stateserver message of type " << msgtype << std::endl;
+				m_log->trace() << "Ignoring stateserver message of type " << msgtype << std::endl;
 			}
 	}
 }

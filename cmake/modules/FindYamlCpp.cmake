@@ -30,7 +30,7 @@ find_path(YAMLCPP_INCLUDE_DIR yaml-cpp/yaml.h
 
 # find the yaml-cpp library
 find_library(YAMLCPP_LIBRARY
-             NAMES ${YAMLCPP_STATIC} yaml-cpp
+             NAMES ${YAMLCPP_STATIC} yaml-cpp libyaml-cppmd.lib
              PATH_SUFFIXES lib64 lib
              PATHS ~/Library/Frameworks
                     /Library/Frameworks

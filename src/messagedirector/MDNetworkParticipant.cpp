@@ -11,7 +11,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 
 void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 {
-	logger().spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
+	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	try
 	{
 		network_send(dg);

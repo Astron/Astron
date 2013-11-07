@@ -18,10 +18,20 @@ class LoggerBuf : public std::streambuf
 		bool m_output_to_console;
 };
 
+// NullBuffer is used to make streams that log in cases when we do not
+// want to compile the message out (for example, when the LogServity is configurable)
+class NullBuffer;
+extern NullBuffer null_buffer;
+class NullBuffer : public std::streambuf
+{
+	public:
+		int overflow(int c) { return c; }
+};
+
 enum LogSeverity
 {
     LSEVERITY_PACKET,
-    LSEVERITY_SPAM,
+    LSEVERITY_TRACE,
     LSEVERITY_DEBUG,
     LSEVERITY_INFO,
     LSEVERITY_WARNING,
@@ -30,6 +40,8 @@ enum LogSeverity
     LSEVERITY_FATAL
 };
 
+// NullStream is used with pre-processor definitions to define a stream that when
+// logged to, will be reduced to a no-op and compiled out.
 class NullStream;
 extern NullStream null_stream;
 
@@ -54,14 +66,19 @@ class NullStream
 class Logger
 {
 	public:
-		Logger(const std::string &log_file, bool console_output = true);
+		Logger(const std::string &log_file, LogSeverity sev, bool console_output = true);
 		Logger();
 
 		std::ostream &log(LogSeverity sev);
 
+		void set_min_severity(LogSeverity sev);
+		LogSeverity get_min_severity();
+
 	private:
 		LoggerBuf m_buf;
+		LogSeverity m_severity;
 		std::ostream m_output;
+		std::ostream m_null;
 };
 
 extern Logger *g_logger;
@@ -105,10 +122,10 @@ class LogCategory
 #endif
 
 #ifdef DEBUG_MESSAGES
-		F(spam, LSEVERITY_SPAM)
+		F(trace, LSEVERITY_TRACE)
 		F(debug, LSEVERITY_DEBUG)
 #else
-		inline NullStream &spam()
+		inline NullStream &trace()
 		{
 			return null_stream;
 		}
