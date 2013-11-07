@@ -293,6 +293,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			if(m_seen_objects.find(do_id) != m_seen_objects.end())
 			{
 				m_seen_objects.erase(do_id);
+				m_id_history.insert(do_id);
 				handle_remove_object(do_id);
 			}
 
