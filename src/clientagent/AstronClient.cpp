@@ -198,6 +198,15 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
+			std::string version = dgi.read_string();
+			if(version != m_client_agent->get_version())
+			{
+				std::stringstream ss;
+				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
+				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
+				return;
+			}
+
 			uint32_t dc_hash = dgi.read_uint32();
 			const static uint32_t expected_hash = g_dcf->get_hash();
 			if(dc_hash != expected_hash)
@@ -205,15 +214,6 @@ class AstronClient : public Client, public NetworkClient
 				std::stringstream ss;
 				ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
-				return;
-			}
-
-			std::string version = dgi.read_string();
-			if(version != m_client_agent->get_version())
-			{
-				std::stringstream ss;
-				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
-				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
 				return;
 			}
 
