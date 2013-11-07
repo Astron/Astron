@@ -198,7 +198,9 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
+			uint32_t dc_hash = dgi.read_uint32();
 			std::string version = dgi.read_string();
+
 			if(version != m_client_agent->get_version())
 			{
 				std::stringstream ss;
@@ -207,7 +209,6 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			uint32_t dc_hash = dgi.read_uint32();
 			const static uint32_t expected_hash = g_dcf->get_hash();
 			if(dc_hash != expected_hash)
 			{
