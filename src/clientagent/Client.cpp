@@ -235,7 +235,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 
 	std::list<std::string> event;
 	event.push_back(security ? "client-ejected-security" : "client-ejected");
-	event.push_back(std::to_string(reason));
+	event.push_back(std::to_string((unsigned long long)reason));
 	event.push_back(error_string);
 	log_event(event);
 }

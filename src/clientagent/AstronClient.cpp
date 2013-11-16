@@ -96,7 +96,7 @@ class AstronClient : public Client, public NetworkClient
 
 				std::list<std::string> event;
 				event.push_back(security ? "client-ejected-security" : "client-ejected");
-				event.push_back(std::to_string(reason));
+				event.push_back(std::to_string((unsigned long long)reason));
 				event.push_back(error_string);
 				log_event(event);
 
@@ -423,7 +423,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				count = dgi.read_uint16();
 			}
-			i.zones.reserve(count);
+			i.zones.rehash(ceil(count / i.zones.max_load_factor()));
 			for(int x = 0; x < count; ++x)
 			{
 				uint32_t zone = dgi.read_uint32();
