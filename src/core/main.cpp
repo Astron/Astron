@@ -3,6 +3,8 @@
 #include <fstream>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #include "global.h"
 #include "RoleFactory.h"
 
@@ -86,6 +88,16 @@ int main(int argc, char *argv[])
 		if(argv[argc - 1][0] != '-')
 		{
 			cfg_file = argv[argc - 1];
+			// seperate path
+			boost::filesystem::path p (cfg_file);
+			boost::filesystem::path dir = p.parent_path();
+			string basename = boost::filesystem::basename (p);
+			string dir = dir.string();
+		
+			// change directory
+			boost::filesystem::current_path (dir);
+			
+			cfg_file = p.string(); 	
 		}
 	}
 
