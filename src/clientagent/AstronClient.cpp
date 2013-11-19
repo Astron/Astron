@@ -72,6 +72,11 @@ class AstronClient : public Client, public NetworkClient
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
+			catch(DatagramOverflow &e)
+			{
+				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM,
+				                "ClientDatagram to large to be routed on MD.", true);
+			}
 
 			if(dgi.get_remaining())
 			{
@@ -355,12 +360,6 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
 			resp.add_doid(do_id);
 			resp.add_uint16(field_id);
-			if(data.size() > 65535u - resp.size())
-			{
-				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM, "Field update too large to be routed on MD.",
-				                true);
-				return;
-			}
 			resp.add_data(data);
 			send(resp);
 		}
@@ -453,7 +452,6 @@ class AstronClient : public Client, public NetworkClient
 			}
 			delete this;
 		}
-
 };
 
 static ClientType<AstronClient> astron_client_fact("libastron");

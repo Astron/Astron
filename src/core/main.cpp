@@ -173,7 +173,7 @@ void printHelp(std::ostream &s)
 	  << "                (levels): packet, trace, debug, info, warning, security" << std::endl;
 #else
 	  << "                (levels): info, warning, security" << std::endl;
-#endif DEBUG_MESSAGES
+#endif
 
 	s.flush();
 }

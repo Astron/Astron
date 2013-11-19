@@ -2,11 +2,19 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <string.h> // memcpy
 #include "core/messages.h"
 
-#define DGSIZE_SIZE_BYTES 2
 typedef uint16_t dgsize_t;
+#define DGSIZE_SIZE_BYTES 2
+#define DGSIZE_MAX ((dgsize_t)(-1))
+
+class DatagramOverflow : public std::runtime_error
+{
+	public:
+		DatagramOverflow(const std::string &what) : std::runtime_error(what) { }
+};
 
 class Datagram
 {
@@ -17,6 +25,14 @@ class Datagram
 
 		void check_add_length(dgsize_t len)
 		{
+			if(buf_end + len > DGSIZE_MAX)
+			{
+				std::stringstream err_str;
+				err_str << "dg tried to add data past max datagram size, buf_end+len("
+				    << buf_end + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
+				throw DatagramOverflow(err_str.str());
+			}
+
 			if(buf_end + len > buf_cap)
 			{
 				uint8_t *tmp_buf = new uint8_t[buf_cap + len + 64];
