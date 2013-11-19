@@ -89,14 +89,13 @@ int main(int argc, char *argv[])
 		{
 			cfg_file = argv[argc - 1];
 			// seperate path
-			boost::filesystem::path p (cfg_file);
+			boost::filesystem::path p(cfg_file);
 			boost::filesystem::path dir = p.parent_path();
 			string filename = p.filename().string();
 			string dir_str = dir.string();
-	
 
 			// change directory
-			boost::filesystem::current_path (dir_str);
+			boost::filesystem::current_path(dir_str);
 			
 			cfg_file = filename; 	
 		}
