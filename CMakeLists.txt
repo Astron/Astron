@@ -68,10 +68,10 @@ endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set (Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-find_package (Boost COMPONENTS system)
+find_package (Boost COMPONENTS system filesystem)
 if (NOT Boost_FOUND)
 	set (Boost_USE_STATIC_LIBS OFF CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-	find_package (Boost COMPONENTS system)
+	find_package (Boost COMPONENTS system filesystem)
 endif()
 if (Boost_FOUND)
 	include_directories (${Boost_INCLUDE_DIR})
