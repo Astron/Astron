@@ -140,10 +140,18 @@ class DatagramIterator
 		// looks exactly the same as a nested datagram.
 		std::vector<uint8_t> read_datagram()
 		{
+			// NOTE: datagrams are stored in other datagrams as blobs (which always have 16-bit size)
+			// therefore it is a temporary limitation of astron that the max post-remove size is 16-bit,
+            // even if you are using 32-bit datagram mode.
+			// TODO: Address this problem in either the protocol or  and document
+
+			/*
 			check_read_length(sizeof(dgsize_t));
 			dgsize_t length = *(dgsize_t*)(m_dg.get_data() + m_offset);
 			m_offset += sizeof(dgsize_t);
+			*/
 
+			uint16_t length = read_uint16();
 			return read_data(length);
 		}
 
