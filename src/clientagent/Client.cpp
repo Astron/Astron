@@ -438,7 +438,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			doid_t do_id = dgi.read_doid();
 			doid_t n_parent = dgi.read_doid();
 			zone_t n_zone = dgi.read_zone();
-			dgi.skip(DOID_SIZE_BYTES + ZONE_SIZE_BYTES); // don't care about the old location
+			dgi.skip(sizeof(doid_t) + sizeof(zone_t)); // don't care about the old location
 			bool disable = true;
 			for(auto it = m_interests.begin(); it != m_interests.end(); ++it)
 			{

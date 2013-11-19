@@ -77,25 +77,25 @@ class DatagramIterator
 
 		channel_t read_channel()
 		{
-			check_read_length(CHANNEL_SIZE_BYTES);
+			check_read_length(sizeof(channel_t));
 			channel_t r = *(channel_t*)(m_dg.get_data() + m_offset);
-			m_offset += CHANNEL_SIZE_BYTES;
+			m_offset += sizeof(channel_t);
 			return r;
 		}
 
 		doid_t read_doid()
 		{
-			check_read_length(DOID_SIZE_BYTES);
+			check_read_length(sizeof(doid_t));
 			doid_t r = *(doid_t*)(m_dg.get_data() + m_offset);
-			m_offset += DOID_SIZE_BYTES;
+			m_offset += sizeof(doid_t);
 			return r;
 		}
 
 		zone_t read_zone()
 		{
-			check_read_length(ZONE_SIZE_BYTES);
+			check_read_length(sizeof(zone_t));
 			zone_t r = *(zone_t*)(m_dg.get_data() + m_offset);
-			m_offset += ZONE_SIZE_BYTES;
+			m_offset += sizeof(zone_t);
 			return r;
 		}
 
@@ -140,9 +140,9 @@ class DatagramIterator
 		// looks exactly the same as a nested datagram.
 		std::vector<uint8_t> read_datagram()
 		{
-			check_read_length(DGSIZE_SIZE_BYTES);
+			check_read_length(sizeof(dgsize_t));
 			dgsize_t length = *(dgsize_t*)(m_dg.get_data() + m_offset);
-			m_offset += DGSIZE_SIZE_BYTES;
+			m_offset += sizeof(dgsize_t);
 
 			return read_data(length);
 		}
@@ -271,7 +271,7 @@ class DatagramIterator
 		{
 			uint16_t offset = m_offset; // save offset
 
-			m_offset = 1 + get_recipient_count() * CHANNEL_SIZE_BYTES; // seek sender
+			m_offset = 1 + get_recipient_count() * sizeof(channel_t); // seek sender
 			channel_t sender = read_channel(); // read sender
 
 			m_offset = offset; // restore offset
@@ -285,7 +285,7 @@ class DatagramIterator
 		{
 			uint16_t offset = m_offset; // save offset
 
-			m_offset = 9 + get_recipient_count() * CHANNEL_SIZE_BYTES; // seek message type
+			m_offset = 9 + get_recipient_count() * sizeof(channel_t); // seek message type
 			uint16_t msg_type = read_uint16(); // read message type
 
 			m_offset = offset; // restore offset
@@ -314,7 +314,7 @@ class DatagramIterator
 		void seek_payload()
 		{
 			m_offset = 0; // Seek to start
-			m_offset = 1 + get_recipient_count() * CHANNEL_SIZE_BYTES;
+			m_offset = 1 + get_recipient_count() * sizeof(channel_t);
 		}
 
 		// skip increments the current message offset by a length.

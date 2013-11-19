@@ -7,12 +7,9 @@ typedef uint32_t doid_t;
 typedef uint32_t zone_t;
 
 #define CHANNEL_MAX ((channel_t)(-1))
-#define CHANNEL_SIZE_BYTES 8
 #define DOID_MAX ((doid_t)(-1))
-#define DOID_SIZE_BYTES 4
 #define ZONE_MAX ((zone_t)(-1))
-#define ZONE_SIZE_BITS 32
-#define ZONE_SIZE_BYTES (ZONE_SIZE_BITS/8)
+#define ZONE_BITS (sizeof(zone_t)*8)
 
 // Channel constants
 #define INVALID_CHANNEL 0
@@ -20,10 +17,10 @@ typedef uint32_t zone_t;
 #define BCHAN_CLIENTS 10
 #define BCHAN_STATESERVERS 12
 #define BCHAN_DBSERVERS 13
-#define PARENT_PREFIX ((channel_t)(1) << ZONE_SIZE_BITS)
+#define PARENT_PREFIX ((channel_t)(1) << ZONE_BITS)
 
 // Location macros
-#define LOCATION2CHANNEL(p, z) ((channel_t)(p) << ZONE_SIZE_BITS|(channel_t)(z))
+#define LOCATION2CHANNEL(p, z) ((channel_t)(p) << ZONE_BITS|(channel_t)(z))
 #define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
 
 // DO ID Constants

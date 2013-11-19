@@ -6,8 +6,12 @@
 #include <string.h> // memcpy
 #include "core/messages.h"
 
-typedef uint16_t dgsize_t;
-#define DGSIZE_SIZE_BYTES 2
+#ifdef ASTRON_32BIT_DATAGRAMS
+	typedef uint32_t dgsize_t;
+#else
+	typedef uint16_t dgsize_t;
+#endif
+
 #define DGSIZE_MAX ((dgsize_t)(-1))
 
 class DatagramOverflow : public std::runtime_error
@@ -143,32 +147,32 @@ class Datagram
 
 		void add_channel(const channel_t &v)
 		{
-			check_add_length(CHANNEL_SIZE_BYTES);
-			memcpy(buf + buf_end, &v, CHANNEL_SIZE_BYTES);
-			buf_end += CHANNEL_SIZE_BYTES;
+			check_add_length(sizeof(channel_t));
+			memcpy(buf + buf_end, &v, sizeof(channel_t));
+			buf_end += sizeof(channel_t);
 		}
 
 		void add_doid(const doid_t &v)
 		{
-			check_add_length(DOID_SIZE_BYTES);
-			memcpy(buf + buf_end, &v, DOID_SIZE_BYTES);
-			buf_end += DOID_SIZE_BYTES;
+			check_add_length(sizeof(doid_t));
+			memcpy(buf + buf_end, &v, sizeof(doid_t));
+			buf_end += sizeof(doid_t);
 		}
 
 		void add_zone(const zone_t &v)
 		{
-			check_add_length(ZONE_SIZE_BYTES);
-			memcpy(buf + buf_end, &v, ZONE_SIZE_BYTES);
-			buf_end += ZONE_SIZE_BYTES;
+			check_add_length(sizeof(zone_t));
+			memcpy(buf + buf_end, &v, sizeof(zone_t));
+			buf_end += sizeof(zone_t);
 		}
 
 		void add_location(const doid_t &parent, const zone_t &zone)
 		{
-			check_add_length(DOID_SIZE_BYTES + ZONE_SIZE_BYTES);
-			memcpy(buf + buf_end, &parent, DOID_SIZE_BYTES);
-			buf_end += DOID_SIZE_BYTES;
-			memcpy(buf + buf_end, &zone, ZONE_SIZE_BYTES);
-			buf_end += ZONE_SIZE_BYTES;
+			check_add_length(sizeof(doid_t) + sizeof(zone_t));
+			memcpy(buf + buf_end, &parent, sizeof(doid_t));
+			buf_end += sizeof(doid_t);
+			memcpy(buf + buf_end, &zone, sizeof(zone_t));
+			buf_end += sizeof(zone_t);
 		}
 
 		void add_data(const std::vector<uint8_t> &data)

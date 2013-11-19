@@ -132,7 +132,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1 + channels * CHANNEL_SIZE_BYTES);
+		DatagramIterator msg_dgi(dg, 1 + channels * sizeof(channel_t));
 		try
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
