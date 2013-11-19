@@ -17,6 +17,14 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 	set (CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+### Define astron’s git aha for use in program ###
+exec_program(
+    "git"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ARGS "describe --abbrev=8 --dirty --always"
+    OUTPUT_VARIABLE VERSION )
+
+add_definitions( -DGIT_SHA1="${VERSION}" )
 
 ### Add GNU Make compiler flags for each build type ###
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
