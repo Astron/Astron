@@ -1,5 +1,6 @@
 #pragma once
 #include "core/config.h"
+#include "core/messages.h"
 #include "dcparser/dcField.h"
 #include <vector>
 #include <cstdint>

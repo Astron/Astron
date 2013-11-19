@@ -146,7 +146,7 @@ class Client : public MDParticipantInterface
 
 		// handle_set_field should inform the client that the field has been updated
 		virtual void handle_set_field(doid_t do_id, uint16_t field_id,
-		                              const std::vector<uint8_t> &value) = 0;
+		                              DatagramIterator &dgi) = 0;
 
 		// handle_change_location should inform the client that the objects location has changed
 		virtual void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone) = 0;

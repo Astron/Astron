@@ -37,11 +37,11 @@ void EventSender::send(const Datagram &dg)
 {
 	if(!m_enabled)
 	{
-		m_log.spam() << "Disabled; discarding event..." << std::endl;
+		m_log.trace() << "Disabled; discarding event..." << std::endl;
 		return;
 	}
 
-	m_log.spam() << "Sending event..." << std::endl;
+	m_log.trace() << "Sending event..." << std::endl;
 	m_socket.send_to(boost::asio::buffer(dg.get_data(), dg.size()),
 	                 m_target);
 }

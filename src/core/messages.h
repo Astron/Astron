@@ -6,7 +6,7 @@ typedef uint64_t channel_t;
 typedef uint32_t doid_t;
 typedef uint32_t zone_t;
 
-#define CHANNEL_MAX ((channel_t)(0) - 1)
+#define CHANNEL_MAX ((channel_t)(0) - (channel_t)(1))
 #define CHANNEL_SIZE_BYTES 8
 #define DOID_SIZE_BYTES 4
 #define ZONE_SIZE_BITS 32

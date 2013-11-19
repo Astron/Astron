@@ -235,7 +235,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 
 	std::list<std::string> event;
 	event.push_back(security ? "client-ejected-security" : "client-ejected");
-	event.push_back(std::to_string(reason));
+	event.push_back(std::to_string((unsigned long long)reason));
 	event.push_back(error_string);
 	log_event(event);
 }
@@ -277,7 +277,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			if(sender != m_channel)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				handle_set_field(do_id, field_id, dgi.read_remainder());
+				handle_set_field(do_id, field_id, dgi);
 			}
 		}
 		break;
@@ -293,6 +293,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			if(m_seen_objects.find(do_id) != m_seen_objects.end())
 			{
 				m_seen_objects.erase(do_id);
+				m_historical_objects.insert(do_id);
 				handle_remove_object(do_id);
 			}
 
@@ -306,6 +307,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		}
 		break;
 		case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
+        case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED:
 		{
 			doid_t do_id = dgi.read_doid();
 			doid_t parent = dgi.read_doid();

@@ -5,9 +5,11 @@
 
 #include "global.h"
 #include "RoleFactory.h"
-LogCategory mainlog("main", "Main");
 
-ConfigVariable<std::vector<std::string> > dc_files("general/dc_files", std::vector<std::string>());
+static ConfigVariable<std::vector<std::string> > dc_files("general/dc_files", std::vector<std::string>());
+LogCategory mainlog("main", "Main");
+void printHelp(std::ostream &s);
+
 
 int main(int argc, char *argv[])
 {
@@ -21,20 +23,64 @@ int main(int argc, char *argv[])
 	else
 	{
 		cfg_file = "astrond.yml";
+		LogSeverity sev = g_logger->get_min_severity();
 		for(int i = 1; i < argc; i++)
 		{
 			if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc)
 			{
 				delete g_logger;
-				g_logger = new Logger(argv[++i]);
+				g_logger = new Logger(argv[++i], sev);
+			}
+			else if((strcmp(argv[i], "--loglevel") == 0 || strcmp(argv[i], "-l") == 0) && i + 1 < argc)
+			{
+				std::string llstr(argv[++i]);
+				if(llstr == "packet")
+				{
+					sev = LSEVERITY_PACKET;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr == "trace")
+				{
+					sev = LSEVERITY_TRACE;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr == "debug")
+				{
+					sev = LSEVERITY_DEBUG;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr == "info")
+				{
+					sev = LSEVERITY_INFO;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr == "warning")
+				{
+					sev = LSEVERITY_INFO;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr == "security")
+				{
+					sev = LSEVERITY_SECURITY;
+					g_logger->set_min_severity(sev);
+				}
+				else if(llstr != "error" && llstr != "fatal")
+				{
+					std::cerr << "Unknown log-level \"" << llstr << "\"." << std::endl;
+					printHelp(std::cerr);
+					exit(1);
+				}
 			}
 			else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 			{
-				std::cerr << "Usage: astrond [OPTION]... [CONFIG]" << std::endl
-				          << "Astrond is a distributed server daemon." << std::endl << std::endl
-				          << "-h, --help  Print this help dialog." << std::endl
-				          << "-L, --log   Specify a file to write log messages to." << std::endl;
+				printHelp(std::cout);
 				exit(0);
+			}
+			else if(argv[i][0] == '-')
+			{
+				std::cerr << "Unrecognized option \"" << string(argv[i]) << "\"." << std::endl;
+				printHelp(std::cerr);
+				exit(1);
 			}
 		}
 		if(argv[argc - 1][0] != '-')
@@ -113,4 +159,21 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
+}
+
+void printHelp(std::ostream &s)
+{
+	s << "Usage: astrond [OPTION]... [CONFIG]" << std::endl
+	  << "Astrond is a distributed server daemon." << std::endl << std::endl
+	  << "-h, --help      Print this help dialog." << std::endl
+	  << "-L, --log       Specify a file to write log messages to." << std::endl
+	  << "-l, --loglevel  Specify the minimum log level that should be logged;" << std::endl
+	  << "                  Security, Error, and Fatal will always be logged;" << std::endl
+#ifdef DEBUG_MESSAGES
+	  << "                (levels): packet, trace, debug, info, warning, security" << std::endl;
+#else
+	  << "                (levels): info, warning, security" << std::endl;
+#endif DEBUG_MESSAGES
+
+	s.flush();
 }

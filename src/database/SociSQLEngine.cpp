@@ -94,7 +94,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			if(dcc && storable)
 			{
-				m_log->spam() << "... object has stored field, also deleted." << endl;
+				m_log->trace() << "... object has stored field, also deleted." << endl;
 				m_sql << "DELETE FROM fields_" << dcc->get_name() << " WHERE object_id=:id;", use(do_id);
 			}
 
@@ -102,7 +102,7 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 		bool get_object(doid_t do_id, DatabaseObject& dbo)
 		{
-			m_log->spam() << "Getting object with id" << do_id << endl;
+			m_log->trace() << "Getting object with id" << do_id << endl;
 
 			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);

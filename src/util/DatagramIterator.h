@@ -17,7 +17,7 @@ class DatagramIteratorEOF : public std::runtime_error
 
 class DatagramIterator
 {
-	private:
+	protected:
 		const Datagram &m_dg;
 		dgsize_t m_offset;
 
@@ -96,6 +96,22 @@ class DatagramIterator
 			check_read_length(ZONE_SIZE_BYTES);
 			zone_t r = *(zone_t*)(m_dg.get_data() + m_offset);
 			m_offset += ZONE_SIZE_BYTES;
+			return r;
+		}
+
+		double read_float64()
+		{
+			check_read_length(8);
+			double r = *(double*)(m_dg.get_data() + m_offset);
+			m_offset += 8;
+			return r;
+		}
+
+		float read_float32()
+		{
+			check_read_length(4);
+			float r = *(float*)(m_dg.get_data() + m_offset);
+			m_offset += 4;
 			return r;
 		}
 

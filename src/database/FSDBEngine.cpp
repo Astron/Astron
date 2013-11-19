@@ -109,7 +109,7 @@ class FSDBEngine : public IDatabaseEngine
 				for(uint32_t i = 0; i < num_ids; ++i)
 				{
 					auto k = dgi.read_uint32();
-					fsdb_log.spam() << "Loaded free id: " << k << std::endl;
+					fsdb_log.trace() << "Loaded free id: " << k << std::endl;
 					m_free_ids.insert(m_free_ids.end(), k);
 				}
 			}

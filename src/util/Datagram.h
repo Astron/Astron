@@ -10,7 +10,7 @@ typedef uint16_t dgsize_t;
 
 class Datagram
 {
-	private:
+	protected:
 		uint8_t* buf;
 		dgsize_t buf_cap;
 		dgsize_t buf_end;
@@ -111,6 +111,20 @@ class Datagram
 			buf_end += 8;
 		}
 
+		void add_float64(const double &v)
+		{
+			check_add_length(8);
+			memcpy(buf + buf_end, &v, 8);
+			buf_end += 8;
+		}
+
+		void add_float32(const float &v)
+		{
+			check_add_length(4);
+			memcpy(buf + buf_end, &v, 4);
+			buf_end += 4;
+		}
+
 		void add_channel(const channel_t &v)
 		{
 			check_add_length(CHANNEL_SIZE_BYTES);
@@ -158,6 +172,12 @@ class Datagram
 			buf_end += str.length();
 		}
 
+		void add_data(uint8_t* data, dgsize_t length) {
+			check_add_length(length);
+			memcpy(buf + buf_end, data, length);
+			buf_end += length;
+		}
+
 		void add_datagram(const Datagram &dg)
 		{
 			check_add_length(dg.buf_end);
@@ -179,6 +199,13 @@ class Datagram
 			check_add_length(blob.size());
 			memcpy(buf + buf_end, &blob[0], blob.size());
 			buf_end += blob.size();
+		}
+
+		void add_blob(uint8_t* data, uint16_t length) {
+			add_uint16(length);
+			check_add_length(length);
+			memcpy(buf + buf_end, data, length);
+			buf_end += length;
 		}
 
 		void add_server_header(channel_t to, channel_t from, uint16_t message_type)

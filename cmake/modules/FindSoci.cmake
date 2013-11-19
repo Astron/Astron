@@ -35,7 +35,8 @@ SET(_SOCI_REQUIRED_VARS  SOCI_INCLUDE_DIR SOCI_LIBRARY)
 #
 FIND_PATH(
     SOCI_INCLUDE_DIR soci.h
-    PATHS "/usr/local" "${PROJECT_SOURCE_DIR}/dependencies/soci-3.2.2/core/"
+    PATHS "/usr/local"
+          "${PROJECT_SOURCE_DIR}/dependencies/soci-3.2.2/core/"
     PATH_SUFFIXES "" "soci"
     DOC "Soci (http://soci.sourceforge.net) include directory")
 MARK_AS_ADVANCED(SOCI_INCLUDE_DIR)
@@ -49,7 +50,7 @@ FIND_LIBRARY(
     SOCI_LIBRARY
     NAMES soci_core
     HINTS ${SOCI_INCLUDE_DIR}/..
-    PATH_SUFFIXES lib${LIB_SUFFIX})
+    PATH_SUFFIXES lib${LIB_SUFFIX} lib lib32 lib64)
 MARK_AS_ADVANCED(SOCI_LIBRARY)
 
 GET_FILENAME_COMPONENT(SOCI_LIBRARY_DIR ${SOCI_LIBRARY} PATH)

@@ -162,8 +162,8 @@ void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_
 		return;
 	}
 
-	m_log.spam() << "Got packet from "
-	             << m_remote.address() << ":" << m_remote.port() << std::endl;
+	m_log.trace() << "Got packet from "
+	              << m_remote.address() << ":" << m_remote.port() << std::endl;
 
 	Datagram dg(m_buffer, bytes);
 	process_packet(dg);
