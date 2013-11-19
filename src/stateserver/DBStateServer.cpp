@@ -8,8 +8,8 @@
 static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL);
 
 // RangesConfig
-static ConfigVariable<uint32_t> range_min("min", INVALID_DO_ID);
-static ConfigVariable<uint32_t> range_max("max", UINT32_MAX);
+static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID);
+static ConfigVariable<doid_t> range_max("max", DOID_MAX);
 
 DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 	m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
@@ -35,9 +35,9 @@ DBStateServer::~DBStateServer()
 
 void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 {
-	uint32_t do_id = dgi.read_uint32();
-	uint32_t parent_id = dgi.read_uint32();
-	uint32_t zone_id = dgi.read_uint32();
+	doid_t do_id = dgi.read_uint32();
+	doid_t parent_id = dgi.read_uint32();
+	zone_t zone_id = dgi.read_uint32();
 
 	// Check object is not already active
 	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())
@@ -104,7 +104,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case DBSS_OBJECT_DELETE_DISK:
 		{
-			uint32_t do_id = dgi.read_uint32();
+			doid_t do_id = dgi.read_uint32();
 
 			// If object exists broadcast the delete message
 			auto obj_keyval = m_objs.find(do_id);
@@ -133,21 +133,21 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 				// Build and send datagram
 				Datagram dg(targets, sender, DBSS_OBJECT_DELETE_DISK);
-				dg.add_uint32(do_id);
+				dg.add_doid(do_id);
 				send(dg);
 			}
 
 			// Send delete to database
 			Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
-			dg.add_uint32(do_id);
+			dg.add_doid(do_id);
 			send(dg);
 
 			break;
 		}
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
-			uint32_t do_id = dgi.read_uint32();
-			uint32_t field_id = dgi.read_uint16();
+			doid_t do_id = dgi.read_doid();
+			uint16_t field_id = dgi.read_uint16();
 
 			DCField* field = g_dcf->get_field_by_index(field_id);
 			if(field && field->is_db())
@@ -156,7 +156,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				              << ", on object " << do_id << " to database." << std::endl;
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
-				dg.add_uint32(do_id);
+				dg.add_doid(do_id);
 				dg.add_uint16(field_id);
 				dg.add_data(dgi.read_remainder());
 				send(dg);
@@ -165,7 +165,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_SET_FIELDS:
 		{
-			uint32_t do_id = dgi.read_uint32();
+			doid_t do_id = dgi.read_doid();
 			uint16_t field_count = dgi.read_uint16();
 
 			std::unordered_map<DCField*, std::vector<uint8_t> > db_fields;
@@ -190,7 +190,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				m_log->trace() << "Forwarding SetFields on object " << do_id << " to database." << std::endl;
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
-				dg.add_uint32(do_id);
+				dg.add_doid(do_id);
 				dg.add_uint16(field_count);
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
@@ -205,7 +205,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_GET_FIELD:
 		{
 			uint32_t r_context = dgi.read_uint32();
-			uint32_t r_do_id = dgi.read_uint32();
+			doid_t r_do_id = dgi.read_doid();
 			uint16_t field_id = dgi.read_uint16();
 
 			// If object is active or loading, the Object or Loader will handle it
@@ -225,7 +225,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 				dg.add_uint32(r_context);
-				dg.add_uint8(false);
+				dg.add_bool(false);
 				send(dg);
 			}
 
@@ -246,7 +246,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Send query to database
 				Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
 				dg.add_uint32(db_context);
-				dg.add_uint32(r_do_id);
+				dg.add_doid(r_do_id);
 				dg.add_uint16(field_id);
 				send(dg);
 			}
@@ -254,7 +254,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				Datagram dg = Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 				dg.add_uint32(r_context);
-				dg.add_uint8(true);
+				dg.add_bool(true);
 				dg.add_uint16(field_id);
 				dg.add_data(field->get_default_value());
 				send(dg);
@@ -306,7 +306,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_GET_FIELDS:
 		{
 			uint32_t r_context = dgi.read_uint32();
-			uint32_t r_do_id = dgi.read_uint32();
+			doid_t r_do_id = dgi.read_doid();
 			uint16_t field_count = dgi.read_uint16();
 
 			// If object is active or loading, the Object or Loader will handle it
@@ -357,7 +357,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					        STATESERVER_OBJECT_GET_FIELDS_RESP);
 				}
 				m_context_datagrams[db_context].add_uint32(r_context);
-				m_context_datagrams[db_context].add_uint8(true);
+				m_context_datagrams[db_context].add_bool(true);
 				m_context_datagrams[db_context].add_uint16(ram_fields.size() + db_fields.size());
 				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
 				{
@@ -368,7 +368,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Send query to database
 				Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELDS);
 				dg.add_uint32(db_context);
-				dg.add_uint32(r_do_id);
+				dg.add_doid(r_do_id);
 				dg.add_uint16(db_fields.size());
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
@@ -380,7 +380,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				Datagram dg = Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 				dg.add_uint32(r_context);
-				dg.add_uint8(true);
+				dg.add_bool(true);
 				dg.add_uint16(ram_fields.size());
 				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
 				{
@@ -428,7 +428,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_log->trace() << "Received GetFieldResp from database." << std::endl;
 
 			// Add database field payload to response (don't know dclass, so must copy payload).
-			if(dgi.read_uint8() == true)
+			if(dgi.read_bool() == true)
 			{
 				dgi.read_uint16(); // Discard field count
 				dg.add_data(dgi.read_remainder());
@@ -440,7 +440,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_GET_ALL:
 		{
 			uint32_t r_context = dgi.read_uint32();
-			uint32_t r_do_id = dgi.read_uint32();
+			doid_t r_do_id = dgi.read_doid();
 
 			// If object is active or loading, the Object or Loader will handle it
 			if(m_objs.find(r_do_id) != m_objs.end() ||
@@ -461,7 +461,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			m_context_datagrams[db_context].add_uint32(r_context);
-			m_context_datagrams[db_context].add_uint32(r_do_id);
+			m_context_datagrams[db_context].add_doid(r_do_id);
 			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
 
 			// Cache the do_id --> context in case we get a dbss_activate
@@ -470,7 +470,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Send query to database
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
 			dg.add_uint32(db_context);
-			dg.add_uint32(r_do_id);
+			dg.add_doid(r_do_id);
 			send(dg);
 
 			break;
@@ -511,7 +511,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Get do_id from datagram
 			check_dgi.seek_payload();
 			check_dgi.skip(8 + 4); // skip over sender and context to do_id;
-			uint32_t do_id = check_dgi.read_uint32();
+			doid_t do_id = check_dgi.read_doid();
 
 			// Remove cached loading operation
 			if(m_inactive_loads[do_id].size() > 1)
@@ -526,7 +526,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_log->trace() << "Received GetAllResp from database." << std::endl;
 
 			// If object not found, just cleanup the context map
-			if(dgi.read_uint8() != true)
+			if(dgi.read_bool() != true)
 			{
 				break; // Object not found
 			}
@@ -604,7 +604,7 @@ void DBStateServer::receive_object(DistributedObject* obj)
 {
 	m_objs[obj->get_id()] = obj;
 }
-void DBStateServer::discard_loader(uint32_t do_id)
+void DBStateServer::discard_loader(doid_t do_id)
 {
 	m_loading.erase(do_id);
 }
