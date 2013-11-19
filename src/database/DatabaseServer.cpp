@@ -105,42 +105,16 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					// Check for required fields, and populate with defaults
+					// Populate with defaults
 					m_log->trace() << "Checking all required fields exist..." << std::endl;
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
 						DCField *field = dcc->get_inherited_field(i);
-						if(field->is_required() && field->is_db() && !field->as_molecular_field()
-						        && dbo.fields.find(field) == dbo.fields.end())
+						if(field->is_db() && !field->as_molecular_field()
+						        && dbo.fields.find(field) == dbo.fields.end() && field->has_default_value())
 						{
-							if(!field->has_default_value())
-							{
-								m_log->error() << "Field " << field->get_name()
-								               << " missing when trying to create object"
-								               << " of type " << dcc->get_name() << std::endl;
-								resp.add_uint32(INVALID_DO_ID);
-								send(resp);
-								return;
-							}
-							else
-							{
-								std::string val = field->get_default_value();
-								dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
-								if(!field->has_default_value())
-								{
-									m_log->error() << "Field " << field->get_name() << " missing when trying to create "
-									               "object of type " << dcc->get_name();
-
-									resp.add_uint32(0);
-									send(resp);
-									return;
-								}
-								else
-								{
-									std::string val = field->get_default_value();
-									dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
-								}
-							}
+                            std::string val = field->get_default_value();
+                            dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
 						}
 					}
 
