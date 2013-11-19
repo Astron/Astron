@@ -64,19 +64,6 @@ class DatabaseBaseTests(object):
         dg.add_uint16(0) # Field count
         self.assertTrue(*self.conn.expect(dg)) # Expecting SELECT_RESP with no values
 
-        # Create a stored DistributedTestObject3 missing a required value...
-        dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
-        dg.add_uint32(3) # Context
-        dg.add_uint16(DistributedTestObject3)
-        dg.add_uint16(0) # Field count
-        self.conn.send(dg)
-
-        # Return should be invalid because it is missing a defaultless required field
-        dg = Datagram.create([20], 777, DBSERVER_CREATE_OBJECT_RESP)
-        dg.add_uint32(3) # Context
-        dg.add_uint32(INVALID_DO_ID)
-        self.assertTrue(*self.conn.expect(dg)) # Expecting CREATE_RESP with BAD_DO_ID
-
         # Create a stored DistributedTestObject3 with an actual values...
         dg = Datagram.create([777], 20, DBSERVER_CREATE_OBJECT)
         dg.add_uint32(4) # Context
