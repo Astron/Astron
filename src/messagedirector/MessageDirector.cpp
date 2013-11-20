@@ -101,7 +101,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		recieve_log << "Recievers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
-			channel_t channel = dgi.read_uint64();
+			channel_t channel = dgi.read_channel();
 			recieve_log << channel << ", ";
 			auto &subscriptions = m_channel_subscriptions[channel];
 			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
@@ -132,7 +132,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1 + channels * 8);
+		DatagramIterator msg_dgi(dg, 1 + channels * sizeof(channel_t));
 		try
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
@@ -188,7 +188,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_CHANNEL);
-		dg.add_uint64(c);
+		dg.add_channel(c);
 		network_send(dg);
 	}
 }
@@ -235,7 +235,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 
 		// Send upstream control message
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
-		dg.add_uint64(c);
+		dg.add_channel(c);
 		network_send(dg);
 	}
 }
@@ -269,7 +269,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	if(is_client)
 	{
 		// Check how many intervals along that range are already subscribed
-		uint64_t new_intervals = 0, premade_intervals = 0;
+		channel_t new_intervals = 0, premade_intervals = 0; // use channel_t to match max_channels
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
@@ -288,8 +288,8 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_RANGE);
-		dg.add_uint64(lo);
-		dg.add_uint64(hi);
+		dg.add_channel(lo);
+		dg.add_channel(hi);
 		network_send(dg);
 	}
 }
@@ -381,8 +381,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
-			dg.add_uint64(lo);
-			dg.add_uint64(hi);
+			dg.add_channel(lo);
+			dg.add_channel(hi);
 			network_send(dg);
 		}
 	}
@@ -394,7 +394,7 @@ MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_
 	// Initialize m_range_susbcriptions with empty range
 	auto empty_set = std::set<MDParticipantInterface*>();
 	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
-	m_range_subscriptions += std::make_pair(interval_t::closed(0, ULLONG_MAX), empty_set);
+	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
 }
 
 void MessageDirector::start_accept()

@@ -3,6 +3,13 @@
 
 // Defined types
 typedef uint64_t channel_t;
+typedef uint32_t doid_t;
+typedef uint32_t zone_t;
+
+#define CHANNEL_MAX ((channel_t)(-1))
+#define DOID_MAX ((doid_t)(-1))
+#define ZONE_MAX ((zone_t)(-1))
+#define ZONE_BITS (sizeof(zone_t)*8)
 
 // Channel constants
 #define INVALID_CHANNEL 0
@@ -10,7 +17,11 @@ typedef uint64_t channel_t;
 #define BCHAN_CLIENTS 10
 #define BCHAN_STATESERVERS 12
 #define BCHAN_DBSERVERS 13
-#define PARENT_PREFIX ((channel_t)(1) << 32)
+#define PARENT_PREFIX ((channel_t)(1) << ZONE_BITS)
+
+// Location macros
+#define LOCATION2CHANNEL(p, z) ((channel_t)(p) << ZONE_BITS|(channel_t)(z))
+#define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
 
 // DO ID Constants
 #define INVALID_DO_ID 0
@@ -115,9 +126,6 @@ typedef uint64_t channel_t;
 #define DBSS_OBJECT_DELETE_FIELD_RAM             2230
 #define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
 #define DBSS_OBJECT_DELETE_DISK                  2232
-// Stateserver macros
-#define LOCATION2CHANNEL(p, z) ((channel_t)(p)<<32|(channel_t)(z))
-#define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
 
 // Database Server range
 #define DBSERVER_MSGTYPE_MIN 3000

@@ -4,8 +4,8 @@
 #include "IDatabaseEngine.h"
 
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
-static ConfigVariable<uint32_t> min_id("generate/min", INVALID_DO_ID);
-static ConfigVariable<uint32_t> max_id("generate/max", UINT_MAX);
+static ConfigVariable<doid_t> min_id("generate/min", INVALID_DO_ID);
+static ConfigVariable<doid_t> max_id("generate/max", UINT_MAX);
 static ConfigVariable<std::string> engine_type("engine/type", "yaml");
 
 class DatabaseServer : public Role
@@ -15,7 +15,7 @@ class DatabaseServer : public Role
 		LogCategory *m_log;
 
 		channel_t m_control_channel;
-		uint32_t m_min_id, m_max_id;
+		doid_t m_min_id, m_max_id;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 			m_db_engine(DBEngineFactory::singleton.instantiate(
@@ -47,7 +47,7 @@ class DatabaseServer : public Role
 
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
-			channel_t sender = dgi.read_uint64();
+			channel_t sender = dgi.read_channel();
 			uint16_t msg_type = dgi.read_uint16();
 			switch(msg_type)
 			{
@@ -66,7 +66,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
-						resp.add_uint32(INVALID_DO_ID);
+						resp.add_doid(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
@@ -77,7 +77,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Unpacking fields..." << std::endl;
 					try
 					{
-						for(uint32_t i = 0; i < field_count; ++i)
+						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
 							DCField *field = dcc->get_field_by_index(field_id);
@@ -100,7 +100,7 @@ class DatabaseServer : public Role
 						m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 						               << e.what() << std::endl;
 
-						resp.add_uint32(INVALID_DO_ID);
+						resp.add_doid(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
@@ -120,17 +120,17 @@ class DatabaseServer : public Role
 
 					// Create object in database
 					m_log->trace() << "Creating stored object..." << std::endl;
-					uint32_t do_id = m_db_engine->create_object(dbo);
+					doid_t do_id = m_db_engine->create_object(dbo);
 					if(do_id == INVALID_DO_ID || do_id < m_min_id || do_id > m_max_id)
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
-						resp.add_uint32(INVALID_DO_ID);
+						resp.add_doid(INVALID_DO_ID);
 						send(resp);
 						return;
 					}
 
 					m_log->trace() << "... created with ID: " << do_id << std::endl;
-					resp.add_uint32(do_id);
+					resp.add_doid(do_id);
 					send(resp);
 				}
 				break;
@@ -142,7 +142,7 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
 					resp.add_uint32(context);
 
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 
 					m_log->trace() << "Selecting all from do_id: " << do_id << "... " << std::endl;
 
@@ -171,14 +171,14 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_DELETE:
 				{
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					m_db_engine->delete_object(do_id);
 					m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELD:
 				{
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -197,7 +197,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_SET_FIELDS:
 				{
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -209,7 +209,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Unpacking fields..." << std::endl;
 					try
 					{
-						for(uint32_t i = 0; i < field_count; ++i)
+						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
 							DCField *field = dcc->get_field_by_index(field_id);
@@ -243,7 +243,7 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
 					resp.add_uint32(context);
 
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -287,7 +287,7 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -334,7 +334,7 @@ class DatabaseServer : public Role
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -407,7 +407,7 @@ class DatabaseServer : public Role
 					resp.add_uint32(context);
 
 					// Get object id from datagram
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Reading field from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
@@ -459,7 +459,7 @@ class DatabaseServer : public Role
 					resp.add_uint32(context);
 
 					// Get object id from datagram
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Reading fields from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
@@ -513,7 +513,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_DELETE_FIELD:
 				{
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					DCClass* dcc = m_db_engine->get_class(do_id);
@@ -564,7 +564,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_DELETE_FIELDS:
 				{
-					uint32_t do_id = dgi.read_uint32();
+					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					DCClass* dcc = m_db_engine->get_class(do_id);

@@ -128,9 +128,31 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Initialize configured MessageDirector
 	MessageDirector::singleton.init_network();
 	g_eventsender.init();
 
+	// Load uberdog metadata from configuration
+	YAML::Node udnodes = g_config->copy_node()["uberdogs"];
+	if(!udnodes.IsNull())
+	{
+		for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
+		{
+			YAML::Node udnode = *it;
+			Uberdog ud;
+			ud.dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
+			if(!ud.dcc)
+			{
+				mainlog.fatal() << "DCClass " << udnode["class"].as<std::string>()
+				               << "Does not exist!" << std::endl;
+				exit(1);
+			}
+			ud.anonymous = udnode["anonymous"].as<bool>();
+			g_uberdogs[udnode["id"].as<doid_t>()] = ud;
+		}
+	}
+
+	// Initialize configured roles
 	YAML::Node node = g_config->copy_node();
 	node = node["roles"];
 	for(auto it = node.begin(); it != node.end(); ++it)
@@ -148,12 +170,6 @@ int main(int argc, char *argv[])
 		                << e.what() << std::endl;
 	}
 
-	//gDCF->read("filename.dc");
-
-	// TODO: Load DC, bind/connect MD, and instantiate components.
-
-	// TODO: Run libevent main loop.
-
 	return 0;
 }
 
@@ -169,7 +185,7 @@ void printHelp(std::ostream &s)
 	  << "                (levels): packet, trace, debug, info, warning, security" << std::endl;
 #else
 	  << "                (levels): info, warning, security" << std::endl;
-#endif DEBUG_MESSAGES
+#endif
 
 	s.flush();
 }

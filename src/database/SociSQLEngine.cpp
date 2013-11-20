@@ -13,8 +13,8 @@
 using namespace std;
 using namespace soci;
 
-typedef boost::icl::discrete_interval<uint32_t> interval_t;
-typedef boost::icl::interval_set<uint32_t> set_t;
+typedef boost::icl::discrete_interval<doid_t> interval_t;
+typedef boost::icl::interval_set<doid_t> set_t;
 
 static ConfigVariable<string> engine_type("type", "null");
 static ConfigVariable<string> database_name("database", "null");
@@ -24,7 +24,7 @@ static ConfigVariable<string> session_passwd("password", "null");
 class SociSQLEngine : public IDatabaseEngine
 {
 	public:
-		SociSQLEngine(DBEngineConfig dbeconfig, uint32_t min_id, uint32_t max_id) :
+		SociSQLEngine(DBEngineConfig dbeconfig, doid_t min_id, doid_t max_id) :
 			IDatabaseEngine(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
 			m_backend(engine_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),
@@ -41,7 +41,7 @@ class SociSQLEngine : public IDatabaseEngine
 			check_ids();
 		}
 
-		uint32_t create_object(const DatabaseObject& dbo)
+		doid_t create_object(const DatabaseObject& dbo)
 		{
 			string field_name;
 			vector<uint8_t> field_value;
@@ -78,7 +78,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			return do_id;
 		}
-		void delete_object(uint32_t do_id)
+		void delete_object(doid_t do_id)
 		{
 			bool storable = false;
 			DCClass* dcc = get_class(do_id);
@@ -100,7 +100,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			push_id(do_id);
 		}
-		bool get_object(uint32_t do_id, DatabaseObject& dbo)
+		bool get_object(doid_t do_id, DatabaseObject& dbo)
 		{
 			m_log->trace() << "Getting object with id" << do_id << endl;
 
@@ -120,7 +120,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			return true;
 		}
-		DCClass* get_class(uint32_t do_id)
+		DCClass* get_class(doid_t do_id)
 		{
 			int dc_id = -1;
 			indicator ind;
@@ -141,7 +141,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			return g_dcf->get_class(dc_id);
 		}
-		void del_field(uint32_t do_id, DCField* field)
+		void del_field(doid_t do_id, DCField* field)
 		{
 			DCClass *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_number());
@@ -153,7 +153,7 @@ class SociSQLEngine : public IDatabaseEngine
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void del_fields(uint32_t do_id, const vector<DCField*> &fields)
+		void del_fields(doid_t do_id, const vector<DCField*> &fields)
 		{
 			DCClass *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_number());
@@ -163,7 +163,7 @@ class SociSQLEngine : public IDatabaseEngine
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void set_field(uint32_t do_id, DCField* field, const vector<uint8_t> &value)
+		void set_field(doid_t do_id, DCField* field, const vector<uint8_t> &value)
 		{
 			DCClass *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_number());
@@ -184,7 +184,7 @@ class SociSQLEngine : public IDatabaseEngine
 				}
 			}
 		}
-		void set_fields(uint32_t do_id, const map<DCField*, vector<uint8_t> > &fields)
+		void set_fields(doid_t do_id, const map<DCField*, vector<uint8_t> > &fields)
 		{
 			DCClass *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_number());
@@ -203,7 +203,7 @@ class SociSQLEngine : public IDatabaseEngine
 				}
 			}
 		}
-		bool set_field_if_empty(uint32_t do_id, DCField* field, vector<uint8_t> &value)
+		bool set_field_if_empty(doid_t do_id, DCField* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);
@@ -243,7 +243,7 @@ class SociSQLEngine : public IDatabaseEngine
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_empty(uint32_t do_id, map<DCField*, vector<uint8_t> > &values)
+		bool set_fields_if_empty(doid_t do_id, map<DCField*, vector<uint8_t> > &values)
 		{
 			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);
@@ -304,7 +304,7 @@ class SociSQLEngine : public IDatabaseEngine
 				return false;
 			}
 		}
-		bool set_field_if_equals(uint32_t do_id, DCField* field, const vector<uint8_t> &equal,
+		bool set_field_if_equals(doid_t do_id, DCField* field, const vector<uint8_t> &equal,
 		                         vector<uint8_t> &value)
 		{
 			// Get class from the objects table
@@ -350,7 +350,7 @@ class SociSQLEngine : public IDatabaseEngine
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_equals(uint32_t do_id, const map<DCField*, vector<uint8_t> > &equals,
+		bool set_fields_if_equals(doid_t do_id, const map<DCField*, vector<uint8_t> > &equals,
 		                          map<DCField*, vector<uint8_t> > &values)
 		{
 			// Get class from the objects table
@@ -429,7 +429,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 
-		bool get_field(uint32_t do_id, const DCField* field, vector<uint8_t> &value)
+		bool get_field(doid_t do_id, const DCField* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			DCClass* dcc = get_class(do_id);
@@ -460,7 +460,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			return true;
 		}
-		bool get_fields(uint32_t do_id, const vector<DCField*> &fields,
+		bool get_fields(doid_t do_id, const vector<DCField*> &fields,
 		                map<DCField*, vector<uint8_t> > &values)
 		{
 			// Get class from the objects table
@@ -559,7 +559,7 @@ class SociSQLEngine : public IDatabaseEngine
 			m_free_ids = set_t();
 			m_free_ids += interval_t::closed(m_min_id, m_max_id);
 
-			uint32_t id;
+			doid_t id;
 
 			// Get all ids from the database at once
 			statement st = (m_sql.prepare << "SELECT id FROM objects;", into(id));
@@ -572,7 +572,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 
-		uint32_t pop_next_id()
+		doid_t pop_next_id()
 		{
 			// Check to make sure any free ids exist
 			if(!m_free_ids.size())
@@ -582,7 +582,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			// Get next available id from m_free_ids set
 			interval_t first = *m_free_ids.begin();
-			uint32_t id = first.lower();
+			doid_t id = first.lower();
 			if(!(first.bounds().bits() & BOOST_BINARY(10)))
 			{
 				id += 1;
@@ -600,12 +600,12 @@ class SociSQLEngine : public IDatabaseEngine
 			return id;
 		}
 
-		void push_id(uint32_t id)
+		void push_id(doid_t id)
 		{
 			m_free_ids += interval_t::closed(id, id);
 		}
 	private:
-		uint32_t m_min_id, m_max_id;
+		doid_t m_min_id, m_max_id;
 		string m_backend, m_db_name;
 		string m_sess_user, m_sess_passwd;
 		session m_sql;
@@ -682,7 +682,7 @@ class SociSQLEngine : public IDatabaseEngine
 			return storable;
 		}
 
-		void get_all_from_table(uint32_t id, DCClass* dcc, map<DCField*, vector<uint8_t> > &fields)
+		void get_all_from_table(doid_t id, DCClass* dcc, map<DCField*, vector<uint8_t> > &fields)
 		{
 			string value;
 			indicator ind;
@@ -703,7 +703,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 
-		void get_fields_from_table(uint32_t id, DCClass* dcc, const vector<DCField*> &fields,
+		void get_fields_from_table(doid_t id, DCClass* dcc, const vector<DCField*> &fields,
 		                           map<DCField*, vector<uint8_t> > &values)
 		{
 			string value;
@@ -725,7 +725,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 
-		void set_fields_in_table(uint32_t id, DCClass* dcc, const map<DCField*, vector<uint8_t> > &fields)
+		void set_fields_in_table(doid_t id, DCClass* dcc, const map<DCField*, vector<uint8_t> > &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
@@ -743,7 +743,7 @@ class SociSQLEngine : public IDatabaseEngine
 			}
 		}
 
-		void del_fields_in_table(uint32_t id, DCClass* dcc, const vector<DCField*> &fields)
+		void del_fields_in_table(doid_t id, DCClass* dcc, const vector<DCField*> &fields)
 		{
 			string name;
 			for(auto it = fields.begin(); it != fields.end(); ++it)

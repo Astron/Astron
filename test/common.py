@@ -54,6 +54,8 @@ DATATYPES = {
 }
 
 CONSTANTS = {
+    # Size types
+
     # Reserved Values
     'INVALID_DO_ID': 0,
     'INVALID_ZONE': 0,
@@ -210,6 +212,11 @@ CONSTANTS = {
     'CLIENT_STATE_ANONYMOUS': 1,
     'CLIENT_STATE_ESTABLISHED': 2,
 }
+
+if 'USE_32BIT_DATAGRAMS' in os.environ:
+    CONSTANTS['DGSIZE_MAX'] = (1 << 32) - 1
+else:
+    CONSTANTS['DGSIZE_MAX'] = (1 << 16) - 1
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
@@ -398,7 +405,10 @@ class MDConnection(object):
 
     def send(self, datagram):
         data = datagram.get_data()
-        msg = struct.pack('<H', len(data)) + data
+        if 'USE_32BIT_DATAGRAMS' in os.environ:
+            msg = struct.pack('<I', len(data)) + data
+        else:
+            msg = struct.pack('<H', len(data)) + data
         self.s.send(msg)
 
     def recv(self):
@@ -416,13 +426,18 @@ class MDConnection(object):
     def _read(self):
         try:
             length = 2
+            if 'USE_32BIT_DATAGRAMS' in os.environ:
+                length = 4
             result = ''
             while len(result) < length:
                 data = self.s.recv(length - len(result))
                 if data == '':
                     raise EOFError('Remote socket closed connection')
                 result += data
-            length = struct.unpack('<H', result)[0]
+            if 'USE_32BIT_DATAGRAMS' in os.environ:
+                length = struct.unpack('<I', result)[0]
+            else:
+                length = struct.unpack('<H', result)[0]
         except socket.error:
             return None
 

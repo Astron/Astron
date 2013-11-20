@@ -48,7 +48,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	set (CMAKE_CXX_FLAGS "-pthread")
 endif()
 
-
 ### YAML Depedency -- required by config, used by yaml database ###
 set (YAMLCPP_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
 find_package (YamlCpp)
@@ -244,6 +243,11 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientFactory.h
 		src/clientagent/AstronClient.cpp
 	)
+endif()
+
+set (USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, Datagrams will use 32-bit length tags instead of 16-bit.")
+if (USE_32BIT_DATAGRAMS)
+	add_definitions(-DASTRON_32BIT_DATAGRAMS)
 endif()
 
 include_directories (src)

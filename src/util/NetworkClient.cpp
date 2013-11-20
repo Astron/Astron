@@ -55,7 +55,7 @@ void NetworkClient::start_receive()
 		}
 		else // Read length
 		{
-			async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
+			async_read(*m_socket, boost::asio::buffer(m_size_buf, sizeof(dgsize_t)),
 			           boost::bind(&NetworkClient::handle_size, this,
 			           boost::asio::placeholders::error,
 			           boost::asio::placeholders::bytes_transferred));
@@ -72,13 +72,13 @@ void NetworkClient::start_receive()
 void NetworkClient::network_send(Datagram &dg)
 {
 	//TODO: make this asynch if necessary
-	uint16_t len = dg.size();
+	dgsize_t len = dg.size();
 	try
 	{
 		m_socket->non_blocking(true);
 		m_socket->native_non_blocking(true);
 		std::list<boost::asio::const_buffer> gather;
-		gather.push_back(boost::asio::buffer((uint8_t*)&len, 2));
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
 		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
 		m_socket->send(gather);
 	}
@@ -103,8 +103,8 @@ void NetworkClient::handle_size(const boost::system::error_code &ec, size_t byte
 		return;
 	}
 
-	uint16_t old_size = m_data_size;
-	m_data_size = *(uint16_t*)m_size_buf;
+	dgsize_t old_size = m_data_size;
+	m_data_size = *(dgsize_t*)m_size_buf;
 	if(m_data_size > old_size)
 	{
 		delete [] m_data_buf;

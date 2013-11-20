@@ -26,7 +26,7 @@ class DBStateServer : public StateServer
 
 	private:
 		channel_t m_db_channel; // database control channel
-		std::unordered_map<uint32_t, LoadingObject*> m_loading; // loading but not active objects
+		std::unordered_map<doid_t, LoadingObject*> m_loading; // loading but not active objects
 
 		// m_next_context is the next context to send to the db. Invariant: always post-increment.
 		uint32_t m_next_context;
@@ -35,7 +35,7 @@ class DBStateServer : public StateServer
 		// dbss is waiting on the db.
 		std::unordered_map<uint32_t, Datagram> m_context_datagrams;
 
-		std::unordered_map<uint32_t, std::unordered_set<uint32_t> > m_inactive_loads;
+		std::unordered_map<doid_t, std::unordered_set<uint32_t> > m_inactive_loads;
 
 		// handle_activate parses any DBSS_ACTIVATE_* message and spawns a LoadingObject to handle it.
 		void handle_activate(DatagramIterator &dgi, bool has_other);
@@ -45,5 +45,5 @@ class DBStateServer : public StateServer
 		void receive_object(DistributedObject* obj);
 		// discard_loader tells the dbss to forget about a LoadingObject, either
 		// because the object finished loading, or because the object failed to load.
-		void discard_loader(uint32_t do_id);
+		void discard_loader(doid_t do_id);
 };

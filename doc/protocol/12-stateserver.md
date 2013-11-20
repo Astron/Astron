@@ -268,15 +268,15 @@ These messages are sent to a single parent object to interact with its children.
 **STATESERVER_OBJECT_GET_ZONE_COUNT(2110)**  
     `args(uint32 context, uint32 parent_id, uint32 zone_id)`  
 **STATESERVER_OBJECT_GET_ZONE_COUNT_RESP(2111)**  
-    `args(uint32 context, uint32 count)`  
+    `args(uint32 context, uint32 object_count)` // when using uint64 ids, `object_count` is uint64.  
 **STATESERVER_OBJECT_GET_ZONES_COUNT(2112)**  
     `args(uint32 context, uint32 parent_id, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 **STATESERVER_OBJECT_GET_ZONES_COUNT_RESP(2113)**  
-    `args(uint32 context, uint32 count)`  
+    `args(uint32 context, uint32 object_count)` // when using uint64 ids, `object_count` is uint64.  
 **STATESERVER_OBJECT_GET_CHILD_COUNT(2114)**  
     `args(uint32 context, uint32 parent_id)`  
 **STATESERVER_OBJECT_GET_CHILD_COUNT_RESP(2115)**  
-    `args(uint32 context, uint32 count)`  
+    `args(uint32 context, uint32 object_count)` // when using uint64 ids, `object_count` is uint64.  
 > Get the number of children objects in one or more of a single object's zones.
 
 
