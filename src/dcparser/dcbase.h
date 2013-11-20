@@ -121,9 +121,9 @@ typedef uint16_t length_tag_t;
 // TODO: Channels, doids, and zones should not exist in the dcparser! The code that uses these
 // belongs in another module (for example, within the CMU code, etc....)
 //typedef       unsigned long   CHANNEL_TYPE;
-typedef       uint64_t   CHANNEL_TYPE;
-typedef       uint32_t   DOID_TYPE;
-typedef       uint32_t   ZONEID_TYPE;
+typedef uint64_t CHANNEL_TYPE;
+typedef uint32_t DOID_TYPE;
+typedef uint32_t ZONEID_TYPE;
 
 
 

@@ -245,7 +245,7 @@ if(BUILD_CLIENTAGENT)
 	)
 endif()
 
-set (USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, Datagrams will use 32-bit length tags instead of 16-bit.")
+set (USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if (USE_32BIT_DATAGRAMS)
 	add_definitions(-DASTRON_32BIT_DATAGRAMS)
 	add_definitions(-DDCPARSER_32BIT_LENGTH_TAG)

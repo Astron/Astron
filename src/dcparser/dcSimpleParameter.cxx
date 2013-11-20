@@ -39,7 +39,7 @@ DCSimpleParameter(DCSubatomicType type, unsigned int divisor) :
   _nested_type = ST_invalid;
   _has_nested_fields = false;
   _bytes_per_element = 0;
-  _num_length_bytes = 2;
+  _num_length_bytes = sizeof(length_tag_t);
 
   // Check for one of the built-in array types.  For these types, we
   // must present a packing interface that has a variable number of
@@ -557,8 +557,8 @@ set_range(const DCDoubleRange &range) {
     for (i = 0; i < num_ranges; i++) {
       uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
       uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
-      validate_uint64_limits(min, 16, range_error);
-      validate_uint64_limits(max, 16, range_error);
+      validate_uint64_limits(min, sizeof(length_tag_t)*8, range_error);
+      validate_uint64_limits(max, sizeof(length_tag_t)*8, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
     }
     if (_uint_range.has_one_value()) {
@@ -569,7 +569,7 @@ set_range(const DCDoubleRange &range) {
       _fixed_byte_size = _uint_range.get_one_value();
       _has_fixed_structure = true;
     } else {
-      _num_length_bytes = 2;
+      _num_length_bytes = sizeof(length_tag_t);
       _has_fixed_byte_size = false;
       _has_fixed_structure = false;
     }
@@ -1114,9 +1114,9 @@ pack_string(DCPackData &pack_data, const string &value,
   case ST_string:
   case ST_blob:
     _uint_range.validate(string_length, range_error);
-    validate_uint_limits(string_length, 16, range_error);
+    validate_uint_limits(string_length, sizeof(length_tag_t)*8, range_error);
     if (_num_length_bytes != 0) {
-      do_pack_uint16(pack_data.get_write_pointer(2), string_length);
+      do_pack_length_tag(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
     }
     pack_data.append_data(value.data(), string_length);
     break;
@@ -1988,12 +1988,12 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
     switch (_type) {
     case ST_string:
     case ST_blob:
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         pack_error = true;
         return;
       }
-      string_length = do_unpack_uint16(data + p);
-      p += 2;
+      string_length = do_unpack_length_tag(data + p);
+      p += sizeof(length_tag_t);
       break;
 
     case ST_blob32:
@@ -2154,13 +2154,13 @@ unpack_validate(const char *data, size_t length, size_t &p,
       p += _fixed_byte_size;
 
     } else {
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         pack_error = true;
         return true;
       }
-      size_t string_length = do_unpack_uint16(data + p);
+      size_t string_length = do_unpack_length_tag(data + p);
       _uint_range.validate(string_length, range_error);
-      p += 2 + string_length;
+      p += sizeof(length_tag_t) + string_length;
     }
     break;
 
@@ -2228,11 +2228,11 @@ unpack_skip(const char *data, size_t length, size_t &p,
       p += _fixed_byte_size;
 
     } else {
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         return false;
       }
-      string_length = do_unpack_uint16(data + p);
-      p += 2 + string_length;
+      string_length = do_unpack_length_tag(data + p);
+      p += sizeof(length_tag_t) + string_length;
     }
     break;
 
