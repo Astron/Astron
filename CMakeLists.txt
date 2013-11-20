@@ -32,7 +32,7 @@ endif()
 
 
 ### Debug Flags -- compile in spam/debug log messages ###
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG_MESSAGES")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 
 ### OS Specific Settings ###

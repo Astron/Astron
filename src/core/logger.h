@@ -111,8 +111,7 @@ class LogCategory
 		return out; \
 	}
 
-
-#ifdef DEBUG_MESSAGES
+#ifdef ASTRON_DEBUG_MESSAGES
         F(packet, LSEVERITY_PACKET)
 		F(trace, LSEVERITY_TRACE)
 		F(debug, LSEVERITY_DEBUG)
