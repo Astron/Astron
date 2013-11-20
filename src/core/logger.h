@@ -112,19 +112,15 @@ class LogCategory
 	}
 
 
-#ifdef PACKET_DEBUG
-    F(packet, LSEVERITY_PACKET)
-#else
-    inline NullStream &packet()
-    {
-        return null_stream;
-    }
-#endif
-
 #ifdef DEBUG_MESSAGES
+        F(packet, LSEVERITY_PACKET)
 		F(trace, LSEVERITY_TRACE)
 		F(debug, LSEVERITY_DEBUG)
 #else
+        inline NullStream &packet()
+        {
+            return null_stream;
+        }
 		inline NullStream &trace()
 		{
 			return null_stream;
