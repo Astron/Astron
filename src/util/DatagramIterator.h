@@ -1,9 +1,6 @@
 #pragma once
 #include "Datagram.h"
 #include "dcparser/dcClass.h"
-#include <exception>
-#include <stdexcept>
-#include <sstream>
 
 #ifdef _DEBUG
 #include <fstream>
