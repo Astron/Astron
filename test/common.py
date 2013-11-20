@@ -216,11 +216,9 @@ CONSTANTS = {
 if 'USE_32BIT_DATAGRAMS' in os.environ:
     DATATYPES['size'] = '<I'
     CONSTANTS['DGSIZE_MAX'] = (1 << 32) - 1
-    CONSTANTS['DGSIZE_SIZE_BYTES'] = 4
 else:
     DATATYPES['size'] = '<H'
     CONSTANTS['DGSIZE_MAX'] = (1 << 16) - 1
-    CONSTANTS['DGSIZE_SIZE_BYTES'] = 2
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
