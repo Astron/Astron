@@ -238,7 +238,10 @@ class Datagram(object):
         self._data += data
 
     def add_string(self, string):
-        self.add_uint16(len(string))
+        if 'USE_32BIT_DATAGRAMS' in os.environ:
+            self.add_uint32(len(string))
+        else:
+            self.add_uint16(len(string))
         self.add_raw(string)
 
     def get_data(self):
@@ -385,7 +388,11 @@ class DatagramIterator(object):
         return struct.unpack("<Q", self._data[self._offset-8:self._offset])[0]
 
     def read_string(self):
-        length = self.read_uint16()
+        length = 0
+        if 'USE_32BIT_DATAGRAMS' in os.environ:
+            length = self.read_uint32()
+        else:
+            length = self.read_uint16()
         self._offset += length
         if self._offset > len(self._data):
             raise EOFError('End of Datagram')

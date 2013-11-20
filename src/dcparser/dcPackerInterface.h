@@ -113,9 +113,9 @@ class EXPCL_DIRECT DCPackerInterface
 		                      bool &pack_error, bool &range_error) const;
 		virtual void pack_uint(DCPackData &pack_data, unsigned int value,
 		                       bool &pack_error, bool &range_error) const;
-		virtual void pack_int64(DCPackData &pack_data, PN_int64 value,
+		virtual void pack_int64(DCPackData &pack_data, int64_t value,
 		                        bool &pack_error, bool &range_error) const;
-		virtual void pack_uint64(DCPackData &pack_data, PN_uint64 value,
+		virtual void pack_uint64(DCPackData &pack_data, uint64_t value,
 		                         bool &pack_error, bool &range_error) const;
 		virtual void pack_string(DCPackData &pack_data, const string &value,
 		                         bool &pack_error, bool &range_error) const;
@@ -128,9 +128,9 @@ class EXPCL_DIRECT DCPackerInterface
 		virtual void unpack_uint(const char *data, size_t length, size_t &p,
 		                         unsigned int &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_int64(const char *data, size_t length, size_t &p,
-		                          PN_int64 &value, bool &pack_error, bool &range_error) const;
+		                          int64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_uint64(const char *data, size_t length, size_t &p,
-		                           PN_uint64 &value, bool &pack_error, bool &range_error) const;
+		                           uint64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_string(const char *data, size_t length, size_t &p,
 		                           string &value, bool &pack_error, bool &range_error) const;
 		virtual bool unpack_validate(const char *data, size_t length, size_t &p,
@@ -141,33 +141,35 @@ class EXPCL_DIRECT DCPackerInterface
 		// These are the low-level interfaces for packing and unpacking
 		// numbers from a buffer.  You're responsible for making sure the
 		// buffer has enough room, and for incrementing the pointer.
-		INLINE static void do_pack_int8(char *buffer, int value);
-		INLINE static void do_pack_int16(char *buffer, int value);
-		INLINE static void do_pack_int32(char *buffer, int value);
-		INLINE static void do_pack_int64(char *buffer, PN_int64 value);
-		INLINE static void do_pack_uint8(char *buffer, unsigned int value);
-		INLINE static void do_pack_uint16(char *buffer, unsigned int value);
-		INLINE static void do_pack_uint32(char *buffer, unsigned int value);
-		INLINE static void do_pack_uint64(char *buffer, PN_uint64 value);
+		INLINE static void do_pack_int8(char *buffer, int8_t value);
+		INLINE static void do_pack_int16(char *buffer, int16_t value);
+		INLINE static void do_pack_int32(char *buffer, int32_t value);
+		INLINE static void do_pack_int64(char *buffer, int64_t value);
+		INLINE static void do_pack_uint8(char *buffer, uint8_t value);
+		INLINE static void do_pack_uint16(char *buffer, uint16_t value);
+		INLINE static void do_pack_uint32(char *buffer, uint32_t value);
+		INLINE static void do_pack_uint64(char *buffer, uint64_t value);
 		INLINE static void do_pack_float64(char *buffer, double value);
+		INLINE static void do_pack_length_tag(char* buffer, length_tag_t value);
 
-		INLINE static int do_unpack_int8(const char *buffer);
-		INLINE static int do_unpack_int16(const char *buffer);
-		INLINE static int do_unpack_int32(const char *buffer);
-		INLINE static PN_int64 do_unpack_int64(const char *buffer);
-		INLINE static unsigned int do_unpack_uint8(const char *buffer);
-		INLINE static unsigned int do_unpack_uint16(const char *buffer);
-		INLINE static unsigned int do_unpack_uint32(const char *buffer);
-		INLINE static PN_uint64 do_unpack_uint64(const char *buffer);
+		INLINE static int8_t do_unpack_int8(const char *buffer);
+		INLINE static int16_t do_unpack_int16(const char *buffer);
+		INLINE static int32_t do_unpack_int32(const char *buffer);
+		INLINE static int64_t do_unpack_int64(const char *buffer);
+		INLINE static uint8_t do_unpack_uint8(const char *buffer);
+		INLINE static uint16_t do_unpack_uint16(const char *buffer);
+		INLINE static uint32_t do_unpack_uint32(const char *buffer);
+		INLINE static uint64_t do_unpack_uint64(const char *buffer);
 		INLINE static double do_unpack_float64(const char *buffer);
+		INLINE static length_tag_t do_unpack_length_tag(const char* buffer);
 
 		INLINE static void validate_int_limits(int value, int num_bits,
 		                                       bool &range_error);
-		INLINE static void validate_int64_limits(PN_int64 value, int num_bits,
+		INLINE static void validate_int64_limits(int64_t value, int num_bits,
 		        bool &range_error);
 		INLINE static void validate_uint_limits(unsigned int value, int num_bits,
 		                                        bool &range_error);
-		INLINE static void validate_uint64_limits(PN_uint64 value, int num_bits,
+		INLINE static void validate_uint64_limits(uint64_t value, int num_bits,
 		        bool &range_error);
 
 		const DCPackerCatalog *get_catalog() const;
