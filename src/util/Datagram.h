@@ -145,6 +145,13 @@ class Datagram
 			buf_end += 4;
 		}
 
+		void add_size(const dgsize_t &v)
+		{
+			check_add_length(sizeof(dgsize_t));
+			memcpy(buf + buf_end, &v, sizeof(dgsize_t));
+			buf_end += sizeof(dgsize_t);
+		}
+
 		void add_channel(const channel_t &v)
 		{
 			check_add_length(sizeof(channel_t));
@@ -207,7 +214,7 @@ class Datagram
 
 		void add_string(const std::string &str)
 		{
-			add_uint16(str.length());
+			add_size(str.length());
 			check_add_length(str.length());
 			memcpy(buf + buf_end, str.c_str(), str.length());
 			buf_end += str.length();
@@ -215,14 +222,14 @@ class Datagram
 
 		void add_blob(const std::vector<uint8_t> &blob)
 		{
-			add_uint16(blob.size());
+			add_size(blob.size());
 			check_add_length(blob.size());
 			memcpy(buf + buf_end, &blob[0], blob.size());
 			buf_end += blob.size();
 		}
 
 		void add_blob(uint8_t* data, uint16_t length) {
-			add_uint16(length);
+			add_size(length);
 			check_add_length(length);
 			memcpy(buf + buf_end, data, length);
 			buf_end += length;

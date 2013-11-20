@@ -75,6 +75,14 @@ class DatagramIterator
 			return r;
 		}
 
+		dgsize_t read_size()
+		{
+			check_read_length(sizeof(dgsize_t));
+			dgsize_t r = *(dgsize_t*)(m_dg.get_data() + m_offset);
+			m_offset += sizeof(dgsize_t);
+			return r;
+		}
+
 		channel_t read_channel()
 		{
 			check_read_length(sizeof(channel_t));
@@ -119,7 +127,7 @@ class DatagramIterator
 		//     {uint16 length; char[length] characters}.
 		std::string read_string()
 		{
-			uint16_t length = read_uint16();
+			dgsize_t length = read_size();
 			check_read_length(length);
 			std::string str((char*)(m_dg.get_data() + m_offset), length);
 			m_offset += length;
@@ -130,7 +138,7 @@ class DatagramIterator
 		//     {uint16 length; uint8[length] binary}.
 		std::vector<uint8_t> read_blob()
 		{
-			uint16_t length = read_uint16();
+			dgsize_t length = read_size();
 			return read_data(length);
 		}
 
@@ -140,18 +148,7 @@ class DatagramIterator
 		// looks exactly the same as a nested datagram.
 		std::vector<uint8_t> read_datagram()
 		{
-			// NOTE: datagrams are stored in other datagrams as blobs (which always have 16-bit size)
-			// therefore it is a temporary limitation of astron that the max post-remove size is 16-bit,
-            // even if you are using 32-bit datagram mode.
-			// TODO: Address this problem in either the protocol or  and document
-
-			/*
-			check_read_length(sizeof(dgsize_t));
-			dgsize_t length = *(dgsize_t*)(m_dg.get_data() + m_offset);
-			m_offset += sizeof(dgsize_t);
-			*/
-
-			uint16_t length = read_uint16();
+			dgsize_t length = read_size();
 			return read_data(length);
 		}
 
@@ -291,7 +288,7 @@ class DatagramIterator
 		//     datagram is not the msg_type. If stepping through a fresh datagram, use read_uint16().
 		uint16_t get_msg_type()
 		{
-			uint16_t offset = m_offset; // save offset
+			dgsize_t offset = m_offset; // save offset
 
 			m_offset = 9 + get_recipient_count() * sizeof(channel_t); // seek message type
 			uint16_t msg_type = read_uint16(); // read message type
