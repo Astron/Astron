@@ -214,9 +214,13 @@ CONSTANTS = {
 }
 
 if 'USE_32BIT_DATAGRAMS' in os.environ:
+    DATATYPES['size'] = '<I'
     CONSTANTS['DGSIZE_MAX'] = (1 << 32) - 1
+    CONSTANTS['DGSIZE_SIZE_BYTES'] = 4
 else:
+    DATATYPES['size'] = '<H'
     CONSTANTS['DGSIZE_MAX'] = (1 << 16) - 1
+    CONSTANTS['DGSIZE_SIZE_BYTES'] = 2
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
@@ -238,10 +242,7 @@ class Datagram(object):
         self._data += data
 
     def add_string(self, string):
-        if 'USE_32BIT_DATAGRAMS' in os.environ:
-            self.add_uint32(len(string))
-        else:
-            self.add_uint16(len(string))
+        self.add_size(len(string))
         self.add_raw(string)
 
     def get_data(self):
@@ -341,6 +342,23 @@ class DatagramIterator(object):
         self._data = datagram.get_data()
         self._offset = offset
 
+        def make_reader(v):
+            def reader():
+                return self.read_format(v)
+            return reader
+
+        for k,v in DATATYPES.items():
+            reader = make_reader(v)
+            setattr(self, 'read_' + k, reader)
+
+    def read_format(self, f):
+        offset = struct.calcsize(f)
+        self._offset += offset
+        if self._offset > len(self._data):
+            raise EOFError('End of Datagram')
+
+        return struct.unpack(f, self._data[self._offset-offset:self._offset])[0]
+
     def matches_header(self, recipients, sender, msgtype, remaining=-1):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
@@ -359,40 +377,8 @@ class DatagramIterator(object):
 
         return True
 
-    def read_uint8(self):
-        self._offset += 1
-        if self._offset > len(self._data):
-            raise EOFError('End of Datagram')
-
-        return struct.unpack("<B", self._data[self._offset-1:self._offset])[0]
-
-    def read_uint16(self):
-        self._offset += 2
-        if self._offset > len(self._data):
-            raise EOFError('End of Datagram')
-
-        return struct.unpack("<H", self._data[self._offset-2:self._offset])[0]
-
-    def read_uint32(self):
-        self._offset += 4
-        if self._offset > len(self._data):
-            raise EOFError('End of Datagram')
-
-        return struct.unpack("<I", self._data[self._offset-4:self._offset])[0]
-
-    def read_uint64(self):
-        self._offset += 8
-        if self._offset > len(self._data):
-            raise EOFError('End of Datagram')
-
-        return struct.unpack("<Q", self._data[self._offset-8:self._offset])[0]
-
     def read_string(self):
-        length = 0
-        if 'USE_32BIT_DATAGRAMS' in os.environ:
-            length = self.read_uint32()
-        else:
-            length = self.read_uint16()
+        length = self.read_size()
         self._offset += length
         if self._offset > len(self._data):
             raise EOFError('End of Datagram')
@@ -412,10 +398,7 @@ class MDConnection(object):
 
     def send(self, datagram):
         data = datagram.get_data()
-        if 'USE_32BIT_DATAGRAMS' in os.environ:
-            msg = struct.pack('<I', len(data)) + data
-        else:
-            msg = struct.pack('<H', len(data)) + data
+        msg = struct.pack(DATATYPES['size'], len(data)) + data
         self.s.send(msg)
 
     def recv(self):

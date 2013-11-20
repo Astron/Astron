@@ -101,6 +101,7 @@ class TestStateServer(unittest.TestCase):
                 dg = parent.recv_maybe()
                 self.assertTrue(dg is not None, msg="Parent did not receive ChangingLocation and/or GetAI")
                 dgi = DatagramIterator(dg)
+                msgtype = dgi.read_uint16()
                 # The object should tell the parent its arriving...
                 if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
                     received = True
