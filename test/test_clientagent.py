@@ -409,6 +409,12 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
 
+        # TODO: Change protocol to address max field sizes
+        # Write now with 32 bit mode, an oversized field size cannot occur, but we probably want to
+        # support 32-bit field sizes as well.
+        if 'USE_32BIT_DATAGRAMS' in os.environ:
+            return
+
         # Send an oversized field update:
         client = self.connect()
         dg = Datagram()
