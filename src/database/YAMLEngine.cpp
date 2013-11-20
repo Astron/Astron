@@ -116,6 +116,23 @@ class YAMLEngine : public IDatabaseEngine
 
 		std::vector<uint8_t> read_yaml_field(const DCField* field, YAML::Node node)
 		{
+			// NOTE: This is a hack to get strings to work w/ 32-bit DGs until the DCParser can be
+			//       fixed/cleaned-up/rewritten and properly supports parse_string() for 32-bit DGs.
+		#ifdef ASTRON_32BIT_DATAGRAMS
+			const DCAtomicField* atomic = field->as_atomic_field();
+			if(atomic)
+			{
+				if(atomic->get_num_elements() == 1 && atomic->get_element_type(0) == ST_string)
+				{
+					std::string str = node.as<std::string>();
+					str = str.substr(2, str.length()-4);
+					Datagram dg;
+					dg.add_string(str);
+					return std::vector<uint8_t>(dg.get_data(), dg.get_data()+dg.size());
+				}
+			}
+		#endif
+
 			std::string packed_data = const_cast<DCField*>(field)->parse_string(node.as<std::string>());
 			std::vector<uint8_t> result(packed_data.begin(), packed_data.end());
 			return result;
