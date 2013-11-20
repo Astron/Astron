@@ -421,7 +421,8 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_uint32(1234)
         dg.add_uint16(request)
-        dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-2)) # This will fit inside the client dg, but be too big for the server.
+        # This will fit inside the client dg, but be too big for the server.
+        dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-DGSIZE_SIZE_BYTES))
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
 
