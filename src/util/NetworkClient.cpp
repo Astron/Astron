@@ -55,7 +55,7 @@ void NetworkClient::start_receive()
 		}
 		else // Read length
 		{
-			async_read(*m_socket, boost::asio::buffer(m_size_buf, 2),
+			async_read(*m_socket, boost::asio::buffer(m_size_buf, sizeof(dgsize_t)),
 			           boost::bind(&NetworkClient::handle_size, this,
 			           boost::asio::placeholders::error,
 			           boost::asio::placeholders::bytes_transferred));
@@ -78,7 +78,7 @@ void NetworkClient::network_send(Datagram &dg)
 		m_socket->non_blocking(true);
 		m_socket->native_non_blocking(true);
 		std::list<boost::asio::const_buffer> gather;
-		gather.push_back(boost::asio::buffer((uint8_t*)&len, 2));
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
 		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
 		m_socket->send(gather);
 	}
