@@ -214,9 +214,9 @@ CONSTANTS = {
 }
 
 if 'USE_32BIT_DATAGRAMS' in os.environ:
-    CONSTANTS['DGSIZE_MAX'] = 1 << 32
+    CONSTANTS['DGSIZE_MAX'] = (1 << 32) - 1
 else:
-    CONSTANTS['DGSIZE_MAX'] = 1 << 16
+    CONSTANTS['DGSIZE_MAX'] = (1 << 16) - 1
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
