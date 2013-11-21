@@ -61,9 +61,9 @@ class EXPCL_DIRECT DCSimpleParameter : public DCParameter
 		                      bool &pack_error, bool &range_error) const;
 		virtual void pack_uint(DCPackData &pack_data, unsigned int value,
 		                       bool &pack_error, bool &range_error) const;
-		virtual void pack_int64(DCPackData &pack_data, PN_int64 value,
+		virtual void pack_int64(DCPackData &pack_data, int64_t value,
 		                        bool &pack_error, bool &range_error) const;
-		virtual void pack_uint64(DCPackData &pack_data, PN_uint64 value,
+		virtual void pack_uint64(DCPackData &pack_data, uint64_t value,
 		                         bool &pack_error, bool &range_error) const;
 		virtual void pack_string(DCPackData &pack_data, const string &value,
 		                         bool &pack_error, bool &range_error) const;
@@ -76,9 +76,9 @@ class EXPCL_DIRECT DCSimpleParameter : public DCParameter
 		virtual void unpack_uint(const char *data, size_t length, size_t &p,
 		                         unsigned int &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_int64(const char *data, size_t length, size_t &p,
-		                          PN_int64 &value, bool &pack_error, bool &range_error) const;
+		                          int64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_uint64(const char *data, size_t length, size_t &p,
-		                           PN_uint64 &value, bool &pack_error, bool &range_error) const;
+		                           uint64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_string(const char *data, size_t length, size_t &p,
 		                           string &value, bool &pack_error, bool &range_error) const;
 		virtual bool unpack_validate(const char *data, size_t length, size_t &p,
@@ -131,7 +131,7 @@ class EXPCL_DIRECT DCSimpleParameter : public DCParameter
 		// All of these modulus values will be filled in, regardless of the
 		// type.
 		unsigned int _uint_modulus;
-		PN_uint64 _uint64_modulus;
+		uint64_t _uint64_modulus;
 		double _double_modulus;
 
 		static DCClassParameter *_uint32uint8_type;

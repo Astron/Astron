@@ -51,7 +51,7 @@ Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output
 {	
 }
 
-#ifdef DEBUG_MESSAGES
+#ifdef ASTRON_DEBUG_MESSAGES
 Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_null(&null_buffer)
 #else
 Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_null(&null_buffer)

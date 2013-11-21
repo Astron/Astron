@@ -224,7 +224,7 @@ pack_uint(unsigned int value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-pack_int64(PN_int64 value) {
+pack_int64(int64_t value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -241,7 +241,7 @@ pack_int64(PN_int64 value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-pack_uint64(PN_uint64 value) {
+pack_uint64(uint64_t value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -358,9 +358,9 @@ unpack_uint() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE PN_int64 DCPacker::
+INLINE int64_t DCPacker::
 unpack_int64() {
-  PN_int64 value = 0;
+  int64_t value = 0;
   nassertr(_mode == M_unpack, value);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -380,9 +380,9 @@ unpack_int64() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE PN_uint64 DCPacker::
+INLINE uint64_t DCPacker::
 unpack_uint64() {
-  PN_uint64 value = 0;
+  uint64_t value = 0;
   nassertr(_mode == M_unpack, value);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -497,7 +497,7 @@ unpack_uint(unsigned int &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-unpack_int64(PN_int64 &value) {
+unpack_int64(int64_t &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -516,7 +516,7 @@ unpack_int64(PN_int64 &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-unpack_uint64(PN_uint64 &value) {
+unpack_uint64(uint64_t &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
     _pack_error = true;
@@ -796,7 +796,7 @@ get_num_stack_elements_ever_allocated() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_int8(int value) {
+raw_pack_int8(int8_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int8(_pack_data.get_write_pointer(1), value);
 }
@@ -808,7 +808,7 @@ raw_pack_int8(int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_int16(int value) {
+raw_pack_int16(int16_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int16(_pack_data.get_write_pointer(2), value);
 }
@@ -820,7 +820,7 @@ raw_pack_int16(int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_int32(int value) {
+raw_pack_int32(int32_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int32(_pack_data.get_write_pointer(4), value);
 }
@@ -832,7 +832,7 @@ raw_pack_int32(int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_int64(PN_int64 value) {
+raw_pack_int64(int64_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int64(_pack_data.get_write_pointer(8), value);
 }
@@ -844,7 +844,7 @@ raw_pack_int64(PN_int64 value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_uint8(unsigned int value) {
+raw_pack_uint8(uint8_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint8(_pack_data.get_write_pointer(1), value);
 }
@@ -856,9 +856,21 @@ raw_pack_uint8(unsigned int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_uint16(unsigned int value) {
+raw_pack_uint16(uint16_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCPacker::raw_pack_length_tag
+//       Access: Published
+//  Description: Packs the data into the buffer between packing
+//               sessions.
+////////////////////////////////////////////////////////////////////
+INLINE void DCPacker::
+raw_pack_length_tag(length_tag_t value) {
+  nassertv(_mode == M_idle);
+  DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -868,7 +880,7 @@ raw_pack_uint16(unsigned int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_uint32(unsigned int value) {
+raw_pack_uint32(uint32_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint32(_pack_data.get_write_pointer(4), value);
 }
@@ -880,7 +892,7 @@ raw_pack_uint32(unsigned int value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_pack_uint64(PN_uint64 value) {
+raw_pack_uint64(uint64_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint64(_pack_data.get_write_pointer(8), value);
 }
@@ -906,7 +918,7 @@ raw_pack_float64(double value) {
 INLINE void DCPacker::
 raw_pack_string(const string &value) {
   nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value.length());
+  DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value.length());
   _pack_data.append_data(value.data(), value.length());
 }
 
@@ -916,9 +928,9 @@ raw_pack_string(const string &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+INLINE int8_t DCPacker::
 raw_unpack_int8() {
-  int value = 0;
+  int8_t value = 0;
   raw_unpack_int8(value);
   return value;
 }
@@ -929,9 +941,9 @@ raw_unpack_int8() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+INLINE int16_t DCPacker::
 raw_unpack_int16() {
-  int value = 0;
+  int16_t value = 0;
   raw_unpack_int16(value);
   return value;
 }
@@ -942,9 +954,9 @@ raw_unpack_int16() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+INLINE int32_t DCPacker::
 raw_unpack_int32() {
-  int value = 0;
+  int32_t value = 0;
   raw_unpack_int32(value);
   return value;
 }
@@ -955,9 +967,9 @@ raw_unpack_int32() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE PN_int64 DCPacker::
+INLINE int64_t DCPacker::
 raw_unpack_int64() {
-  PN_int64 value = 0;
+  int64_t value = 0;
   raw_unpack_int64(value);
   return value;
 }
@@ -969,7 +981,7 @@ raw_unpack_int64() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_int8(int &value) {
+raw_unpack_int8(int8_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 1 > _unpack_length) {
     _pack_error = true;
@@ -986,7 +998,7 @@ raw_unpack_int8(int &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_int16(int &value) {
+raw_unpack_int16(int16_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 2 > _unpack_length) {
     _pack_error = true;
@@ -1003,7 +1015,7 @@ raw_unpack_int16(int &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_int32(int &value) {
+raw_unpack_int32(int32_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 4 > _unpack_length) {
     _pack_error = true;
@@ -1019,9 +1031,9 @@ raw_unpack_int32(int &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPacker::
+INLINE uint8_t DCPacker::
 raw_unpack_uint8() {
-  unsigned int value = 0;
+  uint8_t value = 0;
   raw_unpack_uint8(value);
   return value;
 }
@@ -1032,12 +1044,26 @@ raw_unpack_uint8() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPacker::
+INLINE uint16_t DCPacker::
 raw_unpack_uint16() {
-  unsigned int value = 0;
+  uint16_t value = 0;
   raw_unpack_uint16(value);
   return value;
 }
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCPacker::raw_unpack_length_tag
+//       Access: Published
+//  Description: Unpacks the data from the buffer between unpacking
+//               sessions.
+////////////////////////////////////////////////////////////////////
+INLINE length_tag_t DCPacker::
+raw_unpack_length_tag() {
+  length_tag_t value = 0;
+  raw_unpack_length_tag(value);
+  return value;
+}
+
 
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPacker::raw_unpack_uint32
@@ -1045,9 +1071,9 @@ raw_unpack_uint16() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPacker::
+INLINE uint32_t DCPacker::
 raw_unpack_uint32() {
-  unsigned int value = 0;
+  uint32_t value = 0;
   raw_unpack_uint32(value);
   return value;
 }
@@ -1058,9 +1084,9 @@ raw_unpack_uint32() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE PN_uint64 DCPacker::
+INLINE uint64_t DCPacker::
 raw_unpack_uint64() {
-  PN_uint64 value = 0;
+  uint64_t value = 0;
   raw_unpack_uint64(value);
   return value;
 }
@@ -1098,7 +1124,7 @@ raw_unpack_string() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_int64(PN_int64 &value) {
+raw_unpack_int64(int64_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 8 > _unpack_length) {
     _pack_error = true;
@@ -1115,7 +1141,7 @@ raw_unpack_int64(PN_int64 &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_uint8(unsigned int &value) {
+raw_unpack_uint8(uint8_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 1 > _unpack_length) {
     _pack_error = true;
@@ -1132,7 +1158,7 @@ raw_unpack_uint8(unsigned int &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_uint16(unsigned int &value) {
+raw_unpack_uint16(uint16_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 2 > _unpack_length) {
     _pack_error = true;
@@ -1143,13 +1169,30 @@ raw_unpack_uint16(unsigned int &value) {
 }
 
 ////////////////////////////////////////////////////////////////////
+//     Function: DCPacker::raw_unpack_length_tag
+//       Access: Public
+//  Description: Unpacks the data from the buffer between unpacking
+//               sessions.
+////////////////////////////////////////////////////////////////////
+INLINE void DCPacker::
+raw_unpack_length_tag(length_tag_t &value) {
+  nassertv(_mode == M_idle && _unpack_data != NULL);
+  if (_unpack_p + sizeof(length_tag_t) > _unpack_length) {
+    _pack_error = true;
+    return;
+  }
+  value = DCPackerInterface::do_unpack_length_tag(_unpack_data + _unpack_p);
+  _unpack_p += sizeof(length_tag_t);
+}
+
+////////////////////////////////////////////////////////////////////
 //     Function: DCPacker::raw_unpack_uint32
 //       Access: Public
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_uint32(unsigned int &value) {
+raw_unpack_uint32(uint32_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 4 > _unpack_length) {
     _pack_error = true;
@@ -1166,7 +1209,7 @@ raw_unpack_uint32(unsigned int &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPacker::
-raw_unpack_uint64(PN_uint64 &value) {
+raw_unpack_uint64(uint64_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 8 > _unpack_length) {
     _pack_error = true;
@@ -1202,7 +1245,7 @@ raw_unpack_float64(double &value) {
 INLINE void DCPacker::
 raw_unpack_string(string &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
-  unsigned int string_length = raw_unpack_uint16();
+  length_tag_t string_length = raw_unpack_length_tag();
 
   if (_unpack_p + string_length > _unpack_length) {
     _pack_error = true;

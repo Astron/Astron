@@ -39,7 +39,7 @@ DCSimpleParameter(DCSubatomicType type, unsigned int divisor) :
   _nested_type = ST_invalid;
   _has_nested_fields = false;
   _bytes_per_element = 0;
-  _num_length_bytes = 2;
+  _num_length_bytes = sizeof(length_tag_t);
 
   // Check for one of the built-in array types.  For these types, we
   // must present a packing interface that has a variable number of
@@ -349,7 +349,7 @@ set_modulus(double modulus) {
 
   bool range_error = false;
   _double_modulus = modulus * _divisor;
-  _uint64_modulus = (PN_uint64)floor(_double_modulus + 0.5);
+  _uint64_modulus = (uint64_t)floor(_double_modulus + 0.5);
   _uint_modulus = (unsigned int)_uint64_modulus;
 
   // Check the range.  The legitimate range for a modulus value is 1
@@ -455,8 +455,8 @@ set_range(const DCDoubleRange &range) {
   case ST_int8array:
     _int_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_int64 min = (PN_int64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_int64 max = (PN_int64)floor(range.get_max(i) * _divisor + 0.5);
+      int64_t min = (int64_t)floor(range.get_min(i) * _divisor + 0.5);
+      int64_t max = (int64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_int64_limits(min, 8, range_error);
       validate_int64_limits(max, 8, range_error);
       _int_range.add_range((int)min, (int)max);
@@ -467,8 +467,8 @@ set_range(const DCDoubleRange &range) {
   case ST_int16array:
     _int_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_int64 min = (PN_int64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_int64 max = (PN_int64)floor(range.get_max(i) * _divisor + 0.5);
+      int64_t min = (int64_t)floor(range.get_min(i) * _divisor + 0.5);
+      int64_t max = (int64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_int64_limits(min, 16, range_error);
       validate_int64_limits(max, 16, range_error);
       _int_range.add_range((int)min, (int)max);
@@ -479,8 +479,8 @@ set_range(const DCDoubleRange &range) {
   case ST_int32array:
     _int_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_int64 min = (PN_int64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_int64 max = (PN_int64)floor(range.get_max(i) * _divisor + 0.5);
+      int64_t min = (int64_t)floor(range.get_min(i) * _divisor + 0.5);
+      int64_t max = (int64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_int64_limits(min, 32, range_error);
       validate_int64_limits(max, 32, range_error);
       _int_range.add_range((int)min, (int)max);
@@ -490,8 +490,8 @@ set_range(const DCDoubleRange &range) {
   case ST_int64:
     _int64_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_int64 min = (PN_int64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_int64 max = (PN_int64)floor(range.get_max(i) * _divisor + 0.5);
+      int64_t min = (int64_t)floor(range.get_min(i) * _divisor + 0.5);
+      int64_t max = (int64_t)floor(range.get_max(i) * _divisor + 0.5);
       _int64_range.add_range(min, max);
     }
     break;
@@ -501,8 +501,8 @@ set_range(const DCDoubleRange &range) {
   case ST_uint8array:
     _uint_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_uint64_limits(min, 8, range_error);
       validate_uint64_limits(max, 8, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
@@ -513,8 +513,8 @@ set_range(const DCDoubleRange &range) {
   case ST_uint16array:
     _uint_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_uint64_limits(min, 16, range_error);
       validate_uint64_limits(max, 16, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
@@ -525,8 +525,8 @@ set_range(const DCDoubleRange &range) {
   case ST_uint32array:
     _uint_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_uint64_limits(min, 32, range_error);
       validate_uint64_limits(max, 32, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
@@ -536,8 +536,8 @@ set_range(const DCDoubleRange &range) {
   case ST_uint64:
     _uint64_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
       _uint64_range.add_range(min, max);
     }
     break;
@@ -555,10 +555,10 @@ set_range(const DCDoubleRange &range) {
   case ST_blob:
     _uint_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
-      validate_uint64_limits(min, 16, range_error);
-      validate_uint64_limits(max, 16, range_error);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
+      validate_uint64_limits(min, sizeof(length_tag_t)*8, range_error);
+      validate_uint64_limits(max, sizeof(length_tag_t)*8, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
     }
     if (_uint_range.has_one_value()) {
@@ -569,7 +569,7 @@ set_range(const DCDoubleRange &range) {
       _fixed_byte_size = _uint_range.get_one_value();
       _has_fixed_structure = true;
     } else {
-      _num_length_bytes = 2;
+      _num_length_bytes = sizeof(length_tag_t);
       _has_fixed_byte_size = false;
       _has_fixed_structure = false;
     }
@@ -578,8 +578,8 @@ set_range(const DCDoubleRange &range) {
   case ST_blob32:
     _uint_range.clear();
     for (i = 0; i < num_ranges; i++) {
-      PN_uint64 min = (PN_uint64)floor(range.get_min(i) * _divisor + 0.5);
-      PN_uint64 max = (PN_uint64)floor(range.get_max(i) * _divisor + 0.5);
+      uint64_t min = (uint64_t)floor(range.get_min(i) * _divisor + 0.5);
+      uint64_t max = (uint64_t)floor(range.get_max(i) * _divisor + 0.5);
       validate_uint64_limits(min, 32, range_error);
       validate_uint64_limits(max, 32, range_error);
       _uint_range.add_range((unsigned int)min, (unsigned int)max);
@@ -686,7 +686,7 @@ pack_double(DCPackData &pack_data, double value,
 
   case ST_int64:
     {
-      PN_int64 int64_value = (PN_int64)floor(real_value + 0.5);
+      int64_t int64_value = (int64_t)floor(real_value + 0.5);
       _int64_range.validate(int64_value, range_error);
       do_pack_int64(pack_data.get_write_pointer(8), int64_value);
     }
@@ -721,7 +721,7 @@ pack_double(DCPackData &pack_data, double value,
 
   case ST_uint64:
     {
-      PN_uint64 int64_value = (PN_uint64)floor(real_value + 0.5);
+      uint64_t int64_value = (uint64_t)floor(real_value + 0.5);
       _uint64_range.validate(int64_value, range_error);
       do_pack_uint64(pack_data.get_write_pointer(8), int64_value);
     }
@@ -751,7 +751,7 @@ pack_int(DCPackData &pack_data, int value,
   if (value != 0 && (int_value / value) != (int)_divisor) {
     // If we've experienced overflow after applying the divisor, pack
     // it as an int64 instead.
-    pack_int64(pack_data, (PN_int64)value, pack_error, range_error);
+    pack_int64(pack_data, (int64_t)value, pack_error, range_error);
     return;
   }
 
@@ -920,9 +920,9 @@ pack_uint(DCPackData &pack_data, unsigned int value,
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCSimpleParameter::
-pack_int64(DCPackData &pack_data, PN_int64 value,
+pack_int64(DCPackData &pack_data, int64_t value,
             bool &pack_error, bool &range_error) const {
-  PN_int64 int_value = value * _divisor;
+  int64_t int_value = value * _divisor;
   if (_has_modulus && _uint64_modulus != 0) {
     if (int_value < 0) {
       int_value = _uint64_modulus - 1 - (-int_value - 1) % _uint64_modulus;
@@ -960,35 +960,35 @@ pack_int64(DCPackData &pack_data, PN_int64 value,
     if (int_value < 0) {
       range_error = true;
     }
-    _uint_range.validate((unsigned int)(PN_uint64)int_value, range_error);
-    validate_uint64_limits((PN_uint64)int_value, 8, range_error);
-    do_pack_uint8(pack_data.get_write_pointer(1), (unsigned int)(PN_uint64)int_value);
+    _uint_range.validate((unsigned int)(uint64_t)int_value, range_error);
+    validate_uint64_limits((uint64_t)int_value, 8, range_error);
+    do_pack_uint8(pack_data.get_write_pointer(1), (unsigned int)(uint64_t)int_value);
     break;
 
   case ST_uint16:
     if (int_value < 0) {
       range_error = true;
     }
-    _uint_range.validate((unsigned int)(PN_uint64)int_value, range_error);
-    validate_uint64_limits((PN_uint64)int_value, 16, range_error);
-    do_pack_uint16(pack_data.get_write_pointer(2), (unsigned int)(PN_uint64)int_value);
+    _uint_range.validate((unsigned int)(uint64_t)int_value, range_error);
+    validate_uint64_limits((uint64_t)int_value, 16, range_error);
+    do_pack_uint16(pack_data.get_write_pointer(2), (unsigned int)(uint64_t)int_value);
     break;
 
   case ST_uint32:
     if (int_value < 0) {
       range_error = true;
     }
-    _uint_range.validate((unsigned int)(PN_uint64)int_value, range_error);
-    validate_uint64_limits((PN_uint64)int_value, 32, range_error);
-    do_pack_uint32(pack_data.get_write_pointer(4), (unsigned int)(PN_uint64)int_value);
+    _uint_range.validate((unsigned int)(uint64_t)int_value, range_error);
+    validate_uint64_limits((uint64_t)int_value, 32, range_error);
+    do_pack_uint32(pack_data.get_write_pointer(4), (unsigned int)(uint64_t)int_value);
     break;
 
   case ST_uint64:
     if (int_value < 0) {
       range_error = true;
     }
-    _uint64_range.validate((PN_uint64)int_value, range_error);
-    do_pack_uint64(pack_data.get_write_pointer(8), (PN_uint64)int_value);
+    _uint64_range.validate((uint64_t)int_value, range_error);
+    do_pack_uint64(pack_data.get_write_pointer(8), (uint64_t)int_value);
     break;
 
   case ST_float64:
@@ -1008,47 +1008,47 @@ pack_int64(DCPackData &pack_data, PN_int64 value,
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCSimpleParameter::
-pack_uint64(DCPackData &pack_data, PN_uint64 value,
+pack_uint64(DCPackData &pack_data, uint64_t value,
             bool &pack_error, bool &range_error) const {
-  PN_uint64 int_value = value * _divisor;
+  uint64_t int_value = value * _divisor;
   if (_has_modulus && _uint64_modulus != 0) {
     int_value = int_value % _uint64_modulus;
   }
 
   switch (_type) {
   case ST_int8:
-    if ((PN_int64)int_value < 0) {
+    if ((int64_t)int_value < 0) {
       range_error = true;
     }
-    _int_range.validate((int)(PN_int64)int_value, range_error);
-    validate_int64_limits((PN_int64)int_value, 8, range_error);
-    do_pack_int8(pack_data.get_write_pointer(1), (int)(PN_int64)int_value);
+    _int_range.validate((int)(int64_t)int_value, range_error);
+    validate_int64_limits((int64_t)int_value, 8, range_error);
+    do_pack_int8(pack_data.get_write_pointer(1), (int)(int64_t)int_value);
     break;
 
   case ST_int16:
-    if ((PN_int64)int_value < 0) {
+    if ((int64_t)int_value < 0) {
       range_error = true;
     }
-    _int_range.validate((int)(PN_int64)int_value, range_error);
-    validate_int64_limits((PN_int64)int_value, 16, range_error);
-    do_pack_int16(pack_data.get_write_pointer(2), (int)(PN_int64)int_value);
+    _int_range.validate((int)(int64_t)int_value, range_error);
+    validate_int64_limits((int64_t)int_value, 16, range_error);
+    do_pack_int16(pack_data.get_write_pointer(2), (int)(int64_t)int_value);
     break;
 
   case ST_int32:
-    if ((PN_int64)int_value < 0) {
+    if ((int64_t)int_value < 0) {
       range_error = true;
     }
-    _int_range.validate((int)(PN_int64)int_value, range_error);
-    validate_int64_limits((PN_int64)int_value, 32, range_error);
-    do_pack_int32(pack_data.get_write_pointer(4), (int)(PN_int64)int_value);
+    _int_range.validate((int)(int64_t)int_value, range_error);
+    validate_int64_limits((int64_t)int_value, 32, range_error);
+    do_pack_int32(pack_data.get_write_pointer(4), (int)(int64_t)int_value);
     break;
 
   case ST_int64:
-    if ((PN_int64)int_value < 0) {
+    if ((int64_t)int_value < 0) {
       range_error = true;
     }
-    _int64_range.validate((PN_int64)int_value, range_error);
-    do_pack_int64(pack_data.get_write_pointer(8), (PN_int64)int_value);
+    _int64_range.validate((int64_t)int_value, range_error);
+    do_pack_int64(pack_data.get_write_pointer(8), (int64_t)int_value);
     break;
 
   case ST_char:
@@ -1114,9 +1114,9 @@ pack_string(DCPackData &pack_data, const string &value,
   case ST_string:
   case ST_blob:
     _uint_range.validate(string_length, range_error);
-    validate_uint_limits(string_length, 16, range_error);
+    validate_uint_limits(string_length, sizeof(length_tag_t)*8, range_error);
     if (_num_length_bytes != 0) {
-      do_pack_uint16(pack_data.get_write_pointer(2), string_length);
+      do_pack_length_tag(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
     }
     pack_data.append_data(value.data(), string_length);
     break;
@@ -1286,7 +1286,7 @@ unpack_double(const char *data, size_t length, size_t &p, double &value,
         pack_error = true;
         return;
       }
-      PN_int64 int_value = do_unpack_int64(data + p);
+      int64_t int_value = do_unpack_int64(data + p);
       _int64_range.validate(int_value, range_error);
       value = (double)int_value;
       p += 8;
@@ -1339,7 +1339,7 @@ unpack_double(const char *data, size_t length, size_t &p, double &value,
         pack_error = true;
         return;
       }
-      PN_uint64 uint_value = do_unpack_uint64(data + p);
+      uint64_t uint_value = do_unpack_uint64(data + p);
       _uint64_range.validate(uint_value, range_error);
       value = (double)uint_value;
       p += 8;
@@ -1416,7 +1416,7 @@ unpack_int(const char *data, size_t length, size_t &p, int &value,
         pack_error = true;
         return;
       }
-      PN_int64 int_value = do_unpack_uint64(data + p);
+      int64_t int_value = do_unpack_uint64(data + p);
       _int64_range.validate(int_value, range_error);
       value = (int)int_value;
       if (value != int_value) {
@@ -1476,7 +1476,7 @@ unpack_int(const char *data, size_t length, size_t &p, int &value,
         pack_error = true;
         return;
       }
-      PN_uint64 uint_value = do_unpack_uint64(data + p);
+      uint64_t uint_value = do_unpack_uint64(data + p);
       _uint64_range.validate(uint_value, range_error);
       value = (int)(unsigned int)uint_value;
       if ((unsigned int)value != uint_value || value < 0) {
@@ -1575,7 +1575,7 @@ unpack_uint(const char *data, size_t length, size_t &p, unsigned int &value,
         pack_error = true;
         return;
       }
-      PN_int64 int_value = do_unpack_int64(data + p);
+      int64_t int_value = do_unpack_int64(data + p);
       _int64_range.validate(int_value, range_error);
       if (int_value < 0) {
         pack_error = true;
@@ -1625,7 +1625,7 @@ unpack_uint(const char *data, size_t length, size_t &p, unsigned int &value,
         pack_error = true;
         return;
       }
-      PN_uint64 uint_value = do_unpack_uint64(data + p);
+      uint64_t uint_value = do_unpack_uint64(data + p);
       _uint64_range.validate(uint_value, range_error);
       value = (unsigned int)uint_value;
       if (value != uint_value) {
@@ -1667,7 +1667,7 @@ unpack_uint(const char *data, size_t length, size_t &p, unsigned int &value,
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCSimpleParameter::
-unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
+unpack_int64(const char *data, size_t length, size_t &p, int64_t &value,
               bool &pack_error, bool &range_error) const {
   switch (_type) {
   case ST_int8:
@@ -1678,7 +1678,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       int int_value = do_unpack_int8(data + p);
       _int_range.validate(int_value, range_error);
-      value = (PN_int64)int_value;
+      value = (int64_t)int_value;
       p++;
     }
     break;
@@ -1691,7 +1691,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       int int_value = do_unpack_int16(data + p);
       _int_range.validate(int_value, range_error);
-      value = (PN_int64)int_value;
+      value = (int64_t)int_value;
       p += 2;
     }
     break;
@@ -1704,7 +1704,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       int int_value = do_unpack_int32(data + p);
       _int_range.validate(int_value, range_error);
-      value = (PN_int64)int_value;
+      value = (int64_t)int_value;
       p += 4;
     }
     break;
@@ -1728,7 +1728,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       unsigned int uint_value = do_unpack_uint8(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_int64)(int)uint_value;
+      value = (int64_t)(int)uint_value;
       p++;
     }
     break;
@@ -1741,7 +1741,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       unsigned int uint_value = do_unpack_uint16(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_int64)(int)uint_value;
+      value = (int64_t)(int)uint_value;
       p += 2;
     }
     break;
@@ -1754,7 +1754,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       unsigned int uint_value = do_unpack_uint32(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_int64)(int)uint_value;
+      value = (int64_t)(int)uint_value;
       p += 4;
     }
     break;
@@ -1765,9 +1765,9 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
         pack_error = true;
         return;
       }
-      PN_uint64 uint_value = do_unpack_uint64(data + p);
+      uint64_t uint_value = do_unpack_uint64(data + p);
       _uint64_range.validate(uint_value, range_error);
-      value = (PN_int64)uint_value;
+      value = (int64_t)uint_value;
       if (value < 0) {
         pack_error = true;
       }
@@ -1783,7 +1783,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
       }
       double real_value = do_unpack_float64(data + p);
       _double_range.validate(real_value, range_error);
-      value = (PN_int64)real_value;
+      value = (int64_t)real_value;
       p += 8;
     }
     break;
@@ -1807,7 +1807,7 @@ unpack_int64(const char *data, size_t length, size_t &p, PN_int64 &value,
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCSimpleParameter::
-unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
+unpack_uint64(const char *data, size_t length, size_t &p, uint64_t &value,
               bool &pack_error, bool &range_error) const {
   switch (_type) {
   case ST_int8:
@@ -1821,7 +1821,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       if (int_value < 0) {
         pack_error = true;
       }
-      value = (PN_uint64)(unsigned int)int_value;
+      value = (uint64_t)(unsigned int)int_value;
       p++;
     }
     break;
@@ -1837,7 +1837,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       if (int_value < 0) {
         pack_error = true;
       }
-      value = (PN_uint64)(unsigned int)int_value;
+      value = (uint64_t)(unsigned int)int_value;
       p += 2;
     }
     break;
@@ -1853,7 +1853,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       if (int_value < 0) {
         pack_error = true;
       }
-      value = (PN_uint64)(unsigned int)int_value;
+      value = (uint64_t)(unsigned int)int_value;
       p += 4;
     }
     break;
@@ -1864,12 +1864,12 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
         pack_error = true;
         return;
       }
-      PN_int64 int_value = do_unpack_int64(data + p);
+      int64_t int_value = do_unpack_int64(data + p);
       _int64_range.validate(int_value, range_error);
       if (int_value < 0) {
         pack_error = true;
       }
-      value = (PN_uint64)int_value;
+      value = (uint64_t)int_value;
       p += 8;
     }
     break;
@@ -1883,7 +1883,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       }
       unsigned int uint_value = do_unpack_uint8(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_uint64)uint_value;
+      value = (uint64_t)uint_value;
       p++;
     }
     break;
@@ -1896,7 +1896,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       }
       unsigned int uint_value = do_unpack_uint16(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_uint64)uint_value;
+      value = (uint64_t)uint_value;
       p += 2;
     }
     break;
@@ -1909,7 +1909,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       }
       unsigned int uint_value = do_unpack_uint32(data + p);
       _uint_range.validate(uint_value, range_error);
-      value = (PN_uint64)uint_value;
+      value = (uint64_t)uint_value;
       p += 4;
     }
     break;
@@ -1932,7 +1932,7 @@ unpack_uint64(const char *data, size_t length, size_t &p, PN_uint64 &value,
       }
       double real_value = do_unpack_float64(data + p);
       _double_range.validate(real_value, range_error);
-      value = (PN_uint64)real_value;
+      value = (uint64_t)real_value;
       p += 8;
     }
     break;
@@ -1988,12 +1988,12 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
     switch (_type) {
     case ST_string:
     case ST_blob:
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         pack_error = true;
         return;
       }
-      string_length = do_unpack_uint16(data + p);
-      p += 2;
+      string_length = do_unpack_length_tag(data + p);
+      p += sizeof(length_tag_t);
       break;
 
     case ST_blob32:
@@ -2081,7 +2081,7 @@ unpack_validate(const char *data, size_t length, size_t &p,
         pack_error = true;
         return true;
       }
-      PN_int64 int_value = do_unpack_int64(data + p);
+      int64_t int_value = do_unpack_int64(data + p);
       _int64_range.validate(int_value, range_error);
       p += 8;
     }
@@ -2130,7 +2130,7 @@ unpack_validate(const char *data, size_t length, size_t &p,
         pack_error = true;
         return true;
       }
-      PN_uint64 uint_value = do_unpack_uint64(data + p);
+      uint64_t uint_value = do_unpack_uint64(data + p);
       _uint64_range.validate(uint_value, range_error);
       p += 8;
     }
@@ -2154,13 +2154,13 @@ unpack_validate(const char *data, size_t length, size_t &p,
       p += _fixed_byte_size;
 
     } else {
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         pack_error = true;
         return true;
       }
-      size_t string_length = do_unpack_uint16(data + p);
+      size_t string_length = do_unpack_length_tag(data + p);
       _uint_range.validate(string_length, range_error);
-      p += 2 + string_length;
+      p += sizeof(length_tag_t) + string_length;
     }
     break;
 
@@ -2228,11 +2228,11 @@ unpack_skip(const char *data, size_t length, size_t &p,
       p += _fixed_byte_size;
 
     } else {
-      if (p + 2 > length) {
+      if (p + sizeof(length_tag_t) > length) {
         return false;
       }
-      string_length = do_unpack_uint16(data + p);
-      p += 2 + string_length;
+      string_length = do_unpack_length_tag(data + p);
+      p += sizeof(length_tag_t) + string_length;
     }
     break;
 

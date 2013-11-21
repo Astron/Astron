@@ -363,7 +363,9 @@ class Datagram
 		uint8_t* add_buffer(dgsize_t length)
 		{
 			check_add_length(length);
-			return buf+buf_offset;
+			uint8_t* buf_start = buf + buf_offset;
+			buf_offset += length;
+			return buf_start;
 		}
 
 		// add_server_header prepends a generic header for messages that are supposed to be routed

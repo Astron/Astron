@@ -127,8 +127,7 @@ class MDParticipantInterface
 			logger().debug() << "MDParticipant '" << m_name << "' sending post removes..." << std::endl;
 			for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 			{
-				Datagram dg(*it);
-				send(dg);
+				send(*it);
 			}
 		}
 
@@ -168,10 +167,10 @@ class MDParticipantInterface
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
 		}
-		inline void add_post_remove(const std::vector<uint8_t> &post)
+		inline void add_post_remove(const Datagram dg)
 		{
 			logger().trace() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
-			m_post_removes.push_back(post);
+			m_post_removes.push_back(dg);
 		}
 		inline void clear_post_removes()
 		{
@@ -194,7 +193,7 @@ class MDParticipantInterface
 	private:
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-		std::vector<std::vector<uint8_t> > m_post_removes; // The messages to be distributed on unexpected disconnect.
+		std::vector<Datagram> m_post_removes; // The messages to be distributed on unexpected disconnect.
 		std::string m_name;
 		std::string m_url;
 

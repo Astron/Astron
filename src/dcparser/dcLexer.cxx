@@ -1549,7 +1549,7 @@ YY_RULE_SETUP
   dcyylval.u.uint64 = 0;
   const char *p = dcyytext;
   while (*p != '\0') {
-    PN_uint64 next_value = dcyylval.u.uint64 * 10;
+    uint64_t next_value = dcyylval.u.uint64 * 10;
     if (next_value < dcyylval.u.uint64) {
       dcyyerror("Number out of range.");
       dcyylval.u.uint64 = 1;
@@ -1582,9 +1582,9 @@ YY_RULE_SETUP
     ++p;
   }
 
-  PN_uint64 value = 0;
+  uint64_t value = 0;
   while (*p != '\0') {
-    PN_uint64 next_value = value * 10;
+    uint64_t next_value = value * 10;
     if (next_value < value) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
@@ -1596,13 +1596,13 @@ YY_RULE_SETUP
   }
 
   if (neg) {
-    dcyylval.u.int64 = -(PN_int64)value;
+    dcyylval.u.int64 = -(int64_t)value;
     if (dcyylval.u.int64 > 0) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
     }
   } else {
-    dcyylval.u.int64 = (PN_int64)value;
+    dcyylval.u.int64 = (int64_t)value;
     if (dcyylval.u.int64 < 0) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
@@ -1624,7 +1624,7 @@ YY_RULE_SETUP
   dcyylval.u.uint64 = 0;
   const char *p = dcyytext + 2;
   while (*p != '\0') {
-    PN_uint64 next_value = dcyylval.u.uint64 * 16;
+    uint64_t next_value = dcyylval.u.uint64 * 16;
     if (next_value < dcyylval.u.uint64) {
       dcyyerror("Number out of range.");
       dcyylval.u.uint64 = 1;
