@@ -134,6 +134,8 @@ CONSTANTS = {
     'DBSS_OBJECT_DELETE_FIELD_DISK':             2230,
     'DBSS_OBJECT_DELETE_FIELDS_DISK':            2231,
     'DBSS_OBJECT_DELETE_DISK':                   2232,
+    # Stateserver internal contexts
+    'STATESERVER_CONTEXT_WAKE_CHILDREN': 1001,
 
     # Database Server
     'DBSERVER_CREATE_OBJECT':                       3000,

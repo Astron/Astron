@@ -126,6 +126,8 @@ typedef uint32_t zone_t;
 #define DBSS_OBJECT_DELETE_FIELD_RAM             2230
 #define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
 #define DBSS_OBJECT_DELETE_DISK                  2232
+// Stateserver context values
+#define STATESERVER_CONTEXT_WAKE_CHILDREN 1001
 
 // Database Server range
 #define DBSERVER_MSGTYPE_MIN 3000
