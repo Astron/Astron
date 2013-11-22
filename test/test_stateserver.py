@@ -87,6 +87,7 @@ class TestStateServer(unittest.TestCase):
         self.flush_failed()
         ai = self.connect(5000<<32|1500)
         parent = self.connect(5000)
+        children = self.connect(PARENT_PREFIX|101000000)
 
         # Repeat tests twice to verify doids can be reused
         for x in xrange(2):
@@ -124,6 +125,10 @@ class TestStateServer(unittest.TestCase):
             dg.add_uint32(6789) # setRequired1
             self.assertTrue(*ai.expect(dg))
 
+            # .. as well as waking its children and getting their location.
+            dg = Datagram.create([PARENT_PREFIX|101000000], 101000000, STATESERVER_OBJECT_GET_LOCATION)
+            dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN)
+            self.assertTrue(*children.expect(dg))
 
             ### Test for DeleteRam ### (continues from previous)
             # Destroy our object...
@@ -257,6 +262,9 @@ class TestStateServer(unittest.TestCase):
         # Object should not ask its parent (INVALID_CHANNEl) for an AI channel...
         self.assertTrue(conn.expect_none())
 
+        # We'll ignore the wake children messages
+        children1.flush()
+
         # First object belongs to AI1...
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
         dg.add_uint64(ai1chan) # AI channel
@@ -321,6 +329,11 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid1)
         dg.add_uint64(ai2chan)
         self.assertTrue(*obj2.expect(dg)) # Receiving GET_AI_RESP from parent
+
+        # Check to make sure we're receiving a wake children GetLocation message, and not something else
+        dg = Datagram.create([PARENT_PREFIX|doid2], doid2, STATESERVER_OBJECT_GET_LOCATION)
+        dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN)
+        self.assertTrue(*children2.expect(dg))
 
         # Then the second object should announce its presence to AI2...
         dg = Datagram.create([ai2chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
@@ -1701,6 +1714,7 @@ class TestStateServer(unittest.TestCase):
         # Ignore entry broadcasts
         location1.flush()
         location20.flush()
+        children0.flush()
 
         # Send delete children
         dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
