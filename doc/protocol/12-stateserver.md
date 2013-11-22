@@ -33,6 +33,9 @@ control channel:
 >
 > The object then broadcasts an ENTER_LOCATION message to its location channel,
 > and sends a CHANGING_ZONE with old location (0,0) to its parent (if it has one).
+>
+> Additionally, the object sends a GET_LOCATION to its children over the parent
+> messages channel (1 << 32|parent_id) with context 1001 (STATESERVER_CONTEXT_WAKE_CHILDREN).
 
 
 **STATESERVER_DELETE_AI_OBJECTS(2009)** `args(uint64 ai_channel)`  
