@@ -1,5 +1,5 @@
 // Filename: ArrayParameter.cpp
-// Created by: drose (17Jun04)
+// Created by: drose (17 Jun, 2004)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
@@ -88,19 +88,20 @@ ArrayParameter::~ArrayParameter()
 	delete m_element_type;
 }
 
-// as_array_parameter returns this as an array parameter; this method can be used with a Parameter*
-//     to determine whether the Parameter is of type ArrayParameter at run-time.  A Parameter that
-//     is not an ArrayParameter will return NULL instead.
+// as_array_parameter returns the same parameter pointer converted to an array parameter
+//     pointer, if this is in fact an array parameter; otherwise, returns NULL.
 ArrayParameter* ArrayParameter::as_array_parameter()
 {
 	return this;
 }
+// as_array_parameter returns the same parameter pointer converted to an array parameter
+//     pointer, if this is in fact an array parameter; otherwise, returns NULL.
 const ArrayParameter *ArrayParameter::as_array_parameter() const
 {
 	return this;
 }
 
-// make_copy returns a copy of this parameter
+// make_copy returns a deep copy of this parameter
 Parameter* ArrayParameter::make_copy() const
 {
 	return new ArrayParameter(*this);
@@ -113,8 +114,8 @@ bool ArrayParameter::is_valid() const
 	return m_element_type->is_valid();
 }
 
-// get_element_Type returns the type of the individual elements of this array.
-Parameter* ArrayParameter::getm_element_type() const
+// get_element_type returns the type of the individual elements of this array.
+Parameter* ArrayParameter::get_element_type() const
 {
 	return m_element_type;
 }
@@ -127,15 +128,14 @@ int ArrayParameter::get_array_size() const
 }
 
 // append_array_specification returns the type represented by this type[size].
-//     In the case of a DCArrayParameter, this means it modifies the current type
-//     to append the array specification on the innermost type, and returns this
-//     same pointer again.
-Parameter *ArrayParameter::append_array_specification(const UintRange &size)
+//     As an ArrayParameter, this same pointer is returned, but the inner type of the array
+//     becomes an array type (ie. type[] becomes type[][]).
+Parameter* ArrayParameter::append_array_specification(const UintRange &size)
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
 		// If this was a typedef, wrap it directly.
-		return new DCArrayParameter(this, size);
+		return new ArrayParameter(this, size);
 	}
 
 	// Otherwise, the brackets get applied to the inner type.
@@ -156,16 +156,16 @@ int ArrayParameter::calc_num_nested_fields(size_t length_bytes) const
 	return -1;
 }
 
-// get_nested_field returns the DCPackerInterface object that represents the nth nested field.
-//     This may return NULL if there is no such field (but it shouldn't do this if n is in
-//     the range 0 <= n < get_num_nested_fields()).
+
+// get_nested_field returns the PackerInterface object that represents the nth nested field.
+//     The return is NULL if 'n' is out-of-bounds of 0 <= n < get_num_nested_fields().
 PackerInterface* ArrayParameter::get_nested_field(int) const
 {
 	return m_element_type;
 }
 
 // validate_num_nested_fields determines whether the number of nested fields added while packing
-//     an array-type parameter is valid for this field.  This is called by the packer after a
+//     an array-type parameter is valid for this type.  This is called by the packer after a
 //     number of fields have been packed via push() .. pack_*() .. pop().
 //     Note: This is primarily useful for array types with dynamic ranges that
 //           can't validate the number of fields any other way.
@@ -177,9 +177,9 @@ bool ArrayParameter::validate_num_nested_fields(int num_nested_fields) const
 	return !range_error;
 }
 
-// output_instance formats the parameter to the syntax of an array parameter in a dclass file
-//     as TYPE IDENTIFIER[RANGE], with optional IDENTIFIER and RANGE.
-////////////////////////////////////////////////////////////////////
+// output_instance formats the parameter to the syntax of an array parameter in a .dc file
+//     as TYPE IDENTIFIER[RANGE] with optional IDENTIFIER and RANGE,
+//     and outputs the formatted string to the stream.
 void ArrayParameter::output_instance(ostream &out, bool brief, const string &prename,
                                      const string &name, const string &postname) const
 {
