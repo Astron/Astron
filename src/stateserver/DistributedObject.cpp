@@ -724,7 +724,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_bool(success);
 			if(success)
 			{
-				dg.add_datagram(raw_field);
+				dg.add_data(raw_field);
 			}
 			send(dg);
 
@@ -763,7 +763,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(success)
 			{
 				dg.add_uint16(fields_found);
-				dg.add_datagram(raw_fields);
+				dg.add_data(raw_fields);
 			}
 			send(dg);
 
