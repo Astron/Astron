@@ -71,6 +71,8 @@ class DistributedObject : public MDParticipantInterface
 		void annihilate(channel_t sender, bool notify_parent = true);
 		void delete_children(channel_t sender);
 
+		void wake_children(); // ask all children for their locations
+
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);
 		bool handle_one_get(Datagram &out, uint16_t field_id,

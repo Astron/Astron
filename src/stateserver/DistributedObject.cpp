@@ -53,6 +53,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
 	handle_location_change(parent_id, zone_id, dgi.read_uint64());
+	wake_children();
 }
 
 DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender, doid_t do_id,
@@ -72,6 +73,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 	handle_location_change(parent_id, zone_id, sender);
+	wake_children();
 }
 
 DistributedObject::~DistributedObject()
@@ -338,6 +340,13 @@ void DistributedObject::delete_children(channel_t sender)
 		dg.add_doid(m_do_id);
 		send(dg);
 	}
+}
+
+void DistributedObject::wake_children()
+{
+	Datagram dg(PARENT2CHILDREN(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
+	dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN);
+	send(dg);
 }
 
 void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
@@ -658,6 +667,34 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_location(m_parent_id, m_zone_id);
 			send(dg);
 
+			break;
+		}
+		case STATESERVER_OBJECT_GET_LOCATION_RESP:
+		{
+			// This case occurs immediately after object creation.
+			// A parent expects to receive a location_resp from each
+			// of its pre-existing children.
+
+			if(dgi.read_uint32() != STATESERVER_CONTEXT_WAKE_CHILDREN)
+			{
+				m_log->warning() << "Received unexpected GetLocationResp from "
+				                 << dgi.read_uint32() << "." << std::endl;
+                break;
+			}
+
+			// Discard do_id
+			dgi.skip(sizeof(doid_t));
+
+			// Get location
+			doid_t r_parent = dgi.read_doid();
+			zone_t r_zone = dgi.read_zone();
+
+			// Update the child count
+			if(r_parent == m_do_id)
+			{
+				m_child_count += 1;
+				m_zone_count[r_zone] += 1;
+			}
 			break;
 		}
 		case STATESERVER_OBJECT_GET_ALL:
