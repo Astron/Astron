@@ -92,7 +92,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Get values back from server
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive GetAllResp from server.")
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([20], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 5) # Check context

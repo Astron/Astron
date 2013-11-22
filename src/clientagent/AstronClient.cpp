@@ -75,7 +75,8 @@ class AstronClient : public Client, public NetworkClient
 			catch(DatagramOverflow &e)
 			{
 				send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM,
-				                "ClientDatagram to large to be routed on MD.", true);
+				                "ClientDatagram too large to be routed on MD.", true);
+				return;
 			}
 
 			if(dgi.get_remaining())
@@ -330,7 +331,6 @@ class AstronClient : public Client, public NetworkClient
 				}
 			}
 
-
 			DCField *field = dcc->get_field_by_index(field_id);
 			if(!field)
 			{
@@ -352,9 +352,10 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
+			// If an exception occurs while unpacking data it will be handled
+			// and client will be dc'd for truncated/overflowed datagram
 			std::vector<uint8_t> data;
-			dgi.unpack_field(field, data);//if an exception occurs it will be handled
-			//and client will be dc'd for truncated datagram
+			dgi.unpack_field(field, data);
 
 			Datagram resp;
 			resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);

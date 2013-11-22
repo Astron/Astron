@@ -148,8 +148,9 @@ get_pack_type() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_int8(char *buffer, int value) {
-  buffer[0] = (char)(value & 0xff);
+do_pack_int8(char *buffer, int8_t value) {
+  buffer[0] = (char)(value);
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -158,7 +159,7 @@ do_pack_int8(char *buffer, int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_int16(char *buffer, int value) {
+do_pack_int16(char *buffer, int16_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
 }
@@ -169,7 +170,7 @@ do_pack_int16(char *buffer, int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_int32(char *buffer, int value) {
+do_pack_int32(char *buffer, int32_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
   buffer[2] = (char)((value >> 16) & 0xff);
@@ -182,7 +183,7 @@ do_pack_int32(char *buffer, int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_int64(char *buffer, PN_int64 value) {
+do_pack_int64(char *buffer, int64_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
   buffer[2] = (char)((value >> 16) & 0xff);
@@ -199,8 +200,8 @@ do_pack_int64(char *buffer, PN_int64 value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_uint8(char *buffer, unsigned int value) {
-  buffer[0] = (char)(value & 0xff);
+do_pack_uint8(char *buffer, uint8_t value) {
+  buffer[0] = (char)(value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -209,9 +210,24 @@ do_pack_uint8(char *buffer, unsigned int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_uint16(char *buffer, unsigned int value) {
+do_pack_uint16(char *buffer, uint16_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCPackerInterface::do_pack_length_tag
+//       Access: Public, Static
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE void DCPackerInterface::
+do_pack_length_tag(char *buffer, length_tag_t value) {
+  // NOTE: Wondering if maybe memcpy would be better for this?
+  //       Did it this way to copy other pack_value's (are they done that way for performance?)
+  for(size_t i = 0; i < sizeof(length_tag_t); ++i)
+  {
+    buffer[i] = (char)((value >> 8*i) & 0xff);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -220,7 +236,7 @@ do_pack_uint16(char *buffer, unsigned int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_uint32(char *buffer, unsigned int value) {
+do_pack_uint32(char *buffer, uint32_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
   buffer[2] = (char)((value >> 16) & 0xff);
@@ -233,7 +249,7 @@ do_pack_uint32(char *buffer, unsigned int value) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-do_pack_uint64(char *buffer, PN_uint64 value) {
+do_pack_uint64(char *buffer, uint64_t value) {
   buffer[0] = (char)(value & 0xff);
   buffer[1] = (char)((value >> 8) & 0xff);
   buffer[2] = (char)((value >> 16) & 0xff);
@@ -268,9 +284,9 @@ do_pack_float64(char *buffer, double value) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPackerInterface::
+INLINE int8_t DCPackerInterface::
 do_unpack_int8(const char *buffer) {
-  return (int)(signed char)buffer[0];
+  return (int8_t)buffer[0];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -278,10 +294,9 @@ do_unpack_int8(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPackerInterface::
+INLINE int16_t DCPackerInterface::
 do_unpack_int16(const char *buffer) {
-  return (int)((unsigned int)(unsigned char)buffer[0] |
-               ((int)(signed char)buffer[1] << 8));
+  return *(int16_t*)buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -289,12 +304,9 @@ do_unpack_int16(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPackerInterface::
+INLINE int32_t DCPackerInterface::
 do_unpack_int32(const char *buffer) {
-  return (int)((unsigned int)(unsigned char)buffer[0] |
-               ((unsigned int)(unsigned char)buffer[1] << 8) |
-               ((unsigned int)(unsigned char)buffer[2] << 16) |
-               ((int)(signed char)buffer[3] << 24));
+  return *(int32_t*)buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -302,25 +314,18 @@ do_unpack_int32(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PN_int64 DCPackerInterface::
+INLINE int64_t DCPackerInterface::
 do_unpack_int64(const char *buffer) {
-  return (PN_int64)((PN_uint64)(unsigned char)buffer[0] |
-                    ((PN_uint64)(unsigned char)buffer[1] << 8) |
-                    ((PN_uint64)(unsigned char)buffer[2] << 16) |
-                    ((PN_uint64)(unsigned char)buffer[3] << 24) |
-                    ((PN_uint64)(unsigned char)buffer[4] << 32) |
-                    ((PN_uint64)(unsigned char)buffer[5] << 40) |
-                    ((PN_uint64)(unsigned char)buffer[6] << 48) |
-                    ((PN_int64)(signed char)buffer[7] << 54));
+  return *(int64_t*)buffer;
 }
 ////////////////////////////////////////////////////////////////////
 //     Function: DCPackerInterface::do_unpack_uint8
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPackerInterface::
+INLINE uint8_t DCPackerInterface::
 do_unpack_uint8(const char *buffer) {
-  return (unsigned int)(unsigned char)buffer[0];
+  return *(uint8_t*)buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -328,10 +333,19 @@ do_unpack_uint8(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPackerInterface::
+INLINE uint16_t DCPackerInterface::
 do_unpack_uint16(const char *buffer) {
-  return ((unsigned int)(unsigned char)buffer[0] |
-          ((unsigned int)(unsigned char)buffer[1] << 8));
+  return *(uint16_t*)buffer;
+}
+
+////////////////////////////////////////////////////////////////////
+//     Function: DCPackerInterface::do_unpack_length_tag
+//       Access: Public, Static
+//  Description:
+////////////////////////////////////////////////////////////////////
+INLINE length_tag_t DCPackerInterface::
+do_unpack_length_tag(const char *buffer) {
+  return *(length_tag_t*)buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -339,12 +353,9 @@ do_unpack_uint16(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPackerInterface::
+INLINE uint32_t DCPackerInterface::
 do_unpack_uint32(const char *buffer) {
-  return ((unsigned int)(unsigned char)buffer[0] |
-          ((unsigned int)(unsigned char)buffer[1] << 8) |
-          ((unsigned int)(unsigned char)buffer[2] << 16) |
-          ((unsigned int)(unsigned char)buffer[3] << 24));
+  return *(uint32_t*)buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -352,16 +363,9 @@ do_unpack_uint32(const char *buffer) {
 //       Access: Public, Static
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE PN_uint64 DCPackerInterface::
+INLINE uint64_t DCPackerInterface::
 do_unpack_uint64(const char *buffer) {
-  return ((PN_uint64)(unsigned char)buffer[0] |
-          ((PN_uint64)(unsigned char)buffer[1] << 8) |
-          ((PN_uint64)(unsigned char)buffer[2] << 16) |
-          ((PN_uint64)(unsigned char)buffer[3] << 24) |
-          ((PN_uint64)(unsigned char)buffer[4] << 32) |
-          ((PN_uint64)(unsigned char)buffer[5] << 40) |
-          ((PN_uint64)(unsigned char)buffer[6] << 48) |
-          ((PN_int64)(signed char)buffer[7] << 54));
+  return *(uint64_t*)buffer;
 }
 
 
@@ -414,8 +418,8 @@ validate_int_limits(int value, int num_bits, bool &range_error) {
 //               bits.  Sets range_error true if it does not.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-validate_int64_limits(PN_int64 value, int num_bits, bool &range_error) {
-  PN_int64 mask = ((PN_int64)1 << (num_bits - 1)) - 1;
+validate_int64_limits(int64_t value, int num_bits, bool &range_error) {
+  int64_t mask = ((int64_t)1 << (num_bits - 1)) - 1;
   value |= mask;
 
   if (value != mask && value != -1) {
@@ -449,8 +453,8 @@ validate_uint_limits(unsigned int value, int num_bits, bool &range_error) {
 //               bits.  Sets range_error true if it does not.
 ////////////////////////////////////////////////////////////////////
 INLINE void DCPackerInterface::
-validate_uint64_limits(PN_uint64 value, int num_bits, bool &range_error) {
-  PN_uint64 mask = ((PN_uint64)1 << num_bits) - 1;
+validate_uint64_limits(uint64_t value, int num_bits, bool &range_error) {
+  uint64_t mask = ((uint64_t)1 << num_bits) - 1;
   value &= ~mask;
 
   if (value != 0) {

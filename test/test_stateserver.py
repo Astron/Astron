@@ -101,6 +101,7 @@ class TestStateServer(unittest.TestCase):
                 dg = parent.recv_maybe()
                 self.assertTrue(dg is not None, msg="Parent did not receive ChangingLocation and/or GetAI")
                 dgi = DatagramIterator(dg)
+                msgtype = dgi.read_uint16()
                 # The object should tell the parent its arriving...
                 if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
                     received = True
@@ -1763,7 +1764,7 @@ class TestStateServer(unittest.TestCase):
         # Created a distributed chunk
         dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid1, 0xBAD, 0xF001, DistributedChunk)
-        dg.add_uint16(12) # blockList size in bytes (contains 1 element)
+        dg.add_size(12) # blockList size in bytes (contains 1 element)
         dg.add_uint32(43) # blockList[0].x
         dg.add_uint32(54) # blockList[0].y
         dg.add_uint32(65) # blockList[0].z
@@ -1778,7 +1779,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([0xBAD << 32 | 0xF001], doid1,
             STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid1, 0xBAD, 0xF001, DistributedChunk)
-        dg.add_uint16(12) # blockList size in bytes (contains 1 element)
+        dg.add_size(12) # blockList size in bytes (contains 1 element)
         dg.add_uint32(43) # blockList[0].x
         dg.add_uint32(54) # blockList[0].y
         dg.add_uint32(65) # blockList[0].z
@@ -1794,7 +1795,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(doid1) # Id
         dg.add_uint16(3) # Num fields: 3
         dg.add_uint16(blockList)
-        dg.add_uint16(24) # blockList size in bytes (contains 2 elements)
+        dg.add_size(24) # blockList size in bytes (contains 2 elements)
         dg.add_uint32(43) # blockList[0].x
         dg.add_uint32(54) # blockList[0].y
         dg.add_uint32(65) # blockList[0].z
