@@ -6,7 +6,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string.h> // memcpy
-#include "core/messages.h"
+#include "core/types.h"
 
 #ifdef ASTRON_32BIT_DATAGRAMS
 	typedef uint32_t dgsize_t;

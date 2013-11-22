@@ -3,6 +3,7 @@
 #include "ClientAgent.h"
 
 #include "core/global.h"
+#include "core/msgtypes.h"
 
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),

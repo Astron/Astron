@@ -1,4 +1,5 @@
 #include "core/global.h"
+#include "core/msgtypes.h"
 #include <unordered_set>
 
 #include "DBStateServer.h"

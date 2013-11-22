@@ -262,7 +262,8 @@ add_executable (astrond
 	src/core/logger.h
 	src/core/RoleFactory.cpp
 	src/core/RoleFactory.h
-	src/core/messages.h
+	src/core/types.h
+	src/core/msgtypes.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp

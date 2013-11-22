@@ -4,6 +4,7 @@
 #include "ClientAgent.h"
 #include "util/NetworkClient.h"
 #include "core/global.h"
+#include "core/msgtypes.h"
 
 class AstronClient : public Client, public NetworkClient
 {

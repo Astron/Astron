@@ -1,5 +1,5 @@
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include "dcparser/dcClass.h"
 #include "dcparser/dcField.h"
 #include "dcparser/dcAtomicField.h"
@@ -10,7 +10,7 @@
 DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doid_t parent_id,
                                      zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
                                      bool has_other) :
-	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
@@ -60,7 +60,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
                                      doid_t parent_id, zone_t zone_id, DCClass *dclass,
                                      std::unordered_map<DCField*, std::vector<uint8_t> > required,
                                      std::map<DCField*, std::vector<uint8_t> > ram) :
-	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
@@ -307,7 +307,7 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 		{
 			Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
 			dg.add_doid(m_do_id);
-			dg.add_location(INVALID_DO_ID, INVALID_ZONE);
+			dg.add_location(INVALID_DO_ID, 0);
 			dg.add_location(m_parent_id, m_zone_id);
 			send(dg);
 		}

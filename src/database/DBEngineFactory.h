@@ -2,7 +2,7 @@
 #include <string>
 #include <cstdint>
 #include "core/config.h"
-#include "core/messages.h"
+#include "core/types.h"
 
 class IDatabaseEngine;
 

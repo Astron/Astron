@@ -1,4 +1,5 @@
 #include "core/global.h"
+#include "core/msgtypes.h"
 #include "core/RoleFactory.h"
 #include "DBEngineFactory.h"
 #include "IDatabaseEngine.h"
