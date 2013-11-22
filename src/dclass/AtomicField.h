@@ -1,76 +1,80 @@
-// Filename: dcAtomicField.h
-// Created by:  drose (05Oct00)
+// Filename: AtomicField.h
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCATOMICFIELD_H
-#define DCATOMICFIELD_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcField.h"
-#include "dcSubatomicType.h"
-#include "dcParameter.h"
-
-// Must use math.h instead of cmath.h so this can compile outside of
-// Panda.
+#include "Field.h"
+#include "SubatomicType.h"
+#include "Parameter.h"
 #include <math.h>
+namespace dclass   // open namespace
+{
 
-////////////////////////////////////////////////////////////////////
-//       Class : DCAtomicField
-// Description : A single atomic field of a Distributed Class, as read
-//               from a .dc file.  This defines an interface to the
-//               Distributed Class, and is always implemented as a
-//               remote procedure method.
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCAtomicField : public DCField
+
+// An AtomicField is a single atomic field of a Distributed Class, as read
+//     from a .dc file.  This defines an interface to the Distributed Class,
+//     and represents a method of the distributed class.
+//     AtomicFields are most commonly used for remote procedure calls.
+class EXPCL_DIRECT AtomicField : public Field
 {
 	public:
-		DCAtomicField(const string &name, DCClass *dclass, bool bogus_field);
-		virtual ~DCAtomicField();
+		AtomicField(const string &name, Class *dcc, bool bogus_field);
+		virtual ~AtomicField();
 
 	PUBLISHED:
-		virtual DCAtomicField *as_atomic_field();
-		virtual const DCAtomicField *as_atomic_field() const;
+		// as_atomic_field returns the same field pointer converted to an atomic field
+		//     pointer, if this is in fact an atomic field; otherwise, returns NULL.
+		virtual AtomicField *as_atomic_field();
+		virtual const AtomicField *as_atomic_field() const;
 
+		// get_num_elements returns the number of arguments (parameters) of the atomic field.
 		int get_num_elements() const;
-		DCParameter *get_element(int n) const;
 
-		// These five methods are deprecated and will be removed soon.
-		string get_element_default(int n) const;
-		bool has_element_default(int n) const;
-		string get_element_name(int n) const;
-		DCSubatomicType get_element_type(int n) const;
-		int get_element_divisor(int n) const;
+		// get_element returns the parameter object describing the nth element.
+		Parameter *get_element(int n) const;
 
 	public:
-		void add_element(DCParameter *element);
+		// add_element adds a new element (parameter) to the field.
+		//     Normally this is called only during parsing.  The AtomicField object
+		//     becomes the owner of the new pointer and will delete it upon destruction.
+		void add_element(Parameter *element);
 
+		// output formats the field to the syntax of an atomic field in a .dc file
+		//     as IDENTIFIER(ELEMENTS, ...) KEYWORDS with optional ELEMENTS and KEYWORDS,
+		//     and outputs the formatted string to the stream.
 		virtual void output(ostream &out, bool brief) const;
+
+		// write generates a parseable description of the object to the indicated output stream.
 		virtual void write(ostream &out, bool brief, int indent_level) const;
+
+		// generate_hash accumulates the properties of this field into the hash
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
-		virtual DCPackerInterface *get_nested_field(int n) const;
+		// get_nested_field returns the PackerInterface object that represents the nth
+		//     nested field.  This may return NULL if there is no such field (but it
+		//     shouldn't do this if n is in the range 0 <= n < get_num_nested_fields()).
+		virtual PackerInterface *get_nested_field(int n) const;
 
 	protected:
-		virtual bool do_check_match(const DCPackerInterface *other) const;
-		virtual bool do_check_match_atomic_field(const DCAtomicField *other) const;
+		// do_check_match returns true if the other interface is bitwise the same as
+		//     this one--that is, a uint32 only matches a uint32, etc.
+		//     Names of components, and range limits, are not compared.
+		virtual bool do_check_match(const PackerInterface *other) const;
+		virtual bool do_check_match_atomic_field(const AtomicField *other) const;
 
 	private:
-		void output_element(ostream &out, bool brief, DCParameter *element) const;
+		// output_element formats a parameter as an element for output into .dc file syntax.
+		void output_element(ostream &out, bool brief, Parameter *element) const;
 
-		typedef pvector<DCParameter *> Elements;
-		Elements _elements;
+		std::vector<Parameter*> m_elements; // the "arguments" or parameters of the AtomicField
 };
 
-#include "dcAtomicField.I"
 
-#endif
+} // close namespace dclass
