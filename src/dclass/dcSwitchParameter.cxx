@@ -23,61 +23,66 @@
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter::
 DCSwitchParameter(const DCSwitch *dswitch) :
-  _dswitch(dswitch)
+	_dswitch(dswitch)
 {
-  set_name(dswitch->get_name());
+	set_name(dswitch->get_name());
 
-  _has_fixed_byte_size = true;
-  _fixed_byte_size = 0;
-  _has_fixed_structure = false;
+	_has_fixed_byte_size = true;
+	_fixed_byte_size = 0;
+	_has_fixed_structure = false;
 
-  // The DCSwitch presents just one nested field initially, which is
-  // the key parameter.  When we pack or unpack that, the DCPacker
-  // calls apply_switch(), which returns a new record that presents
-  // the remaining nested fields.
-  _has_nested_fields = true;
-  _num_nested_fields = 1;
+	// The DCSwitch presents just one nested field initially, which is
+	// the key parameter.  When we pack or unpack that, the DCPacker
+	// calls apply_switch(), which returns a new record that presents
+	// the remaining nested fields.
+	_has_nested_fields = true;
+	_num_nested_fields = 1;
 
-  _pack_type = PT_switch;
+	_pack_type = PT_switch;
 
-  DCField *key_parameter = dswitch->get_key_parameter();
-  _has_fixed_byte_size = _has_fixed_byte_size && key_parameter->has_fixed_byte_size();
-  _has_range_limits = _has_range_limits || key_parameter->has_range_limits();
-  _has_default_value = _has_default_value || key_parameter->has_default_value();
+	DCField *key_parameter = dswitch->get_key_parameter();
+	_has_fixed_byte_size = _has_fixed_byte_size && key_parameter->has_fixed_byte_size();
+	_has_range_limits = _has_range_limits || key_parameter->has_range_limits();
+	_has_default_value = _has_default_value || key_parameter->has_default_value();
 
-  int num_cases = _dswitch->get_num_cases();
-  if (num_cases > 0) {
-    _fixed_byte_size = _dswitch->get_case(0)->get_fixed_byte_size();
+	int num_cases = _dswitch->get_num_cases();
+	if(num_cases > 0)
+	{
+		_fixed_byte_size = _dswitch->get_case(0)->get_fixed_byte_size();
 
-    // Consider each case for fixed size, etc.
-    for (int i = 0; i < num_cases; i++) {
-      const DCSwitch::SwitchFields *fields =
-        (const DCSwitch::SwitchFields *)_dswitch->get_case(i);
+		// Consider each case for fixed size, etc.
+		for(int i = 0; i < num_cases; i++)
+		{
+			const DCSwitch::SwitchFields *fields =
+			    (const DCSwitch::SwitchFields *)_dswitch->get_case(i);
 
-      if (!fields->has_fixed_byte_size() ||
-          fields->get_fixed_byte_size() != _fixed_byte_size) {
+			if(!fields->has_fixed_byte_size() ||
+			        fields->get_fixed_byte_size() != _fixed_byte_size)
+			{
 
-        // Nope, we have a variable byte size.
-        _has_fixed_byte_size = false;
-      }
+				// Nope, we have a variable byte size.
+				_has_fixed_byte_size = false;
+			}
 
-      _has_range_limits = _has_range_limits || fields->has_range_limits();
-      _has_default_value = _has_default_value || fields->_has_default_value;
-    }
-  }
+			_has_range_limits = _has_range_limits || fields->has_range_limits();
+			_has_default_value = _has_default_value || fields->_has_default_value;
+		}
+	}
 
-  // Also consider the default case, if there is one.
-  const DCSwitch::SwitchFields *fields =
-    (DCSwitch::SwitchFields *)_dswitch->get_default_case();
-  if (fields != (DCSwitch::SwitchFields *)NULL) {
-    if (!fields->has_fixed_byte_size() ||
-        fields->get_fixed_byte_size() != _fixed_byte_size) {
-      _has_fixed_byte_size = false;
-    }
+	// Also consider the default case, if there is one.
+	const DCSwitch::SwitchFields *fields =
+	    (DCSwitch::SwitchFields *)_dswitch->get_default_case();
+	if(fields != (DCSwitch::SwitchFields *)NULL)
+	{
+		if(!fields->has_fixed_byte_size() ||
+		        fields->get_fixed_byte_size() != _fixed_byte_size)
+		{
+			_has_fixed_byte_size = false;
+		}
 
-    _has_range_limits = _has_range_limits || fields->has_range_limits();
-    _has_default_value = _has_default_value || fields->_has_default_value;
-  }
+		_has_range_limits = _has_range_limits || fields->has_range_limits();
+		_has_default_value = _has_default_value || fields->_has_default_value;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -87,8 +92,8 @@ DCSwitchParameter(const DCSwitch *dswitch) :
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter::
 DCSwitchParameter(const DCSwitchParameter &copy) :
-  DCParameter(copy),
-  _dswitch(copy._dswitch)
+	DCParameter(copy),
+	_dswitch(copy._dswitch)
 {
 }
 
@@ -98,8 +103,9 @@ DCSwitchParameter(const DCSwitchParameter &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCSwitchParameter::
-as_switch_parameter() {
-  return this;
+as_switch_parameter()
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -108,8 +114,9 @@ as_switch_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCSwitchParameter::
-as_switch_parameter() const {
-  return this;
+as_switch_parameter() const
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -118,8 +125,9 @@ as_switch_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCSwitchParameter::
-make_copy() const {
-  return new DCSwitchParameter(*this);
+make_copy() const
+{
+	return new DCSwitchParameter(*this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -130,8 +138,9 @@ make_copy() const {
 //               it is valid.
 ////////////////////////////////////////////////////////////////////
 bool DCSwitchParameter::
-is_valid() const {
-  return true; //_dswitch->is_valid();
+is_valid() const
+{
+	return true; //_dswitch->is_valid();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -140,8 +149,9 @@ is_valid() const {
 //  Description: Returns the switch object this parameter represents.
 ////////////////////////////////////////////////////////////////////
 const DCSwitch *DCSwitchParameter::
-get_switch() const {
-  return _dswitch;
+get_switch() const
+{
+	return _dswitch;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -153,8 +163,9 @@ get_switch() const {
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface *DCSwitchParameter::
-get_nested_field(int) const {
-  return _dswitch->get_key_parameter();
+get_nested_field(int) const
+{
+	return _dswitch->get_key_parameter();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -166,8 +177,9 @@ get_nested_field(int) const {
 //               string does not match one of the expected cases.
 ////////////////////////////////////////////////////////////////////
 const DCPackerInterface *DCSwitchParameter::
-apply_switch(const char *value_data, size_t length) const {
-  return _dswitch->apply_switch(value_data, length);
+apply_switch(const char *value_data, size_t length) const
+{
+	return _dswitch->apply_switch(value_data, length);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -178,13 +190,17 @@ apply_switch(const char *value_data, size_t length) const {
 ////////////////////////////////////////////////////////////////////
 void DCSwitchParameter::
 output_instance(ostream &out, bool brief, const string &prename,
-                const string &name, const string &postname) const {
-  if (get_typedef() != (DCTypedef *)NULL) {
-    output_typedef_name(out, brief, prename, name, postname);
+                const string &name, const string &postname) const
+{
+	if(get_typedef() != (DCTypedef *)NULL)
+	{
+		output_typedef_name(out, brief, prename, name, postname);
 
-  } else {
-    _dswitch->output_instance(out, brief, prename, name, postname);
-  }
+	}
+	else
+	{
+		_dswitch->output_instance(out, brief, prename, name, postname);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -196,13 +212,17 @@ output_instance(ostream &out, bool brief, const string &prename,
 void DCSwitchParameter::
 write_instance(ostream &out, bool brief, int indent_level,
                const string &prename, const string &name,
-               const string &postname) const {
-  if (get_typedef() != (DCTypedef *)NULL) {
-    write_typedef_name(out, brief, indent_level, prename, name, postname);
+               const string &postname) const
+{
+	if(get_typedef() != (DCTypedef *)NULL)
+	{
+		write_typedef_name(out, brief, indent_level, prename, name, postname);
 
-  } else {
-    _dswitch->write_instance(out, brief, indent_level, prename, name, postname);
-  }
+	}
+	else
+	{
+		_dswitch->write_instance(out, brief, indent_level, prename, name, postname);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -212,9 +232,10 @@ write_instance(ostream &out, bool brief, int indent_level,
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCSwitchParameter::
-generate_hash(HashGenerator &hashgen) const {
-  DCParameter::generate_hash(hashgen);
-  _dswitch->generate_hash(hashgen);
+generate_hash(HashGenerator &hashgen) const
+{
+	DCParameter::generate_hash(hashgen);
+	_dswitch->generate_hash(hashgen);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -227,12 +248,14 @@ generate_hash(HashGenerator &hashgen) const {
 //               default value.
 ////////////////////////////////////////////////////////////////////
 bool DCSwitchParameter::
-pack_default_value(DCPackData &pack_data, bool &pack_error) const {
-  if (has_default_value()) {
-    return DCField::pack_default_value(pack_data, pack_error);
-  }
+pack_default_value(DCPackData &pack_data, bool &pack_error) const
+{
+	if(has_default_value())
+	{
+		return DCField::pack_default_value(pack_data, pack_error);
+	}
 
-  return _dswitch->pack_default_value(pack_data, pack_error);
+	return _dswitch->pack_default_value(pack_data, pack_error);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -244,8 +267,9 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
 //               are not compared.
 ////////////////////////////////////////////////////////////////////
 bool DCSwitchParameter::
-do_check_match(const DCPackerInterface *other) const {
-  return other->do_check_match_switch_parameter(this);
+do_check_match(const DCPackerInterface *other) const
+{
+	return other->do_check_match_switch_parameter(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -255,6 +279,7 @@ do_check_match(const DCPackerInterface *other) const {
 //               switch parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCSwitchParameter::
-do_check_match_switch_parameter(const DCSwitchParameter *other) const {
-  return _dswitch->do_check_match_switch(other->_dswitch);
+do_check_match_switch_parameter(const DCSwitchParameter *other) const
+{
+	return _dswitch->do_check_match_switch(other->_dswitch);
 }

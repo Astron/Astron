@@ -24,11 +24,12 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter::
-DCParameter() {
-  _typedef = NULL;
-  _has_fixed_byte_size = false;
-  _has_fixed_structure = false;
-  _num_nested_fields = -1;
+DCParameter()
+{
+	_typedef = NULL;
+	_has_fixed_byte_size = false;
+	_has_fixed_structure = false;
+	_num_nested_fields = -1;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -38,8 +39,8 @@ DCParameter() {
 ////////////////////////////////////////////////////////////////////
 DCParameter::
 DCParameter(const DCParameter &copy) :
-  DCField(copy),
-  _typedef(copy._typedef)
+	DCField(copy),
+	_typedef(copy._typedef)
 {
 }
 
@@ -49,7 +50,8 @@ DCParameter(const DCParameter &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter::
-~DCParameter() {
+~DCParameter()
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,8 +60,9 @@ DCParameter::
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCParameter::
-as_parameter() {
-  return this;
+as_parameter()
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -68,8 +71,9 @@ as_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCParameter *DCParameter::
-as_parameter() const {
-  return this;
+as_parameter() const
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,8 +82,9 @@ as_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCSimpleParameter *DCParameter::
-as_simple_parameter() {
-  return NULL;
+as_simple_parameter()
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -88,8 +93,9 @@ as_simple_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSimpleParameter *DCParameter::
-as_simple_parameter() const {
-  return NULL;
+as_simple_parameter() const
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -98,8 +104,9 @@ as_simple_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter *DCParameter::
-as_class_parameter() {
-  return NULL;
+as_class_parameter()
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -108,8 +115,9 @@ as_class_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCClassParameter *DCParameter::
-as_class_parameter() const {
-  return NULL;
+as_class_parameter() const
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -118,8 +126,9 @@ as_class_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCParameter::
-as_switch_parameter() {
-  return NULL;
+as_switch_parameter()
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -128,8 +137,9 @@ as_switch_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCParameter::
-as_switch_parameter() const {
-  return NULL;
+as_switch_parameter() const
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -138,8 +148,9 @@ as_switch_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter *DCParameter::
-as_array_parameter() {
-  return NULL;
+as_array_parameter()
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -148,8 +159,9 @@ as_array_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCArrayParameter *DCParameter::
-as_array_parameter() const {
-  return NULL;
+as_array_parameter() const
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -160,8 +172,9 @@ as_array_parameter() const {
 //               type was declared on-the-fly.
 ////////////////////////////////////////////////////////////////////
 const DCTypedef *DCParameter::
-get_typedef() const {
-  return _typedef;
+get_typedef() const
+{
+	return _typedef;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -172,8 +185,9 @@ get_typedef() const {
 //               DCTypedef::make_new_parameter().
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
-set_typedef(const DCTypedef *dtypedef) {
-  _typedef = dtypedef;
+set_typedef(const DCTypedef *dtypedef)
+{
+	_typedef = dtypedef;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -185,8 +199,9 @@ set_typedef(const DCTypedef *dtypedef) {
 //               returns a DCArrayParameter wrapped around this type.
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCParameter::
-append_array_specification(const DCUnsignedIntRange &size) {
-  return new DCArrayParameter(this, size);
+append_array_specification(const DCUnsignedIntRange &size)
+{
+	return new DCArrayParameter(this, size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -195,12 +210,14 @@ append_array_specification(const DCUnsignedIntRange &size) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
-output(ostream &out, bool brief) const {
-  string name;
-  if (!brief) {
-    name = get_name();
-  }
-  output_instance(out, brief, "", name, "");
+output(ostream &out, bool brief) const
+{
+	string name;
+	if(!brief)
+	{
+		name = get_name();
+	}
+	output_instance(out, brief, "", name, "");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -209,11 +226,12 @@ output(ostream &out, bool brief) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
-write(ostream &out, bool brief, int indent_level) const {
-  // we must always output the name when the parameter occurs by
-  // itself within a class, so we pass get_name() even if brief is
-  // true.
-  write_instance(out, brief, indent_level, "", get_name(), "");
+write(ostream &out, bool brief, int indent_level) const
+{
+	// we must always output the name when the parameter occurs by
+	// itself within a class, so we pass get_name() even if brief is
+	// true.
+	write_instance(out, brief, indent_level, "", get_name(), "");
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -225,15 +243,17 @@ write(ostream &out, bool brief, int indent_level) const {
 void DCParameter::
 write_instance(ostream &out, bool brief, int indent_level,
                const string &prename, const string &name,
-               const string &postname) const {
-  indent(out, indent_level);
-  output_instance(out, brief, prename, name, postname);
-  output_keywords(out);
-  out << ";";
-  if (!brief && _number >= 0) {
-    out << "  // field " << _number;
-  }
-  out << "\n";
+               const string &postname) const
+{
+	indent(out, indent_level);
+	output_instance(out, brief, prename, name, postname);
+	output_keywords(out);
+	out << ";";
+	if(!brief && _number >= 0)
+	{
+		out << "  // field " << _number;
+	}
+	out << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -244,11 +264,13 @@ write_instance(ostream &out, bool brief, int indent_level,
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
 output_typedef_name(ostream &out, bool, const string &prename,
-                    const string &name, const string &postname) const {
-  out << get_typedef()->get_name();
-  if (!prename.empty() || !name.empty() || !postname.empty()) {
-    out << " " << prename << name << postname;
-  }
+                    const string &name, const string &postname) const
+{
+	out << get_typedef()->get_name();
+	if(!prename.empty() || !name.empty() || !postname.empty())
+	{
+		out << " " << prename << name << postname;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -260,18 +282,21 @@ output_typedef_name(ostream &out, bool, const string &prename,
 void DCParameter::
 write_typedef_name(ostream &out, bool brief, int indent_level,
                    const string &prename, const string &name,
-                   const string &postname) const {
-  indent(out, indent_level)
-    << get_typedef()->get_name();
-  if (!prename.empty() || !name.empty() || !postname.empty()) {
-    out << " " << prename << name << postname;
-  }
-  output_keywords(out);
-  out << ";";
-  if (!brief && _number >= 0) {
-    out << "  // field " << _number;
-  }
-  out << "\n";
+                   const string &postname) const
+{
+	indent(out, indent_level)
+	        << get_typedef()->get_name();
+	if(!prename.empty() || !name.empty() || !postname.empty())
+	{
+		out << " " << prename << name << postname;
+	}
+	output_keywords(out);
+	out << ";";
+	if(!brief && _number >= 0)
+	{
+		out << "  // field " << _number;
+	}
+	out << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -281,11 +306,13 @@ write_typedef_name(ostream &out, bool brief, int indent_level,
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCParameter::
-generate_hash(HashGenerator &hashgen) const {
-  // We specifically don't call up to DCField::generate_hash(), since
-  // the parameter name is not actually significant to the hash.
+generate_hash(HashGenerator &hashgen) const
+{
+	// We specifically don't call up to DCField::generate_hash(), since
+	// the parameter name is not actually significant to the hash.
 
-  if (get_num_keywords() != 0) {
-    DCKeywordList::generate_hash(hashgen);
-  }
+	if(get_num_keywords() != 0)
+	{
+		DCKeywordList::generate_hash(hashgen);
+	}
 }

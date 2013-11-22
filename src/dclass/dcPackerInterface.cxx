@@ -25,17 +25,17 @@
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
 DCPackerInterface(const string &name) :
-  _name(name)
+	_name(name)
 {
-  _has_fixed_byte_size = false;
-  _fixed_byte_size = 0;
-  _has_fixed_structure = false;
-  _has_range_limits = false;
-  _num_length_bytes = 0;
-  _has_nested_fields = false;
-  _num_nested_fields = -1;
-  _pack_type = PT_invalid;
-  _catalog = NULL;
+	_has_fixed_byte_size = false;
+	_fixed_byte_size = 0;
+	_has_fixed_structure = false;
+	_has_range_limits = false;
+	_num_length_bytes = 0;
+	_has_nested_fields = false;
+	_num_nested_fields = -1;
+	_pack_type = PT_invalid;
+	_catalog = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -45,17 +45,17 @@ DCPackerInterface(const string &name) :
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
 DCPackerInterface(const DCPackerInterface &copy) :
-  _name(copy._name),
-  _has_fixed_byte_size(copy._has_fixed_byte_size),
-  _fixed_byte_size(copy._fixed_byte_size),
-  _has_fixed_structure(copy._has_fixed_structure),
-  _has_range_limits(copy._has_range_limits),
-  _num_length_bytes(copy._num_length_bytes),
-  _has_nested_fields(copy._has_nested_fields),
-  _num_nested_fields(copy._num_nested_fields),
-  _pack_type(copy._pack_type)
+	_name(copy._name),
+	_has_fixed_byte_size(copy._has_fixed_byte_size),
+	_fixed_byte_size(copy._fixed_byte_size),
+	_has_fixed_structure(copy._has_fixed_structure),
+	_has_range_limits(copy._has_range_limits),
+	_num_length_bytes(copy._num_length_bytes),
+	_has_nested_fields(copy._has_nested_fields),
+	_num_nested_fields(copy._num_nested_fields),
+	_pack_type(copy._pack_type)
 {
-  _catalog = NULL;
+	_catalog = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -64,10 +64,12 @@ DCPackerInterface(const DCPackerInterface &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface::
-~DCPackerInterface() {
-  if (_catalog != (DCPackerCatalog *)NULL) {
-    delete _catalog;
-  }
+~DCPackerInterface()
+{
+	if(_catalog != (DCPackerCatalog *)NULL)
+	{
+		delete _catalog;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -86,8 +88,9 @@ DCPackerInterface::
 //               number--you must seek for the field by name.
 ////////////////////////////////////////////////////////////////////
 int DCPackerInterface::
-find_seek_index(const string &name) const {
-  return get_catalog()->find_entry_by_name(name);
+find_seek_index(const string &name) const
+{
+	return get_catalog()->find_entry_by_name(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -96,8 +99,9 @@ find_seek_index(const string &name) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCField *DCPackerInterface::
-as_field() {
-  return (DCField *)NULL;
+as_field()
+{
+	return (DCField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -106,8 +110,9 @@ as_field() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCField *DCPackerInterface::
-as_field() const {
-  return (DCField *)NULL;
+as_field() const
+{
+	return (DCField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -116,8 +121,9 @@ as_field() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCSwitchParameter *DCPackerInterface::
-as_switch_parameter() {
-  return (DCSwitchParameter *)NULL;
+as_switch_parameter()
+{
+	return (DCSwitchParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -126,8 +132,9 @@ as_switch_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCSwitchParameter *DCPackerInterface::
-as_switch_parameter() const {
-  return (DCSwitchParameter *)NULL;
+as_switch_parameter() const
+{
+	return (DCSwitchParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -136,8 +143,9 @@ as_switch_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCClassParameter *DCPackerInterface::
-as_class_parameter() {
-  return (DCClassParameter *)NULL;
+as_class_parameter()
+{
+	return (DCClassParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -146,8 +154,9 @@ as_class_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCClassParameter *DCPackerInterface::
-as_class_parameter() const {
-  return (DCClassParameter *)NULL;
+as_class_parameter() const
+{
+	return (DCClassParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -164,26 +173,29 @@ as_class_parameter() const {
 //               description string.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-check_match(const string &description, DCFile *dcfile) const {
-  bool match = false;
+check_match(const string &description, DCFile *dcfile) const
+{
+	bool match = false;
 
-  istringstream strm(description);
-  dc_init_parser_parameter_description(strm, "check_match", dcfile);
-  dcyyparse();
-  dc_cleanup_parser();
+	istringstream strm(description);
+	dc_init_parser_parameter_description(strm, "check_match", dcfile);
+	dcyyparse();
+	dc_cleanup_parser();
 
-  DCField *field = dc_get_parameter_description();
-  if (field != NULL) {
-    match = check_match(field);
-    delete field;
-  }
+	DCField *field = dc_get_parameter_description();
+	if(field != NULL)
+	{
+		match = check_match(field);
+		delete field;
+	}
 
-  if (dc_error_count() == 0) {
-    return match;
-  }
+	if(dc_error_count() == 0)
+	{
+		return match;
+	}
 
-  // Parse error: no match is allowed.
-  return false;
+	// Parse error: no match is allowed.
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -192,8 +204,9 @@ check_match(const string &description, DCFile *dcfile) const {
 //  Description: Sets the name of this field.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-set_name(const string &name) {
-  _name = name;
+set_name(const string &name)
+{
+	_name = name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -207,8 +220,9 @@ set_name(const string &name) {
 //               is nonzero.
 ////////////////////////////////////////////////////////////////////
 int DCPackerInterface::
-calc_num_nested_fields(size_t) const {
-  return 0;
+calc_num_nested_fields(size_t) const
+{
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -220,8 +234,9 @@ calc_num_nested_fields(size_t) const {
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface *DCPackerInterface::
-get_nested_field(int) const {
-  return NULL;
+get_nested_field(int) const
+{
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -235,8 +250,9 @@ get_nested_field(int) const {
 //               number of fields any other way.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-validate_num_nested_fields(int) const {
-  return true;
+validate_num_nested_fields(int) const
+{
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -246,8 +262,9 @@ validate_num_nested_fields(int) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_double(DCPackData &, double, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_double(DCPackData &, double, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -257,8 +274,9 @@ pack_double(DCPackData &, double, bool &pack_error, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_int(DCPackData &, int, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_int(DCPackData &, int, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -268,8 +286,9 @@ pack_int(DCPackData &, int, bool &pack_error, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_uint(DCPackData &, unsigned int, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_uint(DCPackData &, unsigned int, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -279,8 +298,9 @@ pack_uint(DCPackData &, unsigned int, bool &pack_error, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_int64(DCPackData &, int64_t, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_int64(DCPackData &, int64_t, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -290,8 +310,9 @@ pack_int64(DCPackData &, int64_t, bool &pack_error, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_uint64(DCPackData &, uint64_t, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_uint64(DCPackData &, uint64_t, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -301,8 +322,9 @@ pack_uint64(DCPackData &, uint64_t, bool &pack_error, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-pack_string(DCPackData &, const string &, bool &pack_error, bool &) const {
-  pack_error = true;
+pack_string(DCPackData &, const string &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -315,8 +337,9 @@ pack_string(DCPackData &, const string &, bool &pack_error, bool &) const {
 //               default value.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-pack_default_value(DCPackData &, bool &) const {
-  return false;
+pack_default_value(DCPackData &, bool &) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -326,8 +349,9 @@ pack_default_value(DCPackData &, bool &) const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_double(const char *, size_t, size_t &, double &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_double(const char *, size_t, size_t &, double &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -337,8 +361,9 @@ unpack_double(const char *, size_t, size_t &, double &, bool &pack_error, bool &
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_int(const char *, size_t, size_t &, int &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_int(const char *, size_t, size_t &, int &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -348,8 +373,9 @@ unpack_int(const char *, size_t, size_t &, int &, bool &pack_error, bool &) cons
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_uint(const char *, size_t, size_t &, unsigned int &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_uint(const char *, size_t, size_t &, unsigned int &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -359,8 +385,9 @@ unpack_uint(const char *, size_t, size_t &, unsigned int &, bool &pack_error, bo
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_int64(const char *, size_t, size_t &, int64_t &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_int64(const char *, size_t, size_t &, int64_t &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -370,8 +397,9 @@ unpack_int64(const char *, size_t, size_t &, int64_t &, bool &pack_error, bool &
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_uint64(const char *, size_t, size_t &, uint64_t &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_uint64(const char *, size_t, size_t &, uint64_t &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -381,8 +409,9 @@ unpack_uint64(const char *, size_t, size_t &, uint64_t &, bool &pack_error, bool
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &) const {
-  pack_error = true;
+unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &) const
+{
+	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -396,11 +425,13 @@ unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
 unpack_validate(const char *data, size_t length, size_t &p,
-                bool &pack_error, bool &) const {
-  if (!_has_range_limits) {
-    return unpack_skip(data, length, p, pack_error);
-  }
-  return false;
+                bool &pack_error, bool &) const
+{
+	if(!_has_range_limits)
+	{
+		return unpack_skip(data, length, p, pack_error);
+	}
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -413,39 +444,50 @@ unpack_validate(const char *data, size_t length, size_t &p,
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
 unpack_skip(const char *data, size_t length, size_t &p,
-            bool &pack_error) const {
-  if (_has_fixed_byte_size) {
-    // If this field has a fixed byte size, it's easy to skip.
-    p += _fixed_byte_size;
-    if (p > length) {
-      pack_error = true;
-    }
-    return true;
-  }
+            bool &pack_error) const
+{
+	if(_has_fixed_byte_size)
+	{
+		// If this field has a fixed byte size, it's easy to skip.
+		p += _fixed_byte_size;
+		if(p > length)
+		{
+			pack_error = true;
+		}
+		return true;
+	}
 
-  if (_has_nested_fields && _num_length_bytes != 0) {
-    // If we have a length prefix, use that for skipping.
-    if (p + _num_length_bytes > length) {
-      pack_error = true;
+	if(_has_nested_fields && _num_length_bytes != 0)
+	{
+		// If we have a length prefix, use that for skipping.
+		if(p + _num_length_bytes > length)
+		{
+			pack_error = true;
 
-    } else {
-      if (_num_length_bytes == 4) {
-        size_t this_length = do_unpack_uint32(data + p);
-        p += this_length + 4;
-      } else {
-        size_t this_length = do_unpack_uint16(data + p);
-        p += this_length + 2;
-      }
-      if (p > length) {
-        pack_error = true;
-      }
-    }
-    return true;
-  }
+		}
+		else
+		{
+			if(_num_length_bytes == 4)
+			{
+				size_t this_length = do_unpack_uint32(data + p);
+				p += this_length + 4;
+			}
+			else
+			{
+				size_t this_length = do_unpack_uint16(data + p);
+				p += this_length + 2;
+			}
+			if(p > length)
+			{
+				pack_error = true;
+			}
+		}
+		return true;
+	}
 
-  // Otherwise, we don't know how to skip this field (presumably it
-  // can be skipped by skipping over its nested fields individually).
-  return false;
+	// Otherwise, we don't know how to skip this field (presumably it
+	// can be skipped by skipping over its nested fields individually).
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -455,11 +497,13 @@ unpack_skip(const char *data, size_t length, size_t &p,
 //               field, listing all of the nested fields by name.
 ////////////////////////////////////////////////////////////////////
 const DCPackerCatalog *DCPackerInterface::
-get_catalog() const {
-  if (_catalog == (DCPackerCatalog *)NULL) {
-    ((DCPackerInterface *)this)->make_catalog();
-  }
-  return _catalog;
+get_catalog() const
+{
+	if(_catalog == (DCPackerCatalog *)NULL)
+	{
+		((DCPackerInterface *)this)->make_catalog();
+	}
+	return _catalog;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -469,8 +513,9 @@ get_catalog() const {
 //               simple parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_simple_parameter(const DCSimpleParameter *) const {
-  return false;
+do_check_match_simple_parameter(const DCSimpleParameter *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -480,8 +525,9 @@ do_check_match_simple_parameter(const DCSimpleParameter *) const {
 //               class parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_class_parameter(const DCClassParameter *) const {
-  return false;
+do_check_match_class_parameter(const DCClassParameter *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -491,8 +537,9 @@ do_check_match_class_parameter(const DCClassParameter *) const {
 //               switch parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_switch_parameter(const DCSwitchParameter *) const {
-  return false;
+do_check_match_switch_parameter(const DCSwitchParameter *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -502,8 +549,9 @@ do_check_match_switch_parameter(const DCSwitchParameter *) const {
 //               array parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_array_parameter(const DCArrayParameter *) const {
-  return false;
+do_check_match_array_parameter(const DCArrayParameter *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -513,8 +561,9 @@ do_check_match_array_parameter(const DCArrayParameter *) const {
 //               atomic field, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_atomic_field(const DCAtomicField *) const {
-  return false;
+do_check_match_atomic_field(const DCAtomicField *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -524,8 +573,9 @@ do_check_match_atomic_field(const DCAtomicField *) const {
 //               molecular field, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCPackerInterface::
-do_check_match_molecular_field(const DCMolecularField *) const {
-  return false;
+do_check_match_molecular_field(const DCMolecularField *) const
+{
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -535,9 +585,10 @@ do_check_match_molecular_field(const DCMolecularField *) const {
 //               object.
 ////////////////////////////////////////////////////////////////////
 void DCPackerInterface::
-make_catalog() {
-  nassertv(_catalog == (DCPackerCatalog *)NULL);
-  _catalog = new DCPackerCatalog(this);
+make_catalog()
+{
+	nassertv(_catalog == (DCPackerCatalog *)NULL);
+	_catalog = new DCPackerCatalog(this);
 
-  _catalog->r_fill_catalog("", this, NULL, 0);
+	_catalog->r_fill_catalog("", this, NULL, 0);
 }

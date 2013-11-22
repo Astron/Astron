@@ -28,9 +28,9 @@
 DCAtomicField::
 DCAtomicField(const string &name, DCClass *dclass,
               bool bogus_field) :
-  DCField(name, dclass)
+	DCField(name, dclass)
 {
-  _bogus_field = bogus_field;
+	_bogus_field = bogus_field;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -39,12 +39,14 @@ DCAtomicField(const string &name, DCClass *dclass,
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCAtomicField::
-~DCAtomicField() {
-  Elements::iterator ei;
-  for (ei = _elements.begin(); ei != _elements.end(); ++ei) {
-    delete (*ei);
-  }
-  _elements.clear();
+~DCAtomicField()
+{
+	Elements::iterator ei;
+	for(ei = _elements.begin(); ei != _elements.end(); ++ei)
+	{
+		delete(*ei);
+	}
+	_elements.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -55,8 +57,9 @@ DCAtomicField::
 //               otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
 DCAtomicField *DCAtomicField::
-as_atomic_field() {
-  return this;
+as_atomic_field()
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -67,8 +70,9 @@ as_atomic_field() {
 //               otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
 const DCAtomicField *DCAtomicField::
-as_atomic_field() const {
-  return this;
+as_atomic_field() const
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,8 +82,9 @@ as_atomic_field() const {
 //               atomic field.
 ////////////////////////////////////////////////////////////////////
 int DCAtomicField::
-get_num_elements() const {
-  return _elements.size();
+get_num_elements() const
+{
+	return _elements.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -89,9 +94,10 @@ get_num_elements() const {
 //               nth element.
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCAtomicField::
-get_element(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), NULL);
-  return _elements[n];
+get_element(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), NULL);
+	return _elements[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -110,9 +116,10 @@ get_element(int n) const {
 //               This is deprecated; use get_element() instead.
 ////////////////////////////////////////////////////////////////////
 string DCAtomicField::
-get_element_default(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), string());
-  return _elements[n]->get_default_value();
+get_element_default(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), string());
+	return _elements[n]->get_default_value();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -124,9 +131,10 @@ get_element_default(int n) const {
 //               This is deprecated; use get_element() instead.
 ////////////////////////////////////////////////////////////////////
 bool DCAtomicField::
-has_element_default(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), false);
-  return _elements[n]->has_default_value();
+has_element_default(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), false);
+	return _elements[n]->has_default_value();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -141,9 +149,10 @@ has_element_default(int n) const {
 //               get_element()->get_name() instead.
 ////////////////////////////////////////////////////////////////////
 string DCAtomicField::
-get_element_name(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), string());
-  return _elements[n]->get_name();
+get_element_name(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), string());
+	return _elements[n]->get_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -154,11 +163,12 @@ get_element_name(int n) const {
 //               get_element() instead.
 ////////////////////////////////////////////////////////////////////
 DCSubatomicType DCAtomicField::
-get_element_type(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), ST_invalid);
-  DCSimpleParameter *simple_parameter = _elements[n]->as_simple_parameter();
-  nassertr(simple_parameter != (DCSimpleParameter *)NULL, ST_invalid);
-  return simple_parameter->get_type();
+get_element_type(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), ST_invalid);
+	DCSimpleParameter *simple_parameter = _elements[n]->as_simple_parameter();
+	nassertr(simple_parameter != (DCSimpleParameter *)NULL, ST_invalid);
+	return simple_parameter->get_type();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -174,11 +184,12 @@ get_element_type(int n) const {
 //               get_element()->get_divisor() instead.
 ////////////////////////////////////////////////////////////////////
 int DCAtomicField::
-get_element_divisor(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), 1);
-  DCSimpleParameter *simple_parameter = _elements[n]->as_simple_parameter();
-  nassertr(simple_parameter != (DCSimpleParameter *)NULL, 1);
-  return simple_parameter->get_divisor();
+get_element_divisor(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), 1);
+	DCSimpleParameter *simple_parameter = _elements[n]->as_simple_parameter();
+	nassertr(simple_parameter != (DCSimpleParameter *)NULL, 1);
+	return simple_parameter->get_divisor();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -187,22 +198,25 @@ get_element_divisor(int n) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
-output(ostream &out, bool brief) const {
-  out << _name << "(";
+output(ostream &out, bool brief) const
+{
+	out << _name << "(";
 
-  if (!_elements.empty()) {
-    Elements::const_iterator ei = _elements.begin();
-    output_element(out, brief, *ei);
-    ++ei;
-    while (ei != _elements.end()) {
-      out << ", ";
-      output_element(out, brief, *ei);
-      ++ei;
-    }
-  }
-  out << ")";
+	if(!_elements.empty())
+	{
+		Elements::const_iterator ei = _elements.begin();
+		output_element(out, brief, *ei);
+		++ei;
+		while(ei != _elements.end())
+		{
+			out << ", ";
+			output_element(out, brief, *ei);
+			++ei;
+		}
+	}
+	out << ")";
 
-  output_keywords(out);
+	output_keywords(out);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -212,14 +226,16 @@ output(ostream &out, bool brief) const {
 //               the indicated output stream.
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
-write(ostream &out, bool brief, int indent_level) const {
-  indent(out, indent_level);
-  output(out, brief);
-  out << ";";
-  if (!brief && _number >= 0) {
-    out << "  // field " << _number;
-  }
-  out << "\n";
+write(ostream &out, bool brief, int indent_level) const
+{
+	indent(out, indent_level);
+	output(out, brief);
+	out << ";";
+	if(!brief && _number >= 0)
+	{
+		out << "  // field " << _number;
+	}
+	out << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -229,16 +245,18 @@ write(ostream &out, bool brief, int indent_level) const {
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
-generate_hash(HashGenerator &hashgen) const {
-  DCField::generate_hash(hashgen);
+generate_hash(HashGenerator &hashgen) const
+{
+	DCField::generate_hash(hashgen);
 
-  hashgen.add_int(_elements.size());
-  Elements::const_iterator ei;
-  for (ei = _elements.begin(); ei != _elements.end(); ++ei) {
-    (*ei)->generate_hash(hashgen);
-  }
+	hashgen.add_int(_elements.size());
+	Elements::const_iterator ei;
+	for(ei = _elements.begin(); ei != _elements.end(); ++ei)
+	{
+		(*ei)->generate_hash(hashgen);
+	}
 
-  DCKeywordList::generate_hash(hashgen);
+	DCKeywordList::generate_hash(hashgen);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -250,9 +268,10 @@ generate_hash(HashGenerator &hashgen) const {
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface *DCAtomicField::
-get_nested_field(int n) const {
-  nassertr(n >= 0 && n < (int)_elements.size(), NULL);
-  return _elements[n];
+get_nested_field(int n) const
+{
+	nassertr(n >= 0 && n < (int)_elements.size(), NULL);
+	return _elements[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -264,25 +283,30 @@ get_nested_field(int n) const {
 //               pointer and will delete it upon destruction.
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
-add_element(DCParameter *element) {
-  _elements.push_back(element);
-  _num_nested_fields = (int)_elements.size();
+add_element(DCParameter *element)
+{
+	_elements.push_back(element);
+	_num_nested_fields = (int)_elements.size();
 
-  // See if we still have a fixed byte size.
-  if (_has_fixed_byte_size) {
-    _has_fixed_byte_size = element->has_fixed_byte_size();
-    _fixed_byte_size += element->get_fixed_byte_size();
-  }
-  if (_has_fixed_structure) {
-    _has_fixed_structure = element->has_fixed_structure();
-  }
-  if (!_has_range_limits) {
-    _has_range_limits = element->has_range_limits();
-  }
-  if (!_has_default_value) {
-    _has_default_value = element->has_default_value();
-  }
-  _default_value_stale = true;
+	// See if we still have a fixed byte size.
+	if(_has_fixed_byte_size)
+	{
+		_has_fixed_byte_size = element->has_fixed_byte_size();
+		_fixed_byte_size += element->get_fixed_byte_size();
+	}
+	if(_has_fixed_structure)
+	{
+		_has_fixed_structure = element->has_fixed_structure();
+	}
+	if(!_has_range_limits)
+	{
+		_has_range_limits = element->has_range_limits();
+	}
+	if(!_has_default_value)
+	{
+		_has_default_value = element->has_default_value();
+	}
+	_default_value_stale = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -294,8 +318,9 @@ add_element(DCParameter *element) {
 //               are not compared.
 ////////////////////////////////////////////////////////////////////
 bool DCAtomicField::
-do_check_match(const DCPackerInterface *other) const {
-  return other->do_check_match_atomic_field(this);
+do_check_match(const DCPackerInterface *other) const
+{
+	return other->do_check_match_atomic_field(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -305,17 +330,21 @@ do_check_match(const DCPackerInterface *other) const {
 //               atomic field, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCAtomicField::
-do_check_match_atomic_field(const DCAtomicField *other) const {
-  if (_elements.size() != other->_elements.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < _elements.size(); i++) {
-    if (!_elements[i]->check_match(other->_elements[i])) {
-      return false;
-    }
-  }
+do_check_match_atomic_field(const DCAtomicField *other) const
+{
+	if(_elements.size() != other->_elements.size())
+	{
+		return false;
+	}
+	for(size_t i = 0; i < _elements.size(); i++)
+	{
+		if(!_elements[i]->check_match(other->_elements[i]))
+		{
+			return false;
+		}
+	}
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -324,15 +353,17 @@ do_check_match_atomic_field(const DCAtomicField *other) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCAtomicField::
-output_element(ostream &out, bool brief, DCParameter *element) const {
-  element->output(out, brief);
+output_element(ostream &out, bool brief, DCParameter *element) const
+{
+	element->output(out, brief);
 
-  if (!brief && element->has_default_value()) {
-    out << " = ";
-    DCPacker packer;
-    packer.set_unpack_data(element->get_default_value());
-    packer.begin_unpack(element);
-    packer.unpack_and_format(out, false);
-    packer.end_unpack();
-  }
+	if(!brief && element->has_default_value())
+	{
+		out << " = ";
+		DCPacker packer;
+		packer.set_unpack_data(element->get_default_value());
+		packer.begin_unpack(element);
+		packer.unpack_and_format(out, false);
+		packer.end_unpack();
+	}
 }

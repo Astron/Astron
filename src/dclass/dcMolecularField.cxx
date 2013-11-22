@@ -25,8 +25,9 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCMolecularField::
-DCMolecularField(const string &name, DCClass *dclass) : DCField(name, dclass) {
-  _got_keywords = false;
+DCMolecularField(const string &name, DCClass *dclass) : DCField(name, dclass)
+{
+	_got_keywords = false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -37,8 +38,9 @@ DCMolecularField(const string &name, DCClass *dclass) : DCField(name, dclass) {
 //               molecular field; otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
 DCMolecularField *DCMolecularField::
-as_molecular_field() {
-  return this;
+as_molecular_field()
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -49,8 +51,9 @@ as_molecular_field() {
 //               molecular field; otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
 const DCMolecularField *DCMolecularField::
-as_molecular_field() const {
-  return this;
+as_molecular_field() const
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -60,8 +63,9 @@ as_molecular_field() const {
 //               molecular field.
 ////////////////////////////////////////////////////////////////////
 int DCMolecularField::
-get_num_atomics() const {
-  return _fields.size();
+get_num_atomics() const
+{
+	return _fields.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -73,9 +77,10 @@ get_num_atomics() const {
 //               parent class.
 ////////////////////////////////////////////////////////////////////
 DCAtomicField *DCMolecularField::
-get_atomic(int n) const {
-  nassertr(n >= 0 && n < (int)_fields.size(), NULL);
-  return _fields[n];
+get_atomic(int n) const
+{
+	nassertr(n >= 0 && n < (int)_fields.size(), NULL);
+	return _fields[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,38 +95,46 @@ get_atomic(int n) const {
 //               adding it to a molecular field.
 ////////////////////////////////////////////////////////////////////
 void DCMolecularField::
-add_atomic(DCAtomicField *atomic) {
-  if (!atomic->is_bogus_field()) {
-    if (!_got_keywords) {
-      // The first non-bogus atomic field determines our keywords.
-      copy_keywords(*atomic);
-      _got_keywords = true;
-    }
-  }
-  _fields.push_back(atomic);
+add_atomic(DCAtomicField *atomic)
+{
+	if(!atomic->is_bogus_field())
+	{
+		if(!_got_keywords)
+		{
+			// The first non-bogus atomic field determines our keywords.
+			copy_keywords(*atomic);
+			_got_keywords = true;
+		}
+	}
+	_fields.push_back(atomic);
 
-  int num_atomic_fields = atomic->get_num_nested_fields();
-  for (int i = 0; i < num_atomic_fields; i++) {
-    _nested_fields.push_back(atomic->get_nested_field(i));
-  }
+	int num_atomic_fields = atomic->get_num_nested_fields();
+	for(int i = 0; i < num_atomic_fields; i++)
+	{
+		_nested_fields.push_back(atomic->get_nested_field(i));
+	}
 
-  _num_nested_fields = _nested_fields.size();
+	_num_nested_fields = _nested_fields.size();
 
-  // See if we still have a fixed byte size.
-  if (_has_fixed_byte_size) {
-    _has_fixed_byte_size = atomic->has_fixed_byte_size();
-    _fixed_byte_size += atomic->get_fixed_byte_size();
-  }
-  if (_has_fixed_structure) {
-    _has_fixed_structure = atomic->has_fixed_structure();
-  }
-  if (!_has_range_limits) {
-    _has_range_limits = atomic->has_range_limits();
-  }
-  if (!_has_default_value) {
-    _has_default_value = atomic->has_default_value();
-  }
-  _default_value_stale = true;
+	// See if we still have a fixed byte size.
+	if(_has_fixed_byte_size)
+	{
+		_has_fixed_byte_size = atomic->has_fixed_byte_size();
+		_fixed_byte_size += atomic->get_fixed_byte_size();
+	}
+	if(_has_fixed_structure)
+	{
+		_has_fixed_structure = atomic->has_fixed_structure();
+	}
+	if(!_has_range_limits)
+	{
+		_has_range_limits = atomic->has_range_limits();
+	}
+	if(!_has_default_value)
+	{
+		_has_default_value = atomic->has_default_value();
+	}
+	_default_value_stale = true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -130,20 +143,23 @@ add_atomic(DCAtomicField *atomic) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCMolecularField::
-output(ostream &out, bool brief) const {
-  out << _name;
+output(ostream &out, bool brief) const
+{
+	out << _name;
 
-  if (!_fields.empty()) {
-    Fields::const_iterator fi = _fields.begin();
-    out << " : " << (*fi)->get_name();
-    ++fi;
-    while (fi != _fields.end()) {
-      out << ", " << (*fi)->get_name();
-      ++fi;
-    }
-  }
+	if(!_fields.empty())
+	{
+		Fields::const_iterator fi = _fields.begin();
+		out << " : " << (*fi)->get_name();
+		++fi;
+		while(fi != _fields.end())
+		{
+			out << ", " << (*fi)->get_name();
+			++fi;
+		}
+	}
 
-  out << ";";
+	out << ";";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -153,13 +169,15 @@ output(ostream &out, bool brief) const {
 //               the indicated output stream.
 ////////////////////////////////////////////////////////////////////
 void DCMolecularField::
-write(ostream &out, bool brief, int indent_level) const {
-  indent(out, indent_level);
-  output(out, brief);
-  if (!brief) {
-    out << "  // field " << _number;
-  }
-  out << "\n";
+write(ostream &out, bool brief, int indent_level) const
+{
+	indent(out, indent_level);
+	output(out, brief);
+	if(!brief)
+	{
+		out << "  // field " << _number;
+	}
+	out << "\n";
 }
 
 
@@ -170,14 +188,16 @@ write(ostream &out, bool brief, int indent_level) const {
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCMolecularField::
-generate_hash(HashGenerator &hashgen) const {
-  DCField::generate_hash(hashgen);
+generate_hash(HashGenerator &hashgen) const
+{
+	DCField::generate_hash(hashgen);
 
-  hashgen.add_int(_fields.size());
-  Fields::const_iterator fi;
-  for (fi = _fields.begin(); fi != _fields.end(); ++fi) {
-    (*fi)->generate_hash(hashgen);
-  }
+	hashgen.add_int(_fields.size());
+	Fields::const_iterator fi;
+	for(fi = _fields.begin(); fi != _fields.end(); ++fi)
+	{
+		(*fi)->generate_hash(hashgen);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -189,9 +209,10 @@ generate_hash(HashGenerator &hashgen) const {
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface *DCMolecularField::
-get_nested_field(int n) const {
-  nassertr(n >= 0 && n < (int)_nested_fields.size(), NULL);
-  return _nested_fields[n];
+get_nested_field(int n) const
+{
+	nassertr(n >= 0 && n < (int)_nested_fields.size(), NULL);
+	return _nested_fields[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -203,8 +224,9 @@ get_nested_field(int n) const {
 //               are not compared.
 ////////////////////////////////////////////////////////////////////
 bool DCMolecularField::
-do_check_match(const DCPackerInterface *other) const {
-  return other->do_check_match_molecular_field(this);
+do_check_match(const DCPackerInterface *other) const
+{
+	return other->do_check_match_molecular_field(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -214,15 +236,19 @@ do_check_match(const DCPackerInterface *other) const {
 //               molecular field, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCMolecularField::
-do_check_match_molecular_field(const DCMolecularField *other) const {
-  if (_nested_fields.size() != other->_nested_fields.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < _nested_fields.size(); i++) {
-    if (!_nested_fields[i]->check_match(other->_nested_fields[i])) {
-      return false;
-    }
-  }
+do_check_match_molecular_field(const DCMolecularField *other) const
+{
+	if(_nested_fields.size() != other->_nested_fields.size())
+	{
+		return false;
+	}
+	for(size_t i = 0; i < _nested_fields.size(); i++)
+	{
+		if(!_nested_fields[i]->check_match(other->_nested_fields[i]))
+		{
+			return false;
+		}
+	}
 
-  return true;
+	return true;
 }

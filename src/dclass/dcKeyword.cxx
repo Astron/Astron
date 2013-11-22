@@ -23,8 +23,8 @@
 ////////////////////////////////////////////////////////////////////
 DCKeyword::
 DCKeyword(const string &name, int historical_flag) :
-  _name(name),
-  _historical_flag(historical_flag)
+	_name(name),
+	_historical_flag(historical_flag)
 {
 }
 
@@ -34,7 +34,8 @@ DCKeyword(const string &name, int historical_flag) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCKeyword::
-~DCKeyword() {
+~DCKeyword()
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,8 +44,9 @@ DCKeyword::
 //  Description: Returns the name of this keyword.
 ////////////////////////////////////////////////////////////////////
 const string &DCKeyword::
-get_name() const {
-  return _name;
+get_name() const
+{
+	return _name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,8 +60,9 @@ get_name() const {
 //               historical keyword.
 ////////////////////////////////////////////////////////////////////
 int DCKeyword::
-get_historical_flag() const {
-  return _historical_flag;
+get_historical_flag() const
+{
+	return _historical_flag;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -69,8 +72,9 @@ get_historical_flag() const {
 //               were not one of the historically defined keywords.
 ////////////////////////////////////////////////////////////////////
 void DCKeyword::
-clear_historical_flag() {
-  _historical_flag = ~0;
+clear_historical_flag()
+{
+	_historical_flag = ~0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,8 +84,9 @@ clear_historical_flag() {
 //                <out>.
 ////////////////////////////////////////////////////////////////////
 void DCKeyword::
-output(ostream &out, bool brief) const {
-  out << "keyword " << _name;
+output(ostream &out, bool brief) const
+{
+	out << "keyword " << _name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,9 +95,10 @@ output(ostream &out, bool brief) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCKeyword::
-write(ostream &out, bool, int indent_level) const {
-  indent(out, indent_level)
-    << "keyword " << _name << ";\n";
+write(ostream &out, bool, int indent_level) const
+{
+	indent(out, indent_level)
+	        << "keyword " << _name << ";\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -102,6 +108,7 @@ write(ostream &out, bool, int indent_level) const {
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCKeyword::
-generate_hash(HashGenerator &hashgen) const {
-  hashgen.add_string(_name);
+generate_hash(HashGenerator &hashgen) const
+{
+	hashgen.add_string(_name);
 }

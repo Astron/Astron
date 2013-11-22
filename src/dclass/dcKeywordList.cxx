@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////
 DCKeywordList::
 DCKeywordList() :
-  _flags(0)
+	_flags(0)
 {
 }
 
@@ -34,9 +34,9 @@ DCKeywordList() :
 ////////////////////////////////////////////////////////////////////
 DCKeywordList::
 DCKeywordList(const DCKeywordList &copy) :
-  _keywords(copy._keywords),
-  _keywords_by_name(copy._keywords_by_name),
-  _flags(copy._flags)
+	_keywords(copy._keywords),
+	_keywords_by_name(copy._keywords_by_name),
+	_flags(copy._flags)
 {
 }
 
@@ -46,10 +46,11 @@ DCKeywordList(const DCKeywordList &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCKeywordList::
-operator = (const DCKeywordList &copy) {
-  _keywords = copy._keywords;
-  _keywords_by_name = copy._keywords_by_name;
-  _flags = copy._flags;
+operator = (const DCKeywordList &copy)
+{
+	_keywords = copy._keywords;
+	_keywords_by_name = copy._keywords_by_name;
+	_flags = copy._flags;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -58,8 +59,9 @@ operator = (const DCKeywordList &copy) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCKeywordList::
-~DCKeywordList() {
-  nassertv(_keywords_by_name.size() == _keywords.size());
+~DCKeywordList()
+{
+	nassertv(_keywords_by_name.size() == _keywords.size());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -69,8 +71,9 @@ DCKeywordList::
 //               keyword, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCKeywordList::
-has_keyword(const string &name) const {
-  return (_keywords_by_name.find(name) != _keywords_by_name.end());
+has_keyword(const string &name) const
+{
+	return (_keywords_by_name.find(name) != _keywords_by_name.end());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,8 +83,9 @@ has_keyword(const string &name) const {
 //               keyword, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCKeywordList::
-has_keyword(const DCKeyword *keyword) const {
-  return has_keyword(keyword->get_name());
+has_keyword(const DCKeyword *keyword) const
+{
+	return has_keyword(keyword->get_name());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,9 +94,10 @@ has_keyword(const DCKeyword *keyword) const {
 //  Description: Returns the number of keywords in the list.
 ////////////////////////////////////////////////////////////////////
 int DCKeywordList::
-get_num_keywords() const {
-  nassertr(_keywords_by_name.size() == _keywords.size(), 0);
-  return _keywords.size();
+get_num_keywords() const
+{
+	nassertr(_keywords_by_name.size() == _keywords.size(), 0);
+	return _keywords.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -101,9 +106,10 @@ get_num_keywords() const {
 //  Description: Returns the nth keyword in the list.
 ////////////////////////////////////////////////////////////////////
 const DCKeyword *DCKeywordList::
-get_keyword(int n) const {
-  nassertr(n >= 0 && n < (int)_keywords.size(), NULL);
-  return _keywords[n];
+get_keyword(int n) const
+{
+	nassertr(n >= 0 && n < (int)_keywords.size(), NULL);
+	return _keywords[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -114,14 +120,16 @@ get_keyword(int n) const {
 //               that name.
 ////////////////////////////////////////////////////////////////////
 const DCKeyword *DCKeywordList::
-get_keyword_by_name(const string &name) const {
-  KeywordsByName::const_iterator ni;
-  ni = _keywords_by_name.find(name);
-  if (ni != _keywords_by_name.end()) {
-    return (*ni).second;
-  }
+get_keyword_by_name(const string &name) const
+{
+	KeywordsByName::const_iterator ni;
+	ni = _keywords_by_name.find(name);
+	if(ni != _keywords_by_name.end())
+	{
+		return (*ni).second;
+	}
 
-  return NULL;
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -132,8 +140,9 @@ get_keyword_by_name(const string &name) const {
 //               Order is not considered important.
 ////////////////////////////////////////////////////////////////////
 bool DCKeywordList::
-compare_keywords(const DCKeywordList &other) const {
-  return _keywords_by_name == other._keywords_by_name;
+compare_keywords(const DCKeywordList &other) const
+{
+	return _keywords_by_name == other._keywords_by_name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -143,8 +152,9 @@ compare_keywords(const DCKeywordList &other) const {
 //               list.
 ////////////////////////////////////////////////////////////////////
 void DCKeywordList::
-copy_keywords(const DCKeywordList &other) {
-  (*this) = other;
+copy_keywords(const DCKeywordList &other)
+{
+	(*this) = other;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -154,14 +164,17 @@ copy_keywords(const DCKeywordList &other) {
 //               if it is added, false if it was already there.
 ////////////////////////////////////////////////////////////////////
 bool DCKeywordList::
-add_keyword(const DCKeyword *keyword) {
-  bool inserted = _keywords_by_name.insert(KeywordsByName::value_type(keyword->get_name(), keyword)).second;
-  if (inserted) {
-    _keywords.push_back(keyword);
-    _flags |= keyword->get_historical_flag();
-  }
+add_keyword(const DCKeyword *keyword)
+{
+	bool inserted = _keywords_by_name.insert(KeywordsByName::value_type(keyword->get_name(),
+	                keyword)).second;
+	if(inserted)
+	{
+		_keywords.push_back(keyword);
+		_flags |= keyword->get_historical_flag();
+	}
 
-  return inserted;
+	return inserted;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -170,10 +183,11 @@ add_keyword(const DCKeyword *keyword) {
 //  Description: Removes all keywords from the field.
 ////////////////////////////////////////////////////////////////////
 void DCKeywordList::
-clear_keywords() {
-  _keywords.clear();
-  _keywords_by_name.clear();
-  _flags = 0;
+clear_keywords()
+{
+	_keywords.clear();
+	_keywords_by_name.clear();
+	_flags = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -182,11 +196,13 @@ clear_keywords() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCKeywordList::
-output_keywords(ostream &out) const {
-  Keywords::const_iterator ki;
-  for (ki = _keywords.begin(); ki != _keywords.end(); ++ki) {
-    out << " " << (*ki)->get_name();
-  }
+output_keywords(ostream &out) const
+{
+	Keywords::const_iterator ki;
+	for(ki = _keywords.begin(); ki != _keywords.end(); ++ki)
+	{
+		out << " " << (*ki)->get_name();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -196,21 +212,26 @@ output_keywords(ostream &out) const {
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCKeywordList::
-generate_hash(HashGenerator &hashgen) const {
-  if (_flags != ~0) {
-    // All of the flags are historical flags only, so add just the
-    // flags bitmask to keep the hash code the same as it has
-    // historically been.
-    hashgen.add_int(_flags);
+generate_hash(HashGenerator &hashgen) const
+{
+	if(_flags != ~0)
+	{
+		// All of the flags are historical flags only, so add just the
+		// flags bitmask to keep the hash code the same as it has
+		// historically been.
+		hashgen.add_int(_flags);
 
-  } else {
-    // There is at least one custom flag, so go ahead and make the
-    // hash code reflect it.
+	}
+	else
+	{
+		// There is at least one custom flag, so go ahead and make the
+		// hash code reflect it.
 
-    hashgen.add_int(_keywords_by_name.size());
-    KeywordsByName::const_iterator ni;
-    for (ni = _keywords_by_name.begin(); ni != _keywords_by_name.end(); ++ni) {
-      (*ni).second->generate_hash(hashgen);
-    }
-  }
+		hashgen.add_int(_keywords_by_name.size());
+		KeywordsByName::const_iterator ni;
+		for(ni = _keywords_by_name.begin(); ni != _keywords_by_name.end(); ++ni)
+		{
+			(*ni).second->generate_hash(hashgen);
+		}
+	}
 }

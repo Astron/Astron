@@ -24,52 +24,62 @@
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
 DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
-  _element_type(element_type),
-  _array_size_range(size)
+	_element_type(element_type),
+	_array_size_range(size)
 {
-  set_name(_element_type->get_name());
-  _element_type->set_name(string());
+	set_name(_element_type->get_name());
+	_element_type->set_name(string());
 
-  _array_size = -1;
-  if (_array_size_range.has_one_value()) {
-    _array_size = _array_size_range.get_one_value();
-  } else {
-    _has_range_limits = true;
-  }
+	_array_size = -1;
+	if(_array_size_range.has_one_value())
+	{
+		_array_size = _array_size_range.get_one_value();
+	}
+	else
+	{
+		_has_range_limits = true;
+	}
 
-  if (_array_size >= 0 && _element_type->has_fixed_byte_size()) {
-    _has_fixed_byte_size = true;
-    _fixed_byte_size = _array_size * _element_type->get_fixed_byte_size();
-    _has_fixed_structure = true;
+	if(_array_size >= 0 && _element_type->has_fixed_byte_size())
+	{
+		_has_fixed_byte_size = true;
+		_fixed_byte_size = _array_size * _element_type->get_fixed_byte_size();
+		_has_fixed_structure = true;
 
-  } else {
-    // We only need to store the length bytes if the array has a
-    // variable size.
-    _num_length_bytes = sizeof(length_tag_t);
-  }
+	}
+	else
+	{
+		// We only need to store the length bytes if the array has a
+		// variable size.
+		_num_length_bytes = sizeof(length_tag_t);
+	}
 
-  if (_element_type->has_range_limits()) {
-    _has_range_limits = true;
-  }
+	if(_element_type->has_range_limits())
+	{
+		_has_range_limits = true;
+	}
 
-  if (_element_type->has_default_value()) {
-    _has_default_value = true;
-  }
+	if(_element_type->has_default_value())
+	{
+		_has_default_value = true;
+	}
 
-  _has_nested_fields = true;
-  _num_nested_fields = _array_size;
-  _pack_type = PT_array;
+	_has_nested_fields = true;
+	_num_nested_fields = _array_size;
+	_pack_type = PT_array;
 
-  DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
-  if (simple_type != (DCSimpleParameter *)NULL) {
-    if (simple_type->get_type() == ST_char) {
-      // We make a special case for char[] arrays: these we format as
-      // a string.  (It will still accept an array of ints packed into
-      // it.)  We don't make this special case for uint8[] or int8[]
-      // arrays, although we will accept a string packed in for them.
-      _pack_type = PT_string;
-    }
-  }
+	DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
+	if(simple_type != (DCSimpleParameter *)NULL)
+	{
+		if(simple_type->get_type() == ST_char)
+		{
+			// We make a special case for char[] arrays: these we format as
+			// a string.  (It will still accept an array of ints packed into
+			// it.)  We don't make this special case for uint8[] or int8[]
+			// arrays, although we will accept a string packed in for them.
+			_pack_type = PT_string;
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -79,10 +89,10 @@ DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
 DCArrayParameter(const DCArrayParameter &copy) :
-  DCParameter(copy),
-  _element_type(copy._element_type->make_copy()),
-  _array_size(copy._array_size),
-  _array_size_range(copy._array_size_range)
+	DCParameter(copy),
+	_element_type(copy._element_type->make_copy()),
+	_array_size(copy._array_size),
+	_array_size_range(copy._array_size_range)
 {
 }
 
@@ -92,8 +102,9 @@ DCArrayParameter(const DCArrayParameter &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter::
-~DCArrayParameter() {
-  delete _element_type;
+~DCArrayParameter()
+{
+	delete _element_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -102,8 +113,9 @@ DCArrayParameter::
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCArrayParameter *DCArrayParameter::
-as_array_parameter() {
-  return this;
+as_array_parameter()
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -112,8 +124,9 @@ as_array_parameter() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 const DCArrayParameter *DCArrayParameter::
-as_array_parameter() const {
-  return this;
+as_array_parameter() const
+{
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -122,8 +135,9 @@ as_array_parameter() const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCArrayParameter::
-make_copy() const {
-  return new DCArrayParameter(*this);
+make_copy() const
+{
+	return new DCArrayParameter(*this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -134,8 +148,9 @@ make_copy() const {
 //               it is valid.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-is_valid() const {
-  return _element_type->is_valid();
+is_valid() const
+{
+	return _element_type->is_valid();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -145,8 +160,9 @@ is_valid() const {
 //               array.
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCArrayParameter::
-get_element_type() const {
-  return _element_type;
+get_element_type() const
+{
+	return _element_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -157,8 +173,9 @@ get_element_type() const {
 //               elements.
 ////////////////////////////////////////////////////////////////////
 int DCArrayParameter::
-get_array_size() const {
-  return _array_size;
+get_array_size() const
+{
+	return _array_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -172,15 +189,17 @@ get_array_size() const {
 //               same pointer again.
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCArrayParameter::
-append_array_specification(const DCUnsignedIntRange &size) {
-  if (get_typedef() != (DCTypedef *)NULL) {
-    // If this was a typedef, wrap it directly.
-    return new DCArrayParameter(this, size);
-  }
+append_array_specification(const DCUnsignedIntRange &size)
+{
+	if(get_typedef() != (DCTypedef *)NULL)
+	{
+		// If this was a typedef, wrap it directly.
+		return new DCArrayParameter(this, size);
+	}
 
-  // Otherwise, the brackets get applied to the inner type.
-  _element_type = _element_type->append_array_specification(size);
-  return this;
+	// Otherwise, the brackets get applied to the inner type.
+	_element_type = _element_type->append_array_specification(size);
+	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -194,11 +213,13 @@ append_array_specification(const DCUnsignedIntRange &size) {
 //               get_num_length_bytes() returns nonzero.
 ////////////////////////////////////////////////////////////////////
 int DCArrayParameter::
-calc_num_nested_fields(size_t length_bytes) const {
-  if (_element_type->has_fixed_byte_size()) {
-    return length_bytes / _element_type->get_fixed_byte_size();
-  }
-  return -1;
+calc_num_nested_fields(size_t length_bytes) const
+{
+	if(_element_type->has_fixed_byte_size())
+	{
+		return length_bytes / _element_type->get_fixed_byte_size();
+	}
+	return -1;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -210,8 +231,9 @@ calc_num_nested_fields(size_t length_bytes) const {
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
 DCPackerInterface *DCArrayParameter::
-get_nested_field(int) const {
-  return _element_type;
+get_nested_field(int) const
+{
+	return _element_type;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -225,11 +247,12 @@ get_nested_field(int) const {
 //               number of fields any other way.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-validate_num_nested_fields(int num_nested_fields) const {
-  bool range_error = false;
-  _array_size_range.validate(num_nested_fields, range_error);
+validate_num_nested_fields(int num_nested_fields) const
+{
+	bool range_error = false;
+	_array_size_range.validate(num_nested_fields, range_error);
 
-  return !range_error;
+	return !range_error;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -240,20 +263,24 @@ validate_num_nested_fields(int num_nested_fields) const {
 ////////////////////////////////////////////////////////////////////
 void DCArrayParameter::
 output_instance(ostream &out, bool brief, const string &prename,
-                const string &name, const string &postname) const {
-  if (get_typedef() != (DCTypedef *)NULL) {
-    output_typedef_name(out, brief, prename, name, postname);
+                const string &name, const string &postname) const
+{
+	if(get_typedef() != (DCTypedef *)NULL)
+	{
+		output_typedef_name(out, brief, prename, name, postname);
 
-  } else {
-    ostringstream strm;
+	}
+	else
+	{
+		ostringstream strm;
 
-    strm << "[";
-    _array_size_range.output(strm);
-    strm << "]";
+		strm << "[";
+		_array_size_range.output(strm);
+		strm << "]";
 
-    _element_type->output_instance(out, brief, prename, name,
-                                   postname + strm.str());
-  }
+		_element_type->output_instance(out, brief, prename, name,
+		                               postname + strm.str());
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -263,10 +290,11 @@ output_instance(ostream &out, bool brief, const string &prename,
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCArrayParameter::
-generate_hash(HashGenerator &hashgen) const {
-  DCParameter::generate_hash(hashgen);
-  _element_type->generate_hash(hashgen);
-  _array_size_range.generate_hash(hashgen);
+generate_hash(HashGenerator &hashgen) const
+{
+	DCParameter::generate_hash(hashgen);
+	_element_type->generate_hash(hashgen);
+	_array_size_range.generate_hash(hashgen);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -277,32 +305,36 @@ generate_hash(HashGenerator &hashgen) const {
 ////////////////////////////////////////////////////////////////////
 void DCArrayParameter::
 pack_string(DCPackData &pack_data, const string &value,
-            bool &pack_error, bool &range_error) const {
-  // We can only pack a string if the array element type is char or
-  // int8.
-  DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
-  if (simple_type == (DCSimpleParameter *)NULL) {
-    pack_error = true;
-    return;
-  }
+            bool &pack_error, bool &range_error) const
+{
+	// We can only pack a string if the array element type is char or
+	// int8.
+	DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
+	if(simple_type == (DCSimpleParameter *)NULL)
+	{
+		pack_error = true;
+		return;
+	}
 
-  size_t string_length = value.length();
+	size_t string_length = value.length();
 
-  switch (simple_type->get_type()) {
-  case ST_char:
-  case ST_uint8:
-  case ST_int8:
-    _array_size_range.validate(string_length, range_error);
-    if (_num_length_bytes != 0) {
-      nassertv(_num_length_bytes == sizeof(length_tag_t));
-      do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
-    }
-    pack_data.append_data(value.data(), string_length);
-    break;
+	switch(simple_type->get_type())
+	{
+		case ST_char:
+		case ST_uint8:
+		case ST_int8:
+			_array_size_range.validate(string_length, range_error);
+			if(_num_length_bytes != 0)
+			{
+				nassertv(_num_length_bytes == sizeof(length_tag_t));
+				do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
+			}
+			pack_data.append_data(value.data(), string_length);
+			break;
 
-  default:
-    pack_error = true;
-  }
+		default:
+			pack_error = true;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -315,36 +347,43 @@ pack_string(DCPackData &pack_data, const string &value,
 //               default value.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-pack_default_value(DCPackData &pack_data, bool &pack_error) const {
-  // We only want to call up if the DCField can pack the value
-  // immediately--we don't trust the DCField to generate the default
-  // value (since it doesn't know how large the minimum length array
-  // is).
-  if (_has_default_value && !_default_value_stale) {
-    return DCField::pack_default_value(pack_data, pack_error);
-  }
+pack_default_value(DCPackData &pack_data, bool &pack_error) const
+{
+	// We only want to call up if the DCField can pack the value
+	// immediately--we don't trust the DCField to generate the default
+	// value (since it doesn't know how large the minimum length array
+	// is).
+	if(_has_default_value && !_default_value_stale)
+	{
+		return DCField::pack_default_value(pack_data, pack_error);
+	}
 
-  // If a default value is not specified for a variable-length array,
-  // the default is the minimum array.
-  unsigned int minimum_length = 0;
-  if (!_array_size_range.is_empty()) {
-    minimum_length = _array_size_range.get_min(0);
-  }
+	// If a default value is not specified for a variable-length array,
+	// the default is the minimum array.
+	unsigned int minimum_length = 0;
+	if(!_array_size_range.is_empty())
+	{
+		minimum_length = _array_size_range.get_min(0);
+	}
 
-  DCPacker packer;
-  packer.begin_pack(this);
-  packer.push();
-  for (unsigned int i = 0; i < minimum_length; i++) {
-    packer.pack_default_value();
-  }
-  packer.pop();
-  if (!packer.end_pack()) {
-    pack_error = true;
-  } else {
-    pack_data.append_data(packer.get_data(), packer.get_length());
-  }
+	DCPacker packer;
+	packer.begin_pack(this);
+	packer.push();
+	for(unsigned int i = 0; i < minimum_length; i++)
+	{
+		packer.pack_default_value();
+	}
+	packer.pop();
+	if(!packer.end_pack())
+	{
+		pack_error = true;
+	}
+	else
+	{
+		pack_data.append_data(packer.get_data(), packer.get_length());
+	}
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -355,39 +394,46 @@ pack_default_value(DCPackData &pack_data, bool &pack_error) const {
 ////////////////////////////////////////////////////////////////////
 void DCArrayParameter::
 unpack_string(const char *data, size_t length, size_t &p, string &value,
-              bool &pack_error, bool &range_error) const {
-  // We can only unpack a string if the array element type is char or
-  // int8.
-  DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
-  if (simple_type == (DCSimpleParameter *)NULL) {
-    pack_error = true;
-    return;
-  }
+              bool &pack_error, bool &range_error) const
+{
+	// We can only unpack a string if the array element type is char or
+	// int8.
+	DCSimpleParameter *simple_type = _element_type->as_simple_parameter();
+	if(simple_type == (DCSimpleParameter *)NULL)
+	{
+		pack_error = true;
+		return;
+	}
 
-  size_t string_length;
+	size_t string_length;
 
-  switch (simple_type->get_type()) {
-  case ST_char:
-  case ST_uint8:
-  case ST_int8:
-    if (_num_length_bytes != 0) {
-      string_length = do_unpack_length_tag(data + p);
-      p += sizeof(length_tag_t);
-    } else {
-      nassertv(_array_size >= 0);
-      string_length = _array_size;
-    }
-    if (p + string_length > length) {
-      pack_error = true;
-      return;
-    }
-    value.assign(data + p, string_length);
-    p += string_length;
-    break;
+	switch(simple_type->get_type())
+	{
+		case ST_char:
+		case ST_uint8:
+		case ST_int8:
+			if(_num_length_bytes != 0)
+			{
+				string_length = do_unpack_length_tag(data + p);
+				p += sizeof(length_tag_t);
+			}
+			else
+			{
+				nassertv(_array_size >= 0);
+				string_length = _array_size;
+			}
+			if(p + string_length > length)
+			{
+				pack_error = true;
+				return;
+			}
+			value.assign(data + p, string_length);
+			p += string_length;
+			break;
 
-  default:
-    pack_error = true;
-  }
+		default:
+			pack_error = true;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -399,8 +445,9 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
 //               are not compared.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-do_check_match(const DCPackerInterface *other) const {
-  return other->do_check_match_array_parameter(this);
+do_check_match(const DCPackerInterface *other) const
+{
+	return other->do_check_match_array_parameter(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -410,8 +457,9 @@ do_check_match(const DCPackerInterface *other) const {
 //               simple parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-do_check_match_simple_parameter(const DCSimpleParameter *other) const {
-  return ((const DCPackerInterface *)other)->do_check_match_array_parameter(this);
+do_check_match_simple_parameter(const DCSimpleParameter *other) const
+{
+	return ((const DCPackerInterface *)other)->do_check_match_array_parameter(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -421,8 +469,9 @@ do_check_match_simple_parameter(const DCSimpleParameter *other) const {
 //               class parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-do_check_match_class_parameter(const DCClassParameter *other) const {
-  return ((const DCPackerInterface *)other)->do_check_match_array_parameter(this);
+do_check_match_class_parameter(const DCClassParameter *other) const
+{
+	return ((const DCPackerInterface *)other)->do_check_match_array_parameter(this);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -432,9 +481,11 @@ do_check_match_class_parameter(const DCClassParameter *other) const {
 //               array parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCArrayParameter::
-do_check_match_array_parameter(const DCArrayParameter *other) const {
-  if (_array_size != other->_array_size) {
-    return false;
-  }
-  return _element_type->check_match(other->_element_type);
+do_check_match_array_parameter(const DCArrayParameter *other) const
+{
+	if(_array_size != other->_array_size)
+	{
+		return false;
+	}
+	return _element_type->check_match(other->_element_type);
 }

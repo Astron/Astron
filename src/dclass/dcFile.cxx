@@ -36,11 +36,12 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCFile::
-DCFile() {
-  _all_objects_valid = true;
-  _inherited_fields_stale = false;
+DCFile()
+{
+	_all_objects_valid = true;
+	_inherited_fields_stale = false;
 
-  setup_default_keywords();
+	setup_default_keywords();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -49,8 +50,9 @@ DCFile() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCFile::
-~DCFile() {
-  clear();
+~DCFile()
+{
+	clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -60,27 +62,30 @@ DCFile::
 //               and prepares it for reading a new file.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-clear() {
-  Declarations::iterator di;
-  for (di = _declarations.begin(); di != _declarations.end(); ++di) {
-    delete (*di);
-  }
-  for (di = _things_to_delete.begin(); di != _things_to_delete.end(); ++di) {
-    delete (*di);
-  }
+clear()
+{
+	Declarations::iterator di;
+	for(di = _declarations.begin(); di != _declarations.end(); ++di)
+	{
+		delete(*di);
+	}
+	for(di = _things_to_delete.begin(); di != _things_to_delete.end(); ++di)
+	{
+		delete(*di);
+	}
 
-  _classes.clear();
-  _imports.clear();
-  _things_by_name.clear();
-  _typedefs.clear();
-  _typedefs_by_name.clear();
-  _keywords.clear_keywords();
-  _declarations.clear();
-  _things_to_delete.clear();
-  setup_default_keywords();
+	_classes.clear();
+	_imports.clear();
+	_things_by_name.clear();
+	_typedefs.clear();
+	_typedefs_by_name.clear();
+	_keywords.clear_keywords();
+	_declarations.clear();
+	_things_to_delete.clear();
+	setup_default_keywords();
 
-  _all_objects_valid = true;
-  _inherited_fields_stale = false;
+	_all_objects_valid = true;
+	_inherited_fields_stale = false;
 }
 
 #ifdef WITHIN_PANDA
@@ -93,28 +98,32 @@ clear() {
 //               into the DCFile namespace.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-read_all() {
-  static ConfigVariableList dc_files
-    ("dc-file", PRC_DESC("The list of dc files to load."));
+read_all()
+{
+	static ConfigVariableList dc_files
+	("dc-file", PRC_DESC("The list of dc files to load."));
 
-  if (dc_files.size() == 0) {
-    cerr << "No files specified via dc-file Config.prc variable!\n";
-    return false;
-  }
+	if(dc_files.size() == 0)
+	{
+		cerr << "No files specified via dc-file Config.prc variable!\n";
+		return false;
+	}
 
-  int size = dc_files.size();
+	int size = dc_files.size();
 
-  // Load the DC files in opposite order, because we want to load the
-  // least-important (most fundamental) files first.
-  for (int i = size - 1; i >= 0; --i) {
-    string dc_file = ExecutionEnvironment::expand_string(dc_files[i]);
-    Filename filename = Filename::from_os_specific(dc_file);
-    if (!read(filename)) {
-      return false;
-    }
-  }
+	// Load the DC files in opposite order, because we want to load the
+	// least-important (most fundamental) files first.
+	for(int i = size - 1; i >= 0; --i)
+	{
+		string dc_file = ExecutionEnvironment::expand_string(dc_files[i]);
+		Filename filename = Filename::from_os_specific(dc_file);
+		if(!read(filename))
+		{
+			return false;
+		}
+	}
 
-  return true;
+	return true;
 }
 
 #endif  // WITHIN_PANDA
@@ -132,36 +141,39 @@ read_all() {
 //               have been partially read).
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-read(Filename filename) {
+read(Filename filename)
+{
 #ifdef WITHIN_PANDA
-  filename.set_text();
-  VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-  istream *in = vfs->open_read_file(filename, true);
-  if (in == (istream *)NULL) {
-    cerr << "Cannot open " << filename << " for reading.\n";
-    return false;
-  }
-  bool okflag = read(*in, filename);
+	filename.set_text();
+	VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
+	istream *in = vfs->open_read_file(filename, true);
+	if(in == (istream *)NULL)
+	{
+		cerr << "Cannot open " << filename << " for reading.\n";
+		return false;
+	}
+	bool okflag = read(*in, filename);
 
-  // For some reason--compiler bug in gcc 3.2?--explicitly deleting
-  // the in pointer does not call the appropriate global delete
-  // function; instead apparently calling the system delete
-  // function.  So we call the delete function by hand instead.
-  vfs->close_read_file(in);
+	// For some reason--compiler bug in gcc 3.2?--explicitly deleting
+	// the in pointer does not call the appropriate global delete
+	// function; instead apparently calling the system delete
+	// function.  So we call the delete function by hand instead.
+	vfs->close_read_file(in);
 
-  return okflag;
+	return okflag;
 
 #else  // WITHIN_PANDA
 
-  pifstream in;
-  in.open(filename.c_str());
+	pifstream in;
+	in.open(filename.c_str());
 
-  if (!in) {
-    cerr << "Cannot open " << filename << " for reading.\n";
-    return false;
-  }
+	if(!in)
+	{
+		cerr << "Cannot open " << filename << " for reading.\n";
+		return false;
+	}
 
-  return read(in, filename);
+	return read(in, filename);
 
 #endif  // WITHIN_PANDA
 }
@@ -183,12 +195,13 @@ read(Filename filename) {
 //               have been partially read).
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-read(istream &in, const string &filename) {
-  dc_init_parser(in, filename, *this);
-  dcyyparse();
-  dc_cleanup_parser();
+read(istream &in, const string &filename)
+{
+	dc_init_parser(in, filename, *this);
+	dcyyparse();
+	dc_cleanup_parser();
 
-  return (dc_error_count() == 0);
+	return (dc_error_count() == 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -202,21 +215,23 @@ read(istream &in, const string &filename) {
 //               written, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-write(Filename filename, bool brief) const {
-  pofstream out;
+write(Filename filename, bool brief) const
+{
+	pofstream out;
 
 #ifdef WITHIN_PANDA
-  filename.set_text();
-  filename.open_write(out);
+	filename.set_text();
+	filename.open_write(out);
 #else
-  out.open(filename.c_str());
+	out.open(filename.c_str());
 #endif
 
-  if (!out) {
-    cerr << "Can't open " << filename << " for output.\n";
-    return false;
-  }
-  return write(out, brief);
+	if(!out)
+	{
+		cerr << "Can't open " << filename << " for output.\n";
+		return false;
+	}
+	return write(out, brief);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -229,35 +244,43 @@ write(Filename filename, bool brief) const {
 //               written, false otherwise.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-write(ostream &out, bool brief) const {
-  if (!_imports.empty()) {
-    Imports::const_iterator ii;
-    for (ii = _imports.begin(); ii != _imports.end(); ++ii) {
-      const Import &import = (*ii);
-      if (import._symbols.empty()) {
-        out << "import " << import._module << "\n";
-      } else {
-        out << "from " << import._module << " import ";
-        ImportSymbols::const_iterator si = import._symbols.begin();
-        out << *si;
-        ++si;
-        while (si != import._symbols.end()) {
-          out << ", " << *si;
-        ++si;
-        }
-        out << "\n";
-      }
-    }
-    out << "\n";
-  }
+write(ostream &out, bool brief) const
+{
+	if(!_imports.empty())
+	{
+		Imports::const_iterator ii;
+		for(ii = _imports.begin(); ii != _imports.end(); ++ii)
+		{
+			const Import &import = (*ii);
+			if(import._symbols.empty())
+			{
+				out << "import " << import._module << "\n";
+			}
+			else
+			{
+				out << "from " << import._module << " import ";
+				ImportSymbols::const_iterator si = import._symbols.begin();
+				out << *si;
+				++si;
+				while(si != import._symbols.end())
+				{
+					out << ", " << *si;
+					++si;
+				}
+				out << "\n";
+			}
+		}
+		out << "\n";
+	}
 
-  Declarations::const_iterator di;
-  for (di = _declarations.begin(); di != _declarations.end(); ++di) {
-    (*di)->write(out, brief, 0);
-    out << "\n";
-  }
+	Declarations::const_iterator di;
+	for(di = _declarations.begin(); di != _declarations.end(); ++di)
+	{
+		(*di)->write(out, brief, 0);
+		out << "\n";
+	}
 
-  return !out.fail();
+	return !out.fail();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -267,8 +290,9 @@ write(ostream &out, bool brief) const {
 //               file(s).
 ////////////////////////////////////////////////////////////////////
 int DCFile::
-get_num_classes() const {
-  return _classes.size();
+get_num_classes() const
+{
+	return _classes.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -277,9 +301,10 @@ get_num_classes() const {
 //  Description: Returns the nth class read from the .dc file(s).
 ////////////////////////////////////////////////////////////////////
 DCClass *DCFile::
-get_class(int n) const {
-  nassertr(n >= 0 && n < (int)_classes.size(), NULL);
-  return _classes[n];
+get_class(int n) const
+{
+	nassertr(n >= 0 && n < (int)_classes.size(), NULL);
+	return _classes[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -289,14 +314,16 @@ get_class(int n) const {
 //               NULL if there is no such class.
 ////////////////////////////////////////////////////////////////////
 DCClass *DCFile::
-get_class_by_name(const string &name) const {
-  ThingsByName::const_iterator ni;
-  ni = _things_by_name.find(name);
-  if (ni != _things_by_name.end()) {
-    return (*ni).second->as_class();
-  }
+get_class_by_name(const string &name) const
+{
+	ThingsByName::const_iterator ni;
+	ni = _things_by_name.find(name);
+	if(ni != _things_by_name.end())
+	{
+		return (*ni).second->as_class();
+	}
 
-  return (DCClass *)NULL;
+	return (DCClass *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -306,14 +333,16 @@ get_class_by_name(const string &name) const {
 //               NULL if there is no such switch.
 ////////////////////////////////////////////////////////////////////
 DCSwitch *DCFile::
-get_switch_by_name(const string &name) const {
-  ThingsByName::const_iterator ni;
-  ni = _things_by_name.find(name);
-  if (ni != _things_by_name.end()) {
-    return (*ni).second->as_switch();
-  }
+get_switch_by_name(const string &name) const
+{
+	ThingsByName::const_iterator ni;
+	ni = _things_by_name.find(name);
+	if(ni != _things_by_name.end())
+	{
+		return (*ni).second->as_switch();
+	}
 
-  return (DCSwitch *)NULL;
+	return (DCSwitch *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -329,14 +358,16 @@ get_switch_by_name(const string &name) const {
 //               number, so this global lookup is not possible.
 ////////////////////////////////////////////////////////////////////
 DCField *DCFile::
-get_field_by_index(int index_number) const {
-  nassertr(dc_multiple_inheritance, NULL);
+get_field_by_index(int index_number) const
+{
+	nassertr(dc_multiple_inheritance, NULL);
 
-  if (index_number >= 0 && index_number < (int)_fields_by_index.size()) {
-    return _fields_by_index[index_number];
-  }
+	if(index_number >= 0 && index_number < (int)_fields_by_index.size())
+	{
+		return _fields_by_index[index_number];
+	}
 
-  return NULL;
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -346,8 +377,9 @@ get_field_by_index(int index_number) const {
 //               file(s).
 ////////////////////////////////////////////////////////////////////
 int DCFile::
-get_num_import_modules() const {
-  return _imports.size();
+get_num_import_modules() const
+{
+	return _imports.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -357,9 +389,10 @@ get_num_import_modules() const {
 //               from the .dc file(s).
 ////////////////////////////////////////////////////////////////////
 string DCFile::
-get_import_module(int n) const {
-  nassertr(n >= 0 && n < (int)_imports.size(), string());
-  return _imports[n]._module;
+get_import_module(int n) const
+{
+	nassertr(n >= 0 && n < (int)_imports.size(), string());
+	return _imports[n]._module;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -371,9 +404,10 @@ get_import_module(int n) const {
 //               is "from modulename import symbol, symbol ... ".
 ////////////////////////////////////////////////////////////////////
 int DCFile::
-get_num_import_symbols(int n) const {
-  nassertr(n >= 0 && n < (int)_imports.size(), 0);
-  return _imports[n]._symbols.size();
+get_num_import_symbols(int n) const
+{
+	nassertr(n >= 0 && n < (int)_imports.size(), 0);
+	return _imports[n]._symbols.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -383,10 +417,11 @@ get_num_import_symbols(int n) const {
 //               read from the .dc file(s).
 ////////////////////////////////////////////////////////////////////
 string DCFile::
-get_import_symbol(int n, int i) const {
-  nassertr(n >= 0 && n < (int)_imports.size(), string());
-  nassertr(i >= 0 && i < (int)_imports[n]._symbols.size(), string());
-  return _imports[n]._symbols[i];
+get_import_symbol(int n, int i) const
+{
+	nassertr(n >= 0 && n < (int)_imports.size(), string());
+	nassertr(i >= 0 && i < (int)_imports[n]._symbols.size(), string());
+	return _imports[n]._symbols[i];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -396,8 +431,9 @@ get_import_symbol(int n, int i) const {
 //               file(s).
 ////////////////////////////////////////////////////////////////////
 int DCFile::
-get_num_typedefs() const {
-  return _typedefs.size();
+get_num_typedefs() const
+{
+	return _typedefs.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -406,9 +442,10 @@ get_num_typedefs() const {
 //  Description: Returns the nth typedef read from the .dc file(s).
 ////////////////////////////////////////////////////////////////////
 DCTypedef *DCFile::
-get_typedef(int n) const {
-  nassertr(n >= 0 && n < (int)_typedefs.size(), NULL);
-  return _typedefs[n];
+get_typedef(int n) const
+{
+	nassertr(n >= 0 && n < (int)_typedefs.size(), NULL);
+	return _typedefs[n];
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -418,14 +455,16 @@ get_typedef(int n) const {
 //               NULL if there is no such typedef name.
 ////////////////////////////////////////////////////////////////////
 DCTypedef *DCFile::
-get_typedef_by_name(const string &name) const {
-  TypedefsByName::const_iterator ni;
-  ni = _typedefs_by_name.find(name);
-  if (ni != _typedefs_by_name.end()) {
-    return (*ni).second;
-  }
+get_typedef_by_name(const string &name) const
+{
+	TypedefsByName::const_iterator ni;
+	ni = _typedefs_by_name.find(name);
+	if(ni != _typedefs_by_name.end())
+	{
+		return (*ni).second;
+	}
 
-  return NULL;
+	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -435,8 +474,9 @@ get_typedef_by_name(const string &name) const {
 //               file(s).
 ////////////////////////////////////////////////////////////////////
 int DCFile::
-get_num_keywords() const {
-  return _keywords.get_num_keywords();
+get_num_keywords() const
+{
+	return _keywords.get_num_keywords();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -445,8 +485,9 @@ get_num_keywords() const {
 //  Description: Returns the nth keyword read from the .dc file(s).
 ////////////////////////////////////////////////////////////////////
 const DCKeyword *DCFile::
-get_keyword(int n) const {
-  return _keywords.get_keyword(n);
+get_keyword(int n) const
+{
+	return _keywords.get_keyword(n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -456,18 +497,21 @@ get_keyword(int n) const {
 //               NULL if there is no such keyword name.
 ////////////////////////////////////////////////////////////////////
 const DCKeyword *DCFile::
-get_keyword_by_name(const string &name) const {
-  const DCKeyword *keyword = _keywords.get_keyword_by_name(name);
-  if (keyword == (const DCKeyword *)NULL) {
-    keyword = _default_keywords.get_keyword_by_name(name);
-    if (keyword != (const DCKeyword *)NULL) {
-      // One of the historical default keywords was used, but wasn't
-      // defined.  Define it implicitly right now.
-      ((DCFile *)this)->_keywords.add_keyword(keyword);
-    }
-  }
+get_keyword_by_name(const string &name) const
+{
+	const DCKeyword *keyword = _keywords.get_keyword_by_name(name);
+	if(keyword == (const DCKeyword *)NULL)
+	{
+		keyword = _default_keywords.get_keyword_by_name(name);
+		if(keyword != (const DCKeyword *)NULL)
+		{
+			// One of the historical default keywords was used, but wasn't
+			// defined.  Define it implicitly right now.
+			((DCFile *)this)->_keywords.add_keyword(keyword);
+		}
+	}
 
-  return keyword;
+	return keyword;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -480,10 +524,11 @@ get_keyword_by_name(const string &name) const {
 //               file do change.
 ////////////////////////////////////////////////////////////////////
 unsigned long DCFile::
-get_hash() const {
-  HashGenerator hashgen;
-  generate_hash(hashgen);
-  return hashgen.get_hash();
+get_hash() const
+{
+	HashGenerator hashgen;
+	generate_hash(hashgen);
+	return hashgen.get_hash();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -493,21 +538,27 @@ get_hash() const {
 //               hash.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-generate_hash(HashGenerator &hashgen) const {
-  if (dc_virtual_inheritance) {
-    // Just to make the hash number change in this case.
-    if (dc_sort_inheritance_by_file) {
-      hashgen.add_int(1);
-    } else {
-      hashgen.add_int(2);
-    }
-  }
+generate_hash(HashGenerator &hashgen) const
+{
+	if(dc_virtual_inheritance)
+	{
+		// Just to make the hash number change in this case.
+		if(dc_sort_inheritance_by_file)
+		{
+			hashgen.add_int(1);
+		}
+		else
+		{
+			hashgen.add_int(2);
+		}
+	}
 
-  hashgen.add_int(_classes.size());
-  Classes::const_iterator ci;
-  for (ci = _classes.begin(); ci != _classes.end(); ++ci) {
-    (*ci)->generate_hash(hashgen);
-  }
+	hashgen.add_int(_classes.size());
+	Classes::const_iterator ci;
+	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	{
+		(*ci)->generate_hash(hashgen);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -520,32 +571,40 @@ generate_hash(HashGenerator &hashgen) const {
 //               false if there was a name conflict.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-add_class(DCClass *dclass) {
-  if (!dclass->get_name().empty()) {
-    bool inserted = _things_by_name.insert
-      (ThingsByName::value_type(dclass->get_name(), dclass)).second;
+add_class(DCClass *dclass)
+{
+	if(!dclass->get_name().empty())
+	{
+		bool inserted = _things_by_name.insert
+		                (ThingsByName::value_type(dclass->get_name(), dclass)).second;
 
-    if (!inserted) {
-      return false;
-    }
-  }
+		if(!inserted)
+		{
+			return false;
+		}
+	}
 
-  if (!dclass->is_struct()) {
-    dclass->set_number(get_num_classes());
-  }
-  _classes.push_back(dclass);
+	if(!dclass->is_struct())
+	{
+		dclass->set_number(get_num_classes());
+	}
+	_classes.push_back(dclass);
 
-  if (dclass->is_bogus_class()) {
-    _all_objects_valid = false;
-  }
+	if(dclass->is_bogus_class())
+	{
+		_all_objects_valid = false;
+	}
 
-  if (!dclass->is_bogus_class()) {
-    _declarations.push_back(dclass);
-  } else {
-    _things_to_delete.push_back(dclass);
-  }
+	if(!dclass->is_bogus_class())
+	{
+		_declarations.push_back(dclass);
+	}
+	else
+	{
+		_things_to_delete.push_back(dclass);
+	}
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -558,19 +617,22 @@ add_class(DCClass *dclass) {
 //               false if there was a name conflict.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-add_switch(DCSwitch *dswitch) {
-  if (!dswitch->get_name().empty()) {
-    bool inserted = _things_by_name.insert
-      (ThingsByName::value_type(dswitch->get_name(), dswitch)).second;
+add_switch(DCSwitch *dswitch)
+{
+	if(!dswitch->get_name().empty())
+	{
+		bool inserted = _things_by_name.insert
+		                (ThingsByName::value_type(dswitch->get_name(), dswitch)).second;
 
-    if (!inserted) {
-      return false;
-    }
-  }
+		if(!inserted)
+		{
+			return false;
+		}
+	}
 
-  _declarations.push_back(dswitch);
+	_declarations.push_back(dswitch);
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -582,10 +644,11 @@ add_switch(DCSwitch *dswitch) {
 //               interfaces named within the .dc file.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-add_import_module(const string &import_module) {
-  Import import;
-  import._module = import_module;
-  _imports.push_back(import);
+add_import_module(const string &import_module)
+{
+	Import import;
+	import._module = import_module;
+	_imports.push_back(import);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -598,9 +661,10 @@ add_import_module(const string &import_module) {
 //               be "import module_name".
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-add_import_symbol(const string &import_symbol) {
-  nassertv(!_imports.empty());
-  _imports.back()._symbols.push_back(import_symbol);
+add_import_symbol(const string &import_symbol)
+{
+	nassertv(!_imports.empty());
+	_imports.back()._symbols.push_back(import_symbol);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -613,28 +677,34 @@ add_import_symbol(const string &import_symbol) {
 //               false if there was a name conflict.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-add_typedef(DCTypedef *dtypedef) {
-  bool inserted = _typedefs_by_name.insert
-    (TypedefsByName::value_type(dtypedef->get_name(), dtypedef)).second;
+add_typedef(DCTypedef *dtypedef)
+{
+	bool inserted = _typedefs_by_name.insert
+	                (TypedefsByName::value_type(dtypedef->get_name(), dtypedef)).second;
 
-  if (!inserted) {
-    return false;
-  }
+	if(!inserted)
+	{
+		return false;
+	}
 
-  dtypedef->set_number(get_num_typedefs());
-  _typedefs.push_back(dtypedef);
+	dtypedef->set_number(get_num_typedefs());
+	_typedefs.push_back(dtypedef);
 
-  if (dtypedef->is_bogus_typedef()) {
-    _all_objects_valid = false;
-  }
+	if(dtypedef->is_bogus_typedef())
+	{
+		_all_objects_valid = false;
+	}
 
-  if (!dtypedef->is_bogus_typedef() && !dtypedef->is_implicit_typedef()) {
-    _declarations.push_back(dtypedef);
-  } else {
-    _things_to_delete.push_back(dtypedef);
-  }
+	if(!dtypedef->is_bogus_typedef() && !dtypedef->is_implicit_typedef())
+	{
+		_declarations.push_back(dtypedef);
+	}
+	else
+	{
+		_things_to_delete.push_back(dtypedef);
+	}
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -646,17 +716,21 @@ add_typedef(DCTypedef *dtypedef) {
 //               a particular keyword more than once.
 ////////////////////////////////////////////////////////////////////
 bool DCFile::
-add_keyword(const string &name) {
-  DCKeyword *keyword = new DCKeyword(name);
-  bool added = _keywords.add_keyword(keyword);
+add_keyword(const string &name)
+{
+	DCKeyword *keyword = new DCKeyword(name);
+	bool added = _keywords.add_keyword(keyword);
 
-  if (added) {
-    _declarations.push_back(keyword);
-  } else {
-    delete keyword;
-  }
+	if(added)
+	{
+		_declarations.push_back(keyword);
+	}
+	else
+	{
+		delete keyword;
+	}
 
-  return added;
+	return added;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -669,8 +743,9 @@ add_keyword(const string &name) {
 //               to the DCFile.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-add_thing_to_delete(DCDeclaration *decl) {
-  _things_to_delete.push_back(decl);
+add_thing_to_delete(DCDeclaration *decl)
+{
+	_things_to_delete.push_back(decl);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -682,9 +757,10 @@ add_thing_to_delete(DCDeclaration *decl) {
 //               parsed.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-set_new_index_number(DCField *field) {
-  field->set_number((int)_fields_by_index.size());
-  _fields_by_index.push_back(field);
+set_new_index_number(DCField *field)
+{
+	field->set_number((int)_fields_by_index.size());
+	_fields_by_index.push_back(field);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -694,33 +770,37 @@ set_new_index_number(DCField *field) {
 //               are defined for every DCFile for legacy reasons.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-setup_default_keywords() {
-  struct KeywordDef {
-    const char *name;
-    int flag;
-  };
-  static KeywordDef default_keywords[] = {
-    { "required", 0x0001 },
-    { "broadcast", 0x0002 },
-    { "ownrecv", 0x0004 },
-    { "ram", 0x0008 },
-    { "db", 0x0010 },
-    { "clsend", 0x0020 },
-    { "clrecv", 0x0040 },
-    { "ownsend", 0x0080 },
-    { "airecv", 0x0100 },
-    { NULL, 0 }
-  };
+setup_default_keywords()
+{
+	struct KeywordDef
+	{
+		const char *name;
+		int flag;
+	};
+	static KeywordDef default_keywords[] =
+	{
+		{ "required", 0x0001 },
+		{ "broadcast", 0x0002 },
+		{ "ownrecv", 0x0004 },
+		{ "ram", 0x0008 },
+		{ "db", 0x0010 },
+		{ "clsend", 0x0020 },
+		{ "clrecv", 0x0040 },
+		{ "ownsend", 0x0080 },
+		{ "airecv", 0x0100 },
+		{ NULL, 0 }
+	};
 
-  _default_keywords.clear_keywords();
-  for (int i = 0; default_keywords[i].name != NULL; ++i) {
-    DCKeyword *keyword =
-      new DCKeyword(default_keywords[i].name,
-                    default_keywords[i].flag);
+	_default_keywords.clear_keywords();
+	for(int i = 0; default_keywords[i].name != NULL; ++i)
+	{
+		DCKeyword *keyword =
+		    new DCKeyword(default_keywords[i].name,
+		                  default_keywords[i].flag);
 
-    _default_keywords.add_keyword(keyword);
-    _things_to_delete.push_back(keyword);
-  }
+		_default_keywords.add_keyword(keyword);
+		_things_to_delete.push_back(keyword);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -730,14 +810,17 @@ setup_default_keywords() {
 //               classes.
 ////////////////////////////////////////////////////////////////////
 void DCFile::
-rebuild_inherited_fields() {
-  _inherited_fields_stale = false;
+rebuild_inherited_fields()
+{
+	_inherited_fields_stale = false;
 
-  Classes::iterator ci;
-  for (ci = _classes.begin(); ci != _classes.end(); ++ci) {
-    (*ci)->clear_inherited_fields();
-  }
-  for (ci = _classes.begin(); ci != _classes.end(); ++ci) {
-    (*ci)->rebuild_inherited_fields();
-  }
+	Classes::iterator ci;
+	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	{
+		(*ci)->clear_inherited_fields();
+	}
+	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	{
+		(*ci)->rebuild_inherited_fields();
+	}
 }

@@ -26,10 +26,10 @@
 ////////////////////////////////////////////////////////////////////
 DCTypedef::
 DCTypedef(DCParameter *parameter, bool implicit) :
-  _parameter(parameter),
-  _bogus_typedef(false),
-  _implicit_typedef(implicit),
-  _number(-1)
+	_parameter(parameter),
+	_bogus_typedef(false),
+	_implicit_typedef(implicit),
+	_number(-1)
 {
 }
 
@@ -40,12 +40,12 @@ DCTypedef(DCParameter *parameter, bool implicit) :
 ////////////////////////////////////////////////////////////////////
 DCTypedef::
 DCTypedef(const string &name) :
-  _parameter(new DCSimpleParameter(ST_invalid)),
-  _bogus_typedef(true),
-  _implicit_typedef(false),
-  _number(-1)
+	_parameter(new DCSimpleParameter(ST_invalid)),
+	_bogus_typedef(true),
+	_implicit_typedef(false),
+	_number(-1)
 {
-  _parameter->set_name(name);
+	_parameter->set_name(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -54,8 +54,9 @@ DCTypedef(const string &name) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 DCTypedef::
-~DCTypedef() {
-  delete _parameter;
+~DCTypedef()
+{
+	delete _parameter;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -66,8 +67,9 @@ DCTypedef::
 //               the .dc file(s) are read.
 ////////////////////////////////////////////////////////////////////
 int DCTypedef::
-get_number() const {
-  return _number;
+get_number() const
+{
+	return _number;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -76,8 +78,9 @@ get_number() const {
 //  Description: Returns the name of this typedef.
 ////////////////////////////////////////////////////////////////////
 const string &DCTypedef::
-get_name() const {
-  return _parameter->get_name();
+get_name() const
+{
+	return _parameter->get_name();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -87,10 +90,11 @@ get_name() const {
 //               human consumption.
 ////////////////////////////////////////////////////////////////////
 string DCTypedef::
-get_description() const {
-  ostringstream strm;
-  _parameter->output(strm, true);
-  return strm.str();
+get_description() const
+{
+	ostringstream strm;
+	_parameter->output(strm, true);
+	return strm.str();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -103,8 +107,9 @@ get_description() const {
 //               normal valid dc file.
 ////////////////////////////////////////////////////////////////////
 bool DCTypedef::
-is_bogus_typedef() const {
-  return _bogus_typedef;
+is_bogus_typedef() const
+{
+	return _bogus_typedef;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -115,8 +120,9 @@ is_bogus_typedef() const {
 //               DCClass that was referenced inline as a type.
 ////////////////////////////////////////////////////////////////////
 bool DCTypedef::
-is_implicit_typedef() const {
-  return _implicit_typedef;
+is_implicit_typedef() const
+{
+	return _implicit_typedef;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -126,11 +132,12 @@ is_implicit_typedef() const {
 //               uses the same type as that named by the typedef.
 ////////////////////////////////////////////////////////////////////
 DCParameter *DCTypedef::
-make_new_parameter() const {
-  DCParameter *new_parameter = _parameter->make_copy();
-  new_parameter->set_name(string());
-  new_parameter->set_typedef(this);
-  return new_parameter;
+make_new_parameter() const
+{
+	DCParameter *new_parameter = _parameter->make_copy();
+	new_parameter->set_name(string());
+	new_parameter->set_typedef(this);
+	return new_parameter;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -141,8 +148,9 @@ make_new_parameter() const {
 //               typedef is added.
 ////////////////////////////////////////////////////////////////////
 void DCTypedef::
-set_number(int number) {
-  _number = number;
+set_number(int number)
+{
+	_number = number;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -152,9 +160,10 @@ set_number(int number) {
 //                <out>.
 ////////////////////////////////////////////////////////////////////
 void DCTypedef::
-output(ostream &out, bool brief) const {
-  out << "typedef ";
-  _parameter->output(out, false);
+output(ostream &out, bool brief) const
+{
+	out << "typedef ";
+	_parameter->output(out, false);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -163,17 +172,19 @@ output(ostream &out, bool brief) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 void DCTypedef::
-write(ostream &out, bool brief, int indent_level) const {
-  indent(out, indent_level)
-    << "typedef ";
+write(ostream &out, bool brief, int indent_level) const
+{
+	indent(out, indent_level)
+	        << "typedef ";
 
-  // We need to preserve the parameter name in the typedef (this is
-  // the typedef name); hence, we pass brief = false to output().
-  _parameter->output(out, false);
-  out << ";";
+	// We need to preserve the parameter name in the typedef (this is
+	// the typedef name); hence, we pass brief = false to output().
+	_parameter->output(out, false);
+	out << ";";
 
-  if (!brief) {
-    out << "  // typedef " << _number;
-  }
-  out << "\n";
+	if(!brief)
+	{
+		out << "  // typedef " << _number;
+	}
+	out << "\n";
 }
