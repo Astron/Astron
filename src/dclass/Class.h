@@ -1,137 +1,91 @@
-// Filename: dcClass.h
-// Created by:  drose (05Oct00)
+// Filename: Class.h
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCCLASS_H
-#define DCCLASS_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcField.h"
-#include "dcDeclaration.h"
-#include "dcPython.h"
-
-#ifdef WITHIN_PANDA
-#include "pStatCollector.h"
-#include "configVariableBool.h"
-
-extern ConfigVariableBool dc_multiple_inheritance;
-extern ConfigVariableBool dc_virtual_inheritance;
-extern ConfigVariableBool dc_sort_inheritance_by_file;
-
-#else  // WITHIN_PANDA
-
-static const bool dc_multiple_inheritance = true;
-static const bool dc_virtual_inheritance = true;
-static const bool dc_sort_inheritance_by_file = true;
-
-#endif  // WITHIN_PANDA
-
-class HashGenerator;
-class DCParameter;
-
-////////////////////////////////////////////////////////////////////
-//       Class : DCClass
-// Description : Defines a particular DistributedClass as read from an
-//               input .dc file.
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCClass : public DCDeclaration
+#include "Field.h"
+#include "Declaration.h"
+namespace dclass   // open namespace
 {
+
+
+// Foward declaration
+class HashGenerator;
+class Parameter;
+
+// A Class (dclass::Class) defines a particular DistributedClass as read from an input .dc file.
+class EXPCL_DIRECT Class : public Declaration
+{
+	friend class Field;
+
 	public:
-		DCClass(DCFile *dc_file, const string &name,
-		        bool is_struct, bool bogus_class);
-		~DCClass();
+		Class(File *dc_file, const string &name,
+		      bool is_struct, bool bogus_class);
+		~Class();
 
 	PUBLISHED:
-		virtual DCClass *as_class();
-		virtual const DCClass *as_class() const;
+		virtual Class *as_class();
+		virtual const Class *as_class() const;
 
-		INLINE DCFile *get_dc_file() const;
+		// get_file returns the File object that contains the class.
+		INLINE File *get_file() const;
 
+		// get_name returns the name of this class.
 		INLINE const string &get_name() const;
-		INLINE int get_number() const;
+		// get_number returns a unique index number associated with this class.
+		//     This is defined implicitly when a .dc file is read.
+		INLINE int get_index() const;
 
-		int get_num_parents() const;
-		DCClass *get_parent(int n) const;
+		// get_num_parents returns the number of base classes this class inherits from.
+		size_t get_num_parents() const;
+		// get_parent returns the nth parent class this class inherits from.
+		Class *get_parent(unsigned int n) const;
 
+		// has_constructor returns true if this class has a constructor method,
+		//     or false if it just uses the default constructor.
 		bool has_constructor() const;
-		DCField *get_constructor() const;
+		// get_constructor returns the constructor method for this class if it
+		//     is defined, or NULL if the class uses the default constructor.
+		Field *get_constructor() const;
 
-		int get_num_fields() const;
-		DCField *get_field(int n) const;
+		// get_num_fields returns the number of fields defined directly, ignoring inherited fields.
+		size_t get_num_fields() const;
+		// get_field returns the nth field in the class.  This is not the field with index n;
+		//     this is the nth field defined in the class directly, ignoring inheritance.
+		Field *get_field(unsigned int n) const;
 
-		DCField *get_field_by_name(const string &name) const;
-		DCField *get_field_by_index(int index_number) const;
+		// get_field_by_name returns a pointer to the declared or inherited Field with name 'name';
+		//     Returns NULL if there is no such field defined.
+		Field *get_field_by_name(const string &name) const;
+		// get_field_by_index returns a pointer to the declared or
+		//     inherited Field with unique id 'index';
+		//     Returns NULL if there is no such field defined.
+		Field *get_field_by_index(int index) const;
 
-		int get_num_inherited_fields() const;
-		DCField *get_inherited_field(int n) const;
+		// get_num_inherited_fields returns the total declared and inherited fields in this class.
+		size_t get_num_inherited_fields() const;
+		// get_inherited_field returns the nth field from all
+		//     declared and inherited fields in the class.
+		Field *get_inherited_field(int n) const;
 
+		// is_struct returns true if the class has been identified with the "struct"
+		//     keyword in the dc file, false if it was declared with "dclass".
 		INLINE bool is_struct() const;
+		// is_bogus_class returns true if the class has been flagged as a bogus class.
+		//     This is used by the parser as a placeholder for missing classes.
 		INLINE bool is_bogus_class() const;
+		// inherits_from_bogus_class returns true if this class, or any class in the inheritance
+		//     heirarchy for this class, is a forward reference to an as-yet-undefined class.
 		bool inherits_from_bogus_class() const;
 
-		INLINE void start_generate();
-		INLINE void stop_generate();
-
 		virtual void output(ostream &out) const;
-
-#ifdef HAVE_PYTHON
-		bool has_class_def() const;
-		void set_class_def(PyObject *class_def);
-		PyObject *get_class_def() const;
-		bool has_owner_class_def() const;
-		void set_owner_class_def(PyObject *owner_class_def);
-		PyObject *get_owner_class_def() const;
-
-		void receive_update(PyObject *distobj, DatagramIterator &di) const;
-		void receive_update_broadcast_required(PyObject *distobj, DatagramIterator &di) const;
-		void receive_update_broadcast_required_owner(PyObject *distobj, DatagramIterator &di) const;
-		void receive_update_all_required(PyObject *distobj, DatagramIterator &di) const;
-		void receive_update_other(PyObject *distobj, DatagramIterator &di) const;
-
-		void direct_update(PyObject *distobj, const string &field_name,
-		                   const string &value_blob);
-		void direct_update(PyObject *distobj, const string &field_name,
-		                   const Datagram &datagram);
-		bool pack_required_field(Datagram &datagram, PyObject *distobj,
-		                         const DCField *field) const;
-		bool pack_required_field(DCPacker &packer, PyObject *distobj,
-		                         const DCField *field) const;
-
-
-
-		Datagram client_format_update(const string &field_name,
-		                              DOID_TYPE do_id, PyObject *args) const;
-		Datagram ai_format_update(const string &field_name, DOID_TYPE do_id,
-		                          CHANNEL_TYPE to_id, CHANNEL_TYPE from_id, PyObject *args) const;
-		Datagram ai_format_update_msg_type(const string &field_name, DOID_TYPE do_id,
-		                                   CHANNEL_TYPE to_id, CHANNEL_TYPE from_id,
-		                                   int msg_type, PyObject *args) const;
-		Datagram ai_format_generate(PyObject *distobj, DOID_TYPE do_id, ZONEID_TYPE parent_id,
-		                            ZONEID_TYPE zone_id, CHANNEL_TYPE district_channel_id,
-		                            CHANNEL_TYPE from_channel_id, PyObject *optional_fields) const;
-		Datagram client_format_generate_CMU(PyObject *distobj, DOID_TYPE do_id,
-		                                    ZONEID_TYPE zone_id, PyObject *optional_fields) const;
-
-		Datagram ai_database_generate_context(unsigned int context_id, DOID_TYPE parent_id,
-		                                      ZONEID_TYPE zone_id, CHANNEL_TYPE owner_channel,
-		                                      CHANNEL_TYPE database_server_id,
-		                                      CHANNEL_TYPE from_channel_id) const;
-		Datagram ai_database_generate_context_old(unsigned int context_id,
-		        DOID_TYPE parent_id, ZONEID_TYPE zone_id,
-		        CHANNEL_TYPE database_server_id,
-		        CHANNEL_TYPE from_channel_id) const;
-
-#endif
 
 	public:
 		virtual void output(ostream &out, bool brief) const;
@@ -142,49 +96,28 @@ class EXPCL_DIRECT DCClass : public DCDeclaration
 		void clear_inherited_fields();
 		void rebuild_inherited_fields();
 
-		bool add_field(DCField *field);
-		void add_parent(DCClass *parent);
+		bool add_field(Field *field);
+		void add_parent(Class *parent);
 		void set_number(int number);
 
 	private:
 		void shadow_inherited_field(const string &name);
 
-#ifdef WITHIN_PANDA
-		PStatCollector _class_update_pcollector;
-		PStatCollector _class_generate_pcollector;
-		static PStatCollector _update_pcollector;
-		static PStatCollector _generate_pcollector;
-#endif
+		File *m_file;
 
-		DCFile *_dc_file;
+		string m_name;
+		bool m_is_struct;
+		bool m_bogus_class;
+		int m_number;
 
-		string _name;
-		bool _is_struct;
-		bool _bogus_class;
-		int _number;
-
-		typedef pvector<DCClass *> Parents;
-		Parents _parents;
-
-		DCField *_constructor;
-
-		typedef pvector<DCField *> Fields;
-		Fields _fields, _inherited_fields;
-
-		typedef pmap<string, DCField *> FieldsByName;
-		FieldsByName _fields_by_name;
-
-		typedef pmap<int, DCField *> FieldsByIndex;
-		FieldsByIndex _fields_by_index;
-
-#ifdef HAVE_PYTHON
-		PyObject *_class_def;
-		PyObject *_owner_class_def;
-#endif
-
-		friend class DCField;
+		Field* m_constructor;
+		std::vector<Class*> m_parents;
+		std::vector<Field*> m_fields, m_inherited_fields;
+		std::unordered_map<std::string, Field*> m_fields_by_name;
+		std::unordered_map<int, Field*> m_fields_by_index;
 };
 
-#include "dcClass.I"
+#include "Class.ipp"
 
-#endif
+
+} // close namespace dclass
