@@ -152,7 +152,7 @@ void Client::add_interest(Interest &i, uint32_t context)
 		resp.add_zone(*it);
 		subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
 	}
-	send(resp);
+	route_datagram(resp);
 }
 
 void Client::remove_interest(Interest &i, uint32_t context)
@@ -343,7 +343,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 		{
 			Datagram forward;
 			forward.add_data(dgi.read_string());
-			send_datagram(forward);
+			forward_datagram(forward);
 		}
 		break;
 		case CLIENTAGENT_OPEN_CHANNEL:

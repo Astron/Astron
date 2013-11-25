@@ -44,7 +44,7 @@ void LoadingObject::send_get_object(doid_t do_id)
 	Datagram dg(m_dbss->m_db_channel, do_id, DBSERVER_OBJECT_GET_ALL);
 	dg.add_uint32(m_context); // Context
 	dg.add_doid(do_id);
-	send(dg);
+	route_datagram(dg);
 }
 
 void LoadingObject::replay_datagrams(DistributedObject* obj)

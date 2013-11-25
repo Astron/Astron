@@ -67,7 +67,7 @@ class DatabaseServer : public Role
 					{
 						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
 						resp.add_doid(INVALID_DO_ID);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -101,7 +101,7 @@ class DatabaseServer : public Role
 						               << e.what() << std::endl;
 
 						resp.add_doid(INVALID_DO_ID);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -125,13 +125,13 @@ class DatabaseServer : public Role
 					{
 						m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
 						resp.add_doid(INVALID_DO_ID);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
 					m_log->trace() << "... created with ID: " << do_id << std::endl;
 					resp.add_doid(do_id);
-					send(resp);
+					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_GET_ALL:
@@ -166,7 +166,7 @@ class DatabaseServer : public Role
 						m_log->trace() << "... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
 					}
-					send(resp);
+					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_DELETE:
@@ -248,7 +248,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -257,7 +257,7 @@ class DatabaseServer : public Role
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -266,7 +266,7 @@ class DatabaseServer : public Role
 					if(m_db_engine->set_field_if_empty(do_id, field, value))
 					{
 						resp.add_uint8(SUCCESS);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -276,7 +276,7 @@ class DatabaseServer : public Role
 						resp.add_uint16(field_id);
 						resp.add_data(value);
 					}
-					send(resp);
+					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
@@ -292,7 +292,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -301,7 +301,7 @@ class DatabaseServer : public Role
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -313,7 +313,7 @@ class DatabaseServer : public Role
 					if(m_db_engine->set_field_if_equals(do_id, field, equal, value))
 					{
 						resp.add_uint8(SUCCESS);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -323,7 +323,7 @@ class DatabaseServer : public Role
 						resp.add_uint16(field_id);
 						resp.add_data(value);
 					}
-					send(resp);
+					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
@@ -339,7 +339,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -363,7 +363,7 @@ class DatabaseServer : public Role
 								else
 								{
 									resp.add_uint8(FAILURE);
-									send(resp);
+									route_datagram(resp);
 									return;
 								}
 							}
@@ -374,14 +374,14 @@ class DatabaseServer : public Role
 						m_log->error() << "Error while unpacking fields, msg may be truncated."
 						               << " e.what(): " << e.what() << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
 					if(m_db_engine->set_fields_if_equals(do_id, equals, values))
 					{
 						resp.add_uint8(SUCCESS);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -395,7 +395,7 @@ class DatabaseServer : public Role
 							resp.add_data(it->second);
 						}
 					}
-					send(resp);
+					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_GET_FIELD:
@@ -416,7 +416,7 @@ class DatabaseServer : public Role
 					{
 						m_log->trace() << "... object not found in database." << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -428,7 +428,7 @@ class DatabaseServer : public Role
 						m_log->error() << "Asked for invalid field,"
 						               << " reading from obj-" << do_id << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -438,7 +438,7 @@ class DatabaseServer : public Role
 					{
 						m_log->trace() << "... field not set." << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -446,7 +446,7 @@ class DatabaseServer : public Role
 					resp.add_uint8(SUCCESS);
 					resp.add_uint16(field_id);
 					resp.add_data(value);
-					send(resp);
+					route_datagram(resp);
 					m_log->trace() << "... success." << std::endl;
 				}
 				break;
@@ -467,7 +467,7 @@ class DatabaseServer : public Role
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -483,7 +483,7 @@ class DatabaseServer : public Role
 							m_log->error() << "Asked for invalid field(s),"
 							               << " reading from object #" << do_id << std::endl;
 							resp.add_uint8(FAILURE);
-							send(resp);
+							route_datagram(resp);
 							return;
 						}
 						fields[i] = field;
@@ -495,7 +495,7 @@ class DatabaseServer : public Role
 					{
 						m_log->trace() << "... failure." << std::endl;
 						resp.add_uint8(FAILURE);
-						send(resp);
+						route_datagram(resp);
 						return;
 					}
 
@@ -507,7 +507,7 @@ class DatabaseServer : public Role
 						resp.add_uint16(it->first->get_number());
 						resp.add_data(it->second);
 					}
-					send(resp);
+					route_datagram(resp);
 					m_log->trace() << "... success." << std::endl;
 				}
 				break;
