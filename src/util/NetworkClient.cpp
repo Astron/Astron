@@ -44,10 +44,10 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::start_receive()
 {
-	_async_receive();
+	async_receive();
 }
 
-void NetworkClient::_async_receive()
+void NetworkClient::async_receive()
 {
 	try
 	{
@@ -116,7 +116,7 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
 		m_data_buf = new uint8_t[m_data_size];
 	}
 	m_is_data = true;
-	_async_receive();
+	async_receive();
 }
 
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
