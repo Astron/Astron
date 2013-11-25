@@ -130,7 +130,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t byt
 	Datagram dg(m_data_buf, m_data_size); // Datagram makes a copy
 	m_is_data = false;
 	receive_datagram(dg);
-	_async_receive();
+	async_receive();
 }
 
 bool NetworkClient::is_connected()
