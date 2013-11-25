@@ -12,7 +12,7 @@ NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
 	m_data_size(0), m_is_data(false)
 {
-	start_receive();
+	network_init();
 }
 
 NetworkClient::~NetworkClient()
@@ -39,6 +39,11 @@ void NetworkClient::set_socket(tcp::socket *socket)
 	boost::asio::ip::tcp::no_delay nodelay(true);
 	m_socket->set_option(nodelay);
 
+	network_init();
+}
+
+void NetworkClient::network_init()
+{
 	start_receive();
 }
 
