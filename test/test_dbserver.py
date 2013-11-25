@@ -186,7 +186,7 @@ class DatabaseBaseTests(object):
             doid = self.createGenericGetId(40, len(doids))
 
         self.assertEquals(len(set(doids)), len(doids)) # Check if duplicate do_ids exist
-        self.assertEquals(len(doids), 11) # Check we recieved the max do_ids we requested
+        self.assertEquals(len(doids), 11) # Check we received the max do_ids we requested
         self.assertEquals(doid, INVALID_DO_ID) # Check the last object returned was BAD_DO_ID (0x0)
 
         # Delete an object

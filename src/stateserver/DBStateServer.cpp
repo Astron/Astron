@@ -134,13 +134,13 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Build and send datagram
 				Datagram dg(targets, sender, DBSS_OBJECT_DELETE_DISK);
 				dg.add_doid(do_id);
-				send(dg);
+				route_datagram(dg);
 			}
 
 			// Send delete to database
 			Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
 			dg.add_doid(do_id);
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -159,7 +159,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_doid(do_id);
 				dg.add_uint16(field_id);
 				dg.add_data(dgi.read_remainder());
-				send(dg);
+				route_datagram(dg);
 			}
 			break;
 		}
@@ -197,7 +197,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					dg.add_uint16(it->first->get_number());
 					dg.add_data(it->second);
 				}
-				send(dg);
+				route_datagram(dg);
 			}
 
 			break;
@@ -226,7 +226,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 				dg.add_uint32(r_context);
 				dg.add_bool(false);
-				send(dg);
+				route_datagram(dg);
 			}
 
 			if(field->is_db())
@@ -248,7 +248,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint32(db_context);
 				dg.add_doid(r_do_id);
 				dg.add_uint16(field_id);
-				send(dg);
+				route_datagram(dg);
 			}
 			else // Field is required and not-db
 			{
@@ -257,7 +257,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_bool(true);
 				dg.add_uint16(field_id);
 				dg.add_data(field->get_default_value());
-				send(dg);
+				route_datagram(dg);
 			}
 
 			break;
@@ -299,7 +299,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Add database field payload to response (don't know dclass, so must copy payload) and send
 			dg.add_data(dgi.read_remainder());
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -330,7 +330,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 					dg.add_uint32(r_context);
 					dg.add_uint8(false);
-					send(dg);
+					route_datagram(dg);
 				}
 				else if(field->is_ram() || field->is_required())
 				{
@@ -374,7 +374,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					dg.add_uint16((*it)->get_number());
 				}
-				send(dg);
+				route_datagram(dg);
 			}
 			else // If no database fields exist
 			{
@@ -387,7 +387,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					dg.add_uint16((*it)->get_number());
 					dg.add_data((*it)->get_default_value());
 				}
-				send(dg);
+				route_datagram(dg);
 			}
 
 			break;
@@ -433,7 +433,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dgi.read_uint16(); // Discard field count
 				dg.add_data(dgi.read_remainder());
 			}
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -471,7 +471,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
 			dg.add_uint32(db_context);
 			dg.add_doid(r_do_id);
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -581,7 +581,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Send response back to caller
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}

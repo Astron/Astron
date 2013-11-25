@@ -25,20 +25,20 @@ struct ChannelList
 class MDParticipantInterface;
 
 // A MessageDirector is the internal networking object for an Astron server-node.
-// The MessageDirector recieves message from other servers and routes them to the
+// The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
 class MessageDirector : public NetworkClient
 {
 	public:
-		// InitializeMD causes the MessageDirector to start listening for
+		// init_network causes the MessageDirector to start listening for
 		//     messages if it hasn't already been initialized.
 		void init_network();
 		static MessageDirector singleton;
 
-		// handle_datagram accepts any Astron message (a Datagram), and
+		// route_datagram accepts any Astron message (a Datagram), and
 		//     properly routes it to any subscribed listeners.
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-		void handle_datagram(MDParticipantInterface *p, Datagram &dg);
+		void route_datagram(MDParticipantInterface *p, Datagram &dg);
 
 		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
 		// (Args) "c": the channel to be added.
@@ -89,8 +89,8 @@ class MessageDirector : public NetworkClient
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void network_datagram(Datagram &dg);
-		virtual void network_disconnect();
+		virtual void receive_datagram(Datagram &dg);
+		virtual void receive_disconnect();
 
 
 };
@@ -98,7 +98,7 @@ class MessageDirector : public NetworkClient
 
 
 // A MDParticipantInterface is the interface that must be implemented to
-//     recieve messages from the MessageDirector.
+//     receive messages from the MessageDirector.
 // MDParticipants might be a StateServer, a single StateServer object, the
 //     DB-server, or etc. which are on the node and will be transferred
 //     internally.  Another server with its own MessageDirector also would
@@ -117,7 +117,7 @@ class MDParticipantInterface
 			MessageDirector::singleton.remove_participant(this);
 		}
 
-		// handle_datagram should handle a message recieved from the MessageDirector.
+		// handle_datagram should handle a message received from the MessageDirector.
 		// Implementations of handle_datagram should be non-blocking operations.
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
 
@@ -127,7 +127,7 @@ class MDParticipantInterface
 			logger().debug() << "MDParticipant '" << m_name << "' sending post removes..." << std::endl;
 			for(auto it = m_post_removes.begin(); it != m_post_removes.end(); ++it)
 			{
-				send(*it);
+				route_datagram(*it);
 			}
 		}
 
@@ -141,9 +141,9 @@ class MDParticipantInterface
 		}
 
 	protected:
-		inline void send(Datagram &dg)
+		inline void route_datagram(Datagram &dg)
 		{
-			MessageDirector::singleton.handle_datagram(this, dg);
+			MessageDirector::singleton.route_datagram(this, dg);
 		}
 		inline void subscribe_channel(channel_t c)
 		{

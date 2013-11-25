@@ -216,7 +216,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(FAILURE)
         self.database.send(dg)
 
-        # Should recieve no stateserver object response
+        # Should receive no stateserver object response
         self.assertTrue(self.shard.expect_none())
 
 
@@ -503,7 +503,7 @@ class TestStateServer(unittest.TestCase):
             dg.add_uint32(doid)
             self.shard.send(dg)
 
-            # Check if recieved database query
+            # Check if received database query
             dg = self.database.recv_maybe()
             if dg is None:
                 return False

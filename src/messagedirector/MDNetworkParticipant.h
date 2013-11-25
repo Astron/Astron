@@ -8,6 +8,6 @@ class MDNetworkParticipant : public MDParticipantInterface, public NetworkClient
 		MDNetworkParticipant(boost::asio::ip::tcp::socket *socket);
 		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi);
 	private:
-		virtual void network_datagram(Datagram &dg);
-		virtual void network_disconnect();
+		virtual void receive_datagram(Datagram &dg);
+		virtual void receive_disconnect();
 };
