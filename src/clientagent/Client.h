@@ -8,6 +8,11 @@
 
 class ClientAgent; // Forward declaration
 
+// The ClientState represents how far in the
+// connection process a client has reached.
+// A NEW client has just connected and not sent any messages.
+// An ANONYMOUS client has completed a handshake.
+// An AUTHENTICATED client has been granted access by an Uberdog or AI.
 enum ClientState
 {
     CLIENT_STATE_NEW,
@@ -15,6 +20,8 @@ enum ClientState
     CLIENT_STATE_ESTABLISHED
 };
 
+// A VisibleObject is used to cache metadata associated with
+// a particular object when it becomes visible to a Client.
 struct VisibleObject
 {
 	doid_t id;
@@ -23,6 +30,8 @@ struct VisibleObject
 	DCClass *dcc;
 };
 
+// An Interest represents a Client's interest opened with a
+// per-client-unique id, a parent, and one or more interested zones.
 struct Interest
 {
 	uint16_t id;
@@ -30,6 +39,9 @@ struct Interest
 	std::unordered_set<zone_t> zones;
 };
 
+// An InterestOperation represents the process of receiving the entirety of the interest
+// within a client.  The InterestOperation stays around until all new visible obterjects from a
+// newly created or updated interest have been received and forwarded to the Client.
 class InterestOperation
 {
 	public:
@@ -46,20 +58,6 @@ class InterestOperation
 
 		bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects);
 		void store_total(doid_t total);
-};
-
-class ChannelTracker
-{
-	public:
-		ChannelTracker(channel_t min, channel_t max);
-
-		channel_t alloc_channel();
-		void free_channel(channel_t channel);
-
-	private:
-		channel_t m_next;
-		channel_t m_max;
-		std::queue<channel_t> m_unused_channels;
 };
 
 class Client : public MDParticipantInterface
@@ -123,7 +121,7 @@ class Client : public MDParticipantInterface
 
 		/* Client Interface */
 		// send_disconnect must close any connections with a connected client; the given reason and
-		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
+		// error should be forwarded to the client. Additionally, it is recommend to log the event.
 		// Handler for CLIENTAGENT_EJECT.
 		virtual void send_disconnect(uint16_t reason, const std::string &error_string,
 		                             bool security = false);

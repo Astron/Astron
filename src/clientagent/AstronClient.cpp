@@ -62,15 +62,7 @@ class AstronClient : public Client, public NetworkClient
 		{
 			if(is_connected())
 			{
-				(security ? m_log->security() : m_log->error())
-				        << "Terminating client connection (" << reason << "): "
-				        << error_string << std::endl;
-
-				std::list<std::string> event;
-				event.push_back(security ? "client-ejected-security" : "client-ejected");
-				event.push_back(std::to_string((unsigned long long)reason));
-				event.push_back(error_string);
-				log_event(event);
+				Client::send_disconnect(reason, error_string, security);
 
 				Datagram resp;
 				resp.add_uint16(CLIENT_EJECT);
