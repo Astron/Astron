@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 project (Astron)
+enable_testing()
 
 ### Configure CMake to use our extra Find modules ###
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
@@ -127,6 +128,7 @@ if(BUILD_DBSERVER)
 			${DBSERVER_FILES}
 			src/database/YAMLEngine.cpp
 		)
+		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -143,7 +145,7 @@ if(BUILD_DBSERVER)
             message (STATUS "  PostgreSQL found")
             message ("    ${SOCI_postgresql_PLUGIN}")
 		else()
-			unset (BUILD_DB_POSTGRESQ CACHE)
+			unset (BUILD_DB_POSTGRESQL CACHE)
 			message (STATUS "  PostgreSQL not found")
 			message ("    won't add PostgreSQl support")
 		endif()
@@ -183,6 +185,8 @@ if(BUILD_DBSERVER)
 			set (SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set (SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
+				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_posgres.py)
+
 			endif()
 		endif()
 	else ()
@@ -208,6 +212,7 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
+	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
 
 	set (BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
@@ -218,6 +223,7 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.h
 			src/stateserver/LoadingObject.cpp
 		)
+		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
@@ -243,6 +249,7 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientFactory.h
 		src/clientagent/AstronClient.cpp
 	)
+	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
 endif()
 
 set (USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
@@ -252,6 +259,7 @@ if (USE_32BIT_DATAGRAMS)
 endif()
 
 include_directories (src)
+add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 add_executable (astrond
 	src/core/main.cpp 
 	src/core/config.cpp 
