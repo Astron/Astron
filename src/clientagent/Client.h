@@ -124,37 +124,45 @@ class Client : public MDParticipantInterface
 		/* Client Interface */
 		// send_disconnect must close any connections with a connected client; the given reason and
 		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
+		// Handler for CLIENTAGENT_EJECT.
 		virtual void send_disconnect(uint16_t reason, const std::string &error_string,
 		                             bool security = false);
 
-		//forward_datagram should foward the datagram to the client, or where appopriate parse
+		// forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
+		// Handler for CLIENTAGENT_SEND_DATAGRAM.
 		virtual void forward_datagram(Datagram &dg) = 0;
 
 		// handle_drop should immediately disconnect the client without sending any more data.
+		// Handler for CLIENTAGENT_DROP.
 		virtual void handle_drop() = 0;
 
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
+		// Handler for OBJECT_ENTER_LOCATION (an object, enters the Client's interest).
 		virtual void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id,
 		                               uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
 		// handle_add_ownership should inform the client it has control of a new object. The datagram
 		// iterator provided starts at the 'required fields' data, and may have 'optional fields'.
+		// Handler for OBJECT_ENTER_OWNER (an object, enters the Client's ownership).
 		virtual void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id,
 		                                  uint16_t dc_id, DatagramIterator &dgi, bool other = false) = 0;
 
-		// handle_set_field should inform the client that the field has been updated
+		// handle_set_field should inform the client that the field has been updated.
 		virtual void handle_set_field(doid_t do_id, uint16_t field_id,
 		                              DatagramIterator &dgi) = 0;
 
-		// handle_change_location should inform the client that the objects location has changed
+		// handle_change_location should inform the client that the objects location has changed.
 		virtual void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone) = 0;
 
 		// handle_remove_object should send a mesage to remove the object from the connected client.
+		// Handler for cases where an object is no longer visible to the client;
+		//     for example, when it changes zone, leaves visibility, or is deleted.
 		virtual void handle_remove_object(doid_t do_id) = 0;
 
 		// handle_remove_ownership should notify the client it no has control of the object.
+		// Handle when the client loses ownership of an object.
 		virtual void handle_remove_ownership(doid_t do_id) = 0;
 
 		// handle_interest_done is called when all of the objects from an opened interest have been
