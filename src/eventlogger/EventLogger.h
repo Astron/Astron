@@ -4,7 +4,7 @@
 #include <boost/bind.hpp>
 
 #include "core/global.h"
-#include "util/Role.h"
+#include "core/Role.h"
 #include "util/Datagram.h"
 
 using boost::asio::ip::udp;
