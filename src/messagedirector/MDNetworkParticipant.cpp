@@ -14,7 +14,7 @@ void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	try
 	{
-		network_send(dg);
+		send_datagram(dg);
 	}
 	catch(boost::system::system_error &e)
 	{
@@ -24,7 +24,7 @@ void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	}
 }
 
-void MDNetworkParticipant::network_datagram(Datagram &dg)
+void MDNetworkParticipant::receive_datagram(Datagram &dg)
 {
 	DatagramIterator dgi(dg);
 	uint16_t channels = dgi.read_uint8();
@@ -83,10 +83,10 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 		}
 		return;
 	}
-	send(dg);
+	route_datagram(dg);
 }
 
-void MDNetworkParticipant::network_disconnect()
+void MDNetworkParticipant::receive_disconnect()
 {
 	delete this;
 }

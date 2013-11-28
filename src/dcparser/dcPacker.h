@@ -98,7 +98,7 @@ class EXPCL_DIRECT DCPacker
 		// the result back by reference instead of as a return value.
 		INLINE void unpack_double(double &value);
 		INLINE void unpack_int(int &value);
-		INLINE void unpack_uint(uint &value);
+		INLINE void unpack_uint(unsigned int &value);
 		INLINE void unpack_int64(int64_t &value);
 		INLINE void unpack_uint64(uint64_t &value);
 		INLINE void unpack_string(string &value);

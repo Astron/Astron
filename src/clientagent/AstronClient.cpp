@@ -48,8 +48,8 @@ class AstronClient : public Client, public NetworkClient
 			log_event(event);
 		}
 
-		// network_datagram is the handler for datagrams received over the network from a Client.
-		void network_datagram(Datagram &dg)
+		// receive_datagram is the handler for datagrams received over the network from a Client.
+		void receive_datagram(Datagram &dg)
 		{
 			DatagramIterator dgi(dg);
 			try
@@ -87,9 +87,9 @@ class AstronClient : public Client, public NetworkClient
 			}
 		}
 
-		void send_datagram(Datagram &dg)
+		void forward_datagram(Datagram &dg)
 		{
-			network_send(dg);
+			send_datagram(dg);
 		}
 
 		// send_disconnect
@@ -111,16 +111,17 @@ class AstronClient : public Client, public NetworkClient
 				resp.add_uint16(CLIENT_EJECT);
 				resp.add_uint16(reason);
 				resp.add_string(error_string);
-				network_send(resp);
+				send_datagram(resp);
+
 				m_clean_disconnect = true;
-				do_disconnect();
+//				NetworkClient::send_disconnect();
 			}
 		}
 
 		void handle_drop()
 		{
 			m_clean_disconnect = true;
-			do_disconnect();
+			NetworkClient::send_disconnect();
 		}
 
 		void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
@@ -132,7 +133,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_location(parent_id, zone_id);
 			resp.add_uint16(dc_id);
 			resp.add_data(dgi.read_remainder());
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
@@ -145,7 +146,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_location(parent_id, zone_id);
 			resp.add_uint16(dc_id);
 			resp.add_data(dgi.read_remainder());
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_set_field(doid_t do_id, uint16_t field_id, DatagramIterator &dgi)
@@ -155,7 +156,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_doid(do_id);
 			resp.add_uint16(field_id);
 			resp.add_data(dgi.read_remainder());
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone)
@@ -164,7 +165,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_uint16(CLIENT_OBJECT_LOCATION);
 			resp.add_doid(do_id);
 			resp.add_location(new_parent, new_zone);
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_remove_object(doid_t do_id)
@@ -172,7 +173,7 @@ class AstronClient : public Client, public NetworkClient
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_LEAVING);
 			resp.add_doid(do_id);
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_remove_ownership(doid_t do_id)
@@ -180,7 +181,7 @@ class AstronClient : public Client, public NetworkClient
 			Datagram resp;
 			resp.add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
 			resp.add_doid(do_id);
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		void handle_interest_done(uint16_t interest_id, uint32_t context)
@@ -189,7 +190,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
 			resp.add_uint32(context);
 			resp.add_uint16(interest_id);
-			network_send(resp);
+			send_datagram(resp);
 		}
 
 		//Only handles one message type, so it does not need to be split up.
@@ -224,7 +225,7 @@ class AstronClient : public Client, public NetworkClient
 
 			Datagram resp;
 			resp.add_uint16(CLIENT_HELLO_RESP);
-			network_send(resp);
+			send_datagram(resp);
 
 			m_state = CLIENT_STATE_ANONYMOUS;
 		}
@@ -241,7 +242,7 @@ class AstronClient : public Client, public NetworkClient
 					log_event(event);
 
 					m_clean_disconnect = true;
-					do_disconnect();
+					NetworkClient::send_disconnect();
 				}
 				break;
 				case CLIENT_OBJECT_SET_FIELD:
@@ -269,7 +270,7 @@ class AstronClient : public Client, public NetworkClient
 					log_event(event);
 
 					m_clean_disconnect = true;
-					do_disconnect();
+					NetworkClient::send_disconnect();
 				}
 				break;
 				case CLIENT_OBJECT_SET_FIELD:
@@ -363,7 +364,7 @@ class AstronClient : public Client, public NetworkClient
 			resp.add_doid(do_id);
 			resp.add_uint16(field_id);
 			resp.add_data(data);
-			send(resp);
+			route_datagram(resp);
 		}
 
 		void handle_client_object_location(DatagramIterator &dgi)
@@ -403,7 +404,7 @@ class AstronClient : public Client, public NetworkClient
 			Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
 			dg.add_doid(dgi.read_doid()); // Parent
 			dg.add_zone(dgi.read_zone()); // Zone
-			send(dg);
+			route_datagram(dg);
 		}
 
 		void handle_client_add_interest(DatagramIterator &dgi, bool multiple)
@@ -444,7 +445,7 @@ class AstronClient : public Client, public NetworkClient
 			remove_interest(i, context);
 		}
 
-		void network_disconnect()
+		void receive_disconnect()
 		{
 			if(!m_clean_disconnect)
 			{

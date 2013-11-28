@@ -127,9 +127,9 @@ class Client : public MDParticipantInterface
 		virtual void send_disconnect(uint16_t reason, const std::string &error_string,
 		                             bool security = false);
 
-		// send_datagram should foward the datagram to the client, or where appopriate parse
+		//forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
-		virtual void send_datagram(Datagram &dg) = 0;
+		virtual void forward_datagram(Datagram &dg) = 0;
 
 		// handle_drop should immediately disconnect the client without sending any more data.
 		virtual void handle_drop() = 0;
