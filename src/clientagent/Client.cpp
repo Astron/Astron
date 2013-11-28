@@ -463,6 +463,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			{
 				handle_remove_object(do_id);
 				m_seen_objects.erase(do_id);
+				m_historical_objects.insert(do_id);
 				m_visible_objects.erase(do_id);
 			}
 			else
