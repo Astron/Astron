@@ -2,6 +2,7 @@
 #include "core/Role.h"
 #include <unordered_map>
 
+// A BaseRoleFactoryItem is a common ancestor that all role factory templates inherit from.
 class BaseRoleFactoryItem
 {
 	public:
@@ -10,6 +11,8 @@ class BaseRoleFactoryItem
 		BaseRoleFactoryItem(const std::string &name);
 };
 
+// A RoleFactoryItem is the factory for a particular role.
+// Each new role should declare a RoleFactoryItem<RoleClass>("RoleName");
 template<class T>
 class RoleFactoryItem : public BaseRoleFactoryItem
 {
@@ -24,12 +27,18 @@ class RoleFactoryItem : public BaseRoleFactoryItem
 		}
 };
 
+// The RoleFactory instantiates roles from a role's name.
+// It is a singleton object.
 class RoleFactory
 {
 	public:
-		Role* instantiate_role(const std::string &role_name, RoleConfig roleconfig);
 		static RoleFactory singleton;
 
+		// instantiate_role creates a new Role object of type 'role_name'.
+		Role* instantiate_role(const std::string &role_name, RoleConfig roleconfig);
+
+		// add_role adds a factory for role of type 'name'
+		// It is called automatically when instantiating a new RoleFactoryItem.
 		void add_role(const std::string &name, BaseRoleFactoryItem *factory);
 	private:
 		std::unordered_map<std::string, BaseRoleFactoryItem*> m_factories;
