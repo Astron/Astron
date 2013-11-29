@@ -263,4 +263,4 @@ class FSDBEngine : public IDatabaseEngine
 #undef val_t
 };
 
-DBEngineCreator<FSDBEngine> fsdbengine_creator("filesystem");
+DBEngineFactoryItem<FSDBEngine> fsdbengine_creator("filesystem");

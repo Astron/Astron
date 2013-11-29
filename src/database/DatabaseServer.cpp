@@ -19,7 +19,7 @@ class DatabaseServer : public Role
 		doid_t m_min_id, m_max_id;
 	public:
 		DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
-			m_db_engine(DBEngineFactory::singleton.instantiate(
+			m_db_engine(DBEngineFactory::singleton.instantiate_engine(
 			                engine_type.get_rval(roleconfig),
 			                roleconfig["engine"],
 			                min_id.get_rval(roleconfig),

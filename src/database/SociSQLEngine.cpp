@@ -758,6 +758,6 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 };
 
-DBEngineCreator<SociSQLEngine> mysqlengine_creator("mysql");
-DBEngineCreator<SociSQLEngine> postgresqlengine_creator("postgresql");
-DBEngineCreator<SociSQLEngine> sqliteengine_creator("sqlite");
+DBEngineFactoryItem<SociSQLEngine> mysqlengine_creator("mysql");
+DBEngineFactoryItem<SociSQLEngine> postgresqlengine_creator("postgresql");
+DBEngineFactoryItem<SociSQLEngine> sqliteengine_creator("sqlite");

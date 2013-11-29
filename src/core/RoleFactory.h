@@ -27,8 +27,7 @@ class RoleFactoryItem : public BaseRoleFactoryItem
 		}
 };
 
-// The RoleFactory instantiates roles from a role's name.
-// It is a singleton object.
+// The RoleFactory is a singleton that instantiates roles from a role's name.
 class RoleFactory
 {
 	public:

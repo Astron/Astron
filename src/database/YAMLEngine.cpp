@@ -662,4 +662,4 @@ class YAMLEngine : public IDatabaseEngine
 #undef val_t
 };
 
-DBEngineCreator<YAMLEngine> yamlengine_creator("yaml");
+DBEngineFactoryItem<YAMLEngine> yamlengine_creator("yaml");
