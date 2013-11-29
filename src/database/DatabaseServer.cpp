@@ -130,6 +130,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Send the newly allocated doid back to caller
 					m_log->trace() << "... created with ID: " << do_id << std::endl;
 					resp.add_doid(do_id);
 					route_datagram(resp);
@@ -139,6 +140,7 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start the reply datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
 					resp.add_uint32(context);
@@ -147,9 +149,11 @@ class DatabaseServer : public Role
 
 					m_log->trace() << "Selecting all from do_id: " << do_id << "... " << std::endl;
 
+					// Get object from database
 					DatabaseObject dbo;
 					if(m_db_engine->get_object(do_id, dbo))
 					{
+						// Object found, serialize fields and send all data back
 						m_log->trace() << "... object found!" << std::endl;
 						resp.add_uint8(SUCCESS);
 						resp.add_uint16(dbo.dc_id);
@@ -164,14 +168,18 @@ class DatabaseServer : public Role
 					}
 					else
 					{
+						// Object not found, send failure.
 						m_log->trace() << "... object not found." << std::endl;
 						resp.add_uint8(FAILURE);
 					}
+
+					// Send reply datagram
 					route_datagram(resp);
 				}
 				break;
 				case DBSERVER_OBJECT_DELETE:
 				{
+					// Just delete the object
 					doid_t do_id = dgi.read_doid();
 					m_db_engine->delete_object(do_id);
 					m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
@@ -179,6 +187,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_SET_FIELD:
 				{
+					// Check class so we can filter the field
 					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
@@ -188,8 +197,11 @@ class DatabaseServer : public Role
 
 					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
+
+					// Make sure field exists and is a database field
 					if(field && field->is_db())
 					{
+						// Update the field value
 						std::vector<uint8_t> value;
 						dgi.unpack_field(field, value);
 						m_db_engine->set_field(do_id, field, value);
@@ -198,6 +210,7 @@ class DatabaseServer : public Role
 				break;
 				case DBSERVER_OBJECT_SET_FIELDS:
 				{
+					// Check class so we can filter the fieldss
 					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
@@ -205,6 +218,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Make sure field exists and are database fields, storing their values
 					std::map<DCField*, std::vector<uint8_t> > fields;
 					uint16_t field_count = dgi.read_uint16();
 					m_log->trace() << "Unpacking fields..." << std::endl;
@@ -233,6 +247,8 @@ class DatabaseServer : public Role
 						               << e.what() << std::endl;
 						return;
 					}
+
+					// Update the field values in the database
 					m_db_engine->set_fields(do_id, fields);
 				}
 				break;
@@ -240,10 +256,12 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start response datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
 					resp.add_uint32(context);
 
+					// Get class so we can filter the field
 					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
@@ -253,6 +271,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
 					if(!field->is_db())
@@ -262,15 +281,18 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Try to set the field
 					std::vector<uint8_t> value;
 					dgi.unpack_field(field, value);
 					if(m_db_engine->set_field_if_empty(do_id, field, value))
 					{
+						// Update was successful, send reply
 						resp.add_uint8(SUCCESS);
 						route_datagram(resp);
 						return;
 					}
 
+					// Update failed, send back current object values
 					resp.add_uint8(FAILURE);
 					if(value.size() > 0)
 					{
@@ -284,10 +306,12 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start response datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
+					// Get class so we can filter the field
 					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
@@ -297,6 +321,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
 					DCField *field = dcc->get_field_by_index(field_id);
 					if(!field->is_db())
@@ -311,13 +336,16 @@ class DatabaseServer : public Role
 					dgi.unpack_field(field, equal);
 					dgi.unpack_field(field, value);
 
+					// Try to set the field
 					if(m_db_engine->set_field_if_equals(do_id, field, equal, value))
 					{
+						// Update was successful, send reply
 						resp.add_uint8(SUCCESS);
 						route_datagram(resp);
 						return;
 					}
 
+					// Update failed, send back current object values
 					resp.add_uint8(FAILURE);
 					if(value.size() > 0)
 					{
@@ -331,10 +359,12 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start response datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 					resp.add_uint32(context);
 
+					// Get class so we can filter the fields
 					doid_t do_id = dgi.read_doid();
 					DCClass *dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
@@ -344,7 +374,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
-					// Unpack fields from datagram
+					// Unpack fields from datagram, validate that they are database fields
 					std::map<DCField*, std::vector<uint8_t> > equals;
 					std::map<DCField*, std::vector<uint8_t> > values;
 					uint16_t field_count = dgi.read_uint16();
@@ -379,13 +409,16 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Try to update the values
 					if(m_db_engine->set_fields_if_equals(do_id, equals, values))
 					{
+						// Update was successful, send reply
 						resp.add_uint8(SUCCESS);
 						route_datagram(resp);
 						return;
 					}
 
+					// Update failed, send back current object values
 					resp.add_uint8(FAILURE);
 					if(values.size() > 0)
 					{
@@ -403,6 +436,7 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start response datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELD_RESP);
 					resp.add_uint32(context);
@@ -455,6 +489,7 @@ class DatabaseServer : public Role
 				{
 					uint32_t context = dgi.read_uint32();
 
+					// Start response datagram
 					Datagram resp;
 					resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELDS_RESP);
 					resp.add_uint32(context);
@@ -517,6 +552,7 @@ class DatabaseServer : public Role
 					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
+					// Get class so we can validate the field
 					DCClass* dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -524,6 +560,7 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Check the field exists
 					uint16_t field_id = dgi.read_uint16();
 					DCField* field = dcc->get_field_by_index(field_id);
 					if(!field)
@@ -533,8 +570,10 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					// Check the field is a database field
 					if(field->is_db())
 					{
+						// If field has a default, use it
 						if(field->has_default_value())
 						{
 							std::string str = field->get_default_value();
@@ -545,15 +584,12 @@ class DatabaseServer : public Role
 							m_db_engine->set_field(do_id, field, value);
 							m_log->trace() << "... field set to default." << std::endl;
 						}
-						else if(!field->is_required())
+
+						// Otherwise just delete the field
+						else
 						{
 							m_db_engine->del_field(do_id, field);
 							m_log->trace() << "... field deleted." << std::endl;
-						}
-						else
-						{
-							m_log->warning() << "Cannot delete required field of obj-" << do_id
-							                 << "." << std::endl;
 						}
 					}
 					else
@@ -568,6 +604,7 @@ class DatabaseServer : public Role
 					doid_t do_id = dgi.read_doid();
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
+					// Get class to validate fields
 					DCClass* dcc = m_db_engine->get_class(do_id);
 					if(!dcc)
 					{
@@ -575,11 +612,14 @@ class DatabaseServer : public Role
 						return;
 					}
 
+					std::vector<DCField*> del_fields; // deleted fields
+					std::map<DCField*, std::vector<uint8_t> > set_fields; // set to default
+
+					// Iterate through all the fields
 					uint16_t field_count = dgi.read_uint16();
-					std::vector<DCField*> del_fields;
-					std::map<DCField*, std::vector<uint8_t> > set_fields;
 					for(uint16_t i = 0; i < field_count; ++i)
 					{
+						// Check that field actually exists
 						uint16_t field_id = dgi.read_uint16();
 						DCField* field = dcc->get_field_by_index(field_id);
 						if(!field)
@@ -588,8 +628,11 @@ class DatabaseServer : public Role
 							               << " on obj-" << do_id << "." << std::endl;
 							return;
 						}
-						else if(field->is_db())
+
+						// Check the field is actually a database field
+						if(field->is_db())
 						{
+							// If field has a default, use it
 							if(field->has_default_value())
 							{
 								std::string str = field->get_default_value();
@@ -600,15 +643,12 @@ class DatabaseServer : public Role
 								set_fields[field] = value;
 								m_log->trace() << "... field set to default ..." << std::endl;
 							}
-							else if(!field->is_required())
+
+							// Otherwise just delete the field
+							else
 							{
 								del_fields.push_back(field);
 								m_log->trace() << "... field deleted ..." << std::endl;
-							}
-							else
-							{
-								m_log->warning() << "Cannot delete required field of obj-" << do_id
-								                 << "." << std::endl;
 							}
 						}
 						else
@@ -618,11 +658,14 @@ class DatabaseServer : public Role
 						}
 					}
 
+					// Delete fields marked for deltion
 					if(del_fields.size() > 0)
 					{
 						m_db_engine->del_fields(do_id, del_fields);
 						m_log->trace() << "... fields deleted." << std::endl;
 					}
+
+					// Update fields with default values
 					if(set_fields.size() > 0)
 					{
 						m_db_engine->set_fields(do_id, set_fields);
