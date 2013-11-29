@@ -109,16 +109,16 @@ set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into bina
 if(BUILD_DBSERVER)
 	set(DBSERVER_FILES
 		src/database/DatabaseServer.cpp
-		src/database/IDatabaseEngine.h
-		src/database/DBEngineFactory.h
-		src/database/DBEngineFactory.cpp
+		src/database/DatabaseBackend.h
+		src/database/DBBackendFactory.h
+		src/database/DBBackendFactory.cpp
 	)
 
 	set(BUILD_DB_YAML ON CACHE BOOL "If on, will support a YAML-based database (for development)")
 	if(BUILD_DB_YAML)
 		set(DBSERVER_FILES
 			${DBSERVER_FILES}
-			src/database/YAMLEngine.cpp
+			src/database/YAMLDatabase.cpp
 		)
 		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
 	endif()
@@ -172,7 +172,7 @@ if(BUILD_DBSERVER)
 			link_directories(${SOCI_LIBRARY_DIR})
 			set(DBSERVER_FILES
 				${DBSERVER_FILES}
-				src/database/SociSQLEngine.cpp
+				src/database/SociSQLDatabase.cpp
 			)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)

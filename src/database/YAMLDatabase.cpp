@@ -1,5 +1,5 @@
-#include "IDatabaseEngine.h"
-#include "DBEngineFactory.h"
+#include "DatabaseBackend.h"
+#include "DBBackendFactory.h"
 
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
@@ -15,7 +15,7 @@
 static ConfigVariable<std::string> foldername("foldername", "yaml_db");
 LogCategory yamldb_log("yamldb", "YAML Database Engine");
 
-class YAMLEngine : public IDatabaseEngine
+class YAMLDatabase : public DatabaseBackend
 {
 	private:
 		doid_t m_next_id;
@@ -145,7 +145,7 @@ class YAMLEngine : public IDatabaseEngine
 			out << const_cast<DCField*>(field)->format_data(packed_data, false);
 		}
 
-		bool write_yaml_object(doid_t do_id, DCClass* dcc, const DatabaseObject &dbo)
+		bool write_yaml_object(doid_t do_id, DCClass* dcc, const ObjectData &dbo)
 		{
 			// Build object as YAMl output
 			YAML::Emitter out;
@@ -175,8 +175,8 @@ class YAMLEngine : public IDatabaseEngine
 			return false;
 		}
 	public:
-		YAMLEngine(DBEngineConfig dbeconfig, doid_t min_id, doid_t max_id) :
-			IDatabaseEngine(dbeconfig, min_id, max_id),
+		YAMLDatabase(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
+			DatabaseBackend(dbeconfig, min_id, max_id),
 			m_next_id(min_id),
 			m_free_ids(),
 			m_foldername(foldername.get_rval(m_config))
@@ -209,7 +209,7 @@ class YAMLEngine : public IDatabaseEngine
 			infostream.close();
 		}
 
-		doid_t create_object(const DatabaseObject &dbo)
+		doid_t create_object(const ObjectData &dbo)
 		{
 			doid_t do_id = get_next_id();
 			if(do_id == 0)
@@ -237,7 +237,7 @@ class YAMLEngine : public IDatabaseEngine
 			}
 		}
 
-		bool get_object(doid_t do_id, DatabaseObject &dbo)
+		bool get_object(doid_t do_id, ObjectData &dbo)
 		{
 			yamldb_log.trace() << "Getting obj-" << do_id << " ..." << std::endl;
 
@@ -305,7 +305,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get the fields from the file that are not being updated
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -324,7 +324,7 @@ class YAMLEngine : public IDatabaseEngine
 				}
 			}
 
-			// Remove field to be deleted from DatabaseObject
+			// Remove field to be deleted from ObjectData
 			dbo.fields.erase(field);
 
 			// Write out new object to file
@@ -342,7 +342,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get the fields from the file that are not being updated
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -379,7 +379,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get the fields from the file that are not being updated
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -414,7 +414,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get the fields from the file that are not being updated
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -460,7 +460,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get current field values from the file
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -503,7 +503,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get current field values from the file
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -546,7 +546,7 @@ class YAMLEngine : public IDatabaseEngine
 
 			// Get current field values from the file
 			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			DatabaseObject dbo(dcc->get_number());
+			ObjectData dbo(dcc->get_number());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -662,4 +662,4 @@ class YAMLEngine : public IDatabaseEngine
 #undef val_t
 };
 
-DBEngineFactoryItem<YAMLEngine> yamlengine_creator("yaml");
+DBBackendFactoryItem<YAMLDatabase> yamldb_factory("yaml");
