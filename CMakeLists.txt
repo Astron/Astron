@@ -114,14 +114,6 @@ if(BUILD_DBSERVER)
 		src/database/DBEngineFactory.cpp
 	)
 
-	set(BUILD_DB_FILESYSTEM OFF CACHE BOOL "If on, will support a filesystem-based database (not full-featured)")
-	if(BUILD_DB_FILESYSTEM)
-		set(DBSERVER_FILES
-			${DBSERVER_FILES}
-			src/database/FSDBEngine.cpp
-		)
-	endif()
-
 	set(BUILD_DB_YAML ON CACHE BOOL "If on, will support a YAML-based database (for development)")
 	if(BUILD_DB_YAML)
 		set(DBSERVER_FILES
