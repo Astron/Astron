@@ -3,7 +3,7 @@
 
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "core/logger.h"
+#include "core/Logger.h"
 #include "core/global.h"
 #include "dcparser/dcSubatomicType.h"
 #include "dcparser/dcAtomicField.h"

@@ -261,13 +261,13 @@ endif()
 include_directories (src)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 add_executable (astrond
-	src/core/main.cpp 
-	src/core/config.cpp 
-	src/core/logger.cpp 
-	src/core/config.h 
+	src/core/main.cpp
 	src/core/global.h
 	src/core/global.cpp
-	src/core/logger.h
+	src/core/config.cpp
+	src/core/config.h
+	src/core/Logger.h
+	src/core/Logger.cpp
 	src/core/Role.h
 	src/core/RoleFactory.cpp
 	src/core/RoleFactory.h
@@ -290,7 +290,7 @@ add_executable (astrond
 	${DBSERVER_FILES}
 )
 
-source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/logger.h src/messagedirector/messagedirector.h)
+source_group ("Header Files" FILES src/core/config.h src/core/global.h src/core/Logger.h src/messagedirector/MessageDirector.h)
 
 add_library (dcparser 
 	src/dcparser/p3dcparser_composite1.cxx 

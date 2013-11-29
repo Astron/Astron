@@ -2,7 +2,7 @@
 #include "DBEngineFactory.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "core/logger.h"
+#include "core/Logger.h"
 #include "core/global.h"
 #include <stdexcept>
 #include <fstream>

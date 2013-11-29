@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "logger.h"
+#include "Logger.h"
 
 NullStream null_stream; // used to print nothing by compiling out the unwanted messages
 NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messages
