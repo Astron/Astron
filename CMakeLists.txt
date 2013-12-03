@@ -13,15 +13,17 @@ if (WIN32)
 endif()
 
 
-### Use RelWithDebInfo by default ###
+### Set build type to Release with Debug Info by default ###
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 	set (CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
 
-### Add GNU Make compiler flags for each build type ###
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
+### Add per-compiler flags ###
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
+   CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+
+	### Release with Debugging Info
 	set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
 
 	### Release Flags -- warnings are errors, release code should not have warnings ###
