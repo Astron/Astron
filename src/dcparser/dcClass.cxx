@@ -1509,6 +1509,7 @@ add_field(DCField *field) {
 
     // It shouldn't be possible for that to fail.
     nassertr(inserted, false);
+    _used_in_assert(inserted);
   }
 
   _fields.push_back(field);
