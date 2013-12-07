@@ -18,6 +18,17 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+### Define astron’s git aha for use in program ###
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
+	exec_program(
+		"git"
+		${CMAKE_CURRENT_SOURCE_DIR}
+		ARGS "describe --abbrev=8 --dirty --always"
+		OUTPUT_VARIABLE GIT_SHA_VERSION
+	)
+
+	add_definitions(-DGIT_SHA1="${GIT_SHA_VERSION}")
+endif()
 
 
 ### Add per-compiler flags ###
