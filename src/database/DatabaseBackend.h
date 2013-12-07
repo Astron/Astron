@@ -1,33 +1,32 @@
 #pragma once
 #include "core/config.h"
-#include "core/messages.h"
+#include "core/types.h"
 #include "dcparser/dcField.h"
 #include <vector>
-#include <cstdint>
 
 
-struct DatabaseObject
+struct ObjectData
 {
 	uint16_t dc_id;
 	std::map<DCField*, std::vector<uint8_t> > fields;
 
-	DatabaseObject()
+	ObjectData()
 	{
 	}
-	DatabaseObject(uint16_t dcid) : dc_id(dcid)
+	ObjectData(uint16_t dcid) : dc_id(dcid)
 	{
 	}
 };
 
-class IDatabaseEngine
+class DatabaseBackend
 {
 	public:
-		IDatabaseEngine(DBEngineConfig dbeconfig, doid_t min_id, doid_t max_id) :
+		DatabaseBackend(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
 			m_config(dbeconfig), m_min_id(min_id), m_max_id(max_id) {}
 
-		virtual doid_t create_object(const DatabaseObject &dbo) = 0;
+		virtual doid_t create_object(const ObjectData &dbo) = 0;
 		virtual void delete_object(doid_t do_id) = 0;
-		virtual bool get_object(doid_t do_id, DatabaseObject &dbo) = 0;
+		virtual bool get_object(doid_t do_id, ObjectData &dbo) = 0;
 
 		//virtual bool get_exists(uint32_t do_id) = 0;
 		virtual DCClass* get_class(doid_t do_id) = 0;
@@ -50,7 +49,7 @@ class IDatabaseEngine
 #undef map_t
 #undef val_t
 	protected:
-		DBEngineConfig m_config;
+		DBBackendConfig m_config;
 		doid_t m_min_id;
 		doid_t m_max_id;
 };

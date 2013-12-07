@@ -40,6 +40,7 @@ ClientAgent::~ClientAgent()
 	delete m_log;
 }
 
+// start_accept waits for a new client connection and calls handle_accept when received.
 void ClientAgent::start_accept()
 {
 	tcp::socket *socket = new tcp::socket(io_service);
@@ -48,6 +49,7 @@ void ClientAgent::start_accept()
 	                         this, socket, boost::asio::placeholders::error));
 }
 
+// handle_accepts generates a new Client object from a connection, then calls start_accept.
 void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
 	boost::asio::ip::tcp::endpoint remote;
@@ -71,8 +73,42 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	start_accept();
 }
 
+// handle_datagram handles Datagrams received from the message director.
 void ClientAgent::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
 }
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");
+
+
+
+/* ========================== *
+ *       HELPER CLASSES       *
+ * ========================== */
+ChannelTracker::ChannelTracker(channel_t min, channel_t max) : m_next(min), m_max(max),
+	m_unused_channels()
+{
+}
+
+channel_t ChannelTracker::alloc_channel()
+{
+	if(m_next <= m_max)
+	{
+		return m_next++;
+	}
+	else
+	{
+		if(!m_unused_channels.empty())
+		{
+			channel_t c = m_unused_channels.front();
+			m_unused_channels.pop();
+			return c;
+		}
+	}
+	return 0;
+}
+
+void ChannelTracker::free_channel(channel_t channel)
+{
+	m_unused_channels.push(channel);
+}

@@ -2,7 +2,7 @@
 #include "MDNetworkParticipant.h"
 #include "core/config.h"
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit

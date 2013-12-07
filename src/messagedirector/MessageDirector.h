@@ -4,7 +4,7 @@
 #include <map>
 #include <unordered_map>
 #include <string>
-#include "core/logger.h"
+#include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include "util/NetworkClient.h"

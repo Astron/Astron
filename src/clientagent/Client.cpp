@@ -3,6 +3,7 @@
 #include "ClientAgent.h"
 
 #include "core/global.h"
+#include "core/msgtypes.h"
 
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
@@ -31,6 +32,7 @@ Client::~Client()
 	m_client_agent->m_ct.free_channel(m_allocated_channel);
 }
 
+// log_event sends an event to the EventLogger
 void Client::log_event(const std::list<std::string> &event)
 {
 	Datagram dg;
@@ -47,6 +49,8 @@ void Client::log_event(const std::list<std::string> &event)
 	g_eventsender.send(dg);
 }
 
+// lookup_object returns the class of the object with a do_id.
+// If that object is not visible to the client, NULL will be returned instead.
 DCClass *Client::lookup_object(doid_t do_id)
 {
 	// First see if it's an UberDOG:
@@ -70,6 +74,7 @@ DCClass *Client::lookup_object(doid_t do_id)
 	return NULL;
 }
 
+// lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
 std::list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 {
 	std::list<Interest> interests;
@@ -83,6 +88,9 @@ std::list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 	return interests;
 }
 
+// add_interest will start a new interest operation and retrieve all the objects an interest
+// from the server, subscribing to each zone in the interest.  If the interest already
+// exists, the interest will be updated with the new zones passed in by the argument.
 void Client::add_interest(Interest &i, uint32_t context)
 {
 	std::unordered_set<zone_t> new_zones;
@@ -155,6 +163,8 @@ void Client::add_interest(Interest &i, uint32_t context)
 	route_datagram(resp);
 }
 
+// remove_interest find each zone an interest which is not part of another interest and
+// passes it to close_zones() to be removed from the client's visibility.
 void Client::remove_interest(Interest &i, uint32_t context)
 {
 	std::unordered_set<zone_t> killed_zones;
@@ -176,6 +186,8 @@ void Client::remove_interest(Interest &i, uint32_t context)
 	m_interests.erase(i.id);
 }
 
+// cloze_zones removes objects visible through the zones from the client and unsubscribes
+// from the associated location channels for those objects.
 void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed_zones)
 {
 	// Kill off all objects that are in the matched parent/zones:
@@ -218,6 +230,8 @@ void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed
 	}
 }
 
+// is_historical_object returns true if the object was once visible to the client, but has
+// since been deleted.  The return is still true even if the object has become visible again.
 bool Client::is_historical_object(doid_t do_id)
 {
 	if(m_historical_objects.find(do_id) != m_historical_objects.end())
@@ -227,6 +241,9 @@ bool Client::is_historical_object(doid_t do_id)
 	return false;
 }
 
+// send_disconnect must close any connections with a connected client;
+// the given reason and error should be forwarded to the client.
+// Client::send_disconnect can be called by subclasses to handle logging the event.
 void Client::send_disconnect(uint16_t reason, const std::string &error_string, bool security)
 {
 	(security ? m_log->security() : m_log->error())
@@ -480,34 +497,6 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 /* ========================== *
  *       HELPER CLASSES       *
  * ========================== */
-ChannelTracker::ChannelTracker(channel_t min, channel_t max) : m_next(min), m_max(max),
-	m_unused_channels()
-{
-}
-
-channel_t ChannelTracker::alloc_channel()
-{
-	if(m_next <= m_max)
-	{
-		return m_next++;
-	}
-	else
-	{
-		if(!m_unused_channels.empty())
-		{
-			channel_t c = m_unused_channels.front();
-			m_unused_channels.pop();
-			return c;
-		}
-	}
-	return 0;
-}
-
-void ChannelTracker::free_channel(channel_t channel)
-{
-	m_unused_channels.push(channel);
-}
-
 InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_context,
                                      doid_t parent, std::unordered_set<zone_t> zones) :
 	m_interest_id(interest_id), m_client_context(client_context), m_parent(parent), m_zones(zones),

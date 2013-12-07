@@ -57,7 +57,7 @@ roles:
       # and is generally responsible for. Min and max are both optional fields.
         min: 100000000 # Required (no default)
       # max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
-      engine:
+      backend:
         type: bdb
         filename: main_database.db
 

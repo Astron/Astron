@@ -2,7 +2,7 @@
 #include "messagedirector/MessageDirector.h"
 #include "dcparser/dcFile.h"
 #include "util/EventSender.h"
-#include "logger.h"
+#include "Logger.h"
 #include "config.h"
 #include <boost/asio.hpp>
 #include <unordered_map>

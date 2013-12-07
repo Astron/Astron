@@ -1,6 +1,6 @@
 #include "MDNetworkParticipant.h"
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include <boost/bind.hpp>
 
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)

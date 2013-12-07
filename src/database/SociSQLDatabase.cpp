@@ -1,5 +1,5 @@
-#include "IDatabaseEngine.h"
-#include "DBEngineFactory.h"
+#include "DatabaseBackend.h"
+#include "DBBackendFactory.h"
 
 #include "core/global.h"
 #include "dcparser/hashGenerator.h"
@@ -16,17 +16,17 @@ using namespace soci;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
-static ConfigVariable<string> engine_type("type", "null");
+static ConfigVariable<string> database_type("type", "null");
 static ConfigVariable<string> database_name("database", "null");
 static ConfigVariable<string> session_user("username", "null");
 static ConfigVariable<string> session_passwd("password", "null");
 
-class SociSQLEngine : public IDatabaseEngine
+class SociSQLDatabase : public DatabaseBackend
 {
 	public:
-		SociSQLEngine(DBEngineConfig dbeconfig, doid_t min_id, doid_t max_id) :
-			IDatabaseEngine(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
-			m_backend(engine_type.get_rval(dbeconfig)),
+		SociSQLDatabase(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
+			DatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
+			m_backend(database_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),
 			m_sess_user(session_user.get_rval(dbeconfig)),
 			m_sess_passwd(session_passwd.get_rval(dbeconfig))
@@ -41,7 +41,7 @@ class SociSQLEngine : public IDatabaseEngine
 			check_ids();
 		}
 
-		doid_t create_object(const DatabaseObject& dbo)
+		doid_t create_object(const ObjectData& dbo)
 		{
 			string field_name;
 			vector<uint8_t> field_value;
@@ -100,7 +100,7 @@ class SociSQLEngine : public IDatabaseEngine
 
 			push_id(do_id);
 		}
-		bool get_object(doid_t do_id, DatabaseObject& dbo)
+		bool get_object(doid_t do_id, ObjectData& dbo)
 		{
 			m_log->trace() << "Getting object with id" << do_id << endl;
 
@@ -758,6 +758,6 @@ class SociSQLEngine : public IDatabaseEngine
 		}
 };
 
-DBEngineCreator<SociSQLEngine> mysqlengine_creator("mysql");
-DBEngineCreator<SociSQLEngine> postgresqlengine_creator("postgresql");
-DBEngineCreator<SociSQLEngine> sqliteengine_creator("sqlite");
+DBBackendFactoryItem<SociSQLDatabase> mysql_factory("mysql");
+DBBackendFactoryItem<SociSQLDatabase> postgresql_factory("postgresql");
+DBBackendFactoryItem<SociSQLDatabase> sqlite_factory("sqlite");
