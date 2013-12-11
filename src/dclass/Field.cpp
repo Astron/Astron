@@ -1,202 +1,152 @@
-// Filename: dcField.cxx
-// Created by:  drose (11Oct00)
+// Filename: Field.cpp
+// Created by: drose (11 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#include "dcField.h"
-#include "dcFile.h"
-#include "dcPacker.h"
-#include "dcClass.h"
-#include "hashGenerator.h"
-#include "dcmsgtypes.h"
-
-#ifdef WITHIN_PANDA
-#include "pStatTimer.h"
-#endif
-
-////////////////////////////////////////////////////////////////////
-//     Function: DCField::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-DCField::
-DCField() :
-	_dclass(NULL)
-#ifdef WITHIN_PANDA
-	,
-	_field_update_pcollector("DCField")
-#endif
+#include "Field.h"
+#include "File.h"
+#include "Packer.h"
+#include "Class.h"
+#include "HashGenerator.h"
+#include "msgtypes.h"
+namespace dclass   // open namespace
 {
-	_number = -1;
-	_default_value_stale = true;
-	_has_default_value = false;
 
-	_bogus_field = false;
 
-	_has_nested_fields = true;
-	_num_nested_fields = 0;
-	_pack_type = PT_field;
-
-	_has_fixed_byte_size = true;
-	_fixed_byte_size = 0;
-	_has_fixed_structure = true;
+// nameless constructor (for structs)
+Field::Field() : m_class(NULL), m_number(-1), m_default_value_stale(true),
+	m_has_default_value(false), m_bogus_field(false), m_has_nested_fields(true),
+	m_num_nested_fields(0), m_pack_type(PT_field), m_has_fixed_byte_size(true),
+	m_fixed_byte_size(0), m_has_fixed_structure(true)
+{
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCField::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-DCField::
-DCField(const string &name, DCClass *dclass) :
-	DCPackerInterface(name),
-	_dclass(dclass)
-#ifdef WITHIN_PANDA
-	,
-	_field_update_pcollector(dclass->_class_update_pcollector, name)
-#endif
+// named constructor (for classes)
+Field::Field(const string &name, Class *dclass) : PackerInterface(name),
+	m_class(dclass), m_number(-1), m_default_value_stale(true), m_has_default_value(false),
+	m_bogus_field(false), m_has_nested_fields(true), m_num_nested_fields(0),
+	m_pack_type(PT_field), m_has_fixed_byte_size(true), m_fixed_byte_size(0),
+	m_has_fixed_structure(true)
 {
-	_number = -1;
-	_has_default_value = false;
-	_default_value_stale = true;
-
-	_bogus_field = false;
-
-	_has_nested_fields = true;
-	_num_nested_fields = 0;
-	_pack_type = PT_field;
-
-	_has_fixed_byte_size = true;
-	_fixed_byte_size = 0;
-	_has_fixed_structure = true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCField::Destructor
-//       Access: Public, Virtual
-//  Description:
-////////////////////////////////////////////////////////////////////
-DCField::
-~DCField()
+// destructor
+Field::~Field()
 {
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_field
+//     Function: Field::as_field
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCField *DCField::
+Field *Field::
 as_field()
 {
 	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_field
+//     Function: Field::as_field
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-const DCField *DCField::
+const Field *Field::
 as_field() const
 {
 	return this;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_atomic_field
+//     Function: Field::as_atomic_field
 //       Access: Published, Virtual
 //  Description: Returns the same field pointer converted to an atomic
 //               field pointer, if this is in fact an atomic field;
 //               otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
-DCAtomicField *DCField::
+AtomicField *Field::
 as_atomic_field()
 {
-	return (DCAtomicField *)NULL;
+	return (AtomicField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_atomic_field
+//     Function: Field::as_atomic_field
 //       Access: Published, Virtual
 //  Description: Returns the same field pointer converted to an atomic
 //               field pointer, if this is in fact an atomic field;
 //               otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
-const DCAtomicField *DCField::
+const AtomicField *Field::
 as_atomic_field() const
 {
-	return (DCAtomicField *)NULL;
+	return (AtomicField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_molecular_field
+//     Function: Field::as_molecular_field
 //       Access: Published, Virtual
 //  Description: Returns the same field pointer converted to a
 //               molecular field pointer, if this is in fact a
 //               molecular field; otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
-DCMolecularField *DCField::
+MolecularField *Field::
 as_molecular_field()
 {
-	return (DCMolecularField *)NULL;
+	return (MolecularField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_molecular_field
+//     Function: Field::as_molecular_field
 //       Access: Published, Virtual
 //  Description: Returns the same field pointer converted to a
 //               molecular field pointer, if this is in fact a
 //               molecular field; otherwise, returns NULL.
 ////////////////////////////////////////////////////////////////////
-const DCMolecularField *DCField::
+const MolecularField *Field::
 as_molecular_field() const
 {
-	return (DCMolecularField *)NULL;
+	return (MolecularField *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_parameter
+//     Function: Field::as_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCParameter *DCField::
+Parameter *Field::
 as_parameter()
 {
-	return (DCParameter *)NULL;
+	return (Parameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::as_parameter
+//     Function: Field::as_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-const DCParameter *DCField::
+const Parameter *Field::
 as_parameter() const
 {
-	return (DCParameter *)NULL;
+	return (Parameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::format_data
+//     Function: Field::format_data
 //       Access: Published
 //  Description: Given a blob that represents the packed data for this
 //               field, returns a string formatting it for human
 //               consumption.  Returns empty string if there is an error.
 ////////////////////////////////////////////////////////////////////
-string DCField::
+string Field::
 format_data(const string &packed_data, bool show_field_names)
 {
-	DCPacker packer;
+	Packer packer;
 	packer.set_unpack_data(packed_data);
 	packer.begin_unpack(this);
 	string result = packer.unpack_and_format(show_field_names);
@@ -208,7 +158,7 @@ format_data(const string &packed_data, bool show_field_names)
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::parse_string
+//     Function: Field::parse_string
 //       Access: Published
 //  Description: Given a human-formatted string (for instance, as
 //               returned by format_data(), above) that represents the
@@ -216,10 +166,10 @@ format_data(const string &packed_data, bool show_field_names)
 //               corresponding packed data.  Returns empty string if
 //               there is an error.
 ////////////////////////////////////////////////////////////////////
-string DCField::
+string Field::
 parse_string(const string &formatted_string)
 {
-	DCPacker packer;
+	Packer packer;
 	packer.begin_pack(this);
 	if(!packer.parse_and_pack(formatted_string))
 	{
@@ -236,17 +186,17 @@ parse_string(const string &formatted_string)
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::validate_ranges
+//     Function: Field::validate_ranges
 //       Access: Published
 //  Description: Verifies that all of the packed values in the field
 //               data are within the specified ranges and that there
 //               are no extra bytes on the end of the record.  Returns
 //               true if all fields are valid, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCField::
+bool Field::
 validate_ranges(const string &packed_data) const
 {
-	DCPacker packer;
+	Packer packer;
 	packer.set_unpack_data(packed_data);
 	packer.begin_unpack(this);
 	packer.unpack_validate();
@@ -260,7 +210,7 @@ validate_ranges(const string &packed_data) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::pack_args
+//     Function: Field::pack_args
 //       Access: Published
 //  Description: Packs the Python arguments from the indicated tuple
 //               into the packer.  Returns true on success, false on
@@ -269,8 +219,8 @@ validate_ranges(const string &packed_data) const
 //               It is assumed that the packer is currently positioned
 //               on this field.
 ////////////////////////////////////////////////////////////////////
-bool DCField::
-pack_args(DCPacker &packer, PyObject *sequence) const
+bool Field::
+pack_args(Packer &packer, PyObject *sequence) const
 {
 	nassertr(!packer.had_error(), false);
 	nassertr(packer.get_current_field() == this, false);
@@ -290,7 +240,7 @@ pack_args(DCPacker &packer, PyObject *sequence) const
 		ostringstream strm;
 		PyObject *exc_type = PyExc_Exception;
 
-		if(as_parameter() != (DCParameter *)NULL)
+		if(as_parameter() != (Parameter *)NULL)
 		{
 			// If it's a parameter-type field, the value may or may not be a
 			// sequence.
@@ -348,7 +298,7 @@ pack_args(DCPacker &packer, PyObject *sequence) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::unpack_args
+//     Function: Field::unpack_args
 //       Access: Published
 //  Description: Unpacks the values from the packer, beginning at
 //               the current point in the unpack_buffer, into a Python
@@ -357,8 +307,8 @@ pack_args(DCPacker &packer, PyObject *sequence) const
 //               It is assumed that the packer is currently positioned
 //               on this field.
 ////////////////////////////////////////////////////////////////////
-PyObject *DCField::
-unpack_args(DCPacker &packer) const
+PyObject *Field::
+unpack_args(Packer &packer) const
 {
 	nassertr(!packer.had_error(), NULL);
 	nassertr(packer.get_current_field() == this, NULL);
@@ -413,16 +363,16 @@ unpack_args(DCPacker &packer) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::receive_update
+//     Function: Field::receive_update
 //       Access: Published
 //  Description: Extracts the update message out of the datagram and
 //               applies it to the indicated object by calling the
 //               appropriate method.
 ////////////////////////////////////////////////////////////////////
-void DCField::
-receive_update(DCPacker &packer, PyObject *distobj) const
+void Field::
+receive_update(Packer &packer, PyObject *distobj) const
 {
-	if(as_parameter() != (DCParameter *)NULL)
+	if(as_parameter() != (Parameter *)NULL)
 	{
 		// If it's a parameter-type field, just store a new value on the
 		// object.
@@ -461,7 +411,7 @@ receive_update(DCPacker &packer, PyObject *distobj) const
 				PyObject *result;
 				{
 #ifdef WITHIN_PANDA
-					PStatTimer timer(((DCField *)this)->_field_update_pcollector);
+					PStatTimer timer(((Field *)this)->_field_update_pcollector);
 #endif
 					result = PyObject_CallObject(func, args);
 				}
@@ -476,16 +426,16 @@ receive_update(DCPacker &packer, PyObject *distobj) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::client_format_update
+//     Function: Field::client_format_update
 //       Access: Published
 //  Description: Generates a datagram containing the message necessary
 //               to send an update for the indicated distributed
 //               object from the client.
 ////////////////////////////////////////////////////////////////////
-Datagram DCField::
+Datagram Field::
 client_format_update(DOID_TYPE do_id, PyObject *args) const
 {
-	DCPacker packer;
+	Packer packer;
 
 	packer.raw_pack_uint16(CLIENT_OBJECT_UPDATE_FIELD);
 	packer.raw_pack_uint32(do_id);
@@ -504,16 +454,16 @@ client_format_update(DOID_TYPE do_id, PyObject *args) const
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::ai_format_update
+//     Function: Field::ai_format_update
 //       Access: Published
 //  Description: Generates a datagram containing the message necessary
 //               to send an update for the indicated distributed
 //               object from the AI.
 ////////////////////////////////////////////////////////////////////
-Datagram DCField::
+Datagram Field::
 ai_format_update(DOID_TYPE do_id, CHANNEL_TYPE to_id, CHANNEL_TYPE from_id, PyObject *args) const
 {
-	DCPacker packer;
+	Packer packer;
 
 	packer.raw_pack_uint8(1);
 	packer.RAW_PACK_CHANNEL(to_id);
@@ -535,18 +485,18 @@ ai_format_update(DOID_TYPE do_id, CHANNEL_TYPE to_id, CHANNEL_TYPE from_id, PyOb
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::ai_format_update_msg_type
+//     Function: Field::ai_format_update_msg_type
 //       Access: Published
 //  Description: Generates a datagram containing the message necessary
 //               to send an update, with the msg type,
 //               for the indicated distributed
 //               object from the AI.
 ////////////////////////////////////////////////////////////////////
-Datagram DCField::
+Datagram Field::
 ai_format_update_msg_type(DOID_TYPE do_id, CHANNEL_TYPE to_id, CHANNEL_TYPE from_id, int msg_type,
                           PyObject *args) const
 {
-	DCPacker packer;
+	Packer packer;
 
 	packer.raw_pack_uint8(1);
 	packer.RAW_PACK_CHANNEL(to_id);
@@ -568,12 +518,12 @@ ai_format_update_msg_type(DOID_TYPE do_id, CHANNEL_TYPE to_id, CHANNEL_TYPE from
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::generate_hash
+//     Function: Field::generate_hash
 //       Access: Public, Virtual
 //  Description: Accumulates the properties of this field into the
 //               hash.
 ////////////////////////////////////////////////////////////////////
-void DCField::
+void Field::
 generate_hash(HashGenerator &hashgen) const
 {
 	// It shouldn't be necessary to explicitly add _number to the
@@ -591,7 +541,7 @@ generate_hash(HashGenerator &hashgen) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::pack_default_value
+//     Function: Field::pack_default_value
 //       Access: Public, Virtual
 //  Description: Packs the field's specified default value (or a
 //               sensible default if no value is specified) into the
@@ -599,8 +549,8 @@ generate_hash(HashGenerator &hashgen) const
 //               false if the field doesn't know how to pack its
 //               default value.
 ////////////////////////////////////////////////////////////////////
-bool DCField::
-pack_default_value(DCPackData &pack_data, bool &) const
+bool Field::
+pack_default_value(PackData &pack_data, bool &) const
 {
 	// The default behavior is to pack the default value if we got it;
 	// otherwise, to return false and let the packer visit our nested
@@ -615,15 +565,15 @@ pack_default_value(DCPackData &pack_data, bool &) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::set_name
+//     Function: Field::set_name
 //       Access: Public, Virtual
 //  Description: Sets the name of this field.
 ////////////////////////////////////////////////////////////////////
-void DCField::
+void Field::
 set_name(const string &name)
 {
-	DCPackerInterface::set_name(name);
-	if(_dclass != (DCClass *)NULL)
+	PackerInterface::set_name(name);
+	if(_dclass != (Class *)NULL)
 	{
 		_dclass->_dc_file->mark_inherited_fields_stale();
 	}
@@ -631,12 +581,12 @@ set_name(const string &name)
 
 #ifdef HAVE_PYTHON
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::get_pystr
+//     Function: Field::get_pystr
 //       Access: Public, Static
 //  Description: Returns the string representation of the indicated
 //               Python object.
 ////////////////////////////////////////////////////////////////////
-string DCField::
+string Field::
 get_pystr(PyObject *value)
 {
 	if(value == NULL)
@@ -688,15 +638,15 @@ get_pystr(PyObject *value)
 #endif  // HAVE_PYTHON
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCField::refresh_default_value
+//     Function: Field::refresh_default_value
 //       Access: Protected
 //  Description: Recomputes the default value of the field by
 //               repacking it.
 ////////////////////////////////////////////////////////////////////
-void DCField::
+void Field::
 refresh_default_value()
 {
-	DCPacker packer;
+	Packer packer;
 	packer.begin_pack(this);
 	packer.pack_default_value();
 	if(!packer.end_pack())
