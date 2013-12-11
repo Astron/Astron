@@ -18,7 +18,7 @@
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE DCPackData::
+inline DCPackData::
 DCPackData() {
   _buffer = NULL;
   _allocated_size = 0;
@@ -30,7 +30,7 @@ DCPackData() {
 //       Access: Published
 //  Description:
 ////////////////////////////////////////////////////////////////////
-INLINE DCPackData::
+inline DCPackData::
 ~DCPackData() {
   if (_buffer != (const char *)NULL) {
     delete[] _buffer;
@@ -43,7 +43,7 @@ INLINE DCPackData::
 //  Description: Empties the contents of the data (without necessarily
 //               freeing its allocated memory).
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPackData::
+inline void DCPackData::
 clear() {
   _used_length = 0;
 }
@@ -53,7 +53,7 @@ clear() {
 //       Access: Public
 //  Description: Adds the indicated bytes to the end of the data.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPackData::
+inline void DCPackData::
 append_data(const char *buffer, size_t size) {
   set_used_length(_used_length + size);
   memcpy(_buffer + _used_length - size, buffer, size);
@@ -66,7 +66,7 @@ append_data(const char *buffer, size_t size) {
 //               data without initializing them, and returns a pointer
 //               to the beginning of the new data.
 ////////////////////////////////////////////////////////////////////
-INLINE char *DCPackData::
+inline char *DCPackData::
 get_write_pointer(size_t size) {
   set_used_length(_used_length + size);
   return _buffer + _used_length - size;
@@ -77,7 +77,7 @@ get_write_pointer(size_t size) {
 //       Access: Public
 //  Description: Adds some uninitialized bytes to the end of the data.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPackData::
+inline void DCPackData::
 append_junk(size_t size) {
   set_used_length(_used_length + size);
 }
@@ -89,7 +89,7 @@ append_junk(size_t size) {
 //               given value.  It is an error if there are not at
 //               least position + size bytes in the data.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPackData::
+inline void DCPackData::
 rewrite_data(size_t position, const char *buffer, size_t size) {
   nassertv(position + size <= _used_length);
   memcpy(_buffer + position, buffer, size);
@@ -101,7 +101,7 @@ rewrite_data(size_t position, const char *buffer, size_t size) {
 //  Description: Returns a pointer into the middle of the data at the
 //               indicated point.
 ////////////////////////////////////////////////////////////////////
-INLINE char *DCPackData::
+inline char *DCPackData::
 get_rewrite_pointer(size_t position, size_t size) {
   nassertr(position + size <= _used_length, NULL);
   return _buffer + position;
@@ -113,7 +113,7 @@ get_rewrite_pointer(size_t position, size_t size) {
 //  Description: Returns the data buffer as a string.  Also see
 //               get_data().
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPackData::
+inline string DCPackData::
 get_string() const {
   return string(_buffer, _used_length);
 }
@@ -125,7 +125,7 @@ get_string() const {
 //               the number of useful bytes stored in the buffer, not
 //               the amount of memory it takes up.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPackData::
+inline size_t DCPackData::
 get_length() const {
   return _used_length;
 }
@@ -141,7 +141,7 @@ get_length() const {
 //               This may be used in conjunction with get_length() to
 //               copy all of the bytes out of the buffer.
 ////////////////////////////////////////////////////////////////////
-INLINE const char *DCPackData::
+inline const char *DCPackData::
 get_data() const {
   return _buffer;
 }
@@ -160,7 +160,7 @@ get_data() const {
 //               its length to zero (so you should call get_length()
 //               before calling this method).
 ////////////////////////////////////////////////////////////////////
-INLINE char *DCPackData::
+inline char *DCPackData::
 take_data() {
   char *data = _buffer;
 

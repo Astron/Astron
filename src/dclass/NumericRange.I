@@ -19,7 +19,7 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE DCNumericRange<NUM>::
+inline DCNumericRange<NUM>::
 DCNumericRange() {
 }
 
@@ -29,7 +29,7 @@ DCNumericRange() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE DCNumericRange<NUM>::
+inline DCNumericRange<NUM>::
 DCNumericRange(Number min, Number max) {
   add_range(min, max);
 }
@@ -40,7 +40,7 @@ DCNumericRange(Number min, Number max) {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE DCNumericRange<NUM>::
+inline DCNumericRange<NUM>::
 DCNumericRange(const DCNumericRange<NUM> &copy) :
   _ranges(copy._ranges)
 {
@@ -52,7 +52,7 @@ DCNumericRange(const DCNumericRange<NUM> &copy) :
 //  Description:
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE void DCNumericRange<NUM>::
+inline void DCNumericRange<NUM>::
 operator = (const DCNumericRange<NUM> &copy) {
   _ranges = copy._ranges;
 }
@@ -89,7 +89,7 @@ is_in_range(Number num) const {
 //               sets range_error to true.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE void DCNumericRange<NUM>::
+inline void DCNumericRange<NUM>::
 validate(Number num, bool &range_error) const {
   if (!is_in_range(num)) {
     range_error = true;
@@ -103,7 +103,7 @@ validate(Number num, bool &range_error) const {
 //               one legal value, false if multiple values are legal.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE bool DCNumericRange<NUM>::
+inline bool DCNumericRange<NUM>::
 has_one_value() const {
   return _ranges.size() == 1 && _ranges[0]._min == _ranges[0]._max;
 }
@@ -115,7 +115,7 @@ has_one_value() const {
 //               legal value accepted by the numeric range.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
+inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
 get_one_value() const {
   nassertr(has_one_value(), 0);
   return _ranges[0]._min;
@@ -195,7 +195,7 @@ output_char(ostream &out, Number divisor) const {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE void DCNumericRange<NUM>::
+inline void DCNumericRange<NUM>::
 clear() {
   _ranges.clear();
 }
@@ -242,7 +242,7 @@ add_range(Number min, Number max) {
 //               least one.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE bool DCNumericRange<NUM>::
+inline bool DCNumericRange<NUM>::
 is_empty() const {
   return _ranges.empty();
 }
@@ -254,7 +254,7 @@ is_empty() const {
 //               description.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE int DCNumericRange<NUM>::
+inline int DCNumericRange<NUM>::
 get_num_ranges() const {
   return _ranges.size();
 }
@@ -265,7 +265,7 @@ get_num_ranges() const {
 //  Description: Returns the minimum value defined by the nth component.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
+inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
 get_min(int n) const {
   nassertr(n >= 0 && n < (int)_ranges.size(), 0);
   return _ranges[n]._min;
@@ -277,7 +277,7 @@ get_min(int n) const {
 //  Description: Returns the maximum value defined by the nth component.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
+inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
 get_max(int n) const {
   nassertr(n >= 0 && n < (int)_ranges.size(), 0);
   return _ranges[n]._max;
@@ -289,7 +289,7 @@ get_max(int n) const {
 //  Description: Outputs a single element of the range description.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE void DCNumericRange<NUM>::
+inline void DCNumericRange<NUM>::
 output_minmax(ostream &out, Number divisor, const MinMax &range) const {
   if (divisor == 1) {
     if (range._min == range._max) {
@@ -314,7 +314,7 @@ output_minmax(ostream &out, Number divisor, const MinMax &range) const {
 //  Description: Outputs a single element of the range description.
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
-INLINE void DCNumericRange<NUM>::
+inline void DCNumericRange<NUM>::
 output_minmax_char(ostream &out, const MinMax &range) const {
   if (range._min == range._max) {
     DCPacker::enquote_string(out, '\'', string(1, range._min));

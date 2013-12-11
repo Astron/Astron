@@ -21,7 +21,7 @@
 //               begin_pack(), unless you want to concatenate all of
 //               the pack results together.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 clear_data() {
   _pack_data.clear();
 
@@ -41,7 +41,7 @@ clear_data() {
 //               true, get_num_nested_fields() may be called to
 //               determine how many nested fields are expected.
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 has_nested_fields() const {
   if (_current_field == NULL) {
     return false;
@@ -67,7 +67,7 @@ has_nested_fields() const {
 //               DCSwitch, it may change during traversal.  Use
 //               more_nested_fields() instead.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+inline int DCPacker::
 get_num_nested_fields() const {
   return _num_nested_fields;
 }
@@ -79,7 +79,7 @@ get_num_nested_fields() const {
 //               or unpack in the current push sequence, false if it
 //               is time to call pop().
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 more_nested_fields() const {
   return (_current_field != (DCPackerInterface *)NULL && !_pack_error);
 }
@@ -92,7 +92,7 @@ more_nested_fields() const {
 //               This may be NULL at the beginning of the pack
 //               operation.
 ////////////////////////////////////////////////////////////////////
-INLINE const DCPackerInterface *DCPacker::
+inline const DCPackerInterface *DCPacker::
 get_current_parent() const {
   return _current_parent;
 }
@@ -105,7 +105,7 @@ get_current_parent() const {
 //               we have unpacked (or packed) all fields, or if it is
 //               time to call pop().
 ////////////////////////////////////////////////////////////////////
-INLINE const DCPackerInterface *DCPacker::
+inline const DCPackerInterface *DCPacker::
 get_current_field() const {
   return _current_field;
 }
@@ -123,7 +123,7 @@ get_current_field() const {
 //               get_current_parent() will contain the particular
 //               SwitchCase that was selected by the switch.
 ////////////////////////////////////////////////////////////////////
-INLINE const DCSwitchParameter *DCPacker::
+inline const DCSwitchParameter *DCPacker::
 get_last_switch() const {
   return _last_switch;
 }
@@ -141,7 +141,7 @@ get_last_switch() const {
 //               should call push() and begin packing or unpacking the
 //               nested fields.
 ////////////////////////////////////////////////////////////////////
-INLINE DCPackType DCPacker::
+inline DCPackType DCPacker::
 get_pack_type() const {
   if (_current_field == NULL) {
     return PT_invalid;
@@ -157,7 +157,7 @@ get_pack_type() const {
 //               name, or the empty string if the field does not have
 //               a name or there is no current field.
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 get_current_field_name() const {
   if (_current_field == NULL) {
     return string();
@@ -172,7 +172,7 @@ get_current_field_name() const {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_double(double value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -189,7 +189,7 @@ pack_double(double value) {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_int(int value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -206,7 +206,7 @@ pack_int(int value) {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_uint(unsigned int value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -223,7 +223,7 @@ pack_uint(unsigned int value) {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_int64(int64_t value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -240,7 +240,7 @@ pack_int64(int64_t value) {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_uint64(uint64_t value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -257,7 +257,7 @@ pack_uint64(uint64_t value) {
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_string(const string &value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -275,7 +275,7 @@ pack_string(const string &value) {
 //               representing a single pre-packed field element, or a
 //               whole group of field elements at once.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 pack_literal_value(const string &value) {
   nassertv(_mode == M_pack || _mode == M_repack);
   if (_current_field == NULL) {
@@ -292,7 +292,7 @@ pack_literal_value(const string &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE double DCPacker::
+inline double DCPacker::
 unpack_double() {
   double value = 0.0;
   nassertr(_mode == M_unpack, value);
@@ -314,7 +314,7 @@ unpack_double() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+inline int DCPacker::
 unpack_int() {
   int value = 0;
   nassertr(_mode == M_unpack, value);
@@ -336,7 +336,7 @@ unpack_int() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE unsigned int DCPacker::
+inline unsigned int DCPacker::
 unpack_uint() {
   unsigned int value = 0;
   nassertr(_mode == M_unpack, value);
@@ -358,7 +358,7 @@ unpack_uint() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE int64_t DCPacker::
+inline int64_t DCPacker::
 unpack_int64() {
   int64_t value = 0;
   nassertr(_mode == M_unpack, value);
@@ -380,7 +380,7 @@ unpack_int64() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE uint64_t DCPacker::
+inline uint64_t DCPacker::
 unpack_uint64() {
   uint64_t value = 0;
   nassertr(_mode == M_unpack, value);
@@ -402,7 +402,7 @@ unpack_uint64() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 unpack_string() {
   string value;
   nassertr(_mode == M_unpack, value);
@@ -425,7 +425,7 @@ unpack_string() {
 //               value of the current field, and advances the field
 //               pointer.
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 unpack_literal_value() {
   size_t start = _unpack_p;
   unpack_skip();
@@ -439,7 +439,7 @@ unpack_literal_value() {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_double(double &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -458,7 +458,7 @@ unpack_double(double &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_int(int &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -477,7 +477,7 @@ unpack_int(int &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_uint(unsigned int &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -496,7 +496,7 @@ unpack_uint(unsigned int &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_int64(int64_t &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -515,7 +515,7 @@ unpack_int64(int64_t &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_uint64(uint64_t &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -534,7 +534,7 @@ unpack_uint64(uint64_t &value) {
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_string(string &value) {
   nassertv(_mode == M_unpack);
   if (_current_field == NULL) {
@@ -554,7 +554,7 @@ unpack_string(string &value) {
 //               value of the current field, and advances the field
 //               pointer.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 unpack_literal_value(string &value) {
   size_t start = _unpack_p;
   unpack_skip();
@@ -569,7 +569,7 @@ unpack_literal_value(string &value) {
 //               since the most recent call to begin(); this can only
 //               happen if you call parse_and_pack().
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 had_parse_error() const {
   return _parse_error;
 }
@@ -588,7 +588,7 @@ had_parse_error() const {
 //               elements in a nested push/pop structure, or on unpack
 //               that the data stream was truncated.
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 had_pack_error() const {
   return _pack_error;
 }
@@ -607,7 +607,7 @@ had_pack_error() const {
 //               legal range for a parameter, or within the limits of
 //               the field size.
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 had_range_error() const {
   return _range_error;
 }
@@ -621,7 +621,7 @@ had_range_error() const {
 //               matching call to end() will indicate an error
 //               (false).
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCPacker::
+inline bool DCPacker::
 had_error() const {
   return _range_error || _pack_error || _parse_error;
 }
@@ -636,7 +636,7 @@ had_error() const {
 //               actually unpacked (which is not otherwise considered
 //               an error).
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPacker::
+inline size_t DCPacker::
 get_num_unpacked_bytes() const {
   return _unpack_p;
 }
@@ -648,7 +648,7 @@ get_num_unpacked_bytes() const {
 //               the number of useful bytes stored in the buffer, not
 //               the amount of memory it takes up.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPacker::
+inline size_t DCPacker::
 get_length() const {
   return _pack_data.get_length();
 }
@@ -659,7 +659,7 @@ get_length() const {
 //  Description: Returns the packed data buffer as a string.  Also see
 //               get_data().
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 get_string() const {
   return _pack_data.get_string();
 }
@@ -672,7 +672,7 @@ get_string() const {
 //               is separate from the pack data returned by
 //               get_length(), which is filled during packing.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPacker::
+inline size_t DCPacker::
 get_unpack_length() const {
   return _unpack_length;
 }
@@ -686,7 +686,7 @@ get_unpack_length() const {
 //               which is filled during packing.  Also see
 //               get_unpack_data().
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 get_unpack_string() const {
   return string(_unpack_data, _unpack_length);
 }
@@ -697,7 +697,7 @@ get_unpack_string() const {
 //  Description: Copies the packed data into the indicated string.
 //               Also see get_data().
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 get_string(string &data) const {
   data.assign(_pack_data.get_data(), _pack_data.get_length());
 }
@@ -713,7 +713,7 @@ get_string(string &data) const {
 //               take_data() to get the packed data without a copy
 //               operation.
 ////////////////////////////////////////////////////////////////////
-INLINE const char *DCPacker::
+inline const char *DCPacker::
 get_data() const {
   return _pack_data.get_data();
 }
@@ -732,7 +732,7 @@ get_data() const {
 //               its length to zero (so you should call get_length()
 //               before calling this method).
 ////////////////////////////////////////////////////////////////////
-INLINE char *DCPacker::
+inline char *DCPacker::
 take_data() {
   return _pack_data.take_data();
 }
@@ -743,7 +743,7 @@ take_data() {
 //  Description: Adds the indicated bytes to the end of the data.
 //               This may only be called between packing sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 append_data(const char *buffer, size_t size) {
   nassertv(_mode == M_idle);
   _pack_data.append_data(buffer, size);
@@ -757,7 +757,7 @@ append_data(const char *buffer, size_t size) {
 //               to the beginning of the new data.  This may only be
 //               called between packing sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE char *DCPacker::
+inline char *DCPacker::
 get_write_pointer(size_t size) {
   nassertr(_mode == M_idle, NULL);
   return _pack_data.get_write_pointer(size);
@@ -771,7 +771,7 @@ get_write_pointer(size_t size) {
 //               separate from the pack data returned by get_data(),
 //               which is filled during packing.
 ////////////////////////////////////////////////////////////////////
-INLINE const char *DCPacker::
+inline const char *DCPacker::
 get_unpack_data() const {
   return _unpack_data;
 }
@@ -784,7 +784,7 @@ get_unpack_data() const {
 //               in active use or have been recycled into the deleted
 //               DCPacker::StackElement pool to be used again.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPacker::
+inline int DCPacker::
 get_num_stack_elements_ever_allocated() {
   return StackElement::_num_ever_allocated;
 }
@@ -795,7 +795,7 @@ get_num_stack_elements_ever_allocated() {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_int8(int8_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int8(_pack_data.get_write_pointer(1), value);
@@ -807,7 +807,7 @@ raw_pack_int8(int8_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_int16(int16_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int16(_pack_data.get_write_pointer(2), value);
@@ -819,7 +819,7 @@ raw_pack_int16(int16_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_int32(int32_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int32(_pack_data.get_write_pointer(4), value);
@@ -831,7 +831,7 @@ raw_pack_int32(int32_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_int64(int64_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_int64(_pack_data.get_write_pointer(8), value);
@@ -843,7 +843,7 @@ raw_pack_int64(int64_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_uint8(uint8_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint8(_pack_data.get_write_pointer(1), value);
@@ -855,7 +855,7 @@ raw_pack_uint8(uint8_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_uint16(uint16_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value);
@@ -867,7 +867,7 @@ raw_pack_uint16(uint16_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_length_tag(length_tag_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value);
@@ -879,7 +879,7 @@ raw_pack_length_tag(length_tag_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_uint32(uint32_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint32(_pack_data.get_write_pointer(4), value);
@@ -891,7 +891,7 @@ raw_pack_uint32(uint32_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_uint64(uint64_t value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_uint64(_pack_data.get_write_pointer(8), value);
@@ -903,7 +903,7 @@ raw_pack_uint64(uint64_t value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_float64(double value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_float64(_pack_data.get_write_pointer(8), value);
@@ -915,7 +915,7 @@ raw_pack_float64(double value) {
 //  Description: Packs the data into the buffer between packing
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_pack_string(const string &value) {
   nassertv(_mode == M_idle);
   DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value.length());
@@ -928,7 +928,7 @@ raw_pack_string(const string &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int8_t DCPacker::
+inline int8_t DCPacker::
 raw_unpack_int8() {
   int8_t value = 0;
   raw_unpack_int8(value);
@@ -941,7 +941,7 @@ raw_unpack_int8() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int16_t DCPacker::
+inline int16_t DCPacker::
 raw_unpack_int16() {
   int16_t value = 0;
   raw_unpack_int16(value);
@@ -954,7 +954,7 @@ raw_unpack_int16() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int32_t DCPacker::
+inline int32_t DCPacker::
 raw_unpack_int32() {
   int32_t value = 0;
   raw_unpack_int32(value);
@@ -967,7 +967,7 @@ raw_unpack_int32() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE int64_t DCPacker::
+inline int64_t DCPacker::
 raw_unpack_int64() {
   int64_t value = 0;
   raw_unpack_int64(value);
@@ -980,7 +980,7 @@ raw_unpack_int64() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_int8(int8_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 1 > _unpack_length) {
@@ -997,7 +997,7 @@ raw_unpack_int8(int8_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_int16(int16_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 2 > _unpack_length) {
@@ -1014,7 +1014,7 @@ raw_unpack_int16(int16_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_int32(int32_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 4 > _unpack_length) {
@@ -1031,7 +1031,7 @@ raw_unpack_int32(int32_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE uint8_t DCPacker::
+inline uint8_t DCPacker::
 raw_unpack_uint8() {
   uint8_t value = 0;
   raw_unpack_uint8(value);
@@ -1044,7 +1044,7 @@ raw_unpack_uint8() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE uint16_t DCPacker::
+inline uint16_t DCPacker::
 raw_unpack_uint16() {
   uint16_t value = 0;
   raw_unpack_uint16(value);
@@ -1057,7 +1057,7 @@ raw_unpack_uint16() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE length_tag_t DCPacker::
+inline length_tag_t DCPacker::
 raw_unpack_length_tag() {
   length_tag_t value = 0;
   raw_unpack_length_tag(value);
@@ -1071,7 +1071,7 @@ raw_unpack_length_tag() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE uint32_t DCPacker::
+inline uint32_t DCPacker::
 raw_unpack_uint32() {
   uint32_t value = 0;
   raw_unpack_uint32(value);
@@ -1084,7 +1084,7 @@ raw_unpack_uint32() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE uint64_t DCPacker::
+inline uint64_t DCPacker::
 raw_unpack_uint64() {
   uint64_t value = 0;
   raw_unpack_uint64(value);
@@ -1097,7 +1097,7 @@ raw_unpack_uint64() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE double DCPacker::
+inline double DCPacker::
 raw_unpack_float64() {
   double value = 0;
   raw_unpack_float64(value);
@@ -1110,7 +1110,7 @@ raw_unpack_float64() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE string DCPacker::
+inline string DCPacker::
 raw_unpack_string() {
   string value;
   raw_unpack_string(value);
@@ -1123,7 +1123,7 @@ raw_unpack_string() {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_int64(int64_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 8 > _unpack_length) {
@@ -1140,7 +1140,7 @@ raw_unpack_int64(int64_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_uint8(uint8_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 1 > _unpack_length) {
@@ -1157,7 +1157,7 @@ raw_unpack_uint8(uint8_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_uint16(uint16_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 2 > _unpack_length) {
@@ -1174,7 +1174,7 @@ raw_unpack_uint16(uint16_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_length_tag(length_tag_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + sizeof(length_tag_t) > _unpack_length) {
@@ -1191,7 +1191,7 @@ raw_unpack_length_tag(length_tag_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_uint32(uint32_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 4 > _unpack_length) {
@@ -1208,7 +1208,7 @@ raw_unpack_uint32(uint32_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_uint64(uint64_t &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 8 > _unpack_length) {
@@ -1225,7 +1225,7 @@ raw_unpack_uint64(uint64_t &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_float64(double &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   if (_unpack_p + 8 > _unpack_length) {
@@ -1242,7 +1242,7 @@ raw_unpack_float64(double &value) {
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 raw_unpack_string(string &value) {
   nassertv(_mode == M_idle && _unpack_data != NULL);
   length_tag_t string_length = raw_unpack_length_tag();
@@ -1262,7 +1262,7 @@ raw_unpack_string(string &value) {
 //  Description: Advances to the next field after a call to
 //               pack_value() or pop().
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::
+inline void DCPacker::
 advance() {
   _current_field_index++;
   if (_num_nested_fields >= 0 &&
@@ -1298,7 +1298,7 @@ advance() {
 //               This is specialized here to provide for fast
 //               allocation of these things.
 ////////////////////////////////////////////////////////////////////
-INLINE void *DCPacker::StackElement::
+inline void *DCPacker::StackElement::
 operator new(size_t size) {
   if (_deleted_chain != (DCPacker::StackElement *)NULL) {
     StackElement *obj = _deleted_chain;
@@ -1318,7 +1318,7 @@ operator new(size_t size) {
 //               This is specialized here to provide for fast
 //               allocation of these things.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCPacker::StackElement::
+inline void DCPacker::StackElement::
 operator delete(void *ptr) {
   StackElement *obj = (StackElement *)ptr;
   obj->_next = _deleted_chain;

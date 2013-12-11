@@ -31,16 +31,16 @@ class DCNumericRange
 	public:
 		typedef NUM Number;
 
-		INLINE DCNumericRange();
-		INLINE DCNumericRange(Number min, Number max);
-		INLINE DCNumericRange(const DCNumericRange &copy);
-		INLINE void operator = (const DCNumericRange &copy);
+		inline DCNumericRange();
+		inline DCNumericRange(Number min, Number max);
+		inline DCNumericRange(const DCNumericRange &copy);
+		inline void operator = (const DCNumericRange &copy);
 
 		bool is_in_range(Number num) const;
-		INLINE void validate(Number num, bool &range_error) const;
+		inline void validate(Number num, bool &range_error) const;
 
-		INLINE bool has_one_value() const;
-		INLINE Number get_one_value() const;
+		inline bool has_one_value() const;
+		inline Number get_one_value() const;
 
 		void generate_hash(HashGenerator &hashgen) const;
 
@@ -48,25 +48,25 @@ class DCNumericRange
 		void output_char(ostream &out, Number divisor = 1) const;
 
 	public:
-		INLINE void clear();
+		inline void clear();
 		bool add_range(Number min, Number max);
 
-		INLINE bool is_empty() const;
-		INLINE int get_num_ranges() const;
-		INLINE Number get_min(int n) const;
-		INLINE Number get_max(int n) const;
+		inline bool is_empty() const;
+		inline int get_num_ranges() const;
+		inline Number get_min(int n) const;
+		inline Number get_max(int n) const;
 
 	private:
 		class MinMax
 		{
 			public:
-				INLINE bool operator < (const MinMax &other) const;
+				inline bool operator < (const MinMax &other) const;
 
 				Number _min;
 				Number _max;
 		};
-		INLINE void output_minmax(ostream &out, Number divisor, const MinMax &range) const;
-		INLINE void output_minmax_char(ostream &out, const MinMax &range) const;
+		inline void output_minmax(ostream &out, Number divisor, const MinMax &range) const;
+		inline void output_minmax_char(ostream &out, const MinMax &range) const;
 
 		typedef pvector<MinMax> Ranges;
 		Ranges _ranges;

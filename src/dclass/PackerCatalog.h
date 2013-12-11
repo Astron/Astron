@@ -61,13 +61,13 @@ class EXPCL_DIRECT DCPackerCatalog
 		class LiveCatalog
 		{
 			public:
-				INLINE size_t get_begin(int n) const;
-				INLINE size_t get_end(int n) const;
+				inline size_t get_begin(int n) const;
+				inline size_t get_end(int n) const;
 
-				INLINE int get_num_entries() const;
-				INLINE const Entry &get_entry(int n) const;
-				INLINE int find_entry_by_name(const string &name) const;
-				INLINE int find_entry_by_field(const DCPackerInterface *field) const;
+				inline int get_num_entries() const;
+				inline const Entry &get_entry(int n) const;
+				inline int find_entry_by_name(const string &name) const;
+				inline int find_entry_by_field(const DCPackerInterface *field) const;
 
 			private:
 				typedef pvector<LiveCatalogEntry> LiveEntries;
@@ -77,8 +77,8 @@ class EXPCL_DIRECT DCPackerCatalog
 				friend class DCPackerCatalog;
 		};
 
-		INLINE int get_num_entries() const;
-		INLINE const Entry &get_entry(int n) const;
+		inline int get_num_entries() const;
+		inline const Entry &get_entry(int n) const;
 		int find_entry_by_name(const string &name) const;
 		int find_entry_by_field(const DCPackerInterface *field) const;
 

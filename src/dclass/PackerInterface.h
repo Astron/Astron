@@ -77,7 +77,7 @@ class EXPCL_DIRECT DCPackerInterface
 		virtual ~DCPackerInterface();
 
 	PUBLISHED:
-		INLINE const string &get_name() const;
+		inline const string &get_name() const;
 		int find_seek_index(const string &name) const;
 
 		virtual DCField *as_field();
@@ -87,25 +87,25 @@ class EXPCL_DIRECT DCPackerInterface
 		virtual DCClassParameter *as_class_parameter();
 		virtual const DCClassParameter *as_class_parameter() const;
 
-		INLINE bool check_match(const DCPackerInterface *other) const;
+		inline bool check_match(const DCPackerInterface *other) const;
 		bool check_match(const string &description, DCFile *dcfile = NULL) const;
 
 	public:
 		virtual void set_name(const string &name);
-		INLINE bool has_fixed_byte_size() const;
-		INLINE size_t get_fixed_byte_size() const;
-		INLINE bool has_fixed_structure() const;
-		INLINE bool has_range_limits() const;
-		INLINE size_t get_num_length_bytes() const;
+		inline bool has_fixed_byte_size() const;
+		inline size_t get_fixed_byte_size() const;
+		inline bool has_fixed_structure() const;
+		inline bool has_range_limits() const;
+		inline size_t get_num_length_bytes() const;
 
-		INLINE bool has_nested_fields() const;
-		INLINE int get_num_nested_fields() const;
+		inline bool has_nested_fields() const;
+		inline int get_num_nested_fields() const;
 		virtual int calc_num_nested_fields(size_t length_bytes) const;
 		virtual DCPackerInterface *get_nested_field(int n) const;
 
 		virtual bool validate_num_nested_fields(int num_nested_fields) const;
 
-		INLINE DCPackType get_pack_type() const;
+		inline DCPackType get_pack_type() const;
 
 		virtual void pack_double(DCPackData &pack_data, double value,
 		                         bool &pack_error, bool &range_error) const;
@@ -141,35 +141,35 @@ class EXPCL_DIRECT DCPackerInterface
 		// These are the low-level interfaces for packing and unpacking
 		// numbers from a buffer.  You're responsible for making sure the
 		// buffer has enough room, and for incrementing the pointer.
-		INLINE static void do_pack_int8(char *buffer, int8_t value);
-		INLINE static void do_pack_int16(char *buffer, int16_t value);
-		INLINE static void do_pack_int32(char *buffer, int32_t value);
-		INLINE static void do_pack_int64(char *buffer, int64_t value);
-		INLINE static void do_pack_uint8(char *buffer, uint8_t value);
-		INLINE static void do_pack_uint16(char *buffer, uint16_t value);
-		INLINE static void do_pack_uint32(char *buffer, uint32_t value);
-		INLINE static void do_pack_uint64(char *buffer, uint64_t value);
-		INLINE static void do_pack_float64(char *buffer, double value);
-		INLINE static void do_pack_length_tag(char* buffer, length_tag_t value);
+		inline static void do_pack_int8(char *buffer, int8_t value);
+		inline static void do_pack_int16(char *buffer, int16_t value);
+		inline static void do_pack_int32(char *buffer, int32_t value);
+		inline static void do_pack_int64(char *buffer, int64_t value);
+		inline static void do_pack_uint8(char *buffer, uint8_t value);
+		inline static void do_pack_uint16(char *buffer, uint16_t value);
+		inline static void do_pack_uint32(char *buffer, uint32_t value);
+		inline static void do_pack_uint64(char *buffer, uint64_t value);
+		inline static void do_pack_float64(char *buffer, double value);
+		inline static void do_pack_length_tag(char* buffer, length_tag_t value);
 
-		INLINE static int8_t do_unpack_int8(const char *buffer);
-		INLINE static int16_t do_unpack_int16(const char *buffer);
-		INLINE static int32_t do_unpack_int32(const char *buffer);
-		INLINE static int64_t do_unpack_int64(const char *buffer);
-		INLINE static uint8_t do_unpack_uint8(const char *buffer);
-		INLINE static uint16_t do_unpack_uint16(const char *buffer);
-		INLINE static uint32_t do_unpack_uint32(const char *buffer);
-		INLINE static uint64_t do_unpack_uint64(const char *buffer);
-		INLINE static double do_unpack_float64(const char *buffer);
-		INLINE static length_tag_t do_unpack_length_tag(const char* buffer);
+		inline static int8_t do_unpack_int8(const char *buffer);
+		inline static int16_t do_unpack_int16(const char *buffer);
+		inline static int32_t do_unpack_int32(const char *buffer);
+		inline static int64_t do_unpack_int64(const char *buffer);
+		inline static uint8_t do_unpack_uint8(const char *buffer);
+		inline static uint16_t do_unpack_uint16(const char *buffer);
+		inline static uint32_t do_unpack_uint32(const char *buffer);
+		inline static uint64_t do_unpack_uint64(const char *buffer);
+		inline static double do_unpack_float64(const char *buffer);
+		inline static length_tag_t do_unpack_length_tag(const char* buffer);
 
-		INLINE static void validate_int_limits(int value, int num_bits,
+		inline static void validate_int_limits(int value, int num_bits,
 		                                       bool &range_error);
-		INLINE static void validate_int64_limits(int64_t value, int num_bits,
+		inline static void validate_int64_limits(int64_t value, int num_bits,
 		        bool &range_error);
-		INLINE static void validate_uint_limits(unsigned int value, int num_bits,
+		inline static void validate_uint_limits(unsigned int value, int num_bits,
 		                                        bool &range_error);
-		INLINE static void validate_uint64_limits(uint64_t value, int num_bits,
+		inline static void validate_uint64_limits(uint64_t value, int num_bits,
 		        bool &range_error);
 
 		const DCPackerCatalog *get_catalog() const;

@@ -45,8 +45,8 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
 		virtual ~DCField();
 
 	PUBLISHED:
-		INLINE int get_number() const;
-		INLINE DCClass *get_class() const;
+		inline int get_number() const;
+		inline DCClass *get_class() const;
 
 		virtual DCField *as_field();
 		virtual const DCField *as_field() const;
@@ -62,23 +62,23 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
 
 		bool validate_ranges(const string &packed_data) const;
 
-		INLINE bool has_default_value() const;
-		INLINE const string &get_default_value() const;
+		inline bool has_default_value() const;
+		inline const string &get_default_value() const;
 
-		INLINE bool is_bogus_field() const;
+		inline bool is_bogus_field() const;
 
-		INLINE bool is_required() const;
-		INLINE bool is_broadcast() const;
-		INLINE bool is_ram() const;
-		INLINE bool is_db() const;
-		INLINE bool is_clsend() const;
-		INLINE bool is_clrecv() const;
-		INLINE bool is_ownsend() const;
-		INLINE bool is_ownrecv() const;
-		INLINE bool is_airecv() const;
+		inline bool is_required() const;
+		inline bool is_broadcast() const;
+		inline bool is_ram() const;
+		inline bool is_db() const;
+		inline bool is_clsend() const;
+		inline bool is_clrecv() const;
+		inline bool is_ownsend() const;
+		inline bool is_ownrecv() const;
+		inline bool is_airecv() const;
 
-		INLINE void output(ostream &out) const;
-		INLINE void write(ostream &out, int indent_level) const;
+		inline void output(ostream &out) const;
+		inline void write(ostream &out, int indent_level) const;
 
 #ifdef HAVE_PYTHON
 		bool pack_args(DCPacker &packer, PyObject *sequence) const;
@@ -100,9 +100,9 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
 		virtual bool pack_default_value(DCPackData &pack_data, bool &pack_error) const;
 		virtual void set_name(const string &name);
 
-		INLINE void set_number(int number);
-		INLINE void set_class(DCClass *dclass);
-		INLINE void set_default_value(const string &default_value);
+		inline void set_number(int number);
+		inline void set_class(DCClass *dclass);
+		inline void set_default_value(const string &default_value);
 
 #ifdef HAVE_PYTHON
 		static string get_pystr(PyObject *value);
@@ -126,7 +126,7 @@ class EXPCL_DIRECT DCField : public DCPackerInterface, public DCKeywordList
 #endif
 };
 
-INLINE ostream &operator << (ostream &out, const DCField &field)
+inline ostream &operator << (ostream &out, const DCField &field)
 {
 	field.output(out);
 	return out;

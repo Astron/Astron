@@ -25,24 +25,24 @@
 class EXPCL_DIRECT DCPackData
 {
 	PUBLISHED:
-		INLINE DCPackData();
-		INLINE ~DCPackData();
+		inline DCPackData();
+		inline ~DCPackData();
 
-		INLINE void clear();
+		inline void clear();
 
 	public:
-		INLINE void append_data(const char *buffer, size_t size);
-		INLINE char *get_write_pointer(size_t size);
-		INLINE void append_junk(size_t size);
-		INLINE void rewrite_data(size_t position, const char *buffer, size_t size);
-		INLINE char *get_rewrite_pointer(size_t position, size_t size);
+		inline void append_data(const char *buffer, size_t size);
+		inline char *get_write_pointer(size_t size);
+		inline void append_junk(size_t size);
+		inline void rewrite_data(size_t position, const char *buffer, size_t size);
+		inline char *get_rewrite_pointer(size_t position, size_t size);
 
 	PUBLISHED:
-		INLINE string get_string() const;
-		INLINE size_t get_length() const;
+		inline string get_string() const;
+		inline size_t get_length() const;
 	public:
-		INLINE const char *get_data() const;
-		INLINE char *take_data();
+		inline const char *get_data() const;
+		inline char *take_data();
 
 	private:
 		void set_used_length(size_t size);

@@ -19,7 +19,7 @@
 //  Description: Returns the beginning of the indicated field within
 //               the live data.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPackerCatalog::LiveCatalog::
+inline size_t DCPackerCatalog::LiveCatalog::
 get_begin(int n) const {
   nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
   return _live_entries[n]._begin;
@@ -32,7 +32,7 @@ get_begin(int n) const {
 //               position of the first following field) within the
 //               live data.
 ////////////////////////////////////////////////////////////////////
-INLINE size_t DCPackerCatalog::LiveCatalog::
+inline size_t DCPackerCatalog::LiveCatalog::
 get_end(int n) const {
   nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
   return _live_entries[n]._end;
@@ -43,7 +43,7 @@ get_end(int n) const {
 //       Access: Public
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPackerCatalog::LiveCatalog::
+inline int DCPackerCatalog::LiveCatalog::
 get_num_entries() const {
   return _catalog->get_num_entries();
 }
@@ -53,7 +53,7 @@ get_num_entries() const {
 //       Access: Public
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
-INLINE const DCPackerCatalog::Entry &DCPackerCatalog::LiveCatalog::
+inline const DCPackerCatalog::Entry &DCPackerCatalog::LiveCatalog::
 get_entry(int n) const {
   return _catalog->get_entry(n);
 }
@@ -89,7 +89,7 @@ find_entry_by_field(const DCPackerInterface *field) const {
 //       Access: Public
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
-INLINE int DCPackerCatalog::
+inline int DCPackerCatalog::
 get_num_entries() const {
   return _entries.size();
 }
@@ -99,7 +99,7 @@ get_num_entries() const {
 //       Access: Public
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
-INLINE const DCPackerCatalog::Entry &DCPackerCatalog::
+inline const DCPackerCatalog::Entry &DCPackerCatalog::
 get_entry(int n) const {
   nassertr(n >= 0 && n < (int)_entries.size(), _entries[0]);
   return _entries[n];

@@ -21,7 +21,7 @@
 //               were undefined ("bogus classes").  If this is true,
 //               we might have read a partial file.
 ////////////////////////////////////////////////////////////////////
-INLINE bool DCFile::
+inline bool DCFile::
 all_objects_valid() const {
   return _all_objects_valid;
 }
@@ -32,7 +32,7 @@ all_objects_valid() const {
 //  Description: Rebuilds all of the inherited fields tables, if
 //               necessary.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCFile::
+inline void DCFile::
 check_inherited_fields() {
   if (_inherited_fields_stale) {
     rebuild_inherited_fields();
@@ -48,7 +48,7 @@ check_inherited_fields() {
 //               inherited fields tables of all classes will be
 //               rebuilt.
 ////////////////////////////////////////////////////////////////////
-INLINE void DCFile::
+inline void DCFile::
 mark_inherited_fields_stale() {
   _inherited_fields_stale = true;
 }

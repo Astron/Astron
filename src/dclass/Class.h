@@ -35,13 +35,13 @@ class EXPCL_DIRECT Class : public Declaration
 		virtual const Class *as_class() const;
 
 		// get_file returns the File object that contains the class.
-		INLINE File *get_file() const;
+		inline File *get_file() const;
 
 		// get_name returns the name of this class.
-		INLINE const string &get_name() const;
+		inline const string &get_name() const;
 		// get_number returns a unique index number associated with this class.
 		//     This is defined implicitly when a .dc file is read.
-		INLINE int get_index() const;
+		inline int get_index() const;
 
 		// get_num_parents returns the number of base classes this class inherits from.
 		size_t get_num_parents() const;
@@ -77,10 +77,10 @@ class EXPCL_DIRECT Class : public Declaration
 
 		// is_struct returns true if the class has been identified with the "struct"
 		//     keyword in the dc file, false if it was declared with "dclass".
-		INLINE bool is_struct() const;
+		inline bool is_struct() const;
 		// is_bogus_class returns true if the class has been flagged as a bogus class.
 		//     This is used by the parser as a placeholder for missing classes.
-		INLINE bool is_bogus_class() const;
+		inline bool is_bogus_class() const;
 		// inherits_from_bogus_class returns true if this class, or any class in the inheritance
 		//     heirarchy for this class, is a forward reference to an as-yet-undefined class.
 		bool inherits_from_bogus_class() const;

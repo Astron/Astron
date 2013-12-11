@@ -56,7 +56,7 @@ class EXPCL_DIRECT DCFile
 
 		DCField *get_field_by_index(int index_number) const;
 
-		INLINE bool all_objects_valid() const;
+		inline bool all_objects_valid() const;
 
 		int get_num_import_modules() const;
 		string get_import_module(int n) const;
@@ -84,8 +84,8 @@ class EXPCL_DIRECT DCFile
 		void add_thing_to_delete(DCDeclaration *decl);
 
 		void set_new_index_number(DCField *field);
-		INLINE void check_inherited_fields();
-		INLINE void mark_inherited_fields_stale();
+		inline void check_inherited_fields();
+		inline void mark_inherited_fields_stale();
 
 	private:
 		void setup_default_keywords();
