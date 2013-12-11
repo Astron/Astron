@@ -132,6 +132,6 @@ inline ostream &operator << (ostream &out, const DCField &field)
 	return out;
 }
 
-#include "dcField.I"
+#include "Field.ipp"
 
 #endif
