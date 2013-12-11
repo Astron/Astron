@@ -15,27 +15,27 @@ namespace dclass   // open namespace
 // get_file returns the File object that contains the class.
 inline File *Class::get_file() const
 {
-  return m_file;
+	return m_file;
 }
 
 // get_name returns the name of this class.
 inline const string& Class::get_name() const
 {
-  return m_name;
+	return m_name;
 }
 
 // get_number returns a unique index number associated with this class.
 //     This is defined implicitly when a .dc file is read.
 inline int Class::get_index() const
 {
-  return m_number;
+	return m_number;
 }
 
 // is_struct returns true if the class has been identified with the "struct"
 //     keyword in the dc file, false if it was declared with "dclass".
 inline bool Class::is_struct() const
 {
-  return m_is_struct;
+	return m_is_struct;
 }
 
 // is_bogus_class returns true if the class has been flagged as a bogus class.
@@ -44,7 +44,7 @@ inline bool Class::is_struct() const
 //     in a normal valid dc file.
 inline bool Class::is_bogus_class() const
 {
-  return m_bogus_class;
+	return m_bogus_class;
 }
 
 

@@ -20,9 +20,10 @@
 //               the live data.
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPackerCatalog::LiveCatalog::
-get_begin(int n) const {
-  nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
-  return _live_entries[n]._begin;
+get_begin(int n) const
+{
+	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
+	return _live_entries[n]._begin;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -33,9 +34,10 @@ get_begin(int n) const {
 //               live data.
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPackerCatalog::LiveCatalog::
-get_end(int n) const {
-  nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
-  return _live_entries[n]._end;
+get_end(int n) const
+{
+	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
+	return _live_entries[n]._end;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -44,8 +46,9 @@ get_end(int n) const {
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
 inline int DCPackerCatalog::LiveCatalog::
-get_num_entries() const {
-  return _catalog->get_num_entries();
+get_num_entries() const
+{
+	return _catalog->get_num_entries();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -54,8 +57,9 @@ get_num_entries() const {
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
 inline const DCPackerCatalog::Entry &DCPackerCatalog::LiveCatalog::
-get_entry(int n) const {
-  return _catalog->get_entry(n);
+get_entry(int n) const
+{
+	return _catalog->get_entry(n);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -67,8 +71,9 @@ get_entry(int n) const {
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
 int DCPackerCatalog::LiveCatalog::
-find_entry_by_name(const string &name) const {
-  return _catalog->find_entry_by_name(name);
+find_entry_by_name(const string &name) const
+{
+	return _catalog->find_entry_by_name(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,8 +85,9 @@ find_entry_by_name(const string &name) const {
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
 int DCPackerCatalog::LiveCatalog::
-find_entry_by_field(const DCPackerInterface *field) const {
-  return _catalog->find_entry_by_field(field);
+find_entry_by_field(const DCPackerInterface *field) const
+{
+	return _catalog->find_entry_by_field(field);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,8 +96,9 @@ find_entry_by_field(const DCPackerInterface *field) const {
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
 inline int DCPackerCatalog::
-get_num_entries() const {
-  return _entries.size();
+get_num_entries() const
+{
+	return _entries.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -100,7 +107,8 @@ get_num_entries() const {
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
 inline const DCPackerCatalog::Entry &DCPackerCatalog::
-get_entry(int n) const {
-  nassertr(n >= 0 && n < (int)_entries.size(), _entries[0]);
-  return _entries[n];
+get_entry(int n) const
+{
+	nassertr(n >= 0 && n < (int)_entries.size(), _entries[0]);
+	return _entries[n];
 }

@@ -19,10 +19,11 @@
 //  Description:
 ////////////////////////////////////////////////////////////////////
 inline DCPackData::
-DCPackData() {
-  _buffer = NULL;
-  _allocated_size = 0;
-  _used_length = 0;
+DCPackData()
+{
+	_buffer = NULL;
+	_allocated_size = 0;
+	_used_length = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -31,10 +32,12 @@ DCPackData() {
 //  Description:
 ////////////////////////////////////////////////////////////////////
 inline DCPackData::
-~DCPackData() {
-  if (_buffer != (const char *)NULL) {
-    delete[] _buffer;
-  }
+~DCPackData()
+{
+	if(_buffer != (const char *)NULL)
+	{
+		delete[] _buffer;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -44,8 +47,9 @@ inline DCPackData::
 //               freeing its allocated memory).
 ////////////////////////////////////////////////////////////////////
 inline void DCPackData::
-clear() {
-  _used_length = 0;
+clear()
+{
+	_used_length = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -54,9 +58,10 @@ clear() {
 //  Description: Adds the indicated bytes to the end of the data.
 ////////////////////////////////////////////////////////////////////
 inline void DCPackData::
-append_data(const char *buffer, size_t size) {
-  set_used_length(_used_length + size);
-  memcpy(_buffer + _used_length - size, buffer, size);
+append_data(const char *buffer, size_t size)
+{
+	set_used_length(_used_length + size);
+	memcpy(_buffer + _used_length - size, buffer, size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -67,9 +72,10 @@ append_data(const char *buffer, size_t size) {
 //               to the beginning of the new data.
 ////////////////////////////////////////////////////////////////////
 inline char *DCPackData::
-get_write_pointer(size_t size) {
-  set_used_length(_used_length + size);
-  return _buffer + _used_length - size;
+get_write_pointer(size_t size)
+{
+	set_used_length(_used_length + size);
+	return _buffer + _used_length - size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,8 +84,9 @@ get_write_pointer(size_t size) {
 //  Description: Adds some uninitialized bytes to the end of the data.
 ////////////////////////////////////////////////////////////////////
 inline void DCPackData::
-append_junk(size_t size) {
-  set_used_length(_used_length + size);
+append_junk(size_t size)
+{
+	set_used_length(_used_length + size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,9 +97,10 @@ append_junk(size_t size) {
 //               least position + size bytes in the data.
 ////////////////////////////////////////////////////////////////////
 inline void DCPackData::
-rewrite_data(size_t position, const char *buffer, size_t size) {
-  nassertv(position + size <= _used_length);
-  memcpy(_buffer + position, buffer, size);
+rewrite_data(size_t position, const char *buffer, size_t size)
+{
+	nassertv(position + size <= _used_length);
+	memcpy(_buffer + position, buffer, size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -102,9 +110,10 @@ rewrite_data(size_t position, const char *buffer, size_t size) {
 //               indicated point.
 ////////////////////////////////////////////////////////////////////
 inline char *DCPackData::
-get_rewrite_pointer(size_t position, size_t size) {
-  nassertr(position + size <= _used_length, NULL);
-  return _buffer + position;
+get_rewrite_pointer(size_t position, size_t size)
+{
+	nassertr(position + size <= _used_length, NULL);
+	return _buffer + position;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -114,8 +123,9 @@ get_rewrite_pointer(size_t position, size_t size) {
 //               get_data().
 ////////////////////////////////////////////////////////////////////
 inline string DCPackData::
-get_string() const {
-  return string(_buffer, _used_length);
+get_string() const
+{
+	return string(_buffer, _used_length);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -126,8 +136,9 @@ get_string() const {
 //               the amount of memory it takes up.
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPackData::
-get_length() const {
-  return _used_length;
+get_length() const
+{
+	return _used_length;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -142,8 +153,9 @@ get_length() const {
 //               copy all of the bytes out of the buffer.
 ////////////////////////////////////////////////////////////////////
 inline const char *DCPackData::
-get_data() const {
-  return _buffer;
+get_data() const
+{
+	return _buffer;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -161,12 +173,13 @@ get_data() const {
 //               before calling this method).
 ////////////////////////////////////////////////////////////////////
 inline char *DCPackData::
-take_data() {
-  char *data = _buffer;
+take_data()
+{
+	char *data = _buffer;
 
-  _buffer = NULL;
-  _allocated_size = 0;
-  _used_length = 0;
+	_buffer = NULL;
+	_allocated_size = 0;
+	_used_length = 0;
 
-  return data;
+	return data;
 }

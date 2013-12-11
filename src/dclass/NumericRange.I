@@ -20,7 +20,8 @@
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline DCNumericRange<NUM>::
-DCNumericRange() {
+DCNumericRange()
+{
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -30,8 +31,9 @@ DCNumericRange() {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline DCNumericRange<NUM>::
-DCNumericRange(Number min, Number max) {
-  add_range(min, max);
+DCNumericRange(Number min, Number max)
+{
+	add_range(min, max);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,7 +44,7 @@ DCNumericRange(Number min, Number max) {
 template <class NUM>
 inline DCNumericRange<NUM>::
 DCNumericRange(const DCNumericRange<NUM> &copy) :
-  _ranges(copy._ranges)
+	_ranges(copy._ranges)
 {
 }
 
@@ -53,8 +55,9 @@ DCNumericRange(const DCNumericRange<NUM> &copy) :
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline void DCNumericRange<NUM>::
-operator = (const DCNumericRange<NUM> &copy) {
-  _ranges = copy._ranges;
+operator = (const DCNumericRange<NUM> &copy)
+{
+	_ranges = copy._ranges;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,19 +68,23 @@ operator = (const DCNumericRange<NUM> &copy) {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 bool DCNumericRange<NUM>::
-is_in_range(Number num) const {
-  if (_ranges.empty()) {
-    return true;
-  }
+is_in_range(Number num) const
+{
+	if(_ranges.empty())
+	{
+		return true;
+	}
 
-  TYPENAME Ranges::const_iterator ri;
-  for (ri = _ranges.begin(); ri != _ranges.end(); ++ri) {
-    if (num >= (*ri)._min && num <= (*ri)._max) {
-      return true;
-    }
-  }
+	TYPENAME Ranges::const_iterator ri;
+	for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+	{
+		if(num >= (*ri)._min && num <= (*ri)._max)
+		{
+			return true;
+		}
+	}
 
-  return false;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -90,10 +97,12 @@ is_in_range(Number num) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline void DCNumericRange<NUM>::
-validate(Number num, bool &range_error) const {
-  if (!is_in_range(num)) {
-    range_error = true;
-  }
+validate(Number num, bool &range_error) const
+{
+	if(!is_in_range(num))
+	{
+		range_error = true;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -104,8 +113,9 @@ validate(Number num, bool &range_error) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline bool DCNumericRange<NUM>::
-has_one_value() const {
-  return _ranges.size() == 1 && _ranges[0]._min == _ranges[0]._max;
+has_one_value() const
+{
+	return _ranges.size() == 1 && _ranges[0]._min == _ranges[0]._max;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -116,9 +126,10 @@ has_one_value() const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_one_value() const {
-  nassertr(has_one_value(), 0);
-  return _ranges[0]._min;
+get_one_value() const
+{
+	nassertr(has_one_value(), 0);
+	return _ranges[0]._min;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -128,17 +139,20 @@ get_one_value() const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 void DCNumericRange<NUM>::
-generate_hash(HashGenerator &hashgen) const {
-  if (!_ranges.empty()) {
-    hashgen.add_int(_ranges.size());
-    TYPENAME Ranges::const_iterator ri;
-    for (ri = _ranges.begin(); ri != _ranges.end(); ++ri) {
-      // We don't account for the fractional part of floating-point
-      // ranges here.  Shouldn't be a real issue.
-      hashgen.add_int((int)(*ri)._min);
-      hashgen.add_int((int)(*ri)._max);
-    }
-  }
+generate_hash(HashGenerator &hashgen) const
+{
+	if(!_ranges.empty())
+	{
+		hashgen.add_int(_ranges.size());
+		TYPENAME Ranges::const_iterator ri;
+		for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+		{
+			// We don't account for the fractional part of floating-point
+			// ranges here.  Shouldn't be a real issue.
+			hashgen.add_int((int)(*ri)._min);
+			hashgen.add_int((int)(*ri)._max);
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -148,18 +162,21 @@ generate_hash(HashGenerator &hashgen) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 void DCNumericRange<NUM>::
-output(ostream &out, Number divisor) const {
-  if (!_ranges.empty()) {
-    TYPENAME Ranges::const_iterator ri;
-    ri = _ranges.begin();
-    output_minmax(out, divisor, *ri);
-    ++ri;
-    while (ri != _ranges.end()) {
-      out << ", ";
-      output_minmax(out, divisor, *ri);
-      ++ri;
-    }
-  }
+output(ostream &out, Number divisor) const
+{
+	if(!_ranges.empty())
+	{
+		TYPENAME Ranges::const_iterator ri;
+		ri = _ranges.begin();
+		output_minmax(out, divisor, *ri);
+		++ri;
+		while(ri != _ranges.end())
+		{
+			out << ", ";
+			output_minmax(out, divisor, *ri);
+			++ri;
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -170,23 +187,29 @@ output(ostream &out, Number divisor) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 void DCNumericRange<NUM>::
-output_char(ostream &out, Number divisor) const {
-  if (divisor != 1) {
-    output(out, divisor);
+output_char(ostream &out, Number divisor) const
+{
+	if(divisor != 1)
+	{
+		output(out, divisor);
 
-  } else {
-    if (!_ranges.empty()) {
-      TYPENAME Ranges::const_iterator ri;
-      ri = _ranges.begin();
-      output_minmax_char(out, *ri);
-      ++ri;
-      while (ri != _ranges.end()) {
-        out << ", ";
-        output_minmax_char(out, *ri);
-        ++ri;
-      }
-    }
-  }
+	}
+	else
+	{
+		if(!_ranges.empty())
+		{
+			TYPENAME Ranges::const_iterator ri;
+			ri = _ranges.begin();
+			output_minmax_char(out, *ri);
+			++ri;
+			while(ri != _ranges.end())
+			{
+				out << ", ";
+				output_minmax_char(out, *ri);
+				++ri;
+			}
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -196,8 +219,9 @@ output_char(ostream &out, Number divisor) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline void DCNumericRange<NUM>::
-clear() {
-  _ranges.clear();
+clear()
+{
+	_ranges.clear();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -210,28 +234,32 @@ clear() {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 bool DCNumericRange<NUM>::
-add_range(Number min, Number max) {
-  // Check for an overlap.  This is probably indicative of a typo and
-  // should be reported.
-  if (max < min) {
-    return false;
-  }
+add_range(Number min, Number max)
+{
+	// Check for an overlap.  This is probably indicative of a typo and
+	// should be reported.
+	if(max < min)
+	{
+		return false;
+	}
 
-  TYPENAME Ranges::const_iterator ri;
-  for (ri = _ranges.begin(); ri != _ranges.end(); ++ri) {
-    if ((min >= (*ri)._min && min <= (*ri)._max) ||
-        (max >= (*ri)._min && max <= (*ri)._max) ||
-        (min < (*ri)._min && max > (*ri)._max)) {
-      return false;
-    }
-  }
+	TYPENAME Ranges::const_iterator ri;
+	for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+	{
+		if((min >= (*ri)._min && min <= (*ri)._max) ||
+		        (max >= (*ri)._min && max <= (*ri)._max) ||
+		        (min < (*ri)._min && max > (*ri)._max))
+		{
+			return false;
+		}
+	}
 
-  MinMax minmax;
-  minmax._min = min;
-  minmax._max = max;
-  _ranges.push_back(minmax);
+	MinMax minmax;
+	minmax._min = min;
+	minmax._max = max;
+	_ranges.push_back(minmax);
 
-  return true;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -243,8 +271,9 @@ add_range(Number min, Number max) {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline bool DCNumericRange<NUM>::
-is_empty() const {
-  return _ranges.empty();
+is_empty() const
+{
+	return _ranges.empty();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -255,8 +284,9 @@ is_empty() const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline int DCNumericRange<NUM>::
-get_num_ranges() const {
-  return _ranges.size();
+get_num_ranges() const
+{
+	return _ranges.size();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -266,9 +296,10 @@ get_num_ranges() const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_min(int n) const {
-  nassertr(n >= 0 && n < (int)_ranges.size(), 0);
-  return _ranges[n]._min;
+get_min(int n) const
+{
+	nassertr(n >= 0 && n < (int)_ranges.size(), 0);
+	return _ranges[n]._min;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -278,9 +309,10 @@ get_min(int n) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_max(int n) const {
-  nassertr(n >= 0 && n < (int)_ranges.size(), 0);
-  return _ranges[n]._max;
+get_max(int n) const
+{
+	nassertr(n >= 0 && n < (int)_ranges.size(), 0);
+	return _ranges[n]._max;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -290,22 +322,32 @@ get_max(int n) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline void DCNumericRange<NUM>::
-output_minmax(ostream &out, Number divisor, const MinMax &range) const {
-  if (divisor == 1) {
-    if (range._min == range._max) {
-      out << range._min;
-    } else {
-      out << range._min << "-" << range._max;
-    }
-  } else {
-    if (range._min == range._max) {
-      out << (double)range._min / (double)divisor;
-    } else {
-      out << (double)range._min / (double)divisor
-          << "-"
-          << (double)range._max / (double)divisor;
-    }
-  }
+output_minmax(ostream &out, Number divisor, const MinMax &range) const
+{
+	if(divisor == 1)
+	{
+		if(range._min == range._max)
+		{
+			out << range._min;
+		}
+		else
+		{
+			out << range._min << "-" << range._max;
+		}
+	}
+	else
+	{
+		if(range._min == range._max)
+		{
+			out << (double)range._min / (double)divisor;
+		}
+		else
+		{
+			out << (double)range._min / (double)divisor
+			    << "-"
+			    << (double)range._max / (double)divisor;
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -315,12 +357,16 @@ output_minmax(ostream &out, Number divisor, const MinMax &range) const {
 ////////////////////////////////////////////////////////////////////
 template <class NUM>
 inline void DCNumericRange<NUM>::
-output_minmax_char(ostream &out, const MinMax &range) const {
-  if (range._min == range._max) {
-    DCPacker::enquote_string(out, '\'', string(1, range._min));
-  } else {
-    DCPacker::enquote_string(out, '\'', string(1, range._min));
-    out << "-";
-    DCPacker::enquote_string(out, '\'', string(1, range._max));
-  }
+output_minmax_char(ostream &out, const MinMax &range) const
+{
+	if(range._min == range._max)
+	{
+		DCPacker::enquote_string(out, '\'', string(1, range._min));
+	}
+	else
+	{
+		DCPacker::enquote_string(out, '\'', string(1, range._min));
+		out << "-";
+		DCPacker::enquote_string(out, '\'', string(1, range._max));
+	}
 }

@@ -22,8 +22,9 @@
 //               we might have read a partial file.
 ////////////////////////////////////////////////////////////////////
 inline bool DCFile::
-all_objects_valid() const {
-  return _all_objects_valid;
+all_objects_valid() const
+{
+	return _all_objects_valid;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -33,10 +34,12 @@ all_objects_valid() const {
 //               necessary.
 ////////////////////////////////////////////////////////////////////
 inline void DCFile::
-check_inherited_fields() {
-  if (_inherited_fields_stale) {
-    rebuild_inherited_fields();
-  }
+check_inherited_fields()
+{
+	if(_inherited_fields_stale)
+	{
+		rebuild_inherited_fields();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -49,6 +52,7 @@ check_inherited_fields() {
 //               rebuilt.
 ////////////////////////////////////////////////////////////////////
 inline void DCFile::
-mark_inherited_fields_stale() {
-  _inherited_fields_stale = true;
+mark_inherited_fields_stale()
+{
+	_inherited_fields_stale = true;
 }

@@ -117,7 +117,7 @@ class EXPCL_DIRECT Class : public Declaration
 		std::unordered_map<int, Field*> m_fields_by_index;
 };
 
-#include "Class.ipp"
-
 
 } // close namespace dclass
+
+#include "Class.ipp"

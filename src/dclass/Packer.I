@@ -22,14 +22,16 @@
 //               the pack results together.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-clear_data() {
-  _pack_data.clear();
+clear_data()
+{
+	_pack_data.clear();
 
-  if (_owns_unpack_data) {
-    delete[] _unpack_data;
-    _owns_unpack_data = false;
-  }
-  _unpack_data = NULL;
+	if(_owns_unpack_data)
+	{
+		delete[] _unpack_data;
+		_owns_unpack_data = false;
+	}
+	_unpack_data = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -42,12 +44,16 @@ clear_data() {
 //               determine how many nested fields are expected.
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-has_nested_fields() const {
-  if (_current_field == NULL) {
-    return false;
-  } else {
-    return _current_field->has_nested_fields();
-  }
+has_nested_fields() const
+{
+	if(_current_field == NULL)
+	{
+		return false;
+	}
+	else
+	{
+		return _current_field->has_nested_fields();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -68,8 +74,9 @@ has_nested_fields() const {
 //               more_nested_fields() instead.
 ////////////////////////////////////////////////////////////////////
 inline int DCPacker::
-get_num_nested_fields() const {
-  return _num_nested_fields;
+get_num_nested_fields() const
+{
+	return _num_nested_fields;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -80,8 +87,9 @@ get_num_nested_fields() const {
 //               is time to call pop().
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-more_nested_fields() const {
-  return (_current_field != (DCPackerInterface *)NULL && !_pack_error);
+more_nested_fields() const
+{
+	return (_current_field != (DCPackerInterface *)NULL && !_pack_error);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -93,8 +101,9 @@ more_nested_fields() const {
 //               operation.
 ////////////////////////////////////////////////////////////////////
 inline const DCPackerInterface *DCPacker::
-get_current_parent() const {
-  return _current_parent;
+get_current_parent() const
+{
+	return _current_parent;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -106,8 +115,9 @@ get_current_parent() const {
 //               time to call pop().
 ////////////////////////////////////////////////////////////////////
 inline const DCPackerInterface *DCPacker::
-get_current_field() const {
-  return _current_field;
+get_current_field() const
+{
+	return _current_field;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -124,8 +134,9 @@ get_current_field() const {
 //               SwitchCase that was selected by the switch.
 ////////////////////////////////////////////////////////////////////
 inline const DCSwitchParameter *DCPacker::
-get_last_switch() const {
-  return _last_switch;
+get_last_switch() const
+{
+	return _last_switch;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -142,12 +153,16 @@ get_last_switch() const {
 //               nested fields.
 ////////////////////////////////////////////////////////////////////
 inline DCPackType DCPacker::
-get_pack_type() const {
-  if (_current_field == NULL) {
-    return PT_invalid;
-  } else {
-    return _current_field->get_pack_type();
-  }
+get_pack_type() const
+{
+	if(_current_field == NULL)
+	{
+		return PT_invalid;
+	}
+	else
+	{
+		return _current_field->get_pack_type();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -158,12 +173,16 @@ get_pack_type() const {
 //               a name or there is no current field.
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-get_current_field_name() const {
-  if (_current_field == NULL) {
-    return string();
-  } else {
-    return _current_field->get_name();
-  }
+get_current_field_name() const
+{
+	if(_current_field == NULL)
+	{
+		return string();
+	}
+	else
+	{
+		return _current_field->get_name();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -173,14 +192,18 @@ get_current_field_name() const {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_double(double value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_double(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_double(double value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_double(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -190,14 +213,18 @@ pack_double(double value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_int(int value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_int(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_int(int value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_int(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -207,14 +234,18 @@ pack_int(int value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_uint(unsigned int value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_uint(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_uint(unsigned int value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_uint(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -224,14 +255,18 @@ pack_uint(unsigned int value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_int64(int64_t value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_int64(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_int64(int64_t value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_int64(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -241,14 +276,18 @@ pack_int64(int64_t value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_uint64(uint64_t value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_uint64(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_uint64(uint64_t value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_uint64(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -258,14 +297,18 @@ pack_uint64(uint64_t value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_string(const string &value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _current_field->pack_string(_pack_data, value, _pack_error, _range_error);
-    advance();
-  }
+pack_string(const string &value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_current_field->pack_string(_pack_data, value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -276,14 +319,18 @@ pack_string(const string &value) {
 //               whole group of field elements at once.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-pack_literal_value(const string &value) {
-  nassertv(_mode == M_pack || _mode == M_repack);
-  if (_current_field == NULL) {
-    _pack_error = true;
-  } else {
-    _pack_data.append_data(value.data(), value.length());
-    advance();
-  }
+pack_literal_value(const string &value)
+{
+	nassertv(_mode == M_pack || _mode == M_repack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
+	}
+	else
+	{
+		_pack_data.append_data(value.data(), value.length());
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -293,19 +340,23 @@ pack_literal_value(const string &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline double DCPacker::
-unpack_double() {
-  double value = 0.0;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_double()
+{
+	double value = 0.0;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -315,19 +366,23 @@ unpack_double() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline int DCPacker::
-unpack_int() {
-  int value = 0;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_int()
+{
+	int value = 0;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_int(_unpack_data, _unpack_length, _unpack_p,
-                               value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_int(_unpack_data, _unpack_length, _unpack_p,
+		                           value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -337,19 +392,23 @@ unpack_int() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline unsigned int DCPacker::
-unpack_uint() {
-  unsigned int value = 0;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_uint()
+{
+	unsigned int value = 0;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_uint(_unpack_data, _unpack_length, _unpack_p,
-                                value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_uint(_unpack_data, _unpack_length, _unpack_p,
+		                            value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -359,19 +418,23 @@ unpack_uint() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline int64_t DCPacker::
-unpack_int64() {
-  int64_t value = 0;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_int64()
+{
+	int64_t value = 0;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_int64(_unpack_data, _unpack_length, _unpack_p,
-                                 value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_int64(_unpack_data, _unpack_length, _unpack_p,
+		                             value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -381,19 +444,23 @@ unpack_int64() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline uint64_t DCPacker::
-unpack_uint64() {
-  uint64_t value = 0;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_uint64()
+{
+	uint64_t value = 0;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_uint64(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_uint64(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -403,19 +470,23 @@ unpack_uint64() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-unpack_string() {
-  string value;
-  nassertr(_mode == M_unpack, value);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_string()
+{
+	string value;
+	nassertr(_mode == M_unpack, value);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_string(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_string(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 
-  return value;
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -426,11 +497,12 @@ unpack_string() {
 //               pointer.
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-unpack_literal_value() {
-  size_t start = _unpack_p;
-  unpack_skip();
-  nassertr(_unpack_p >= start, string());
-  return string(_unpack_data + start, _unpack_p - start);
+unpack_literal_value()
+{
+	size_t start = _unpack_p;
+	unpack_skip();
+	nassertr(_unpack_p >= start, string());
+	return string(_unpack_data + start, _unpack_p - start);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -440,16 +512,20 @@ unpack_literal_value() {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_double(double &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_double(double &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_double(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -459,16 +535,20 @@ unpack_double(double &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_int(int &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_int(int &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_int(_unpack_data, _unpack_length, _unpack_p,
-                               value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_int(_unpack_data, _unpack_length, _unpack_p,
+		                           value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -478,16 +558,20 @@ unpack_int(int &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_uint(unsigned int &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_uint(unsigned int &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_uint(_unpack_data, _unpack_length, _unpack_p,
-                                value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_uint(_unpack_data, _unpack_length, _unpack_p,
+		                            value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -497,16 +581,20 @@ unpack_uint(unsigned int &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_int64(int64_t &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_int64(int64_t &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_int64(_unpack_data, _unpack_length, _unpack_p,
-                                 value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_int64(_unpack_data, _unpack_length, _unpack_p,
+		                             value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -516,16 +604,20 @@ unpack_int64(int64_t &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_uint64(uint64_t &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_uint64(uint64_t &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_uint64(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_uint64(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -535,16 +627,20 @@ unpack_uint64(uint64_t &value) {
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_string(string &value) {
-  nassertv(_mode == M_unpack);
-  if (_current_field == NULL) {
-    _pack_error = true;
+unpack_string(string &value)
+{
+	nassertv(_mode == M_unpack);
+	if(_current_field == NULL)
+	{
+		_pack_error = true;
 
-  } else {
-    _current_field->unpack_string(_unpack_data, _unpack_length, _unpack_p,
-                                  value, _pack_error, _range_error);
-    advance();
-  }
+	}
+	else
+	{
+		_current_field->unpack_string(_unpack_data, _unpack_length, _unpack_p,
+		                              value, _pack_error, _range_error);
+		advance();
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -555,11 +651,12 @@ unpack_string(string &value) {
 //               pointer.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-unpack_literal_value(string &value) {
-  size_t start = _unpack_p;
-  unpack_skip();
-  nassertv(_unpack_p >= start);
-  value.assign(_unpack_data + start, _unpack_p - start);
+unpack_literal_value(string &value)
+{
+	size_t start = _unpack_p;
+	unpack_skip();
+	nassertv(_unpack_p >= start);
+	value.assign(_unpack_data + start, _unpack_p - start);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -570,8 +667,9 @@ unpack_literal_value(string &value) {
 //               happen if you call parse_and_pack().
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-had_parse_error() const {
-  return _parse_error;
+had_parse_error() const
+{
+	return _parse_error;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -589,8 +687,9 @@ had_parse_error() const {
 //               that the data stream was truncated.
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-had_pack_error() const {
-  return _pack_error;
+had_pack_error() const
+{
+	return _pack_error;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -608,8 +707,9 @@ had_pack_error() const {
 //               the field size.
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-had_range_error() const {
-  return _range_error;
+had_range_error() const
+{
+	return _range_error;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -622,8 +722,9 @@ had_range_error() const {
 //               (false).
 ////////////////////////////////////////////////////////////////////
 inline bool DCPacker::
-had_error() const {
-  return _range_error || _pack_error || _parse_error;
+had_error() const
+{
+	return _range_error || _pack_error || _parse_error;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -637,8 +738,9 @@ had_error() const {
 //               an error).
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPacker::
-get_num_unpacked_bytes() const {
-  return _unpack_p;
+get_num_unpacked_bytes() const
+{
+	return _unpack_p;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -649,8 +751,9 @@ get_num_unpacked_bytes() const {
 //               the amount of memory it takes up.
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPacker::
-get_length() const {
-  return _pack_data.get_length();
+get_length() const
+{
+	return _pack_data.get_length();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -660,8 +763,9 @@ get_length() const {
 //               get_data().
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-get_string() const {
-  return _pack_data.get_string();
+get_string() const
+{
+	return _pack_data.get_string();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -673,8 +777,9 @@ get_string() const {
 //               get_length(), which is filled during packing.
 ////////////////////////////////////////////////////////////////////
 inline size_t DCPacker::
-get_unpack_length() const {
-  return _unpack_length;
+get_unpack_length() const
+{
+	return _unpack_length;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -687,8 +792,9 @@ get_unpack_length() const {
 //               get_unpack_data().
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-get_unpack_string() const {
-  return string(_unpack_data, _unpack_length);
+get_unpack_string() const
+{
+	return string(_unpack_data, _unpack_length);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -698,8 +804,9 @@ get_unpack_string() const {
 //               Also see get_data().
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-get_string(string &data) const {
-  data.assign(_pack_data.get_data(), _pack_data.get_length());
+get_string(string &data) const
+{
+	data.assign(_pack_data.get_data(), _pack_data.get_length());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -714,8 +821,9 @@ get_string(string &data) const {
 //               operation.
 ////////////////////////////////////////////////////////////////////
 inline const char *DCPacker::
-get_data() const {
-  return _pack_data.get_data();
+get_data() const
+{
+	return _pack_data.get_data();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -733,8 +841,9 @@ get_data() const {
 //               before calling this method).
 ////////////////////////////////////////////////////////////////////
 inline char *DCPacker::
-take_data() {
-  return _pack_data.take_data();
+take_data()
+{
+	return _pack_data.take_data();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -744,9 +853,10 @@ take_data() {
 //               This may only be called between packing sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-append_data(const char *buffer, size_t size) {
-  nassertv(_mode == M_idle);
-  _pack_data.append_data(buffer, size);
+append_data(const char *buffer, size_t size)
+{
+	nassertv(_mode == M_idle);
+	_pack_data.append_data(buffer, size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -758,9 +868,10 @@ append_data(const char *buffer, size_t size) {
 //               called between packing sessions.
 ////////////////////////////////////////////////////////////////////
 inline char *DCPacker::
-get_write_pointer(size_t size) {
-  nassertr(_mode == M_idle, NULL);
-  return _pack_data.get_write_pointer(size);
+get_write_pointer(size_t size)
+{
+	nassertr(_mode == M_idle, NULL);
+	return _pack_data.get_write_pointer(size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -772,8 +883,9 @@ get_write_pointer(size_t size) {
 //               which is filled during packing.
 ////////////////////////////////////////////////////////////////////
 inline const char *DCPacker::
-get_unpack_data() const {
-  return _unpack_data;
+get_unpack_data() const
+{
+	return _unpack_data;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -785,8 +897,9 @@ get_unpack_data() const {
 //               DCPacker::StackElement pool to be used again.
 ////////////////////////////////////////////////////////////////////
 inline int DCPacker::
-get_num_stack_elements_ever_allocated() {
-  return StackElement::_num_ever_allocated;
+get_num_stack_elements_ever_allocated()
+{
+	return StackElement::_num_ever_allocated;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -796,9 +909,10 @@ get_num_stack_elements_ever_allocated() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_int8(int8_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_int8(_pack_data.get_write_pointer(1), value);
+raw_pack_int8(int8_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_int8(_pack_data.get_write_pointer(1), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -808,9 +922,10 @@ raw_pack_int8(int8_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_int16(int16_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_int16(_pack_data.get_write_pointer(2), value);
+raw_pack_int16(int16_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_int16(_pack_data.get_write_pointer(2), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -820,9 +935,10 @@ raw_pack_int16(int16_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_int32(int32_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_int32(_pack_data.get_write_pointer(4), value);
+raw_pack_int32(int32_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_int32(_pack_data.get_write_pointer(4), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -832,9 +948,10 @@ raw_pack_int32(int32_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_int64(int64_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_int64(_pack_data.get_write_pointer(8), value);
+raw_pack_int64(int64_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_int64(_pack_data.get_write_pointer(8), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -844,9 +961,10 @@ raw_pack_int64(int64_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_uint8(uint8_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_uint8(_pack_data.get_write_pointer(1), value);
+raw_pack_uint8(uint8_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_uint8(_pack_data.get_write_pointer(1), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -856,9 +974,10 @@ raw_pack_uint8(uint8_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_uint16(uint16_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value);
+raw_pack_uint16(uint16_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -868,9 +987,10 @@ raw_pack_uint16(uint16_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_length_tag(length_tag_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value);
+raw_pack_length_tag(length_tag_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -880,9 +1000,10 @@ raw_pack_length_tag(length_tag_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_uint32(uint32_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_uint32(_pack_data.get_write_pointer(4), value);
+raw_pack_uint32(uint32_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_uint32(_pack_data.get_write_pointer(4), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -892,9 +1013,10 @@ raw_pack_uint32(uint32_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_uint64(uint64_t value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_uint64(_pack_data.get_write_pointer(8), value);
+raw_pack_uint64(uint64_t value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_uint64(_pack_data.get_write_pointer(8), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -904,9 +1026,10 @@ raw_pack_uint64(uint64_t value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_float64(double value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_float64(_pack_data.get_write_pointer(8), value);
+raw_pack_float64(double value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_float64(_pack_data.get_write_pointer(8), value);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -916,10 +1039,12 @@ raw_pack_float64(double value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_pack_string(const string &value) {
-  nassertv(_mode == M_idle);
-  DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value.length());
-  _pack_data.append_data(value.data(), value.length());
+raw_pack_string(const string &value)
+{
+	nassertv(_mode == M_idle);
+	DCPackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)),
+	                                      value.length());
+	_pack_data.append_data(value.data(), value.length());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -929,10 +1054,11 @@ raw_pack_string(const string &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline int8_t DCPacker::
-raw_unpack_int8() {
-  int8_t value = 0;
-  raw_unpack_int8(value);
-  return value;
+raw_unpack_int8()
+{
+	int8_t value = 0;
+	raw_unpack_int8(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -942,10 +1068,11 @@ raw_unpack_int8() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline int16_t DCPacker::
-raw_unpack_int16() {
-  int16_t value = 0;
-  raw_unpack_int16(value);
-  return value;
+raw_unpack_int16()
+{
+	int16_t value = 0;
+	raw_unpack_int16(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -955,10 +1082,11 @@ raw_unpack_int16() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline int32_t DCPacker::
-raw_unpack_int32() {
-  int32_t value = 0;
-  raw_unpack_int32(value);
-  return value;
+raw_unpack_int32()
+{
+	int32_t value = 0;
+	raw_unpack_int32(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -968,10 +1096,11 @@ raw_unpack_int32() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline int64_t DCPacker::
-raw_unpack_int64() {
-  int64_t value = 0;
-  raw_unpack_int64(value);
-  return value;
+raw_unpack_int64()
+{
+	int64_t value = 0;
+	raw_unpack_int64(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -981,14 +1110,16 @@ raw_unpack_int64() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_int8(int8_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 1 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_int8(_unpack_data + _unpack_p);
-  _unpack_p++;
+raw_unpack_int8(int8_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 1 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_int8(_unpack_data + _unpack_p);
+	_unpack_p++;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -998,14 +1129,16 @@ raw_unpack_int8(int8_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_int16(int16_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 2 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_int16(_unpack_data + _unpack_p);
-  _unpack_p += 2;
+raw_unpack_int16(int16_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 2 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_int16(_unpack_data + _unpack_p);
+	_unpack_p += 2;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1015,14 +1148,16 @@ raw_unpack_int16(int16_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_int32(int32_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 4 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_int32(_unpack_data + _unpack_p);
-  _unpack_p += 4;
+raw_unpack_int32(int32_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 4 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_int32(_unpack_data + _unpack_p);
+	_unpack_p += 4;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1032,10 +1167,11 @@ raw_unpack_int32(int32_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline uint8_t DCPacker::
-raw_unpack_uint8() {
-  uint8_t value = 0;
-  raw_unpack_uint8(value);
-  return value;
+raw_unpack_uint8()
+{
+	uint8_t value = 0;
+	raw_unpack_uint8(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1045,10 +1181,11 @@ raw_unpack_uint8() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline uint16_t DCPacker::
-raw_unpack_uint16() {
-  uint16_t value = 0;
-  raw_unpack_uint16(value);
-  return value;
+raw_unpack_uint16()
+{
+	uint16_t value = 0;
+	raw_unpack_uint16(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1058,10 +1195,11 @@ raw_unpack_uint16() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline length_tag_t DCPacker::
-raw_unpack_length_tag() {
-  length_tag_t value = 0;
-  raw_unpack_length_tag(value);
-  return value;
+raw_unpack_length_tag()
+{
+	length_tag_t value = 0;
+	raw_unpack_length_tag(value);
+	return value;
 }
 
 
@@ -1072,10 +1210,11 @@ raw_unpack_length_tag() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline uint32_t DCPacker::
-raw_unpack_uint32() {
-  uint32_t value = 0;
-  raw_unpack_uint32(value);
-  return value;
+raw_unpack_uint32()
+{
+	uint32_t value = 0;
+	raw_unpack_uint32(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1085,10 +1224,11 @@ raw_unpack_uint32() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline uint64_t DCPacker::
-raw_unpack_uint64() {
-  uint64_t value = 0;
-  raw_unpack_uint64(value);
-  return value;
+raw_unpack_uint64()
+{
+	uint64_t value = 0;
+	raw_unpack_uint64(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1098,10 +1238,11 @@ raw_unpack_uint64() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline double DCPacker::
-raw_unpack_float64() {
-  double value = 0;
-  raw_unpack_float64(value);
-  return value;
+raw_unpack_float64()
+{
+	double value = 0;
+	raw_unpack_float64(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1111,10 +1252,11 @@ raw_unpack_float64() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline string DCPacker::
-raw_unpack_string() {
-  string value;
-  raw_unpack_string(value);
-  return value;
+raw_unpack_string()
+{
+	string value;
+	raw_unpack_string(value);
+	return value;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1124,14 +1266,16 @@ raw_unpack_string() {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_int64(int64_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 8 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_int64(_unpack_data + _unpack_p);
-  _unpack_p += 8;
+raw_unpack_int64(int64_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 8 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_int64(_unpack_data + _unpack_p);
+	_unpack_p += 8;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1141,14 +1285,16 @@ raw_unpack_int64(int64_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_uint8(uint8_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 1 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_uint8(_unpack_data + _unpack_p);
-  _unpack_p++;
+raw_unpack_uint8(uint8_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 1 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_uint8(_unpack_data + _unpack_p);
+	_unpack_p++;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1158,14 +1304,16 @@ raw_unpack_uint8(uint8_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_uint16(uint16_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 2 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_uint16(_unpack_data + _unpack_p);
-  _unpack_p += 2;
+raw_unpack_uint16(uint16_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 2 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_uint16(_unpack_data + _unpack_p);
+	_unpack_p += 2;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1175,14 +1323,16 @@ raw_unpack_uint16(uint16_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_length_tag(length_tag_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + sizeof(length_tag_t) > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_length_tag(_unpack_data + _unpack_p);
-  _unpack_p += sizeof(length_tag_t);
+raw_unpack_length_tag(length_tag_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + sizeof(length_tag_t) > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_length_tag(_unpack_data + _unpack_p);
+	_unpack_p += sizeof(length_tag_t);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1192,14 +1342,16 @@ raw_unpack_length_tag(length_tag_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_uint32(uint32_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 4 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_uint32(_unpack_data + _unpack_p);
-  _unpack_p += 4;
+raw_unpack_uint32(uint32_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 4 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_uint32(_unpack_data + _unpack_p);
+	_unpack_p += 4;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1209,14 +1361,16 @@ raw_unpack_uint32(uint32_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_uint64(uint64_t &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 8 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_uint64(_unpack_data + _unpack_p);
-  _unpack_p += 8;
+raw_unpack_uint64(uint64_t &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 8 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_uint64(_unpack_data + _unpack_p);
+	_unpack_p += 8;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1226,14 +1380,16 @@ raw_unpack_uint64(uint64_t &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_float64(double &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  if (_unpack_p + 8 > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
-  value = DCPackerInterface::do_unpack_float64(_unpack_data + _unpack_p);
-  _unpack_p += 8;
+raw_unpack_float64(double &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	if(_unpack_p + 8 > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
+	value = DCPackerInterface::do_unpack_float64(_unpack_data + _unpack_p);
+	_unpack_p += 8;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1243,17 +1399,19 @@ raw_unpack_float64(double &value) {
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-raw_unpack_string(string &value) {
-  nassertv(_mode == M_idle && _unpack_data != NULL);
-  length_tag_t string_length = raw_unpack_length_tag();
+raw_unpack_string(string &value)
+{
+	nassertv(_mode == M_idle && _unpack_data != NULL);
+	length_tag_t string_length = raw_unpack_length_tag();
 
-  if (_unpack_p + string_length > _unpack_length) {
-    _pack_error = true;
-    return;
-  }
+	if(_unpack_p + string_length > _unpack_length)
+	{
+		_pack_error = true;
+		return;
+	}
 
-  value.assign(_unpack_data + _unpack_p, string_length);
-  _unpack_p += string_length;
+	value.assign(_unpack_data + _unpack_p, string_length);
+	_unpack_p += string_length;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1263,32 +1421,41 @@ raw_unpack_string(string &value) {
 //               pack_value() or pop().
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::
-advance() {
-  _current_field_index++;
-  if (_num_nested_fields >= 0 &&
-      _current_field_index >= _num_nested_fields) {
-    // Done with all the fields on this parent.  The caller must now
-    // call pop().
-    _current_field = NULL;
+advance()
+{
+	_current_field_index++;
+	if(_num_nested_fields >= 0 &&
+	        _current_field_index >= _num_nested_fields)
+	{
+		// Done with all the fields on this parent.  The caller must now
+		// call pop().
+		_current_field = NULL;
 
-    // But if the parent is a switch record, we make a special case so
-    // we can get the alternate fields.
-    if (_current_parent != (DCPackerInterface *)NULL) {
-      const DCSwitchParameter *switch_parameter = ((DCPackerInterface *)_current_parent)->as_switch_parameter();
-      if (switch_parameter != (DCSwitchParameter *)NULL) {
-        handle_switch(switch_parameter);
-      }
-    }
+		// But if the parent is a switch record, we make a special case so
+		// we can get the alternate fields.
+		if(_current_parent != (DCPackerInterface *)NULL)
+		{
+			const DCSwitchParameter *switch_parameter = ((DCPackerInterface *)
+			        _current_parent)->as_switch_parameter();
+			if(switch_parameter != (DCSwitchParameter *)NULL)
+			{
+				handle_switch(switch_parameter);
+			}
+		}
 
-  } else if (_pop_marker != 0 && _unpack_p >= _pop_marker) {
-    // Done with all the fields on this parent.  The caller must now
-    // call pop().
-    _current_field = NULL;
+	}
+	else if(_pop_marker != 0 && _unpack_p >= _pop_marker)
+	{
+		// Done with all the fields on this parent.  The caller must now
+		// call pop().
+		_current_field = NULL;
 
-  } else {
-    // We have another field to advance to.
-    _current_field = _current_parent->get_nested_field(_current_field_index);
-  }
+	}
+	else
+	{
+		// We have another field to advance to.
+		_current_field = _current_parent->get_nested_field(_current_field_index);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1299,16 +1466,18 @@ advance() {
 //               allocation of these things.
 ////////////////////////////////////////////////////////////////////
 inline void *DCPacker::StackElement::
-operator new(size_t size) {
-  if (_deleted_chain != (DCPacker::StackElement *)NULL) {
-    StackElement *obj = _deleted_chain;
-    _deleted_chain = _deleted_chain->_next;
-    return obj;
-  }
+operator new(size_t size)
+{
+	if(_deleted_chain != (DCPacker::StackElement *)NULL)
+	{
+		StackElement *obj = _deleted_chain;
+		_deleted_chain = _deleted_chain->_next;
+		return obj;
+	}
 #ifndef NDEBUG
-  _num_ever_allocated++;
+	_num_ever_allocated++;
 #endif  // NDEBUG
-  return ::operator new(size);
+	return ::operator new(size);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1319,8 +1488,9 @@ operator new(size_t size) {
 //               allocation of these things.
 ////////////////////////////////////////////////////////////////////
 inline void DCPacker::StackElement::
-operator delete(void *ptr) {
-  StackElement *obj = (StackElement *)ptr;
-  obj->_next = _deleted_chain;
-  _deleted_chain = obj;
+operator delete(void *ptr)
+{
+	StackElement *obj = (StackElement *)ptr;
+	obj->_next = _deleted_chain;
+	_deleted_chain = obj;
 }
