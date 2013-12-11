@@ -21,13 +21,13 @@ namespace dclass   // open namespace
 // constructor
 AtomicField::AtomicField(const string &name, Class *dcc, bool bogus_field) : Field(name, dcc)
 {
-	_bogus_field = bogus_field;
+	m_bogus_field = bogus_field;
 }
 
 // destructor
 AtomicField::~AtomicField()
 {
-	for(auto it = m_elements.begin(); it != _elements.end(); ++it)
+	for(auto it = m_elements.begin(); it != m_elements.end(); ++it)
 	{
 		delete(*it);
 	}
@@ -66,7 +66,7 @@ Parameter* AtomicField::get_element(int n) const
 //     and outputs the formatted string to the stream.
 void AtomicField::output(ostream &out, bool brief) const
 {
-	out << _name << "(";
+	out << m_name << "(";
 
 	if(!m_elements.empty())
 	{
@@ -91,9 +91,9 @@ void AtomicField::write(ostream &out, bool brief, int indent_level) const
 	indent(out, indent_level);
 	output(out, brief);
 	out << ";";
-	if(!brief && _number >= 0)
+	if(!brief && m_number >= 0)
 	{
-		out << "  // field " << _number;
+		out << "  // field " << m_number;
 	}
 	out << "\n";
 }
@@ -104,7 +104,7 @@ void AtomicField::generate_hash(HashGenerator &hashgen) const
 	Field::generate_hash(hashgen);
 
 	hashgen.add_int(m_elements.size());
-	for(auto it = _elements.begin(); it != m_elements.end(); ++it)
+	for(auto it = m_elements.begin(); it != m_elements.end(); ++it)
 	{
 		(*it)->generate_hash(hashgen);
 	}
@@ -127,27 +127,27 @@ PackerInterface *AtomicField::get_nested_field(int n) const
 void AtomicField::add_element(Parameter *element)
 {
 	m_elements.push_back(element);
-	_num_nested_fields = (int)m_elements.size();
+	m_num_nested_fields = (int)m_elements.size();
 
 	// See if we still have a fixed byte size.
 	if(_has_fixed_byte_size)
 	{
-		_has_fixed_byte_size = element->has_fixed_byte_size();
-		_fixed_byte_size += element->get_fixed_byte_size();
+		m_has_fixed_byte_size = element->has_fixed_byte_size();
+		m_fixed_byte_size += element->get_fixed_byte_size();
 	}
 	if(_has_fixed_structure)
 	{
-		_has_fixed_structure = element->has_fixed_structure();
+		m_has_fixed_structure = element->has_fixed_structure();
 	}
 	if(!_has_range_limits)
 	{
-		_has_range_limits = element->has_range_limits();
+		m_has_range_limits = element->has_range_limits();
 	}
 	if(!_has_default_value)
 	{
-		_has_default_value = element->has_default_value();
+		m_has_default_value = element->has_default_value();
 	}
-	_default_value_stale = true;
+	m_default_value_stale = true;
 }
 
 // do_check_match returns true if the other interface is bitwise the same as

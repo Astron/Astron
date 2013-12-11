@@ -1,62 +1,72 @@
-// Filename: dcClassParameter.h
-// Created by:  drose (18Jun04)
+// Filename: ClassParameter.h
+// Created by: drose (18 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCCLASSPARAMETER_H
-#define DCCLASSPARAMETER_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcParameter.h"
+#include "Parameter.h"
+namespace dclass   // open namespace
+{
 
-class DCClass;
+// Forward declaration of class
+class Class;
 
-////////////////////////////////////////////////////////////////////
-//       Class : DCClassParameter
-// Description : This represents a class (or struct) object used as a
-//               parameter itself.  This means that all the fields of
-//               the class get packed into the message.
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCClassParameter : public DCParameter
+// A ClassParameter represents a class (or struct) object used as a parameter itself.
+//     This means that all the fields of the class get packed into the message.
+class EXPCL_DIRECT ClassParameter : public Parameter
 {
 	public:
-		DCClassParameter(const DCClass *dclass);
-		DCClassParameter(const DCClassParameter &copy);
+		ClassParameter(const Class *dclass); // construct from class definition
+		ClassParameter(const ClassParameter &copy); // copy constructor
 
 	PUBLISHED:
-		virtual DCClassParameter *as_class_parameter();
-		virtual const DCClassParameter *as_class_parameter() const;
-		virtual DCParameter *make_copy() const;
+		// as_class_parameter returns the same parameter pointer converted to a class parameter
+		//     pointer, if this is in fact an class parameter; otherwise, returns NULL.
+		virtual ClassParameter *as_class_parameter();
+		virtual const ClassParameter *as_class_parameter() const;
+
+		// make_copy returns a deep copy of this parameter
+		virtual Parameter *make_copy() const;
+
+		// is_valid returns false if the element type is an invalid type
+		//     (e.g. declared from an undefined typedef), or true if it is valid.
 		virtual bool is_valid() const;
 
-		const DCClass *get_class() const;
+		// get_class returns the class that this parameter represents
+		const Class *get_class() const;
 
 	public:
-		virtual DCPackerInterface *get_nested_field(int n) const;
+		// get_nested_field returns the PackerInterface object that represents the nth nested field.
+		//     The return is NULL if 'n' is out-of-bounds of 0 <= n < get_num_nested_fields().
+		virtual PackerInterface *get_nested_field(int n) const;
 
+		// output_instance formats the parameter to the syntax of an class parameter in a .dc file
+		//     as CLASS_IDENTIFIER PARAM_IDENTIFIER with optional PARAM_IDENTIFIER,
+		//     and outputs the formatted string to the stream.
 		virtual void output_instance(ostream &out, bool brief, const string &prename,
 		                             const string &name, const string &postname) const;
+
+		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	protected:
-		virtual bool do_check_match(const DCPackerInterface *other) const;
-		virtual bool do_check_match_class_parameter(const DCClassParameter *other) const;
-		virtual bool do_check_match_array_parameter(const DCArrayParameter *other) const;
+		// do_check_match returns true if the other interface is bitwise the same as
+		//     this one--that is, a uint32 only matches a uint32, etc.
+		//     Names of components, and range limits, are not compared.
+		virtual bool do_check_match(const PackerInterface *other) const;
+		virtual bool do_check_match_class_parameter(const ClassParameter *other) const;
+		virtual bool do_check_match_array_parameter(const ArrayParameter *other) const;
 
 	private:
-		typedef pvector<DCPackerInterface *> Fields;
-		Fields _nested_fields;
-
-		const DCClass *_dclass;
+		const Class *m_class; // class type of parameter
+		std::vector<PackerInterface*> m_nested_fields; // list of nested fields in parameter
 };
 
-#endif
+
+} // close namespace dclass

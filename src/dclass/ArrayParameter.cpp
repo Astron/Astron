@@ -30,36 +30,36 @@ ArrayParameter::ArrayParameter(DCParameter *element_type, const UintRange &size)
 	}
 	else
 	{
-		_has_range_limits = true;
+		m_has_range_limits = true;
 	}
 
 	if(m_array_size >= 0 && m_element_type->has_fixed_byte_size())
 	{
-		_has_fixed_byte_size = true;
-		_fixed_byte_size = m_array_size * m_element_type->get_fixed_byte_size();
-		_has_fixed_structure = true;
+		m_has_fixed_byte_size = true;
+		m_fixed_byte_size = m_array_size * m_element_type->get_fixed_byte_size();
+		m_has_fixed_structure = true;
 
 	}
 	else
 	{
 		// We only need to store the length bytes if the array has a
 		// variable size.
-		_num_length_bytes = sizeof(length_tag_t);
+		m_num_length_bytes = sizeof(length_tag_t);
 	}
 
 	if(m_element_type->has_range_limits())
 	{
-		_has_range_limits = true;
+		m_has_range_limits = true;
 	}
 
 	if(m_element_type->has_default_value())
 	{
-		_has_default_value = true;
+		m_has_default_value = true;
 	}
 
-	_has_nested_fields = true;
-	_num_nested_fields = m_array_size;
-	_pack_type = PT_array;
+	m_has_nested_fields = true;
+	m_num_nested_fields = m_array_size;
+	m_pack_type = PT_array;
 
 	DCSimpleParameter *simple_type = m_element_type->as_simple_parameter();
 	if(simple_type != (SimpleParameter *)NULL)
@@ -70,7 +70,7 @@ ArrayParameter::ArrayParameter(DCParameter *element_type, const UintRange &size)
 			// a string.  (It will still accept an array of ints packed into
 			// it.)  We don't make this special case for uint8[] or int8[]
 			// arrays, although we will accept a string packed in for them.
-			_pack_type = PT_string;
+			m_pack_type = PT_string;
 		}
 	}
 }
