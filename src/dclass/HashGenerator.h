@@ -1,42 +1,39 @@
-// Filename: hashGenerator.h
-// Created by:  drose (22Mar01)
+// Filename: HashGenerator.h
+// Created by: drose (22 Mar, 2001)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCHASHGENERATOR_H
-#define DCHASHGENERATOR_H
-
+#pragma once
 #include "dcbase.h"
-#include "primeNumberGenerator.h"
+#include "PrimeNumberGenerator.h"
+namespace dclass   // open namespace dclass
+{
 
-////////////////////////////////////////////////////////////////////
-//       Class : HashGenerator
-// Description : This class generates an arbitrary hash number from a
-//               sequence of ints.
-////////////////////////////////////////////////////////////////////
+
+// A HashGenerator generates an arbitrary hash number from a sequence of ints.
 class HashGenerator
 {
 	public:
 		HashGenerator();
 
+		// add_int adds another integer to the hash so far.
 		void add_int(int num);
+
+		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
 		void add_string(const string &str);
 
-		unsigned long get_hash() const;
+		uint32_t get_hash() const;
 
 	private:
-		long _hash;
-		int _index;
-		PrimeNumberGenerator _primes;
+		int32_t m_hash;
+		int m_index;
+		PrimeNumberGenerator m_primes;
 };
 
-#endif
+
+} // close namespace dclass

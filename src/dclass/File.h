@@ -161,7 +161,6 @@ class EXPCL_DIRECT File
 };
 
 
-
 } // close namespace dclass
 
 #include "File.ipp"

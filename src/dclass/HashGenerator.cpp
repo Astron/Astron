@@ -1,19 +1,17 @@
-// Filename: hashGenerator.cxx
-// Created by:  drose (22Mar01)
+// Filename: HashGenerator.cpp
+// Created by: drose (22 Mar, 2001)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#include "hashGenerator.h"
-#include "primeNumberGenerator.h"
+#include "HashGenerator.h"
+#include "PrimeNumberGenerator.h"
+namespace dclass   // open namespace dclass
+{
 
 // We multiply each consecutive integer by the next prime number and
 // add it to the total.  This will generate pretty evenly-distributed
@@ -24,57 +22,36 @@
 // computing large prime numbers unnecessarily), and we also truncate
 // the result to the low-order 32 bits.
 
-static const int max_prime_numbers = 10000;
+#define MAX_PRIME_NUMBERS 10000
 
-////////////////////////////////////////////////////////////////////
-//     Function: HashGenerator::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
-HashGenerator::
-HashGenerator()
+// constructor
+HashGenerator::HashGenerator() : m_hash(0), m_index(0)
 {
-	_hash = 0;
-	_index = 0;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: HashGenerator::add_int
-//       Access: Public
-//  Description: Adds another integer to the hash so far.
-////////////////////////////////////////////////////////////////////
-void HashGenerator::
-add_int(int num)
+// add_int adds another integer to the hash so far.
+void HashGenerator::add_int(int num)
 {
-	nassertv(_index >= 0 && _index < max_prime_numbers);
-	_hash += _primes[_index] * num;
-	_index = (_index + 1) % max_prime_numbers;
+	nassertv(m_index >= 0 && m_index < MAX_PRIME_NUMBERS);
+	m_hash += m_primes[m_index] * num;
+	m_index = (m_index + 1) % MAX_PRIME_NUMBERS;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: HashGenerator::add_string
-//       Access: Public
-//  Description: Adds a string to the hash, by breaking it down into a
-//               sequence of integers.
-////////////////////////////////////////////////////////////////////
-void HashGenerator::
-add_string(const string &str)
+// add_string adds a string to the hash, by breaking it down into a sequence of integers.
+void HashGenerator::add_string(const string &str)
 {
 	add_int(str.length());
-	string::const_iterator si;
-	for(si = str.begin(); si != str.end(); ++si)
+	for(auto it = str.begin(); it != str.end(); ++it)
 	{
-		add_int(*si);
+		add_int(*it);
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: HashGenerator::get_hash
-//       Access: Public
-//  Description: Returns the hash number generated.
-////////////////////////////////////////////////////////////////////
-unsigned long HashGenerator::
-get_hash() const
+// get_hash returns the hash number generated.
+uint32_t HashGenerator::get_hash() const
 {
-	return (unsigned long)(_hash & 0xffffffff);
+	return (uint32_t)(m_hash & 0xffffffff);
 }
+
+
+} // close namespace dclass
