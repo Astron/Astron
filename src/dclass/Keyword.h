@@ -1,56 +1,57 @@
-// Filename: dcKeyword.h
-// Created by:  drose (22Jul05)
+// Filename: Keyword.h
+// Created by: drose (22 Jul, 2005)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCKEYWORD_H
-#define DCKEYWORD_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcDeclaration.h"
+#include "Declaration.h"
+namespace dclass   // open namespace dclass
+{
 
-class DCParameter;
+
+// Forward declartions
+class Parameter;
 class HashGenerator;
 
-////////////////////////////////////////////////////////////////////
-//       Class : DCKeyword
-// Description : This represents a single keyword declaration in the
-//               dc file.  It is used to define a communication
-//               property associated with a field, for instance
-//               "broadcast" or "airecv".
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCKeyword : public DCDeclaration
+// A Keyword represents a single keyword declaration in the dc file.
+//     It is used to define a communication property associated with a field,
+//     for instance "broadcast" or "airecv".
+class EXPCL_DIRECT Keyword : public Declaration
 {
 	public:
-		DCKeyword(const string &name, int historical_flag = ~0);
-		virtual ~DCKeyword();
+		Keyword(const string &name, int historical_flag = ~0);
+		virtual ~Keyword();
 
 	PUBLISHED:
+		// get_name returns the name of this keyword.
 		const string &get_name() const;
 
 	public:
+		// get_historical_flag returns the bitmask associated with this keyword, if any.
 		int get_historical_flag() const;
+		// clear_historical_flag resets the historical flag to ~0.
 		void clear_historical_flag();
 
+		// output and write output a string representation of this instance to <out>.
 		virtual void output(ostream &out, bool brief) const;
 		virtual void write(ostream &out, bool brief, int indent_level) const;
+
+		// generate_hash accumulates the properties of this keyword into the hash.
 		void generate_hash(HashGenerator &hashgen) const;
 
 	private:
-		const string _name;
+		const string m_name;
 
 		// This flag is only kept for historical reasons, so we can preserve
 		// the file's hash code if no new flags are in use.
-		int _historical_flag;
+		int m_historical_flag;
 };
 
-#endif
+
+} // close namespace dclass

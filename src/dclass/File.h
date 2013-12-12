@@ -11,8 +11,8 @@
 #pragma once
 #include "dcbase.h"
 #include "KeywordList.h"
-#include "<vector>"
-#include "<map>"
+#include <vector>
+#include <map>
 namespace dclass   // open namespace
 {
 
