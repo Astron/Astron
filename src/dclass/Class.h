@@ -31,6 +31,8 @@ class EXPCL_DIRECT Class : public Declaration
 		~Class();
 
 	PUBLISHED:
+		// as_class returns the same Declaration pointer converted to a class
+		//     pointer, if this is in fact a class; otherwise, returns NULL.
 		virtual Class *as_class();
 		virtual const Class *as_class() const;
 

@@ -295,11 +295,11 @@ void Class::write(ostream &out, bool brief, int indent_level) const
 	if(!m_parents.empty())
 	{
 		auto it = m_parents.begin();
-		out << " : " << (*it)->_name;
+		out << " : " << (*it)->m_name;
 		++it;
 		while(it != m_parents.end())
 		{
-			out << ", " << (*it)->_name;
+			out << ", " << (*it)->m_name;
 			++it;
 		}
 	}
@@ -363,11 +363,11 @@ void Class::output_instance(ostream &out, bool brief, const string &prename,
 	if(!m_parents.empty())
 	{
 		auto it = m_parents.begin();
-		out << " : " << (*it)->_name;
+		out << " : " << (*it)->m_name;
 		++it;
 		while(it != m_parents.end())
 		{
-			out << ", " << (*it)->_name;
+			out << ", " << (*it)->m_name;
 			++it;
 		}
 	}

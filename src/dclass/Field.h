@@ -42,22 +42,42 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		inline Class *get_class() const;
 
 
+		// as_field returns the same pointer converted to a field pointer,
+		//     if this is in fact a field; otherwise, returns NULL.
 		virtual Field *as_field();
 		virtual const Field *as_field() const;
+
+		// as_atomic_field returns the same field pointer converted to an atomic field
+		//     pointer, if this is in fact an atomic field; otherwise, returns NULL.
 		virtual AtomicField *as_atomic_field();
 		virtual const AtomicField *as_atomic_field() const;
+
+		// as_molecular_field returns the same field pointer converted to a molecular field
+		//     pointer, if this is in fact a molecular field; otherwise, returns NULL.
 		virtual MolecularField *as_molecular_field();
 		virtual const MolecularField *as_molecular_field() const;
+
+		// as_parameter returns the same field pointer converted to a parameter
+		//     pointer, if this is in fact a parameter; otherwise, returns NULL.
 		virtual Parameter *as_parameter();
 		virtual const Parameter *as_parameter() const;
 
-
-
+		// format_data accepts a blob that represents the packed data for this field,
+		//     returns a string formatting it for human consumption.
+		//     Returns empty string if there is an error.
 		string format_data(const string &packed_data, bool show_field_names = true);
+
+		// parse_string given a human-formatted string (for instance, as
+		//     returned by format_data(), above) that represents the value of this field,
+		//     parse the string and return the corresponding packed data.
+		//     Returns empty string if there is an error.
 		string parse_string(const string &formatted_string);
 
-		bool validate_ranges(const string &packed_data) const;
 
+		// validate_ranges verifies that all of the packed values in the field data are
+		//     within the specified ranges and that there are no extra bytes on the end
+		//     of the record.  Returns true if all fields are valid, false otherwise.
+		bool validate_ranges(const string &packed_data) const;
 
 		// has_default_value returns true if a default value has been explicitly
 		//     established for this field, false otherwise.
@@ -100,25 +120,38 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
+
+		// pack_default_value packs the default value for this field into <pack_data>
+		//     If a default value hasn't been set, packs an implicit default.
 		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
+
+		// set_name sets the name of this field.
 		virtual void set_name(const string &name);
 
+
+		// set_number assigns the unique number to this field.  This is normally
+		//     called only by the Class interface as the field is added.
 		inline void set_number(int number);
+		// set_class assigns the class pointer to this field.  This is normally
+		//     called only by the Class interface as the field is added.
 		inline void set_class(Class *dclass);
+
+		// set_default_value establishes a default value for this field.
 		inline void set_default_value(const string &default_value);
 
 	protected:
+		// refresh_default_value recomputes the default value of the field by repacking it.
 		void refresh_default_value();
 
 	protected:
-		Class *m_class;
-		int m_number;
-		bool m_default_value_stale;
-		bool m_has_default_value;
-		bool m_bogus_field;
+		Class *m_class; // the class that this field belongs to
+		int m_number; // the unique index of the field in the .dc file
+		bool m_default_value_stale; // is true if the default value hasn't been computed
+		bool m_has_default_value; // is true if an explicity default has been set
+		bool m_bogus_field; // is true if the field is incomplete (only encountered during parsing)
 
 	private:
-		string m_default_value;
+		string m_default_value; // the binary data of the default value encoded in a string
 
 };
 
