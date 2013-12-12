@@ -7,7 +7,6 @@
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-
 namespace dclass   // open namespace
 {
 

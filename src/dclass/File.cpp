@@ -1,201 +1,87 @@
-// Filename: dcFile.cxx
-// Created by:  drose (05Oct00)
+// Filename: File.cpp
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#include "dcFile.h"
-#include "dcClass.h"
-#include "dcSwitch.h"
-#include "dcParserDefs.h"
-#include "dcLexerDefs.h"
-#include "dcTypedef.h"
-#include "dcKeyword.h"
-#include "hashGenerator.h"
-
-#ifdef WITHIN_PANDA
-#include "filename.h"
-#include "config_express.h"
-#include "virtualFileSystem.h"
-#include "executionEnvironment.h"
-#include "configVariableList.h"
-#endif
-
-
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::Constructor
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-DCFile::
-DCFile()
+#include "File.h"
+#include "Class.h"
+#include "Switch.h"
+#include "ParserDefs.h"
+#include "LexerDefs.h"
+#include "Typedef.h"
+#include "Keyword.h"
+#include "HashGenerator.h"
+namespace dclass   // open namespace
 {
-	_all_objects_valid = true;
-	_inherited_fields_stale = false;
 
+
+// constructor
+File::File() : m_all_objects_valid(true), m_inherited_fields_stale(false)
+{
 	setup_default_keywords();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::Destructor
-//       Access: Published
-//  Description:
-////////////////////////////////////////////////////////////////////
-DCFile::
-~DCFile()
+//destructor
+File::~File()
 {
 	clear();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::clear
-//       Access: Published
-//  Description: Removes all of the classes defined within the DCFile
-//               and prepares it for reading a new file.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-clear()
+// clear removes all of the classes defined within the
+//     File and prepares it for reading a new file.
+void File::clear()
 {
-	Declarations::iterator di;
-	for(di = _declarations.begin(); di != _declarations.end(); ++di)
+	for(auto it = m_declarations.begin(); it != m_declarations.end(); ++it)
 	{
-		delete(*di);
+		delete(*it);
 	}
-	for(di = _things_to_delete.begin(); di != _things_to_delete.end(); ++di)
+	for(auto it = m_things_to_delete.begin(); it != m_things_to_delete.end(); ++it)
 	{
-		delete(*di);
+		delete(*it);
 	}
 
-	_classes.clear();
-	_imports.clear();
-	_things_by_name.clear();
-	_typedefs.clear();
-	_typedefs_by_name.clear();
-	_keywords.clear_keywords();
-	_declarations.clear();
-	_things_to_delete.clear();
+	m_classes.clear();
+	m_imports.clear();
+	m_things_by_name.clear();
+	m_typedefs.clear();
+	m_typedefs_by_name.clear();
+	m_keywords.clear_keywords();
+	m_declarations.clear();
+	m_things_to_delete.clear();
 	setup_default_keywords();
 
-	_all_objects_valid = true;
-	_inherited_fields_stale = false;
+	m_all_objects_valid = true;
+	m_inherited_fields_stale = false;
 }
 
-#ifdef WITHIN_PANDA
-
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::read_all
-//       Access: Published
-//  Description: This special method reads all of the .dc files named
-//               by the "dc-file" config.prc variable, and loads them
-//               into the DCFile namespace.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-read_all()
+// read opens and reads the indicated .dc file by name.  The distributed classes defined
+//     in the file will be appended to the set of distributed classes already recorded, if any.
+//     Returns true if the file is successfully read, false if there was an error.
+bool File::read(Filename filename)
 {
-	static ConfigVariableList dc_files
-	("dc-file", PRC_DESC("The list of dc files to load."));
-
-	if(dc_files.size() == 0)
-	{
-		cerr << "No files specified via dc-file Config.prc variable!\n";
-		return false;
-	}
-
-	int size = dc_files.size();
-
-	// Load the DC files in opposite order, because we want to load the
-	// least-important (most fundamental) files first.
-	for(int i = size - 1; i >= 0; --i)
-	{
-		string dc_file = ExecutionEnvironment::expand_string(dc_files[i]);
-		Filename filename = Filename::from_os_specific(dc_file);
-		if(!read(filename))
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-#endif  // WITHIN_PANDA
-
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::read
-//       Access: Published
-//  Description: Opens and reads the indicated .dc file by name.  The
-//               distributed classes defined in the file will be
-//               appended to the set of distributed classes already
-//               recorded, if any.
-//
-//               Returns true if the file is successfully read, false
-//               if there was an error (in which case the file might
-//               have been partially read).
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-read(Filename filename)
-{
-#ifdef WITHIN_PANDA
-	filename.set_text();
-	VirtualFileSystem *vfs = VirtualFileSystem::get_global_ptr();
-	istream *in = vfs->open_read_file(filename, true);
-	if(in == (istream *)NULL)
-	{
-		cerr << "Cannot open " << filename << " for reading.\n";
-		return false;
-	}
-	bool okflag = read(*in, filename);
-
-	// For some reason--compiler bug in gcc 3.2?--explicitly deleting
-	// the in pointer does not call the appropriate global delete
-	// function; instead apparently calling the system delete
-	// function.  So we call the delete function by hand instead.
-	vfs->close_read_file(in);
-
-	return okflag;
-
-#else  // WITHIN_PANDA
-
-	pifstream in;
+	std::ifstream in;
 	in.open(filename.c_str());
 
 	if(!in)
 	{
-		cerr << "Cannot open " << filename << " for reading.\n";
+		std::cerr << "Cannot open " << filename << " for reading.\n";
 		return false;
 	}
 
 	return read(in, filename);
-
-#endif  // WITHIN_PANDA
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::read
-//       Access: Published
-//  Description: Parses the already-opened input stream for
-//               distributed class descriptions.  The filename
-//               parameter is optional and is only used when reporting
-//               errors.
-//
-//               The distributed classes defined in the file will be
-//               appended to the set of distributed classes already
-//               recorded, if any.
-//
-//               Returns true if the file is successfully read, false
-//               if there was an error (in which case the file might
-//               have been partially read).
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-read(istream &in, const string &filename)
+// read parses the already-opened input stream for distributed class descriptions.
+//     The filename parameter is optional and is only used when reporting errors.
+//     The distributed classes defined in the file will be appended to the set of
+//     distributed classes already recorded, if any.
+//     Returns true if the file is successfully read, false if there was an error.
+bool File::read(istream &in, const string &filename)
 {
 	dc_init_parser(in, filename, *this);
 	dcyyparse();
@@ -204,68 +90,46 @@ read(istream &in, const string &filename)
 	return (dc_error_count() == 0);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::write
-//       Access: Published
-//  Description: Opens the indicated filename for output and writes a
-//               parseable description of all the known distributed
-//               classes to the file.
-//
-//               Returns true if the description is successfully
-//               written, false otherwise.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-write(Filename filename, bool brief) const
+// write opens the indicated filename for output and writes a parseable
+//     description of all the known distributed classes to the file.
+//     Returns true if the description is successfully written, false otherwise.
+bool File::write(Filename filename, bool brief) const
 {
-	pofstream out;
+	std::ofstream out;
 
-#ifdef WITHIN_PANDA
-	filename.set_text();
-	filename.open_write(out);
-#else
 	out.open(filename.c_str());
-#endif
 
 	if(!out)
 	{
-		cerr << "Can't open " << filename << " for output.\n";
+		std::cerr << "Can't open " << filename << " for output.\n";
 		return false;
 	}
 	return write(out, brief);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::write
-//       Access: Published
-//  Description: Writes a parseable description of all the known
-//               distributed classes to the stream.
-//
-//               Returns true if the description is successfully
-//               written, false otherwise.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-write(ostream &out, bool brief) const
+// write writes a parseable description of all the known distributed classes to the stream.
+//     Returns true if the description is successfully written, false otherwise.
+bool File::write(ostream &out, bool brief) const
 {
-	if(!_imports.empty())
+	if(!m_imports.empty())
 	{
-		Imports::const_iterator ii;
-		for(ii = _imports.begin(); ii != _imports.end(); ++ii)
+		for(auto imp_it = m_imports.begin(); imp_it != m_imports.end(); ++imp_it)
 		{
-			const Import &import = (*ii);
-			if(import._symbols.empty())
+			const Import &import = (*imp_it);
+			if(import.m_symbols.empty())
 			{
-				out << "import " << import._module << "\n";
+				out << "import " << import.m_module << "\n";
 			}
 			else
 			{
-				out << "from " << import._module << " import ";
-				ImportSymbols::const_iterator si = import._symbols.begin();
-				out << *si;
-				++si;
-				while(si != import._symbols.end())
+				out << "from " << import.m_module << " import ";
+				auto sym_it = import.m_symbols.begin())
+				out << *sym_it;
+				++sym_it;
+				while(sym_it != import.m_symbols.end())
 				{
-					out << ", " << *si;
-					++si;
+					out << ", " << *sym_it;
+					++sym_it;
 				}
 				out << "\n";
 			}
@@ -273,272 +137,172 @@ write(ostream &out, bool brief) const
 		out << "\n";
 	}
 
-	Declarations::const_iterator di;
-	for(di = _declarations.begin(); di != _declarations.end(); ++di)
+
+	for(auto it = m_declarations.begin(); it != m_declarations.end(); ++it)
 	{
-		(*di)->write(out, brief, 0);
+		(*it)->write(out, brief, 0);
 		out << "\n";
 	}
 
 	return !out.fail();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_num_classes
-//       Access: Published
-//  Description: Returns the number of classes read from the .dc
-//               file(s).
-////////////////////////////////////////////////////////////////////
-int DCFile::
-get_num_classes() const
+// get_num_classes returns the number of classes read from the .dc file(s).
+int File::get_num_classes() const
 {
-	return _classes.size();
+	return m_classes.size();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_class
-//       Access: Published
-//  Description: Returns the nth class read from the .dc file(s).
-////////////////////////////////////////////////////////////////////
-DCClass *DCFile::
-get_class(int n) const
+// get_class returns the nth class read from the .dc file(s).
+Class* File::get_class(int n) const
 {
-	nassertr(n >= 0 && n < (int)_classes.size(), NULL);
-	return _classes[n];
+	nassertr(n >= 0 && n < (int)m_classes.size(), NULL);
+	return m_classes[n];
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_class_by_name
-//       Access: Published
-//  Description: Returns the class that has the indicated name, or
-//               NULL if there is no such class.
-////////////////////////////////////////////////////////////////////
-DCClass *DCFile::
-get_class_by_name(const string &name) const
+// get_class_by_name returns the class that has the indicated name,
+//     or NULL if there is no such class.
+Class* File::get_class_by_name(const string &name) const
 {
-	ThingsByName::const_iterator ni;
-	ni = _things_by_name.find(name);
-	if(ni != _things_by_name.end())
+	auto class_it = m_things_by_name.find(name);
+	if(class_it != m_things_by_name.end())
 	{
-		return (*ni).second->as_class();
+		return class_it->second->as_class();
 	}
 
-	return (DCClass *)NULL;
+	return (Class*)NULL;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_switch_by_name
-//       Access: Published
-//  Description: Returns the switch that has the indicated name, or
-//               NULL if there is no such switch.
-////////////////////////////////////////////////////////////////////
-DCSwitch *DCFile::
-get_switch_by_name(const string &name) const
+// get_switch_by_name returns the switch that has the indicated name,
+//     or NULL if there is no such switch.
+Switch* File::get_switch_by_name(const string &name) const
 {
-	ThingsByName::const_iterator ni;
-	ni = _things_by_name.find(name);
-	if(ni != _things_by_name.end())
+	auto switch_it = m_things_by_name.find(name);
+	if(switch_it != m_things_by_name.end())
 	{
-		return (*ni).second->as_switch();
+		return switch_it->second->as_switch();
 	}
 
-	return (DCSwitch *)NULL;
+	return (Switch*)NULL;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_field_by_index
-//       Access: Published, Static
-//  Description: Returns a pointer to the one DCField that has the
-//               indicated index number, of all the DCFields across
-//               all classes in the file.
-//
-//               This method is only valid if dc-multiple-inheritance
-//               is set true in the Config.prc file.  Without this
-//               setting, different DCFields may share the same index
-//               number, so this global lookup is not possible.
-////////////////////////////////////////////////////////////////////
-DCField *DCFile::
-get_field_by_index(int index_number) const
+// get_field_by_index returns a pointer to the one Field that has the indicated
+//     index number, of all the Fields across all classes in the file.
+//     This method is only valid if dc-multiple-inheritance is set true in the
+//     Config.prc file.  Without this setting, different Fields may share the
+//     same index number, so this global lookup is not possible.
+Field* File::get_field_by_index(int index_number) const
 {
 	nassertr(dc_multiple_inheritance, NULL);
 
-	if(index_number >= 0 && index_number < (int)_fields_by_index.size())
+	if(index_number >= 0 && index_number < (int)m_fields_by_index.size())
 	{
-		return _fields_by_index[index_number];
+		return m_fields_by_index[index_number];
 	}
 
 	return NULL;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_num_import_modules
-//       Access: Published
-//  Description: Returns the number of import lines read from the .dc
-//               file(s).
-////////////////////////////////////////////////////////////////////
-int DCFile::
-get_num_import_modules() const
+// get_num_import_modules returns the number of import lines read from the .dc file(s).
+int File::get_num_import_modules() const
 {
 	return _imports.size();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_import_module
-//       Access: Published
-//  Description: Returns the module named by the nth import line read
-//               from the .dc file(s).
-////////////////////////////////////////////////////////////////////
-string DCFile::
-get_import_module(int n) const
+// get_import_module returns the module named by the nth import line read from the .dc file(s).
+string File::get_import_module(int n) const
 {
-	nassertr(n >= 0 && n < (int)_imports.size(), string());
-	return _imports[n]._module;
+	nassertr(n >= 0 && n < (int)m_imports.size(), string());
+	return m_imports[n]._module;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_num_import_symbols
-//       Access: Published
-//  Description: Returns the number of symbols explicitly imported by
-//               the nth import line.  If this is 0, the line is
-//               "import modulename"; if it is more than 0, the line
-//               is "from modulename import symbol, symbol ... ".
-////////////////////////////////////////////////////////////////////
-int DCFile::
-get_num_import_symbols(int n) const
+// get_num_import_symbols returns the number of symbols explicitly imported by
+//     the nth import line.  If this is 0, the line is "import modulename";
+//     if it is more than 0, the line is "from modulename import symbol, symbol ... ".
+int File::get_num_import_symbols(int n) const
 {
-	nassertr(n >= 0 && n < (int)_imports.size(), 0);
-	return _imports[n]._symbols.size();
+	nassertr(n >= 0 && n < (int)m_imports.size(), 0);
+	return m_imports[n].m_symbols.size();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_import_symbol
-//       Access: Published
-//  Description: Returns the ith symbol named by the nth import line
-//               read from the .dc file(s).
-////////////////////////////////////////////////////////////////////
-string DCFile::
-get_import_symbol(int n, int i) const
+// get_import_symbol returns the ith symbol named by the nth import line read from the .dc file(s).
+string File::get_import_symbol(int n, int i) const
 {
-	nassertr(n >= 0 && n < (int)_imports.size(), string());
-	nassertr(i >= 0 && i < (int)_imports[n]._symbols.size(), string());
-	return _imports[n]._symbols[i];
+	nassertr(n >= 0 && n < (int)m_imports.size(), string());
+	nassertr(i >= 0 && i < (int)m_imports[n].m_symbols.size(), string());
+	return m_imports[n].m_symbols[i];
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_num_typedefs
-//       Access: Published
-//  Description: Returns the number of typedefs read from the .dc
-//               file(s).
-////////////////////////////////////////////////////////////////////
-int DCFile::
-get_num_typedefs() const
+// get_num_typedefs returns the number of typedefs read from the .dc file(s).
+int File::get_num_typedefs() const
 {
-	return _typedefs.size();
+	return m_typedefs.size();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_typedef
-//       Access: Published
-//  Description: Returns the nth typedef read from the .dc file(s).
-////////////////////////////////////////////////////////////////////
-DCTypedef *DCFile::
-get_typedef(int n) const
+// get_typedef returns the nth typedef read from the .dc file(s).
+Typedef *File::get_typedef(int n) const
 {
-	nassertr(n >= 0 && n < (int)_typedefs.size(), NULL);
-	return _typedefs[n];
+	nassertr(n >= 0 && n < (int)m_typedefs.size(), NULL);
+	return m_typedefs[n];
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_typedef_by_name
-//       Access: Published
-//  Description: Returns the typedef that has the indicated name, or
-//               NULL if there is no such typedef name.
-////////////////////////////////////////////////////////////////////
-DCTypedef *DCFile::
-get_typedef_by_name(const string &name) const
+// get_typedef_by_name returns the typedef that has the indicated name,
+//     or NULL if there is no such typedef name.
+Typedef *File::get_typedef_by_name(const string &name) const
 {
-	TypedefsByName::const_iterator ni;
-	ni = _typedefs_by_name.find(name);
-	if(ni != _typedefs_by_name.end())
+	auto typ_it = m_typedefs_by_name.find(name);
+	if(typ_it != m_typedefs_by_name.end())
 	{
-		return (*ni).second;
+		return typ_it->second;
 	}
 
 	return NULL;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_num_keywords
-//       Access: Published
-//  Description: Returns the number of keywords read from the .dc
-//               file(s).
-////////////////////////////////////////////////////////////////////
-int DCFile::
-get_num_keywords() const
+// get_num_keywords returns the number of keywords read from the .dc file(s).
+int File::get_num_keywords() const
 {
-	return _keywords.get_num_keywords();
+	return m_keywords.get_num_keywords();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_keyword
-//       Access: Published
-//  Description: Returns the nth keyword read from the .dc file(s).
-////////////////////////////////////////////////////////////////////
-const DCKeyword *DCFile::
-get_keyword(int n) const
+// get_keyword returns the nth keyword read from the .dc file(s).
+const Keyword *File::get_keyword(int n) const
 {
-	return _keywords.get_keyword(n);
+	return m_keywords.get_keyword(n);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_keyword_by_name
-//       Access: Published
-//  Description: Returns the keyword that has the indicated name, or
-//               NULL if there is no such keyword name.
-////////////////////////////////////////////////////////////////////
-const DCKeyword *DCFile::
-get_keyword_by_name(const string &name) const
+// get_keyword_by_name returns the keyword that has the indicated name,
+//     or NULL if there is no such keyword name.
+const Keyword *File::get_keyword_by_name(const string &name) const
 {
-	const DCKeyword *keyword = _keywords.get_keyword_by_name(name);
-	if(keyword == (const DCKeyword *)NULL)
+	const Keyword *keyword = _keywords.get_keyword_by_name(name);
+	if(keyword == (const Keyword*)NULL)
 	{
-		keyword = _default_keywords.get_keyword_by_name(name);
-		if(keyword != (const DCKeyword *)NULL)
+		keyword = m_default_keywords.get_keyword_by_name(name);
+		if(keyword != (const Keyword*)NULL)
 		{
 			// One of the historical default keywords was used, but wasn't
 			// defined.  Define it implicitly right now.
-			((DCFile *)this)->_keywords.add_keyword(keyword);
+			((File*)this)->m_keywords.add_keyword(keyword);
 		}
 	}
 
 	return keyword;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::get_hash
-//       Access: Published
-//  Description: Returns a 32-bit hash index associated with this
-//               file.  This number is guaranteed to be consistent if
-//               the contents of the file have not changed, and it is
-//               very likely to be different if the contents of the
-//               file do change.
-////////////////////////////////////////////////////////////////////
-unsigned long DCFile::
-get_hash() const
+// get_hash returns a 32-bit hash index associated with this file.
+//     This number is guaranteed to be consistent if the contents of the file
+//     have not changed, and it is very likely to be different if the
+//     contents of the file do change.
+unsigned long File::get_hash() const
 {
 	HashGenerator hashgen;
 	generate_hash(hashgen);
 	return hashgen.get_hash();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::generate_hash
-//       Access: Public, Virtual
-//  Description: Accumulates the properties of this file into the
-//               hash.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-generate_hash(HashGenerator &hashgen) const
+// generate_hash accumulates the properties of this file into the hash.
+void File::generate_hash(HashGenerator &hashgen) const
 {
 	if(dc_virtual_inheritance)
 	{
@@ -553,30 +317,22 @@ generate_hash(HashGenerator &hashgen) const
 		}
 	}
 
-	hashgen.add_int(_classes.size());
-	Classes::const_iterator ci;
-	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	hashgen.add_int(m_classes.size());
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		(*ci)->generate_hash(hashgen);
+		(*it)->generate_hash(hashgen);
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_class
-//       Access: Public
-//  Description: Adds the newly-allocated distributed class definition
-//               to the file.  The DCFile becomes the owner of the
-//               pointer and will delete it when it destructs.
-//               Returns true if the class is successfully added, or
-//               false if there was a name conflict.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-add_class(DCClass *dclass)
+// add_class adds the newly-allocated distributed class definition to the file.
+//     The File becomes the owner of the pointer and will delete it when it destructs.
+//     Returns true if the class is successfully added, or false if there was a name conflict.
+bool File::add_class(Class *dclass)
 {
 	if(!dclass->get_name().empty())
 	{
-		bool inserted = _things_by_name.insert
-		                (ThingsByName::value_type(dclass->get_name(), dclass)).second;
+		bool inserted = m_things_by_name.insert(
+			std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
 
 		if(!inserted)
 		{
@@ -588,41 +344,34 @@ add_class(DCClass *dclass)
 	{
 		dclass->set_number(get_num_classes());
 	}
-	_classes.push_back(dclass);
+	m_classes.push_back(dclass);
 
 	if(dclass->is_bogus_class())
 	{
-		_all_objects_valid = false;
+		m_all_objects_valid = false;
 	}
 
 	if(!dclass->is_bogus_class())
 	{
-		_declarations.push_back(dclass);
+		m_declarations.push_back(dclass);
 	}
 	else
 	{
-		_things_to_delete.push_back(dclass);
+		m_things_to_delete.push_back(dclass);
 	}
 
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_switch
-//       Access: Public
-//  Description: Adds the newly-allocated switch definition
-//               to the file.  The DCFile becomes the owner of the
-//               pointer and will delete it when it destructs.
-//               Returns true if the switch is successfully added, or
-//               false if there was a name conflict.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-add_switch(DCSwitch *dswitch)
+// add_switch adds the newly-allocated switch definition to the file.
+//     The File becomes the owner of the pointer and will delete it when it destructs.
+//     Returns true if the switch is successfully added, or false if there was a name conflict.
+bool File::add_switch(Switch *dswitch)
 {
 	if(!dswitch->get_name().empty())
 	{
-		bool inserted = _things_by_name.insert
-		                (ThingsByName::value_type(dswitch->get_name(), dswitch)).second;
+		bool inserted = m_things_by_name.insert(
+			std::map<std::string, Declaration*>::value_type(dswitch->get_name(), dswitch)).second;
 
 		if(!inserted)
 		{
@@ -630,57 +379,38 @@ add_switch(DCSwitch *dswitch)
 		}
 	}
 
-	_declarations.push_back(dswitch);
+	m_declarations.push_back(dswitch);
 
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_import_module
-//       Access: Public
-//  Description: Adds a new name to the list of names of Python
-//               modules that are to be imported by the client or AI
-//               to define the code that is associated with the class
-//               interfaces named within the .dc file.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-add_import_module(const string &import_module)
+// add_import_module adds a new name to the list of names of Python modules that
+//     are to be imported by the client or AI to define the code that is associated
+//     with the class interfaces named within the .dc file.
+void File::add_import_module(const string &import_module)
 {
 	Import import;
-	import._module = import_module;
-	_imports.push_back(import);
+	import.m_module = import_module;
+	m_imports.push_back(import);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_import_symbol
-//       Access: Public
-//  Description: Adds a new name to the list of symbols that are to be
-//               explicitly imported from the most-recently added
-//               module, e.g. "from module_name import symbol".  If
-//               the list of symbols is empty, the syntax is taken to
-//               be "import module_name".
-////////////////////////////////////////////////////////////////////
-void DCFile::
-add_import_symbol(const string &import_symbol)
+// add_import_symbol adds a new name to the list of symbols that are to be
+//     explicitly imported from the most-recently added module, e.g.
+//     "from module_name import symbol".  If the list of symbols is empty,
+//     the syntax is taken to  be "import module_name".
+void File::add_import_symbol(const string &import_symbol)
 {
-	nassertv(!_imports.empty());
-	_imports.back()._symbols.push_back(import_symbol);
+	nassertv(!m_imports.empty());
+	m_imports.back().m_symbols.push_back(import_symbol);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_typedef
-//       Access: Public
-//  Description: Adds the newly-allocated distributed typedef definition
-//               to the file.  The DCFile becomes the owner of the
-//               pointer and will delete it when it destructs.
-//               Returns true if the typedef is successfully added, or
-//               false if there was a name conflict.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-add_typedef(DCTypedef *dtypedef)
+// add_typedef adds the newly-allocated distributed typedef definition to the file.
+//     The File becomes the owner of the pointer and will delete it when it destructs.
+//     Returns true if the typedef is successfully added, or  false if there was a name conflict.
+bool File::add_typedef(Typedef *dtypedef)
 {
-	bool inserted = _typedefs_by_name.insert
-	                (TypedefsByName::value_type(dtypedef->get_name(), dtypedef)).second;
+	bool inserted = m_typedefs_by_name.insert(
+		std::map<std::string, Typedef*>::value_type(dtypedef->get_name(), dtypedef)).second;
 
 	if(!inserted)
 	{
@@ -688,42 +418,36 @@ add_typedef(DCTypedef *dtypedef)
 	}
 
 	dtypedef->set_number(get_num_typedefs());
-	_typedefs.push_back(dtypedef);
+	m_typedefs.push_back(dtypedef);
 
 	if(dtypedef->is_bogus_typedef())
 	{
-		_all_objects_valid = false;
+		m_all_objects_valid = false;
 	}
 
 	if(!dtypedef->is_bogus_typedef() && !dtypedef->is_implicit_typedef())
 	{
-		_declarations.push_back(dtypedef);
+		m_declarations.push_back(dtypedef);
 	}
 	else
 	{
-		_things_to_delete.push_back(dtypedef);
+		m_things_to_delete.push_back(dtypedef);
 	}
 
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_keyword
-//       Access: Public
-//  Description: Adds the indicated keyword string to the list of
-//               keywords known to the DCFile.  These keywords may
-//               then be added to DCFields.  It is not an error to add
-//               a particular keyword more than once.
-////////////////////////////////////////////////////////////////////
-bool DCFile::
-add_keyword(const string &name)
+// add_keyword adds the indicated keyword string to the list of keywords known to the File.
+//     These keywords may then be added to Fields.
+//     It is not an error to add a particular keyword more than once.
+bool File::add_keyword(const string &name)
 {
-	DCKeyword *keyword = new DCKeyword(name);
-	bool added = _keywords.add_keyword(keyword);
+	Keyword *keyword = new Keyword(name);
+	bool added = m_keywords.add_keyword(keyword);
 
 	if(added)
 	{
-		_declarations.push_back(keyword);
+		m_declarations.push_back(keyword);
 	}
 	else
 	{
@@ -733,44 +457,25 @@ add_keyword(const string &name)
 	return added;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::add_thing_to_delete
-//       Access: Public
-//  Description: Adds the indicated declaration to the list of
-//               declarations that are not reported with the file, but
-//               will be deleted when the DCFile object destructs.
-//               That is, transfers ownership of the indicated pointer
-//               to the DCFile.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-add_thing_to_delete(DCDeclaration *decl)
+// add_thing_to_delete adds the indicated declaration to the list of declarations
+//     that are not reported with the file, but will be deleted when the File object destructs.
+//     That is, transfers ownership of the indicated pointer to the File.
+void File::add_thing_to_delete(Declaration *decl)
 {
-	_things_to_delete.push_back(decl);
+	m_things_to_delete.push_back(decl);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::set_new_index_number
-//       Access: Public
-//  Description: Sets the next sequential available index number on
-//               the indicated field.  This is only meant to be called
-//               by DCClass::add_field(), while the dc file is being
-//               parsed.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-set_new_index_number(DCField *field)
+// set_new_index_number sets the next sequential available index number on the indicated field.
+//     This is only meant to be called by Class::add_field(), while the dc file is being parsed.
+void File::set_new_index_number(Field *field)
 {
-	field->set_number((int)_fields_by_index.size());
-	_fields_by_index.push_back(field);
+	field->set_number((int)m_fields_by_index.size());
+	m_fields_by_index.push_back(field);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::setup_default_keywords
-//       Access: Private
-//  Description: Adds an entry for each of the default keywords that
-//               are defined for every DCFile for legacy reasons.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-setup_default_keywords()
+// setup_default_keywords adds an entry for each of the default keywords
+//     that are defined for every File for legacy reasons.
+void File::setup_default_keywords()
 {
 	struct KeywordDef
 	{
@@ -791,36 +496,32 @@ setup_default_keywords()
 		{ NULL, 0 }
 	};
 
-	_default_keywords.clear_keywords();
+	m_default_keywords.clear_keywords();
 	for(int i = 0; default_keywords[i].name != NULL; ++i)
 	{
-		DCKeyword *keyword =
-		    new DCKeyword(default_keywords[i].name,
+		Keyword *keyword =
+		    new Keyword(default_keywords[i].name,
 		                  default_keywords[i].flag);
 
-		_default_keywords.add_keyword(keyword);
-		_things_to_delete.push_back(keyword);
+		m_default_keywords.add_keyword(keyword);
+		m_things_to_delete.push_back(keyword);
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCFile::rebuild_inherited_fields
-//       Access: Private
-//  Description: Reconstructs the inherited fields table of all
-//               classes.
-////////////////////////////////////////////////////////////////////
-void DCFile::
-rebuild_inherited_fields()
+// rebuild_inherited_fields reconstructs the inherited fields table of all classes.
+void File::rebuild_inherited_fields()
 {
-	_inherited_fields_stale = false;
+	m_inherited_fields_stale = false;
 
-	Classes::iterator ci;
-	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		(*ci)->clear_inherited_fields();
+		(*it)->clear_inherited_fields();
 	}
-	for(ci = _classes.begin(); ci != _classes.end(); ++ci)
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		(*ci)->rebuild_inherited_fields();
+		(*it)->rebuild_inherited_fields();
 	}
 }
+
+
+} // close namespace dclass
