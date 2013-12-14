@@ -1,86 +1,107 @@
-// Filename: dcParameter.h
-// Created by:  drose (15Jun04)
+// Filename: Parameter.h
+// Created by: drose (15 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPARAMETER_H
-#define DCPARAMETER_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcField.h"
-#include "dcNumericRange.h"
+#include "Field.h"
+#include "NumericRange.h"
+namespace dclass   // open namespace dclass
+{
 
-class DCSimpleParameter;
-class DCClassParameter;
-class DCArrayParameter;
-class DCTypedef;
+
+// Foward declarations
+class SimpleParameter;
+class ClassParameter;
+class ArrayParameter;
+class Typedef;
 class HashGenerator;
 
-////////////////////////////////////////////////////////////////////
-//       Class : DCParameter
-// Description : Represents the type specification for a single
-//               parameter within a field specification.  This may be
-//               a simple type, or it may be a class or an array
-//               reference.
-//
-//               This may also be a typedef reference to another type,
-//               which has the same properties as the referenced type,
-//               but a different name.
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCParameter : public DCField
+// A Parameter represents the type specification for a single parameter within a field specification.
+//     This may be a simple type, or it may be a class or an array reference.
+//     This may also be a typedef reference to another type, which has the same properties as
+//     the referenced type, but a different name.
+class EXPCL_DIRECT Parameter : public Field
 {
 	protected:
-		DCParameter();
-		DCParameter(const DCParameter &copy);
+		// null constructor
+		Parameter();
+		// copy constructor
+		Parameter(const Parameter &copy);
 	public:
-		virtual ~DCParameter();
+		virtual ~Parameter();
 
 	PUBLISHED:
-		virtual DCParameter *as_parameter();
-		virtual const DCParameter *as_parameter() const;
-		virtual DCSimpleParameter *as_simple_parameter();
-		virtual const DCSimpleParameter *as_simple_parameter() const;
-		virtual DCClassParameter *as_class_parameter();
-		virtual const DCClassParameter *as_class_parameter() const;
-		virtual DCSwitchParameter *as_switch_parameter();
-		virtual const DCSwitchParameter *as_switch_parameter() const;
-		virtual DCArrayParameter *as_array_parameter();
-		virtual const DCArrayParameter *as_array_parameter() const;
+		// as_parameter returns the same field pointer converted to a parameter,
+		//     if this is in fact a parameter; otherwise, returns NULL.
+		virtual Parameter *as_parameter();
+		virtual const Parameter *as_parameter() const;
 
-		virtual DCParameter *make_copy() const = 0;
+		// as_simple_parameter returns the same parameter pointer converted to a simple parameter,
+		//     if this is in fact a simple parameter; otherwise, returns NULL.
+		virtual SimpleParameter *as_simple_parameter();
+		virtual const SimpleParameter *as_simple_parameter() const;
+
+		// as_class_parameter returns the same parameter pointer converted to a class parameter,
+		//     if this is in fact a class parameter; otherwise, returns NULL.
+		virtual ClassParameter *as_class_parameter();
+		virtual const ClassParameter *as_class_parameter() const;
+
+		// as_switch_parameter returns the same parameter pointer converted to a switch parameter,
+		//     if this is in fact a switch parameter; otherwise, returns NULL.
+		virtual SwitchParameter *as_switch_parameter();
+		virtual const SwitchParameter *as_switch_parameter() const;
+
+		// as_array_parameter returns the same parameter pointer converted to an array parameter,
+		//     if this is in fact an array parameter; otherwise, returns NULL.
+		virtual ArrayParameter *as_array_parameter();
+		virtual const ArrayParameter *as_array_parameter() const;
+
+		virtual Parameter *make_copy() const = 0;
 		virtual bool is_valid() const = 0;
 
-		const DCTypedef *get_typedef() const;
+		// get_typedef returns the Typedef instance if this type has been referenced from a typedef, or NULL.
+		const Typedef *get_typedef() const;
 
 	public:
-		void set_typedef(const DCTypedef *dtypedef);
-		virtual DCParameter *append_array_specification(const DCUnsignedIntRange &size);
+		// set_typedef records the Typedef object that generated this parameter.
+		//     This is normally called only from Typedef::make_new_parameter().
+		void set_typedef(const Typedef *dtypedef);
 
+		// append_array_specification returns the type represented by this_type[size].
+		//     In the case of a generic Parameter, it returns an ArrayParameter wrapped around this type.
+		virtual Parameter *append_array_specification(const UnsignedIntRange &size);
+
+		// output and write write a representation of the parameter to an output stream.
 		virtual void output(ostream &out, bool brief) const;
 		virtual void write(ostream &out, bool brief, int indent_level) const;
+
+		// output_instance and write_instance format the parameter in .dc file syntax.
 		virtual void output_instance(ostream &out, bool brief, const string &prename,
 		                             const string &name, const string &postname) const = 0;
 		virtual void write_instance(ostream &out, bool brief, int indent_level,
 		                            const string &prename, const string &name,
 		                            const string &postname) const;
+
+		// output_typedef_name formats the instance like output_instance, but uses the typedef name instead.
 		void output_typedef_name(ostream &out, bool brief, const string &prename,
 		                         const string &name, const string &postname) const;
 		void write_typedef_name(ostream &out, bool brief, int indent_level,
 		                        const string &prename, const string &name,
 		                        const string &postname) const;
+
+		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	private:
-		const DCTypedef *_typedef;
+		const Typedef *m_typedef;
 };
 
-#endif
+
+} // close namespace dclass
