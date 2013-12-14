@@ -1,42 +1,41 @@
-// Filename: dcPackerCatalog.cxx
-// Created by:  drose (21Jun04)
+// Filename: PackerCatalog.cxx
+// Created by: drose (21 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#include "dcPackerCatalog.h"
-#include "dcPackerInterface.h"
-#include "dcPacker.h"
-#include "dcSwitchParameter.h"
+#include "PackerCatalog.h"
+#include "PackerInterface.h"
+#include "Packer.h"
+#include "SwitchParameter.h"
+namespace dclass   // open namespace dclass
+{
+
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::Constructor
+//     Function: PackerCatalog::Constructor
 //       Access: Private
 //  Description: The catalog is created only by
-//               DCPackerInterface::get_catalog().
+//               PackerInterface::get_catalog().
 ////////////////////////////////////////////////////////////////////
-DCPackerCatalog::
-DCPackerCatalog(const DCPackerInterface *root) : _root(root)
+PackerCatalog::
+PackerCatalog(const PackerInterface *root) : _root(root)
 {
 	_live_catalog = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::Copy Constructor
+//     Function: PackerCatalog::Copy Constructor
 //       Access: Private
 //  Description: The copy constructor is used only internally, in
 //               update_switch_fields().
 ////////////////////////////////////////////////////////////////////
-DCPackerCatalog::
-DCPackerCatalog(const DCPackerCatalog &copy) :
+PackerCatalog::
+PackerCatalog(const PackerCatalog &copy) :
 	_root(copy._root),
 	_entries(copy._entries),
 	_entries_by_name(copy._entries_by_name),
@@ -46,13 +45,13 @@ DCPackerCatalog(const DCPackerCatalog &copy) :
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::Destructor
+//     Function: PackerCatalog::Destructor
 //       Access: Private
 //  Description: The catalog is destroyed only by
-//               ~DCPackerInterface().
+//               ~PackerInterface().
 ////////////////////////////////////////////////////////////////////
-DCPackerCatalog::
-~DCPackerCatalog()
+PackerCatalog::
+~PackerCatalog()
 {
 	if(_live_catalog != (LiveCatalog *)NULL)
 	{
@@ -67,14 +66,14 @@ DCPackerCatalog::
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::find_entry_by_name
+//     Function: PackerCatalog::find_entry_by_name
 //       Access: Public
 //  Description: Returns the index number of the entry with the
 //               indicated name, or -1 if no entry has the indicated
 //               name.  The return value is suitable for passing to
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
-int DCPackerCatalog::
+int PackerCatalog::
 find_entry_by_name(const string &name) const
 {
 	EntriesByName::const_iterator ni;
@@ -87,15 +86,15 @@ find_entry_by_name(const string &name) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::find_entry_by_field
+//     Function: PackerCatalog::find_entry_by_field
 //       Access: Public
 //  Description: Returns the index number of the entry with the
 //               indicated field, or -1 if no entry has the indicated
 //               field.  The return value is suitable for passing to
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
-int DCPackerCatalog::
-find_entry_by_field(const DCPackerInterface *field) const
+int PackerCatalog::
+find_entry_by_field(const PackerInterface *field) const
 {
 	EntriesByField::const_iterator ni;
 	ni = _entries_by_field.find(field);
@@ -107,7 +106,7 @@ find_entry_by_field(const DCPackerInterface *field) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::get_live_catalog
+//     Function: PackerCatalog::get_live_catalog
 //       Access: Public
 //  Description: Returns a LiveCatalog object indicating the positions
 //               within the indicated data record of each field within
@@ -118,7 +117,7 @@ find_entry_by_field(const DCPackerInterface *field) const
 //               LiveCatalog object that must be freed with a later
 //               call to release_live_catalog().
 ////////////////////////////////////////////////////////////////////
-const DCPackerCatalog::LiveCatalog *DCPackerCatalog::
+const PackerCatalog::LiveCatalog *PackerCatalog::
 get_live_catalog(const char *data, size_t length) const
 {
 	if(_live_catalog != (LiveCatalog *)NULL)
@@ -139,10 +138,10 @@ get_live_catalog(const char *data, size_t length) const
 		live_catalog->_live_entries.push_back(zero_entry);
 	}
 
-	DCPacker packer;
+	Packer packer;
 	packer.set_unpack_data(data, length, false);
 	packer.begin_unpack(_root);
-	const DCSwitchParameter *last_switch = NULL;
+	const SwitchParameter *last_switch = NULL;
 	r_fill_live_catalog(live_catalog, packer, last_switch);
 	bool okflag = packer.end_unpack();
 
@@ -157,14 +156,14 @@ get_live_catalog(const char *data, size_t length) const
 		// If our root field has a fixed structure, then the live catalog
 		// will always be the same every time, so we might as well keep
 		// this one around as an optimization.
-		((DCPackerCatalog *)this)->_live_catalog = live_catalog;
+		((PackerCatalog *)this)->_live_catalog = live_catalog;
 	}
 
 	return live_catalog;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::release_live_catalog
+//     Function: PackerCatalog::release_live_catalog
 //       Access: Public
 //  Description: Releases the LiveCatalog object that was returned by
 //               an earlier call to get_live_catalog().  If this
@@ -175,8 +174,8 @@ get_live_catalog(const char *data, size_t length) const
 //               match a call to get_live_catalog() with a later call
 //               to release_live_catalog().
 ////////////////////////////////////////////////////////////////////
-void DCPackerCatalog::
-release_live_catalog(const DCPackerCatalog::LiveCatalog *live_catalog) const
+void PackerCatalog::
+release_live_catalog(const PackerCatalog::LiveCatalog *live_catalog) const
 {
 	if(live_catalog != _live_catalog)
 	{
@@ -185,14 +184,14 @@ release_live_catalog(const DCPackerCatalog::LiveCatalog *live_catalog) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::add_entry
+//     Function: PackerCatalog::add_entry
 //       Access: Private
-//  Description: Called only by DCPackerInterface::r_fill_catalog(),
+//  Description: Called only by PackerInterface::r_fill_catalog(),
 //               this adds a new entry to the catalog.
 ////////////////////////////////////////////////////////////////////
-void DCPackerCatalog::
-add_entry(const string &name, const DCPackerInterface *field,
-          const DCPackerInterface *parent, int field_index)
+void PackerCatalog::
+add_entry(const string &name, const PackerInterface *field,
+          const PackerInterface *parent, int field_index)
 {
 	Entry entry;
 	entry._name = name;
@@ -223,20 +222,20 @@ add_entry(const string &name, const DCPackerInterface *field,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::r_fill_catalog
+//     Function: PackerCatalog::r_fill_catalog
 //       Access: Private
-//  Description: Called by DCPackerInterface to recursively fill up a
+//  Description: Called by PackerInterface to recursively fill up a
 //               newly-allocated reference catalog.  Also called by
 //               update_switch_fields to append fields to a catalog
-//               after a DCSwitch node is selected.
+//               after a Switch node is selected.
 ////////////////////////////////////////////////////////////////////
-void DCPackerCatalog::
-r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
-               const DCPackerInterface *parent, int field_index)
+void PackerCatalog::
+r_fill_catalog(const string &name_prefix, const PackerInterface *field,
+               const PackerInterface *parent, int field_index)
 {
 	string next_name_prefix = name_prefix;
 
-	if(parent != (const DCPackerInterface *)NULL && !field->get_name().empty())
+	if(parent != (const PackerInterface *)NULL && !field->get_name().empty())
 	{
 		// Record this entry in the catalog.
 		next_name_prefix += field->get_name();
@@ -245,10 +244,10 @@ r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
 		next_name_prefix += ".";
 	}
 
-	const DCSwitchParameter *switch_parameter = field->as_switch_parameter();
-	if(switch_parameter != (DCSwitchParameter *)NULL)
+	const SwitchParameter *switch_parameter = field->as_switch_parameter();
+	if(switch_parameter != (SwitchParameter *)NULL)
 	{
-		// If we come upon a DCSwitch while building the catalog, save the
+		// If we come upon a Switch while building the catalog, save the
 		// name_prefix at this point so we'll have it again when we later
 		// encounter the switch while unpacking a live record (and so we
 		// can return to this point in the recursion from
@@ -263,8 +262,8 @@ r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
 		// It's ok if num_nested is -1.
 		for(int i = 0; i < num_nested; i++)
 		{
-			DCPackerInterface *nested = field->get_nested_field(i);
-			if(nested != (DCPackerInterface *)NULL)
+			PackerInterface *nested = field->get_nested_field(i);
+			if(nested != (PackerInterface *)NULL)
 			{
 				r_fill_catalog(next_name_prefix, nested, field, i);
 			}
@@ -273,17 +272,17 @@ r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::r_fill_live_catalog
+//     Function: PackerCatalog::r_fill_live_catalog
 //       Access: Private
 //  Description: Recursively walks through all of the fields on the
 //               catalog and fills the live catalog with the
 //               appropriate offsets.
 ////////////////////////////////////////////////////////////////////
-void DCPackerCatalog::
-r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
-                    const DCSwitchParameter *&last_switch) const
+void PackerCatalog::
+r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer,
+                    const SwitchParameter *&last_switch) const
 {
-	const DCPackerInterface *current_field = packer.get_current_field();
+	const PackerInterface *current_field = packer.get_current_field();
 
 	int field_index = live_catalog->find_entry_by_field(current_field);
 	if(field_index >= 0)
@@ -315,15 +314,15 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
 
 	if(last_switch != packer.get_last_switch())
 	{
-		// We've just invoked a new DCSwitch.  That means we must add the
+		// We've just invoked a new Switch.  That means we must add the
 		// new fields revealed by the switch to the reference catalog.
 		last_switch = packer.get_last_switch();
 
-		const DCPackerInterface *switch_case = packer.get_current_parent();
-		nassertv(switch_case != (DCPackerInterface *)NULL);
-		const DCPackerCatalog *switch_catalog =
+		const PackerInterface *switch_case = packer.get_current_parent();
+		nassertv(switch_case != (PackerInterface *)NULL);
+		const PackerCatalog *switch_catalog =
 		    live_catalog->_catalog->update_switch_fields(last_switch, switch_case);
-		nassertv(switch_catalog != (DCPackerCatalog *)NULL);
+		nassertv(switch_catalog != (PackerCatalog *)NULL);
 		live_catalog->_catalog = switch_catalog;
 
 		// And we also have to expand the live catalog to hold the new
@@ -341,9 +340,9 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::update_switch_fields
+//     Function: PackerCatalog::update_switch_fields
 //       Access: Private
-//  Description: Returns a new DCPackerCatalog that includes all of
+//  Description: Returns a new PackerCatalog that includes all of
 //               the fields in this object, with the addition of the
 //               fields named by switch_case.
 //
@@ -358,9 +357,9 @@ r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
 //               returned both times.  The ownership of the returned
 //               pointer is kept by this object.
 ////////////////////////////////////////////////////////////////////
-const DCPackerCatalog *DCPackerCatalog::
-update_switch_fields(const DCSwitchParameter *switch_parameter,
-                     const DCPackerInterface *switch_case) const
+const PackerCatalog *PackerCatalog::
+update_switch_fields(const SwitchParameter *switch_parameter,
+                     const PackerInterface *switch_case) const
 {
 	SwitchCatalogs::const_iterator si = _switch_catalogs.find(switch_case);
 	if(si != _switch_catalogs.end())
@@ -370,7 +369,7 @@ update_switch_fields(const DCSwitchParameter *switch_parameter,
 
 	// Look up the name_prefix will we use for all of the fields that
 	// descend from this switch.  This should be stored in this record
-	// because we must have come across the DCSwitch when building the
+	// because we must have come across the Switch when building the
 	// catalog the first time.
 	SwitchPrefixes::const_iterator pi = _switch_prefixes.find(switch_parameter);
 	if(pi == _switch_prefixes.end())
@@ -383,9 +382,9 @@ update_switch_fields(const DCSwitchParameter *switch_parameter,
 
 	string name_prefix = (*pi).second;
 
-	// Start by creating a new DCPackerCatalog object that contains all
+	// Start by creating a new PackerCatalog object that contains all
 	// of the fields that this one contains.
-	DCPackerCatalog *switch_catalog = new DCPackerCatalog(*this);
+	PackerCatalog *switch_catalog = new PackerCatalog(*this);
 
 	// Now record all of the fields of the switch case in the new
 	// catalog.  We start with the second field of the switch case,
@@ -394,8 +393,8 @@ update_switch_fields(const DCSwitchParameter *switch_parameter,
 	int num_nested = switch_case->get_num_nested_fields();
 	for(int i = 1; i < num_nested; i++)
 	{
-		DCPackerInterface *nested = switch_case->get_nested_field(i);
-		if(nested != (DCPackerInterface *)NULL)
+		PackerInterface *nested = switch_case->get_nested_field(i);
+		if(nested != (PackerInterface *)NULL)
 		{
 			switch_catalog->r_fill_catalog(name_prefix, nested, switch_case, i);
 		}
@@ -403,7 +402,10 @@ update_switch_fields(const DCSwitchParameter *switch_parameter,
 
 	// Store the newly-generated switch catalog in the record so the
 	// same pointer can be returned in the future.
-	((DCPackerCatalog *)this)->_switch_catalogs[switch_case] = switch_catalog;
+	((PackerCatalog *)this)->_switch_catalogs[switch_case] = switch_catalog;
 
 	return switch_catalog;
 }
+
+
+} // close namespace dclass

@@ -1,49 +1,46 @@
-// Filename: dcPacker.h
-// Created by:  drose (15Jun04)
+// Filename: Packer.h
+// Created by: drose (15 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPACKER_H
-#define DCPACKER_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcPackerInterface.h"
-#include "dcSubatomicType.h"
-#include "dcPackData.h"
-#include "dcPackerCatalog.h"
-#include "dcPython.h"
+#include "PackerInterface.h"
+#include "SubatomicType.h"
+#include "PackData.h"
+#include "PackerCatalog.h"
+#include "Python.h"
+namespace dclass   // open namespace dclass
+{
 
-class DCClass;
-class DCSwitchParameter;
+
+class Class;
+class SwitchParameter;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : DCPacker
+//       Class : Packer
 // Description : This class can be used for packing a series of
 //               numeric and string data into a binary stream,
-//               according to the DC specification.
+//               according to the  specification.
 //
 //               See also direct/src/doc/dcPacker.txt for a more
 //               complete description and examples of using this
 //               class.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPacker
+class EXPCL_DIRECT Packer
 {
 	PUBLISHED:
-		DCPacker();
-		~DCPacker();
+		Packer();
+		~Packer();
 
 		inline void clear_data();
 
-		void begin_pack(const DCPackerInterface *root);
+		void begin_pack(const PackerInterface *root);
 		bool end_pack();
 
 		void set_unpack_data(const string &data);
@@ -52,10 +49,10 @@ class EXPCL_DIRECT DCPacker
 		                     bool owns_unpack_data);
 
 	PUBLISHED:
-		void begin_unpack(const DCPackerInterface *root);
+		void begin_unpack(const PackerInterface *root);
 		bool end_unpack();
 
-		void begin_repack(const DCPackerInterface *root);
+		void begin_repack(const PackerInterface *root);
 		bool end_repack();
 
 		bool seek(const string &field_name);
@@ -65,10 +62,10 @@ class EXPCL_DIRECT DCPacker
 		inline int get_num_nested_fields() const;
 		inline bool more_nested_fields() const;
 
-		inline const DCPackerInterface *get_current_parent() const;
-		inline const DCPackerInterface *get_current_field() const;
-		inline const DCSwitchParameter *get_last_switch() const;
-		inline DCPackType get_pack_type() const;
+		inline const PackerInterface *get_current_parent() const;
+		inline const PackerInterface *get_current_field() const;
+		inline const SwitchParameter *get_last_switch() const;
+		inline PackType get_pack_type() const;
 		inline string get_current_field_name() const;
 
 		void push();
@@ -105,11 +102,6 @@ class EXPCL_DIRECT DCPacker
 		inline void unpack_literal_value(string &value);
 
 	PUBLISHED:
-
-#ifdef HAVE_PYTHON
-		void pack_object(PyObject *object);
-		PyObject *unpack_object();
-#endif
 
 		bool parse_and_pack(const string &formatted_object);
 		bool parse_and_pack(istream &in);
@@ -192,18 +184,9 @@ class EXPCL_DIRECT DCPacker
 
 	private:
 		inline void advance();
-		void handle_switch(const DCSwitchParameter *switch_parameter);
+		void handle_switch(const SwitchParameter *switch_parameter);
 		void clear();
 		void clear_stack();
-
-#ifdef HAVE_PYTHON
-		void pack_class_object(const DCClass *dclass, PyObject *object);
-		PyObject *unpack_class_object(const DCClass *dclass);
-		void set_class_element(PyObject *class_def, PyObject *&object,
-		                       const DCField *field);
-		void get_class_element(const DCClass *dclass, PyObject *object,
-		                       const DCField *field);
-#endif
 
 	private:
 		enum Mode
@@ -215,15 +198,15 @@ class EXPCL_DIRECT DCPacker
 		};
 		Mode _mode;
 
-		DCPackData _pack_data;
+		PackData _pack_data;
 		const char *_unpack_data;
 		size_t _unpack_length;
 		bool _owns_unpack_data;
 		size_t _unpack_p;
 
-		const DCPackerInterface *_root;
-		const DCPackerCatalog *_catalog;
-		const DCPackerCatalog::LiveCatalog *_live_catalog;
+		const PackerInterface *_root;
+		const PackerCatalog *_catalog;
+		const PackerCatalog::LiveCatalog *_live_catalog;
 
 		class StackElement
 		{
@@ -233,7 +216,7 @@ class EXPCL_DIRECT DCPacker
 				inline void *operator new(size_t size);
 				inline void operator delete(void *ptr);
 
-				const DCPackerInterface *_current_parent;
+				const PackerInterface *_current_parent;
 				int _current_field_index;
 				size_t _push_marker;
 				size_t _pop_marker;
@@ -244,8 +227,8 @@ class EXPCL_DIRECT DCPacker
 		};
 		StackElement *_stack;
 
-		const DCPackerInterface *_current_field;
-		const DCPackerInterface *_current_parent;
+		const PackerInterface *_current_field;
+		const PackerInterface *_current_parent;
 		int _current_field_index;
 
 		// _push_marker marks the beginning of the push record (so we can go
@@ -258,13 +241,14 @@ class EXPCL_DIRECT DCPacker
 		// use.
 		size_t _pop_marker;
 		int _num_nested_fields;
-		const DCSwitchParameter *_last_switch;
+		const SwitchParameter *_last_switch;
 
 		bool _parse_error;
 		bool _pack_error;
 		bool _range_error;
 };
 
-#include "dcPacker.I"
 
-#endif
+} // close namespace dclass
+
+#include "Packer.ipp"

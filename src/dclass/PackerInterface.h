@@ -1,38 +1,34 @@
-// Filename: dcPackerInterface.h
-// Created by:  drose (15Jun04)
+// Filename: PackerInterface.h
+// Created by: drose (15 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPACKERINTERFACE_H
-#define DCPACKERINTERFACE_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcSubatomicType.h"
+#include "SubatomicType.h"
+namespace dclass   // open namespace dclass
+{
 
-class DCFile;
-class DCField;
-class DCSimpleParameter;
-class DCSwitchParameter;
-class DCClassParameter;
-class DCArrayParameter;
-class DCAtomicField;
-class DCMolecularField;
-class DCPackData;
-class DCPackerCatalog;
+class File;
+class Field;
+class SimpleParameter;
+class SwitchParameter;
+class ClassParameter;
+class ArrayParameter;
+class AtomicField;
+class MolecularField;
+class PackData;
+class PackerCatalog;
 
 BEGIN_PUBLISH
 // This enumerated type is returned by get_pack_type() and represents
 // the best choice for a subsequent call to pack_*() or unpack_*().
-enum DCPackType
+enum PackType
 {
     // This one should never be returned in a normal situation.
     PT_invalid,
@@ -60,35 +56,35 @@ enum DCPackType
 END_PUBLISH
 
 ////////////////////////////////////////////////////////////////////
-//       Class : DCPackerInterface
+//       Class : PackerInterface
 // Description : This defines the internal interface for packing
-//               values into a DCField.  The various different DC
+//               values into a Field.  The various different 
 //               objects inherit from this.
 //
 //               Normally these methods are called only by the
-//               DCPacker object; the user wouldn't normally call
+//               Packer object; the user wouldn't normally call
 //               these directly.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackerInterface
+class EXPCL_DIRECT PackerInterface
 {
 	public:
-		DCPackerInterface(const string &name = string());
-		DCPackerInterface(const DCPackerInterface &copy);
-		virtual ~DCPackerInterface();
+		PackerInterface(const string &name = string());
+		PackerInterface(const PackerInterface &copy);
+		virtual ~PackerInterface();
 
 	PUBLISHED:
 		inline const string &get_name() const;
 		int find_seek_index(const string &name) const;
 
-		virtual DCField *as_field();
-		virtual const DCField *as_field() const;
-		virtual DCSwitchParameter *as_switch_parameter();
-		virtual const DCSwitchParameter *as_switch_parameter() const;
-		virtual DCClassParameter *as_class_parameter();
-		virtual const DCClassParameter *as_class_parameter() const;
+		virtual Field *as_field();
+		virtual const Field *as_field() const;
+		virtual SwitchParameter *as_switch_parameter();
+		virtual const SwitchParameter *as_switch_parameter() const;
+		virtual ClassParameter *as_class_parameter();
+		virtual const ClassParameter *as_class_parameter() const;
 
-		inline bool check_match(const DCPackerInterface *other) const;
-		bool check_match(const string &description, DCFile *dcfile = NULL) const;
+		inline bool check_match(const PackerInterface *other) const;
+		bool check_match(const string &description, File *dcfile = NULL) const;
 
 	public:
 		virtual void set_name(const string &name);
@@ -101,25 +97,25 @@ class EXPCL_DIRECT DCPackerInterface
 		inline bool has_nested_fields() const;
 		inline int get_num_nested_fields() const;
 		virtual int calc_num_nested_fields(size_t length_bytes) const;
-		virtual DCPackerInterface *get_nested_field(int n) const;
+		virtual PackerInterface *get_nested_field(int n) const;
 
 		virtual bool validate_num_nested_fields(int num_nested_fields) const;
 
-		inline DCPackType get_pack_type() const;
+		inline PackType get_pack_type() const;
 
-		virtual void pack_double(DCPackData &pack_data, double value,
+		virtual void pack_double(PackData &pack_data, double value,
 		                         bool &pack_error, bool &range_error) const;
-		virtual void pack_int(DCPackData &pack_data, int value,
+		virtual void pack_int(PackData &pack_data, int value,
 		                      bool &pack_error, bool &range_error) const;
-		virtual void pack_uint(DCPackData &pack_data, unsigned int value,
+		virtual void pack_uint(PackData &pack_data, unsigned int value,
 		                       bool &pack_error, bool &range_error) const;
-		virtual void pack_int64(DCPackData &pack_data, int64_t value,
+		virtual void pack_int64(PackData &pack_data, int64_t value,
 		                        bool &pack_error, bool &range_error) const;
-		virtual void pack_uint64(DCPackData &pack_data, uint64_t value,
+		virtual void pack_uint64(PackData &pack_data, uint64_t value,
 		                         bool &pack_error, bool &range_error) const;
-		virtual void pack_string(DCPackData &pack_data, const string &value,
+		virtual void pack_string(PackData &pack_data, const string &value,
 		                         bool &pack_error, bool &range_error) const;
-		virtual bool pack_default_value(DCPackData &pack_data, bool &pack_error) const;
+		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
 
 		virtual void unpack_double(const char *data, size_t length, size_t &p,
 		                           double &value, bool &pack_error, bool &range_error) const;
@@ -172,21 +168,21 @@ class EXPCL_DIRECT DCPackerInterface
 		inline static void validate_uint64_limits(uint64_t value, int num_bits,
 		        bool &range_error);
 
-		const DCPackerCatalog *get_catalog() const;
+		const PackerCatalog *get_catalog() const;
 
 	protected:
-		virtual bool do_check_match(const DCPackerInterface *other) const = 0;
+		virtual bool do_check_match(const PackerInterface *other) const = 0;
 
 	public:
 		// These are declared public just so the derived classes can call
 		// them easily.  They're not intended to be called directly.
 
-		virtual bool do_check_match_simple_parameter(const DCSimpleParameter *other) const;
-		virtual bool do_check_match_class_parameter(const DCClassParameter *other) const;
-		virtual bool do_check_match_switch_parameter(const DCSwitchParameter *other) const;
-		virtual bool do_check_match_array_parameter(const DCArrayParameter *other) const;
-		virtual bool do_check_match_atomic_field(const DCAtomicField *other) const;
-		virtual bool do_check_match_molecular_field(const DCMolecularField *other) const;
+		virtual bool do_check_match_simple_parameter(const SimpleParameter *other) const;
+		virtual bool do_check_match_class_parameter(const ClassParameter *other) const;
+		virtual bool do_check_match_switch_parameter(const SwitchParameter *other) const;
+		virtual bool do_check_match_array_parameter(const ArrayParameter *other) const;
+		virtual bool do_check_match_atomic_field(const AtomicField *other) const;
+		virtual bool do_check_match_molecular_field(const MolecularField *other) const;
 
 	private:
 		void make_catalog();
@@ -200,12 +196,13 @@ class EXPCL_DIRECT DCPackerInterface
 		size_t _num_length_bytes;
 		bool _has_nested_fields;
 		int _num_nested_fields;
-		DCPackType _pack_type;
+		PackType _pack_type;
 
 	private:
-		DCPackerCatalog *_catalog;
+		PackerCatalog *_catalog;
 };
 
-#include "dcPackerInterface.I"
 
-#endif
+} // close namespace dclass
+
+#include "PackerInterface.ipp"

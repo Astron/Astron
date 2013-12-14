@@ -1,32 +1,25 @@
-// Filename: dcPackData.h
-// Created by:  drose (15Jun04)
+// Filename: PackData.h
+// Created by: drose (15 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPACKDATA_H
-#define DCPACKDATA_H
-
+#pragma once
 #include "dcbase.h"
+namespace dclass   // open namespace dclass
+{
 
-////////////////////////////////////////////////////////////////////
-//       Class : DCPackData
-// Description : This is a block of data that receives the results of
-//               DCPacker.
-////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackData
+
+// A PackData is a block of data that receives the results of Packer.
+class EXPCL_DIRECT PackData
 {
 	PUBLISHED:
-		inline DCPackData();
-		inline ~DCPackData();
+		inline PackData();
+		inline ~PackData();
 
 		inline void clear();
 
@@ -48,11 +41,12 @@ class EXPCL_DIRECT DCPackData
 		void set_used_length(size_t size);
 
 	private:
-		char *_buffer;
-		size_t _allocated_size;
-		size_t _used_length;
+		char *m_buffer;
+		size_t m_allocated_size;
+		size_t m_used_length;
 };
 
-#include "dcPackData.I"
 
-#endif
+} // close namespace dclass
+
+#include "PackData.ipp"

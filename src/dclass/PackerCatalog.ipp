@@ -1,25 +1,23 @@
-// Filename: dcPackerCatalog.I
-// Created by:  drose (21Jun04)
+// Filename: PackerCatalog.ipp
+// Created by: drose (21 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
+namespace dclass   // open namespace dclass
+{
 
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::get_begin
+//     Function: PackerCatalog::LiveCatalog::get_begin
 //       Access: Public
 //  Description: Returns the beginning of the indicated field within
 //               the live data.
 ////////////////////////////////////////////////////////////////////
-inline size_t DCPackerCatalog::LiveCatalog::
+inline size_t PackerCatalog::LiveCatalog::
 get_begin(int n) const
 {
 	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
@@ -27,13 +25,13 @@ get_begin(int n) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::get_end
+//     Function: PackerCatalog::LiveCatalog::get_end
 //       Access: Public
 //  Description: Returns the end of the indicated field (the byte
 //               position of the first following field) within the
 //               live data.
 ////////////////////////////////////////////////////////////////////
-inline size_t DCPackerCatalog::LiveCatalog::
+inline size_t PackerCatalog::LiveCatalog::
 get_end(int n) const
 {
 	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
@@ -41,74 +39,77 @@ get_end(int n) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::get_num_entries
+//     Function: PackerCatalog::LiveCatalog::get_num_entries
 //       Access: Public
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
-inline int DCPackerCatalog::LiveCatalog::
+inline int PackerCatalog::LiveCatalog::
 get_num_entries() const
 {
 	return _catalog->get_num_entries();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::get_entry
+//     Function: PackerCatalog::LiveCatalog::get_entry
 //       Access: Public
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
-inline const DCPackerCatalog::Entry &DCPackerCatalog::LiveCatalog::
+inline const PackerCatalog::Entry &PackerCatalog::LiveCatalog::
 get_entry(int n) const
 {
 	return _catalog->get_entry(n);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::find_entry_by_name
+//     Function: PackerCatalog::LiveCatalog::find_entry_by_name
 //       Access: Public
 //  Description: Returns the index number of the entry with the
 //               indicated name, or -1 if no entry has the indicated
 //               name.  The return value is suitable for passing to
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
-int DCPackerCatalog::LiveCatalog::
+int PackerCatalog::LiveCatalog::
 find_entry_by_name(const string &name) const
 {
 	return _catalog->find_entry_by_name(name);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::LiveCatalog::find_entry_by_field
+//     Function: PackerCatalog::LiveCatalog::find_entry_by_field
 //       Access: Public
 //  Description: Returns the index number of the entry with the
 //               indicated field, or -1 if no entry has the indicated
 //               field.  The return value is suitable for passing to
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
-int DCPackerCatalog::LiveCatalog::
-find_entry_by_field(const DCPackerInterface *field) const
+int PackerCatalog::LiveCatalog::
+find_entry_by_field(const PackerInterface *field) const
 {
 	return _catalog->find_entry_by_field(field);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::get_num_entries
+//     Function: PackerCatalog::get_num_entries
 //       Access: Public
 //  Description: Returns the number of entries in the catalog.
 ////////////////////////////////////////////////////////////////////
-inline int DCPackerCatalog::
+inline int PackerCatalog::
 get_num_entries() const
 {
 	return _entries.size();
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerCatalog::get_entry
+//     Function: PackerCatalog::get_entry
 //       Access: Public
 //  Description: Returns the nth entry in the catalog.
 ////////////////////////////////////////////////////////////////////
-inline const DCPackerCatalog::Entry &DCPackerCatalog::
+inline const PackerCatalog::Entry &PackerCatalog::
 get_entry(int n) const
 {
 	nassertr(n >= 0 && n < (int)_entries.size(), _entries[0]);
 	return _entries[n];
 }
+
+
+} // close namespace dclass

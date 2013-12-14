@@ -1,40 +1,36 @@
-// Filename: dcPackerCatalog.h
-// Created by:  drose (21Jun04)
+// Filename: PackerCatalog.h
+// Created by: drose (21 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPACKERCATALOG_H
-#define DCPACKERCATALOG_H
-
+#pragma once
 #include "dcbase.h"
+namespace dclass   // open namespace dclass
+{
 
-class DCPackerInterface;
-class DCPacker;
-class DCSwitchParameter;
+class PackerInterface;
+class Packer;
+class SwitchParameter;
 
 ////////////////////////////////////////////////////////////////////
-//       Class : DCPackerCatalog
+//       Class : PackerCatalog
 // Description : This object contains the names of all of the nested
 //               fields available within a particular field.  It is
 //               created on demand when a catalog is first requested
 //               from a particular field; its ownership is retained by
 //               the field so it must not be deleted.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT DCPackerCatalog
+class EXPCL_DIRECT PackerCatalog
 {
 	private:
-		DCPackerCatalog(const DCPackerInterface *root);
-		DCPackerCatalog(const DCPackerCatalog &copy);
-		~DCPackerCatalog();
+		PackerCatalog(const PackerInterface *root);
+		PackerCatalog(const PackerCatalog &copy);
+		~PackerCatalog();
 
 	public:
 		// The Entry class records the static catalog data: the name of each
@@ -43,8 +39,8 @@ class EXPCL_DIRECT DCPackerCatalog
 		{
 			public:
 				string _name;
-				const DCPackerInterface *_field;
-				const DCPackerInterface *_parent;
+				const PackerInterface *_field;
+				const PackerInterface *_parent;
 				int _field_index;
 		};
 
@@ -67,38 +63,38 @@ class EXPCL_DIRECT DCPackerCatalog
 				inline int get_num_entries() const;
 				inline const Entry &get_entry(int n) const;
 				inline int find_entry_by_name(const string &name) const;
-				inline int find_entry_by_field(const DCPackerInterface *field) const;
+				inline int find_entry_by_field(const PackerInterface *field) const;
 
 			private:
 				typedef pvector<LiveCatalogEntry> LiveEntries;
 				LiveEntries _live_entries;
 
-				const DCPackerCatalog *_catalog;
-				friend class DCPackerCatalog;
+				const PackerCatalog *_catalog;
+				friend class PackerCatalog;
 		};
 
 		inline int get_num_entries() const;
 		inline const Entry &get_entry(int n) const;
 		int find_entry_by_name(const string &name) const;
-		int find_entry_by_field(const DCPackerInterface *field) const;
+		int find_entry_by_field(const PackerInterface *field) const;
 
 		const LiveCatalog *get_live_catalog(const char *data, size_t length) const;
 		void release_live_catalog(const LiveCatalog *live_catalog) const;
 
 	private:
-		void add_entry(const string &name, const DCPackerInterface *field,
-		               const DCPackerInterface *parent, int field_index);
+		void add_entry(const string &name, const PackerInterface *field,
+		               const PackerInterface *parent, int field_index);
 
-		void r_fill_catalog(const string &name_prefix, const DCPackerInterface *field,
-		                    const DCPackerInterface *parent, int field_index);
-		void r_fill_live_catalog(LiveCatalog *live_catalog, DCPacker &packer,
-		                         const DCSwitchParameter *&last_switch) const;
+		void r_fill_catalog(const string &name_prefix, const PackerInterface *field,
+		                    const PackerInterface *parent, int field_index);
+		void r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer,
+		                         const SwitchParameter *&last_switch) const;
 
-		const DCPackerCatalog *update_switch_fields(const DCSwitchParameter *dswitch,
-		        const DCPackerInterface *switch_case) const;
+		const PackerCatalog *update_switch_fields(const SwitchParameter *dswitch,
+		        const PackerInterface *switch_case) const;
 
 
-		const DCPackerInterface *_root;
+		const PackerInterface *_root;
 		LiveCatalog *_live_catalog;
 
 		typedef pvector<Entry> Entries;
@@ -107,18 +103,19 @@ class EXPCL_DIRECT DCPackerCatalog
 		typedef pmap<string, int> EntriesByName;
 		EntriesByName _entries_by_name;
 
-		typedef pmap<const DCPackerInterface *, int> EntriesByField;
+		typedef pmap<const PackerInterface *, int> EntriesByField;
 		EntriesByField _entries_by_field;
 
-		typedef pmap<const DCPackerInterface *, DCPackerCatalog *> SwitchCatalogs;
+		typedef pmap<const PackerInterface *, PackerCatalog *> SwitchCatalogs;
 		SwitchCatalogs _switch_catalogs;
 
-		typedef pmap<const DCSwitchParameter *, string> SwitchPrefixes;
+		typedef pmap<const SwitchParameter *, string> SwitchPrefixes;
 		SwitchPrefixes _switch_prefixes;
 
-		friend class DCPackerInterface;
+		friend class PackerInterface;
 };
 
-#include "dcPackerCatalog.I"
 
-#endif
+} // close namespace dclass
+
+#include "PackerCatalog.ipp"

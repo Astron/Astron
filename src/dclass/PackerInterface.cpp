@@ -1,30 +1,29 @@
-// Filename: dcPackerInterface.cxx
-// Created by:  drose (15Jun04)
+// Filename: PackerInterface.cxx
+// Created by: drose (15 Jun, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#include "dcPackerInterface.h"
-#include "dcPackerCatalog.h"
-#include "dcField.h"
-#include "dcParserDefs.h"
-#include "dcLexerDefs.h"
+#include "PackerInterface.h"
+#include "PackerCatalog.h"
+#include "Field.h"
+#include "ParserDefs.h"
+#include "LexerDefs.h"
+namespace dclass   // open namespace dclass
+{
+
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::Constructor
+//     Function: PackerInterface::Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCPackerInterface::
-DCPackerInterface(const string &name) :
+PackerInterface::
+PackerInterface(const string &name) :
 	_name(name)
 {
 	_has_fixed_byte_size = false;
@@ -39,12 +38,12 @@ DCPackerInterface(const string &name) :
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::Copy Constructor
+//     Function: PackerInterface::Copy Constructor
 //       Access: Public
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCPackerInterface::
-DCPackerInterface(const DCPackerInterface &copy) :
+PackerInterface::
+PackerInterface(const PackerInterface &copy) :
 	_name(copy._name),
 	_has_fixed_byte_size(copy._has_fixed_byte_size),
 	_fixed_byte_size(copy._fixed_byte_size),
@@ -59,24 +58,24 @@ DCPackerInterface(const DCPackerInterface &copy) :
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::Destructor
+//     Function: PackerInterface::Destructor
 //       Access: Public, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCPackerInterface::
-~DCPackerInterface()
+PackerInterface::
+~PackerInterface()
 {
-	if(_catalog != (DCPackerCatalog *)NULL)
+	if(_catalog != (PackerCatalog *)NULL)
 	{
 		delete _catalog;
 	}
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::find_seek_index
+//     Function: PackerInterface::find_seek_index
 //       Access: Published
 //  Description: Returns the index number to be passed to a future
-//               call to DCPacker::seek() to seek directly to the
+//               call to Packer::seek() to seek directly to the
 //               named field without having to look up the field name
 //               in a table later, or -1 if the named field cannot be
 //               found.
@@ -87,93 +86,93 @@ DCPackerInterface::
 //               mechanism cannot be used to pre-fetch the field index
 //               number--you must seek for the field by name.
 ////////////////////////////////////////////////////////////////////
-int DCPackerInterface::
+int PackerInterface::
 find_seek_index(const string &name) const
 {
 	return get_catalog()->find_entry_by_name(name);
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_field
+//     Function: PackerInterface::as_field
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCField *DCPackerInterface::
+Field *PackerInterface::
 as_field()
 {
-	return (DCField *)NULL;
+	return (Field *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_field
+//     Function: PackerInterface::as_field
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-const DCField *DCPackerInterface::
+const Field *PackerInterface::
 as_field() const
 {
-	return (DCField *)NULL;
+	return (Field *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_switch_parameter
+//     Function: PackerInterface::as_switch_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCSwitchParameter *DCPackerInterface::
+SwitchParameter *PackerInterface::
 as_switch_parameter()
 {
-	return (DCSwitchParameter *)NULL;
+	return (SwitchParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_switch_parameter
+//     Function: PackerInterface::as_switch_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-const DCSwitchParameter *DCPackerInterface::
+const SwitchParameter *PackerInterface::
 as_switch_parameter() const
 {
-	return (DCSwitchParameter *)NULL;
+	return (SwitchParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_class_parameter
+//     Function: PackerInterface::as_class_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-DCClassParameter *DCPackerInterface::
+ClassParameter *PackerInterface::
 as_class_parameter()
 {
-	return (DCClassParameter *)NULL;
+	return (ClassParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::as_class_parameter
+//     Function: PackerInterface::as_class_parameter
 //       Access: Published, Virtual
 //  Description:
 ////////////////////////////////////////////////////////////////////
-const DCClassParameter *DCPackerInterface::
+const ClassParameter *PackerInterface::
 as_class_parameter() const
 {
-	return (DCClassParameter *)NULL;
+	return (ClassParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::check_match
+//     Function: PackerInterface::check_match
 //       Access: Published
 //  Description: Returns true if this interface is bitwise the same as
 //               the interface described with the indicated formatted
 //               string, e.g. "(uint8, uint8, int16)", or false
 //               otherwise.
 //
-//               If DCFile is not NULL, it specifies the DCFile that
+//               If File is not NULL, it specifies the File that
 //               was previously loaded, from which some predefined
 //               structs and typedefs may be referenced in the
 //               description string.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-check_match(const string &description, DCFile *dcfile) const
+bool PackerInterface::
+check_match(const string &description, File *dcfile) const
 {
 	bool match = false;
 
@@ -182,7 +181,7 @@ check_match(const string &description, DCFile *dcfile) const
 	dcyyparse();
 	dc_cleanup_parser();
 
-	DCField *field = dc_get_parameter_description();
+	Field *field = dc_get_parameter_description();
 	if(field != NULL)
 	{
 		match = check_match(field);
@@ -199,18 +198,18 @@ check_match(const string &description, DCFile *dcfile) const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::set_name
+//     Function: PackerInterface::set_name
 //       Access: Public, Virtual
 //  Description: Sets the name of this field.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 set_name(const string &name)
 {
 	_name = name;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::calc_num_nested_fields
+//     Function: PackerInterface::calc_num_nested_fields
 //       Access: Public, Virtual
 //  Description: This flavor of get_num_nested_fields is used during
 //               unpacking.  It returns the number of nested fields to
@@ -219,28 +218,28 @@ set_name(const string &name)
 //               push).  This will only be called if _num_length_bytes
 //               is nonzero.
 ////////////////////////////////////////////////////////////////////
-int DCPackerInterface::
+int PackerInterface::
 calc_num_nested_fields(size_t) const
 {
 	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::get_nested_field
+//     Function: PackerInterface::get_nested_field
 //       Access: Public, Virtual
-//  Description: Returns the DCPackerInterface object that represents
+//  Description: Returns the PackerInterface object that represents
 //               the nth nested field.  This may return NULL if there
 //               is no such field (but it shouldn't do this if n is in
 //               the range 0 <= n < get_num_nested_fields()).
 ////////////////////////////////////////////////////////////////////
-DCPackerInterface *DCPackerInterface::
+PackerInterface *PackerInterface::
 get_nested_field(int) const
 {
 	return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::validate_num_nested_fields
+//     Function: PackerInterface::validate_num_nested_fields
 //       Access: Public, Virtual
 //  Description: After a number of fields have been packed via push()
 //               .. pack_*() .. pop(), this is called to confirm that
@@ -249,86 +248,86 @@ get_nested_field(int) const
 //               types with dynamic ranges that can't validate the
 //               number of fields any other way.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
+bool PackerInterface::
 validate_num_nested_fields(int) const
 {
 	return true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_double
+//     Function: PackerInterface::pack_double
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_double(DCPackData &, double, bool &pack_error, bool &) const
+void PackerInterface::
+pack_double(PackData &, double, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_int
+//     Function: PackerInterface::pack_int
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_int(DCPackData &, int, bool &pack_error, bool &) const
+void PackerInterface::
+pack_int(PackData &, int, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_uint
+//     Function: PackerInterface::pack_uint
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_uint(DCPackData &, unsigned int, bool &pack_error, bool &) const
+void PackerInterface::
+pack_uint(PackData &, unsigned int, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_int64
+//     Function: PackerInterface::pack_int64
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_int64(DCPackData &, int64_t, bool &pack_error, bool &) const
+void PackerInterface::
+pack_int64(PackData &, int64_t, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_uint64
+//     Function: PackerInterface::pack_uint64
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_uint64(DCPackData &, uint64_t, bool &pack_error, bool &) const
+void PackerInterface::
+pack_uint64(PackData &, uint64_t, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_string
+//     Function: PackerInterface::pack_string
 //       Access: Public, Virtual
 //  Description: Packs the indicated numeric or string value into the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
-pack_string(DCPackData &, const string &, bool &pack_error, bool &) const
+void PackerInterface::
+pack_string(PackData &, const string &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::pack_default_value
+//     Function: PackerInterface::pack_default_value
 //       Access: Public, Virtual
 //  Description: Packs the field's specified default value (or a
 //               sensible default if no value is specified) into the
@@ -336,86 +335,86 @@ pack_string(DCPackData &, const string &, bool &pack_error, bool &) const
 //               false if the field doesn't know how to pack its
 //               default value.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-pack_default_value(DCPackData &, bool &) const
+bool PackerInterface::
+pack_default_value(PackData &, bool &) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_double
+//     Function: PackerInterface::unpack_double
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_double(const char *, size_t, size_t &, double &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_int
+//     Function: PackerInterface::unpack_int
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_int(const char *, size_t, size_t &, int &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_uint
+//     Function: PackerInterface::unpack_uint
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_uint(const char *, size_t, size_t &, unsigned int &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_int64
+//     Function: PackerInterface::unpack_int64
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_int64(const char *, size_t, size_t &, int64_t &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_uint64
+//     Function: PackerInterface::unpack_uint64
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_uint64(const char *, size_t, size_t &, uint64_t &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_string
+//     Function: PackerInterface::unpack_string
 //       Access: Public, Virtual
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_validate
+//     Function: PackerInterface::unpack_validate
 //       Access: Public, Virtual
 //  Description: Internally unpacks the current numeric or string
 //               value and validates it against the type range limits,
@@ -423,7 +422,7 @@ unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &
 //               success, false on failure (e.g. we don't know how to
 //               validate this field).
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
+bool PackerInterface::
 unpack_validate(const char *data, size_t length, size_t &p,
                 bool &pack_error, bool &) const
 {
@@ -435,14 +434,14 @@ unpack_validate(const char *data, size_t length, size_t &p,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::unpack_skip
+//     Function: PackerInterface::unpack_skip
 //       Access: Public, Virtual
 //  Description: Increments p to the end of the current field without
 //               actually unpacking any data or performing any range
 //               validation.  Returns true on success, false on
 //               failure (e.g. we don't know how to skip this field).
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
+bool PackerInterface::
 unpack_skip(const char *data, size_t length, size_t &p,
             bool &pack_error) const
 {
@@ -491,104 +490,107 @@ unpack_skip(const char *data, size_t length, size_t &p,
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::get_catalog
+//     Function: PackerInterface::get_catalog
 //       Access: Public
-//  Description: Returns the DCPackerCatalog associated with this
+//  Description: Returns the PackerCatalog associated with this
 //               field, listing all of the nested fields by name.
 ////////////////////////////////////////////////////////////////////
-const DCPackerCatalog *DCPackerInterface::
+const PackerCatalog *PackerInterface::
 get_catalog() const
 {
-	if(_catalog == (DCPackerCatalog *)NULL)
+	if(_catalog == (PackerCatalog *)NULL)
 	{
-		((DCPackerInterface *)this)->make_catalog();
+		((PackerInterface *)this)->make_catalog();
 	}
 	return _catalog;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_simple_parameter
+//     Function: PackerInterface::do_check_match_simple_parameter
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               simple parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_simple_parameter(const DCSimpleParameter *) const
+bool PackerInterface::
+do_check_match_simple_parameter(const SimpleParameter *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_class_parameter
+//     Function: PackerInterface::do_check_match_class_parameter
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               class parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_class_parameter(const DCClassParameter *) const
+bool PackerInterface::
+do_check_match_class_parameter(const ClassParameter *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_switch_parameter
+//     Function: PackerInterface::do_check_match_switch_parameter
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               switch parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_switch_parameter(const DCSwitchParameter *) const
+bool PackerInterface::
+do_check_match_switch_parameter(const SwitchParameter *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_array_parameter
+//     Function: PackerInterface::do_check_match_array_parameter
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               array parameter, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_array_parameter(const DCArrayParameter *) const
+bool PackerInterface::
+do_check_match_array_parameter(const ArrayParameter *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_atomic_field
+//     Function: PackerInterface::do_check_match_atomic_field
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               atomic field, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_atomic_field(const DCAtomicField *) const
+bool PackerInterface::
+do_check_match_atomic_field(const AtomicField *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::do_check_match_molecular_field
+//     Function: PackerInterface::do_check_match_molecular_field
 //       Access: Protected, Virtual
 //  Description: Returns true if this field matches the indicated
 //               molecular field, false otherwise.
 ////////////////////////////////////////////////////////////////////
-bool DCPackerInterface::
-do_check_match_molecular_field(const DCMolecularField *) const
+bool PackerInterface::
+do_check_match_molecular_field(const MolecularField *) const
 {
 	return false;
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: DCPackerInterface::make_catalog
+//     Function: PackerInterface::make_catalog
 //       Access: Private
-//  Description: Called internally to create a new DCPackerCatalog
+//  Description: Called internally to create a new PackerCatalog
 //               object.
 ////////////////////////////////////////////////////////////////////
-void DCPackerInterface::
+void PackerInterface::
 make_catalog()
 {
-	nassertv(_catalog == (DCPackerCatalog *)NULL);
-	_catalog = new DCPackerCatalog(this);
+	nassertv(_catalog == (PackerCatalog *)NULL);
+	_catalog = new PackerCatalog(this);
 
 	_catalog->r_fill_catalog("", this, NULL, 0);
 }
+
+
+} // close namespace dclass
