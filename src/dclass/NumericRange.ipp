@@ -7,74 +7,48 @@
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
+namespace dclass   // open namespace dclass
+{
 
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// null constructor
 template <class NUM>
-inline DCNumericRange<NUM>::
-DCNumericRange()
+inline NumericRange<NUM>::NumericRange()
 {
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// range constructor
 template <class NUM>
-inline DCNumericRange<NUM>::
-DCNumericRange(Number min, Number max)
+inline NumericRange<NUM>::NumericRange(Number min, Number max)
 {
 	add_range(min, max);
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::Copy Constructor
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// copy constructor
 template <class NUM>
-inline DCNumericRange<NUM>::
-DCNumericRange(const DCNumericRange<NUM> &copy) :
-	_ranges(copy._ranges)
+inline NumericRange<NUM>::NumericRange(const NumericRange<NUM> &copy) : m_ranges(copy.m_ranges)
 {
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::Copy Assignment Operator
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// copy assignment operator
 template <class NUM>
-inline void DCNumericRange<NUM>::
-operator = (const DCNumericRange<NUM> &copy)
+inline void NumericRange<NUM>::operator = (const NumericRange<NUM> &copy)
 {
-	_ranges = copy._ranges;
+	m_ranges = copy.m_ranges;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::is_in_range
-//       Access: Public
-//  Description: Returns true if the indicated number is within the
-//               specified range, false otherwise.
-////////////////////////////////////////////////////////////////////
+// is_in_range returns true if the indicated number is within the specified range, false otherwise.
 template <class NUM>
-bool DCNumericRange<NUM>::
-is_in_range(Number num) const
+bool NumericRange<NUM>::is_in_range(Number num) const
 {
-	if(_ranges.empty())
+	if(m_ranges.empty())
 	{
 		return true;
 	}
 
-	TYPENAME Ranges::const_iterator ri;
-	for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+	for(auto it = m_ranges.begin(); it != m_ranges.end(); ++it)
 	{
-		if(num >= (*ri)._min && num <= (*ri)._max)
+		if(num >= it->m_min && num <= it->m_max)
 		{
 			return true;
 		}
@@ -83,17 +57,9 @@ is_in_range(Number num) const
 	return false;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::validate
-//       Access: Public
-//  Description: Convenience function to validate the indicated
-//               number.  If the number is within the specified range,
-//               does nothing; otherwise, if it is outside the range,
-//               sets range_error to true.
-////////////////////////////////////////////////////////////////////
+// validate sets <range_error> to true if <num> is outside of the range.
 template <class NUM>
-inline void DCNumericRange<NUM>::
-validate(Number num, bool &range_error) const
+inline void NumericRange<NUM>::validate(Number num, bool &range_error) const
 {
 	if(!is_in_range(num))
 	{
@@ -101,136 +67,92 @@ validate(Number num, bool &range_error) const
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::has_one_value
-//       Access: Public
-//  Description: Returns true if the numeric range specifies exactly
-//               one legal value, false if multiple values are legal.
-////////////////////////////////////////////////////////////////////
+// has_one_value returns true if the numeric range specifies exactly one legal value.
 template <class NUM>
-inline bool DCNumericRange<NUM>::
-has_one_value() const
+inline bool NumericRange<NUM>::has_one_value() const
 {
-	return _ranges.size() == 1 && _ranges[0]._min == _ranges[0]._max;
+	return m_ranges.size() == 1 && m_ranges[0].m_min == m_ranges[0].m_max;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::get_one_value
-//       Access: Public
-//  Description: If has_one_value() returns true, this returns the one
-//               legal value accepted by the numeric range.
-////////////////////////////////////////////////////////////////////
+// get_one_value returns the value accepted by the numeric range, if there is only one legal value.
 template <class NUM>
-inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_one_value() const
+inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_one_value() const
 {
 	nassertr(has_one_value(), 0);
-	return _ranges[0]._min;
+	return m_ranges[0].m_min;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::generate_hash
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// generate_hash accumulates the properties of this range into the hash.
 template <class NUM>
-void DCNumericRange<NUM>::
-generate_hash(HashGenerator &hashgen) const
+void NumericRange<NUM>::generate_hash(HashGenerator &hashgen) const
 {
-	if(!_ranges.empty())
+	if(!m_ranges.empty())
 	{
-		hashgen.add_int(_ranges.size());
-		TYPENAME Ranges::const_iterator ri;
-		for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+		hashgen.add_int(m_ranges.size());
+		for(auto it = m_ranges.begin(); it != m_ranges.end(); ++it)
 		{
 			// We don't account for the fractional part of floating-point
 			// ranges here.  Shouldn't be a real issue.
-			hashgen.add_int((int)(*ri)._min);
-			hashgen.add_int((int)(*ri)._max);
+			hashgen.add_int((int)it->m_min);
+			hashgen.add_int((int)it->m_max);
 		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::output
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// output writes a representation of the range to an output stream
 template <class NUM>
-void DCNumericRange<NUM>::
-output(ostream &out, Number divisor) const
+void NumericRange<NUM>::output(std::ostream &out, Number divisor) const
 {
-	if(!_ranges.empty())
+	if(!m_ranges.empty())
 	{
-		TYPENAME Ranges::const_iterator ri;
-		ri = _ranges.begin();
-		output_minmax(out, divisor, *ri);
+		auto range_it = m_ranges.begin();
+		output_minmax(out, divisor, *range_it);
 		++ri;
-		while(ri != _ranges.end())
+		while(range_it != m_ranges.end())
 		{
 			out << ", ";
-			output_minmax(out, divisor, *ri);
-			++ri;
+			output_minmax(out, divisor, *range_it);
+			++range_it;
 		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::output_char
-//       Access: Public
-//  Description: Outputs the range, formatting the numeric values as
-//               quoted ASCII characters.
-////////////////////////////////////////////////////////////////////
+// output_char outputs the range, formatting the numeric values as quoted ASCII characters.
 template <class NUM>
-void DCNumericRange<NUM>::
-output_char(ostream &out, Number divisor) const
+void NumericRange<NUM>::output_char(std::ostream &out, Number divisor) const
 {
 	if(divisor != 1)
 	{
 		output(out, divisor);
-
 	}
 	else
 	{
-		if(!_ranges.empty())
+		if(!m_ranges.empty())
 		{
-			TYPENAME Ranges::const_iterator ri;
-			ri = _ranges.begin();
-			output_minmax_char(out, *ri);
-			++ri;
-			while(ri != _ranges.end())
+			auto range_it = m_ranges.begin();
+			output_minmax_char(out, *range_it);
+			++range_it;
+			while(range_it != m_ranges.end())
 			{
 				out << ", ";
-				output_minmax_char(out, *ri);
-				++ri;
+				output_minmax_char(out, *range_it);
+				++range_it;
 			}
 		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::clear
-//       Access: Public
-//  Description:
-////////////////////////////////////////////////////////////////////
+// clear reset the range to an empty range
 template <class NUM>
-inline void DCNumericRange<NUM>::
-clear()
+inline void NumericRange<NUM>::clear()
 {
-	_ranges.clear();
+	m_ranges.clear();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::add_range
-//       Access: Public
-//  Description: Adds a new minmax to the list of ranges.  This is
-//               normally called only during dc file parsing.  Returns
-//               true if successful, or false if the new minmax
-//               overlaps an existing minmax.
-////////////////////////////////////////////////////////////////////
+// add_range adds a new minmax to the list of ranges.  This is normally called only during parsing.
+//     Returns true if successful, or false if the new minmax overlaps an existing minmax.
 template <class NUM>
-bool DCNumericRange<NUM>::
-add_range(Number min, Number max)
+bool NumericRange<NUM>::add_range(Number min, Number max)
 {
 	// Check for an overlap.  This is probably indicative of a typo and
 	// should be reported.
@@ -239,130 +161,97 @@ add_range(Number min, Number max)
 		return false;
 	}
 
-	TYPENAME Ranges::const_iterator ri;
-	for(ri = _ranges.begin(); ri != _ranges.end(); ++ri)
+	for(auto it = m_ranges.begin(); it != m_ranges.end(); ++it)
 	{
-		if((min >= (*ri)._min && min <= (*ri)._max) ||
-		        (max >= (*ri)._min && max <= (*ri)._max) ||
-		        (min < (*ri)._min && max > (*ri)._max))
+		if((min >= it->m_min && min <= it->m_max) ||
+		        (max >= it->m_min && max <= it->m_max) ||
+		        (min < it->m_min && max > it->m_max))
 		{
 			return false;
 		}
 	}
 
 	MinMax minmax;
-	minmax._min = min;
-	minmax._max = max;
-	_ranges.push_back(minmax);
+	minmax.m_min = min;
+	minmax.m_max = max;
+	m_ranges.push_back(minmax);
 
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::is_empty
-//       Access: Private
-//  Description: Returns true if the range contains no elements (and
-//               thus allows all numbers), false if it contains at
-//               least one.
-////////////////////////////////////////////////////////////////////
+// is_empty returns true if the range contains no elements (and thus allows all numbers),
+//     false if it contains at least one.
 template <class NUM>
-inline bool DCNumericRange<NUM>::
-is_empty() const
+inline bool NumericRange<NUM>::is_empty() const
 {
-	return _ranges.empty();
+	return m_ranges.empty();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::get_num_ranges
-//       Access: Private
-//  Description: Returns the number of minmax components in the range
-//               description.
-////////////////////////////////////////////////////////////////////
+// get_num_ranges returns the number of minmax components in the range description.
 template <class NUM>
-inline int DCNumericRange<NUM>::
-get_num_ranges() const
+inline int NumericRange<NUM>::get_num_ranges() const
 {
-	return _ranges.size();
+	return m_ranges.size();
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::get_min
-//       Access: Private
-//  Description: Returns the minimum value defined by the nth component.
-////////////////////////////////////////////////////////////////////
+// get_min returns the minimum value defined by the nth component.
 template <class NUM>
-inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_min(int n) const
+inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) const
 {
-	nassertr(n >= 0 && n < (int)_ranges.size(), 0);
-	return _ranges[n]._min;
+	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
+	return m_ranges[n].m_min;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::get_max
-//       Access: Private
-//  Description: Returns the maximum value defined by the nth component.
-////////////////////////////////////////////////////////////////////
+// get_max returns the maximum value defined by the nth component.
 template <class NUM>
-inline TYPENAME DCNumericRange<NUM>::Number DCNumericRange<NUM>::
-get_max(int n) const
+inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_max(int n) const
 {
-	nassertr(n >= 0 && n < (int)_ranges.size(), 0);
-	return _ranges[n]._max;
+	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
+	return m_ranges[n].m_max;
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::output_minmax
-//       Access: Private
-//  Description: Outputs a single element of the range description.
-////////////////////////////////////////////////////////////////////
+// output_minmax outputs a single element of the range description.
 template <class NUM>
-inline void DCNumericRange<NUM>::
-output_minmax(ostream &out, Number divisor, const MinMax &range) const
+inline void NumericRange<NUM>::output_minmax(std::ostream &out, Number divisor, const MinMax &range) const
 {
 	if(divisor == 1)
 	{
-		if(range._min == range._max)
+		if(range.m_min == range.m_max)
 		{
-			out << range._min;
+			out << range.m_min;
 		}
 		else
 		{
-			out << range._min << "-" << range._max;
+			out << range.m_min << "-" << range.m_max;
 		}
 	}
 	else
 	{
-		if(range._min == range._max)
+		if(range.m_min == range.m_max)
 		{
-			out << (double)range._min / (double)divisor;
+			out << (double)range.m_min / (double)divisor;
 		}
 		else
 		{
-			out << (double)range._min / (double)divisor
+			out << (double)range.m_min / (double)divisor
 			    << "-"
-			    << (double)range._max / (double)divisor;
+			    << (double)range.m_max / (double)divisor;
 		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////
-//     Function: DCNumericRange::output_minmax_char
-//       Access: Private
-//  Description: Outputs a single element of the range description.
-////////////////////////////////////////////////////////////////////
+// output_minmax_char outputs a single element of the range description.
 template <class NUM>
-inline void DCNumericRange<NUM>::
-output_minmax_char(ostream &out, const MinMax &range) const
+inline void NumericRange<NUM>::output_minmax_char(ostream &out, const MinMax &range) const
 {
-	if(range._min == range._max)
+	if(range.m_min == range.m_max)
 	{
-		DCPacker::enquote_string(out, '\'', string(1, range._min));
+		Packer::enquote_string(out, '\'', string(1, range.m_min));
 	}
 	else
 	{
-		DCPacker::enquote_string(out, '\'', string(1, range._min));
+		Packer::enquote_string(out, '\'', string(1, range.m_min));
 		out << "-";
-		DCPacker::enquote_string(out, '\'', string(1, range._max));
+		Packer::enquote_string(out, '\'', string(1, range.m_max));
 	}
 }
