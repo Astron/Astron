@@ -1,49 +1,35 @@
-// Filename: primeNumberGenerator.h
-// Created by:  drose (22Mar01)
+// Filename: PrimeNumberGenerator.h
+// Created by: drose (22 Mar, 2001)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef PRIMENUMBERGENERATOR_H
-#define PRIMENUMBERGENERATOR_H
-
+#pragma once
 #include "dcbase.h"
+namespace dclass   // open namespace dclass
+{
 
-#ifdef WITHIN_PANDA
-// We only have the vector_int header file if we're compiling this
-// package within the normal Panda environment.
-#include "vector_int.h"
 
-#else
-typedef vector<int> vector_int;
-#endif
-
-////////////////////////////////////////////////////////////////////
-//       Class : PrimeNumberGenerator
-// Description : This class generates a table of prime numbers, up to
-//               the limit of an int.  For a given integer n, it will
-//               return the nth prime number.  This will involve a
-//               recompute step only if n is greater than any previous
-//               n.
-////////////////////////////////////////////////////////////////////
+// A PrimeNumberGenerator this class generates a table of prime numbers, up to the limit of an int.
+//     For a given integer n, it will return the nth prime number.  This will involve a recompute
+//     step only if n is greater than any previous n.
 class PrimeNumberGenerator
 {
 	public:
 		PrimeNumberGenerator();
 
+		// the indexing operator returns the nth prime number.  this[0] returns 2, this[1] returns 3;
+		//     successively larger values of n return larger prime numbers, up to the largest prime
+		//     number that can be represented in an int.
 		int operator [](int n);
 
 	private:
-		typedef vector_int Primes;
-		Primes _primes;
+		std::vector<int> m_primes;
 };
 
-#endif
+
+} // close namespace dclass
