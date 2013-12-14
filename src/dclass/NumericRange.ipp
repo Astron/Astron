@@ -255,3 +255,6 @@ inline void NumericRange<NUM>::output_minmax_char(ostream &out, const MinMax &ra
 		Packer::enquote_string(out, '\'', string(1, range.m_max));
 	}
 }
+
+
+} // close namespace dclass
