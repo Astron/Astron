@@ -33,6 +33,7 @@
 #define FLEX_BETA
 #endif
 
+
 /* First, we deal with  platform-specific or compiler-specific issues. */
 
 /* begin standard C headers. */
@@ -113,12 +114,12 @@ typedef unsigned int flex_uint32_t;
 
 #else   /* ! __cplusplus */
 
-/* C99 requires __STDC__ to be defined as 1. */
-#if defined (__STDC__)
+/* C99 requires __STLexer__ to be defined as 1. */
+#if defined (__STLexer__)
 
 #define YY_USE_CONST
 
-#endif  /* defined (__STDC__) */
+#endif  /* defined (__STLexer__) */
 #endif  /* ! __cplusplus */
 
 #ifdef YY_USE_CONST
@@ -580,15 +581,15 @@ int dcyy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *dcyytext;
-#line 1 "dcLexer.lxx"
+#line 1 "Lexer.lxx"
 /*
-// Filename: dcLexer.lxx
+// Filename: Lexer.lxx
 // Created by:  drose (05Oct00)
 //
 ////////////////////////////////////////////////////////////////////
 */
-#line 9 "dcLexer.lxx"
-#include "dcLexerDefs.h"
+#line 9 "Lexer.lxx"
+#include "LexerDefs.h"
 #include "dcParserDefs.h"
 #include "dcParser.h"
 #include "dcFile.h"
@@ -631,16 +632,15 @@ static int initial_token;
 // Defining the interface to the lexer.
 ////////////////////////////////////////////////////////////////////
 
-void
-dc_init_lexer(istream &in, const string &filename)
+void dc_init_lexer(istream &in, const string &filename)
 {
-input_p = &in;
-dc_filename = filename;
-line_number = 0;
-col_number = 0;
-error_count = 0;
-warning_count = 0;
-initial_token = START_DC;
+	input_p = &in;
+	dc_filename = filename;
+	line_number = 0;
+	col_number = 0;
+	error_count = 0;
+	warning_count = 0;
+	initial_token = START_DC;
 }
 
 void
@@ -1220,7 +1220,7 @@ register yy_state_type yy_current_state;
 register char * yy_cp, *yy_bp;
 register int yy_act;
 
-#line 415 "dcLexer.lxx"
+#line 415 "Lexer.lxx"
 
 
 
@@ -1329,7 +1329,7 @@ do_action:  /* This label is used only to access EOF actions. */
 		case 1:
 			/* rule 1 can match eol */
 			YY_RULE_SETUP
-#line 425 "dcLexer.lxx"
+#line 425 "Lexer.lxx"
 			{
 				// New line.  Save a copy of the line so we can print it out for the
 				// benefit of the user in case we get an error.
@@ -1346,7 +1346,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 2:
 			YY_RULE_SETUP
-#line 439 "dcLexer.lxx"
+#line 439 "Lexer.lxx"
 			{
 				// Eat whitespace.
 				accept();
@@ -1354,7 +1354,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 3:
 			YY_RULE_SETUP
-#line 444 "dcLexer.lxx"
+#line 444 "Lexer.lxx"
 			{
 				// Eat C++-style comments.
 				accept();
@@ -1362,7 +1362,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 4:
 			YY_RULE_SETUP
-#line 449 "dcLexer.lxx"
+#line 449 "Lexer.lxx"
 			{
 				// Eat C-style comments.
 				accept();
@@ -1371,7 +1371,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 5:
 			YY_RULE_SETUP
-#line 456 "dcLexer.lxx"
+#line 456 "Lexer.lxx"
 			{
 				accept();
 				return KW_DCLASS;
@@ -1379,7 +1379,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 6:
 			YY_RULE_SETUP
-#line 461 "dcLexer.lxx"
+#line 461 "Lexer.lxx"
 			{
 				accept();
 				return KW_STRUCT;
@@ -1387,7 +1387,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 7:
 			YY_RULE_SETUP
-#line 466 "dcLexer.lxx"
+#line 466 "Lexer.lxx"
 			{
 				accept();
 				return KW_FROM;
@@ -1395,7 +1395,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 8:
 			YY_RULE_SETUP
-#line 471 "dcLexer.lxx"
+#line 471 "Lexer.lxx"
 			{
 				accept();
 				return KW_IMPORT;
@@ -1403,7 +1403,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 9:
 			YY_RULE_SETUP
-#line 476 "dcLexer.lxx"
+#line 476 "Lexer.lxx"
 			{
 				accept();
 				return KW_KEYWORD;
@@ -1411,7 +1411,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 10:
 			YY_RULE_SETUP
-#line 481 "dcLexer.lxx"
+#line 481 "Lexer.lxx"
 			{
 				accept();
 				return KW_TYPEDEF;
@@ -1419,7 +1419,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 11:
 			YY_RULE_SETUP
-#line 486 "dcLexer.lxx"
+#line 486 "Lexer.lxx"
 			{
 				accept();
 				return KW_SWITCH;
@@ -1427,7 +1427,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 12:
 			YY_RULE_SETUP
-#line 491 "dcLexer.lxx"
+#line 491 "Lexer.lxx"
 			{
 				accept();
 				return KW_CASE;
@@ -1435,7 +1435,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 13:
 			YY_RULE_SETUP
-#line 496 "dcLexer.lxx"
+#line 496 "Lexer.lxx"
 			{
 				accept();
 				return KW_DEFAULT;
@@ -1443,7 +1443,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 14:
 			YY_RULE_SETUP
-#line 501 "dcLexer.lxx"
+#line 501 "Lexer.lxx"
 			{
 				accept();
 				return KW_BREAK;
@@ -1451,7 +1451,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 15:
 			YY_RULE_SETUP
-#line 506 "dcLexer.lxx"
+#line 506 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT8;
@@ -1459,7 +1459,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 16:
 			YY_RULE_SETUP
-#line 511 "dcLexer.lxx"
+#line 511 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT16;
@@ -1467,7 +1467,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 17:
 			YY_RULE_SETUP
-#line 516 "dcLexer.lxx"
+#line 516 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT32;
@@ -1475,7 +1475,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 18:
 			YY_RULE_SETUP
-#line 521 "dcLexer.lxx"
+#line 521 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT64;
@@ -1483,7 +1483,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 19:
 			YY_RULE_SETUP
-#line 526 "dcLexer.lxx"
+#line 526 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT8;
@@ -1491,7 +1491,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 20:
 			YY_RULE_SETUP
-#line 531 "dcLexer.lxx"
+#line 531 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT16;
@@ -1499,7 +1499,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 21:
 			YY_RULE_SETUP
-#line 536 "dcLexer.lxx"
+#line 536 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT32;
@@ -1507,7 +1507,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 22:
 			YY_RULE_SETUP
-#line 541 "dcLexer.lxx"
+#line 541 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT64;
@@ -1515,7 +1515,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 23:
 			YY_RULE_SETUP
-#line 546 "dcLexer.lxx"
+#line 546 "Lexer.lxx"
 			{
 				accept();
 				return KW_FLOAT64;
@@ -1523,7 +1523,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 24:
 			YY_RULE_SETUP
-#line 551 "dcLexer.lxx"
+#line 551 "Lexer.lxx"
 			{
 				accept();
 				return KW_STRING;
@@ -1531,7 +1531,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 25:
 			YY_RULE_SETUP
-#line 556 "dcLexer.lxx"
+#line 556 "Lexer.lxx"
 			{
 				accept();
 				return KW_BLOB;
@@ -1539,7 +1539,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 26:
 			YY_RULE_SETUP
-#line 561 "dcLexer.lxx"
+#line 561 "Lexer.lxx"
 			{
 				accept();
 				return KW_BLOB32;
@@ -1547,7 +1547,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 27:
 			YY_RULE_SETUP
-#line 566 "dcLexer.lxx"
+#line 566 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT8ARRAY;
@@ -1555,7 +1555,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 28:
 			YY_RULE_SETUP
-#line 571 "dcLexer.lxx"
+#line 571 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT16ARRAY;
@@ -1563,7 +1563,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 29:
 			YY_RULE_SETUP
-#line 576 "dcLexer.lxx"
+#line 576 "Lexer.lxx"
 			{
 				accept();
 				return KW_INT32ARRAY;
@@ -1571,7 +1571,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 30:
 			YY_RULE_SETUP
-#line 581 "dcLexer.lxx"
+#line 581 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT8ARRAY;
@@ -1579,7 +1579,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 31:
 			YY_RULE_SETUP
-#line 586 "dcLexer.lxx"
+#line 586 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT16ARRAY;
@@ -1587,7 +1587,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 32:
 			YY_RULE_SETUP
-#line 591 "dcLexer.lxx"
+#line 591 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT32ARRAY;
@@ -1595,7 +1595,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 33:
 			YY_RULE_SETUP
-#line 596 "dcLexer.lxx"
+#line 596 "Lexer.lxx"
 			{
 				accept();
 				return KW_UINT32UINT8ARRAY;
@@ -1603,7 +1603,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 34:
 			YY_RULE_SETUP
-#line 601 "dcLexer.lxx"
+#line 601 "Lexer.lxx"
 			{
 				accept();
 				return KW_CHAR;
@@ -1611,7 +1611,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 35:
 			YY_RULE_SETUP
-#line 606 "dcLexer.lxx"
+#line 606 "Lexer.lxx"
 			{
 				// An unsigned integer number.
 				accept();
@@ -1639,7 +1639,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 36:
 			YY_RULE_SETUP
-#line 629 "dcLexer.lxx"
+#line 629 "Lexer.lxx"
 			{
 				// A signed integer number.
 				accept();
@@ -1697,7 +1697,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 37:
 			YY_RULE_SETUP
-#line 675 "dcLexer.lxx"
+#line 675 "Lexer.lxx"
 			{
 				// A hexadecimal integer number.
 				accept();
@@ -1732,7 +1732,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 38:
 			YY_RULE_SETUP
-#line 702 "dcLexer.lxx"
+#line 702 "Lexer.lxx"
 			{
 				// A floating-point number.
 				accept();
@@ -1743,7 +1743,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 39:
 			YY_RULE_SETUP
-#line 710 "dcLexer.lxx"
+#line 710 "Lexer.lxx"
 			{
 				// Quoted string.
 				accept();
@@ -1753,7 +1753,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 40:
 			YY_RULE_SETUP
-#line 717 "dcLexer.lxx"
+#line 717 "Lexer.lxx"
 			{
 				// Single-quoted string.
 				accept();
@@ -1763,7 +1763,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 41:
 			YY_RULE_SETUP
-#line 724 "dcLexer.lxx"
+#line 724 "Lexer.lxx"
 			{
 				// Long hex string.
 				accept();
@@ -1773,16 +1773,16 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 42:
 			YY_RULE_SETUP
-#line 731 "dcLexer.lxx"
+#line 731 "Lexer.lxx"
 			{
 				// Identifier or keyword.
 				accept();
 				dcyylval.str = dcyytext;
 
-				if(dc_file != (DCFile *)NULL)
+				if(dc_file != (dclass::File*)NULL)
 				{
-					const DCKeyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
-					if(keyword != (DCKeyword *)NULL)
+					const dclass::Keyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
+					if(keyword != (dclass::Keyword*)NULL)
 					{
 						dcyylval.u.keyword = keyword;
 						return KEYWORD;
@@ -1793,7 +1793,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 43:
 			YY_RULE_SETUP
-#line 747 "dcLexer.lxx"
+#line 747 "Lexer.lxx"
 			{
 				// Send any other printable character as itself.
 				accept();
@@ -1802,7 +1802,7 @@ do_action:  /* This label is used only to access EOF actions. */
 			YY_BREAK
 		case 44:
 			YY_RULE_SETUP
-#line 753 "dcLexer.lxx"
+#line 753 "Lexer.lxx"
 			ECHO;
 			YY_BREAK
 #line 1721 "lex.yy.c"
@@ -2883,4 +2883,4 @@ free((char *) ptr);      /* see dcyyrealloc() for (char *) cast */
 
 #define YYTABLES_NAME "yytables"
 
-#line 753 "dcLexer.lxx"
+#line 753 "Lexer.lxx"
