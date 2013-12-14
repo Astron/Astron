@@ -830,10 +830,10 @@ REALNUM([+ -] ? (([0 - 9] + [.]) | ([0 - 9]*[.][0 - 9] +))([eE][+ -] ? [0 - 9] +
 	accept();
 	dcyylval.str = dcyytext;
 
-	if(dc_file != (DCFile *)NULL)
+	if(dc_file != (File *)NULL)
 	{
-		const DCKeyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
-		if(keyword != (DCKeyword *)NULL)
+		const Keyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
+		if(keyword != (Keyword *)NULL)
 		{
 			dcyylval.u.keyword = keyword;
 			return KEYWORD;

@@ -75,25 +75,25 @@
 /* Copy the first part of user declarations.  */
 
 /* Line 189 of yacc.c  */
-#line 6 "dcParser.yxx"
+#line 6 "Parser.yxx"
 
-#include "dcLexerDefs.h"
-#include "dcParserDefs.h"
-#include "dcFile.h"
-#include "dcClass.h"
-#include "dcSwitch.h"
-#include "dcAtomicField.h"
-#include "dcMolecularField.h"
-#include "dcClassParameter.h"
-#include "dcSwitchParameter.h"
-#include "dcArrayParameter.h"
-#include "dcSimpleParameter.h"
-#include "dcTypedef.h"
-#include "dcKeyword.h"
-#include "dcPacker.h"
-#include "dcNumericRange.h"
+#include "LexerDefs.h"
+#include "ParserDefs.h"
+#include "File.h"
+#include "Class.h"
+#include "Switch.h"
+#include "AtomicField.h"
+#include "MolecularField.h"
+#include "ClassParameter.h"
+#include "SwitchParameter.h"
+#include "ArrayParameter.h"
+#include "SimpleParameter.h"
+#include "Typedef.h"
+#include "Keyword.h"
+#include "Packer.h"
+#include "NumericRange.h"
 
-// Because our token type contains objects of type string, which
+// Because our token type contains objects of type std::string, which
 // require correct copy construction (and not simply memcpying), we
 // cannot use bison's built-in auto-stack-grow feature.  As an easy
 // solution, we ensure here that we have enough yacc stack to start
@@ -101,33 +101,33 @@
 #define YYINITDEPTH 1000
 #define YYMAXDEPTH 1000
 
-DCFile *dc_file = (DCFile *)NULL;
-static DCClass *current_class = (DCClass *)NULL;
-static DCSwitch *current_switch = (DCSwitch *)NULL;
-static DCAtomicField *current_atomic = (DCAtomicField *)NULL;
-static DCMolecularField *current_molecular = (DCMolecularField *)NULL;
-static DCParameter *current_parameter = (DCParameter *)NULL;
-static DCKeywordList current_keyword_list;
-static DCPacker default_packer;
-static DCPacker *current_packer;
-static DCDoubleRange double_range;
-static DCUnsignedIntRange uint_range;
-static DCField *parameter_description = (DCField *)NULL;
+File *dc_file = (File *)NULL;
+static Class *current_class = (Class *)NULL;
+static Switch *current_switch = (Switch *)NULL;
+static AtomicField *current_atomic = (AtomicField *)NULL;
+static MolecularField *current_molecular = (MolecularField *)NULL;
+static Parameter *current_parameter = (Parameter *)NULL;
+static KeywordList current_keyword_list;
+static Packer default_packer;
+static Packer *current_packer;
+static DoubleRange double_range;
+static UnsignedIntRange uint_range;
+static Field *parameter_description = (Field *)NULL;
 
 ////////////////////////////////////////////////////////////////////
 // Defining the interface to the parser.
 ////////////////////////////////////////////////////////////////////
 
 void
-dc_init_parser(istream &in, const string &filename, DCFile &file)
+dc_init_parser(std::istream &in, const std::string &filename, File &file)
 {
 	dc_file = &file;
 	dc_init_lexer(in, filename);
 }
 
 void
-dc_init_parser_parameter_value(istream &in, const string &filename,
-                               DCPacker &packer)
+dc_init_parser_parameter_value(std::istream &in, const std::string &filename,
+                               Packer &packer)
 {
 	dc_file = NULL;
 	current_packer = &packer;
@@ -136,8 +136,8 @@ dc_init_parser_parameter_value(istream &in, const string &filename,
 }
 
 void
-dc_init_parser_parameter_description(istream &in, const string &filename,
-                                     DCFile *file)
+dc_init_parser_parameter_description(std::istream &in, const std::string &filename,
+                                     File *file)
 {
 	dc_file = file;
 	dc_init_lexer(in, filename);
@@ -145,7 +145,7 @@ dc_init_parser_parameter_description(istream &in, const string &filename,
 	dc_start_parameter_description();
 }
 
-DCField *
+Field *
 dc_get_parameter_description()
 {
 	return parameter_description;
@@ -154,7 +154,7 @@ dc_get_parameter_description()
 void
 dc_cleanup_parser()
 {
-	dc_file = (DCFile *)NULL;
+	dc_file = (File *)NULL;
 }
 
 
@@ -1352,7 +1352,7 @@ const char *yysrc;
 # ifndef yytnamerr
 /* Copy to YYRES the contents of YYSTR after stripping away unnecessary
    quotes and backslashes, so that it's suitable for yyerror.  The
-   heuristic is that double-quoting is unnecessary unless the string
+   heuristic is that double-quoting is unnecessary unless the std::string
    contains an apostrophe, a comma, or backslash (other than
    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
    null, do not copy; instead, return the length of what the result
@@ -1497,7 +1497,7 @@ yysyntax_error(char *yyresult, int yystate, int yychar)
 		{
 			/* Avoid sprintf, as that infringes on the user's name space.
 			   Don't have undefined behavior even if the translation
-			   produced a string with the wrong number of "%s"s.  */
+			   produced a std::string with the wrong number of "%s"s.  */
 			char *yyp = yyresult;
 			int yyi = 0;
 			while((*yyp = *yyf) != '\0')
@@ -1872,7 +1872,7 @@ yyreduce:
 		case 4:
 
 			/* Line 1464 of yacc.c  */
-#line 171 "dcParser.yxx"
+#line 171 "Parser.yxx"
 			{
 				parameter_description = (yyvsp[(2) - (2)].u.field);
 			}
@@ -1881,12 +1881,12 @@ yyreduce:
 		case 7:
 
 			/* Line 1464 of yacc.c  */
-#line 180 "dcParser.yxx"
+#line 180 "Parser.yxx"
 			{
 				if(!dc_file->add_class((yyvsp[(2) - (2)].u.dclass)))
 				{
-					DCClass *old_class = dc_file->get_class_by_name((yyvsp[(2) - (2)].u.dclass)->get_name());
-					if(old_class != (DCClass *)NULL && old_class->is_bogus_class())
+					Class *old_class = dc_file->get_class_by_name((yyvsp[(2) - (2)].u.dclass)->get_name());
+					if(old_class != (Class *)NULL && old_class->is_bogus_class())
 					{
 						yyerror("Base class defined after its first reference: " + (yyvsp[(2) - (2)].u.dclass)->get_name());
 					}
@@ -1901,7 +1901,7 @@ yyreduce:
 		case 8:
 
 			/* Line 1464 of yacc.c  */
-#line 191 "dcParser.yxx"
+#line 191 "Parser.yxx"
 			{
 				if(!dc_file->add_switch((yyvsp[(2) - (2)].u.dswitch)))
 				{
@@ -1913,25 +1913,25 @@ yyreduce:
 		case 13:
 
 			/* Line 1464 of yacc.c  */
-#line 204 "dcParser.yxx"
+#line 204 "Parser.yxx"
 			{
-				(yyval.str) = (yyvsp[(1) - (3)].str) + string("/") + (yyvsp[(3) - (3)].str);
+				(yyval.str) = (yyvsp[(1) - (3)].str) + std::string("/") + (yyvsp[(3) - (3)].str);
 			}
 			break;
 
 		case 15:
 
 			/* Line 1464 of yacc.c  */
-#line 212 "dcParser.yxx"
+#line 212 "Parser.yxx"
 			{
-				(yyval.str) = (yyvsp[(1) - (3)].str) + string(".") + (yyvsp[(3) - (3)].str);
+				(yyval.str) = (yyvsp[(1) - (3)].str) + std::string(".") + (yyvsp[(3) - (3)].str);
 			}
 			break;
 
 		case 16:
 
 			/* Line 1464 of yacc.c  */
-#line 219 "dcParser.yxx"
+#line 219 "Parser.yxx"
 			{
 				dc_file->add_import_module((yyvsp[(2) - (2)].str));
 			}
@@ -1940,7 +1940,7 @@ yyreduce:
 		case 17:
 
 			/* Line 1464 of yacc.c  */
-#line 223 "dcParser.yxx"
+#line 223 "Parser.yxx"
 			{
 				dc_file->add_import_module((yyvsp[(2) - (3)].str));
 			}
@@ -1949,7 +1949,7 @@ yyreduce:
 		case 20:
 
 			/* Line 1464 of yacc.c  */
-#line 232 "dcParser.yxx"
+#line 232 "Parser.yxx"
 			{
 				dc_file->add_import_symbol("*");
 			}
@@ -1958,7 +1958,7 @@ yyreduce:
 		case 21:
 
 			/* Line 1464 of yacc.c  */
-#line 239 "dcParser.yxx"
+#line 239 "Parser.yxx"
 			{
 				dc_file->add_import_symbol((yyvsp[(1) - (1)].str));
 			}
@@ -1967,7 +1967,7 @@ yyreduce:
 		case 22:
 
 			/* Line 1464 of yacc.c  */
-#line 243 "dcParser.yxx"
+#line 243 "Parser.yxx"
 			{
 				dc_file->add_import_symbol((yyvsp[(3) - (3)].str));
 			}
@@ -1976,9 +1976,9 @@ yyreduce:
 		case 23:
 
 			/* Line 1464 of yacc.c  */
-#line 250 "dcParser.yxx"
+#line 250 "Parser.yxx"
 			{
-				if((yyvsp[(2) - (2)].u.parameter) != (DCParameter *)NULL)
+				if((yyvsp[(2) - (2)].u.parameter) != (Parameter *)NULL)
 				{
 					DCTypedef *dtypedef = new DCTypedef((yyvsp[(2) - (2)].u.parameter));
 
@@ -2001,7 +2001,7 @@ yyreduce:
 		case 26:
 
 			/* Line 1464 of yacc.c  */
-#line 273 "dcParser.yxx"
+#line 273 "Parser.yxx"
 			{
 				dc_file->add_keyword((yyvsp[(2) - (2)].str));
 			}
@@ -2010,29 +2010,29 @@ yyreduce:
 		case 27:
 
 			/* Line 1464 of yacc.c  */
-#line 277 "dcParser.yxx"
+#line 277 "Parser.yxx"
 			{
 				// This keyword has already been defined.  But since we are now
 				// explicitly defining it, clear its bitmask, so that we will have a
 				// new hash code--doing this will allow us to phase out the
 				// historical hash code support later.
-				((DCKeyword *)(yyvsp[(2) - (2)].u.keyword))->clear_historical_flag();
+				((Keyword *)(yyvsp[(2) - (2)].u.keyword))->clear_historical_flag();
 			}
 			break;
 
 		case 30:
 
 			/* Line 1464 of yacc.c  */
-#line 293 "dcParser.yxx"
+#line 293 "Parser.yxx"
 			{
-				current_class = new DCClass(dc_file, (yyvsp[(2) - (2)].str), false, false);
+				current_class = new Class(dc_file, (yyvsp[(2) - (2)].str), false, false);
 			}
 			break;
 
 		case 31:
 
 			/* Line 1464 of yacc.c  */
-#line 297 "dcParser.yxx"
+#line 297 "Parser.yxx"
 			{
 				(yyval.u.dclass) = current_class;
 				current_class = (yyvsp[(3) - (7)].u.dclass);
@@ -2042,21 +2042,21 @@ yyreduce:
 		case 32:
 
 			/* Line 1464 of yacc.c  */
-#line 305 "dcParser.yxx"
+#line 305 "Parser.yxx"
 			{
-				if(dc_file == (DCFile *)NULL)
+				if(dc_file == (File *)NULL)
 				{
-					yyerror("No DCFile available, so no class names are predefined.");
+					yyerror("No File available, so no class names are predefined.");
 					(yyval.u.dclass) = NULL;
 
 				}
 				else
 				{
-					DCClass *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-					if(dclass == (DCClass *)NULL)
+					Class *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
+					if(dclass == (Class *)NULL)
 					{
 						// Create a bogus class as a forward reference.
-						dclass = new DCClass(dc_file, (yyvsp[(1) - (1)].str), false, true);
+						dclass = new Class(dc_file, (yyvsp[(1) - (1)].str), false, true);
 						dc_file->add_class(dclass);
 					}
 					if(dclass->is_struct())
@@ -2072,9 +2072,9 @@ yyreduce:
 		case 35:
 
 			/* Line 1464 of yacc.c  */
-#line 333 "dcParser.yxx"
+#line 333 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (1)].u.dclass) != (DCClass *)NULL)
+				if((yyvsp[(1) - (1)].u.dclass) != (Class *)NULL)
 				{
 					current_class->add_parent((yyvsp[(1) - (1)].u.dclass));
 				}
@@ -2084,7 +2084,7 @@ yyreduce:
 		case 36:
 
 			/* Line 1464 of yacc.c  */
-#line 339 "dcParser.yxx"
+#line 339 "Parser.yxx"
 			{
 				if(!dc_multiple_inheritance)
 				{
@@ -2093,7 +2093,7 @@ yyreduce:
 				}
 				else
 				{
-					if((yyvsp[(3) - (3)].u.dclass) != (DCClass *)NULL)
+					if((yyvsp[(3) - (3)].u.dclass) != (Class *)NULL)
 					{
 						current_class->add_parent((yyvsp[(3) - (3)].u.dclass));
 					}
@@ -2104,9 +2104,9 @@ yyreduce:
 		case 39:
 
 			/* Line 1464 of yacc.c  */
-#line 355 "dcParser.yxx"
+#line 355 "Parser.yxx"
 			{
-				if((yyvsp[(2) - (3)].u.field) == (DCField *)NULL)
+				if((yyvsp[(2) - (3)].u.field) == (Field *)NULL)
 				{
 					// Pass this error up.
 				}
@@ -2124,9 +2124,9 @@ yyreduce:
 		case 40:
 
 			/* Line 1464 of yacc.c  */
-#line 368 "dcParser.yxx"
+#line 368 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (2)].u.field) != (DCField *)NULL)
+				if((yyvsp[(1) - (2)].u.field) != (Field *)NULL)
 				{
 					if((yyvsp[(1) - (2)].u.field)->get_name().empty())
 					{
@@ -2141,10 +2141,10 @@ yyreduce:
 		case 42:
 
 			/* Line 1464 of yacc.c  */
-#line 379 "dcParser.yxx"
+#line 379 "Parser.yxx"
 			{
 				yyerror("Unnamed parameters are not allowed on a dclass");
-				if((yyvsp[(1) - (2)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
 				{
 					(yyvsp[(1) - (2)].u.parameter)->copy_keywords(current_keyword_list);
 				}
@@ -2155,9 +2155,9 @@ yyreduce:
 		case 43:
 
 			/* Line 1464 of yacc.c  */
-#line 387 "dcParser.yxx"
+#line 387 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (2)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
 				{
 					(yyvsp[(1) - (2)].u.parameter)->copy_keywords(current_keyword_list);
 				}
@@ -2168,16 +2168,16 @@ yyreduce:
 		case 44:
 
 			/* Line 1464 of yacc.c  */
-#line 397 "dcParser.yxx"
+#line 397 "Parser.yxx"
 			{
-				current_class = new DCClass(dc_file, (yyvsp[(2) - (2)].str), true, false);
+				current_class = new Class(dc_file, (yyvsp[(2) - (2)].str), true, false);
 			}
 			break;
 
 		case 45:
 
 			/* Line 1464 of yacc.c  */
-#line 401 "dcParser.yxx"
+#line 401 "Parser.yxx"
 			{
 				(yyval.u.dclass) = current_class;
 				current_class = (yyvsp[(3) - (7)].u.dclass);
@@ -2187,21 +2187,21 @@ yyreduce:
 		case 46:
 
 			/* Line 1464 of yacc.c  */
-#line 409 "dcParser.yxx"
+#line 409 "Parser.yxx"
 			{
-				if(dc_file == (DCFile *)NULL)
+				if(dc_file == (File *)NULL)
 				{
-					yyerror("No DCFile available, so no struct names are predefined.");
+					yyerror("No File available, so no struct names are predefined.");
 					(yyval.u.dclass) = NULL;
 
 				}
 				else
 				{
-					DCClass *dstruct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-					if(dstruct == (DCClass *)NULL)
+					Class *dstruct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
+					if(dstruct == (Class *)NULL)
 					{
 						// Create a bogus class as a forward reference.
-						dstruct = new DCClass(dc_file, (yyvsp[(1) - (1)].str), false, true);
+						dstruct = new Class(dc_file, (yyvsp[(1) - (1)].str), false, true);
 						dc_file->add_class(dstruct);
 					}
 					if(!dstruct->is_struct())
@@ -2217,9 +2217,9 @@ yyreduce:
 		case 49:
 
 			/* Line 1464 of yacc.c  */
-#line 437 "dcParser.yxx"
+#line 437 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (1)].u.dclass) != (DCClass *)NULL)
+				if((yyvsp[(1) - (1)].u.dclass) != (Class *)NULL)
 				{
 					current_class->add_parent((yyvsp[(1) - (1)].u.dclass));
 				}
@@ -2229,9 +2229,9 @@ yyreduce:
 		case 50:
 
 			/* Line 1464 of yacc.c  */
-#line 443 "dcParser.yxx"
+#line 443 "Parser.yxx"
 			{
-				if((yyvsp[(3) - (3)].u.dclass) != (DCClass *)NULL)
+				if((yyvsp[(3) - (3)].u.dclass) != (Class *)NULL)
 				{
 					current_class->add_parent((yyvsp[(3) - (3)].u.dclass));
 				}
@@ -2241,9 +2241,9 @@ yyreduce:
 		case 53:
 
 			/* Line 1464 of yacc.c  */
-#line 454 "dcParser.yxx"
+#line 454 "Parser.yxx"
 			{
-				if((yyvsp[(2) - (3)].u.field) == (DCField *)NULL)
+				if((yyvsp[(2) - (3)].u.field) == (Field *)NULL)
 				{
 					// Pass this error up.
 				}
@@ -2257,7 +2257,7 @@ yyreduce:
 		case 54:
 
 			/* Line 1464 of yacc.c  */
-#line 465 "dcParser.yxx"
+#line 465 "Parser.yxx"
 			{
 				if((yyvsp[(1) - (2)].u.field)->get_name().empty())
 				{
@@ -2270,7 +2270,7 @@ yyreduce:
 		case 56:
 
 			/* Line 1464 of yacc.c  */
-#line 473 "dcParser.yxx"
+#line 473 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
 			}
@@ -2279,7 +2279,7 @@ yyreduce:
 		case 57:
 
 			/* Line 1464 of yacc.c  */
-#line 477 "dcParser.yxx"
+#line 477 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
 			}
@@ -2288,17 +2288,17 @@ yyreduce:
 		case 58:
 
 			/* Line 1464 of yacc.c  */
-#line 484 "dcParser.yxx"
+#line 484 "Parser.yxx"
 			{
-				if(current_class == (DCClass *)NULL)
+				if(current_class == (Class *)NULL)
 				{
 					yyerror("Cannot define a method outside of a struct or class.");
-					DCClass *temp_class = new DCClass(dc_file, "temp", false, false);  // memory leak.
-					current_atomic = new DCAtomicField((yyvsp[(1) - (2)].str), temp_class, false);
+					Class *temp_class = new Class(dc_file, "temp", false, false);  // memory leak.
+					current_atomic = new AtomicField((yyvsp[(1) - (2)].str), temp_class, false);
 				}
 				else
 				{
-					current_atomic = new DCAtomicField((yyvsp[(1) - (2)].str), current_class, false);
+					current_atomic = new AtomicField((yyvsp[(1) - (2)].str), current_class, false);
 				}
 			}
 			break;
@@ -2306,7 +2306,7 @@ yyreduce:
 		case 59:
 
 			/* Line 1464 of yacc.c  */
-#line 494 "dcParser.yxx"
+#line 494 "Parser.yxx"
 			{
 				(yyval.u.field) = current_atomic;
 				current_atomic = (yyvsp[(3) - (5)].u.atomic);
@@ -2316,9 +2316,9 @@ yyreduce:
 		case 64:
 
 			/* Line 1464 of yacc.c  */
-#line 512 "dcParser.yxx"
+#line 512 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (1)].u.parameter) != (DCParameter *)NULL)
+				if((yyvsp[(1) - (1)].u.parameter) != (Parameter *)NULL)
 				{
 					current_atomic->add_element((yyvsp[(1) - (1)].u.parameter));
 				}
@@ -2328,7 +2328,7 @@ yyreduce:
 		case 65:
 
 			/* Line 1464 of yacc.c  */
-#line 521 "dcParser.yxx"
+#line 521 "Parser.yxx"
 			{
 				current_parameter = (yyvsp[(1) - (1)].u.parameter);
 			}
@@ -2337,7 +2337,7 @@ yyreduce:
 		case 66:
 
 			/* Line 1464 of yacc.c  */
-#line 525 "dcParser.yxx"
+#line 525 "Parser.yxx"
 			{
 				(yyval.u.parameter) = (yyvsp[(3) - (3)].u.parameter);
 			}
@@ -2346,11 +2346,11 @@ yyreduce:
 		case 69:
 
 			/* Line 1464 of yacc.c  */
-#line 537 "dcParser.yxx"
+#line 537 "Parser.yxx"
 			{
 				current_packer = &default_packer;
 				current_packer->clear_data();
-				if((yyvsp[(1) - (2)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
 				{
 					current_packer->begin_pack((yyvsp[(1) - (2)].u.parameter));
 				}
@@ -2360,16 +2360,16 @@ yyreduce:
 		case 70:
 
 			/* Line 1464 of yacc.c  */
-#line 545 "dcParser.yxx"
+#line 545 "Parser.yxx"
 			{
 				bool is_valid = false;
-				if((yyvsp[(1) - (4)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (4)].u.parameter) != (Field *)NULL)
 				{
 					is_valid = (yyvsp[(1) - (4)].u.parameter)->is_valid();
 				}
 				if(current_packer->end_pack())
 				{
-					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_string());
+					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_std::string());
 
 				}
 				else
@@ -2388,11 +2388,11 @@ yyreduce:
 		case 72:
 
 			/* Line 1464 of yacc.c  */
-#line 567 "dcParser.yxx"
+#line 567 "Parser.yxx"
 			{
 				current_packer = &default_packer;
 				current_packer->clear_data();
-				if((yyvsp[(1) - (2)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
 				{
 					current_packer->begin_pack((yyvsp[(1) - (2)].u.parameter));
 				}
@@ -2402,16 +2402,16 @@ yyreduce:
 		case 73:
 
 			/* Line 1464 of yacc.c  */
-#line 575 "dcParser.yxx"
+#line 575 "Parser.yxx"
 			{
 				bool is_valid = false;
-				if((yyvsp[(1) - (4)].u.parameter) != (DCField *)NULL)
+				if((yyvsp[(1) - (4)].u.parameter) != (Field *)NULL)
 				{
 					is_valid = (yyvsp[(1) - (4)].u.parameter)->is_valid();
 				}
 				if(current_packer->end_pack())
 				{
-					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_string());
+					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_std::string());
 
 				}
 				else
@@ -2430,7 +2430,7 @@ yyreduce:
 		case 78:
 
 			/* Line 1464 of yacc.c  */
-#line 606 "dcParser.yxx"
+#line 606 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (1)].u.parameter);
 			}
@@ -2439,7 +2439,7 @@ yyreduce:
 		case 79:
 
 			/* Line 1464 of yacc.c  */
-#line 610 "dcParser.yxx"
+#line 610 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (1)].u.field);
 			}
@@ -2448,7 +2448,7 @@ yyreduce:
 		case 80:
 
 			/* Line 1464 of yacc.c  */
-#line 617 "dcParser.yxx"
+#line 617 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (2)].u.field);
 			}
@@ -2457,7 +2457,7 @@ yyreduce:
 		case 81:
 
 			/* Line 1464 of yacc.c  */
-#line 621 "dcParser.yxx"
+#line 621 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
 			}
@@ -2466,7 +2466,7 @@ yyreduce:
 		case 82:
 
 			/* Line 1464 of yacc.c  */
-#line 625 "dcParser.yxx"
+#line 625 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
 			}
@@ -2475,7 +2475,7 @@ yyreduce:
 		case 83:
 
 			/* Line 1464 of yacc.c  */
-#line 632 "dcParser.yxx"
+#line 632 "Parser.yxx"
 			{
 				(yyval.u.parameter) = new DCSimpleParameter((yyvsp[(1) - (1)].u.subatomic));
 			}
@@ -2484,7 +2484,7 @@ yyreduce:
 		case 84:
 
 			/* Line 1464 of yacc.c  */
-#line 636 "dcParser.yxx"
+#line 636 "Parser.yxx"
 			{
 				DCSimpleParameter *simple_param = (yyvsp[(1) - (4)].u.parameter)->as_simple_parameter();
 				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
@@ -2499,7 +2499,7 @@ yyreduce:
 		case 85:
 
 			/* Line 1464 of yacc.c  */
-#line 645 "dcParser.yxx"
+#line 645 "Parser.yxx"
 			{
 				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
 				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
@@ -2525,7 +2525,7 @@ yyreduce:
 		case 86:
 
 			/* Line 1464 of yacc.c  */
-#line 661 "dcParser.yxx"
+#line 661 "Parser.yxx"
 			{
 				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
 				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
@@ -2545,9 +2545,9 @@ yyreduce:
 		case 88:
 
 			/* Line 1464 of yacc.c  */
-#line 677 "dcParser.yxx"
+#line 677 "Parser.yxx"
 			{
-				if(dc_file == (DCFile *)NULL)
+				if(dc_file == (File *)NULL)
 				{
 					yyerror("Invalid type.");
 					(yyval.u.parameter) = NULL;
@@ -2559,20 +2559,20 @@ yyreduce:
 					if(dtypedef == (DCTypedef *)NULL)
 					{
 						// Maybe it's a class name.
-						DCClass *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-						if(dclass != (DCClass *)NULL)
+						Class *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
+						if(dclass != (Class *)NULL)
 						{
 							// Create an implicit typedef for this.
-							dtypedef = new DCTypedef(new DCClassParameter(dclass), true);
+							dtypedef = new DCTypedef(new ClassParameter(dclass), true);
 						}
 						else
 						{
 							// Maybe it's a switch name.
-							DCSwitch *dswitch = dc_file->get_switch_by_name((yyvsp[(1) - (1)].str));
-							if(dswitch != (DCSwitch *)NULL)
+							Switch *dswitch = dc_file->get_switch_by_name((yyvsp[(1) - (1)].str));
+							if(dswitch != (Switch *)NULL)
 							{
 								// This also gets an implicit typedef.
-								dtypedef = new DCTypedef(new DCSwitchParameter(dswitch), true);
+								dtypedef = new DCTypedef(new SwitchParameter(dswitch), true);
 							}
 							else
 							{
@@ -2592,26 +2592,26 @@ yyreduce:
 		case 89:
 
 			/* Line 1464 of yacc.c  */
-#line 709 "dcParser.yxx"
+#line 709 "Parser.yxx"
 			{
 				// This is an inline struct definition.
-				if((yyvsp[(1) - (1)].u.dclass) == (DCClass *)NULL)
+				if((yyvsp[(1) - (1)].u.dclass) == (Class *)NULL)
 				{
 					(yyval.u.parameter) = NULL;
 				}
 				else
 				{
-					if(dc_file != (DCFile *)NULL)
+					if(dc_file != (File *)NULL)
 					{
 						dc_file->add_thing_to_delete((yyvsp[(1) - (1)].u.dclass));
 					}
 					else
 					{
 						// This is a memory leak--this happens when we put an anonymous
-						// struct reference within the string passed to
-						// DCPackerInterface::check_match().  Maybe it doesn't really matter.
+						// struct reference within the std::string passed to
+						// PackerInterface::check_match().  Maybe it doesn't really matter.
 					}
-					(yyval.u.parameter) = new DCClassParameter((yyvsp[(1) - (1)].u.dclass));
+					(yyval.u.parameter) = new ClassParameter((yyvsp[(1) - (1)].u.dclass));
 				}
 			}
 			break;
@@ -2619,26 +2619,26 @@ yyreduce:
 		case 90:
 
 			/* Line 1464 of yacc.c  */
-#line 725 "dcParser.yxx"
+#line 725 "Parser.yxx"
 			{
 				// This is an inline switch definition.
-				if((yyvsp[(1) - (1)].u.dswitch) == (DCSwitch *)NULL)
+				if((yyvsp[(1) - (1)].u.dswitch) == (Switch *)NULL)
 				{
 					(yyval.u.parameter) = NULL;
 				}
 				else
 				{
-					if(dc_file != (DCFile *)NULL)
+					if(dc_file != (File *)NULL)
 					{
 						dc_file->add_thing_to_delete((yyvsp[(1) - (1)].u.dswitch));
 					}
 					else
 					{
 						// This is a memory leak--this happens when we put an anonymous
-						// switch reference within the string passed to
-						// DCPackerInterface::check_match().  Maybe it doesn't really matter.
+						// switch reference within the std::string passed to
+						// PackerInterface::check_match().  Maybe it doesn't really matter.
 					}
-					(yyval.u.parameter) = new DCSwitchParameter((yyvsp[(1) - (1)].u.dswitch));
+					(yyval.u.parameter) = new SwitchParameter((yyvsp[(1) - (1)].u.dswitch));
 				}
 			}
 			break;
@@ -2646,7 +2646,7 @@ yyreduce:
 		case 91:
 
 			/* Line 1464 of yacc.c  */
-#line 744 "dcParser.yxx"
+#line 744 "Parser.yxx"
 			{
 				double_range.clear();
 			}
@@ -2655,7 +2655,7 @@ yyreduce:
 		case 92:
 
 			/* Line 1464 of yacc.c  */
-#line 748 "dcParser.yxx"
+#line 748 "Parser.yxx"
 			{
 				double_range.clear();
 				if(!double_range.add_range((yyvsp[(1) - (1)].u.real), (yyvsp[(1) - (1)].u.real)))
@@ -2668,7 +2668,7 @@ yyreduce:
 		case 93:
 
 			/* Line 1464 of yacc.c  */
-#line 755 "dcParser.yxx"
+#line 755 "Parser.yxx"
 			{
 				double_range.clear();
 				if(!double_range.add_range((yyvsp[(1) - (3)].u.real), (yyvsp[(3) - (3)].u.real)))
@@ -2681,7 +2681,7 @@ yyreduce:
 		case 94:
 
 			/* Line 1464 of yacc.c  */
-#line 762 "dcParser.yxx"
+#line 762 "Parser.yxx"
 			{
 				double_range.clear();
 				if((yyvsp[(2) - (2)].u.real) >= 0)
@@ -2698,7 +2698,7 @@ yyreduce:
 		case 95:
 
 			/* Line 1464 of yacc.c  */
-#line 771 "dcParser.yxx"
+#line 771 "Parser.yxx"
 			{
 				if(!double_range.add_range((yyvsp[(3) - (3)].u.real), (yyvsp[(3) - (3)].u.real)))
 				{
@@ -2710,7 +2710,7 @@ yyreduce:
 		case 96:
 
 			/* Line 1464 of yacc.c  */
-#line 777 "dcParser.yxx"
+#line 777 "Parser.yxx"
 			{
 				if(!double_range.add_range((yyvsp[(3) - (5)].u.real), (yyvsp[(5) - (5)].u.real)))
 				{
@@ -2722,7 +2722,7 @@ yyreduce:
 		case 97:
 
 			/* Line 1464 of yacc.c  */
-#line 783 "dcParser.yxx"
+#line 783 "Parser.yxx"
 			{
 				if((yyvsp[(4) - (4)].u.real) >= 0)
 				{
@@ -2738,7 +2738,7 @@ yyreduce:
 		case 98:
 
 			/* Line 1464 of yacc.c  */
-#line 794 "dcParser.yxx"
+#line 794 "Parser.yxx"
 			{
 				uint_range.clear();
 			}
@@ -2747,7 +2747,7 @@ yyreduce:
 		case 99:
 
 			/* Line 1464 of yacc.c  */
-#line 798 "dcParser.yxx"
+#line 798 "Parser.yxx"
 			{
 				uint_range.clear();
 				if(!uint_range.add_range((yyvsp[(1) - (1)].u.s_uint), (yyvsp[(1) - (1)].u.s_uint)))
@@ -2760,7 +2760,7 @@ yyreduce:
 		case 100:
 
 			/* Line 1464 of yacc.c  */
-#line 805 "dcParser.yxx"
+#line 805 "Parser.yxx"
 			{
 				uint_range.clear();
 				if(!uint_range.add_range((yyvsp[(1) - (3)].u.s_uint), (yyvsp[(3) - (3)].u.s_uint)))
@@ -2773,7 +2773,7 @@ yyreduce:
 		case 101:
 
 			/* Line 1464 of yacc.c  */
-#line 812 "dcParser.yxx"
+#line 812 "Parser.yxx"
 			{
 				uint_range.clear();
 				if(!uint_range.add_range((yyvsp[(1) - (2)].u.s_uint), (yyvsp[(2) - (2)].u.s_uint)))
@@ -2786,7 +2786,7 @@ yyreduce:
 		case 102:
 
 			/* Line 1464 of yacc.c  */
-#line 819 "dcParser.yxx"
+#line 819 "Parser.yxx"
 			{
 				if(!uint_range.add_range((yyvsp[(3) - (3)].u.s_uint), (yyvsp[(3) - (3)].u.s_uint)))
 				{
@@ -2798,7 +2798,7 @@ yyreduce:
 		case 103:
 
 			/* Line 1464 of yacc.c  */
-#line 825 "dcParser.yxx"
+#line 825 "Parser.yxx"
 			{
 				if(!uint_range.add_range((yyvsp[(3) - (5)].u.s_uint), (yyvsp[(5) - (5)].u.s_uint)))
 				{
@@ -2810,7 +2810,7 @@ yyreduce:
 		case 104:
 
 			/* Line 1464 of yacc.c  */
-#line 831 "dcParser.yxx"
+#line 831 "Parser.yxx"
 			{
 				if(!uint_range.add_range((yyvsp[(3) - (4)].u.s_uint), (yyvsp[(4) - (4)].u.s_uint)))
 				{
@@ -2822,9 +2822,9 @@ yyreduce:
 		case 106:
 
 			/* Line 1464 of yacc.c  */
-#line 841 "dcParser.yxx"
+#line 841 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (4)].u.parameter) == (DCParameter *)NULL)
+				if((yyvsp[(1) - (4)].u.parameter) == (Parameter *)NULL)
 				{
 					(yyval.u.parameter) = NULL;
 				}
@@ -2838,7 +2838,7 @@ yyreduce:
 		case 107:
 
 			/* Line 1464 of yacc.c  */
-#line 852 "dcParser.yxx"
+#line 852 "Parser.yxx"
 			{
 				current_parameter->set_name((yyvsp[(1) - (1)].str));
 				(yyval.u.parameter) = current_parameter;
@@ -2848,7 +2848,7 @@ yyreduce:
 		case 108:
 
 			/* Line 1464 of yacc.c  */
-#line 857 "dcParser.yxx"
+#line 857 "Parser.yxx"
 			{
 				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
 				if(simple_param == NULL || simple_param->get_typedef() != (DCTypedef *)NULL)
@@ -2874,7 +2874,7 @@ yyreduce:
 		case 109:
 
 			/* Line 1464 of yacc.c  */
-#line 872 "dcParser.yxx"
+#line 872 "Parser.yxx"
 			{
 				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
 				if(simple_param == NULL || simple_param->get_typedef() != (DCTypedef *)NULL)
@@ -2900,7 +2900,7 @@ yyreduce:
 		case 110:
 
 			/* Line 1464 of yacc.c  */
-#line 887 "dcParser.yxx"
+#line 887 "Parser.yxx"
 			{
 				(yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification(uint_range);
 			}
@@ -2909,7 +2909,7 @@ yyreduce:
 		case 111:
 
 			/* Line 1464 of yacc.c  */
-#line 894 "dcParser.yxx"
+#line 894 "Parser.yxx"
 			{
 				if((yyvsp[(1) - (1)].str).length() != 1)
 				{
@@ -2926,7 +2926,7 @@ yyreduce:
 		case 113:
 
 			/* Line 1464 of yacc.c  */
-#line 907 "dcParser.yxx"
+#line 907 "Parser.yxx"
 			{
 				(yyval.u.s_uint) = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
 				if((yyval.u.s_uint) != (yyvsp[(1) - (1)].u.uint64))
@@ -2940,7 +2940,7 @@ yyreduce:
 		case 114:
 
 			/* Line 1464 of yacc.c  */
-#line 918 "dcParser.yxx"
+#line 918 "Parser.yxx"
 			{
 				(yyval.u.s_uint) = (unsigned int) - (yyvsp[(1) - (1)].u.int64);
 				if((yyvsp[(1) - (1)].u.int64) >= 0)
@@ -2959,7 +2959,7 @@ yyreduce:
 		case 117:
 
 			/* Line 1464 of yacc.c  */
-#line 940 "dcParser.yxx"
+#line 940 "Parser.yxx"
 			{
 				(yyval.u.real) = (double)(yyvsp[(1) - (1)].u.uint64);
 			}
@@ -2968,7 +2968,7 @@ yyreduce:
 		case 118:
 
 			/* Line 1464 of yacc.c  */
-#line 944 "dcParser.yxx"
+#line 944 "Parser.yxx"
 			{
 				(yyval.u.real) = (double)(yyvsp[(1) - (1)].u.int64);
 			}
@@ -2977,7 +2977,7 @@ yyreduce:
 		case 120:
 
 			/* Line 1464 of yacc.c  */
-#line 952 "dcParser.yxx"
+#line 952 "Parser.yxx"
 			{
 				if((yyvsp[(1) - (1)].str).length() != 1)
 				{
@@ -2994,7 +2994,7 @@ yyreduce:
 		case 122:
 
 			/* Line 1464 of yacc.c  */
-#line 966 "dcParser.yxx"
+#line 966 "Parser.yxx"
 			{
 			}
 			break;
@@ -3002,11 +3002,11 @@ yyreduce:
 		case 123:
 
 			/* Line 1464 of yacc.c  */
-#line 969 "dcParser.yxx"
+#line 969 "Parser.yxx"
 			{
 				if((yyvsp[(1) - (2)].str) != current_packer->get_current_field_name())
 				{
-					ostringstream strm;
+					ostd::stringstream strm;
 					strm << "Got '" << (yyvsp[(1) - (2)].str) << "', expected '"
 					     << current_packer->get_current_field_name() << "'";
 					yyerror(strm.str());
@@ -3017,7 +3017,7 @@ yyreduce:
 		case 124:
 
 			/* Line 1464 of yacc.c  */
-#line 978 "dcParser.yxx"
+#line 978 "Parser.yxx"
 			{
 			}
 			break;
@@ -3025,7 +3025,7 @@ yyreduce:
 		case 125:
 
 			/* Line 1464 of yacc.c  */
-#line 984 "dcParser.yxx"
+#line 984 "Parser.yxx"
 			{
 				current_packer->pack_int64((yyvsp[(1) - (1)].u.int64));
 			}
@@ -3034,7 +3034,7 @@ yyreduce:
 		case 126:
 
 			/* Line 1464 of yacc.c  */
-#line 988 "dcParser.yxx"
+#line 988 "Parser.yxx"
 			{
 				current_packer->pack_uint64((yyvsp[(1) - (1)].u.uint64));
 			}
@@ -3043,7 +3043,7 @@ yyreduce:
 		case 127:
 
 			/* Line 1464 of yacc.c  */
-#line 992 "dcParser.yxx"
+#line 992 "Parser.yxx"
 			{
 				current_packer->pack_double((yyvsp[(1) - (1)].u.real));
 			}
@@ -3052,16 +3052,16 @@ yyreduce:
 		case 128:
 
 			/* Line 1464 of yacc.c  */
-#line 996 "dcParser.yxx"
+#line 996 "Parser.yxx"
 			{
-				current_packer->pack_string((yyvsp[(1) - (1)].str));
+				current_packer->pack_std::string((yyvsp[(1) - (1)].str));
 			}
 			break;
 
 		case 129:
 
 			/* Line 1464 of yacc.c  */
-#line 1000 "dcParser.yxx"
+#line 1000 "Parser.yxx"
 			{
 				current_packer->pack_literal_value((yyvsp[(1) - (1)].str));
 			}
@@ -3070,7 +3070,7 @@ yyreduce:
 		case 130:
 
 			/* Line 1464 of yacc.c  */
-#line 1004 "dcParser.yxx"
+#line 1004 "Parser.yxx"
 			{
 				current_packer->push();
 			}
@@ -3079,7 +3079,7 @@ yyreduce:
 		case 131:
 
 			/* Line 1464 of yacc.c  */
-#line 1008 "dcParser.yxx"
+#line 1008 "Parser.yxx"
 			{
 				current_packer->pop();
 			}
@@ -3088,7 +3088,7 @@ yyreduce:
 		case 132:
 
 			/* Line 1464 of yacc.c  */
-#line 1012 "dcParser.yxx"
+#line 1012 "Parser.yxx"
 			{
 				current_packer->push();
 			}
@@ -3097,7 +3097,7 @@ yyreduce:
 		case 133:
 
 			/* Line 1464 of yacc.c  */
-#line 1016 "dcParser.yxx"
+#line 1016 "Parser.yxx"
 			{
 				current_packer->pop();
 			}
@@ -3106,7 +3106,7 @@ yyreduce:
 		case 134:
 
 			/* Line 1464 of yacc.c  */
-#line 1020 "dcParser.yxx"
+#line 1020 "Parser.yxx"
 			{
 				current_packer->push();
 			}
@@ -3115,7 +3115,7 @@ yyreduce:
 		case 135:
 
 			/* Line 1464 of yacc.c  */
-#line 1024 "dcParser.yxx"
+#line 1024 "Parser.yxx"
 			{
 				current_packer->pop();
 			}
@@ -3124,7 +3124,7 @@ yyreduce:
 		case 136:
 
 			/* Line 1464 of yacc.c  */
-#line 1028 "dcParser.yxx"
+#line 1028 "Parser.yxx"
 			{
 				for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.s_uint); i++)
 				{
@@ -3136,7 +3136,7 @@ yyreduce:
 		case 137:
 
 			/* Line 1464 of yacc.c  */
-#line 1034 "dcParser.yxx"
+#line 1034 "Parser.yxx"
 			{
 				for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.s_uint); i++)
 				{
@@ -3148,7 +3148,7 @@ yyreduce:
 		case 138:
 
 			/* Line 1464 of yacc.c  */
-#line 1040 "dcParser.yxx"
+#line 1040 "Parser.yxx"
 			{
 				for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.s_uint); i++)
 				{
@@ -3160,7 +3160,7 @@ yyreduce:
 		case 139:
 
 			/* Line 1464 of yacc.c  */
-#line 1046 "dcParser.yxx"
+#line 1046 "Parser.yxx"
 			{
 				for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.s_uint); i++)
 				{
@@ -3172,7 +3172,7 @@ yyreduce:
 		case 146:
 
 			/* Line 1464 of yacc.c  */
-#line 1070 "dcParser.yxx"
+#line 1070 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int8;
 			}
@@ -3181,7 +3181,7 @@ yyreduce:
 		case 147:
 
 			/* Line 1464 of yacc.c  */
-#line 1074 "dcParser.yxx"
+#line 1074 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int16;
 			}
@@ -3190,7 +3190,7 @@ yyreduce:
 		case 148:
 
 			/* Line 1464 of yacc.c  */
-#line 1078 "dcParser.yxx"
+#line 1078 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int32;
 			}
@@ -3199,7 +3199,7 @@ yyreduce:
 		case 149:
 
 			/* Line 1464 of yacc.c  */
-#line 1082 "dcParser.yxx"
+#line 1082 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int64;
 			}
@@ -3208,7 +3208,7 @@ yyreduce:
 		case 150:
 
 			/* Line 1464 of yacc.c  */
-#line 1086 "dcParser.yxx"
+#line 1086 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint8;
 			}
@@ -3217,7 +3217,7 @@ yyreduce:
 		case 151:
 
 			/* Line 1464 of yacc.c  */
-#line 1090 "dcParser.yxx"
+#line 1090 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint16;
 			}
@@ -3226,7 +3226,7 @@ yyreduce:
 		case 152:
 
 			/* Line 1464 of yacc.c  */
-#line 1094 "dcParser.yxx"
+#line 1094 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint32;
 			}
@@ -3235,7 +3235,7 @@ yyreduce:
 		case 153:
 
 			/* Line 1464 of yacc.c  */
-#line 1098 "dcParser.yxx"
+#line 1098 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint64;
 			}
@@ -3244,7 +3244,7 @@ yyreduce:
 		case 154:
 
 			/* Line 1464 of yacc.c  */
-#line 1102 "dcParser.yxx"
+#line 1102 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_float64;
 			}
@@ -3253,16 +3253,16 @@ yyreduce:
 		case 155:
 
 			/* Line 1464 of yacc.c  */
-#line 1106 "dcParser.yxx"
+#line 1106 "Parser.yxx"
 			{
-				(yyval.u.subatomic) = ST_string;
+				(yyval.u.subatomic) = ST_std::string;
 			}
 			break;
 
 		case 156:
 
 			/* Line 1464 of yacc.c  */
-#line 1110 "dcParser.yxx"
+#line 1110 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_blob;
 			}
@@ -3271,7 +3271,7 @@ yyreduce:
 		case 157:
 
 			/* Line 1464 of yacc.c  */
-#line 1114 "dcParser.yxx"
+#line 1114 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_blob32;
 			}
@@ -3280,7 +3280,7 @@ yyreduce:
 		case 158:
 
 			/* Line 1464 of yacc.c  */
-#line 1118 "dcParser.yxx"
+#line 1118 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int8array;
 			}
@@ -3289,7 +3289,7 @@ yyreduce:
 		case 159:
 
 			/* Line 1464 of yacc.c  */
-#line 1122 "dcParser.yxx"
+#line 1122 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int16array;
 			}
@@ -3298,7 +3298,7 @@ yyreduce:
 		case 160:
 
 			/* Line 1464 of yacc.c  */
-#line 1126 "dcParser.yxx"
+#line 1126 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_int32array;
 			}
@@ -3307,7 +3307,7 @@ yyreduce:
 		case 161:
 
 			/* Line 1464 of yacc.c  */
-#line 1130 "dcParser.yxx"
+#line 1130 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint8array;
 			}
@@ -3316,7 +3316,7 @@ yyreduce:
 		case 162:
 
 			/* Line 1464 of yacc.c  */
-#line 1134 "dcParser.yxx"
+#line 1134 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint16array;
 			}
@@ -3325,7 +3325,7 @@ yyreduce:
 		case 163:
 
 			/* Line 1464 of yacc.c  */
-#line 1138 "dcParser.yxx"
+#line 1138 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint32array;
 			}
@@ -3334,7 +3334,7 @@ yyreduce:
 		case 164:
 
 			/* Line 1464 of yacc.c  */
-#line 1142 "dcParser.yxx"
+#line 1142 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_uint32uint8array;
 			}
@@ -3343,7 +3343,7 @@ yyreduce:
 		case 165:
 
 			/* Line 1464 of yacc.c  */
-#line 1146 "dcParser.yxx"
+#line 1146 "Parser.yxx"
 			{
 				(yyval.u.subatomic) = ST_char;
 			}
@@ -3352,7 +3352,7 @@ yyreduce:
 		case 166:
 
 			/* Line 1464 of yacc.c  */
-#line 1153 "dcParser.yxx"
+#line 1153 "Parser.yxx"
 			{
 				current_keyword_list.clear_keywords();
 			}
@@ -3361,7 +3361,7 @@ yyreduce:
 		case 167:
 
 			/* Line 1464 of yacc.c  */
-#line 1157 "dcParser.yxx"
+#line 1157 "Parser.yxx"
 			{
 				current_keyword_list.add_keyword((yyvsp[(2) - (2)].u.keyword));
 			}
@@ -3370,7 +3370,7 @@ yyreduce:
 		case 168:
 
 			/* Line 1464 of yacc.c  */
-#line 1164 "dcParser.yxx"
+#line 1164 "Parser.yxx"
 			{
 				if(current_keyword_list.get_num_keywords() != 0)
 				{
@@ -3382,16 +3382,16 @@ yyreduce:
 		case 169:
 
 			/* Line 1464 of yacc.c  */
-#line 1173 "dcParser.yxx"
+#line 1173 "Parser.yxx"
 			{
-				current_molecular = new DCMolecularField((yyvsp[(1) - (2)].str), current_class);
+				current_molecular = new MolecularField((yyvsp[(1) - (2)].str), current_class);
 			}
 			break;
 
 		case 170:
 
 			/* Line 1464 of yacc.c  */
-#line 1177 "dcParser.yxx"
+#line 1177 "Parser.yxx"
 			{
 				(yyval.u.field) = current_molecular;
 			}
@@ -3400,18 +3400,18 @@ yyreduce:
 		case 171:
 
 			/* Line 1464 of yacc.c  */
-#line 1184 "dcParser.yxx"
+#line 1184 "Parser.yxx"
 			{
-				DCField *field = current_class->get_field_by_name((yyvsp[(1) - (1)].str));
-				(yyval.u.atomic) = (DCAtomicField *)NULL;
-				if(field == (DCField *)NULL)
+				Field *field = current_class->get_field_by_name((yyvsp[(1) - (1)].str));
+				(yyval.u.atomic) = (AtomicField *)NULL;
+				if(field == (Field *)NULL)
 				{
 					// Maybe the field is unknown because the class is partially
 					// bogus.  In that case, allow it for now; create a bogus field as
 					// a placeholder.
 					if(current_class->inherits_from_bogus_class())
 					{
-						(yyval.u.atomic) = new DCAtomicField((yyvsp[(1) - (1)].str), current_class, true);
+						(yyval.u.atomic) = new AtomicField((yyvsp[(1) - (1)].str), current_class, true);
 						current_class->add_field((yyval.u.atomic));
 
 					}
@@ -3425,7 +3425,7 @@ yyreduce:
 				else
 				{
 					(yyval.u.atomic) = field->as_atomic_field();
-					if((yyval.u.atomic) == (DCAtomicField *)NULL)
+					if((yyval.u.atomic) == (AtomicField *)NULL)
 					{
 						yyerror("Not an atomic field: " + (yyvsp[(1) - (1)].str));
 					}
@@ -3436,9 +3436,9 @@ yyreduce:
 		case 172:
 
 			/* Line 1464 of yacc.c  */
-#line 1211 "dcParser.yxx"
+#line 1211 "Parser.yxx"
 			{
-				if((yyvsp[(1) - (1)].u.atomic) != (DCAtomicField *)NULL)
+				if((yyvsp[(1) - (1)].u.atomic) != (AtomicField *)NULL)
 				{
 					current_molecular->add_atomic((yyvsp[(1) - (1)].u.atomic));
 				}
@@ -3448,9 +3448,9 @@ yyreduce:
 		case 173:
 
 			/* Line 1464 of yacc.c  */
-#line 1217 "dcParser.yxx"
+#line 1217 "Parser.yxx"
 			{
-				if((yyvsp[(3) - (3)].u.atomic) != (DCAtomicField *)NULL)
+				if((yyvsp[(3) - (3)].u.atomic) != (AtomicField *)NULL)
 				{
 					current_molecular->add_atomic((yyvsp[(3) - (3)].u.atomic));
 					if(!(yyvsp[(3) - (3)].u.atomic)->is_bogus_field()
@@ -3467,7 +3467,7 @@ yyreduce:
 		case 174:
 
 			/* Line 1464 of yacc.c  */
-#line 1231 "dcParser.yxx"
+#line 1231 "Parser.yxx"
 			{
 				(yyval.str) = "";
 			}
@@ -3476,32 +3476,32 @@ yyreduce:
 		case 176:
 
 			/* Line 1464 of yacc.c  */
-#line 1239 "dcParser.yxx"
+#line 1239 "Parser.yxx"
 			{
-				current_switch = new DCSwitch((yyvsp[(2) - (6)].str), (yyvsp[(4) - (6)].u.field));
+				current_switch = new Switch((yyvsp[(2) - (6)].str), (yyvsp[(4) - (6)].u.field));
 			}
 			break;
 
 		case 177:
 
 			/* Line 1464 of yacc.c  */
-#line 1243 "dcParser.yxx"
+#line 1243 "Parser.yxx"
 			{
 				(yyval.u.dswitch) = current_switch;
-				current_switch = (DCSwitch *)(yyvsp[(7) - (9)].u.parameter);
+				current_switch = (Switch *)(yyvsp[(7) - (9)].u.parameter);
 			}
 			break;
 
 		case 183:
 
 			/* Line 1464 of yacc.c  */
-#line 1257 "dcParser.yxx"
+#line 1257 "Parser.yxx"
 			{
 				if(!current_switch->is_field_valid())
 				{
 					yyerror("case declaration required before first element");
 				}
-				else if((yyvsp[(2) - (3)].u.field) != (DCField *)NULL)
+				else if((yyvsp[(2) - (3)].u.field) != (Field *)NULL)
 				{
 					if(!current_switch->add_field((yyvsp[(2) - (3)].u.field)))
 					{
@@ -3514,7 +3514,7 @@ yyreduce:
 		case 184:
 
 			/* Line 1464 of yacc.c  */
-#line 1270 "dcParser.yxx"
+#line 1270 "Parser.yxx"
 			{
 				current_packer = &default_packer;
 				current_packer->clear_data();
@@ -3525,7 +3525,7 @@ yyreduce:
 		case 185:
 
 			/* Line 1464 of yacc.c  */
-#line 1276 "dcParser.yxx"
+#line 1276 "Parser.yxx"
 			{
 				if(!current_packer->end_pack())
 				{
@@ -3534,7 +3534,7 @@ yyreduce:
 				}
 				else
 				{
-					int case_index = current_switch->add_case(current_packer->get_string());
+					int case_index = current_switch->add_case(current_packer->get_std::string());
 					if(case_index == -1)
 					{
 						yyerror("Duplicate case value");
@@ -3546,7 +3546,7 @@ yyreduce:
 		case 186:
 
 			/* Line 1464 of yacc.c  */
-#line 1291 "dcParser.yxx"
+#line 1291 "Parser.yxx"
 			{
 				if(!current_switch->add_default())
 				{
@@ -3558,7 +3558,7 @@ yyreduce:
 		case 187:
 
 			/* Line 1464 of yacc.c  */
-#line 1300 "dcParser.yxx"
+#line 1300 "Parser.yxx"
 			{
 				current_switch->add_break();
 			}
@@ -3567,7 +3567,7 @@ yyreduce:
 		case 188:
 
 			/* Line 1464 of yacc.c  */
-#line 1307 "dcParser.yxx"
+#line 1307 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (1)].u.parameter);
 			}
@@ -3576,7 +3576,7 @@ yyreduce:
 		case 189:
 
 			/* Line 1464 of yacc.c  */
-#line 1311 "dcParser.yxx"
+#line 1311 "Parser.yxx"
 			{
 				(yyval.u.field) = (yyvsp[(1) - (1)].u.parameter);
 			}

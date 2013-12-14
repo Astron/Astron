@@ -1,42 +1,36 @@
-// Filename: dcParserDefs.h
-// Created by:  drose (05Oct00)
+// Filename: ParserDefs.h
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCPARSERDEFS_H
-#define DCPARSERDEFS_H
-
+#pragma once
 #include "dcbase.h"
-#include "dcSubatomicType.h"
+#include "SubatomicType.h"
 
-class DCFile;
-class DCClass;
-class DCSwitch;
-class DCField;
-class DCAtomicField;
-class DCParameter;
-class DCKeyword;
-class DCPacker;
+class File;
+class Class;
+class Switch;
+class Field;
+class AtomicField;
+class Parameter;
+class Keyword;
+class Packer;
 
-void dc_init_parser(istream &in, const string &filename, DCFile &file);
-void dc_init_parser_parameter_value(istream &in, const string &filename,
-                                    DCPacker &packer);
-void dc_init_parser_parameter_description(istream &in, const string &filename,
-        DCFile *file);
-DCField *dc_get_parameter_description();
+void dc_init_parser(std::istream &in, const std::string &filename, File &file);
+void dc_init_parser_parameter_value(std::istream &in, const std::string &filename,
+                                    Packer &packer);
+void dc_init_parser_parameter_description(std::istream &in, const std::string &filename,
+        File *file);
+Field *dc_get_parameter_description();
 void dc_cleanup_parser();
 int dcyyparse();
 
-extern DCFile *dc_file;
+extern File *dc_file;
 
 // This structure holds the return value for each token.
 // Traditionally, this is a union, and is declared with the %union
@@ -45,7 +39,7 @@ extern DCFile *dc_file;
 // union), so we'll use a class instead.  That means we need to
 // declare it externally, here.
 
-class DCTokenType
+class TokenType
 {
 	public:
 		union U
@@ -56,19 +50,19 @@ class DCTokenType
 			uint64_t uint64;
 			double real;
 			bool flag;
-			DCClass *dclass;
-			DCSwitch *dswitch;
-			DCField *field;
-			DCAtomicField *atomic;
-			DCSubatomicType subatomic;
-			DCParameter *parameter;
-			const DCKeyword *keyword;
+			Class *dclass;
+			Switch *dswitch;
+			Field *field;
+			AtomicField *atomic;
+			SubatomicType subatomic;
+			Parameter *parameter;
+			const Keyword *keyword;
 		} u;
-		string str;
+		std::string str;
 };
 
 // The yacc-generated code expects to use the symbol 'YYSTYPE' to
 // refer to the above class.
-#define YYSTYPE DCTokenType
+#define YYSTYPE TokenType
 
 #endif
