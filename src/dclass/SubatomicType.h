@@ -1,31 +1,22 @@
-// Filename: dcSubatomicType.h
-// Created by:  drose (05Oct00)
+// Filename: SubatomicType.h
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCSUBATOMICTYPE_H
-#define DCSUBATOMICTYPE_H
-
+#pragma once
 #include "dcbase.h"
+namespace dclass   // open namespace dclass
+{
 
-BEGIN_PUBLISH
-////////////////////////////////////////////////////////////////////
-//        Enum : DCSubatomicType
-// Description : This defines the numeric type of each element of a
-//               DCAtomicField; that is, the particular values that
-//               will get added to the message when the atomic field
-//               method is called.
-////////////////////////////////////////////////////////////////////
-enum DCSubatomicType
+
+// A SubatomicType defines the numeric type of each element of a AtomicField; that is, the
+//    particular values that will get added to the message when the atomic field method is called.
+enum SubatomicType
 {
     ST_int8,
     ST_int16,
@@ -63,10 +54,9 @@ enum DCSubatomicType
 
     ST_invalid
 };
-END_PUBLISH
-
-ostream &operator << (ostream &out, DCSubatomicType type);
-
-#endif
 
 
+std::ostream &operator << (std::ostream &out, SubatomicType type);
+
+
+} // close namespace dclass
