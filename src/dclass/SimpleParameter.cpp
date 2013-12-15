@@ -168,7 +168,6 @@ SimpleParameter::SimpleParameter(SubatomicType type, unsigned int divisor) :
 		case ST_invalid:
 			break;
 	}
-	m_has_fixed_structure = m_has_fixed_byte_size;
 
 	set_divisor(divisor);
 
@@ -505,13 +504,11 @@ bool SimpleParameter::set_range(const DoubleRange &range)
 				m_num_length_bytes = 0;
 				m_has_fixed_byte_size = true;
 				m_fixed_byte_size = m_uint_range.get_one_value();
-				m_has_fixed_structure = true;
 			}
 			else
 			{
 				m_num_length_bytes = sizeof(length_tag_t);
 				m_has_fixed_byte_size = false;
-				m_has_fixed_structure = false;
 			}
 			break;
 
@@ -532,13 +529,11 @@ bool SimpleParameter::set_range(const DoubleRange &range)
 				m_num_length_bytes = 0;
 				m_has_fixed_byte_size = true;
 				m_fixed_byte_size = m_uint_range.get_one_value();
-				m_has_fixed_structure = true;
 			}
 			else
 			{
 				m_num_length_bytes = 4;
 				m_has_fixed_byte_size = false;
-				m_has_fixed_structure = false;
 			}
 			break;
 

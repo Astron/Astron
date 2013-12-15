@@ -28,7 +28,6 @@ PackerInterface(const string &name) :
 {
 	m_has_fixed_byte_size = false;
 	m_fixed_byte_size = 0;
-	m_has_fixed_structure = false;
 	m_has_range_limits = false;
 	m_num_length_bytes = 0;
 	m_has_nested_fields = false;
@@ -47,7 +46,6 @@ PackerInterface(const PackerInterface &copy) :
 	m_name(copy.m_name),
 	m_has_fixed_byte_size(copy.m_has_fixed_byte_size),
 	m_fixed_byte_size(copy.m_fixed_byte_size),
-	m_has_fixed_structure(copy.m_has_fixed_structure),
 	m_has_range_limits(copy.m_has_range_limits),
 	m_num_length_bytes(copy.m_num_length_bytes),
 	m_has_nested_fields(copy.m_has_nested_fields),
@@ -79,12 +77,6 @@ PackerInterface::
 //               named field without having to look up the field name
 //               in a table later, or -1 if the named field cannot be
 //               found.
-//
-//               If the named field is nested within a switch or some
-//               similar dynamic structure that reveals different
-//               fields based on the contents of the data, this
-//               mechanism cannot be used to pre-fetch the field index
-//               number--you must seek for the field by name.
 ////////////////////////////////////////////////////////////////////
 int PackerInterface::
 find_seek_index(const string &name) const
@@ -112,28 +104,6 @@ const Field *PackerInterface::
 as_field() const
 {
 	return (Field *)NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PackerInterface::as_switch_parameter
-//       Access: Published, Virtual
-//  Description:
-////////////////////////////////////////////////////////////////////
-SwitchParameter *PackerInterface::
-as_switch_parameter()
-{
-	return (SwitchParameter *)NULL;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PackerInterface::as_switch_parameter
-//       Access: Published, Virtual
-//  Description:
-////////////////////////////////////////////////////////////////////
-const SwitchParameter *PackerInterface::
-as_switch_parameter() const
-{
-	return (SwitchParameter *)NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -525,18 +495,6 @@ do_check_match_simple_parameter(const SimpleParameter *) const
 ////////////////////////////////////////////////////////////////////
 bool PackerInterface::
 do_check_match_class_parameter(const ClassParameter *) const
-{
-	return false;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: PackerInterface::do_check_match_switch_parameter
-//       Access: Protected, Virtual
-//  Description: Returns true if this field matches the indicated
-//               switch parameter, false otherwise.
-////////////////////////////////////////////////////////////////////
-bool PackerInterface::
-do_check_match_switch_parameter(const SwitchParameter *) const
 {
 	return false;
 }

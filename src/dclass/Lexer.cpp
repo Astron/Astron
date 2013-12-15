@@ -1417,36 +1417,12 @@ do_action:  /* This label is used only to access EOF actions. */
 				return KW_TYPEDEF;
 			}
 			YY_BREAK
-		case 11:
-			YY_RULE_SETUP
-#line 486 "Lexer.lxx"
-			{
-				accept();
-				return KW_SWITCH;
-			}
-			YY_BREAK
-		case 12:
-			YY_RULE_SETUP
-#line 491 "Lexer.lxx"
-			{
-				accept();
-				return KW_CASE;
-			}
-			YY_BREAK
 		case 13:
 			YY_RULE_SETUP
 #line 496 "Lexer.lxx"
 			{
 				accept();
 				return KW_DEFAULT;
-			}
-			YY_BREAK
-		case 14:
-			YY_RULE_SETUP
-#line 501 "Lexer.lxx"
-			{
-				accept();
-				return KW_BREAK;
 			}
 			YY_BREAK
 		case 15:

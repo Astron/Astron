@@ -49,13 +49,11 @@ ClassParameter::ClassParameter(const Class *dclass) : m_class(dclass)
 	// fields).
 	m_has_fixed_byte_size = true;
 	m_fixed_byte_size = 0;
-	m_has_fixed_structure = true;
 	for(i = 0; i < m_num_nested_fields; i++)
 	{
 		PackerInterface *field = get_nested_field(i);
 		m_has_fixed_byte_size = m_has_fixed_byte_size && field->has_fixed_byte_size();
 		m_fixed_byte_size += field->get_fixed_byte_size();
-		m_has_fixed_structure = m_has_fixed_structure && field->has_fixed_structure();
 
 		m_has_range_limits = m_has_range_limits || field->has_range_limits();
 	}

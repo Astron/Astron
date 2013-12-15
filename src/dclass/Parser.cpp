@@ -81,11 +81,9 @@
 #include "ParserDefs.h"
 #include "File.h"
 #include "Class.h"
-#include "Switch.h"
 #include "AtomicField.h"
 #include "MolecularField.h"
 #include "ClassParameter.h"
-#include "SwitchParameter.h"
 #include "ArrayParameter.h"
 #include "SimpleParameter.h"
 #include "Typedef.h"
@@ -104,7 +102,6 @@ using namespace dclass;
 
 File *dc_file = (File *)NULL;
 static Class *current_class = (Class *)NULL;
-static Switch *current_switch = (Switch *)NULL;
 static AtomicField *current_atomic = (AtomicField *)NULL;
 static MolecularField *current_molecular = (MolecularField *)NULL;
 static Parameter *current_parameter = (Parameter *)NULL;
@@ -202,10 +199,7 @@ enum yytokentype
     KW_IMPORT = 268,
     KW_TYPEDEF = 269,
     KW_KEYWORD = 270,
-    KW_SWITCH = 271,
-    KW_CASE = 272,
     KW_DEFAULT = 273,
-    KW_BREAK = 274,
     KW_INT8 = 275,
     KW_INT16 = 276,
     KW_INT32 = 277,
@@ -245,10 +239,7 @@ enum yytokentype
 #define KW_IMPORT 268
 #define KW_TYPEDEF 269
 #define KW_KEYWORD 270
-#define KW_SWITCH 271
-#define KW_CASE 272
 #define KW_DEFAULT 273
-#define KW_BREAK 274
 #define KW_INT8 275
 #define KW_INT16 276
 #define KW_INT32 277
@@ -674,7 +665,7 @@ static const char *const yytname[] =
 	"$end", "error", "$undefined", "UNSIGNED_INTEGER", "SIGNED_INTEGER",
 	"REAL", "STRING", "HEX_STRING", "IDENTIFIER", "KEYWORD", "KW_DCLASS",
 	"KW_STRUCT", "KW_FROM", "KW_IMPORT", "KW_TYPEDEF", "KW_KEYWORD",
-	"KW_SWITCH", "KW_CASE", "KW_DEFAULT", "KW_BREAK", "KW_INT8", "KW_INT16",
+	"KW_DEFAULT", "KW_INT8", "KW_INT16",
 	"KW_INT32", "KW_INT64", "KW_UINT8", "KW_UINT16", "KW_UINT32",
 	"KW_UINT64", "KW_FLOAT64", "KW_STRING", "KW_BLOB", "KW_BLOB32",
 	"KW_INT8ARRAY", "KW_INT16ARRAY", "KW_INT32ARRAY", "KW_UINT8ARRAY",
@@ -699,8 +690,7 @@ static const char *const yytname[] =
 	"parameter_actual_value", "$@9", "$@10", "$@11", "array", "maybe_comma",
 	"array_def", "type_token", "keyword_list", "no_keyword_list",
 	"molecular_field", "$@12", "atomic_name", "molecular_atom_list",
-	"optional_name", "switch", "@13", "switch_fields", "switch_case", "$@14",
-	"switch_default", "switch_break", "switch_field", "empty", 0
+	"optional_name", "@13", "$@14", "empty", 0
 };
 #endif
 
@@ -1899,18 +1889,6 @@ yyreduce:
 			}
 			break;
 
-		case 8:
-
-			/* Line 1464 of yacc.c  */
-#line 191 "Parser.yxx"
-			{
-				if(!dc_file->add_switch((yyvsp[(2) - (2)].u.dswitch)))
-				{
-					yyerror("Duplicate class name: " + (yyvsp[(2) - (2)].u.dswitch)->get_name());
-				}
-			}
-			break;
-
 		case 13:
 
 			/* Line 1464 of yacc.c  */
@@ -2560,18 +2538,8 @@ yyreduce:
 						}
 						else
 						{
-							// Maybe it's a switch name.
-							Switch *dswitch = dc_file->get_switch_by_name((yyvsp[(1) - (1)].str));
-							if(dswitch != (Switch *)NULL)
-							{
-								// This also gets an implicit typedef.
-								dtypedef = new Typedef(new SwitchParameter(dswitch), true);
-							}
-							else
-							{
-								// It's an undefined typedef.  Create a bogus forward reference.
-								dtypedef = new Typedef((yyvsp[(1) - (1)].str));
-							}
+							// It's an undefined typedef.  Create a bogus forward reference.
+							dtypedef = new Typedef((yyvsp[(1) - (1)].str));
 						}
 
 						dc_file->add_typedef(dtypedef);
@@ -2605,33 +2573,6 @@ yyreduce:
 						// PackerInterface::check_match().  Maybe it doesn't really matter.
 					}
 					(yyval.u.parameter) = new ClassParameter((yyvsp[(1) - (1)].u.dclass));
-				}
-			}
-			break;
-
-		case 90:
-
-			/* Line 1464 of yacc.c  */
-#line 725 "Parser.yxx"
-			{
-				// This is an inline switch definition.
-				if((yyvsp[(1) - (1)].u.dswitch) == (Switch *)NULL)
-				{
-					(yyval.u.parameter) = NULL;
-				}
-				else
-				{
-					if(dc_file != (File *)NULL)
-					{
-						dc_file->add_thing_to_delete((yyvsp[(1) - (1)].u.dswitch));
-					}
-					else
-					{
-						// This is a memory leak--this happens when we put an anonymous
-						// switch reference within the std::string passed to
-						// PackerInterface::check_match().  Maybe it doesn't really matter.
-					}
-					(yyval.u.parameter) = new SwitchParameter((yyvsp[(1) - (1)].u.dswitch));
 				}
 			}
 			break;
@@ -3463,97 +3404,6 @@ yyreduce:
 #line 1231 "Parser.yxx"
 			{
 				(yyval.str) = "";
-			}
-			break;
-
-		case 176:
-
-			/* Line 1464 of yacc.c  */
-#line 1239 "Parser.yxx"
-			{
-				current_switch = new Switch((yyvsp[(2) - (6)].str), (yyvsp[(4) - (6)].u.field));
-			}
-			break;
-
-		case 177:
-
-			/* Line 1464 of yacc.c  */
-#line 1243 "Parser.yxx"
-			{
-				(yyval.u.dswitch) = current_switch;
-				current_switch = (Switch *)(yyvsp[(7) - (9)].u.parameter);
-			}
-			break;
-
-		case 183:
-
-			/* Line 1464 of yacc.c  */
-#line 1257 "Parser.yxx"
-			{
-				if(!current_switch->is_field_valid())
-				{
-					yyerror("case declaration required before first element");
-				}
-				else if((yyvsp[(2) - (3)].u.field) != (Field *)NULL)
-				{
-					if(!current_switch->add_field((yyvsp[(2) - (3)].u.field)))
-					{
-						yyerror("Duplicate field name: " + (yyvsp[(2) - (3)].u.field)->get_name());
-					}
-				}
-			}
-			break;
-
-		case 184:
-
-			/* Line 1464 of yacc.c  */
-#line 1270 "Parser.yxx"
-			{
-				current_packer = &default_packer;
-				current_packer->clear_data();
-				current_packer->begin_pack(current_switch->get_key_parameter());
-			}
-			break;
-
-		case 185:
-
-			/* Line 1464 of yacc.c  */
-#line 1276 "Parser.yxx"
-			{
-				if(!current_packer->end_pack())
-				{
-					yyerror("Invalid value for switch parameter");
-					current_switch->add_invalid_case();
-				}
-				else
-				{
-					int case_index = current_switch->add_case(current_packer->get_string());
-					if(case_index == -1)
-					{
-						yyerror("Duplicate case value");
-					}
-				}
-			}
-			break;
-
-		case 186:
-
-			/* Line 1464 of yacc.c  */
-#line 1291 "Parser.yxx"
-			{
-				if(!current_switch->add_default())
-				{
-					yyerror("Default case already defined");
-				}
-			}
-			break;
-
-		case 187:
-
-			/* Line 1464 of yacc.c  */
-#line 1300 "Parser.yxx"
-			{
-				current_switch->add_break();
 			}
 			break;
 

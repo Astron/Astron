@@ -9,11 +9,9 @@
 //
 
 #include "Packer.h"
-#include "Switch.h"
 #include "ParserDefs.h"
 #include "LexerDefs.h"
 #include "ClassParameter.h"
-#include "SwitchParameter.h"
 #include "Class.h"
 namespace dclass   // open namespace dclass
 {
@@ -395,17 +393,6 @@ seek(int seek_index)
 			return false;
 		}
 		const PackerCatalog::Entry &entry = _live_catalog->get_entry(seek_index);
-
-		if(entry._parent->as_switch_parameter() != (SwitchParameter *)NULL)
-		{
-			// If the parent is a Switch, that can only mean that the
-			// seeked field is a switch parameter.  We can't support seeking
-			// to a switch parameter and modifying it directly--what would
-			// happen to all of the related fields?  Instead, you'll have to
-			// seek to the switch itself and repack the whole entity.
-			_pack_error = true;
-			return false;
-		}
 
 		size_t begin = _live_catalog->get_begin(seek_index);
 		if(begin < _unpack_p)
@@ -874,7 +861,6 @@ unpack_and_format(ostream &out, bool show_field_names)
 					break;
 
 				case PT_field:
-				case PT_switch:
 					out << '(';
 					break;
 
@@ -903,7 +889,6 @@ unpack_and_format(ostream &out, bool show_field_names)
 					break;
 
 				case PT_field:
-				case PT_switch:
 					out << ')';
 					break;
 
@@ -971,59 +956,6 @@ output_hex_string(ostream &out, const string &str)
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: Packer::handle_switch
-//       Access: Private
-//  Description: When we advance past the key field on a switch
-//               record, we suddenly have more fields available--all
-//               the appropriate alternate fields in the switch.
-//
-//               This function is called when we detect this
-//               condition; it switches the _current_parent to the
-//               appropriate case of the switch record.
-////////////////////////////////////////////////////////////////////
-void Packer::
-handle_switch(const SwitchParameter *switch_parameter)
-{
-	// First, get the value from the key.  This is either found in the
-	// unpack or the pack data, depending on what mode we're in.
-	const PackerInterface *new_parent = NULL;
-
-	if(_mode == M_pack || _mode == M_repack)
-	{
-		const char *data = _pack_data.get_data();
-		new_parent = switch_parameter->apply_switch
-		             (data + _push_marker, _pack_data.get_length() - _push_marker);
-
-	}
-	else if(_mode == M_unpack)
-	{
-		new_parent = switch_parameter->apply_switch
-		             (_unpack_data + _push_marker, _unpack_p - _push_marker);
-	}
-
-	if(new_parent == (PackerInterface *)NULL)
-	{
-		// This means an invalid value was packed for the key.
-		_range_error = true;
-		return;
-	}
-
-	_last_switch = switch_parameter;
-
-	// Now substitute in the switch case for the previous parent (which
-	// replaces the switch node itself).  This will suddenly make a slew
-	// of new fields appear.
-	_current_parent = new_parent;
-	_num_nested_fields = _current_parent->get_num_nested_fields();
-
-	if(_num_nested_fields < 0 ||
-	        _current_field_index < _num_nested_fields)
-	{
-		_current_field = _current_parent->get_nested_field(_current_field_index);
-	}
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: Packer::clear
 //       Access: Private
 //  Description: Resets the data structures after a pack or unpack
@@ -1039,7 +971,6 @@ clear()
 	_num_nested_fields = 0;
 	_push_marker = 0;
 	_pop_marker = 0;
-	_last_switch = NULL;
 
 	if(_live_catalog != (PackerCatalog::LiveCatalog *)NULL)
 	{

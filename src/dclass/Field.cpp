@@ -27,7 +27,6 @@ Field::Field() : m_class(NULL), m_number(-1), m_default_value_stale(true),
 	m_pack_type = PT_field;
 	m_has_fixed_byte_size = true;
 	m_fixed_byte_size = 0;
-	m_has_fixed_structure = true;
 }
 
 // named constructor (for classes)
@@ -40,7 +39,6 @@ Field::Field(const string &name, Class *dclass) : PackerInterface(name),
 	m_pack_type = PT_field;
 	m_has_fixed_byte_size = true;
 	m_fixed_byte_size = 0;
-	m_has_fixed_structure = true;
 }
 
 // destructor

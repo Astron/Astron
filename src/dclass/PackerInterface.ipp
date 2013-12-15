@@ -63,25 +63,6 @@ get_fixed_byte_size() const
 }
 
 ////////////////////////////////////////////////////////////////////
-//     Function: PackerInterface::has_fixed_structure
-//       Access: Public
-//  Description: Returns true if this field type always has the same
-//               structure regardless of the data in the stream, or
-//               false if its structure may vary.  This is almost, but
-//               not quite, the same thing as has_fixed_byte_size.
-//               The difference is that a Switch may have multiple
-//               cases all with the same byte size, but they will
-//               still (presumably) have different structures, in the
-//               sense that the actual list of fields varies according
-//               to the live data.
-////////////////////////////////////////////////////////////////////
-inline bool PackerInterface::
-has_fixed_structure() const
-{
-	return m_has_fixed_structure;
-}
-
-////////////////////////////////////////////////////////////////////
 //     Function: PackerInterface::has_range_limits
 //       Access: Public
 //  Description: Returns true if this field, or any sub-field of this

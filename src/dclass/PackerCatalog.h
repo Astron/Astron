@@ -15,7 +15,6 @@ namespace dclass   // open namespace dclass
 
 class PackerInterface;
 class Packer;
-class SwitchParameter;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PackerCatalog
@@ -87,11 +86,7 @@ class EXPCL_DIRECT PackerCatalog
 
 		void r_fill_catalog(const string &name_prefix, const PackerInterface *field,
 		                    const PackerInterface *parent, int field_index);
-		void r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer,
-		                         const SwitchParameter *&last_switch) const;
-
-		const PackerCatalog *update_switch_fields(const SwitchParameter *dswitch,
-		        const PackerInterface *switch_case) const;
+		void r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer) const;
 
 
 		const PackerInterface *_root;
@@ -105,12 +100,6 @@ class EXPCL_DIRECT PackerCatalog
 
 		typedef std::map<const PackerInterface *, int> EntriesByField;
 		EntriesByField _entries_by_field;
-
-		typedef std::map<const PackerInterface *, PackerCatalog *> SwitchCatalogs;
-		SwitchCatalogs _switch_catalogs;
-
-		typedef std::map<const SwitchParameter *, string> SwitchPrefixes;
-		SwitchPrefixes _switch_prefixes;
 
 		friend class PackerInterface;
 };

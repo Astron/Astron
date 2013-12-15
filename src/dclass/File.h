@@ -19,7 +19,6 @@ namespace dclass   // open namespace
 
 // Forward declarations
 class Class;
-class Switch;
 class Field;
 class HashGenerator;
 class Typedef;
@@ -54,8 +53,6 @@ class EXPCL_DIRECT File
 		Class *get_class(int n) const;
 		// get_class_by_name returns the requested class or NULL if there is no such class.
 		Class *get_class_by_name(const string &name) const;
-		// get_switch_by_name returns the requested switch or NULL if there is no such class.
-		Switch *get_switch_by_name(const string &name) const;
 		// get_field_by_index returns a pointer to the one Field that has the indicated
 		//     index number, of all the Fields across all classes in the file.
 		Field *get_field_by_index(int index_number) const;
@@ -101,9 +98,6 @@ class EXPCL_DIRECT File
 		// add_class adds the newly-allocated distributed class definition to the file.
 		//     Returns true if the class is successfully added, or false if there was a name conflict.
 		bool add_class(Class *dclass);
-		// add_switch adds the newly-allocated switch definition to the file.
-		//     Returns true if the switch is successfully added, or false if there was a name conflict.
-		bool add_switch(Switch *dswitch);
 
 		// add_import_module adds a new name to the list of names of Python modules.
 		void add_import_module(const std::string &import_module);

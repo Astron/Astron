@@ -53,10 +53,7 @@ enum yytokentype
     KW_IMPORT = 268,
     KW_TYPEDEF = 269,
     KW_KEYWORD = 270,
-    KW_SWITCH = 271,
-    KW_CASE = 272,
     KW_DEFAULT = 273,
-    KW_BREAK = 274,
     KW_INT8 = 275,
     KW_INT16 = 276,
     KW_INT32 = 277,
@@ -96,10 +93,7 @@ enum yytokentype
 #define KW_IMPORT 268
 #define KW_TYPEDEF 269
 #define KW_KEYWORD 270
-#define KW_SWITCH 271
-#define KW_CASE 272
 #define KW_DEFAULT 273
-#define KW_BREAK 274
 #define KW_INT8 275
 #define KW_INT16 276
 #define KW_INT32 277

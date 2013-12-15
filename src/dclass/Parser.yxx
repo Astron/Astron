@@ -10,11 +10,9 @@ using namespace dclass;
 #include "ParserDefs.h"
 #include "File.h"
 #include "Class.h"
-#include "Switch.h"
 #include "AtomicField.h"
 #include "MolecularField.h"
 #include "ClassParameter.h"
-#include "SwitchParameter.h"
 #include "ArrayParameter.h"
 #include "SimpleParameter.h"
 #include "Typedef.h"
@@ -32,7 +30,6 @@ using namespace dclass;
 
 	File *dc_file = (File *)NULL;
 	static Class *current_class = (Class *)NULL;
-	static Switch *current_switch = (Switch *)NULL;
 	static AtomicField *current_atomic = (AtomicField *)NULL;
 	static MolecularField *current_molecular = (MolecularField *)NULL;
 	static Parameter *current_parameter = (Parameter *)NULL;
@@ -101,10 +98,7 @@ using namespace dclass;
 % token KW_IMPORT
 % token KW_TYPEDEF
 % token KW_KEYWORD
-% token KW_SWITCH
-% token KW_CASE
 % token KW_DEFAULT
-% token KW_BREAK
 
 % token KW_INT8
 % token KW_INT16
@@ -143,7 +137,6 @@ using namespace dclass;
 % type <u.dclass> struct
 		% type <u.field> struct_field
 		% type <u.field> parameter_description
-		% type <u.dswitch> switch
 		% type <u.field> switch_field
 		% type <u.field> atomic_field
 		% type <u.field> molecular_field
@@ -197,13 +190,6 @@ if(!dc_file->add_class($2))
 		{
 			yyerror("Duplicate class name: " + $2->get_name());
 		}
-	}
-}
-| dc switch
-{
-if(!dc_file->add_switch($2))
-	{
-		yyerror("Duplicate class name: " + $2->get_name());
 	}
 }
 | dc import
@@ -754,18 +740,8 @@ simple_type_name
 			}
 			else
 			{
-				// Maybe it's a switch name.
-				Switch *dswitch = dc_file->get_switch_by_name($1);
-				if(dswitch != (Switch *)NULL)
-				{
-					// This also gets an implicit typedef.
-					dtypedef = new Typedef(new SwitchParameter(dswitch), true);
-				}
-				else
-				{
-					// It's an undefined typedef.  Create a bogus forward reference.
-					dtypedef = new Typedef($1);
-				}
+				// It's an undefined typedef.  Create a bogus forward reference.
+				dtypedef = new Typedef($1);
 			}
 
 			dc_file->add_typedef(dtypedef);
@@ -794,26 +770,6 @@ simple_type_name
 			// PackerInterface::check_match().  Maybe it doesn't really matter.
 		}
 		$$ = new ClassParameter($1);
-	}
-}
-| switch
-{
-// This is an inline switch definition.
-if($1 == (Switch *)NULL)
-	{
-		$$ = NULL;
-	}
-	else {
-		if(dc_file != (File *)NULL)
-		{
-			dc_file->add_thing_to_delete($1);
-		}
-		else {
-			// This is a memory leak--this happens when we put an anonymous
-			// switch reference within the std::string passed to
-			// PackerInterface::check_match().  Maybe it doesn't really matter.
-		}
-		$$ = new SwitchParameter($1);
 	}
 }
 ;
@@ -1362,93 +1318,6 @@ empty
 	$$ = "";
 }
 | IDENTIFIER
-;
-
-switch:
-KW_SWITCH optional_name '(' parameter_or_atomic ')' '{'
-{
-current_switch = new Switch($2, $4);
-}
-switch_fields '}'
-{
-	$$ = current_switch;
-	current_switch = (Switch *)$<u.parameter>7;
-}
-;
-
-
-switch_fields:
-empty
-| switch_fields ';'
-| switch_fields switch_case
-| switch_fields switch_default
-| switch_fields switch_break ';'
-| switch_fields switch_field ';'
-{
-	if(!current_switch->is_field_valid())
-	{
-		yyerror("case declaration required before first element");
-	}
-	else if($2 != (Field *)NULL)
-	{
-		if(!current_switch->add_field($2))
-		{
-			yyerror("Duplicate field name: " + $2->get_name());
-		}
-	}
-}
-;
-
-switch_case:
-KW_CASE
-{
-	current_packer = &default_packer;
-	current_packer->clear_data();
-	current_packer->begin_pack(current_switch->get_key_parameter());
-}
-parameter_value ':'
-{
-	if(!current_packer->end_pack())
-	{
-		yyerror("Invalid value for switch parameter");
-		current_switch->add_invalid_case();
-	}
-	else {
-		int case_index = current_switch->add_case(current_packer->get_std::string());
-		if(case_index == -1)
-		{
-			yyerror("Duplicate case value");
-		}
-	}
-}
-;
-
-switch_default:
-KW_DEFAULT ':'
-{
-	if(!current_switch->add_default())
-	{
-		yyerror("Default case already defined");
-	}
-}
-;
-
-switch_break:
-KW_BREAK
-{
-	current_switch->add_break();
-}
-;
-
-switch_field:
-unnamed_parameter_with_default
-{
-	$$ = $1;
-}
-| named_parameter_with_default
-{
-	$$ = $1;
-}
 ;
 
 empty:

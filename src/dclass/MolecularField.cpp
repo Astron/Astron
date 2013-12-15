@@ -81,10 +81,6 @@ void MolecularField::add_atomic(AtomicField *atomic)
 		m_has_fixed_byte_size = atomic->has_fixed_byte_size();
 		m_fixed_byte_size += atomic->get_fixed_byte_size();
 	}
-	if(m_has_fixed_structure)
-	{
-		m_has_fixed_structure = atomic->has_fixed_structure();
-	}
 	if(!m_has_range_limits)
 	{
 		m_has_range_limits = atomic->has_range_limits();

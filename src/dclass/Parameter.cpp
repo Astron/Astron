@@ -22,7 +22,6 @@ Parameter::Parameter()
 {
 	m_typedef = NULL;
 	m_has_fixed_byte_size = false;
-	m_has_fixed_structure = false;
 	m_num_nested_fields = -1;
 }
 
@@ -74,20 +73,6 @@ ClassParameter *Parameter::as_class_parameter()
 // as_class_parameter returns the same parameter pointer converted to a class parameter,
 //     if this is in fact a class parameter; otherwise, returns NULL.
 const ClassParameter *Parameter::as_class_parameter() const
-{
-	return NULL;
-}
-
-// as_switch_parameter returns the same parameter pointer converted to a switch parameter,
-//     if this is in fact a switch parameter; otherwise, returns NULL.
-SwitchParameter *Parameter::as_switch_parameter()
-{
-	return NULL;
-}
-
-// as_switch_parameter returns the same parameter pointer converted to a switch parameter,
-//     if this is in fact a switch parameter; otherwise, returns NULL.
-const SwitchParameter *Parameter::as_switch_parameter() const
 {
 	return NULL;
 }

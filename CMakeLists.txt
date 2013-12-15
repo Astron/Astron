@@ -351,12 +351,10 @@ add_library(dclass
 	src/dclass/ClassParameter.cpp
 	src/dclass/ArrayParameter.cpp
 	src/dclass/SimpleParameter.cpp
-	src/dclass/SwitchParameter.cpp
 	src/dclass/Field.cpp
 	src/dclass/File.cpp
 	src/dclass/MolecularField.cpp
 	src/dclass/SubatomicType.cpp
-	src/dclass/Switch.cpp
 	src/dclass/Typedef.cpp
 
 	src/dclass/PrimeNumberGenerator.cpp

@@ -16,7 +16,6 @@ namespace dclass
 {
 	class File;
 	class Class;
-	class Switch;
 	class Field;
 	class AtomicField;
 	class Parameter;
@@ -55,7 +54,6 @@ class TokenType
 			double real;
 			bool flag;
 			Class *dclass;
-			Switch *dswitch;
 			Field *field;
 			AtomicField *atomic;
 			SubatomicType subatomic;

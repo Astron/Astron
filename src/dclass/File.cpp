@@ -10,7 +10,6 @@
 
 #include "File.h"
 #include "Class.h"
-#include "Switch.h"
 #include "ParserDefs.h"
 #include "LexerDefs.h"
 #include "Typedef.h"
@@ -171,19 +170,6 @@ Class* File::get_class_by_name(const string &name) const
 	}
 
 	return (Class*)NULL;
-}
-
-// get_switch_by_name returns the switch that has the indicated name,
-//     or NULL if there is no such switch.
-Switch* File::get_switch_by_name(const string &name) const
-{
-	auto switch_it = m_things_by_name.find(name);
-	if(switch_it != m_things_by_name.end())
-	{
-		return switch_it->second->as_switch();
-	}
-
-	return (Switch*)NULL;
 }
 
 // get_field_by_index returns a pointer to the one Field that has the indicated
@@ -348,27 +334,6 @@ bool File::add_class(Class *dclass)
 	{
 		m_things_to_delete.push_back(dclass);
 	}
-
-	return true;
-}
-
-// add_switch adds the newly-allocated switch definition to the file.
-//     The File becomes the owner of the pointer and will delete it when it destructs.
-//     Returns true if the switch is successfully added, or false if there was a name conflict.
-bool File::add_switch(Switch *dswitch)
-{
-	if(!dswitch->get_name().empty())
-	{
-		bool inserted = m_things_by_name.insert(
-			std::map<std::string, Declaration*>::value_type(dswitch->get_name(), dswitch)).second;
-
-		if(!inserted)
-		{
-			return false;
-		}
-	}
-
-	m_declarations.push_back(dswitch);
 
 	return true;
 }

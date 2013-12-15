@@ -37,7 +37,6 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 	{
 		m_has_fixed_byte_size = true;
 		m_fixed_byte_size = m_array_size * m_element_type->get_fixed_byte_size();
-		m_has_fixed_structure = true;
 
 	}
 	else

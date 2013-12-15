@@ -53,11 +53,6 @@ class EXPCL_DIRECT Parameter : public Field
 		virtual ClassParameter *as_class_parameter();
 		virtual const ClassParameter *as_class_parameter() const;
 
-		// as_switch_parameter returns the same parameter pointer converted to a switch parameter,
-		//     if this is in fact a switch parameter; otherwise, returns NULL.
-		virtual SwitchParameter *as_switch_parameter();
-		virtual const SwitchParameter *as_switch_parameter() const;
-
 		// as_array_parameter returns the same parameter pointer converted to an array parameter,
 		//     if this is in fact an array parameter; otherwise, returns NULL.
 		virtual ArrayParameter *as_array_parameter();

@@ -67,8 +67,7 @@ has_nested_fields() const
 //
 //               Note that this method is unreliable to determine how
 //               many fields you must traverse before you can call
-//               pop(), since particularly in the presence of a
-//               Switch, it may change during traversal.  Use
+//               pop() since it may change during traversal.  Use
 //               more_nested_fields() instead.
 ////////////////////////////////////////////////////////////////////
 inline int Packer::
@@ -116,25 +115,6 @@ inline const PackerInterface *Packer::
 get_current_field() const
 {
 	return _current_field;
-}
-
-////////////////////////////////////////////////////////////////////
-//     Function: Packer::get_last_switch
-//       Access: Published
-//  Description: Returns a pointer to the last Switch instance that
-//               we have passed by and selected one case of during the
-//               pack/unpack process.  Each time we encounter a new
-//               Switch and select a case, this will change state.
-//
-//               This may be used to detect when a Switch has been
-//               selected.  At the moment this changes state,
-//               get_current_parent() will contain the particular
-//               SwitchCase that was selected by the switch.
-////////////////////////////////////////////////////////////////////
-inline const SwitchParameter *Packer::
-get_last_switch() const
-{
-	return _last_switch;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1428,18 +1408,6 @@ advance()
 		// Done with all the fields on this parent.  The caller must now
 		// call pop().
 		_current_field = NULL;
-
-		// But if the parent is a switch record, we make a special case so
-		// we can get the alternate fields.
-		if(_current_parent != (PackerInterface *)NULL)
-		{
-			const SwitchParameter *switch_parameter = ((PackerInterface *)
-			        _current_parent)->as_switch_parameter();
-			if(switch_parameter != (SwitchParameter *)NULL)
-			{
-				handle_switch(switch_parameter);
-			}
-		}
 
 	}
 	else if(_pop_marker != 0 && _unpack_p >= _pop_marker)

@@ -19,7 +19,6 @@ namespace dclass   // open namespace dclass
 
 
 class Class;
-class SwitchParameter;
 
 ////////////////////////////////////////////////////////////////////
 //       Class : Packer
@@ -63,7 +62,6 @@ class EXPCL_DIRECT Packer
 
 		inline const PackerInterface *get_current_parent() const;
 		inline const PackerInterface *get_current_field() const;
-		inline const SwitchParameter *get_last_switch() const;
 		inline PackType get_pack_type() const;
 		inline string get_current_field_name() const;
 
@@ -183,7 +181,6 @@ class EXPCL_DIRECT Packer
 
 	private:
 		inline void advance();
-		void handle_switch(const SwitchParameter *switch_parameter);
 		void clear();
 		void clear_stack();
 
@@ -231,8 +228,7 @@ class EXPCL_DIRECT Packer
 		int _current_field_index;
 
 		// _push_marker marks the beginning of the push record (so we can go
-		// back and write in the length later, or figure out the switch
-		// parameter).
+		// back and write in the length later.
 		size_t _push_marker;
 		// _pop_marker is used in unpack mode with certain data structures
 		// (like dynamic arrays) to mark the end of the push record (so we
@@ -240,7 +236,6 @@ class EXPCL_DIRECT Packer
 		// use.
 		size_t _pop_marker;
 		int _num_nested_fields;
-		const SwitchParameter *_last_switch;
 
 		bool _parse_error;
 		bool _pack_error;

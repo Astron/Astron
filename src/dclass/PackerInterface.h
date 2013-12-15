@@ -17,7 +17,6 @@ namespace dclass   // open namespace dclass
 class File;
 class Field;
 class SimpleParameter;
-class SwitchParameter;
 class ClassParameter;
 class ArrayParameter;
 class AtomicField;
@@ -51,7 +50,6 @@ enum PackType
     PT_array,
     PT_field,
     PT_class,
-    PT_switch,
 };
 END_PUBLISH
 
@@ -78,8 +76,6 @@ class EXPCL_DIRECT PackerInterface
 
 		virtual Field *as_field();
 		virtual const Field *as_field() const;
-		virtual SwitchParameter *as_switch_parameter();
-		virtual const SwitchParameter *as_switch_parameter() const;
 		virtual ClassParameter *as_class_parameter();
 		virtual const ClassParameter *as_class_parameter() const;
 
@@ -90,7 +86,6 @@ class EXPCL_DIRECT PackerInterface
 		virtual void set_name(const string &name);
 		inline bool has_fixed_byte_size() const;
 		inline size_t get_fixed_byte_size() const;
-		inline bool has_fixed_structure() const;
 		inline bool has_range_limits() const;
 		inline size_t get_num_length_bytes() const;
 
@@ -179,7 +174,6 @@ class EXPCL_DIRECT PackerInterface
 
 		virtual bool do_check_match_simple_parameter(const SimpleParameter *other) const;
 		virtual bool do_check_match_class_parameter(const ClassParameter *other) const;
-		virtual bool do_check_match_switch_parameter(const SwitchParameter *other) const;
 		virtual bool do_check_match_array_parameter(const ArrayParameter *other) const;
 		virtual bool do_check_match_atomic_field(const AtomicField *other) const;
 		virtual bool do_check_match_molecular_field(const MolecularField *other) const;
@@ -191,7 +185,6 @@ class EXPCL_DIRECT PackerInterface
 		string m_name;
 		bool m_has_fixed_byte_size;
 		size_t m_fixed_byte_size;
-		bool m_has_fixed_structure;
 		bool m_has_range_limits;
 		size_t m_num_length_bytes;
 		bool m_has_nested_fields;

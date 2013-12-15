@@ -135,10 +135,6 @@ void AtomicField::add_element(Parameter *element)
 		m_has_fixed_byte_size = element->has_fixed_byte_size();
 		m_fixed_byte_size += element->get_fixed_byte_size();
 	}
-	if(m_has_fixed_structure)
-	{
-		m_has_fixed_structure = element->has_fixed_structure();
-	}
 	if(!m_has_range_limits)
 	{
 		m_has_range_limits = element->has_range_limits();

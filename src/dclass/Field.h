@@ -21,7 +21,6 @@ class Packer;
 class AtomicField;
 class MolecularField;
 class Parameter;
-class Switch;
 class Class;
 class HashGenerator;
 
