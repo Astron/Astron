@@ -32,20 +32,6 @@ const Class* Declaration::as_class() const
 	return (Class*)NULL;
 }
 
-// as_switch returns the same declaration pointer converted to a switch
-//     pointer, if this is in fact a switch; otherwise, returns NULL.
-Switch* Declaration::as_switch()
-{
-	return (Switch*)NULL;
-}
-
-// as_switch returns the same declaration pointer converted to a switch
-//     pointer, if this is in fact a switch; otherwise, returns NULL.
-const Switch* Declaration::as_switch() const
-{
-	return (Switch*)NULL;
-}
-
 // output writes a string representation of the declaration to an output stream
 void Declaration::output(ostream &out) const
 {

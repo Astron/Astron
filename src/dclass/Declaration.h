@@ -16,13 +16,9 @@ namespace dclass   // open namespace
 
 // Forward declarations
 class Class;
-class Switch;
 
 // A Declaration is a common interface for a declaration in a DC file.
-//     Currently, this is either a class or a typedef declaration (import declarations are
-//     still collected together at the top, and don't inherit from this object).
-//     Its only purpose is so that classes and typedefs can be stored in one list
-//     together so they can be ordered correctly on output.
+//     This is either a class, typedef, or keyword declaration.
 class EXPCL_DIRECT Declaration
 {
 	public:
@@ -33,11 +29,6 @@ class EXPCL_DIRECT Declaration
 		//     pointer, if this is in fact a class; otherwise, returns NULL.
 		virtual Class *as_class();
 		virtual const Class *as_class() const;
-
-		// as_switch returns the same declaration pointer converted to a switch
-		//     pointer, if this is in fact a switch; otherwise, returns NULL.
-		virtual Switch *as_switch();
-		virtual const Switch *as_switch() const;
 
 		// output and write output representations of the declaration to an output stream
 		virtual void output(ostream &out) const;
