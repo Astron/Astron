@@ -14,7 +14,6 @@
 #include "SubatomicType.h"
 #include "PackData.h"
 #include "PackerCatalog.h"
-#include "Python.h"
 namespace dclass   // open namespace dclass
 {
 

@@ -18,7 +18,7 @@ namespace dclass   // open namespace
 
 // Foward declaration
 class HashGenerator;
-class Parameter;
+//class Parameter;
 
 // A Class (dclass::Class) defines a particular DistributedClass as read from an input .dc file.
 class EXPCL_DIRECT Class : public Declaration

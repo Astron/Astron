@@ -64,7 +64,7 @@ Parameter* AtomicField::get_element(int n) const
 // output formats the field to the syntax of an atomic field in a .dc file
 //     as IDENTIFIER(ELEMENTS, ...) KEYWORDS with optional ELEMENTS and KEYWORDS,
 //     and outputs the formatted string to the stream.
-void AtomicField::output(ostream &out, bool brief) const
+void AtomicField::output(std::ostream &out, bool brief) const
 {
 	out << m_name << "(";
 
@@ -130,20 +130,20 @@ void AtomicField::add_element(Parameter *element)
 	m_num_nested_fields = (int)m_elements.size();
 
 	// See if we still have a fixed byte size.
-	if(_has_fixed_byte_size)
+	if(m_has_fixed_byte_size)
 	{
 		m_has_fixed_byte_size = element->has_fixed_byte_size();
 		m_fixed_byte_size += element->get_fixed_byte_size();
 	}
-	if(_has_fixed_structure)
+	if(m_has_fixed_structure)
 	{
 		m_has_fixed_structure = element->has_fixed_structure();
 	}
-	if(!_has_range_limits)
+	if(!m_has_range_limits)
 	{
 		m_has_range_limits = element->has_range_limits();
 	}
-	if(!_has_default_value)
+	if(!m_has_default_value)
 	{
 		m_has_default_value = element->has_default_value();
 	}

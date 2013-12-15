@@ -26,10 +26,11 @@ ClassParameter *SimpleParameter::cls_uint32uint8_type = NULL;
 
 // Type constructor
 SimpleParameter::SimpleParameter(SubatomicType type, unsigned int divisor) :
-	m_type(type), m_divisor(1), m_has_modulus(false), m_oack_type(PT_invalid),
-	m_nested_type(ST_invalid), m_has_nested_fields(false), m_bytes_per_element(0),
-	m_num_length_bytes(sizeof(length_tag_t))
+	m_type(type), m_divisor(1), m_has_modulus(false), m_nested_type(ST_invalid), m_bytes_per_element(0)
 {
+	m_pack_type = PT_invalid;
+	m_has_nested_fields = false;	
+	m_num_length_bytes = sizeof(length_tag_t);
 	// Check for one of the built-in array types.  For these types, we
 	// must present a packing interface that has a variable number of
 	// nested fields of the appropriate type.
@@ -773,7 +774,7 @@ void SimpleParameter::pack_int(PackData &pack_data, int value,
 void SimpleParameter::pack_uint(PackData &pack_data, unsigned int value,
                                 bool &pack_error, bool &range_error) const
 {
-	unsigned int int_value = value * _divisor;
+	unsigned int int_value = value * m_divisor;
 	if(m_has_modulus && m_uint_modulus != 0)
 	{
 		int_value = int_value % m_uint_modulus;
@@ -1068,7 +1069,7 @@ void SimpleParameter::pack_string(PackData &pack_data, const string &value,
 
 		case ST_blob32:
 			m_uint_range.validate(string_length, range_error);
-			if(_num_length_bytes != 0)
+			if(m_num_length_bytes != 0)
 			{
 				do_pack_uint32(pack_data.get_write_pointer(4), string_length);
 			}
@@ -2168,9 +2169,9 @@ bool SimpleParameter::unpack_validate(const char *data, size_t length, size_t &p
 
 		case ST_string:
 		case ST_blob:
-			if(_num_length_bytes == 0)
+			if(m_num_length_bytes == 0)
 			{
-				p += _fixed_byte_size;
+				p += m_fixed_byte_size;
 
 			}
 			else
@@ -2187,9 +2188,9 @@ bool SimpleParameter::unpack_validate(const char *data, size_t length, size_t &p
 			break;
 
 		case ST_blob32:
-			if(_num_length_bytes == 0)
+			if(m_num_length_bytes == 0)
 			{
-				p += _fixed_byte_size;
+				p += m_fixed_byte_size;
 
 			}
 			else
@@ -2300,14 +2301,14 @@ void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::
 	}
 	else
 	{
-		out << _type;
+		out << m_type;
 		if(m_has_modulus)
 		{
-			out << "%" << _orig_modulus;
+			out << "%" << m_orig_modulus;
 		}
 		if(m_divisor != 1)
 		{
-			out << "/" << _divisor;
+			out << "/" << m_divisor;
 		}
 
 		switch(m_type)
@@ -2419,12 +2420,12 @@ bool SimpleParameter::do_check_match(const PackerInterface *other) const
 //     matches the indicated simple parameter, false otherwise.
 bool SimpleParameter::do_check_match_simple_parameter(const SimpleParameter *other) const
 {
-	if(m_divisor != other->_divisor)
+	if(m_divisor != other->m_divisor)
 	{
 		return false;
 	}
 
-	if(m_type == other->_type)
+	if(m_type == other->m_type)
 	{
 		return true;
 	}
@@ -2486,7 +2487,7 @@ bool SimpleParameter::do_check_match_array_parameter(const ArrayParameter *other
 //     combination of type and divisor if it is not already created.
 SimpleParameter *SimpleParameter::create_nested_field(SubatomicType type, unsigned int divisor)
 {
-	std::map<unsigned int, SimpleParameter*> &divisor_map = m_nested_field_map[type];
+	std::map<unsigned int, SimpleParameter*> &divisor_map = cls_nested_field_map[type];
 	auto div_it = divisor_map.find(divisor);
 	if(div_it != divisor_map.end())
 	{
@@ -2501,14 +2502,14 @@ SimpleParameter *SimpleParameter::create_nested_field(SubatomicType type, unsign
 // create_uint32uint8_type creates the one instance of the Uint32Uint8Type object if it is not already created.
 PackerInterface *SimpleParameter::create_uint32uint8_type()
 {
-	if(m_uint32uint8_type == NULL)
+	if(cls_uint32uint8_type == NULL)
 	{
 		Class *dclass = new Class(NULL, "", true, false);
 		dclass->add_field(new SimpleParameter(ST_uint32));
 		dclass->add_field(new SimpleParameter(ST_uint8));
-		m_uint32uint8_type = new ClassParameter(dclass);
+		cls_uint32uint8_type = new ClassParameter(dclass);
 	}
-	return m_uint32uint8_type;
+	return cls_uint32uint8_type;
 }
 
 

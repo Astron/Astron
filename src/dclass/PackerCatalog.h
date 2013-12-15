@@ -66,7 +66,7 @@ class EXPCL_DIRECT PackerCatalog
 				inline int find_entry_by_field(const PackerInterface *field) const;
 
 			private:
-				typedef pvector<LiveCatalogEntry> LiveEntries;
+				typedef std::vector<LiveCatalogEntry> LiveEntries;
 				LiveEntries _live_entries;
 
 				const PackerCatalog *_catalog;
@@ -97,19 +97,19 @@ class EXPCL_DIRECT PackerCatalog
 		const PackerInterface *_root;
 		LiveCatalog *_live_catalog;
 
-		typedef pvector<Entry> Entries;
+		typedef std::vector<Entry> Entries;
 		Entries _entries;
 
-		typedef pmap<string, int> EntriesByName;
+		typedef std::map<string, int> EntriesByName;
 		EntriesByName _entries_by_name;
 
-		typedef pmap<const PackerInterface *, int> EntriesByField;
+		typedef std::map<const PackerInterface *, int> EntriesByField;
 		EntriesByField _entries_by_field;
 
-		typedef pmap<const PackerInterface *, PackerCatalog *> SwitchCatalogs;
+		typedef std::map<const PackerInterface *, PackerCatalog *> SwitchCatalogs;
 		SwitchCatalogs _switch_catalogs;
 
-		typedef pmap<const SwitchParameter *, string> SwitchPrefixes;
+		typedef std::map<const SwitchParameter *, string> SwitchPrefixes;
 		SwitchPrefixes _switch_prefixes;
 
 		friend class PackerInterface;

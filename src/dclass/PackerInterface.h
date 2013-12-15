@@ -188,18 +188,18 @@ class EXPCL_DIRECT PackerInterface
 		void make_catalog();
 
 	protected:
-		string _name;
-		bool _has_fixed_byte_size;
-		size_t _fixed_byte_size;
-		bool _has_fixed_structure;
-		bool _has_range_limits;
-		size_t _num_length_bytes;
-		bool _has_nested_fields;
-		int _num_nested_fields;
-		PackType _pack_type;
+		string m_name;
+		bool m_has_fixed_byte_size;
+		size_t m_fixed_byte_size;
+		bool m_has_fixed_structure;
+		bool m_has_range_limits;
+		size_t m_num_length_bytes;
+		bool m_has_nested_fields;
+		int m_num_nested_fields;
+		PackType m_pack_type;
 
 	private:
-		PackerCatalog *_catalog;
+		PackerCatalog *m_catalog;
 };
 
 

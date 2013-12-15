@@ -346,12 +346,35 @@ endif()
 #endforeach(sourcefile)
 #source_group("Header Files" FILES ${ASTROND_HEADERS})
 
-add_library(dcparser
-	src/dcparser/p3dcparser_composite1.cxx 
-	src/dcparser/p3dcparser_composite2.cxx 
-	src/dcparser/dcLexer.cxx
-	src/dcparser/dcParser.cxx
+add_library(dclass
+	src/dclass/Parameter.cpp
+	src/dclass/ClassParameter.cpp
+	src/dclass/ArrayParameter.cpp
+	src/dclass/SimpleParameter.cpp
+	src/dclass/SwitchParameter.cpp
+	src/dclass/Field.cpp
+	src/dclass/File.cpp
+	src/dclass/MolecularField.cpp
+	src/dclass/SubatomicType.cpp
+	src/dclass/Switch.cpp
+	src/dclass/Typedef.cpp
+
+	src/dclass/PrimeNumberGenerator.cpp
+	src/dclass/HashGenerator.cpp
+	src/dclass/AtomicField.cpp
+	src/dclass/Class.cpp
+	src/dclass/Declaration.cpp
+	src/dclass/Keyword.cpp
+	src/dclass/KeywordList.cpp
+	src/dclass/PackData.cpp
+	src/dclass/Packer.cpp
+	src/dclass/PackerCatalog.cpp
+	src/dclass/PackerInterface.cpp
+	src/dclass/indent.cpp
+
+	src/dclass/Lexer.cpp
+	src/dclass/Parser.cpp
 )
 
-add_dependencies(astrond dcparser)
-target_link_libraries(astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+add_dependencies(astrond dclass)
+target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})

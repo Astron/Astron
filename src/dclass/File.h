@@ -144,15 +144,15 @@ class EXPCL_DIRECT File
 		};
 
 		std::vector<Import> m_imports; // list of python imports in the file
-		std::vector<Typedefs> m_typedefs; // list of typedefs in the file
+		std::vector<Typedef*> m_typedefs; // list of typedefs in the file
 
 		std::map<string, Typedef*> m_typedefs_by_name; // typedefs in the file by name
 
 		KeywordList m_keywords; // list of keywords read from the file
 		KeywordList m_default_keywords; // list of keywords in the file, provided for legacy reasons
 
-		std::vector<Declarations*> m_declarations; // composite list of classes and switches in the file
-		std::vector<Declarations*> m_things_to_delete; // list of objects to delete in destructor
+		std::vector<Declaration*> m_declarations; // composite list of classes and switches in the file
+		std::vector<Declaration*> m_things_to_delete; // list of objects to delete in destructor
 
 		std::vector<Field*> m_field_by_index; // fields in the file by unique integer id
 

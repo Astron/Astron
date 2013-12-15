@@ -21,7 +21,7 @@ namespace dclass   // open namespace dclass
 inline const string &PackerInterface::
 get_name() const
 {
-	return _name;
+	return m_name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ check_match(const PackerInterface *other) const
 inline bool PackerInterface::
 has_fixed_byte_size() const
 {
-	return _has_fixed_byte_size;
+	return m_has_fixed_byte_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ has_fixed_byte_size() const
 inline size_t PackerInterface::
 get_fixed_byte_size() const
 {
-	return _fixed_byte_size;
+	return m_fixed_byte_size;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ get_fixed_byte_size() const
 inline bool PackerInterface::
 has_fixed_structure() const
 {
-	return _has_fixed_structure;
+	return m_has_fixed_structure;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ has_fixed_structure() const
 inline bool PackerInterface::
 has_range_limits() const
 {
-	return _has_range_limits;
+	return m_has_range_limits;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -101,12 +101,12 @@ has_range_limits() const
 //  Description: Returns the number of bytes that should be written
 //               into the stream on a push() to record the number of
 //               bytes in the record up until the next pop().  This is
-//               only meaningful if _has_nested_fields is true.
+//               only meaningful if m_has_nested_fields is true.
 ////////////////////////////////////////////////////////////////////
 inline size_t PackerInterface::
 get_num_length_bytes() const
 {
-	return _num_length_bytes;
+	return m_num_length_bytes;
 }
 
 
@@ -122,7 +122,7 @@ get_num_length_bytes() const
 inline bool PackerInterface::
 has_nested_fields() const
 {
-	return _has_nested_fields;
+	return m_has_nested_fields;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -136,7 +136,7 @@ has_nested_fields() const
 inline int PackerInterface::
 get_num_nested_fields() const
 {
-	return _num_nested_fields;
+	return m_num_nested_fields;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ get_num_nested_fields() const
 inline PackType PackerInterface::
 get_pack_type() const
 {
-	return _pack_type;
+	return m_pack_type;
 }
 
 ////////////////////////////////////////////////////////////////////

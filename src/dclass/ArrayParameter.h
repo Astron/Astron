@@ -23,7 +23,7 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 {
 	public:
 		// basic constructor
-		ArrayParameter(Parameter *element_type, const UintRange &size = UintRange());
+		ArrayParameter(Parameter *element_type, const UnsignedIntRange &size = UnsignedIntRange());
 		// copy constructor
 		ArrayParameter(const ArrayParameter &copy);
 
@@ -53,7 +53,7 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 		// append_array_specification returns the type represented by this type[size].
 		//     As an ArrayParameter, this same pointer is returned, but the inner type of the array
 		//     becomes an array type (ie. type[] becomes type[][]).
-		virtual Parameter* append_array_specification(const UintRange &size);
+		virtual Parameter* append_array_specification(const UnsignedIntRange &size);
 
 		// calc_num_nested_fields returns the number of nested fields to expect,
 		//     given a certain length in bytes (as read from a get_num_length_bytes()).
@@ -102,7 +102,7 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 	private:
 		Parameter *m_element_type; // type of the elements contained in the array
 		int m_array_size; // number of elements in the array if it is a constant (or -1)
-		UintRange m_array_size_range; // the range of possible elements in the array
+		UnsignedIntRange m_array_size_range; // the range of possible elements in the array
 };
 
 

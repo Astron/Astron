@@ -17,7 +17,7 @@ namespace dclass   // open namespace
 
 
 // basic constructor
-ArrayParameter::ArrayParameter(DCParameter *element_type, const UintRange &size) :
+ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &size) :
 	m_element_type(element_type), m_array_size_range(size)
 {
 	set_name(m_element_type->get_name());
@@ -61,13 +61,13 @@ ArrayParameter::ArrayParameter(DCParameter *element_type, const UintRange &size)
 	m_num_nested_fields = m_array_size;
 	m_pack_type = PT_array;
 
-	DCSimpleParameter *simple_type = m_element_type->as_simple_parameter();
+	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
 	if(simple_type != (SimpleParameter *)NULL)
 	{
 		if(simple_type->get_type() == ST_char)
 		{
 			// We make a special case for char[] arrays: these we format as
-			// a string.  (It will still accept an array of ints packed into
+			// a string.  (It will still acc`ept an array of ints packed into
 			// it.)  We don't make this special case for uint8[] or int8[]
 			// arrays, although we will accept a string packed in for them.
 			m_pack_type = PT_string;
@@ -130,7 +130,7 @@ int ArrayParameter::get_array_size() const
 // append_array_specification returns the type represented by this type[size].
 //     As an ArrayParameter, this same pointer is returned, but the inner type of the array
 //     becomes an array type (ie. type[] becomes type[][]).
-Parameter* ArrayParameter::append_array_specification(const UintRange &size)
+Parameter* ArrayParameter::append_array_specification(const UnsignedIntRange &size)
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
@@ -183,7 +183,7 @@ bool ArrayParameter::validate_num_nested_fields(int num_nested_fields) const
 void ArrayParameter::output_instance(ostream &out, bool brief, const string &prename,
                                      const string &name, const string &postname) const
 {
-	if(get_typedef() != (DCTypedef *)NULL)
+	if(get_typedef() != (Typedef *)NULL)
 	{
 		output_typedef_name(out, brief, prename, name, postname);
 
@@ -210,7 +210,7 @@ void ArrayParameter::generate_hash(HashGenerator &hashgen) const
 }
 
 // pack_string packs the indicated numeric or string value into the stream.
-void ArrayParameter::pack_string(DCPackData &pack_data, const string &value,
+void ArrayParameter::pack_string(PackData &pack_data, const string &value,
                                  bool &pack_error, bool &range_error) const
 {
 	// We can only pack a string if the array element type is char or int8_t.
@@ -229,9 +229,9 @@ void ArrayParameter::pack_string(DCPackData &pack_data, const string &value,
 		case ST_uint8:
 		case ST_int8:
 			m_array_size_range.validate(string_length, range_error);
-			if(_num_length_bytes != 0)
+			if(m_num_length_bytes != 0)
 			{
-				nassertv(_num_length_bytes == sizeof(length_tag_t));
+				nassertv(m_num_length_bytes == sizeof(length_tag_t));
 				do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
 			}
 			pack_data.append_data(value.data(), string_length);
@@ -251,7 +251,7 @@ bool ArrayParameter::pack_default_value(PackData &pack_data, bool &pack_error) c
 	// We only want to call up if the Field can pack the value immediately --
 	// we don't trust the Field to generate the default value (since it doesn't
 	// know how large the minimum length array is).
-	if(_has_default_value && !_default_value_stale)
+	if(m_has_default_value && !m_default_value_stale)
 	{
 		return Field::pack_default_value(pack_data, pack_error);
 	}
@@ -303,7 +303,7 @@ void ArrayParameter::unpack_string(const char *data, size_t length, size_t &p, s
 		case ST_char:
 		case ST_uint8:
 		case ST_int8:
-			if(_num_length_bytes != 0)
+			if(m_num_length_bytes != 0)
 			{
 				string_length = do_unpack_length_tag(data + p);
 				p += sizeof(length_tag_t);

@@ -37,11 +37,6 @@ Class::Class(File* dc_file, const string &name, bool is_struct, bool bogus_class
 {
 	m_number = -1;
 	m_constructor = NULL;
-
-#ifdef HAVE_PYTHON
-	m_class_def = NULL;
-	m_owner_class_def = NULL;
-#endif
 }
 
 // destructor
@@ -56,11 +51,6 @@ Class::~Class()
 	{
 		delete(*it);
 	}
-
-#ifdef HAVE_PYTHON
-	Py_XDECREF(m_class_def);
-	Py_XDECREF(m_owner_class_def);
-#endif
 }
 
 // as_class returns the same pointer converted to a class pointer

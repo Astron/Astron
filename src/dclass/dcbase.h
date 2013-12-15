@@ -72,6 +72,7 @@ typedef std::string Filename;
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <stdint.h>
 

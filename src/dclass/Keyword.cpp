@@ -10,7 +10,7 @@
 
 #include "Keyword.h"
 #include "HashGenerator.h"
-#include "dcindent.h"
+#include "indent.h"
 namespace dclass   // open namespace dclass
 {
 

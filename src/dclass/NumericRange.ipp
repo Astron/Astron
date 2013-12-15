@@ -107,7 +107,7 @@ void NumericRange<NUM>::output(std::ostream &out, Number divisor) const
 	{
 		auto range_it = m_ranges.begin();
 		output_minmax(out, divisor, *range_it);
-		++ri;
+		++range_it;
 		while(range_it != m_ranges.end())
 		{
 			out << ", ";

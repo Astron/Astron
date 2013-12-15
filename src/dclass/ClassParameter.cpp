@@ -28,14 +28,14 @@ ClassParameter::ClassParameter(const Class *dclass) : m_class(dclass)
 
 	if(m_class->has_constructor())
 	{
-		Field *field = _dclass->get_constructor();
+		Field *field = m_class->get_constructor();
 		m_nested_fields.push_back(field);
 		m_has_default_value = m_has_default_value || field->has_default_value();
 	}
 	int i;
 	for(i = 0 ; i < num_fields; i++)
 	{
-		DCField *field = _dclass->get_inherited_field(i);
+		Field *field = m_class->get_inherited_field(i);
 		if(!field->as_molecular_field())
 		{
 			m_nested_fields.push_back(field);
@@ -63,8 +63,7 @@ ClassParameter::ClassParameter(const Class *dclass) : m_class(dclass)
 
  // copy constructor
 ClassParameter::ClassParameter(const ClassParameter &copy) :
-	DCParameter(copy), m_class(copy.m_class),
-	m_nested_fields(copy.m_nested_fields)
+	Parameter(copy), m_class(copy.m_class), m_nested_fields(copy.m_nested_fields)
 {
 }
 

@@ -64,5 +64,3 @@ class TokenType
 // The yacc-generated code expects to use the symbol 'YYSTYPE' to
 // refer to the above class.
 #define YYSTYPE TokenType
-
-#endif
