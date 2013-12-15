@@ -52,6 +52,8 @@ using namespace std;
 #define nassertr_always(condition, return_value) assert(condition)
 #define nassertv(condition) assert(condition)
 #define nassertv_always(condition) assert(condition)
+// Define a macro for assert variables when building for "Production"
+#define _used_in_assert(x) ((void)x)
 
 // Panda defines these export symbols for building DLL's.  Outside of
 // Panda, we assume we're not putting this code in a DLL, so we define

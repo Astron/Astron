@@ -558,6 +558,7 @@ bool Class::add_field(Field *field)
 
 		// It shouldn't be possible for that to fail.
 		nassertr(inserted, false);
+		_used_in_assert(inserted);
 	}
 
 	m_fields.push_back(field);

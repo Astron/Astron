@@ -4,7 +4,7 @@
 #include <boost/bind.hpp>
 
 #include "core/global.h"
-#include "util/Role.h"
+#include "core/Role.h"
 #include "util/Datagram.h"
 
 using boost::asio::ip::udp;
@@ -13,6 +13,8 @@ using boost::asio::ip::udp;
 // receive buffer pretty big.
 #define EVENTLOG_BUFSIZE 8192
 
+// An EventLogger is a role in the daemon that opens up a local socket and reads UDP packets from
+// that socket.  Received UDP packets will be logged as configured by the daemon config file.
 class EventLogger : public Role
 {
 	public:

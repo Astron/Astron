@@ -1,5 +1,5 @@
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include "dcparser/dcClass.h"
 #include "dcparser/dcField.h"
 #include "dcparser/dcAtomicField.h"
@@ -10,7 +10,7 @@
 DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doid_t parent_id,
                                      zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
                                      bool has_other) :
-	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
@@ -60,7 +60,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
                                      doid_t parent_id, zone_t zone_id, DCClass *dclass,
                                      std::unordered_map<DCField*, std::vector<uint8_t> > required,
                                      std::map<DCField*, std::vector<uint8_t> > ram) :
-	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(INVALID_ZONE),
+	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
 {
@@ -141,7 +141,7 @@ void DistributedObject::send_location_entry(channel_t location)
 	{
 		append_other_data(dg, true);
 	}
-	send(dg);
+	route_datagram(dg);
 }
 
 void DistributedObject::send_ai_entry(channel_t ai)
@@ -154,7 +154,7 @@ void DistributedObject::send_ai_entry(channel_t ai)
 	{
 		append_other_data(dg);
 	}
-	send(dg);
+	route_datagram(dg);
 }
 
 void DistributedObject::send_owner_entry(channel_t owner)
@@ -167,7 +167,7 @@ void DistributedObject::send_owner_entry(channel_t owner)
 	{
 		append_other_data(dg, true, true);
 	}
-	send(dg);
+	route_datagram(dg);
 }
 
 void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zone, channel_t sender)
@@ -221,7 +221,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 				// Ask the new parent what its AI is.
 				Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
 				dg.add_uint32(m_next_context++);
-				send(dg);
+				route_datagram(dg);
 			}
 			targets.insert(new_parent); // Notify new parent of changing location
 		}
@@ -248,7 +248,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 	dg.add_doid(m_do_id);
 	dg.add_location(new_parent, new_zone);
 	dg.add_location(old_parent, old_zone);
-	send(dg);
+	route_datagram(dg);
 
 	// Send enter location message
 	if(new_parent)
@@ -285,7 +285,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 	dg.add_doid(m_do_id);
 	dg.add_channel(new_ai);
 	dg.add_channel(old_ai);
-	send(dg);
+	route_datagram(dg);
 
 	if(new_ai)
 	{
@@ -307,9 +307,9 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 		{
 			Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
 			dg.add_doid(m_do_id);
-			dg.add_location(INVALID_DO_ID, INVALID_ZONE);
+			dg.add_location(INVALID_DO_ID, 0);
 			dg.add_location(m_parent_id, m_zone_id);
-			send(dg);
+			route_datagram(dg);
 		}
 	}
 	if(m_owner_channel)
@@ -322,7 +322,7 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 	}
 	Datagram dg(targets, sender, STATESERVER_OBJECT_DELETE_RAM);
 	dg.add_doid(m_do_id);
-	send(dg);
+	route_datagram(dg);
 
 	delete_children(sender);
 
@@ -338,7 +338,7 @@ void DistributedObject::delete_children(channel_t sender)
 		Datagram dg(PARENT2CHILDREN(m_do_id), sender,
 		            STATESERVER_OBJECT_DELETE_CHILDREN);
 		dg.add_doid(m_do_id);
-		send(dg);
+		route_datagram(dg);
 	}
 }
 
@@ -346,7 +346,7 @@ void DistributedObject::wake_children()
 {
 	Datagram dg(PARENT2CHILDREN(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
 	dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN);
-	send(dg);
+	route_datagram(dg);
 }
 
 void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
@@ -425,7 +425,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		dg.add_doid(m_do_id);
 		dg.add_uint16(field_id);
 		dg.add_data(data);
-		send(dg);
+		route_datagram(dg);
 	}
 	return true;
 }
@@ -583,7 +583,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(dgi.read_uint32()); // Get context
 			dg.add_doid(m_do_id);
 			dg.add_channel(m_ai_channel);
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -665,7 +665,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(context);
 			dg.add_doid(m_do_id);
 			dg.add_location(m_parent_id, m_zone_id);
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -703,7 +703,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
 			append_required_data(dg);
 			append_other_data(dg);
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -726,7 +726,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				dg.add_data(raw_field);
 			}
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -765,7 +765,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint16(fields_found);
 				dg.add_data(raw_fields);
 			}
-			send(dg);
+			route_datagram(dg);
 
 			break;
 		}
@@ -786,7 +786,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_doid(m_do_id);
 				dg.add_channel(new_owner);
 				dg.add_channel(m_owner_channel);
-				send(dg);
+				route_datagram(dg);
 			}
 
 			m_owner_channel = new_owner;
@@ -851,14 +851,14 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				Datagram count_dg(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
 				count_dg.add_uint32(context);
 				count_dg.add_doid(child_count);
-				send(count_dg);
+				route_datagram(count_dg);
 
 				// Bounce the message down to all children and have them decide
 				// whether or not to reply.
 				// TODO: Is this really that efficient?
 				if(child_count > 0)
 				{
-					send(child_dg);
+					route_datagram(child_dg);
 				}
 
 				break;

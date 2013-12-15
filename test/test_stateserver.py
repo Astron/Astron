@@ -275,7 +275,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.assertTrue(*ai1.expect(dg)) # AI recieved ENTER_AI
+        self.assertTrue(*ai1.expect(dg)) # AI received ENTER_AI
 
         # ... but should not tell its children (it has none) ...
         self.assertTrue(children1.expect_none())

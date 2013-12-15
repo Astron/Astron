@@ -186,7 +186,7 @@ class DatabaseBaseTests(object):
             doid = self.createGenericGetId(40, len(doids))
 
         self.assertEquals(len(set(doids)), len(doids)) # Check if duplicate do_ids exist
-        self.assertEquals(len(doids), 11) # Check we recieved the max do_ids we requested
+        self.assertEquals(len(doids), 11) # Check we received the max do_ids we requested
         self.assertEquals(doid, INVALID_DO_ID) # Check the last object returned was BAD_DO_ID (0x0)
 
         # Delete an object
@@ -926,27 +926,6 @@ class DatabaseBaseTests(object):
         dg.add_uint8(setRDbD5DefaultValue)
         self.assertTrue(*self.conn.expect(dg)) #Field setRDbD5 should be default
 
-        # Clear a defaultless required field
-        dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doidA)
-        dg.add_uint16(setRDB3)
-        self.conn.send(dg)
-
-        # Get cleared field
-        dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(4) # Context
-        dg.add_uint32(doidA)
-        dg.add_uint16(setRDB3)
-        self.conn.send(dg) # Field RDB3 should not be cleared
-
-        # Cleared defaultless required field should be ignored
-        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(4) # Context
-        dg.add_uint8(SUCCESS)
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(5337)
-        self.assertTrue(*self.conn.expect(dg))
-
         # Clearing multiple fields should behave as expected per field
         doidB = generic_db_obj()
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELDS)
@@ -965,21 +944,14 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Fields should be cleared
-        dg = self.conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([90], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 5) # Context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
-        self.assertEquals(dgi.read_uint16(), 2) # Field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 5337)
-            elif field == setRDbD5:
-                self.assertEquals(dgi.read_uint8(), setRDbD5DefaultValue)
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(5)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(setRDbD5DefaultValue)
+        self.assertTrue(*self.conn.expect(dg))
 
         # Clear one field then attempt to clear multiple fields, some of which are already cleared
         doidC = generic_db_obj()
@@ -1004,21 +976,14 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Fields should be cleared
-        dg = self.conn.recv()
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([90], 777, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 6) # Context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject5)
-        self.assertEquals(dgi.read_uint16(), 2) # Field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 5337)
-            elif field == setRDbD5:
-                self.assertEquals(dgi.read_uint8(), setRDbD5DefaultValue)
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([90], 777, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(6)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(setRDbD5DefaultValue)
+        self.assertTrue(*self.conn.expect(dg))
 
 
         # Cleanup

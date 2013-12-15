@@ -17,27 +17,27 @@ class DistributedObject : public MDParticipantInterface
 
 		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
-		inline doid_t get_id()
+		inline doid_t get_id() const
 		{
 			return m_do_id;
 		}
-		inline doid_t get_parent()
+		inline doid_t get_parent() const
 		{
 			return m_parent_id;
 		}
-		inline doid_t get_zone()
+		inline doid_t get_zone() const
 		{
 			return m_zone_id;
 		}
-		inline channel_t get_location()
+		inline channel_t get_location() const
 		{
 			return LOCATION2CHANNEL(m_parent_id, m_zone_id);
 		}
-		inline channel_t get_ai()
+		inline channel_t get_ai() const
 		{
 			return m_ai_channel;
 		}
-		inline channel_t get_owner()
+		inline channel_t get_owner() const
 		{
 			return m_owner_channel;
 		}

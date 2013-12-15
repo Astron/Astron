@@ -44,19 +44,24 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::start_receive()
 {
+	async_receive();
+}
+
+void NetworkClient::async_receive()
+{
 	try
 	{
 		if(m_is_data) // Read data
 		{
 			async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
-			           boost::bind(&NetworkClient::handle_data, this,
+			           boost::bind(&NetworkClient::receive_data, this,
 			           boost::asio::placeholders::error,
 			           boost::asio::placeholders::bytes_transferred));
 		}
 		else // Read length
 		{
 			async_read(*m_socket, boost::asio::buffer(m_size_buf, sizeof(dgsize_t)),
-			           boost::bind(&NetworkClient::handle_size, this,
+			           boost::bind(&NetworkClient::receive_size, this,
 			           boost::asio::placeholders::error,
 			           boost::asio::placeholders::bytes_transferred));
 		}
@@ -65,11 +70,11 @@ void NetworkClient::start_receive()
 	{
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection. Therefore:
-		do_disconnect();
+		send_disconnect();
 	}
 }
 
-void NetworkClient::network_send(Datagram &dg)
+void NetworkClient::send_datagram(Datagram &dg)
 {
 	//TODO: make this asynch if necessary
 	dgsize_t len = dg.size();
@@ -86,46 +91,48 @@ void NetworkClient::network_send(Datagram &dg)
 	{
 		// We assume that the message just got dropped if the remote end died
 		// before we could send it.
-		do_disconnect();
+		send_disconnect();
 	}
 }
 
-void NetworkClient::do_disconnect()
+void NetworkClient::send_disconnect()
 {
 	m_socket->close();
 }
 
-void NetworkClient::handle_size(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
 	{
-		network_disconnect();
+		receive_disconnect();
 		return;
 	}
 
 	dgsize_t old_size = m_data_size;
-	m_data_size = *(dgsize_t*)m_size_buf;
+	// required to disable strict-aliasing optimizations, which can break the code
+	dgsize_t* new_size_p = (dgsize_t*)m_size_buf;
+	m_data_size = *new_size_p;
 	if(m_data_size > old_size)
 	{
 		delete [] m_data_buf;
 		m_data_buf = new uint8_t[m_data_size];
 	}
 	m_is_data = true;
-	start_receive();
+	async_receive();
 }
 
-void NetworkClient::handle_data(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
 	{
-		network_disconnect();
+		receive_disconnect();
 		return;
 	}
 
 	Datagram dg(m_data_buf, m_data_size); // Datagram makes a copy
 	m_is_data = false;
-	network_datagram(dg);
-	start_receive();
+	receive_datagram(dg);
+	async_receive();
 }
 
 bool NetworkClient::is_connected()

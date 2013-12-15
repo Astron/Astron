@@ -2,7 +2,7 @@
 #include "MDNetworkParticipant.h"
 #include "core/config.h"
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
@@ -57,7 +57,7 @@ void MessageDirector::init_network()
 			start_accept();
 		}
 
-		// Connect to upstream server and start handling recieved messages
+		// Connect to upstream server and start handling received messages
 		if(connect_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
@@ -85,7 +85,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
+void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
@@ -97,12 +97,12 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		channels = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &recieve_log = m_log.trace();
-		recieve_log << "Recievers: ";
+		auto &receive_log = m_log.trace();
+		receive_log << "Recievers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
 			channel_t channel = dgi.read_channel();
-			recieve_log << channel << ", ";
+			receive_log << channel << ", ";
 			auto &subscriptions = m_channel_subscriptions[channel];
 			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
 			{
@@ -115,7 +115,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 				receiving_participants.insert(range->second.begin(), range->second.end());
 			}
 		}
-		recieve_log << std::endl;
+		receive_log << std::endl;
 	}
 	catch(DatagramIteratorEOF &e)
 	{
@@ -148,7 +148,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	if(p && is_client)  // Send message upstream
 	{
-		network_send(dg);
+		send_datagram(dg);
 		m_log.trace() << "...routing upstream." << std::endl;
 	}
 	else if(!p) // If there is no participant, then it came from the upstream
@@ -189,7 +189,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_CHANNEL);
 		dg.add_channel(c);
-		network_send(dg);
+		send_datagram(dg);
 	}
 }
 
@@ -236,7 +236,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		// Send upstream control message
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
 		dg.add_channel(c);
-		network_send(dg);
+		send_datagram(dg);
 	}
 }
 
@@ -290,7 +290,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		Datagram dg(CONTROL_ADD_RANGE);
 		dg.add_channel(lo);
 		dg.add_channel(hi);
-		network_send(dg);
+		send_datagram(dg);
 	}
 }
 
@@ -383,7 +383,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 			dg.add_channel(lo);
 			dg.add_channel(hi);
-			network_send(dg);
+			send_datagram(dg);
 		}
 	}
 }
@@ -461,12 +461,12 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 }
 
-void MessageDirector::network_datagram(Datagram &dg)
+void MessageDirector::receive_datagram(Datagram &dg)
 {
-	handle_datagram(NULL, dg);
+	route_datagram(NULL, dg);
 }
 
-void MessageDirector::network_disconnect()
+void MessageDirector::receive_disconnect()
 {
 	m_log.fatal() << "Lost connection to upstream md" << std::endl;
 	exit(1);

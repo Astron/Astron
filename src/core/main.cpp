@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
 {
 	std::string cfg_file;
 
-	//TODO: Perhaps verbosity should be specified via command-line switch?
 	if(argc < 2)
 	{
 		cfg_file = "astrond.yml";
@@ -173,6 +172,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+// printHelp outputs the cli help-text to the given stream.
 void printHelp(std::ostream &s)
 {
 	s << "Usage: astrond [OPTION]... [CONFIG]" << std::endl

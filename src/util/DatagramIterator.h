@@ -325,7 +325,7 @@ class DatagramIterator
 		// get_recipient_count returns the datagram's recipient count. Does not advance the offset.
 		// Should be used when the current offset needs to be saved and/or if the next field in the
 		// datagram is not the recipient_count. If stepping through a fresh datagram, use read_uint8.
-		uint8_t get_recipient_count()
+		uint8_t get_recipient_count() const
 		{
 			if(m_dg.size() > 0)
 			{
@@ -366,7 +366,7 @@ class DatagramIterator
 		}
 
 		// tell returns the current message offset in std::vector<uint8_t>
-		dgsize_t tell()
+		dgsize_t tell() const
 		{
 			return m_offset;
 		}

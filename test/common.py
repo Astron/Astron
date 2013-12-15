@@ -406,7 +406,7 @@ class MDConnection(object):
     def recv(self):
         dg = self._read()
         if dg is None:
-            raise EOFError('No message recieved')
+            raise EOFError('No message received')
         return Datagram(dg)
 
     def recv_maybe(self):

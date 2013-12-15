@@ -1,5 +1,5 @@
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
@@ -93,7 +93,7 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				Datagram dg(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
 				dg.add_channel(ai_channel);
-				send(dg);
+				route_datagram(dg);
 			}
 			break;
 		}
