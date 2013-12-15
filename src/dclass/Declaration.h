@@ -11,7 +11,6 @@
 #pragma once
 #include "dcbase.h"
 #include "PackerCatalog.h"
-#include <iostream> // for std::ostream
 namespace dclass   // open namespace
 {
 

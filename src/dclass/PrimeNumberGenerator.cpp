@@ -9,6 +9,7 @@
 //
 
 #include "PrimeNumberGenerator.h"
+#include <assert.h>
 namespace dclass   // open namespace dclass
 {
 
@@ -24,7 +25,7 @@ PrimeNumberGenerator::PrimeNumberGenerator()
 //     number that can be represented in an int.
 int PrimeNumberGenerator::operator [](int n)
 {
-	assert(n >= 0, 0);
+	assert(n >= 0);
 
 	// Compute the prime numbers between the last-computed prime number
 	// and n.
@@ -43,7 +44,7 @@ int PrimeNumberGenerator::operator [](int n)
 				maybe_prime = false;
 			}
 			j++;
-			assert(j < (int)m_primes.size(), 0);
+			assert(j < (int)m_primes.size());
 		}
 		if(maybe_prime)
 		{

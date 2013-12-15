@@ -10,6 +10,7 @@
 
 #include "HashGenerator.h"
 #include "PrimeNumberGenerator.h"
+#include <assert.h>
 namespace dclass   // open namespace dclass
 {
 

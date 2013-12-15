@@ -20,6 +20,9 @@ using namespace dclass;
 #include "Packer.h"
 #include "NumericRange.h"
 
+#include <assert.h>
+#include <unistd.h>
+
 // Because our token type contains objects of type std::string, which
 // require correct copy construction (and not simply memcpying), we
 // cannot use bison's built-in auto-stack-grow feature.  As an easy
@@ -672,7 +675,7 @@ type_token
 | simple_type_name '(' double_range ')'
 {
 	SimpleParameter *simple_param = $1->as_simple_parameter();
-	assert(simple_param != (SimpleParameter *)NULL, 0);
+	assert(simple_param != (SimpleParameter *)NULL);
 	if(!simple_param->set_range(double_range))
 	{
 		yyerror("Inappropriate range for type");
@@ -682,7 +685,7 @@ type_token
 | simple_type_name '/' small_unsigned_integer
 {
 	SimpleParameter *simple_param = $1->as_simple_parameter();
-	assert(simple_param != (SimpleParameter *)NULL, 0);
+	assert(simple_param != (SimpleParameter *)NULL);
 	if(!simple_param->is_numeric_type())
 	{
 		yyerror("A divisor is only valid on a numeric type.");
@@ -703,7 +706,7 @@ type_token
 | simple_type_name '%' number
 {
 	SimpleParameter *simple_param = $1->as_simple_parameter();
-	assert(simple_param != (SimpleParameter *)NULL, 0);
+	assert(simple_param != (SimpleParameter *)NULL);
 	if(!simple_param->is_numeric_type())
 	{
 		yyerror("A divisor is only valid on a numeric type.");

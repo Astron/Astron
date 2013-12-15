@@ -49,13 +49,13 @@ void Keyword::clear_historical_flag()
 }
 
 // output writes a string representation of this instance to <out>.
-void Keyword::output(ostream &out, bool brief) const
+void Keyword::output(std::ostream &out, bool brief) const
 {
 	out << "keyword " << m_name;
 }
 
 // write writes a string representation of this instance to <out>.
-void Keyword::write(ostream &out, bool, int indent_level) const
+void Keyword::write(std::ostream &out, bool, int indent_level) const
 {
 	indent(out, indent_level) << "keyword " << m_name << ";\n";
 }

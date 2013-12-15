@@ -13,13 +13,13 @@
 #include "HashGenerator.h"
 #include "Packer.h"
 #include "indent.h"
-#include <math.h>
+#include <assert.h>
 namespace dclass   // open namespace
 {
 
 
 // constructor
-AtomicField::AtomicField(const string &name, Class *dcc, bool bogus_field) : Field(name, dcc)
+AtomicField::AtomicField(const std::string &name, Class *dcc, bool bogus_field) : Field(name, dcc)
 {
 	m_bogus_field = bogus_field;
 }
@@ -56,7 +56,7 @@ int AtomicField::get_num_elements() const
 // get_element returns the parameter object describing the nth element.
 Parameter* AtomicField::get_element(int n) const
 {
-	assert(n >= 0 && n < (int)m_elements.size(), NULL);
+	assert(n >= 0 && n < (int)m_elements.size());
 	return m_elements[n];
 }
 
@@ -86,7 +86,7 @@ void AtomicField::output(std::ostream &out, bool brief) const
 }
 
 // write generates a parseable description of the object to the indicated output stream.
-void AtomicField::write(ostream &out, bool brief, int indent_level) const
+void AtomicField::write(std::ostream &out, bool brief, int indent_level) const
 {
 	indent(out, indent_level);
 	output(out, brief);
@@ -117,7 +117,7 @@ void AtomicField::generate_hash(HashGenerator &hashgen) const
 //     shouldn't do this if n is in the range 0 <= n < get_num_nested_fields()).
 PackerInterface *AtomicField::get_nested_field(int n) const
 {
-	assert(n >= 0 && n < (int)m_elements.size(), NULL);
+	assert(n >= 0 && n < (int)m_elements.size());
 	return m_elements[n];
 }
 
@@ -175,7 +175,7 @@ bool AtomicField::do_check_match_atomic_field(const AtomicField *other) const
 
 // output_element formats a parameter as an element for output into .dc file syntax.
 //     Used internally by AtomicField's output() method.
-void AtomicField::output_element(ostream &out, bool brief, Parameter *element) const
+void AtomicField::output_element(std::ostream &out, bool brief, Parameter *element) const
 {
 	element->output(out, brief);
 

@@ -7,6 +7,8 @@
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
+
+#include <string.h>
 namespace dclass   // open namespace dclass
 {
 

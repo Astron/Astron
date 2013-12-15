@@ -12,6 +12,7 @@
 #include "dcbase.h"
 #include "Field.h"
 #include "Declaration.h"
+#include <vector> // for std::vector
 #include <unordered_map> // for std::unordered_map
 namespace dclass   // open namespace
 {

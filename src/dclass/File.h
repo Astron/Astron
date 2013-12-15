@@ -52,7 +52,7 @@ class File
 		// get_class returns the nth class read from the .dc file(s).
 		Class *get_class(int n) const;
 		// get_class_by_name returns the requested class or NULL if there is no such class.
-		Class *get_class_by_name(const string &name) const;
+		Class *get_class_by_name(const std::string &name) const;
 		// get_field_by_index returns a pointer to the one Field that has the indicated
 		//     index number, of all the Fields across all classes in the file.
 		Field *get_field_by_index(int index_number) const;
@@ -64,12 +64,12 @@ class File
 		// get_num_import_modules returns the number of import lines read from the .dc file(s).
 		int get_num_import_modules() const;
 		// get_import_module returns the module named by the nth import line read from the .dc file(s).
-		string get_import_module(int n) const;
+		std::string get_import_module(int n) const;
 		// get_num_import_symbols returns the number of symbols explicitly imported by the nth import.
 		//     If this is 0, the line imports the entire module.
 		int get_num_import_symbols(int n) const;
 		// get_import_module returns the module named by the nth import line read from the .dc file(s).
-		string get_import_symbol(int n, int i) const;
+		std::string get_import_symbol(int n, int i) const;
 
 		// get_num_typedefs returns the number of typedefs read from the .dc file(s).
 		int get_num_typedefs() const;
@@ -136,14 +136,14 @@ class File
 		class Import
 		{
 			public:
-				string m_module;
-				std::vector<string> m_symbols;
+				std::string m_module;
+				std::vector<std::string> m_symbols;
 		};
 
 		std::vector<Import> m_imports; // list of python imports in the file
 		std::vector<Typedef*> m_typedefs; // list of typedefs in the file
 
-		std::map<string, Typedef*> m_typedefs_by_name; // typedefs in the file by name
+		std::map<std::string, Typedef*> m_typedefs_by_name; // typedefs in the file by name
 
 		KeywordList m_keywords; // list of keywords read from the file
 		KeywordList m_default_keywords; // list of keywords in the file, provided for legacy reasons

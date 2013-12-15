@@ -41,6 +41,8 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <unistd.h>
 
 /* end standard C headers. */
 
@@ -617,11 +619,11 @@ static int error_count = 0;
 static int warning_count = 0;
 
 // This is the pointer to the current input stream.
-static istream *input_p = NULL;
+static std::istream *input_p = NULL;
 
 // This is the name of the dc file we're parsing.  We keep it so we
 // can print it out for error messages.
-static string dc_filename;
+static std::string dc_filename;
 
 // This is the initial token state returned by the lexer.  It allows
 // the yacc grammar to start from initial points.
@@ -632,7 +634,7 @@ static int initial_token;
 // Defining the interface to the lexer.
 ////////////////////////////////////////////////////////////////////
 
-void dc_init_lexer(istream &in, const string &filename)
+void dc_init_lexer(std::istream &in, const std::string &filename)
 {
 	input_p = &in;
 	dc_filename = filename;
@@ -683,35 +685,31 @@ return 1;
 }
 
 void
-dcyyerror(const string &msg)
+dcyyerror(const std::string &msg)
 {
-cerr << "\nError";
+std::cerr << "\nError";
 if(!dc_filename.empty())
 {
-	cerr << " in " << dc_filename;
+	std::cerr << " in " << dc_filename;
 }
-cerr
-        << " at line " << line_number << ", column " << col_number << ":\n"
-        << current_line << "\n";
-indent(cerr, col_number - 1)
-        << "^\n" << msg << "\n\n";
+std::cerr << " at line " << line_number << ", column " << col_number << ":\n"
+          << current_line << "\n";
+indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
 
 error_count++;
 }
 
 void
-dcyywarning(const string &msg)
+dcyywarning(const std::string &msg)
 {
-cerr << "\nWarning";
+std::cerr << "\nWarning";
 if(!dc_filename.empty())
 {
-	cerr << " in " << dc_filename;
+	std::cerr << " in " << dc_filename;
 }
-cerr
-        << " at line " << line_number << ", column " << col_number << ":\n"
-        << current_line << "\n";
-indent(cerr, col_number - 1)
-        << "^\n" << msg << "\n\n";
+std::cerr << " at line " << line_number << ", column " << col_number << ":\n"
+          << current_line << "\n";
+indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
 
 warning_count++;
 }
@@ -789,10 +787,10 @@ return c;
 
 // scan_quoted_string reads a string delimited by quotation marks and
 // returns it.
-static string
+static std::string
 scan_quoted_string(char quote_mark)
 {
-string result;
+std::string result;
 
 // We don't touch the current line number and column number during
 // scanning, so that if we detect an error while scanning the string
@@ -923,10 +921,10 @@ return result;
 
 // scan_hex_string reads a string of hexadecimal digits delimited by
 // angle brackets and returns the representative string.
-static string
+static std::string
 scan_hex_string()
 {
-string result;
+std::string result;
 
 // We don't touch the current line number and column number during
 // scanning, so that if we detect an error while scanning the string
@@ -964,7 +962,7 @@ while(c != '>' && c != EOF)
 		line_number = line;
 		col_number = col;
 		dcyyerror("Invalid hex digit.");
-		return string();
+		return std::string();
 	}
 
 	odd = !odd;
@@ -982,12 +980,12 @@ while(c != '>' && c != EOF)
 if(c == EOF)
 {
 	dcyyerror("This hex string is unterminated.");
-	return string();
+	return std::string();
 }
 else if(odd)
 {
 	dcyyerror("Odd number of hex digits.");
-	return string();
+	return std::string();
 }
 
 line_number = line;

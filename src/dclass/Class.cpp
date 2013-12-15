@@ -18,6 +18,7 @@
 #include "msgtypes.h"
 
 #include <algorithm>
+#include <unordered_set>
 namespace dclass   // open namespace
 {
 
@@ -76,7 +77,7 @@ size_t Class::get_num_parents() const
 // get_parent returns the nth parent class this class inherits from.
 Class* Class::get_parent(unsigned int n) const
 {
-	assert(n >= 0 && n < m_parents.size(), NULL);
+	assert(n >= 0 && n < m_parents.size());
 	return m_parents[n];
 }
 
@@ -104,7 +105,7 @@ size_t Class::get_num_fields() const
 //     this is the nth field defined in the class directly, ignoring inheritance.
 Field* Class::get_field(unsigned int n) const
 {
-	assert_always(n >= 0 && n < m_fields.size(), NULL);
+	assert(n >= 0 && n < m_fields.size());
 	return m_fields[n];
 }
 
@@ -252,7 +253,7 @@ Field *Class::get_inherited_field(int n)
 		{
 			rebuild_inherited_fields();
 		}
-		assert(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
+		assert(n >= 0 && n < (int)m_inherited_fields.size());
 		return m_inherited_fields[n];
 	}
 	else
@@ -285,7 +286,7 @@ Field *Class::get_inherited_field(int n) const
 			// Hacky print statement that makes it obvious this needs to be fixed
 			std::cerr << "\nTried to get_inherited_field on a possibly uninitialized class with a const class pointer.\n\n";
 		}
-		assert(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
+		assert(n >= 0 && n < (int)m_inherited_fields.size());
 		return m_inherited_fields[n];
 	}
 	else
@@ -591,7 +592,7 @@ void Class::shadow_inherited_field(const std::string &name)
 //     or false if there was a name conflict or some other problem.
 bool Class::add_field(Field *field)
 {
-	assert(field->get_class() == this || field->get_class() == NULL, false);
+	assert(field->get_class() == this || field->get_class() == NULL);
 	field->set_class(this);
 	if(m_file != (File*)NULL)
 	{
@@ -636,7 +637,7 @@ bool Class::add_field(Field *field)
 			std::unordered_map<int, Field*>::value_type(field->get_number(), field)).second;
 
 		// It shouldn't be possible for that to fail.
-		assert(inserted, false);
+		assert(inserted);
 		_used_in_assert(inserted);
 	}
 

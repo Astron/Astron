@@ -13,6 +13,7 @@
 #include "Field.h"
 #include "ParserDefs.h"
 #include "LexerDefs.h"
+#include <sstream>
 namespace dclass   // open namespace dclass
 {
 
@@ -23,7 +24,7 @@ namespace dclass   // open namespace dclass
 //  Description:
 ////////////////////////////////////////////////////////////////////
 PackerInterface::
-PackerInterface(const string &name) :
+PackerInterface(const std::string &name) :
 	m_name(name)
 {
 	m_has_fixed_byte_size = false;
@@ -79,7 +80,7 @@ PackerInterface::
 //               found.
 ////////////////////////////////////////////////////////////////////
 int PackerInterface::
-find_seek_index(const string &name) const
+find_seek_index(const std::string &name) const
 {
 	return get_catalog()->find_entry_by_name(name);
 }
@@ -142,11 +143,11 @@ as_class_parameter() const
 //               description string.
 ////////////////////////////////////////////////////////////////////
 bool PackerInterface::
-check_match(const string &description, File *dcfile) const
+check_match(const std::string &description, File *dcfile) const
 {
 	bool match = false;
 
-	istringstream strm(description);
+	std::istringstream strm(description);
 	dc_init_parser_parameter_description(strm, "check_match", dcfile);
 	dcyyparse();
 	dc_cleanup_parser();
@@ -173,7 +174,7 @@ check_match(const string &description, File *dcfile) const
 //  Description: Sets the name of this field.
 ////////////////////////////////////////////////////////////////////
 void PackerInterface::
-set_name(const string &name)
+set_name(const std::string &name)
 {
 	m_name = name;
 }
@@ -291,7 +292,7 @@ pack_uint64(PackData &, uint64_t, bool &pack_error, bool &) const
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void PackerInterface::
-pack_string(PackData &, const string &, bool &pack_error, bool &) const
+pack_string(PackData &, const std::string &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }
@@ -378,7 +379,7 @@ unpack_uint64(const char *, size_t, size_t &, uint64_t &, bool &pack_error, bool
 //               stream.
 ////////////////////////////////////////////////////////////////////
 void PackerInterface::
-unpack_string(const char *, size_t, size_t &, string &, bool &pack_error, bool &) const
+unpack_string(const char *, size_t, size_t &, std::string &, bool &pack_error, bool &) const
 {
 	pack_error = true;
 }

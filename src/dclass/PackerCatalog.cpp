@@ -51,7 +51,7 @@ PackerCatalog::
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
 int PackerCatalog::
-find_entry_by_name(const string &name) const
+find_entry_by_name(const std::string &name) const
 {
 	EntriesByName::const_iterator ni;
 	ni = _entries_by_name.find(name);
@@ -163,7 +163,7 @@ release_live_catalog(const PackerCatalog::LiveCatalog *live_catalog) const
 //               this adds a new entry to the catalog.
 ////////////////////////////////////////////////////////////////////
 void PackerCatalog::
-add_entry(const string &name, const PackerInterface *field,
+add_entry(const std::string &name, const PackerInterface *field,
           const PackerInterface *parent, int field_index)
 {
 	Entry entry;
@@ -187,7 +187,7 @@ add_entry(const string &name, const PackerInterface *field,
 	// convenience.  This won't override a fully-qualified name that
 	// might already have been recorded, and a fully-qualified name
 	// discovered later that conflicts with this name will replace it.
-	string local_name = field->get_name();
+	std::string local_name = field->get_name();
 	if(local_name != name)
 	{
 		_entries_by_name.insert(EntriesByName::value_type(local_name, entry_index));
@@ -201,10 +201,10 @@ add_entry(const string &name, const PackerInterface *field,
 //               newly-allocated reference catalog.
 ////////////////////////////////////////////////////////////////////
 void PackerCatalog::
-r_fill_catalog(const string &name_prefix, const PackerInterface *field,
+r_fill_catalog(const std::string &name_prefix, const PackerInterface *field,
                const PackerInterface *parent, int field_index)
 {
-	string next_name_prefix = name_prefix;
+	std::string next_name_prefix = name_prefix;
 
 	if(parent != (const PackerInterface *)NULL && !field->get_name().empty())
 	{

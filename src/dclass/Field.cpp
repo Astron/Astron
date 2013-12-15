@@ -30,7 +30,7 @@ Field::Field() : m_class(NULL), m_number(-1), m_default_value_stale(true),
 }
 
 // named constructor (for classes)
-Field::Field(const string &name, Class *dclass) : PackerInterface(name),
+Field::Field(const std::string &name, Class *dclass) : PackerInterface(name),
 	m_class(dclass), m_number(-1), m_default_value_stale(true),
 	m_has_default_value(false), m_bogus_field(false)
 {
@@ -103,38 +103,38 @@ const Parameter* Field::as_parameter() const
 }
 
 // format_data accepts a blob that represents the packed data for this field,
-//     returns a string formatting it for human consumption.
-//     Returns empty string if there is an error.
-string Field::format_data(const string &packed_data, bool show_field_names)
+//     returns a std::string formatting it for human consumption.
+//     Returns empty std::string if there is an error.
+std::string Field::format_data(const std::string &packed_data, bool show_field_names)
 {
 	Packer packer;
 	packer.set_unpack_data(packed_data);
 	packer.begin_unpack(this);
-	string result = packer.unpack_and_format(show_field_names);
+	std::string result = packer.unpack_and_format(show_field_names);
 	if(!packer.end_unpack())
 	{
-		return string();
+		return std::string();
 	}
 	return result;
 }
 
-// parse_string given a human-formatted string (for instance, as
+// parse_string given a human-formatted std::string (for instance, as
 //     returned by format_data(), above) that represents the value of this field,
-//     parse the string and return the corresponding packed data.
-//     Returns empty string if there is an error.
-string Field::parse_string(const string &formatted_string)
+//     parse the std::string and return the corresponding packed data.
+//     Returns empty std::string if there is an error.
+std::string Field::parse_string(const std::string &formatted_string)
 {
 	Packer packer;
 	packer.begin_pack(this);
 	if(!packer.parse_and_pack(formatted_string))
 	{
 		// Parse error.
-		return string();
+		return std::string();
 	}
 	if(!packer.end_pack())
 	{
 		// Data type mismatch.
-		return string();
+		return std::string();
 	}
 
 	return packer.get_string();
@@ -143,7 +143,7 @@ string Field::parse_string(const string &formatted_string)
 // validate_ranges verifies that all of the packed values in the field data are
 //     within the specified ranges and that there are no extra bytes on the end
 //     of the record.  Returns true if all fields are valid, false otherwise.
-bool Field::validate_ranges(const string &packed_data) const
+bool Field::validate_ranges(const std::string &packed_data) const
 {
 	Packer packer;
 	packer.set_unpack_data(packed_data);
@@ -188,7 +188,7 @@ bool Field::pack_default_value(PackData &pack_data, bool &) const
 }
 
 // set_name sets the name of this field.
-void Field::set_name(const string &name)
+void Field::set_name(const std::string &name)
 {
 	PackerInterface::set_name(name);
 	if(m_class != (Class *)NULL)
@@ -205,7 +205,7 @@ void Field::refresh_default_value()
 	packer.pack_default_value();
 	if(!packer.end_pack())
 	{
-		cerr << "Error while packing default value for " << get_name() << "\n";
+		std::cerr << "Error while packing default value for " << get_name() << "\n";
 	}
 	else
 	{

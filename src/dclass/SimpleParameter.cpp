@@ -1,4 +1,4 @@
-j// Filename: SimpleParameter.cpp
+// Filename: SimpleParameter.cpp
 // Created by: drose (15 Jun, 2004)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
@@ -1026,7 +1026,7 @@ void SimpleParameter::pack_uint64(PackData &pack_data, uint64_t value,
 }
 
 // pack_string packs the indicated numeric or string value into the stream.
-void SimpleParameter::pack_string(PackData &pack_data, const string &value,
+void SimpleParameter::pack_string(PackData &pack_data, const std::string &value,
                                   bool &pack_error, bool &range_error) const
 {
 	size_t string_length = value.length();
@@ -1955,7 +1955,7 @@ void SimpleParameter::unpack_uint64(const char *data, size_t length, size_t &p, 
 }
 
 // unpack_string unpacks the current numeric or string value from the stream.
-void SimpleParameter::unpack_string(const char *data, size_t length, size_t &p, string &value,
+void SimpleParameter::unpack_string(const char *data, size_t length, size_t &p, std::string &value,
                                     bool &pack_error, bool &range_error) const
 {
 	// If the type is a single byte, unpack it into a string of length 1.
@@ -2286,7 +2286,7 @@ bool SimpleParameter::unpack_skip(const char *data, size_t length, size_t &p, bo
 }
 
 // output_instance formats the parameter in .dc syntax as a typename and identifier.
-void SimpleParameter::output_instance(std::std::ostream &out, bool brief, const std::string &prename,
+void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
                                       const std::string &name, const std::string &postname) const
 {
 	if(get_typedef() != (Typedef *)NULL)

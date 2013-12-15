@@ -33,13 +33,13 @@ const Class* Declaration::as_class() const
 }
 
 // output writes a string representation of the declaration to an output stream
-void Declaration::output(ostream &out) const
+void Declaration::output(std::ostream &out) const
 {
 	output(out, true);
 }
 
 // write writes a string representation of the declaration to an output stream
-void Declaration::write(ostream &out, int indent_level) const
+void Declaration::write(std::ostream &out, int indent_level) const
 {
 	write(out, false, indent_level);
 }

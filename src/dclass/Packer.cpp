@@ -13,6 +13,7 @@
 #include "LexerDefs.h"
 #include "ClassParameter.h"
 #include "Class.h"
+#include <sstream>
 namespace dclass   // open namespace dclass
 {
 
@@ -98,7 +99,7 @@ begin_pack(const PackerInterface *root)
 bool Packer::
 end_pack()
 {
-	assert(_mode == M_pack, false);
+	assert(_mode == M_pack);
 
 	_mode = M_idle;
 
@@ -120,7 +121,7 @@ end_pack()
 //               takes only one parameter.
 ////////////////////////////////////////////////////////////////////
 void Packer::
-set_unpack_data(const string &data)
+set_unpack_data(const std::string &data)
 {
 	assert(_mode == M_idle);
 
@@ -198,7 +199,7 @@ begin_unpack(const PackerInterface *root)
 bool Packer::
 end_unpack()
 {
-	assert(_mode == M_unpack, false);
+	assert(_mode == M_unpack);
 
 	_mode = M_idle;
 
@@ -282,7 +283,7 @@ begin_repack(const PackerInterface *root)
 bool Packer::
 end_repack()
 {
-	assert(_mode == M_repack, false);
+	assert(_mode == M_repack);
 
 	// Put the rest of the data onto the pack stream.
 	_pack_data.append_data(_unpack_data + _unpack_p, _unpack_length - _unpack_p);
@@ -306,14 +307,14 @@ end_repack()
 //               known (or if the packer is in an invalid mode).
 ////////////////////////////////////////////////////////////////////
 bool Packer::
-seek(const string &field_name)
+seek(const std::string &field_name)
 {
 	if(_catalog == (PackerCatalog *)NULL)
 	{
 		_catalog = _root->get_catalog();
 		_live_catalog = _catalog->get_live_catalog(_unpack_data, _unpack_length);
 	}
-	assert(_catalog != (PackerCatalog *)NULL, false);
+	assert(_catalog != (PackerCatalog *)NULL);
 	if(_live_catalog == NULL)
 	{
 		_pack_error = true;
@@ -351,7 +352,7 @@ seek(int seek_index)
 		_catalog = _root->get_catalog();
 		_live_catalog = _catalog->get_live_catalog(_unpack_data, _unpack_length);
 	}
-	assert(_catalog != (PackerCatalog *)NULL, false);
+	assert(_catalog != (PackerCatalog *)NULL);
 	if(_live_catalog == NULL)
 	{
 		_pack_error = true;
@@ -383,7 +384,7 @@ seek(int seek_index)
 	}
 	else if(_mode == M_repack)
 	{
-		assert(_catalog != (PackerCatalog *)NULL, false);
+		assert(_catalog != (PackerCatalog *)NULL);
 
 		if(_stack != NULL || _current_field != NULL)
 		{
@@ -751,9 +752,9 @@ unpack_skip()
 //               Returns true on success, false on a parse error.
 ////////////////////////////////////////////////////////////////////
 bool Packer::
-parse_and_pack(const string &formatted_object)
+parse_and_pack(const std::string &formatted_object)
 {
-	istringstream strm(formatted_object);
+	std::istringstream strm(formatted_object);
 	return parse_and_pack(strm);
 }
 
@@ -765,7 +766,7 @@ parse_and_pack(const string &formatted_object)
 //               Returns true on success, false on a parse error.
 ////////////////////////////////////////////////////////////////////
 bool Packer::
-parse_and_pack(istream &in)
+parse_and_pack(std::istream &in)
 {
 	dc_init_parser_parameter_value(in, "parse_and_pack", *this);
 	dcyyparse();
@@ -787,10 +788,10 @@ parse_and_pack(istream &in)
 //               suitable for parsing in the dc file (e.g. as a
 //               default value), or as an input to parse_object.
 ////////////////////////////////////////////////////////////////////
-string Packer::
+std::string Packer::
 unpack_and_format(bool show_field_names)
 {
-	ostringstream strm;
+	std::ostringstream strm;
 	unpack_and_format(strm, show_field_names);
 	return strm.str();
 }
@@ -803,7 +804,7 @@ unpack_and_format(bool show_field_names)
 //               default value), or as an input to parse_object.
 ////////////////////////////////////////////////////////////////////
 void Packer::
-unpack_and_format(ostream &out, bool show_field_names)
+unpack_and_format(std::ostream &out, bool show_field_names)
 {
 	PackType pack_type = get_pack_type();
 
@@ -908,10 +909,10 @@ unpack_and_format(ostream &out, bool show_field_names)
 //  Description: Outputs the indicated string within quotation marks.
 ////////////////////////////////////////////////////////////////////
 void Packer::
-enquote_string(ostream &out, char quote_mark, const string &str)
+enquote_string(std::ostream &out, char quote_mark, const std::string &str)
 {
 	out << quote_mark;
-	for(string::const_iterator pi = str.begin();
+	for(std::string::const_iterator pi = str.begin();
 	        pi != str.end();
 	        ++pi)
 	{
@@ -941,10 +942,10 @@ enquote_string(ostream &out, char quote_mark, const string &str)
 //  Description: Outputs the indicated string as a hex constant.
 ////////////////////////////////////////////////////////////////////
 void Packer::
-output_hex_string(ostream &out, const string &str)
+output_hex_string(std::ostream &out, const std::string &str)
 {
 	out << '<';
-	for(string::const_iterator pi = str.begin();
+	for(std::string::const_iterator pi = str.begin();
 	        pi != str.end();
 	        ++pi)
 	{

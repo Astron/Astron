@@ -11,6 +11,7 @@
 #pragma once
 #include "dcbase.h"
 #include "Field.h"
+
 namespace dclass   // open namespace dclass
 {
 
@@ -43,8 +44,8 @@ class MolecularField : public Field
 		void add_atomic(AtomicField *atomic);
 
 		// output and write write a representation of the field to an output stream
-		virtual void output(ostream &out, bool brief) const;
-		virtual void write(ostream &out, bool brief, int indent_level) const;
+		virtual void output(std::ostream &out, bool brief) const;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const;
 
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;

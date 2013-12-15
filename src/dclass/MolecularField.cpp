@@ -12,6 +12,7 @@
 #include "AtomicField.h"
 #include "HashGenerator.h"
 #include "indent.h"
+#include <assert.h>
 namespace dclass   // open namespace dclass
 {
 
@@ -46,7 +47,7 @@ int MolecularField::get_num_atomics() const
 //     This may be an inherited field.
 AtomicField *MolecularField::get_atomic(int n) const
 {
-	assert(n >= 0 && n < (int)m_fields.size(), NULL);
+	assert(n >= 0 && n < (int)m_fields.size());
 	return m_fields[n];
 }
 
@@ -140,7 +141,7 @@ void MolecularField::generate_hash(HashGenerator &hashgen) const
 //     Will return null if the field is out of the range 0 <= n < get_num_nested_fields().
 PackerInterface *MolecularField::get_nested_field(int n) const
 {
-	assert(n >= 0 && n < (int)m_nested_fields.size(), NULL);
+	assert(n >= 0 && n < (int)m_nested_fields.size());
 	return m_nested_fields[n];
 }
 

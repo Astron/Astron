@@ -12,8 +12,6 @@
 #include "dcbase.h"
 #include "PackerInterface.h"
 #include "KeywordList.h"
-#include <string> // for std::string
-#include <iostream> // for std::ostream
 namespace dclass   // open namespace
 {
 

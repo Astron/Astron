@@ -55,14 +55,14 @@ bool KeywordList::has_keyword(const Keyword *keyword) const
 // get_num_keywords returns the number of keywords in the list.
 int KeywordList::get_num_keywords() const
 {
-	assert(m_keywords_by_name.size() == m_keywords.size(), 0);
+	assert(m_keywords_by_name.size() == m_keywords.size());
 	return m_keywords.size();
 }
 
 // get_keyword returns the nth keyword in the list.
 const Keyword *KeywordList::get_keyword(int n) const
 {
-	assert(n >= 0 && n < (int)m_keywords.size(), NULL);
+	assert(n >= 0 && n < (int)m_keywords.size());
 	return m_keywords[n];
 }
 

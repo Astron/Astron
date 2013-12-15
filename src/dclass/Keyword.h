@@ -37,8 +37,8 @@ class Keyword : public Declaration
 		void clear_historical_flag();
 
 		// output and write output a string representation of this instance to <out>.
-		virtual void output(ostream &out, bool brief) const;
-		virtual void write(ostream &out, bool brief, int indent_level) const;
+		virtual void output(std::ostream &out, bool brief) const;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const;
 
 		// generate_hash accumulates the properties of this keyword into the hash.
 		void generate_hash(HashGenerator &hashgen) const;

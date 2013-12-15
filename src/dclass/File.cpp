@@ -15,6 +15,8 @@
 #include "Typedef.h"
 #include "Keyword.h"
 #include "HashGenerator.h"
+#include <assert.h>
+#include <fstream>
 namespace dclass   // open namespace
 {
 
@@ -80,7 +82,7 @@ bool File::read(std::string filename)
 //     The distributed classes defined in the file will be appended to the set of
 //     distributed classes already recorded, if any.
 //     Returns true if the file is successfully read, false if there was an error.
-bool File::read(istream &in, const string &filename)
+bool File::read(std::istream &in, const std::string &filename)
 {
 	dc_init_parser(in, filename, *this);
 	dcyyparse();
@@ -108,7 +110,7 @@ bool File::write(std::string filename, bool brief) const
 
 // write writes a parseable description of all the known distributed classes to the stream.
 //     Returns true if the description is successfully written, false otherwise.
-bool File::write(ostream &out, bool brief) const
+bool File::write(std::ostream &out, bool brief) const
 {
 	if(!m_imports.empty())
 	{
@@ -155,13 +157,13 @@ int File::get_num_classes() const
 // get_class returns the nth class read from the .dc file(s).
 Class* File::get_class(int n) const
 {
-	assert(n >= 0 && n < (int)m_classes.size(), NULL);
+	assert(n >= 0 && n < (int)m_classes.size());
 	return m_classes[n];
 }
 
 // get_class_by_name returns the class that has the indicated name,
 //     or NULL if there is no such class.
-Class* File::get_class_by_name(const string &name) const
+Class* File::get_class_by_name(const std::string &name) const
 {
 	auto class_it = m_things_by_name.find(name);
 	if(class_it != m_things_by_name.end())
@@ -179,7 +181,7 @@ Class* File::get_class_by_name(const string &name) const
 //     same index number, so this global lookup is not possible.
 Field* File::get_field_by_index(int index_number) const
 {
-	assert(dc_multiple_inheritance, NULL);
+	assert(dc_multiple_inheritance);
 
 	if(index_number >= 0 && index_number < (int)m_fields_by_index.size())
 	{
@@ -196,9 +198,9 @@ int File::get_num_import_modules() const
 }
 
 // get_import_module returns the module named by the nth import line read from the .dc file(s).
-string File::get_import_module(int n) const
+std::string File::get_import_module(int n) const
 {
-	assert(n >= 0 && n < (int)m_imports.size(), string());
+	assert(n >= 0 && n < (int)m_imports.size());
 	return m_imports[n].m_module;
 }
 
@@ -207,15 +209,15 @@ string File::get_import_module(int n) const
 //     if it is more than 0, the line is "from modulename import symbol, symbol ... ".
 int File::get_num_import_symbols(int n) const
 {
-	assert(n >= 0 && n < (int)m_imports.size(), 0);
+	assert(n >= 0 && n < (int)m_imports.size());
 	return m_imports[n].m_symbols.size();
 }
 
 // get_import_symbol returns the ith symbol named by the nth import line read from the .dc file(s).
-string File::get_import_symbol(int n, int i) const
+std::string File::get_import_symbol(int n, int i) const
 {
-	assert(n >= 0 && n < (int)m_imports.size(), string());
-	assert(i >= 0 && i < (int)m_imports[n].m_symbols.size(), string());
+	assert(n >= 0 && n < (int)m_imports.size());
+	assert(i >= 0 && i < (int)m_imports[n].m_symbols.size());
 	return m_imports[n].m_symbols[i];
 }
 
@@ -228,13 +230,13 @@ int File::get_num_typedefs() const
 // get_typedef returns the nth typedef read from the .dc file(s).
 Typedef *File::get_typedef(int n) const
 {
-	assert(n >= 0 && n < (int)m_typedefs.size(), NULL);
+	assert(n >= 0 && n < (int)m_typedefs.size());
 	return m_typedefs[n];
 }
 
 // get_typedef_by_name returns the typedef that has the indicated name,
 //     or NULL if there is no such typedef name.
-Typedef *File::get_typedef_by_name(const string &name) const
+Typedef *File::get_typedef_by_name(const std::string &name) const
 {
 	auto typ_it = m_typedefs_by_name.find(name);
 	if(typ_it != m_typedefs_by_name.end())
@@ -259,7 +261,7 @@ const Keyword *File::get_keyword(int n) const
 
 // get_keyword_by_name returns the keyword that has the indicated name,
 //     or NULL if there is no such keyword name.
-const Keyword *File::get_keyword_by_name(const string &name) const
+const Keyword *File::get_keyword_by_name(const std::string &name) const
 {
 	const Keyword *keyword = m_keywords.get_keyword_by_name(name);
 	if(keyword == (const Keyword*)NULL)
@@ -394,7 +396,7 @@ bool File::add_typedef(Typedef *dtypedef)
 // add_keyword adds the indicated keyword string to the list of keywords known to the File.
 //     These keywords may then be added to Fields.
 //     It is not an error to add a particular keyword more than once.
-bool File::add_keyword(const string &name)
+bool File::add_keyword(const std::string &name)
 {
 	Keyword *keyword = new Keyword(name);
 	bool added = m_keywords.add_keyword(keyword);

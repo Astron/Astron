@@ -10,6 +10,7 @@
 
 #pragma once
 #include "dcbase.h"
+#include <vector>
 namespace dclass   // open namespace dclass
 {
 

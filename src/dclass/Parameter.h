@@ -12,8 +12,6 @@
 #include "dcbase.h"
 #include "Field.h"
 #include "NumericRange.h"
-#include <string> // for std::string
-#include <iostream> // for std::ostream
 namespace dclass   // open namespace dclass
 {
 

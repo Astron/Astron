@@ -12,6 +12,7 @@
 #include "Parameter.h"
 #include "SimpleParameter.h"
 #include "indent.h"
+#include <sstream>
 namespace dclass   // open namespace dclass
 {
 
@@ -24,7 +25,7 @@ Typedef::Typedef(Parameter *parameter, bool implicit) :
 }
 
 // bogus constructor -- creates a bogus typedef reference.
-Typedef::Typedef(const string &name) :
+Typedef::Typedef(const std::string &name) :
 	m_parameter(new SimpleParameter(ST_invalid)), m_bogus_typedef(true),
 	m_implicit_typedef(false), m_number(-1)
 {
@@ -77,7 +78,7 @@ bool Typedef::is_implicit_typedef() const
 Parameter *Typedef::make_new_parameter() const
 {
 	Parameter *new_parameter = m_parameter->make_copy();
-	new_parameter->set_name(string());
+	new_parameter->set_name(std::string());
 	new_parameter->set_typedef(this);
 	return new_parameter;
 }

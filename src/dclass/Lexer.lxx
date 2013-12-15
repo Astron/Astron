@@ -12,6 +12,9 @@
 #include "File.h"
 #include "indent.h"
 #include "pstrtod.h"
+#include <iostream>
+#include <assert.h>
+#include <unistd.h>
 using namespace dclass;
 
 
@@ -197,7 +200,7 @@ using namespace dclass;
 	// returns it.
 	static std::string scan_quoted_string(char quote_mark)
 	{
-		std:;string result;
+		std::string result;
 
 		// We don't touch the current line number and column number during
 		// scanning, so that if we detect an error while scanning the string

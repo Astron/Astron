@@ -25,7 +25,7 @@ namespace dclass   // open namespace
 class AtomicField : public Field
 {
 	public:
-		AtomicField(const string &name, Class *dcc, bool bogus_field);
+		AtomicField(const std::string &name, Class *dcc, bool bogus_field);
 		virtual ~AtomicField();
 
 		// as_atomic_field returns the same field pointer converted to an atomic field
@@ -47,10 +47,10 @@ class AtomicField : public Field
 		// output formats the field to the syntax of an atomic field in a .dc file
 		//     as IDENTIFIER(ELEMENTS, ...) KEYWORDS with optional ELEMENTS and KEYWORDS,
 		//     and outputs the formatted string to the stream.
-		virtual void output(ostream &out, bool brief) const;
+		virtual void output(std::ostream &out, bool brief) const;
 
 		// write generates a parseable description of the object to the indicated output stream.
-		virtual void write(ostream &out, bool brief, int indent_level) const;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const;
 
 		// generate_hash accumulates the properties of this field into the hash
 		virtual void generate_hash(HashGenerator &hashgen) const;
@@ -69,7 +69,7 @@ class AtomicField : public Field
 
 	private:
 		// output_element formats a parameter as an element for output into .dc file syntax.
-		void output_element(ostream &out, bool brief, Parameter *element) const;
+		void output_element(std::ostream &out, bool brief, Parameter *element) const;
 
 		std::vector<Parameter*> m_elements; // the "arguments" or parameters of the AtomicField
 };
