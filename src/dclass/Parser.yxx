@@ -140,7 +140,6 @@ using namespace dclass;
 % type <u.dclass> struct
 		% type <u.field> struct_field
 		% type <u.field> parameter_description
-		% type <u.field> switch_field
 		% type <u.field> atomic_field
 		% type <u.field> molecular_field
 		% type <u.subatomic> type_token
