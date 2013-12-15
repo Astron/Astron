@@ -1,14 +1,19 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include "dcparser/dcClass.h"
-#include "dcparser/dcField.h"
-#include "dcparser/dcAtomicField.h"
-#include "dcparser/dcMolecularField.h"
+#include "dclass/Class.h"
+#include "dclass/Field.h"
+#include "dclass/AtomicField.h"
+#include "dclass/MolecularField.h"
 
 #include "DistributedObject.h"
 
+using dclass::Class;
+using dclass::Field;
+using dclass::AtomicField;
+using dclass::MolecularField;
+
 DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doid_t parent_id,
-                                     zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
+                                     zone_t zone_id, Class *dclass, DatagramIterator &dgi,
                                      bool has_other) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
@@ -21,7 +26,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 
 	for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
 	{
-		DCField *field = m_dclass->get_inherited_field(i);
+		Field *field = m_dclass->get_inherited_field(i);
 		if(field->is_required() && !field->as_molecular_field())
 		{
 			dgi.unpack_field(field, m_required_fields[field]);
@@ -34,7 +39,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 		for(int i = 0; i < count; ++i)
 		{
 			uint16_t field_id = dgi.read_uint16();
-			DCField *field = m_dclass->get_field_by_index(field_id);
+			Field *field = m_dclass->get_field_by_index(field_id);
 			if(field->is_ram())
 			{
 				dgi.unpack_field(field, m_ram_fields[field]);
@@ -57,9 +62,9 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 }
 
 DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender, doid_t do_id,
-                                     doid_t parent_id, zone_t zone_id, DCClass *dclass,
-                                     std::unordered_map<DCField*, std::vector<uint8_t> > required,
-                                     std::map<DCField*, std::vector<uint8_t> > ram) :
+                                     doid_t parent_id, zone_t zone_id, Class *dclass,
+                                     std::unordered_map<Field*, std::vector<uint8_t> > required,
+                                     std::map<Field*, std::vector<uint8_t> > ram) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
@@ -89,7 +94,7 @@ void DistributedObject::append_required_data(Datagram &dg, bool client_only, boo
 	uint32_t field_count = m_dclass->get_num_inherited_fields();
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
-		DCField *field = m_dclass->get_inherited_field(i);
+		Field *field = m_dclass->get_inherited_field(i);
 		if(field->is_required() && !field->as_molecular_field() && (!client_only
 		        || field->is_broadcast() || field->is_clrecv() || (also_owner && field->is_ownrecv())))
 		{
@@ -102,7 +107,7 @@ void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool a
 {
 	if(client_only)
 	{
-		std::list<DCField*> broadcast_fields;
+		std::list<Field*> broadcast_fields;
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
 			if(it->first->is_broadcast() || it->first->is_clrecv() || (also_owner && it->first->is_ownrecv()))
@@ -349,7 +354,7 @@ void DistributedObject::wake_children()
 	route_datagram(dg);
 }
 
-void DistributedObject::save_field(DCField *field, const std::vector<uint8_t> &data)
+void DistributedObject::save_field(Field *field, const std::vector<uint8_t> &data)
 {
 	if(field->is_required())
 	{
@@ -365,7 +370,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 {
 	std::vector<uint8_t> data;
 	uint16_t field_id = dgi.read_uint16();
-	DCField *field = m_dclass->get_field_by_index(field_id);
+	Field *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
 	{
 		m_log->error() << "Received update for missing field ID="
@@ -388,7 +393,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		return false;
 	}
 
-	DCMolecularField *molecular = field->as_molecular_field();
+	MolecularField *molecular = field->as_molecular_field();
 	if(molecular)
 	{
 		dgi.seek(field_start);
@@ -396,7 +401,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		for(int i = 0; i < n; ++i)
 		{
 			std::vector<uint8_t> atomic_data;
-			DCAtomicField *atomic = molecular->get_atomic(i);
+			AtomicField *atomic = molecular->get_atomic(i);
 			dgi.unpack_field(atomic, atomic_data);
 			save_field(atomic->as_field(), atomic_data);
 		}
@@ -433,7 +438,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
                                        bool succeed_if_unset, bool is_subfield)
 {
-	DCField *field = m_dclass->get_field_by_index(field_id);
+	Field *field = m_dclass->get_field_by_index(field_id);
 	if(!field)
 	{
 		m_log->error() << "Received get_field for field: " << field_id
@@ -442,7 +447,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	}
 	m_log->trace() << "Handling query for '" << field->get_name() << "'." << std::endl;
 
-	DCMolecularField *molecular = field->as_molecular_field();
+	MolecularField *molecular = field->as_molecular_field();
 	if(molecular)
 	{
 		int n = molecular->get_num_atomics();

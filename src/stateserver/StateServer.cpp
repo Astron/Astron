@@ -1,12 +1,13 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include "dcparser/dcClass.h"
+#include "dclass/Class.h"
 #include <exception>
 #include <stdexcept>
 
 #include "DistributedObject.h"
 #include "StateServer.h"
 
+using dclass::Class;
 
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 
@@ -48,7 +49,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 		return;
 	}
 
-	DCClass *dclass = g_dcf->get_class(dc_id);
+	Class *dclass = g_dcf->get_class(dc_id);
 	DistributedObject *obj;
 	try
 	{

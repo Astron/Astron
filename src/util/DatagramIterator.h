@@ -1,10 +1,11 @@
 #pragma once
 #include "Datagram.h"
-#include "dcparser/dcClass.h"
-
+#include "dclass/Class.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif
+
+using dclass::PackerInterface;
 
 // A DatagramIteratorEOF is an exception that is thrown when attempting to read
 // past the end of a datagram.
@@ -222,8 +223,8 @@ class DatagramIterator
 			return read_data(m_dg.size() - m_offset);
 		}
 
-		// unpack_field accepts a DCField type and reads the value of the field into a buffer.
-		void unpack_field(DCPackerInterface *field, std::vector<uint8_t> &buffer)
+		// unpack_field accepts a Field type and reads the value of the field into a buffer.
+		void unpack_field(PackerInterface *field, std::vector<uint8_t> &buffer)
 		{
 			// If field is a fixed-sized type like uint, int, float, etc
 			if(field->has_fixed_byte_size())
@@ -271,16 +272,16 @@ class DatagramIterator
 		}
 
 		// unpack_field can also be called without a reference to unpack into a new buffer.
-		std::vector<uint8_t> unpack_field(DCPackerInterface *field)
+		std::vector<uint8_t> unpack_field(PackerInterface *field)
 		{
 			std::vector<uint8_t> buffer;
 			unpack_field(field, buffer);
 			return buffer;
 		}
 
-		// skip_field can be used to seek past the packed field data for a DCField.
+		// skip_field can be used to seek past the packed field data for a Field.
 		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip_field(DCPackerInterface *field)
+		void skip_field(PackerInterface *field)
 		{
 			// Skip over fields with fixed byte size
 			if(field->has_fixed_byte_size())

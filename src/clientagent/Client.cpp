@@ -5,6 +5,8 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 
+using dclass::Class;
+
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
 	m_interests(), m_pending_interests()
@@ -51,7 +53,7 @@ void Client::log_event(const std::list<std::string> &event)
 
 // lookup_object returns the class of the object with a do_id.
 // If that object is not visible to the client, NULL will be returned instead.
-DCClass *Client::lookup_object(doid_t do_id)
+Class *Client::lookup_object(doid_t do_id)
 {
 	// First see if it's an UberDOG:
 	if(g_uberdogs.find(do_id) != g_uberdogs.end())

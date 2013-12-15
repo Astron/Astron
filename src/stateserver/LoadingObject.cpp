@@ -3,6 +3,9 @@
 
 #include "LoadingObject.h"
 
+using dclass::Class;
+using dclass::Field;
+
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
                              doid_t parent_id, zone_t zone_id,
                              const std::unordered_set<uint32_t> &contexts) :
@@ -19,7 +22,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id,
-                             zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
+                             zone_t zone_id, Class *dclass, DatagramIterator &dgi,
                              const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
 	m_dclass(dclass), m_valid_contexts(contexts)
@@ -108,7 +111,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			DCClass *r_dclass = g_dcf->get_class(dc_id);
+			Class *r_dclass = g_dcf->get_class(dc_id);
 			if(m_dclass && r_dclass != m_dclass)
 			{
 				m_log->error() << "Requested object of class " << m_dclass->get_number()
@@ -128,7 +131,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			int dcc_field_count = r_dclass->get_num_inherited_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				DCField *field = r_dclass->get_inherited_field(i);
+				Field *field = r_dclass->get_inherited_field(i);
 				if(!field->as_molecular_field())
 				{
 					if(field->is_required())

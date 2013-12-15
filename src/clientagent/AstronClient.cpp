@@ -6,6 +6,9 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 
+using dclass::Class;
+using dclass::Field;
+
 class AstronClient : public Client, public NetworkClient
 {
 	private:
@@ -353,7 +356,7 @@ class AstronClient : public Client, public NetworkClient
 			uint16_t field_id = dgi.read_uint16();
 
 			// Get class of object from cache
-			DCClass *dcc = lookup_object(do_id);
+			Class *dcc = lookup_object(do_id);
 
 			// If the class couldn't be found, error out:
 			if(!dcc)
@@ -391,7 +394,7 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Check that the client sent a field that actually exists in the class.
-			DCField *field = dcc->get_field_by_index(field_id);
+			Field *field = dcc->get_field_by_index(field_id);
 			if(!field)
 			{
 				std::stringstream ss;

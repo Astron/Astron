@@ -4,6 +4,9 @@
 #include "DBBackendFactory.h"
 #include "DatabaseBackend.h"
 
+using dclass::Field;
+using dclass::Class;
+
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
 static ConfigVariable<doid_t> min_id("generate/min", INVALID_DO_ID);
 static ConfigVariable<doid_t> max_id("generate/max", UINT_MAX);
@@ -63,10 +66,10 @@ class DatabaseServer : public Role
 
 					// Get DistributedClass
 					uint16_t dc_id = dgi.read_uint16();
-					DCClass *dcc = g_dcf->get_class(dc_id);
+					Class *dcc = g_dcf->get_class(dc_id);
 					if(!dcc)
 					{
-						m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
+						m_log->error() << "Invalid Class when creating object: #" << dc_id << std::endl;
 						resp.add_doid(INVALID_DO_ID);
 						route_datagram(resp);
 						return;
@@ -81,7 +84,7 @@ class DatabaseServer : public Role
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							DCField *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -110,7 +113,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Checking all required fields exist..." << std::endl;
 					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 					{
-						DCField *field = dcc->get_inherited_field(i);
+						Field *field = dcc->get_inherited_field(i);
 						if(field->is_db() && !field->as_molecular_field()
 						        && dbo.fields.find(field) == dbo.fields.end() && field->has_default_value())
 						{
@@ -189,14 +192,14 @@ class DatabaseServer : public Role
 				{
 					// Check class so we can filter the field
 					doid_t do_id = dgi.read_doid();
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						return;
 					}
 
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_index(field_id);
 
 					// Make sure field exists and is a database field
 					if(field && field->is_db())
@@ -212,14 +215,14 @@ class DatabaseServer : public Role
 				{
 					// Check class so we can filter the fieldss
 					doid_t do_id = dgi.read_doid();
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						return;
 					}
 
 					// Make sure field exists and are database fields, storing their values
-					std::map<DCField*, std::vector<uint8_t> > fields;
+					std::map<Field*, std::vector<uint8_t> > fields;
 					uint16_t field_count = dgi.read_uint16();
 					m_log->trace() << "Unpacking fields..." << std::endl;
 					try
@@ -227,7 +230,7 @@ class DatabaseServer : public Role
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							DCField *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -263,7 +266,7 @@ class DatabaseServer : public Role
 
 					// Get class so we can filter the field
 					doid_t do_id = dgi.read_doid();
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
@@ -273,7 +276,7 @@ class DatabaseServer : public Role
 
 					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_index(field_id);
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
@@ -313,7 +316,7 @@ class DatabaseServer : public Role
 
 					// Get class so we can filter the field
 					doid_t do_id = dgi.read_doid();
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
@@ -323,7 +326,7 @@ class DatabaseServer : public Role
 
 					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_index(field_id);
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
@@ -366,7 +369,7 @@ class DatabaseServer : public Role
 
 					// Get class so we can filter the fields
 					doid_t do_id = dgi.read_doid();
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
@@ -375,15 +378,15 @@ class DatabaseServer : public Role
 					}
 
 					// Unpack fields from datagram, validate that they are database fields
-					std::map<DCField*, std::vector<uint8_t> > equals;
-					std::map<DCField*, std::vector<uint8_t> > values;
+					std::map<Field*, std::vector<uint8_t> > equals;
+					std::map<Field*, std::vector<uint8_t> > values;
 					uint16_t field_count = dgi.read_uint16();
 					try
 					{
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							DCField *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_index(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -446,7 +449,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Reading field from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						m_log->trace() << "... object not found in database." << std::endl;
@@ -457,7 +460,7 @@ class DatabaseServer : public Role
 
 					// Get field from datagram
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_index(field_id);
 					if(!field)
 					{
 						m_log->error() << "Asked for invalid field,"
@@ -499,7 +502,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Reading fields from obj-" << do_id << "..." << std::endl;
 
 					// Get object class from db
-					DCClass *dcc = m_db_backend->get_class(do_id);
+					Class *dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						resp.add_uint8(FAILURE);
@@ -509,11 +512,11 @@ class DatabaseServer : public Role
 
 					// Get fields from datagram
 					uint16_t field_count = dgi.read_uint16();
-					std::vector<DCField*> fields(field_count);
+					std::vector<Field*> fields(field_count);
 					for(uint16_t i = 0; i < field_count; ++i)
 					{
 						uint16_t field_id = dgi.read_uint16();
-						DCField *field = dcc->get_field_by_index(field_id);
+						Field *field = dcc->get_field_by_index(field_id);
 						if(!field)
 						{
 							m_log->error() << "Asked for invalid field(s),"
@@ -526,7 +529,7 @@ class DatabaseServer : public Role
 					}
 
 					// Get values from database
-					std::map<DCField*, std::vector<uint8_t> > values;
+					std::map<Field*, std::vector<uint8_t> > values;
 					if(!m_db_backend->get_fields(do_id, fields, values))
 					{
 						m_log->trace() << "... failure." << std::endl;
@@ -553,7 +556,7 @@ class DatabaseServer : public Role
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					// Get class so we can validate the field
-					DCClass* dcc = m_db_backend->get_class(do_id);
+					Class* dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						m_log->trace() << "... object does not exist." << std::endl;
@@ -562,7 +565,7 @@ class DatabaseServer : public Role
 
 					// Check the field exists
 					uint16_t field_id = dgi.read_uint16();
-					DCField* field = dcc->get_field_by_index(field_id);
+					Field* field = dcc->get_field_by_index(field_id);
 					if(!field)
 					{
 						m_log->error() << "Tried to delete an invalid field:" << field_id
@@ -605,15 +608,15 @@ class DatabaseServer : public Role
 					m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
 
 					// Get class to validate fields
-					DCClass* dcc = m_db_backend->get_class(do_id);
+					Class* dcc = m_db_backend->get_class(do_id);
 					if(!dcc)
 					{
 						m_log->trace() << "... object does not exist." << std::endl;
 						return;
 					}
 
-					std::vector<DCField*> del_fields; // deleted fields
-					std::map<DCField*, std::vector<uint8_t> > set_fields; // set to default
+					std::vector<Field*> del_fields; // deleted fields
+					std::map<Field*, std::vector<uint8_t> > set_fields; // set to default
 
 					// Iterate through all the fields
 					uint16_t field_count = dgi.read_uint16();
@@ -621,7 +624,7 @@ class DatabaseServer : public Role
 					{
 						// Check that field actually exists
 						uint16_t field_id = dgi.read_uint16();
-						DCField* field = dcc->get_field_by_index(field_id);
+						Field* field = dcc->get_field_by_index(field_id);
 						if(!field)
 						{
 							m_log->error() << "Tried to delete an invalid field:" << field_id

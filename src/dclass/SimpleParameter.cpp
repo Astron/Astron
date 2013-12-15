@@ -21,7 +21,7 @@ namespace dclass   // open namespace dclass
 
 
 
-std::map<SubatomicType, std::map<unsigned int, SimpleParameter*> > cls_nested_field_map;
+std::map<SubatomicType, std::map<unsigned int, SimpleParameter*> > SimpleParameter::cls_nested_field_map;
 ClassParameter *SimpleParameter::cls_uint32uint8_type = NULL;
 
 // Type constructor

@@ -1,6 +1,6 @@
 #pragma once
 #include "messagedirector/MessageDirector.h"
-#include "dcparser/dcFile.h"
+#include "dclass/File.h"
 #include "util/EventSender.h"
 #include "Logger.h"
 #include "config.h"
@@ -14,13 +14,13 @@
 struct Uberdog
 {
 	doid_t do_id;
-	DCClass *dcc;
+	dclass::Class *dcc;
 	bool anonymous;
 };
 
 extern Logger *g_logger;
 extern ConfigFile *g_config;
-extern DCFile *g_dcf;
+extern dclass::File *g_dcf;
 extern EventSender g_eventsender;
 extern boost::asio::io_service io_service;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;
