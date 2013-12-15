@@ -1,19 +1,14 @@
-// Filename: dcmsgtypes.h
-// Created by:  drose (18May04)
+// Filename: msgtypes.h
+// Created by: drose (18 May, 2004)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCMSGTYPES_H
-#define DCMSGTYPES_H
+#pragma once
 
 // This file defines the server message types used within this module.
 // It duplicates some symbols defined in MsgTypes.py and
@@ -31,6 +26,3 @@
 #define STATESERVER_BOUNCE_MESSAGE                        2086
 
 #define CLIENT_OBJECT_GENERATE_CMU                        9002
-
-#endif
-
