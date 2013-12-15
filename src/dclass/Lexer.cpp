@@ -721,7 +721,7 @@ warning_count++;
 static void
 input_chars(char *buffer, int &result, int max_size)
 {
-nassertv(input_p != NULL);
+assert(input_p != NULL);
 if(*input_p)
 {
 	input_p->read(buffer, max_size);

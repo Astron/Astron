@@ -61,7 +61,7 @@ void File::clear()
 // read opens and reads the indicated .dc file by name.  The distributed classes defined
 //     in the file will be appended to the set of distributed classes already recorded, if any.
 //     Returns true if the file is successfully read, false if there was an error.
-bool File::read(Filename filename)
+bool File::read(std::string filename)
 {
 	std::ifstream in;
 	in.open(filename.c_str());
@@ -92,7 +92,7 @@ bool File::read(istream &in, const string &filename)
 // write opens the indicated filename for output and writes a parseable
 //     description of all the known distributed classes to the file.
 //     Returns true if the description is successfully written, false otherwise.
-bool File::write(Filename filename, bool brief) const
+bool File::write(std::string filename, bool brief) const
 {
 	std::ofstream out;
 
@@ -155,7 +155,7 @@ int File::get_num_classes() const
 // get_class returns the nth class read from the .dc file(s).
 Class* File::get_class(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_classes.size(), NULL);
+	assert(n >= 0 && n < (int)m_classes.size(), NULL);
 	return m_classes[n];
 }
 
@@ -179,7 +179,7 @@ Class* File::get_class_by_name(const string &name) const
 //     same index number, so this global lookup is not possible.
 Field* File::get_field_by_index(int index_number) const
 {
-	nassertr(dc_multiple_inheritance, NULL);
+	assert(dc_multiple_inheritance, NULL);
 
 	if(index_number >= 0 && index_number < (int)m_fields_by_index.size())
 	{
@@ -198,7 +198,7 @@ int File::get_num_import_modules() const
 // get_import_module returns the module named by the nth import line read from the .dc file(s).
 string File::get_import_module(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_imports.size(), string());
+	assert(n >= 0 && n < (int)m_imports.size(), string());
 	return m_imports[n].m_module;
 }
 
@@ -207,15 +207,15 @@ string File::get_import_module(int n) const
 //     if it is more than 0, the line is "from modulename import symbol, symbol ... ".
 int File::get_num_import_symbols(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_imports.size(), 0);
+	assert(n >= 0 && n < (int)m_imports.size(), 0);
 	return m_imports[n].m_symbols.size();
 }
 
 // get_import_symbol returns the ith symbol named by the nth import line read from the .dc file(s).
 string File::get_import_symbol(int n, int i) const
 {
-	nassertr(n >= 0 && n < (int)m_imports.size(), string());
-	nassertr(i >= 0 && i < (int)m_imports[n].m_symbols.size(), string());
+	assert(n >= 0 && n < (int)m_imports.size(), string());
+	assert(i >= 0 && i < (int)m_imports[n].m_symbols.size(), string());
 	return m_imports[n].m_symbols[i];
 }
 
@@ -228,7 +228,7 @@ int File::get_num_typedefs() const
 // get_typedef returns the nth typedef read from the .dc file(s).
 Typedef *File::get_typedef(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_typedefs.size(), NULL);
+	assert(n >= 0 && n < (int)m_typedefs.size(), NULL);
 	return m_typedefs[n];
 }
 
@@ -354,7 +354,7 @@ void File::add_import_module(const std::string &import_module)
 //     the syntax is taken to  be "import module_name".
 void File::add_import_symbol(const std::string &import_symbol)
 {
-	nassertv(!m_imports.empty());
+	assert(!m_imports.empty());
 	m_imports.back().m_symbols.push_back(import_symbol);
 }
 

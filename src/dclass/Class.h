@@ -12,6 +12,7 @@
 #include "dcbase.h"
 #include "Field.h"
 #include "Declaration.h"
+#include <unordered_map> // for std::unordered_map
 namespace dclass   // open namespace
 {
 
@@ -21,16 +22,15 @@ class HashGenerator;
 //class Parameter;
 
 // A Class (dclass::Class) defines a particular DistributedClass as read from an input .dc file.
-class EXPCL_DIRECT Class : public Declaration
+class Class : public Declaration
 {
 	friend class Field;
 
 	public:
-		Class(File *dc_file, const string &name,
+		Class(File *dc_file, const std::string &name,
 		      bool is_struct, bool bogus_class);
 		~Class();
 
-	PUBLISHED:
 		// as_class returns the same Declaration pointer converted to a class
 		//     pointer, if this is in fact a class; otherwise, returns NULL.
 		virtual Class *as_class();
@@ -40,7 +40,7 @@ class EXPCL_DIRECT Class : public Declaration
 		inline File *get_file() const;
 
 		// get_name returns the name of this class.
-		inline const string &get_name() const;
+		inline const std::string &get_name() const;
 		// get_number returns a unique index number associated with this class.
 		//     This is defined implicitly when a .dc file is read.
 		inline int get_number() const;
@@ -65,7 +65,7 @@ class EXPCL_DIRECT Class : public Declaration
 
 		// get_field_by_name returns a pointer to the declared or inherited Field with name 'name';
 		//     Returns NULL if there is no such field defined.
-		Field *get_field_by_name(const string &name) const;
+		Field *get_field_by_name(const std::string &name) const;
 		// get_field_by_index returns a pointer to the declared or
 		//     inherited Field with unique id 'index';
 		//     Returns NULL if there is no such field defined.
@@ -91,13 +91,12 @@ class EXPCL_DIRECT Class : public Declaration
 		//     heirarchy for this class, is a forward reference to an as-yet-undefined class.
 		bool inherits_from_bogus_class() const;
 
-		virtual void output(ostream &out) const;
+		virtual void output(std::ostream &out) const;
 
-	public:
-		virtual void output(ostream &out, bool brief) const;
-		virtual void write(ostream &out, bool brief, int indent_level) const;
-		void output_instance(ostream &out, bool brief, const string &prename,
-		                     const string &name, const string &postname) const;
+		virtual void output(std::ostream &out, bool brief) const;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const;
+		void output_instance(std::ostream &out, bool brief, const std::string &prename,
+		                     const std::string &name, const std::string &postname) const;
 		void generate_hash(HashGenerator &hashgen) const;
 		void clear_inherited_fields();
 		void rebuild_inherited_fields();
@@ -107,11 +106,11 @@ class EXPCL_DIRECT Class : public Declaration
 		void set_number(int number);
 
 	private:
-		void shadow_inherited_field(const string &name);
+		void shadow_inherited_field(const std::string &name);
 
 		File *m_file;
 
-		string m_name;
+		std::string m_name;
 		bool m_is_struct;
 		bool m_bogus_class;
 		int m_number;

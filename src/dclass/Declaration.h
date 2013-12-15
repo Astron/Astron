@@ -10,6 +10,8 @@
 
 #pragma once
 #include "dcbase.h"
+#include "PackerCatalog.h"
+#include <iostream> // for std::ostream
 namespace dclass   // open namespace
 {
 
@@ -19,28 +21,26 @@ class Class;
 
 // A Declaration is a common interface for a declaration in a DC file.
 //     This is either a class, typedef, or keyword declaration.
-class EXPCL_DIRECT Declaration
+class Declaration
 {
 	public:
 		virtual ~Declaration();
 
-	PUBLISHED:
 		// as_class returns the same declaration pointer converted to a class
 		//     pointer, if this is in fact a class; otherwise, returns NULL.
 		virtual Class *as_class();
 		virtual const Class *as_class() const;
 
 		// output and write output representations of the declaration to an output stream
-		virtual void output(ostream &out) const;
-		void write(ostream &out, int indent_level) const;
+		virtual void output(std::ostream &out) const;
+		void write(std::ostream &out, int indent_level) const;
 
-	public:
 		// output and write output representations of the declaration to an output stream
-		virtual void output(ostream &out, bool brief) const = 0;
-		virtual void write(ostream &out, bool brief, int indent_level) const = 0;
+		virtual void output(std::ostream &out, bool brief) const = 0;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const = 0;
 };
 
-inline ostream &operator << (ostream &out, const Declaration &decl)
+inline std::ostream &operator << (std::ostream &out, const Declaration &decl)
 {
 	decl.output(out);
 	return out;

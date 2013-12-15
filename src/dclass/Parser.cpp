@@ -2458,7 +2458,7 @@ yyreduce:
 #line 636 "Parser.yxx"
 			{
 				SimpleParameter *simple_param = (yyvsp[(1) - (4)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (SimpleParameter *)NULL, 0);
+				assert(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->set_range(double_range))
 				{
 					yyerror("Inappropriate range for type");
@@ -2473,7 +2473,7 @@ yyreduce:
 #line 645 "Parser.yxx"
 			{
 				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (SimpleParameter *)NULL, 0);
+				assert(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->is_numeric_type())
 				{
 					yyerror("A divisor is only valid on a numeric type.");
@@ -2499,7 +2499,7 @@ yyreduce:
 #line 661 "Parser.yxx"
 			{
 				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (SimpleParameter *)NULL, 0);
+				assert(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->is_numeric_type())
 				{
 					yyerror("A divisor is only valid on a numeric type.");

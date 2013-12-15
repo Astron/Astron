@@ -70,7 +70,7 @@ Packer::
 void Packer::
 begin_pack(const PackerInterface *root)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 
 	_mode = M_pack;
 	_parse_error = false;
@@ -98,7 +98,7 @@ begin_pack(const PackerInterface *root)
 bool Packer::
 end_pack()
 {
-	nassertr(_mode == M_pack, false);
+	assert(_mode == M_pack, false);
 
 	_mode = M_idle;
 
@@ -122,7 +122,7 @@ end_pack()
 void Packer::
 set_unpack_data(const string &data)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 
 	char *buffer = new char[data.length()];
 	memcpy(buffer, data.data(), data.length());
@@ -140,7 +140,7 @@ void Packer::
 set_unpack_data(const char *unpack_data, size_t unpack_length,
                 bool owns_unpack_data)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 
 	if(_owns_unpack_data)
 	{
@@ -168,8 +168,8 @@ set_unpack_data(const char *unpack_data, size_t unpack_length,
 void Packer::
 begin_unpack(const PackerInterface *root)
 {
-	nassertv(_mode == M_idle);
-	nassertv(_unpack_data != NULL);
+	assert(_mode == M_idle);
+	assert(_unpack_data != NULL);
 
 	_mode = M_unpack;
 	_parse_error = false;
@@ -198,7 +198,7 @@ begin_unpack(const PackerInterface *root)
 bool Packer::
 end_unpack()
 {
-	nassertr(_mode == M_unpack, false);
+	assert(_mode == M_unpack, false);
 
 	_mode = M_idle;
 
@@ -242,9 +242,9 @@ end_unpack()
 void Packer::
 begin_repack(const PackerInterface *root)
 {
-	nassertv(_mode == M_idle);
-	nassertv(_unpack_data != NULL);
-	nassertv(_unpack_p == 0);
+	assert(_mode == M_idle);
+	assert(_unpack_data != NULL);
+	assert(_unpack_p == 0);
 
 	_mode = M_repack;
 	_parse_error = false;
@@ -282,7 +282,7 @@ begin_repack(const PackerInterface *root)
 bool Packer::
 end_repack()
 {
-	nassertr(_mode == M_repack, false);
+	assert(_mode == M_repack, false);
 
 	// Put the rest of the data onto the pack stream.
 	_pack_data.append_data(_unpack_data + _unpack_p, _unpack_length - _unpack_p);
@@ -313,7 +313,7 @@ seek(const string &field_name)
 		_catalog = _root->get_catalog();
 		_live_catalog = _catalog->get_live_catalog(_unpack_data, _unpack_length);
 	}
-	nassertr(_catalog != (PackerCatalog *)NULL, false);
+	assert(_catalog != (PackerCatalog *)NULL, false);
 	if(_live_catalog == NULL)
 	{
 		_pack_error = true;
@@ -351,7 +351,7 @@ seek(int seek_index)
 		_catalog = _root->get_catalog();
 		_live_catalog = _catalog->get_live_catalog(_unpack_data, _unpack_length);
 	}
-	nassertr(_catalog != (PackerCatalog *)NULL, false);
+	assert(_catalog != (PackerCatalog *)NULL, false);
 	if(_live_catalog == NULL)
 	{
 		_pack_error = true;
@@ -383,7 +383,7 @@ seek(int seek_index)
 	}
 	else if(_mode == M_repack)
 	{
-		nassertr(_catalog != (PackerCatalog *)NULL, false);
+		assert(_catalog != (PackerCatalog *)NULL, false);
 
 		if(_stack != NULL || _current_field != NULL)
 		{
@@ -642,7 +642,7 @@ pop()
 void Packer::
 pack_default_value()
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -679,7 +679,7 @@ pack_default_value()
 void Packer::
 unpack_validate()
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -716,7 +716,7 @@ unpack_validate()
 void Packer::
 unpack_skip()
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -809,7 +809,7 @@ unpack_and_format(ostream &out, bool show_field_names)
 
 	if(show_field_names && !get_current_field_name().empty())
 	{
-		nassertv(_current_field != (PackerInterface *)NULL);
+		assert(_current_field != (PackerInterface *)NULL);
 		const Field *field = _current_field->as_field();
 		if(field != (Field *)NULL &&
 		        field->as_parameter() != (Parameter *)NULL)

@@ -12,6 +12,7 @@
 #include "dcbase.h"
 #include "HashGenerator.h"
 #include "Packer.h"
+#include <vector> // for std::vector
 namespace dclass   // open namespace dclass
 {
 

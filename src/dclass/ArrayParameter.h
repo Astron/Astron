@@ -12,6 +12,7 @@
 #include "dcbase.h"
 #include "Parameter.h"
 #include "NumericRange.h"
+#include <sstream> // for std::ostringstream
 namespace dclass   // open namespace
 {
 
@@ -19,7 +20,7 @@ namespace dclass   // open namespace
 // An ArrayParameter represents an array of some other kind of object, meaning
 //     this parameter type accepts an arbitrary (or possibly fixed) number of
 //     nested fields, all of which are of the same type.
-class EXPCL_DIRECT ArrayParameter : public Parameter
+class ArrayParameter : public Parameter
 {
 	public:
 		// basic constructor
@@ -29,7 +30,6 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 
 		virtual ~ArrayParameter();
 
-	PUBLISHED:
 		// as_array_parameter returns the same parameter pointer converted to an array parameter
 		//     pointer, if this is in fact an array parameter; otherwise, returns NULL.
 		virtual ArrayParameter* as_array_parameter();
@@ -49,7 +49,6 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 		//     or -1 if the array may contain a variable number of elements.
 		int get_array_size() const;
 
-	public:
 		// append_array_specification returns the type represented by this type[size].
 		//     As an ArrayParameter, this same pointer is returned, but the inner type of the array
 		//     becomes an array type (ie. type[] becomes type[][]).
@@ -71,14 +70,14 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 		// output_instance formats the parameter to the syntax of an array parameter in a .dc file
 		//     as TYPE IDENTIFIER[RANGE] with optional IDENTIFIER and RANGE,
 		//     and outputs the formatted string to the stream.
-		virtual void output_instance(ostream &out, bool brief, const string &prename,
-		                             const string &name, const string &postname) const;
+		virtual void output_instance(std::ostream &out, bool brief, const std::string &prename,
+		                             const std::string &name, const std::string &postname) const;
 
 		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 		// pack_string packs the indicated numeric or string value into the stream.
-		virtual void pack_string(PackData &pack_data, const string &value,
+		virtual void pack_string(PackData &pack_data, const std::string &value,
 		                         bool &pack_error, bool &range_error) const;
 
 		// pack_default_value packs the ArrayParameter's specified default value
@@ -88,7 +87,7 @@ class EXPCL_DIRECT ArrayParameter : public Parameter
 
 		// unpack_string unpacks the current numeric or string value from the stream.
 		virtual void unpack_string(const char *data, size_t length, size_t &p,
-		                           string &value, bool &pack_error, bool &range_error) const;
+		                           std::string &value, bool &pack_error, bool &range_error) const;
 
 	protected:
 		// do_check_match returns true if the other interface is bitwise the same as

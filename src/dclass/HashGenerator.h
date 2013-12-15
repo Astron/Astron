@@ -25,7 +25,7 @@ class HashGenerator
 		void add_int(int num);
 
 		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
-		void add_string(const string &str);
+		void add_string(const std::string &str);
 
 		uint32_t get_hash() const;
 

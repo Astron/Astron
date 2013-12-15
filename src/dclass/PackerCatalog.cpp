@@ -246,7 +246,7 @@ r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer) const
 	int field_index = live_catalog->find_entry_by_field(current_field);
 	if(field_index >= 0)
 	{
-		nassertv(field_index < (int)live_catalog->_live_entries.size());
+		assert(field_index < (int)live_catalog->_live_entries.size());
 		live_catalog->_live_entries[field_index]._begin = packer.get_num_unpacked_bytes();
 	}
 

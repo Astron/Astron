@@ -22,17 +22,15 @@ class HashGenerator;
 // A Keyword represents a single keyword declaration in the dc file.
 //     It is used to define a communication property associated with a field,
 //     for instance "broadcast" or "airecv".
-class EXPCL_DIRECT Keyword : public Declaration
+class Keyword : public Declaration
 {
 	public:
-		Keyword(const string &name, int historical_flag = ~0);
+		Keyword(const std::string &name, int historical_flag = ~0);
 		virtual ~Keyword();
 
-	PUBLISHED:
 		// get_name returns the name of this keyword.
-		const string &get_name() const;
+		const std::string &get_name() const;
 
-	public:
 		// get_historical_flag returns the bitmask associated with this keyword, if any.
 		int get_historical_flag() const;
 		// clear_historical_flag resets the historical flag to ~0.
@@ -46,7 +44,7 @@ class EXPCL_DIRECT Keyword : public Declaration
 		void generate_hash(HashGenerator &hashgen) const;
 
 	private:
-		const string m_name;
+		const std::string m_name;
 
 		// This flag is only kept for historical reasons, so we can preserve
 		// the file's hash code if no new flags are in use.

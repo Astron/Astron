@@ -1,4 +1,4 @@
-// Filename: SimpleParameter.cpp
+j// Filename: SimpleParameter.cpp
 // Created by: drose (15 Jun, 2004)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
@@ -2286,7 +2286,7 @@ bool SimpleParameter::unpack_skip(const char *data, size_t length, size_t &p, bo
 }
 
 // output_instance formats the parameter in .dc syntax as a typename and identifier.
-void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
+void SimpleParameter::output_instance(std::std::ostream &out, bool brief, const std::string &prename,
                                       const std::string &name, const std::string &postname) const
 {
 	if(get_typedef() != (Typedef *)NULL)

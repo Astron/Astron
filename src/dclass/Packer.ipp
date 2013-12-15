@@ -150,12 +150,12 @@ get_pack_type() const
 //               name, or the empty string if the field does not have
 //               a name or there is no current field.
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 get_current_field_name() const
 {
 	if(_current_field == NULL)
 	{
-		return string();
+		return std::string();
 	}
 	else
 	{
@@ -172,7 +172,7 @@ get_current_field_name() const
 inline void Packer::
 pack_double(double value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -193,7 +193,7 @@ pack_double(double value)
 inline void Packer::
 pack_int(int value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -214,7 +214,7 @@ pack_int(int value)
 inline void Packer::
 pack_uint(unsigned int value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -235,7 +235,7 @@ pack_uint(unsigned int value)
 inline void Packer::
 pack_int64(int64_t value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -256,7 +256,7 @@ pack_int64(int64_t value)
 inline void Packer::
 pack_uint64(uint64_t value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -275,9 +275,9 @@ pack_uint64(uint64_t value)
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-pack_string(const string &value)
+pack_string(const std::string &value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -297,9 +297,9 @@ pack_string(const string &value)
 //               whole group of field elements at once.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-pack_literal_value(const string &value)
+pack_literal_value(const std::string &value)
 {
-	nassertv(_mode == M_pack || _mode == M_repack);
+	assert(_mode == M_pack || _mode == M_repack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -321,7 +321,7 @@ inline double Packer::
 unpack_double()
 {
 	double value = 0.0;
-	nassertr(_mode == M_unpack, value);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -347,7 +347,7 @@ inline int Packer::
 unpack_int()
 {
 	int value = 0;
-	nassertr(_mode == M_unpack, value);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -373,7 +373,7 @@ inline unsigned int Packer::
 unpack_uint()
 {
 	unsigned int value = 0;
-	nassertr(_mode == M_unpack, value);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -399,7 +399,7 @@ inline int64_t Packer::
 unpack_int64()
 {
 	int64_t value = 0;
-	nassertr(_mode == M_unpack, value);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -425,7 +425,7 @@ inline uint64_t Packer::
 unpack_uint64()
 {
 	uint64_t value = 0;
-	nassertr(_mode == M_unpack, value);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -447,11 +447,11 @@ unpack_uint64()
 //  Description: Unpacks the current numeric or string value from the
 //               stream.
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 unpack_string()
 {
-	string value;
-	nassertr(_mode == M_unpack, value);
+	std::string value;
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -474,13 +474,13 @@ unpack_string()
 //               value of the current field, and advances the field
 //               pointer.
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 unpack_literal_value()
 {
 	size_t start = _unpack_p;
 	unpack_skip();
-	nassertr(_unpack_p >= start, string());
-	return string(_unpack_data + start, _unpack_p - start);
+	assert(_unpack_p >= start);
+	return std::string(_unpack_data + start, _unpack_p - start);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -492,7 +492,7 @@ unpack_literal_value()
 inline void Packer::
 unpack_double(double &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -515,7 +515,7 @@ unpack_double(double &value)
 inline void Packer::
 unpack_int(int &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -538,7 +538,7 @@ unpack_int(int &value)
 inline void Packer::
 unpack_uint(unsigned int &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -561,7 +561,7 @@ unpack_uint(unsigned int &value)
 inline void Packer::
 unpack_int64(int64_t &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -584,7 +584,7 @@ unpack_int64(int64_t &value)
 inline void Packer::
 unpack_uint64(uint64_t &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -605,9 +605,9 @@ unpack_uint64(uint64_t &value)
 //               stream.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-unpack_string(string &value)
+unpack_string(std::string &value)
 {
-	nassertv(_mode == M_unpack);
+	assert(_mode == M_unpack);
 	if(_current_field == NULL)
 	{
 		_pack_error = true;
@@ -629,11 +629,11 @@ unpack_string(string &value)
 //               pointer.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-unpack_literal_value(string &value)
+unpack_literal_value(std::string &value)
 {
 	size_t start = _unpack_p;
 	unpack_skip();
-	nassertv(_unpack_p >= start);
+	assert(_unpack_p >= start);
 	value.assign(_unpack_data + start, _unpack_p - start);
 }
 
@@ -740,7 +740,7 @@ get_length() const
 //  Description: Returns the packed data buffer as a string.  Also see
 //               get_data().
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 get_string() const
 {
 	return _pack_data.get_string();
@@ -769,10 +769,10 @@ get_unpack_length() const
 //               which is filled during packing.  Also see
 //               get_unpack_data().
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 get_unpack_string() const
 {
-	return string(_unpack_data, _unpack_length);
+	return std::string(_unpack_data, _unpack_length);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -782,7 +782,7 @@ get_unpack_string() const
 //               Also see get_data().
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-get_string(string &data) const
+get_string(std::string &data) const
 {
 	data.assign(_pack_data.get_data(), _pack_data.get_length());
 }
@@ -833,7 +833,7 @@ take_data()
 inline void Packer::
 append_data(const char *buffer, size_t size)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	_pack_data.append_data(buffer, size);
 }
 
@@ -848,7 +848,7 @@ append_data(const char *buffer, size_t size)
 inline char *Packer::
 get_write_pointer(size_t size)
 {
-	nassertr(_mode == M_idle, NULL);
+	assert(_mode == M_idle);
 	return _pack_data.get_write_pointer(size);
 }
 
@@ -889,7 +889,7 @@ get_num_stack_elements_ever_allocated()
 inline void Packer::
 raw_pack_int8(int8_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_int8(_pack_data.get_write_pointer(1), value);
 }
 
@@ -902,7 +902,7 @@ raw_pack_int8(int8_t value)
 inline void Packer::
 raw_pack_int16(int16_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_int16(_pack_data.get_write_pointer(2), value);
 }
 
@@ -915,7 +915,7 @@ raw_pack_int16(int16_t value)
 inline void Packer::
 raw_pack_int32(int32_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_int32(_pack_data.get_write_pointer(4), value);
 }
 
@@ -928,7 +928,7 @@ raw_pack_int32(int32_t value)
 inline void Packer::
 raw_pack_int64(int64_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_int64(_pack_data.get_write_pointer(8), value);
 }
 
@@ -941,7 +941,7 @@ raw_pack_int64(int64_t value)
 inline void Packer::
 raw_pack_uint8(uint8_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_uint8(_pack_data.get_write_pointer(1), value);
 }
 
@@ -954,7 +954,7 @@ raw_pack_uint8(uint8_t value)
 inline void Packer::
 raw_pack_uint16(uint16_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_uint16(_pack_data.get_write_pointer(2), value);
 }
 
@@ -967,7 +967,7 @@ raw_pack_uint16(uint16_t value)
 inline void Packer::
 raw_pack_length_tag(length_tag_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)), value);
 }
 
@@ -980,7 +980,7 @@ raw_pack_length_tag(length_tag_t value)
 inline void Packer::
 raw_pack_uint32(uint32_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_uint32(_pack_data.get_write_pointer(4), value);
 }
 
@@ -993,7 +993,7 @@ raw_pack_uint32(uint32_t value)
 inline void Packer::
 raw_pack_uint64(uint64_t value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_uint64(_pack_data.get_write_pointer(8), value);
 }
 
@@ -1006,7 +1006,7 @@ raw_pack_uint64(uint64_t value)
 inline void Packer::
 raw_pack_float64(double value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_float64(_pack_data.get_write_pointer(8), value);
 }
 
@@ -1017,9 +1017,9 @@ raw_pack_float64(double value)
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-raw_pack_string(const string &value)
+raw_pack_string(const std::string &value)
 {
-	nassertv(_mode == M_idle);
+	assert(_mode == M_idle);
 	PackerInterface::do_pack_length_tag(_pack_data.get_write_pointer(sizeof(length_tag_t)),
 	                                      value.length());
 	_pack_data.append_data(value.data(), value.length());
@@ -1090,7 +1090,7 @@ raw_unpack_int64()
 inline void Packer::
 raw_unpack_int8(int8_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 1 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1109,7 +1109,7 @@ raw_unpack_int8(int8_t &value)
 inline void Packer::
 raw_unpack_int16(int16_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 2 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1128,7 +1128,7 @@ raw_unpack_int16(int16_t &value)
 inline void Packer::
 raw_unpack_int32(int32_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 4 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1229,10 +1229,10 @@ raw_unpack_float64()
 //  Description: Unpacks the data from the buffer between unpacking
 //               sessions.
 ////////////////////////////////////////////////////////////////////
-inline string Packer::
+inline std::string Packer::
 raw_unpack_string()
 {
-	string value;
+	std::string value;
 	raw_unpack_string(value);
 	return value;
 }
@@ -1246,7 +1246,7 @@ raw_unpack_string()
 inline void Packer::
 raw_unpack_int64(int64_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 8 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1265,7 +1265,7 @@ raw_unpack_int64(int64_t &value)
 inline void Packer::
 raw_unpack_uint8(uint8_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 1 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1284,7 +1284,7 @@ raw_unpack_uint8(uint8_t &value)
 inline void Packer::
 raw_unpack_uint16(uint16_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 2 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1303,7 +1303,7 @@ raw_unpack_uint16(uint16_t &value)
 inline void Packer::
 raw_unpack_length_tag(length_tag_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + sizeof(length_tag_t) > _unpack_length)
 	{
 		_pack_error = true;
@@ -1322,7 +1322,7 @@ raw_unpack_length_tag(length_tag_t &value)
 inline void Packer::
 raw_unpack_uint32(uint32_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 4 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1341,7 +1341,7 @@ raw_unpack_uint32(uint32_t &value)
 inline void Packer::
 raw_unpack_uint64(uint64_t &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 8 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1360,7 +1360,7 @@ raw_unpack_uint64(uint64_t &value)
 inline void Packer::
 raw_unpack_float64(double &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	if(_unpack_p + 8 > _unpack_length)
 	{
 		_pack_error = true;
@@ -1377,9 +1377,9 @@ raw_unpack_float64(double &value)
 //               sessions.
 ////////////////////////////////////////////////////////////////////
 inline void Packer::
-raw_unpack_string(string &value)
+raw_unpack_string(std::string &value)
 {
-	nassertv(_mode == M_idle && _unpack_data != NULL);
+	assert(_mode == M_idle && _unpack_data != NULL);
 	length_tag_t string_length = raw_unpack_length_tag();
 
 	if(_unpack_p + string_length > _unpack_length)

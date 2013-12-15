@@ -27,9 +27,9 @@ class Declaration;
 
 
 // A File represents the complete list of Distributed Class descriptions as read from a .dc file.
-class EXPCL_DIRECT File
+class File
 {
-	PUBLISHED:
+	public:
 		File();
 		~File();
 
@@ -37,15 +37,15 @@ class EXPCL_DIRECT File
 
 		// read opens and reads the indicated .dc file by name.
 		//     Returns true if the file was successfully read, or false if an error occurs.
-		bool read(Filename filename);
+		bool read(std::string filename);
 		// read opens and parses the istream as a .dc file; the filename is used in debug output.
 		//     Returns true if the file was successfully read, or false if an error occurs.
-		bool read(std::istream &in, const string &filename = string());
+		bool read(std::istream &in, const std::string &filename = std::string());
 
 		// write writes a parseable description of all the known distributed classes to the output.
 		//     Returns true if the description is successfully written, false otherwise.
-		bool write(Filename filename, bool brief) const;
-		bool write(ostream &out, bool brief) const;
+		bool write(std::string filename, bool brief) const;
+		bool write(std::ostream &out, bool brief) const;
 
 		// get_num_classes returns the number of classes read from the .dc file(s).
 		int get_num_classes() const;
@@ -77,7 +77,7 @@ class EXPCL_DIRECT File
 		Typedef *get_typedef(int n) const;
 		// get_typedef_by_name returns the typedef that has the indicated name,
 		//     or NULL if there is no such typedef name.
-		Typedef *get_typedef_by_name(const string &name) const;
+		Typedef *get_typedef_by_name(const std::string &name) const;
 
 		// get_num_keywords returns the number of keywords read from the .dc file(s).
 		int get_num_keywords() const;
@@ -91,7 +91,6 @@ class EXPCL_DIRECT File
 		// get_hash returns a 32-bit hash of the file.
 		uint32_t get_hash() const;
 
-	public:
 		// generate_hash accumulates the properties of this file into the hash.
 		void generate_hash(HashGenerator &hashgen) const;
 

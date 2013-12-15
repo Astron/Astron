@@ -18,7 +18,7 @@ namespace dclass   // open namespace dclass
 //  Description: Returns the name of this field, or empty string
 //               if the field is unnamed.
 ////////////////////////////////////////////////////////////////////
-inline const string &PackerInterface::
+inline const std::string &PackerInterface::
 get_name() const
 {
 	return m_name;

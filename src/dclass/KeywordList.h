@@ -10,6 +10,8 @@
 
 #pragma once
 #include "dcbase.h"
+#include <map> // for std::map
+#include <vector> // for std::vector
 namespace dclass   // open namespace dclass
 {
 
@@ -19,7 +21,7 @@ class Keyword;
 class HashGenerator;
 
 // KeywordList this is a list of keywords (see Keyword) that may be set on a particular field.
-class EXPCL_DIRECT KeywordList
+class KeywordList
 {
 	public:
 		// empty list constructor
@@ -31,9 +33,8 @@ class EXPCL_DIRECT KeywordList
 		// destructor
 		~KeywordList();
 
-	PUBLISHED:
 		// has_keyword returns true if this list includes the indicated keyword, false otherwise.
-		bool has_keyword(const string &name) const;
+		bool has_keyword(const std::string &name) const;
 		// has_keyword returns true if this list includes the indicated keyword, false otherwise.
 		bool has_keyword(const Keyword *keyword) const;
 		// get_num_keywords returns the number of keywords in the list.
@@ -41,13 +42,12 @@ class EXPCL_DIRECT KeywordList
 		// get_keyword returns the nth keyword in the list.
 		const Keyword *get_keyword(int n) const;
 		// get_keyword_by_name returns the requested keyword if it exists.
-		const Keyword *get_keyword_by_name(const string &name) const;
+		const Keyword *get_keyword_by_name(const std::string &name) const;
 
 		// compare_keywords returns true if this list has the same keywords as the other list,
 		//     false if some keywords differ. Order is not considered important.
 		bool compare_keywords(const KeywordList &other) const;
 
-	public:
 		// copy_keywords replaces this keyword list with those from the other list.
 		void copy_keywords(const KeywordList &other);
 
@@ -59,7 +59,7 @@ class EXPCL_DIRECT KeywordList
 		void clear_keywords();
 
 		// output_keywords writes the keywords in the list to the output stream.
-		void output_keywords(ostream &out) const;
+		void output_keywords(std::ostream &out) const;
 
 		// generate_hash accumulates the properties of these keywords into the hash.
 		void generate_hash(HashGenerator &hashgen) const;

@@ -22,13 +22,12 @@ namespace dclass   // open namespace
 //     from a .dc file.  This defines an interface to the Distributed Class,
 //     and represents a method of the distributed class.
 //     AtomicFields are most commonly used for remote procedure calls.
-class EXPCL_DIRECT AtomicField : public Field
+class AtomicField : public Field
 {
 	public:
 		AtomicField(const string &name, Class *dcc, bool bogus_field);
 		virtual ~AtomicField();
 
-	PUBLISHED:
 		// as_atomic_field returns the same field pointer converted to an atomic field
 		//     pointer, if this is in fact an atomic field; otherwise, returns NULL.
 		virtual AtomicField *as_atomic_field();
@@ -40,7 +39,6 @@ class EXPCL_DIRECT AtomicField : public Field
 		// get_element returns the parameter object describing the nth element.
 		Parameter *get_element(int n) const;
 
-	public:
 		// add_element adds a new element (parameter) to the field.
 		//     Normally this is called only during parsing.  The AtomicField object
 		//     becomes the owner of the new pointer and will delete it upon destruction.

@@ -104,15 +104,15 @@ const Class *ClassParameter::get_class() const
 //     The return is NULL if 'n' is out-of-bounds of 0 <= n < get_num_nested_fields().
 PackerInterface *ClassParameter::get_nested_field(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_nested_fields.size(), NULL);
+	assert(n >= 0 && n < (int)m_nested_fields.size());
 	return m_nested_fields[n];
 }
 
 // output_instance formats the parameter to the syntax of an class parameter in a .dc file
 //     as CLASS_IDENTIFIER PARAM_IDENTIFIER with optional PARAM_IDENTIFIER,
 //     and outputs the formatted string to the stream.
-void ClassParameter::output_instance(ostream &out, bool brief, const string &prename,
-                                     const string &name, const string &postname) const
+void ClassParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
+                                     const std::string &name, const std::string &postname) const
 {
 	if(get_typedef() != (Typedef*)NULL)
 	{

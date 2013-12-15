@@ -97,7 +97,7 @@ append_junk(size_t size)
 inline void PackData::
 rewrite_data(size_t position, const char *buffer, size_t size)
 {
-	nassertv(position + size <= m_used_length);
+	assert(position + size <= m_used_length);
 	memcpy(m_buffer + position, buffer, size);
 }
 
@@ -110,7 +110,7 @@ rewrite_data(size_t position, const char *buffer, size_t size)
 inline char *PackData::
 get_rewrite_pointer(size_t position, size_t size)
 {
-	nassertr(position + size <= m_used_length, NULL);
+	assert(position + size <= m_used_length);
 	return m_buffer + position;
 }
 
@@ -120,10 +120,10 @@ get_rewrite_pointer(size_t position, size_t size)
 //  Description: Returns the data buffer as a string.  Also see
 //               get_data().
 ////////////////////////////////////////////////////////////////////
-inline string PackData::
+inline std::string PackData::
 get_string() const
 {
-	return string(m_buffer, m_used_length);
+	return std::string(m_buffer, m_used_length);
 }
 
 ////////////////////////////////////////////////////////////////////

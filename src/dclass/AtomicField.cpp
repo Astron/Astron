@@ -56,7 +56,7 @@ int AtomicField::get_num_elements() const
 // get_element returns the parameter object describing the nth element.
 Parameter* AtomicField::get_element(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_elements.size(), NULL);
+	assert(n >= 0 && n < (int)m_elements.size(), NULL);
 	return m_elements[n];
 }
 
@@ -117,7 +117,7 @@ void AtomicField::generate_hash(HashGenerator &hashgen) const
 //     shouldn't do this if n is in the range 0 <= n < get_num_nested_fields()).
 PackerInterface *AtomicField::get_nested_field(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_elements.size(), NULL);
+	assert(n >= 0 && n < (int)m_elements.size(), NULL);
 	return m_elements[n];
 }
 

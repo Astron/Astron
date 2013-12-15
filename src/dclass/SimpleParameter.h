@@ -20,7 +20,7 @@ namespace dclass   // open namespace dclass
 // A SimpleParameter is the most fundamental kind of parameter type: a single number or string,
 //     one of the SubatomicType elements.  It may also optionally have a divisor, which is
 //     meaningful only for the numeric type elements (and represents a fixed-point numeric convention).
-class EXPCL_DIRECT SimpleParameter : public Parameter
+class SimpleParameter : public Parameter
 {
 	public:
 		// Type constructor
@@ -28,7 +28,6 @@ class EXPCL_DIRECT SimpleParameter : public Parameter
 		// Copy constructor
 		SimpleParameter(const SimpleParameter &copy);
 
-	PUBLISHED:
 		// as_simple_parameter returns the same parameter pointer converted to a simple parameter,
 		//     if this is in fact a simple parameter; otherwise, returns NULL.
 		virtual SimpleParameter *as_simple_parameter();
@@ -42,7 +41,6 @@ class EXPCL_DIRECT SimpleParameter : public Parameter
 		double get_modulus() const;
 		int get_divisor() const;
 
-	public:
 		bool is_numeric_type() const;
 		bool set_modulus(double modulus);
 		bool set_divisor(unsigned int divisor);
@@ -61,7 +59,7 @@ class EXPCL_DIRECT SimpleParameter : public Parameter
 		                        bool &pack_error, bool &range_error) const;
 		virtual void pack_uint64(PackData &pack_data, uint64_t value,
 		                         bool &pack_error, bool &range_error) const;
-		virtual void pack_string(PackData &pack_data, const string &value,
+		virtual void pack_string(PackData &pack_data, const std::string &value,
 		                         bool &pack_error, bool &range_error) const;
 		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
 
@@ -76,14 +74,14 @@ class EXPCL_DIRECT SimpleParameter : public Parameter
 		virtual void unpack_uint64(const char *data, size_t length, size_t &p,
 		                           uint64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_string(const char *data, size_t length, size_t &p,
-		                           string &value, bool &pack_error, bool &range_error) const;
+		                           std::string &value, bool &pack_error, bool &range_error) const;
 		virtual bool unpack_validate(const char *data, size_t length, size_t &p,
 		                             bool &pack_error, bool &range_error) const;
 		virtual bool unpack_skip(const char *data, size_t length, size_t &p,
 		                         bool &pack_error) const;
 
-		virtual void output_instance(ostream &out, bool brief, const string &prename,
-		                             const string &name, const string &postname) const;
+		virtual void output_instance(std::ostream &out, bool brief, const std::string &prename,
+		                             const std::string &name, const std::string &postname) const;
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	protected:

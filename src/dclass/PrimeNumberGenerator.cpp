@@ -24,7 +24,7 @@ PrimeNumberGenerator::PrimeNumberGenerator()
 //     number that can be represented in an int.
 int PrimeNumberGenerator::operator [](int n)
 {
-	nassertr(n >= 0, 0);
+	assert(n >= 0, 0);
 
 	// Compute the prime numbers between the last-computed prime number
 	// and n.
@@ -43,7 +43,7 @@ int PrimeNumberGenerator::operator [](int n)
 				maybe_prime = false;
 			}
 			j++;
-			nassertr(j < (int)m_primes.size(), 0);
+			assert(j < (int)m_primes.size(), 0);
 		}
 		if(maybe_prime)
 		{

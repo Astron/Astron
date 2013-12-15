@@ -10,6 +10,9 @@
 
 #pragma once
 #include "dcbase.h"
+#include <map> // for std::map
+#include <vector> // for std::vector
+#include <assert.h>
 namespace dclass   // open namespace dclass
 {
 
@@ -24,7 +27,7 @@ class Packer;
 //               from a particular field; its ownership is retained by
 //               the field so it must not be deleted.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT PackerCatalog
+class PackerCatalog
 {
 	private:
 		PackerCatalog(const PackerInterface *root);
@@ -37,7 +40,7 @@ class EXPCL_DIRECT PackerCatalog
 		class Entry
 		{
 			public:
-				string _name;
+				std::string _name;
 				const PackerInterface *_field;
 				const PackerInterface *_parent;
 				int _field_index;
@@ -61,7 +64,7 @@ class EXPCL_DIRECT PackerCatalog
 
 				inline int get_num_entries() const;
 				inline const Entry &get_entry(int n) const;
-				inline int find_entry_by_name(const string &name) const;
+				inline int find_entry_by_name(const std::string &name) const;
 				inline int find_entry_by_field(const PackerInterface *field) const;
 
 			private:
@@ -74,17 +77,17 @@ class EXPCL_DIRECT PackerCatalog
 
 		inline int get_num_entries() const;
 		inline const Entry &get_entry(int n) const;
-		int find_entry_by_name(const string &name) const;
+		int find_entry_by_name(const std::string &name) const;
 		int find_entry_by_field(const PackerInterface *field) const;
 
 		const LiveCatalog *get_live_catalog(const char *data, size_t length) const;
 		void release_live_catalog(const LiveCatalog *live_catalog) const;
 
 	private:
-		void add_entry(const string &name, const PackerInterface *field,
+		void add_entry(const std::string &name, const PackerInterface *field,
 		               const PackerInterface *parent, int field_index);
 
-		void r_fill_catalog(const string &name_prefix, const PackerInterface *field,
+		void r_fill_catalog(const std::string &name_prefix, const PackerInterface *field,
 		                    const PackerInterface *parent, int field_index);
 		void r_fill_live_catalog(LiveCatalog *live_catalog, Packer &packer) const;
 
@@ -95,7 +98,7 @@ class EXPCL_DIRECT PackerCatalog
 		typedef std::vector<Entry> Entries;
 		Entries _entries;
 
-		typedef std::map<string, int> EntriesByName;
+		typedef std::map<std::string, int> EntriesByName;
 		EntriesByName _entries_by_name;
 
 		typedef std::map<const PackerInterface *, int> EntriesByField;

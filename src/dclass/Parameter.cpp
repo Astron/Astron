@@ -11,8 +11,8 @@
 #include "Parameter.h"
 #include "ArrayParameter.h"
 #include "HashGenerator.h"
-#include "indent.h"
 #include "Typedef.h"
+#include "indent.h"
 namespace dclass   // open namespace dclass
 {
 

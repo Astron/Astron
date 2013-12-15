@@ -37,11 +37,11 @@ void KeywordList::operator = (const KeywordList &copy)
 // destructor
 KeywordList::~KeywordList()
 {
-	nassertv(m_keywords_by_name.size() == m_keywords.size());
+	assert(m_keywords_by_name.size() == m_keywords.size());
 }
 
 // has_keyword returns true if this list includes the indicated keyword, false otherwise.
-bool KeywordList::has_keyword(const string &name) const
+bool KeywordList::has_keyword(const std::string &name) const
 {
 	return (m_keywords_by_name.find(name) != m_keywords_by_name.end());
 }
@@ -55,20 +55,20 @@ bool KeywordList::has_keyword(const Keyword *keyword) const
 // get_num_keywords returns the number of keywords in the list.
 int KeywordList::get_num_keywords() const
 {
-	nassertr(m_keywords_by_name.size() == m_keywords.size(), 0);
+	assert(m_keywords_by_name.size() == m_keywords.size(), 0);
 	return m_keywords.size();
 }
 
 // get_keyword returns the nth keyword in the list.
 const Keyword *KeywordList::get_keyword(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_keywords.size(), NULL);
+	assert(n >= 0 && n < (int)m_keywords.size(), NULL);
 	return m_keywords[n];
 }
 
 // get_keyword_by_name returns the keyword in the list with the indicated name,
 //     or NULL if there is no keyword in the list with that name.
-const Keyword *KeywordList::get_keyword_by_name(const string &name) const
+const Keyword *KeywordList::get_keyword_by_name(const std::string &name) const
 {
 	auto key_it = m_keywords_by_name.find(name);
 	if(key_it != m_keywords_by_name.end())
@@ -116,7 +116,7 @@ void KeywordList::clear_keywords()
 }
 
 // output_keywords writes the keywords in the list to the output stream.
-void KeywordList::output_keywords(ostream &out) const
+void KeywordList::output_keywords(std::ostream &out) const
 {
 	for(auto it = m_keywords.begin(); it != m_keywords.end(); ++it)
 	{

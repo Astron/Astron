@@ -22,12 +22,11 @@ class Parameter;
 // A MolecularField a single molecular field of a Distributed Class, as read from a .dc file.
 //     This represents a combination of two or more related atomic fields,
 //     that will often be treated as a unit.
-class EXPCL_DIRECT MolecularField : public Field
+class MolecularField : public Field
 {
 	public:
 		MolecularField(const std::string &name, Class *dclass);
 
-	PUBLISHED:
 		// as_molecular_field returns the same field pointer converted to a molecular field pointer,
 		//     if this is in fact a molecular field; otherwise, returns NULL.
 		virtual MolecularField *as_molecular_field();
@@ -38,8 +37,6 @@ class EXPCL_DIRECT MolecularField : public Field
 		// get_atomic returns the nth atomic field that makes up this molecular field.
 		//     This may be an inherited field.
 		AtomicField *get_atomic(int n) const;
-
-	public:
 
 		// add_atomic adds the indicated atomic field to the end of the list of atomic
 		//     fields that make up the molecular field.

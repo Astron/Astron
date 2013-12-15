@@ -18,7 +18,7 @@ inline File *Class::get_file() const
 }
 
 // get_name returns the name of this class.
-inline const string& Class::get_name() const
+inline const std::string& Class::get_name() const
 {
 	return m_name;
 }

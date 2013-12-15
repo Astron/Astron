@@ -34,7 +34,7 @@ inline bool Field::has_default_value() const
 // get_default_value returns the default value for this field.  If a
 //     default value has been explicitly set (e.g. has_default_value() returns true),
 //     returns that value; otherwise, returns an implicit default for the field.
-inline const string &Field::get_default_value() const
+inline const std::string &Field::get_default_value() const
 {
 	if(m_default_value_stale)
 	{
@@ -107,13 +107,13 @@ inline bool Field::is_airecv() const
 }
 
 // output writes a string representation of this instance to <out>.
-inline void Field::output(ostream &out) const
+inline void Field::output(std::ostream &out) const
 {
 	output(out, true);
 }
 
 // write writes a string representation of this instance to <out>.
-inline void Field::write(ostream &out, int indent_level) const
+inline void Field::write(std::ostream &out, int indent_level) const
 {
 	write(out, false, indent_level);
 }
@@ -133,7 +133,7 @@ inline void Field::set_class(Class *dclass)
 }
 
 // set_default_value establishes a default value for this field.
-inline void Field::set_default_value(const string &default_value)
+inline void Field::set_default_value(const std::string &default_value)
 {
 	m_default_value = default_value;
 	m_has_default_value = true;

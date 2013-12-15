@@ -20,14 +20,13 @@ class Parameter;
 
 // A Typedef represents a single typedef declaration in the dc file.
 //     It assigns a particular type to a new name, ust like a C typedef.
-class EXPCL_DIRECT Typedef : public Declaration
+class Typedef : public Declaration
 {
 	public:
 		Typedef(Parameter *parameter, bool implicit = false);
 		Typedef(const std::string &name);
 		virtual ~Typedef();
 
-	PUBLISHED:
 		int get_number() const;
 		const std::string &get_name() const;
 		std::string get_description() const;
@@ -35,7 +34,6 @@ class EXPCL_DIRECT Typedef : public Declaration
 		bool is_bogus_typedef() const;
 		bool is_implicit_typedef() const;
 
-	public:
 		Parameter *make_new_parameter() const;
 
 		void set_number(int number);

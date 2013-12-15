@@ -20,7 +20,7 @@ namespace dclass   // open namespace dclass
 inline size_t PackerCatalog::LiveCatalog::
 get_begin(int n) const
 {
-	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
+	assert(n >= 0 && n < (int)_live_entries.size());
 	return _live_entries[n]._begin;
 }
 
@@ -34,7 +34,7 @@ get_begin(int n) const
 inline size_t PackerCatalog::LiveCatalog::
 get_end(int n) const
 {
-	nassertr(n >= 0 && n < (int)_live_entries.size(), 0);
+	assert(n >= 0 && n < (int)_live_entries.size());
 	return _live_entries[n]._end;
 }
 
@@ -69,7 +69,7 @@ get_entry(int n) const
 //               get_entry().
 ////////////////////////////////////////////////////////////////////
 int PackerCatalog::LiveCatalog::
-find_entry_by_name(const string &name) const
+find_entry_by_name(const std::string &name) const
 {
 	return _catalog->find_entry_by_name(name);
 }
@@ -107,7 +107,7 @@ get_num_entries() const
 inline const PackerCatalog::Entry &PackerCatalog::
 get_entry(int n) const
 {
-	nassertr(n >= 0 && n < (int)_entries.size(), _entries[0]);
+	assert(n >= 0 && n < (int)_entries.size());
 	return _entries[n];
 }
 

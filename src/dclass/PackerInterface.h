@@ -24,7 +24,6 @@ class MolecularField;
 class PackData;
 class PackerCatalog;
 
-BEGIN_PUBLISH
 // This enumerated type is returned by get_pack_type() and represents
 // the best choice for a subsequent call to pack_*() or unpack_*().
 enum PackType
@@ -51,7 +50,6 @@ enum PackType
     PT_field,
     PT_class,
 };
-END_PUBLISH
 
 ////////////////////////////////////////////////////////////////////
 //       Class : PackerInterface
@@ -63,16 +61,15 @@ END_PUBLISH
 //               Packer object; the user wouldn't normally call
 //               these directly.
 ////////////////////////////////////////////////////////////////////
-class EXPCL_DIRECT PackerInterface
+class PackerInterface
 {
 	public:
-		PackerInterface(const string &name = string());
+		PackerInterface(const std::string &name = std::string());
 		PackerInterface(const PackerInterface &copy);
 		virtual ~PackerInterface();
 
-	PUBLISHED:
-		inline const string &get_name() const;
-		int find_seek_index(const string &name) const;
+		inline const std::string &get_name() const;
+		int find_seek_index(const std::string &name) const;
 
 		virtual Field *as_field();
 		virtual const Field *as_field() const;
@@ -80,10 +77,9 @@ class EXPCL_DIRECT PackerInterface
 		virtual const ClassParameter *as_class_parameter() const;
 
 		inline bool check_match(const PackerInterface *other) const;
-		bool check_match(const string &description, File *dcfile = NULL) const;
+		bool check_match(const std::string &description, File *dcfile = NULL) const;
 
-	public:
-		virtual void set_name(const string &name);
+		virtual void set_name(const std::string &name);
 		inline bool has_fixed_byte_size() const;
 		inline size_t get_fixed_byte_size() const;
 		inline bool has_range_limits() const;
@@ -108,7 +104,7 @@ class EXPCL_DIRECT PackerInterface
 		                        bool &pack_error, bool &range_error) const;
 		virtual void pack_uint64(PackData &pack_data, uint64_t value,
 		                         bool &pack_error, bool &range_error) const;
-		virtual void pack_string(PackData &pack_data, const string &value,
+		virtual void pack_string(PackData &pack_data, const std::string &value,
 		                         bool &pack_error, bool &range_error) const;
 		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
 
@@ -123,7 +119,7 @@ class EXPCL_DIRECT PackerInterface
 		virtual void unpack_uint64(const char *data, size_t length, size_t &p,
 		                           uint64_t &value, bool &pack_error, bool &range_error) const;
 		virtual void unpack_string(const char *data, size_t length, size_t &p,
-		                           string &value, bool &pack_error, bool &range_error) const;
+		                           std::string &value, bool &pack_error, bool &range_error) const;
 		virtual bool unpack_validate(const char *data, size_t length, size_t &p,
 		                             bool &pack_error, bool &range_error) const;
 		virtual bool unpack_skip(const char *data, size_t length, size_t &p,
@@ -182,7 +178,7 @@ class EXPCL_DIRECT PackerInterface
 		void make_catalog();
 
 	protected:
-		string m_name;
+		std::string m_name;
 		bool m_has_fixed_byte_size;
 		size_t m_fixed_byte_size;
 		bool m_has_range_limits;

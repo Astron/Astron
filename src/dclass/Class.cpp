@@ -32,7 +32,7 @@ class SortFieldsByIndex
 };
 
 // constructor
-Class::Class(File* dc_file, const string &name, bool is_struct, bool bogus_class) :
+Class::Class(File* dc_file, const std::string &name, bool is_struct, bool bogus_class) :
 	m_file(dc_file), m_name(name), m_is_struct(is_struct), m_bogus_class(bogus_class)
 {
 	m_number = -1;
@@ -76,7 +76,7 @@ size_t Class::get_num_parents() const
 // get_parent returns the nth parent class this class inherits from.
 Class* Class::get_parent(unsigned int n) const
 {
-	nassertr(n >= 0 && n < m_parents.size(), NULL);
+	assert(n >= 0 && n < m_parents.size(), NULL);
 	return m_parents[n];
 }
 
@@ -104,13 +104,13 @@ size_t Class::get_num_fields() const
 //     this is the nth field defined in the class directly, ignoring inheritance.
 Field* Class::get_field(unsigned int n) const
 {
-	nassertr_always(n >= 0 && n < m_fields.size(), NULL);
+	assert_always(n >= 0 && n < m_fields.size(), NULL);
 	return m_fields[n];
 }
 
 // get_field_by_name returns a pointer to the declared or inherited Field with name 'name';
 //     Returns NULL if there is no such field defined.
-Field* Class::get_field_by_name(const string &name) const
+Field* Class::get_field_by_name(const std::string &name) const
 {
 	auto field_it = m_fields_by_name.find(name);
 	if(field_it != m_fields_by_name.end())
@@ -197,7 +197,7 @@ size_t Class::get_num_inherited_fields()
 		}
 
 		// This assertion causes trouble when we are only parsing an incomplete  file.
-		//nassertr(is_bogus_class() || !_inherited_fields.empty(), 0);
+		//assert(is_bogus_class() || !_inherited_fields.empty(), 0);
 		return m_inherited_fields.size();
 	}
 	else
@@ -226,7 +226,7 @@ size_t Class::get_num_inherited_fields() const
 		}
 
 		// This assertion causes trouble when we are only parsing an incomplete  file.
-		//nassertr(is_bogus_class() || !_inherited_fields.empty(), 0);
+		//assert(is_bogus_class() || !_inherited_fields.empty(), 0);
 		return m_inherited_fields.size();
 	}
 	else
@@ -252,7 +252,7 @@ Field *Class::get_inherited_field(int n)
 		{
 			rebuild_inherited_fields();
 		}
-		nassertr(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
+		assert(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
 		return m_inherited_fields[n];
 	}
 	else
@@ -285,7 +285,7 @@ Field *Class::get_inherited_field(int n) const
 			// Hacky print statement that makes it obvious this needs to be fixed
 			std::cerr << "\nTried to get_inherited_field on a possibly uninitialized class with a const class pointer.\n\n";
 		}
-		nassertr(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
+		assert(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
 		return m_inherited_fields[n];
 	}
 	else
@@ -328,7 +328,7 @@ bool Class::inherits_from_bogus_class() const
 // output formats a string representation of the class in .dc file syntax
 //     as "dclass IDENTIFIER" or "struct IDENTIFIER" with structs having optional IDENTIFIER,
 //     and outputs the formatted string to the stream.
-void Class::output(ostream &out) const
+void Class::output(std::ostream &out) const
 {
 	if(m_is_struct)
 	{
@@ -347,7 +347,7 @@ void Class::output(ostream &out) const
 // output formats a string representation of the class in .dc file syntax
 //     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
 //     and outputs the formatted string to the stream.
-void Class::output(ostream &out, bool brief) const
+void Class::output(std::ostream &out, bool brief) const
 {
 	output_instance(out, brief, "", "", "");
 }
@@ -355,7 +355,7 @@ void Class::output(ostream &out, bool brief) const
 // write formats a string representation of the class in .dc file syntax
 //     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
 //     and outputs the formatted string to the stream.
-void Class::write(ostream &out, bool brief, int indent_level) const
+void Class::write(std::ostream &out, bool brief, int indent_level) const
 {
 	indent(out, indent_level);
 	if(m_is_struct)
@@ -423,8 +423,8 @@ void Class::write(ostream &out, bool brief, int indent_level) const
 // output_instance formats a string representation of the class in .dc file syntax
 //     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
 //     and outputs the formatted string to the stream.
-void Class::output_instance(ostream &out, bool brief, const string &prename,
-                            const string &name, const string &postname) const
+void Class::output_instance(std::ostream &out, bool brief, const std::string &prename,
+                            const std::string &name, const std::string &postname) const
 {
 	if(m_is_struct)
 	{
@@ -569,7 +569,7 @@ void Class::rebuild_inherited_fields()
 // shadow_inherited_field this is called only by rebuild_inherited_fields().
 //     It removes the named field from the list of m_inherited_fields,
 //     presumably in preparation for adding a new definition below.
-void Class::shadow_inherited_field(const string &name)
+void Class::shadow_inherited_field(const std::string &name)
 {
 	for(auto it = m_inherited_fields.begin(); it != m_inherited_fields.end(); ++it)
 	{
@@ -582,7 +582,7 @@ void Class::shadow_inherited_field(const string &name)
 	}
 
 	// If we get here, the named field wasn't in the list.  Huh.
-	nassertv(false);
+	assert(false);
 }
 
 // add_field adds the newly-allocated field to the class.  The class becomes the
@@ -591,7 +591,7 @@ void Class::shadow_inherited_field(const string &name)
 //     or false if there was a name conflict or some other problem.
 bool Class::add_field(Field *field)
 {
-	nassertr(field->get_class() == this || field->get_class() == NULL, false);
+	assert(field->get_class() == this || field->get_class() == NULL, false);
 	field->set_class(this);
 	if(m_file != (File*)NULL)
 	{
@@ -636,7 +636,7 @@ bool Class::add_field(Field *field)
 			std::unordered_map<int, Field*>::value_type(field->get_number(), field)).second;
 
 		// It shouldn't be possible for that to fail.
-		nassertr(inserted, false);
+		assert(inserted, false);
 		_used_in_assert(inserted);
 	}
 

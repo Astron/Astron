@@ -21,7 +21,7 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 	m_element_type(element_type), m_array_size_range(size)
 {
 	set_name(m_element_type->get_name());
-	m_element_type->set_name(string());
+	m_element_type->set_name(std::string());
 
 	m_array_size = -1;
 	if(m_array_size_range.has_one_value())
@@ -179,8 +179,8 @@ bool ArrayParameter::validate_num_nested_fields(int num_nested_fields) const
 // output_instance formats the parameter to the syntax of an array parameter in a .dc file
 //     as TYPE IDENTIFIER[RANGE] with optional IDENTIFIER and RANGE,
 //     and outputs the formatted string to the stream.
-void ArrayParameter::output_instance(ostream &out, bool brief, const string &prename,
-                                     const string &name, const string &postname) const
+void ArrayParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
+                                     const std::string &name, const std::string &postname) const
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
@@ -189,7 +189,7 @@ void ArrayParameter::output_instance(ostream &out, bool brief, const string &pre
 	}
 	else
 	{
-		ostringstream strm;
+		std::ostringstream strm;
 
 		strm << "[";
 		m_array_size_range.output(strm);
@@ -209,7 +209,7 @@ void ArrayParameter::generate_hash(HashGenerator &hashgen) const
 }
 
 // pack_string packs the indicated numeric or string value into the stream.
-void ArrayParameter::pack_string(PackData &pack_data, const string &value,
+void ArrayParameter::pack_string(PackData &pack_data, const std::string &value,
                                  bool &pack_error, bool &range_error) const
 {
 	// We can only pack a string if the array element type is char or int8_t.
@@ -230,7 +230,7 @@ void ArrayParameter::pack_string(PackData &pack_data, const string &value,
 			m_array_size_range.validate(string_length, range_error);
 			if(m_num_length_bytes != 0)
 			{
-				nassertv(m_num_length_bytes == sizeof(length_tag_t));
+				assert(m_num_length_bytes == sizeof(length_tag_t));
 				do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
 			}
 			pack_data.append_data(value.data(), string_length);
@@ -284,7 +284,7 @@ bool ArrayParameter::pack_default_value(PackData &pack_data, bool &pack_error) c
 }
 
 // unpack_string unpacks the current numeric or string value from the stream.
-void ArrayParameter::unpack_string(const char *data, size_t length, size_t &p, string &value,
+void ArrayParameter::unpack_string(const char *data, size_t length, size_t &p, std::string &value,
                                    bool &pack_error, bool &range_error) const
 {
 	// We can only unpack a string if the array element type is char or int8_t.
@@ -309,7 +309,7 @@ void ArrayParameter::unpack_string(const char *data, size_t length, size_t &p, s
 			}
 			else
 			{
-				nassertv(m_array_size >= 0);
+				assert(m_array_size >= 0);
 				string_length = m_array_size;
 			}
 			if(p + string_length > length)

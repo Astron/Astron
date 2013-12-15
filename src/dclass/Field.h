@@ -12,6 +12,8 @@
 #include "dcbase.h"
 #include "PackerInterface.h"
 #include "KeywordList.h"
+#include <string> // for std::string
+#include <iostream> // for std::ostream
 namespace dclass   // open namespace
 {
 
@@ -25,14 +27,13 @@ class Class;
 class HashGenerator;
 
 // A Field is a single field of a Distributed Class, either atomic or molecular.
-class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
+class Field : public PackerInterface, public KeywordList
 {
 	public:
 		Field();
-		Field(const string &name, Class *dclass);
+		Field(const std::string &name, Class *dclass);
 		virtual ~Field();
 
-	PUBLISHED:
 		// get_number returns a unique index number associated with this field.
 		//     This is defined implicitly when the .dc file(s) are read.
 		inline int get_number() const;
@@ -64,19 +65,19 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		// format_data accepts a blob that represents the packed data for this field,
 		//     returns a string formatting it for human consumption.
 		//     Returns empty string if there is an error.
-		string format_data(const string &packed_data, bool show_field_names = true);
+		std::string format_data(const std::string &packed_data, bool show_field_names = true);
 
 		// parse_string given a human-formatted string (for instance, as
 		//     returned by format_data(), above) that represents the value of this field,
 		//     parse the string and return the corresponding packed data.
 		//     Returns empty string if there is an error.
-		string parse_string(const string &formatted_string);
+		std::string parse_string(const std::string &formatted_string);
 
 
 		// validate_ranges verifies that all of the packed values in the field data are
 		//     within the specified ranges and that there are no extra bytes on the end
 		//     of the record.  Returns true if all fields are valid, false otherwise.
-		bool validate_ranges(const string &packed_data) const;
+		bool validate_ranges(const std::string &packed_data) const;
 
 		// has_default_value returns true if a default value has been explicitly
 		//     established for this field, false otherwise.
@@ -84,7 +85,7 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 
 		// get_default_value returns the default value for this field.
 		//     If a default value hasn't been set, returns an implicit default.
-		inline const string &get_default_value() const;
+		inline const std::string &get_default_value() const;
 
 		// is_bogus_field returns true if the field has been flagged as a bogus field.
 		//     This can occur during parsing, but should not occur in a normal valid dc file.
@@ -110,12 +111,12 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		inline bool is_airecv() const;
 
 		// output and write output a string representation of this instance to <out>.
-		inline void output(ostream &out) const;
-		inline void write(ostream &out, int indent_level) const;
-	public:
+		inline void output(std::ostream &out) const;
+		inline void write(std::ostream &out, int indent_level) const;
+
 		// output and write output a string representation of this instance to <out>.
-		virtual void output(ostream &out, bool brief) const = 0;
-		virtual void write(ostream &out, bool brief, int indent_level) const = 0;
+		virtual void output(std::ostream &out, bool brief) const = 0;
+		virtual void write(std::ostream &out, bool brief, int indent_level) const = 0;
 
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
@@ -125,7 +126,7 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
 
 		// set_name sets the name of this field.
-		virtual void set_name(const string &name);
+		virtual void set_name(const std::string &name);
 
 
 		// set_number assigns the unique number to this field.  This is normally
@@ -136,7 +137,7 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		inline void set_class(Class *dclass);
 
 		// set_default_value establishes a default value for this field.
-		inline void set_default_value(const string &default_value);
+		inline void set_default_value(const std::string &default_value);
 
 	protected:
 		// refresh_default_value recomputes the default value of the field by repacking it.
@@ -150,11 +151,11 @@ class EXPCL_DIRECT Field : public PackerInterface, public KeywordList
 		bool m_bogus_field; // is true if the field is incomplete (only encountered during parsing)
 
 	private:
-		string m_default_value; // the binary data of the default value encoded in a string
+		std::string m_default_value; // the binary data of the default value encoded in a string
 
 };
 
-inline ostream &operator << (ostream &out, const Field &field)
+inline std::ostream &operator << (std::ostream &out, const Field &field)
 {
 	field.output(out);
 	return out;

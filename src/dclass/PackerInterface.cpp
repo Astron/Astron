@@ -544,7 +544,7 @@ do_check_match_molecular_field(const MolecularField *) const
 void PackerInterface::
 make_catalog()
 {
-	nassertv(m_catalog == (PackerCatalog *)NULL);
+	assert(m_catalog == (PackerCatalog *)NULL);
 	m_catalog = new PackerCatalog(this);
 
 	m_catalog->r_fill_catalog("", this, NULL, 0);

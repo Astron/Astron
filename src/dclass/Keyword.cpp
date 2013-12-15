@@ -16,7 +16,7 @@ namespace dclass   // open namespace dclass
 
 
 // constructor
-Keyword::Keyword(const string &name, int historical_flag) :
+Keyword::Keyword(const std::string &name, int historical_flag) :
 	m_name(name), m_historical_flag(historical_flag)
 {
 }
@@ -27,7 +27,7 @@ Keyword::~Keyword()
 }
 
 // get_name returns the name of this keyword.
-const string &Keyword::get_name() const
+const std::string &Keyword::get_name() const
 {
 	return m_name;
 }

@@ -32,13 +32,13 @@ HashGenerator::HashGenerator() : m_hash(0), m_index(0)
 // add_int adds another integer to the hash so far.
 void HashGenerator::add_int(int num)
 {
-	nassertv(m_index >= 0 && m_index < MAX_PRIME_NUMBERS);
+	assert(m_index >= 0 && m_index < MAX_PRIME_NUMBERS);
 	m_hash += m_primes[m_index] * num;
 	m_index = (m_index + 1) % MAX_PRIME_NUMBERS;
 }
 
 // add_string adds a string to the hash, by breaking it down into a sequence of integers.
-void HashGenerator::add_string(const string &str)
+void HashGenerator::add_string(const std::string &str)
 {
 	add_int(str.length());
 	for(auto it = str.begin(); it != str.end(); ++it)

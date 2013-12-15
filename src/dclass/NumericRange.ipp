@@ -78,7 +78,7 @@ inline bool NumericRange<NUM>::has_one_value() const
 template <class NUM>
 inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_one_value() const
 {
-	nassertr(has_one_value(), 0);
+	assert(has_one_value());
 	return m_ranges[0].m_min;
 }
 
@@ -198,7 +198,7 @@ inline int NumericRange<NUM>::get_num_ranges() const
 template <class NUM>
 inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
+	assert(n >= 0 && n < (int)m_ranges.size());
 	return m_ranges[n].m_min;
 }
 
@@ -206,7 +206,7 @@ inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) cons
 template <class NUM>
 inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_max(int n) const
 {
-	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
+	assert(n >= 0 && n < (int)m_ranges.size());
 	return m_ranges[n].m_max;
 }
 
@@ -242,17 +242,17 @@ inline void NumericRange<NUM>::output_minmax(std::ostream &out, Number divisor, 
 
 // output_minmax_char outputs a single element of the range description.
 template <class NUM>
-inline void NumericRange<NUM>::output_minmax_char(ostream &out, const MinMax &range) const
+inline void NumericRange<NUM>::output_minmax_char(std::ostream &out, const MinMax &range) const
 {
 	if(range.m_min == range.m_max)
 	{
-		Packer::enquote_string(out, '\'', string(1, range.m_min));
+		Packer::enquote_string(out, '\'', std::string(1, range.m_min));
 	}
 	else
 	{
-		Packer::enquote_string(out, '\'', string(1, range.m_min));
+		Packer::enquote_string(out, '\'', std::string(1, range.m_min));
 		out << "-";
-		Packer::enquote_string(out, '\'', string(1, range.m_max));
+		Packer::enquote_string(out, '\'', std::string(1, range.m_max));
 	}
 }
 
