@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 			}
 			else if(argv[i][0] == '-')
 			{
-				std::cerr << "Unrecognized option \"" << string(argv[i]) << "\"." << std::endl;
+				std::cerr << "Unrecognized option \"" << std::string(argv[i]) << "\"." << std::endl;
 				printHelp(std::cerr);
 				exit(1);
 			}
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
 			// seperate path
 			boost::filesystem::path p(cfg_file);
 			boost::filesystem::path dir = p.parent_path();
-			string filename = p.filename().string();
-			string dir_str = dir.string();
+			std::string filename = p.filename().string();
+			std::string dir_str = dir.string();
 
 			// change directory
 			boost::filesystem::current_path(dir_str);

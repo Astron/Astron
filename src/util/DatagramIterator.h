@@ -12,7 +12,7 @@ using dclass::PackerInterface;
 class DatagramIteratorEOF : public std::runtime_error
 {
 	public:
-		DatagramIteratorEOF(const string &what) : std::runtime_error(what) { }
+		DatagramIteratorEOF(const std::string &what) : std::runtime_error(what) { }
 };
 
 // A DatagramIterator lets you step trough a datagram by reading a single value at a time.

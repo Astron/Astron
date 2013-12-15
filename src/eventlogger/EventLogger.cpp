@@ -49,7 +49,7 @@ void EventLogger::open_log()
 		m_file->close();
 	}
 
-	m_file = new ofstream(filename);
+	m_file = new std::ofstream(filename);
 
 	m_log.info() << "Opened new log." << std::endl;
 }

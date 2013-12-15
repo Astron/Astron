@@ -118,7 +118,7 @@ class DatabaseServer : public Role
 						        && dbo.fields.find(field) == dbo.fields.end() && field->has_default_value())
 						{
                             std::string val = field->get_default_value();
-                            dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
+                            dbo.fields[field] = std::vector<uint8_t>(val.begin(), val.end());
 						}
 					}
 

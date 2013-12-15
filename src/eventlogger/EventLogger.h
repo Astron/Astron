@@ -27,7 +27,7 @@ class EventLogger : public Role
 		udp::socket *m_socket;
 		udp::endpoint m_remote;
 		std::string m_file_format;
-		ofstream *m_file;
+		std::ofstream *m_file;
 		uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
 		void bind(const std::string &addr);
