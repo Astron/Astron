@@ -76,7 +76,7 @@ inline bool NumericRange<NUM>::has_one_value() const
 
 // get_one_value returns the value accepted by the numeric range, if there is only one legal value.
 template <class NUM>
-inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_one_value() const
+inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_one_value() const
 {
 	nassertr(has_one_value(), 0);
 	return m_ranges[0].m_min;
@@ -196,7 +196,7 @@ inline int NumericRange<NUM>::get_num_ranges() const
 
 // get_min returns the minimum value defined by the nth component.
 template <class NUM>
-inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) const
+inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) const
 {
 	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
 	return m_ranges[n].m_min;
@@ -204,7 +204,7 @@ inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_min(int n) cons
 
 // get_max returns the maximum value defined by the nth component.
 template <class NUM>
-inline TYPENAME NumericRange<NUM>::Number NumericRange<NUM>::get_max(int n) const
+inline typename NumericRange<NUM>::Number NumericRange<NUM>::get_max(int n) const
 {
 	nassertr(n >= 0 && n < (int)m_ranges.size(), 0);
 	return m_ranges[n].m_max;

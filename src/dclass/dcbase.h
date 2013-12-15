@@ -1,46 +1,20 @@
 // Filename: dcbase.h
-// Created by:  drose (05Oct00)
+// Created by: drose (05 Oct, 2000)
 //
-////////////////////////////////////////////////////////////////////
-//
-// PANDA 3D SOFTWARE
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
 //
 // All use of this software is subject to the terms of the revised BSD
 // license.  You should have received a copy of this license along
 // with this source code in a file named "LICENSE."
 //
-////////////////////////////////////////////////////////////////////
 
-#ifndef DCBASE_H
-#define DCBASE_H
 
-// This file defines a few headers and stuff necessary for compilation
-// of the files in this directory.  This is different from most of the
-// other source directories within Panda, since the dcparser is
-// designed to be compilable outside of Panda (for use by the server
-// code).  Therefore, it must not depend on including any of the Panda
-// header files, and we have to duplicate some setup stuff here.
-
-#ifdef WITHIN_PANDA
-// On the other hand, if WITHIN_PANDA is defined, we *are* safely
-// within the Panda environment.
-
-#include "directbase.h"
-#include "pnotify.h"
-#include "numeric_types.h"
-#include "filename.h"
-#include "pvector.h"
-#include "pmap.h"
-#include "pset.h"
-
-#else  // NOT WITHIN_PANDA
-
+#pragma once
 #ifdef WIN32
-/* C4786: 255 char debug symbols */
-#pragma warning (disable : 4786)
-/* C4503: decorated name length exceeded */
-#pragma warning (disable : 4503)
+	/* C4786: 255 char debug symbols */
+	#pragma warning (disable : 4786)
+	/* C4503: decorated name length exceeded */
+	#pragma warning (disable : 4503)
 #endif  /* WIN32_VC */
 
 #include <iostream>
@@ -55,15 +29,14 @@
 // from flex.  flex doesn't create a perfectly windows-friendly source
 // file right out of the box.
 #ifdef WIN32
-#include <io.h>
-#include <malloc.h>
+	#include <io.h>
+	#include <malloc.h>
 #else
-#include <unistd.h>
+	#include <unistd.h>
 #endif
 
 using namespace std;
 
-#define TYPENAME typename
 
 // These symbols are used within the Panda environment for exporting
 // classes and functions to the scripting language.  They're largely
@@ -88,7 +61,7 @@ using namespace std;
 
 // Panda defines a special Filename class.  We'll use an ordinary
 // string instead.
-typedef string Filename;
+typedef std::string Filename;
 
 // Panda defines WORDS_BIGENDIAN on a bigendian machine; otherwise,
 // the machine is assumed to be littleendian.  Outside of Panda,
@@ -98,23 +71,12 @@ typedef string Filename;
 #include <vector>
 #include <map>
 #include <set>
-#define pvector vector
-#define pmap map
-#define pset set
-typedef ifstream pifstream;
-typedef ofstream pofstream;
-typedef fstream pfstream;
-
-
-#endif  // ENDIF WITHIN_PANDA
-
-
 #include <stdint.h>
 
 #ifdef DCPARSER_32BIT_LENGTH_TAG
-typedef uint32_t length_tag_t;
+	typedef uint32_t length_tag_t;
 #else
-typedef uint16_t length_tag_t;
+	typedef uint16_t length_tag_t;
 #endif
 
 // TODO: Channels, doids, and zones should not exist in the dcparser! The code that uses these
@@ -123,7 +85,3 @@ typedef uint16_t length_tag_t;
 typedef uint64_t CHANNEL_TYPE;
 typedef uint32_t DOID_TYPE;
 typedef uint32_t ZONEID_TYPE;
-
-
-
-#endif  // DCBASE_H
