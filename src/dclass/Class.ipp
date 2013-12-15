@@ -25,7 +25,7 @@ inline const string& Class::get_name() const
 
 // get_number returns a unique index number associated with this class.
 //     This is defined implicitly when a .dc file is read.
-inline int Class::get_index() const
+inline int Class::get_number() const
 {
 	return m_number;
 }

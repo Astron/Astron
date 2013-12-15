@@ -74,7 +74,9 @@ typedef std::string Filename;
 #include <map>
 #include <unordered_map>
 #include <set>
+#include <unordered_set>
 #include <stdint.h>
+#include <string.h>
 
 #ifdef DCPARSER_32BIT_LENGTH_TAG
 	typedef uint32_t length_tag_t;

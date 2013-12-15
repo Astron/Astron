@@ -123,7 +123,7 @@ bool File::write(ostream &out, bool brief) const
 			else
 			{
 				out << "from " << import.m_module << " import ";
-				auto sym_it = import.m_symbols.begin())
+				auto sym_it = import.m_symbols.begin();
 				out << *sym_it;
 				++sym_it;
 				while(sym_it != import.m_symbols.end())
@@ -206,14 +206,14 @@ Field* File::get_field_by_index(int index_number) const
 // get_num_import_modules returns the number of import lines read from the .dc file(s).
 int File::get_num_import_modules() const
 {
-	return _imports.size();
+	return m_imports.size();
 }
 
 // get_import_module returns the module named by the nth import line read from the .dc file(s).
 string File::get_import_module(int n) const
 {
 	nassertr(n >= 0 && n < (int)m_imports.size(), string());
-	return m_imports[n]._module;
+	return m_imports[n].m_module;
 }
 
 // get_num_import_symbols returns the number of symbols explicitly imported by
@@ -275,7 +275,7 @@ const Keyword *File::get_keyword(int n) const
 //     or NULL if there is no such keyword name.
 const Keyword *File::get_keyword_by_name(const string &name) const
 {
-	const Keyword *keyword = _keywords.get_keyword_by_name(name);
+	const Keyword *keyword = m_keywords.get_keyword_by_name(name);
 	if(keyword == (const Keyword*)NULL)
 	{
 		keyword = m_default_keywords.get_keyword_by_name(name);
@@ -294,7 +294,7 @@ const Keyword *File::get_keyword_by_name(const string &name) const
 //     This number is guaranteed to be consistent if the contents of the file
 //     have not changed, and it is very likely to be different if the
 //     contents of the file do change.
-unsigned long File::get_hash() const
+uint32_t File::get_hash() const
 {
 	HashGenerator hashgen;
 	generate_hash(hashgen);
@@ -304,19 +304,8 @@ unsigned long File::get_hash() const
 // generate_hash accumulates the properties of this file into the hash.
 void File::generate_hash(HashGenerator &hashgen) const
 {
-	if(dc_virtual_inheritance)
-	{
-		// Just to make the hash number change in this case.
-		if(dc_sort_inheritance_by_file)
-		{
-			hashgen.add_int(1);
-		}
-		else
-		{
-			hashgen.add_int(2);
-		}
-	}
-
+	// Legacy requires adding this number right now
+	hashgen.add_int(1);
 	hashgen.add_int(m_classes.size());
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
@@ -387,7 +376,7 @@ bool File::add_switch(Switch *dswitch)
 // add_import_module adds a new name to the list of names of Python modules that
 //     are to be imported by the client or AI to define the code that is associated
 //     with the class interfaces named within the .dc file.
-void File::add_import_module(const string &import_module)
+void File::add_import_module(const std::string &import_module)
 {
 	Import import;
 	import.m_module = import_module;
@@ -398,7 +387,7 @@ void File::add_import_module(const string &import_module)
 //     explicitly imported from the most-recently added module, e.g.
 //     "from module_name import symbol".  If the list of symbols is empty,
 //     the syntax is taken to  be "import module_name".
-void File::add_import_symbol(const string &import_symbol)
+void File::add_import_symbol(const std::string &import_symbol)
 {
 	nassertv(!m_imports.empty());
 	m_imports.back().m_symbols.push_back(import_symbol);

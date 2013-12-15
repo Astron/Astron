@@ -66,7 +66,7 @@ class EXPCL_DIRECT MolecularField : public Field
 	private:
 		// These members define the primary interface to the molecular field
 		// definition as read from the file.
-		std::vector<Field*> m_fields;
+		std::vector<AtomicField*> m_fields;
 		bool m_got_keywords;
 
 		Parameter* get_next_pack_element();

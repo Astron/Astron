@@ -193,3 +193,6 @@ void AtomicField::output_element(ostream &out, bool brief, Parameter *element) c
 		packer.end_unpack();
 	}
 }
+
+
+} // close namespace dclass

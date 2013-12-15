@@ -99,7 +99,7 @@ void MolecularField::add_atomic(AtomicField *atomic)
 // output writes a representation of the field to an output stream
 void MolecularField::output(std::ostream &out, bool brief) const
 {
-	out << _name;
+	out << m_name;
 
 	if(!m_fields.empty())
 	{
@@ -165,7 +165,7 @@ bool MolecularField::do_check_match_molecular_field(const MolecularField *other)
 	}
 	for(size_t i = 0; i < m_nested_fields.size(); i++)
 	{
-		if(!m_nested_fields[i]->check_match(other->_nested_fields[i]))
+		if(!m_nested_fields[i]->check_match(other->m_nested_fields[i]))
 		{
 			return false;
 		}

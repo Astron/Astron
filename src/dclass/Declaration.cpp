@@ -22,7 +22,7 @@ Declaration::~Declaration()
 //     pointer, if this is in fact a class; otherwise, returns NULL.
 Class* Declaration::as_class()
 {
-	return (DCClass*)NULL;
+	return (Class*)NULL;
 }
 
 // as_class returns the same declaration pointer converted to a class

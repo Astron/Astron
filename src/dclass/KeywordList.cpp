@@ -73,7 +73,7 @@ const Keyword *KeywordList::get_keyword_by_name(const string &name) const
 	auto key_it = m_keywords_by_name.find(name);
 	if(key_it != m_keywords_by_name.end())
 	{
-		return it->second;
+		return key_it->second;
 	}
 
 	return NULL;

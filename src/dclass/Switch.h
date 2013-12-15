@@ -127,7 +127,7 @@ class EXPCL_DIRECT Switch : public Declaration
 		// during this stage of the parser.  There might be more than one at
 		// a time, if we have multiple cases being introduced in the middle
 		// of a series of fields (without a break statement intervening).
-		CaseFields m_current_fields;
+		std::vector<SwitchFields*> m_current_fields;
 		bool m_fields_added;
 
 		// This map indexes into the _cases vector, above.

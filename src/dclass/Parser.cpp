@@ -92,6 +92,7 @@
 #include "Keyword.h"
 #include "Packer.h"
 #include "NumericRange.h"
+using namespace dclass;
 
 // Because our token type contains objects of type std::string, which
 // require correct copy construction (and not simply memcpying), we
@@ -1980,11 +1981,11 @@ yyreduce:
 			{
 				if((yyvsp[(2) - (2)].u.parameter) != (Parameter *)NULL)
 				{
-					DCTypedef *dtypedef = new DCTypedef((yyvsp[(2) - (2)].u.parameter));
+					Typedef *dtypedef = new Typedef((yyvsp[(2) - (2)].u.parameter));
 
 					if(!dc_file->add_typedef(dtypedef))
 					{
-						DCTypedef *old_typedef = dc_file->get_typedef_by_name(dtypedef->get_name());
+						Typedef *old_typedef = dc_file->get_typedef_by_name(dtypedef->get_name());
 						if(old_typedef->is_bogus_typedef())
 						{
 							yyerror("typedef defined after its first reference: " + dtypedef->get_name());
@@ -2086,17 +2087,9 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 339 "Parser.yxx"
 			{
-				if(!dc_multiple_inheritance)
+				if((yyvsp[(3) - (3)].u.dclass) != (Class *)NULL)
 				{
-					yyerror("Multiple inheritance is not supported without \"dc-multiple-inheritance 1\" in your Config.prc file.");
-
-				}
-				else
-				{
-					if((yyvsp[(3) - (3)].u.dclass) != (Class *)NULL)
-					{
-						current_class->add_parent((yyvsp[(3) - (3)].u.dclass));
-					}
+					current_class->add_parent((yyvsp[(3) - (3)].u.dclass));
 				}
 			}
 			break;
@@ -2369,7 +2362,7 @@ yyreduce:
 				}
 				if(current_packer->end_pack())
 				{
-					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_std::string());
+					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_string());
 
 				}
 				else
@@ -2411,7 +2404,7 @@ yyreduce:
 				}
 				if(current_packer->end_pack())
 				{
-					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_std::string());
+					(yyvsp[(1) - (4)].u.parameter)->set_default_value(current_packer->get_string());
 
 				}
 				else
@@ -2477,7 +2470,7 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 632 "Parser.yxx"
 			{
-				(yyval.u.parameter) = new DCSimpleParameter((yyvsp[(1) - (1)].u.subatomic));
+				(yyval.u.parameter) = new SimpleParameter((yyvsp[(1) - (1)].u.subatomic));
 			}
 			break;
 
@@ -2486,8 +2479,8 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 636 "Parser.yxx"
 			{
-				DCSimpleParameter *simple_param = (yyvsp[(1) - (4)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
+				SimpleParameter *simple_param = (yyvsp[(1) - (4)].u.parameter)->as_simple_parameter();
+				nassertr(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->set_range(double_range))
 				{
 					yyerror("Inappropriate range for type");
@@ -2501,8 +2494,8 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 645 "Parser.yxx"
 			{
-				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
+				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
+				nassertr(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->is_numeric_type())
 				{
 					yyerror("A divisor is only valid on a numeric type.");
@@ -2527,8 +2520,8 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 661 "Parser.yxx"
 			{
-				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				nassertr(simple_param != (DCSimpleParameter *)NULL, 0);
+				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
+				nassertr(simple_param != (SimpleParameter *)NULL, 0);
 				if(!simple_param->is_numeric_type())
 				{
 					yyerror("A divisor is only valid on a numeric type.");
@@ -2555,15 +2548,15 @@ yyreduce:
 				}
 				else
 				{
-					DCTypedef *dtypedef = dc_file->get_typedef_by_name((yyvsp[(1) - (1)].str));
-					if(dtypedef == (DCTypedef *)NULL)
+					Typedef *dtypedef = dc_file->get_typedef_by_name((yyvsp[(1) - (1)].str));
+					if(dtypedef == (Typedef *)NULL)
 					{
 						// Maybe it's a class name.
 						Class *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
 						if(dclass != (Class *)NULL)
 						{
 							// Create an implicit typedef for this.
-							dtypedef = new DCTypedef(new ClassParameter(dclass), true);
+							dtypedef = new Typedef(new ClassParameter(dclass), true);
 						}
 						else
 						{
@@ -2572,12 +2565,12 @@ yyreduce:
 							if(dswitch != (Switch *)NULL)
 							{
 								// This also gets an implicit typedef.
-								dtypedef = new DCTypedef(new SwitchParameter(dswitch), true);
+								dtypedef = new Typedef(new SwitchParameter(dswitch), true);
 							}
 							else
 							{
 								// It's an undefined typedef.  Create a bogus forward reference.
-								dtypedef = new DCTypedef((yyvsp[(1) - (1)].str));
+								dtypedef = new Typedef((yyvsp[(1) - (1)].str));
 							}
 						}
 
@@ -2850,8 +2843,8 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 857 "Parser.yxx"
 			{
-				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				if(simple_param == NULL || simple_param->get_typedef() != (DCTypedef *)NULL)
+				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
+				if(simple_param == NULL || simple_param->get_typedef() != (Typedef *)NULL)
 				{
 					yyerror("A divisor is only allowed on a primitive type.");
 
@@ -2876,8 +2869,8 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 872 "Parser.yxx"
 			{
-				DCSimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
-				if(simple_param == NULL || simple_param->get_typedef() != (DCTypedef *)NULL)
+				SimpleParameter *simple_param = (yyvsp[(1) - (3)].u.parameter)->as_simple_parameter();
+				if(simple_param == NULL || simple_param->get_typedef() != (Typedef *)NULL)
 				{
 					yyerror("A modulus is only allowed on a primitive type.");
 
@@ -3006,7 +2999,7 @@ yyreduce:
 			{
 				if((yyvsp[(1) - (2)].str) != current_packer->get_current_field_name())
 				{
-					ostd::stringstream strm;
+					std::stringstream strm;
 					strm << "Got '" << (yyvsp[(1) - (2)].str) << "', expected '"
 					     << current_packer->get_current_field_name() << "'";
 					yyerror(strm.str());
@@ -3054,7 +3047,7 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 996 "Parser.yxx"
 			{
-				current_packer->pack_std::string((yyvsp[(1) - (1)].str));
+				current_packer->pack_string((yyvsp[(1) - (1)].str));
 			}
 			break;
 
@@ -3255,7 +3248,7 @@ yyreduce:
 			/* Line 1464 of yacc.c  */
 #line 1106 "Parser.yxx"
 			{
-				(yyval.u.subatomic) = ST_std::string;
+				(yyval.u.subatomic) = ST_string;
 			}
 			break;
 
@@ -3534,7 +3527,7 @@ yyreduce:
 				}
 				else
 				{
-					int case_index = current_switch->add_case(current_packer->get_std::string());
+					int case_index = current_switch->add_case(current_packer->get_string());
 					if(case_index == -1)
 					{
 						yyerror("Duplicate case value");

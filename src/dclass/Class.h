@@ -43,7 +43,7 @@ class EXPCL_DIRECT Class : public Declaration
 		inline const string &get_name() const;
 		// get_number returns a unique index number associated with this class.
 		//     This is defined implicitly when a .dc file is read.
-		inline int get_index() const;
+		inline int get_number() const;
 
 		// get_num_parents returns the number of base classes this class inherits from.
 		size_t get_num_parents() const;
@@ -69,12 +69,16 @@ class EXPCL_DIRECT Class : public Declaration
 		// get_field_by_index returns a pointer to the declared or
 		//     inherited Field with unique id 'index';
 		//     Returns NULL if there is no such field defined.
+		Field *get_field_by_index(int index);
 		Field *get_field_by_index(int index) const;
 
 		// get_num_inherited_fields returns the total declared and inherited fields in this class.
+		size_t get_num_inherited_fields();
 		size_t get_num_inherited_fields() const;
+
 		// get_inherited_field returns the nth field from all
 		//     declared and inherited fields in the class.
+		Field *get_inherited_field(int n);
 		Field *get_inherited_field(int n) const;
 
 		// is_struct returns true if the class has been identified with the "struct"

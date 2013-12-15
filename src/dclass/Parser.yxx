@@ -1,6 +1,7 @@
 // Filename: Parser.yxx
 // Created by: drose (05 Oct, 2000)
 //
+using namespace dclass;
 
 %
 {
@@ -359,16 +360,9 @@ dclass_name
 }
 | dclass_base_list ',' dclass_name
 {
-	if(!dc_multiple_inheritance)
+	if($3 != (Class *)NULL)
 	{
-		yyerror("Multiple inheritance is not supported without \"dc-multiple-inheritance 1\" in your Config.prc file.");
-
-	}
-	else {
-		if($3 != (Class *)NULL)
-		{
 			current_class->add_parent($3);
-		}
 	}
 }
 ;
@@ -1459,4 +1453,3 @@ unnamed_parameter_with_default
 
 empty:
 ;
-

@@ -12,6 +12,7 @@
 #include "File.h"
 #include "indent.h"
 #include "pstrtod.h"
+using namespace dclass;
 
 
 	static int yyinput(void);        // declared by flex.

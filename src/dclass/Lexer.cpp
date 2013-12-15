@@ -590,10 +590,10 @@ char *dcyytext;
 */
 #line 9 "Lexer.lxx"
 #include "LexerDefs.h"
-#include "dcParserDefs.h"
-#include "dcParser.h"
-#include "dcFile.h"
-#include "dcindent.h"
+#include "ParserDefs.h"
+#include "Parser.h"
+#include "File.h"
+#include "indent.h"
 
 
 static int yyinput(void);        // declared by flex.

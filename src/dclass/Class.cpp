@@ -122,9 +122,9 @@ Field* Class::get_field_by_name(const string &name) const
 	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
 	{
 		Field* field = (*it)->get_field_by_name(name);
-		if(result != (Field*)NULL)
+		if(field != (Field*)NULL)
 		{
-			return result;
+			return field;
 		}
 	}
 
@@ -146,11 +146,38 @@ Field *Class::get_field_by_index(int index) const
 	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
 	{
 		Field *field = (*it)->get_field_by_index(index);
-		if(result != (Field*)NULL)
+		if(field != (Field*)NULL)
 		{
 			// Cache this result for future lookups.
-			m_fields_by_index[index] = result;
-			return result;
+			// Disabled because should not be caching a value in a const function.
+			//m_fields_by_index[index] = field;
+			return field;
+		}
+	}
+
+	// Nobody knew what this field is.
+	return (Field*)NULL;
+}
+
+// get_field_by_index returns a pointer to the declared or inherited Field with unique id 'index';
+//     Returns NULL if there is no such field defined.
+Field *Class::get_field_by_index(int index)
+{
+	auto field_it = m_fields_by_index.find(index);
+	if(field_it != m_fields_by_index.end())
+	{
+		return (*field_it).second;
+	}
+
+	// We didn't have such a field, so check our parents.
+	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+	{
+		Field *field = (*it)->get_field_by_index(index);
+		if(field != (Field*)NULL)
+		{
+			// Cache this result for future lookups.
+			m_fields_by_index[index] = field;
+			return field;
 		}
 	}
 
@@ -159,9 +186,9 @@ Field *Class::get_field_by_index(int index) const
 }
 
 // get_num_inherited_fields returns the total declared and inherited fields in this class.
-size_t Class::get_num_inherited_fields() const
+size_t Class::get_num_inherited_fields()
 {
-	if(m_file != (DCFile*)NULL)
+	if(m_file != (File*)NULL)
 	{
 		m_file->check_inherited_fields();
 		if(m_inherited_fields.empty())
@@ -169,7 +196,36 @@ size_t Class::get_num_inherited_fields() const
 			rebuild_inherited_fields();
 		}
 
-		// This assertion causes trouble when we are only parsing an incomplete DC file.
+		// This assertion causes trouble when we are only parsing an incomplete  file.
+		//nassertr(is_bogus_class() || !_inherited_fields.empty(), 0);
+		return m_inherited_fields.size();
+	}
+	else
+	{
+		size_t num_fields = get_num_fields();
+
+		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+		{
+			num_fields += (*it)->get_num_inherited_fields();
+		}
+
+		return num_fields;
+	}
+}
+
+// get_num_inherited_fields returns the total declared and inherited fields in this class.
+size_t Class::get_num_inherited_fields() const
+{
+	if(m_file != (File*)NULL)
+	{
+		m_file->check_inherited_fields();
+		if(m_inherited_fields.empty())
+		{
+			// Hacky print statement that makes it obvious this needs to be fixed
+			std::cerr << "\nTried to get_num_inherited_fields on a possibly uninitialized class with a const class pointer.\n\n";
+		}
+
+		// This assertion causes trouble when we are only parsing an incomplete  file.
 		//nassertr(is_bogus_class() || !_inherited_fields.empty(), 0);
 		return m_inherited_fields.size();
 	}
@@ -187,9 +243,9 @@ size_t Class::get_num_inherited_fields() const
 }
 
 // get_inherited_field returns the nth field from all declared and inherited fields in the class.
-Field *Class::get_inherited_field(unsigned int n) const
+Field *Class::get_inherited_field(int n)
 {
-	if(m_file != (DCFile *)NULL)
+	if(m_file != (File *)NULL)
 	{
 		m_file->check_inherited_fields();
 		if(m_inherited_fields.empty())
@@ -209,7 +265,40 @@ Field *Class::get_inherited_field(unsigned int n) const
 				return (*it)->get_inherited_field(n);
 			}
 
-			n -= psize;
+			n -= num_fields;
+		}
+
+		return get_field(n);
+	}
+}
+
+
+
+// get_inherited_field returns the nth field from all declared and inherited fields in the class.
+Field *Class::get_inherited_field(int n) const
+{
+	if(m_file != (File *)NULL)
+	{
+		m_file->check_inherited_fields();
+		if(m_inherited_fields.empty())
+		{
+			// Hacky print statement that makes it obvious this needs to be fixed
+			std::cerr << "\nTried to get_inherited_field on a possibly uninitialized class with a const class pointer.\n\n";
+		}
+		nassertr(n >= 0 && n < (int)m_inherited_fields.size(), NULL);
+		return m_inherited_fields[n];
+	}
+	else
+	{
+		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+		{
+			size_t num_fields = (*it)->get_num_inherited_fields();
+			if(n < num_fields)
+			{
+				return (*it)->get_inherited_field(n);
+			}
+
+			n -= num_fields;
 		}
 
 		return get_field(n);
@@ -306,7 +395,7 @@ void Class::write(ostream &out, bool brief, int indent_level) const
 		m_constructor->write(out, brief, indent_level + 2);
 	}
 
-	for(auto it = m_fields.begin(); it != m_fields.end(); ++fi)
+	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
 		if(!(*it)->is_bogus_field())
 		{
@@ -315,7 +404,7 @@ void Class::write(ostream &out, bool brief, int indent_level) const
 			/*
 			if (true || (*fi)->has_default_value()) {
 			  indent(out, indent_level + 2) << "// = ";
-			  DCPacker packer;
+			  Packer packer;
 			  packer.set_unpack_data((*fi)->get_default_value());
 			  packer.begin_unpack(*fi);
 			  packer.unpack_and_format(out, false);
@@ -347,7 +436,7 @@ void Class::output_instance(ostream &out, bool brief, const string &prename,
 	}
 	if(!m_name.empty())
 	{
-		out << " " << _name;
+		out << " " << m_name;
 	}
 
 	if(!m_parents.empty())

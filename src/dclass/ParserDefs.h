@@ -12,14 +12,18 @@
 #include "dcbase.h"
 #include "SubatomicType.h"
 
-class File;
-class Class;
-class Switch;
-class Field;
-class AtomicField;
-class Parameter;
-class Keyword;
-class Packer;
+namespace dclass
+{
+	class File;
+	class Class;
+	class Switch;
+	class Field;
+	class AtomicField;
+	class Parameter;
+	class Keyword;
+	class Packer;
+}
+using namespace dclass;
 
 void dc_init_parser(std::istream &in, const std::string &filename, File &file);
 void dc_init_parser_parameter_value(std::istream &in, const std::string &filename,

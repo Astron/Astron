@@ -52,7 +52,7 @@ class EXPCL_DIRECT SwitchParameter : public Parameter
 		virtual bool do_check_match_switch_parameter(const SwitchParameter *other) const;
 
 	private:
-		const Switch *_dswitch;
+		const Switch *m_switch;
 };
 
 

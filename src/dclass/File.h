@@ -89,7 +89,7 @@ class EXPCL_DIRECT File
 
 		// get_keyword_by_name returns the keyword that has the indicated name,
 		//     or NULL if there is no such keyword name.
-		const Keyword *get_keyword_by_name(const string &name) const;
+		const Keyword *get_keyword_by_name(const std::string &name) const;
 
 		// get_hash returns a 32-bit hash of the file.
 		uint32_t get_hash() const;
@@ -106,14 +106,18 @@ class EXPCL_DIRECT File
 		bool add_switch(Switch *dswitch);
 
 		// add_import_module adds a new name to the list of names of Python modules.
-		void add_import_module(const string &import_module);
+		void add_import_module(const std::string &import_module);
+
+		// add_import_symbol adds a new name to the list of symbols that are to be
+		//     explicitly imported from the most-recently added module.
+		void add_import_symbol(const std::string &import_symbol);
 
 		// add_import_symbol adds a new name to the list of symbols that are to be
 		//     explicitly imported from the most-recently added module.
 		bool add_typedef(Typedef *dtypedef);
 
 		// add_keyword adds the indicated keyword string to the list of keywords known to the File.
-		bool add_keyword(const string &name);
+		bool add_keyword(const std::string &name);
 
 		// add_thing_to_delete transdfers ownership of a decl to the file so that it will
 		//     be deleted when the file's destructor is called.
@@ -154,7 +158,7 @@ class EXPCL_DIRECT File
 		std::vector<Declaration*> m_declarations; // composite list of classes and switches in the file
 		std::vector<Declaration*> m_things_to_delete; // list of objects to delete in destructor
 
-		std::vector<Field*> m_field_by_index; // fields in the file by unique integer id
+		std::vector<Field*> m_fields_by_index; // fields in the file by unique integer id
 
 		bool m_all_objects_valid; // true if there are no object has an incomplete defintion.
 		bool m_inherited_fields_stale; // true if inherited fields have not be calculated.

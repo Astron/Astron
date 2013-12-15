@@ -65,7 +65,7 @@ const Switch *Switch::as_switch() const
 }
 
 // get_name returns the name of this switch.
-const std:;string &Switch::get_name() const
+const std::string &Switch::get_name() const
 {
 	return m_name;
 }
@@ -102,7 +102,7 @@ int Switch::get_case_by_value(const std::string &case_value) const
 PackerInterface *Switch::get_case(int n) const
 {
 	nassertr(n >= 0 && n < (int)m_cases.size(), NULL);
-	return m_cases[n]->_fields;
+	return m_cases[n]->m_fields;
 }
 
 // get_default_case returns the PackerInterface that packs the default case,
@@ -142,9 +142,9 @@ Field *Switch::get_field_by_name(int case_index, const string &name) const
 
 	const std::map<std::string, Field*> &fields_by_name = m_cases[case_index]->m_fields->m_fields_by_name;
 	auto field_it = fields_by_name.find(name);
-	if(it != fields_by_name.end())
+	if(field_it != fields_by_name.end())
 	{
-		return it->second;
+		return field_it->second;
 	}
 
 	return NULL;
@@ -268,7 +268,7 @@ void Switch::output_instance(std::ostream &out, bool brief, const std::string &p
                              const std::string &name, const std::string &postname) const
 {
 	out << "switch";
-	if(!_name.empty())
+	if(!m_name.empty())
 	{
 		out << " " << m_name;
 	}
@@ -285,7 +285,7 @@ void Switch::output_instance(std::ostream &out, bool brief, const std::string &p
 		{
 			last_fields->output(out, brief);
 		}
-		last_fields = dcase->_fields;
+		last_fields = dcase->m_fields;
 		out << "case " << m_key_parameter->format_data(dcase->m_value, false) << ": ";
 	}
 
@@ -316,9 +316,9 @@ void Switch::write_instance(std::ostream &out, bool brief, int indent_level,
                             const std::string &postname) const
 {
 	indent(out, indent_level) << "switch";
-	if(!_name.empty())
+	if(!m_name.empty())
 	{
-		out << " " << _name;
+		out << " " << m_name;
 	}
 	out << " (";
 	m_key_parameter->output(out, brief);
@@ -329,13 +329,13 @@ void Switch::write_instance(std::ostream &out, bool brief, int indent_level,
 	for(auto it = m_cases.begin(); it != m_cases.end(); ++it)
 	{
 		const SwitchCase *dcase = (*it);
-		if(dcase->_fields != last_fields && last_fields != (SwitchFields *)NULL)
+		if(dcase->m_fields != last_fields && last_fields != (SwitchFields *)NULL)
 		{
 			last_fields->write(out, brief, indent_level + 2);
 		}
-		last_fields = dcase->_fields;
+		last_fields = dcase->m_fields;
 		indent(out, indent_level) << "case "
-		                          << m_key_parameter->format_data(dcase->_value, false) << ":\n";
+			<< m_key_parameter->format_data(dcase->m_value, false) << ":\n";
 	}
 
 	if(m_default_case != (SwitchFields *)NULL)
@@ -363,7 +363,7 @@ void Switch::write_instance(std::ostream &out, bool brief, int indent_level,
 // generate_hash accumulates the properties of this switch into the hash.
 void Switch::generate_hash(HashGenerator &hashgen) const
 {
-	hashgen.add_string(_name);
+	hashgen.add_string(m_name);
 
 	m_key_parameter->generate_hash(hashgen);
 
@@ -517,7 +517,7 @@ Switch::SwitchFields *Switch::start_new_case()
 
 
 // constructor
-Switch::SwitchFields::SwitchFields(const string &name) : PackerInterface(name),
+Switch::SwitchFields::SwitchFields(const string &name) : PackerInterface(name)
 {
 	m_has_nested_fields = true;
 	m_num_nested_fields = 0;
@@ -552,8 +552,8 @@ bool Switch::SwitchFields::add_field(Field *field)
 {
 	if(!field->get_name().empty())
 	{
-		bool inserted = m_fields_by_name.insert
-		                (FieldsByName::value_type(field->get_name(), field)).second;
+		bool inserted = m_fields_by_name.insert(
+			std::map<std::string, Field*>::value_type(field->get_name(), field)).second;
 
 		if(!inserted)
 		{
@@ -579,7 +579,7 @@ bool Switch::SwitchFields::add_field(Field *field)
 	{
 		m_has_range_limits = field->has_range_limits();
 	}
-	if(!_has_default_value)
+	if(!m_has_default_value)
 	{
 		m_has_default_value = field->has_default_value();
 	}

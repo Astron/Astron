@@ -16,7 +16,7 @@ namespace dclass   // open namespace dclass
 
 
 // switch constructor
-SwitchParameter::SwitchParameter(const Switch *dswitch) : m_dswitch(dswitch)
+SwitchParameter::SwitchParameter(const Switch *dswitch) : m_switch(dswitch)
 {
 	set_name(dswitch->get_name());
 
@@ -38,16 +38,16 @@ SwitchParameter::SwitchParameter(const Switch *dswitch) : m_dswitch(dswitch)
 	m_has_range_limits = m_has_range_limits || key_parameter->has_range_limits();
 	m_has_default_value = m_has_default_value || key_parameter->has_default_value();
 
-	int num_cases = _dswitch->get_num_cases();
+	int num_cases = m_switch->get_num_cases();
 	if(num_cases > 0)
 	{
-		m_fixed_byte_size = m_dswitch->get_case(0)->get_fixed_byte_size();
+		m_fixed_byte_size = m_switch->get_case(0)->get_fixed_byte_size();
 
 		// Consider each case for fixed size, etc.
 		for(int i = 0; i < num_cases; i++)
 		{
 			const Switch::SwitchFields *fields =
-			    (const Switch::SwitchFields *)m_dswitch->get_case(i);
+			    (const Switch::SwitchFields *)m_switch->get_case(i);
 
 			if(!fields->has_fixed_byte_size() ||
 			        fields->get_fixed_byte_size() != m_fixed_byte_size)
@@ -64,7 +64,7 @@ SwitchParameter::SwitchParameter(const Switch *dswitch) : m_dswitch(dswitch)
 
 	// Also consider the default case, if there is one.
 	const Switch::SwitchFields *fields =
-	    (Switch::SwitchFields *)m_dswitch->get_default_case();
+	    (Switch::SwitchFields *)m_switch->get_default_case();
 	if(fields != (Switch::SwitchFields *)NULL)
 	{
 		if(!fields->has_fixed_byte_size() ||
@@ -80,7 +80,7 @@ SwitchParameter::SwitchParameter(const Switch *dswitch) : m_dswitch(dswitch)
 
 // copy constructor
 SwitchParameter::SwitchParameter(const SwitchParameter &copy) :
-	Parameter(copy), m_dswitch(copy._dswitch)
+	Parameter(copy), m_switch(copy.m_switch)
 {
 }
 
@@ -113,14 +113,14 @@ bool SwitchParameter::is_valid() const
 // get_switch returns the switch object this parameter represents.
 const Switch *SwitchParameter::get_switch() const
 {
-	return m_dswitch;
+	return m_switch;
 }
 
 // get_nested_field returns the PackerInterface object that represents the nth nested field.
 //     This returns NULL if n is not within the range 0 <= n < get_num_nested_fields()).
 PackerInterface *SwitchParameter::get_nested_field(int) const
 {
-	return m_dswitch->get_key_parameter();
+	return m_switch->get_key_parameter();
 }
 
 // apply_switch returns the PackerInterface that presents the alternative fields for the
@@ -128,7 +128,7 @@ PackerInterface *SwitchParameter::get_nested_field(int) const
 //     one of the expected cases.
 const PackerInterface *SwitchParameter::apply_switch(const char *value_data, size_t length) const
 {
-	return m_dswitch->apply_switch(value_data, length);
+	return m_switch->apply_switch(value_data, length);
 }
 
 // output_instance formats the parameter in the C++-like dc syntax as a typename and identifier.
@@ -142,7 +142,7 @@ void SwitchParameter::output_instance(std::ostream &out, bool brief, const std::
 	}
 	else
 	{
-		m_dswitch->output_instance(out, brief, prename, name, postname);
+		m_switch->output_instance(out, brief, prename, name, postname);
 	}
 }
 
@@ -158,15 +158,15 @@ void SwitchParameter::write_instance(std::ostream &out, bool brief, int indent_l
 	}
 	else
 	{
-		m_dswitch->write_instance(out, brief, indent_level, prename, name, postname);
+		m_switch->write_instance(out, brief, indent_level, prename, name, postname);
 	}
 }
 
-// generate_hash accumulates the properties of this type into the hash.\
+// generate_hash accumulates the properties of this type into the hash.
 void SwitchParameter::generate_hash(HashGenerator &hashgen) const
 {
 	Parameter::generate_hash(hashgen);
-	m_dswitch->generate_hash(hashgen);
+	m_switch->generate_hash(hashgen);
 }
 
 // pack_default_value packs the switchParameter's specified default value (or a sensible default
@@ -179,7 +179,7 @@ bool SwitchParameter::pack_default_value(PackData &pack_data, bool &pack_error) 
 		return Field::pack_default_value(pack_data, pack_error);
 	}
 
-	return m_dswitch->pack_default_value(pack_data, pack_error);
+	return m_switch->pack_default_value(pack_data, pack_error);
 }
 
 // do_check_match returns true if the other interface is bitwise the same as this one--that is,
@@ -192,7 +192,7 @@ bool SwitchParameter::do_check_match(const PackerInterface *other) const
 // do_check_match_switch_parameter returns true if this field matches the indicated switch parameter, false otherwise.
 bool SwitchParameter::do_check_match_switch_parameter(const SwitchParameter *other) const
 {
-	return m_dswitch->do_check_match_switch(other->m_dswitch);
+	return m_switch->do_check_match_switch(other->m_switch);
 }
 
 

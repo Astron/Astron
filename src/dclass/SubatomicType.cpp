@@ -83,3 +83,6 @@ std::ostream & operator << (std::ostream &out, SubatomicType type)
 
 	return out << "invalid type: " << (int)type;
 }
+
+
+} // close namespace dclass

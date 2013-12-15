@@ -25,13 +25,13 @@ static const size_t extra_size = 50;
 void PackData::
 set_used_length(size_t size)
 {
-	if(size > _allocated_size)
+	if(size > m_allocated_size)
 	{
 		m_allocated_size = size + size + extra_size;
 		char *new_buf = new char[m_allocated_size];
-		if(_used_length > 0)
+		if(m_used_length > 0)
 		{
-			memcpy(new_buf, _buffer, m_used_length);
+			memcpy(new_buf, m_buffer, m_used_length);
 		}
 		if(m_buffer != NULL)
 		{

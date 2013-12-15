@@ -24,17 +24,17 @@ namespace dclass   // open namespace dclass
 ////////////////////////////////////////////////////////////////////
 PackerInterface::
 PackerInterface(const string &name) :
-	_name(name)
+	m_name(name)
 {
-	_has_fixed_byte_size = false;
-	_fixed_byte_size = 0;
-	_has_fixed_structure = false;
-	_has_range_limits = false;
-	_num_length_bytes = 0;
-	_has_nested_fields = false;
-	_num_nested_fields = -1;
-	_pack_type = PT_invalid;
-	_catalog = NULL;
+	m_has_fixed_byte_size = false;
+	m_fixed_byte_size = 0;
+	m_has_fixed_structure = false;
+	m_has_range_limits = false;
+	m_num_length_bytes = 0;
+	m_has_nested_fields = false;
+	m_num_nested_fields = -1;
+	m_pack_type = PT_invalid;
+	m_catalog = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -44,17 +44,17 @@ PackerInterface(const string &name) :
 ////////////////////////////////////////////////////////////////////
 PackerInterface::
 PackerInterface(const PackerInterface &copy) :
-	_name(copy._name),
-	_has_fixed_byte_size(copy._has_fixed_byte_size),
-	_fixed_byte_size(copy._fixed_byte_size),
-	_has_fixed_structure(copy._has_fixed_structure),
-	_has_range_limits(copy._has_range_limits),
-	_num_length_bytes(copy._num_length_bytes),
-	_has_nested_fields(copy._has_nested_fields),
-	_num_nested_fields(copy._num_nested_fields),
-	_pack_type(copy._pack_type)
+	m_name(copy.m_name),
+	m_has_fixed_byte_size(copy.m_has_fixed_byte_size),
+	m_fixed_byte_size(copy.m_fixed_byte_size),
+	m_has_fixed_structure(copy.m_has_fixed_structure),
+	m_has_range_limits(copy.m_has_range_limits),
+	m_num_length_bytes(copy.m_num_length_bytes),
+	m_has_nested_fields(copy.m_has_nested_fields),
+	m_num_nested_fields(copy.m_num_nested_fields),
+	m_pack_type(copy.m_pack_type)
 {
-	_catalog = NULL;
+	m_catalog = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,9 +65,9 @@ PackerInterface(const PackerInterface &copy) :
 PackerInterface::
 ~PackerInterface()
 {
-	if(_catalog != (PackerCatalog *)NULL)
+	if(m_catalog != (PackerCatalog *)NULL)
 	{
-		delete _catalog;
+		delete m_catalog;
 	}
 }
 
@@ -205,7 +205,7 @@ check_match(const string &description, File *dcfile) const
 void PackerInterface::
 set_name(const string &name)
 {
-	_name = name;
+	m_name = name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -214,8 +214,8 @@ set_name(const string &name)
 //  Description: This flavor of get_num_nested_fields is used during
 //               unpacking.  It returns the number of nested fields to
 //               expect, given a certain length in bytes (as read from
-//               the _num_length_bytes stored in the stream on the
-//               push).  This will only be called if _num_length_bytes
+//               the m_num_length_bytes stored in the stream on the
+//               push).  This will only be called if m_num_length_bytes
 //               is nonzero.
 ////////////////////////////////////////////////////////////////////
 int PackerInterface::
@@ -426,7 +426,7 @@ bool PackerInterface::
 unpack_validate(const char *data, size_t length, size_t &p,
                 bool &pack_error, bool &) const
 {
-	if(!_has_range_limits)
+	if(!m_has_range_limits)
 	{
 		return unpack_skip(data, length, p, pack_error);
 	}
@@ -445,10 +445,10 @@ bool PackerInterface::
 unpack_skip(const char *data, size_t length, size_t &p,
             bool &pack_error) const
 {
-	if(_has_fixed_byte_size)
+	if(m_has_fixed_byte_size)
 	{
 		// If this field has a fixed byte size, it's easy to skip.
-		p += _fixed_byte_size;
+		p += m_fixed_byte_size;
 		if(p > length)
 		{
 			pack_error = true;
@@ -456,17 +456,17 @@ unpack_skip(const char *data, size_t length, size_t &p,
 		return true;
 	}
 
-	if(_has_nested_fields && _num_length_bytes != 0)
+	if(m_has_nested_fields && m_num_length_bytes != 0)
 	{
 		// If we have a length prefix, use that for skipping.
-		if(p + _num_length_bytes > length)
+		if(p + m_num_length_bytes > length)
 		{
 			pack_error = true;
 
 		}
 		else
 		{
-			if(_num_length_bytes == 4)
+			if(m_num_length_bytes == 4)
 			{
 				size_t this_length = do_unpack_uint32(data + p);
 				p += this_length + 4;
@@ -498,11 +498,11 @@ unpack_skip(const char *data, size_t length, size_t &p,
 const PackerCatalog *PackerInterface::
 get_catalog() const
 {
-	if(_catalog == (PackerCatalog *)NULL)
+	if(m_catalog == (PackerCatalog *)NULL)
 	{
 		((PackerInterface *)this)->make_catalog();
 	}
-	return _catalog;
+	return m_catalog;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -586,10 +586,10 @@ do_check_match_molecular_field(const MolecularField *) const
 void PackerInterface::
 make_catalog()
 {
-	nassertv(_catalog == (PackerCatalog *)NULL);
-	_catalog = new PackerCatalog(this);
+	nassertv(m_catalog == (PackerCatalog *)NULL);
+	m_catalog = new PackerCatalog(this);
 
-	_catalog->r_fill_catalog("", this, NULL, 0);
+	m_catalog->r_fill_catalog("", this, NULL, 0);
 }
 
 

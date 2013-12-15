@@ -20,19 +20,27 @@ namespace dclass   // open namespace
 
 // nameless constructor (for structs)
 Field::Field() : m_class(NULL), m_number(-1), m_default_value_stale(true),
-	m_has_default_value(false), m_bogus_field(false), m_has_nested_fields(true),
-	m_num_nested_fields(0), m_pack_type(PT_field), m_has_fixed_byte_size(true),
-	m_fixed_byte_size(0), m_has_fixed_structure(true)
+	m_has_default_value(false), m_bogus_field(false)
 {
+	m_has_nested_fields = true;
+	m_num_nested_fields = 0;
+	m_pack_type = PT_field;
+	m_has_fixed_byte_size = true;
+	m_fixed_byte_size = 0;
+	m_has_fixed_structure = true;
 }
 
 // named constructor (for classes)
 Field::Field(const string &name, Class *dclass) : PackerInterface(name),
-	m_class(dclass), m_number(-1), m_default_value_stale(true), m_has_default_value(false),
-	m_bogus_field(false), m_has_nested_fields(true), m_num_nested_fields(0),
-	m_pack_type(PT_field), m_has_fixed_byte_size(true), m_fixed_byte_size(0),
-	m_has_fixed_structure(true)
+	m_class(dclass), m_number(-1), m_default_value_stale(true),
+	m_has_default_value(false), m_bogus_field(false)
 {
+	m_has_nested_fields = true;
+	m_num_nested_fields = 0;
+	m_pack_type = PT_field;
+	m_has_fixed_byte_size = true;
+	m_fixed_byte_size = 0;
+	m_has_fixed_structure = true;
 }
 
 // destructor
@@ -162,10 +170,7 @@ void Field::generate_hash(HashGenerator &hashgen) const
 
 	// Actually, we add _number anyway, since we need to ensure the hash
 	// code comes out different in the dc_multiple_inheritance case.
-	if(dc_multiple_inheritance)
-	{
-		hashgen.add_int(m_number);
-	}
+	hashgen.add_int(m_number);
 }
 
 // pack_default_value packs the field's specified default value (or a sensible default
@@ -190,7 +195,7 @@ void Field::set_name(const string &name)
 	PackerInterface::set_name(name);
 	if(m_class != (Class *)NULL)
 	{
-		m_class->m_dc_file->mark_inherited_fields_stale();
+		m_class->m_file->mark_inherited_fields_stale();
 	}
 }
 
@@ -210,3 +215,6 @@ void Field::refresh_default_value()
 	}
 	m_default_value_stale = false;
 }
+
+
+} // close namespace dclass

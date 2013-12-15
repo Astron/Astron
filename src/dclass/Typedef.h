@@ -43,7 +43,7 @@ class EXPCL_DIRECT Typedef : public Declaration
 		virtual void write(std::ostream &out, bool brief, int indent_level) const;
 
 	private:
-		Parameter *_parameter;
+		Parameter *m_parameter;
 		bool m_bogus_typedef;
 		bool m_implicit_typedef;
 		int m_number;
