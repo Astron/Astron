@@ -15,7 +15,6 @@
 #include "File.h"
 
 #include "indent.h"
-#include "msgtypes.h"
 
 #include <algorithm>
 #include <unordered_set>

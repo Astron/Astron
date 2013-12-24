@@ -13,7 +13,6 @@
 #include "Packer.h"
 #include "Class.h"
 #include "HashGenerator.h"
-#include "msgtypes.h"
 namespace dclass   // open namespace
 {
 
