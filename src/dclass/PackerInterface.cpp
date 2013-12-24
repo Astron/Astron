@@ -11,8 +11,8 @@
 #include "PackerInterface.h"
 #include "PackerCatalog.h"
 #include "Field.h"
-#include "ParserDefs.h"
-#include "LexerDefs.h"
+#include "parser/ParserDefs.h"
+#include "parser/LexerDefs.h"
 #include <sstream>
 namespace dclass   // open namespace dclass
 {

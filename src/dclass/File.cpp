@@ -10,8 +10,8 @@
 
 #include "File.h"
 #include "Class.h"
-#include "ParserDefs.h"
-#include "LexerDefs.h"
+#include "parser/ParserDefs.h"
+#include "parser/LexerDefs.h"
 #include "Typedef.h"
 #include "Keyword.h"
 #include "HashGenerator.h"

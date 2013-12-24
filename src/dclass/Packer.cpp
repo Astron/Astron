@@ -9,8 +9,8 @@
 //
 
 #include "Packer.h"
-#include "ParserDefs.h"
-#include "LexerDefs.h"
+#include "parser/ParserDefs.h"
+#include "parser/LexerDefs.h"
 #include "ClassParameter.h"
 #include "Class.h"
 #include <sstream>

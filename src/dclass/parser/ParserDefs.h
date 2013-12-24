@@ -9,8 +9,8 @@
 //
 
 #pragma once
-#include "dcbase.h"
-#include "SubatomicType.h"
+#include "../dcbase.h"
+#include "../SubatomicType.h"
 
 namespace dclass
 {

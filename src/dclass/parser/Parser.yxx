@@ -8,17 +8,17 @@ using namespace dclass;
 
 #include "LexerDefs.h"
 #include "ParserDefs.h"
-#include "File.h"
-#include "Class.h"
-#include "AtomicField.h"
-#include "MolecularField.h"
-#include "ClassParameter.h"
-#include "ArrayParameter.h"
-#include "SimpleParameter.h"
-#include "Typedef.h"
-#include "Keyword.h"
-#include "Packer.h"
-#include "NumericRange.h"
+#include "../File.h"
+#include "../Class.h"
+#include "../AtomicField.h"
+#include "../MolecularField.h"
+#include "../ClassParameter.h"
+#include "../ArrayParameter.h"
+#include "../SimpleParameter.h"
+#include "../Typedef.h"
+#include "../Keyword.h"
+#include "../Packer.h"
+#include "../NumericRange.h"
 
 #include <assert.h>
 #include <unistd.h>

@@ -356,7 +356,6 @@ add_library(dclass
 	src/dclass/MolecularField.cpp
 	src/dclass/SubatomicType.cpp
 	src/dclass/Typedef.cpp
-
 	src/dclass/PrimeNumberGenerator.cpp
 	src/dclass/HashGenerator.cpp
 	src/dclass/AtomicField.cpp
@@ -368,10 +367,11 @@ add_library(dclass
 	src/dclass/Packer.cpp
 	src/dclass/PackerCatalog.cpp
 	src/dclass/PackerInterface.cpp
+
 	src/dclass/indent.cpp
 
-	src/dclass/Lexer.cpp
-	src/dclass/Parser.cpp
+	src/dclass/parser/Lexer.cpp
+	src/dclass/parser/Parser.cpp
 )
 
 add_dependencies(astrond dclass)

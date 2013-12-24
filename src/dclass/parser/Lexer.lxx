@@ -9,9 +9,8 @@
 #include "LexerDefs.h"
 #include "ParserDefs.h"
 #include "Parser.h"
-#include "File.h"
-#include "indent.h"
-#include "pstrtod.h"
+#include "../File.h"
+#include "../indent.h"
 #include <iostream>
 #include <assert.h>
 #include <unistd.h>

@@ -594,8 +594,8 @@ char *dcyytext;
 #include "LexerDefs.h"
 #include "ParserDefs.h"
 #include "Parser.h"
-#include "File.h"
-#include "indent.h"
+#include "../File.h"
+#include "../indent.h"
 
 
 static int yyinput(void);        // declared by flex.
