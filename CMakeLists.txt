@@ -370,8 +370,8 @@ add_library(dclass
 
 	src/dclass/indent.cpp
 
-	src/dclass/parser/Lexer.cpp
-	src/dclass/parser/Parser.cpp
+	src/dclass/file/Lexer.cpp
+	src/dclass/file/Parser.cpp
 )
 
 add_dependencies(astrond dclass)

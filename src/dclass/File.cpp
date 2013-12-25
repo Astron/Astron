@@ -10,8 +10,6 @@
 
 #include "File.h"
 #include "Class.h"
-#include "parser/ParserDefs.h"
-#include "parser/LexerDefs.h"
 #include "Typedef.h"
 #include "Keyword.h"
 #include "HashGenerator.h"
@@ -58,37 +56,6 @@ void File::clear()
 
 	m_all_objects_valid = true;
 	m_inherited_fields_stale = false;
-}
-
-// read opens and reads the indicated .dc file by name.  The distributed classes defined
-//     in the file will be appended to the set of distributed classes already recorded, if any.
-//     Returns true if the file is successfully read, false if there was an error.
-bool File::read(std::string filename)
-{
-	std::ifstream in;
-	in.open(filename.c_str());
-
-	if(!in)
-	{
-		std::cerr << "Cannot open " << filename << " for reading.\n";
-		return false;
-	}
-
-	return read(in, filename);
-}
-
-// read parses the already-opened input stream for distributed class descriptions.
-//     The filename parameter is optional and is only used when reporting errors.
-//     The distributed classes defined in the file will be appended to the set of
-//     distributed classes already recorded, if any.
-//     Returns true if the file is successfully read, false if there was an error.
-bool File::read(std::istream &in, const std::string &filename)
-{
-	dc_init_parser(in, filename, *this);
-	dcyyparse();
-	dc_cleanup_parser();
-
-	return (dc_error_count() == 0);
 }
 
 // write opens the indicated filename for output and writes a parseable

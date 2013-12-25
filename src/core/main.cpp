@@ -7,6 +7,7 @@
 
 #include "global.h"
 #include "RoleFactory.h"
+#include "dclass/file/read.h"
 
 static ConfigVariable<std::vector<std::string> > dc_files("general/dc_files", std::vector<std::string>());
 LogCategory mainlog("main", "Main");
@@ -120,7 +121,8 @@ int main(int argc, char *argv[])
 	std::vector<std::string> dc_file_names = dc_files.get_val();
 	for(auto it = dc_file_names.begin(); it != dc_file_names.end(); ++it)
 	{
-		if(!g_dcf->read(*it))
+		bool ok = dclass::append(g_dcf, *it);
+		if(!ok)
 		{
 			mainlog.fatal() << "Could not read DC file " << *it << std::endl;
 			return 1;

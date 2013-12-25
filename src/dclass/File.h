@@ -35,13 +35,6 @@ class File
 
 		void clear();
 
-		// read opens and reads the indicated .dc file by name.
-		//     Returns true if the file was successfully read, or false if an error occurs.
-		bool read(std::string filename);
-		// read opens and parses the istream as a .dc file; the filename is used in debug output.
-		//     Returns true if the file was successfully read, or false if an error occurs.
-		bool read(std::istream &in, const std::string &filename = std::string());
-
 		// write writes a parseable description of all the known distributed classes to the output.
 		//     Returns true if the description is successfully written, false otherwise.
 		bool write(std::string filename, bool brief) const;
