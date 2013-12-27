@@ -68,6 +68,7 @@ void MolecularField::add_atomic(AtomicField *atomic)
 	}
 	m_fields.push_back(atomic);
 
+	/*
 	int num_atomic_fields = atomic->get_num_nested_fields();
 	for(int i = 0; i < num_atomic_fields; i++)
 	{
@@ -86,6 +87,7 @@ void MolecularField::add_atomic(AtomicField *atomic)
 	{
 		m_has_range_limits = atomic->has_range_limits();
 	}
+	*/
 	if(!m_has_default_value)
 	{
 		m_has_default_value = atomic->has_default_value();
@@ -135,40 +137,6 @@ void MolecularField::generate_hash(HashGenerator &hashgen) const
 	{
 		(*it)->generate_hash(hashgen);
 	}
-}
-
-// get_nested_field returns the PackerInterface object that represents the nth nested field.
-//     Will return null if the field is out of the range 0 <= n < get_num_nested_fields().
-PackerInterface *MolecularField::get_nested_field(int n) const
-{
-	assert(n >= 0 && n < (int)m_nested_fields.size());
-	return m_nested_fields[n];
-}
-
-// do_check_match returns true if the other interface is bitwise the same as
-//     this one that is, a uint32 only matches a uint32, etc.
-//     Names of components, and range limits, are not compared.
-bool MolecularField::do_check_match(const PackerInterface *other) const
-{
-	return other->do_check_match_molecular_field(this);
-}
-
-// do_check_match_molecular_field returns true if this field matches the indicated molecular field.
-bool MolecularField::do_check_match_molecular_field(const MolecularField *other) const
-{
-	if(m_nested_fields.size() != other->m_nested_fields.size())
-	{
-		return false;
-	}
-	for(size_t i = 0; i < m_nested_fields.size(); i++)
-	{
-		if(!m_nested_fields[i]->check_match(other->m_nested_fields[i]))
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 

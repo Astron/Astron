@@ -347,31 +347,33 @@ endif()
 #source_group("Header Files" FILES ${ASTROND_HEADERS})
 
 add_library(dclass
+	src/dclass/File.cpp
+	src/dclass/Declaration.cpp
+	src/dclass/Typedef.cpp
+	src/dclass/Class.cpp
+	src/dclass/Keyword.cpp
+	src/dclass/KeywordList.cpp
+	src/dclass/DataType.cpp
+
+	src/dclass/AtomicField.cpp
+	src/dclass/Field.cpp
+	src/dclass/MolecularField.cpp
+
 	src/dclass/Parameter.cpp
 	src/dclass/ClassParameter.cpp
 	src/dclass/ArrayParameter.cpp
 	src/dclass/SimpleParameter.cpp
-	src/dclass/Field.cpp
-	src/dclass/File.cpp
-	src/dclass/MolecularField.cpp
-	src/dclass/SubatomicType.cpp
-	src/dclass/Typedef.cpp
+
 	src/dclass/PrimeNumberGenerator.cpp
 	src/dclass/HashGenerator.cpp
-	src/dclass/AtomicField.cpp
-	src/dclass/Class.cpp
-	src/dclass/Declaration.cpp
-	src/dclass/Keyword.cpp
-	src/dclass/KeywordList.cpp
-	src/dclass/PackData.cpp
-	src/dclass/Packer.cpp
-	src/dclass/PackerCatalog.cpp
-	src/dclass/PackerInterface.cpp
 
 	src/dclass/indent.cpp
 
 	src/dclass/file/Lexer.cpp
 	src/dclass/file/Parser.cpp
+
+	#src/dclass/packer/pack.cpp
+	src/dclass/packer/unpack.cpp
 )
 
 add_dependencies(astrond dclass)

@@ -12,6 +12,7 @@
 #include "dcbase.h"
 #include "Field.h"
 #include "Declaration.h"
+#include "Element.h"
 #include <vector> // for std::vector
 #include <unordered_map> // for std::unordered_map
 namespace dclass   // open namespace
@@ -20,10 +21,11 @@ namespace dclass   // open namespace
 
 // Foward declaration
 class HashGenerator;
+class File;
 //class Parameter;
 
 // A Class (dclass::Class) defines a particular DistributedClass as read from an input .dc file.
-class Class : public Declaration
+class Class : public Declaration, public Element
 {
 	friend class Field;
 

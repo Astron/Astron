@@ -26,13 +26,35 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 	m_array_size = -1;
 	if(m_array_size_range.has_one_value())
 	{
+		m_datatype = DT_array;
 		m_array_size = m_array_size_range.get_one_value();
 	}
 	else
 	{
-		m_has_range_limits = true;
+		m_datatype = DT_vararray;
 	}
 
+
+	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
+	if(simple_type != (SimpleParameter *)NULL)
+	{
+		if(simple_type->get_type() == DT_char)
+		{
+			// We make a special case for char[] arrays: these have the string DataType.
+			// Note: A string is equivalent to an int8[] or uint8[] except that it is
+			//       treated semantically as character data, and is printed as a string.
+			if(m_datatype = DT_array)
+			{
+				m_datatype = DT_string;
+			}
+			else
+			{
+				m_datatype = DT_varstring;
+			}
+		}
+	}
+
+	/*
 	if(m_array_size >= 0 && m_element_type->has_fixed_byte_size())
 	{
 		m_has_fixed_byte_size = true;
@@ -51,27 +73,15 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 		m_has_range_limits = true;
 	}
 
+	*/
+
 	if(m_element_type->has_default_value())
 	{
 		m_has_default_value = true;
 	}
 
-	m_has_nested_fields = true;
-	m_num_nested_fields = m_array_size;
-	m_pack_type = PT_array;
-
-	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
-	if(simple_type != (SimpleParameter *)NULL)
-	{
-		if(simple_type->get_type() == ST_char)
-		{
-			// We make a special case for char[] arrays: these we format as
-			// a string.  (It will still acc`ept an array of ints packed into
-			// it.)  We don't make this special case for uint8[] or int8[]
-			// arrays, although we will accept a string packed in for them.
-			m_pack_type = PT_string;
-		}
-	}
+	//m_has_nested_fields = true;
+	//m_num_nested_fields = m_array_size;
 }
 
 // copy constructor
@@ -142,40 +152,6 @@ Parameter* ArrayParameter::append_array_specification(const UnsignedIntRange &si
 	return this;
 }
 
-// calc_num_nested_fields returns the number of nested fields to expect,
-//     given a certain length in bytes (as read from a get_num_length_bytes()).
-//     This should only be called if get_num_length_bytes() returns non-zero.
-//     Note: This is primarily used in unpacking to determine the number of elements in an array.
-int ArrayParameter::calc_num_nested_fields(size_t length_bytes) const
-{
-	if(m_element_type->has_fixed_byte_size())
-	{
-		return length_bytes / m_element_type->get_fixed_byte_size();
-	}
-	return -1;
-}
-
-
-// get_nested_field returns the PackerInterface object that represents the nth nested field.
-//     The return is NULL if 'n' is out-of-bounds of 0 <= n < get_num_nested_fields().
-PackerInterface* ArrayParameter::get_nested_field(int) const
-{
-	return m_element_type;
-}
-
-// validate_num_nested_fields determines whether the number of nested fields added while packing
-//     an array-type parameter is valid for this type.  This is called by the packer after a
-//     number of fields have been packed via push() .. pack_*() .. pop().
-//     Note: This is primarily useful for array types with dynamic ranges that
-//           can't validate the number of fields any other way.
-bool ArrayParameter::validate_num_nested_fields(int num_nested_fields) const
-{
-	bool range_error = false;
-	m_array_size_range.validate(num_nested_fields, range_error);
-
-	return !range_error;
-}
-
 // output_instance formats the parameter to the syntax of an array parameter in a .dc file
 //     as TYPE IDENTIFIER[RANGE] with optional IDENTIFIER and RANGE,
 //     and outputs the formatted string to the stream.
@@ -206,157 +182,6 @@ void ArrayParameter::generate_hash(HashGenerator &hashgen) const
 	Parameter::generate_hash(hashgen);
 	m_element_type->generate_hash(hashgen);
 	m_array_size_range.generate_hash(hashgen);
-}
-
-// pack_string packs the indicated numeric or string value into the stream.
-void ArrayParameter::pack_string(PackData &pack_data, const std::string &value,
-                                 bool &pack_error, bool &range_error) const
-{
-	// We can only pack a string if the array element type is char or int8_t.
-	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
-	if(simple_type == (SimpleParameter*)NULL)
-	{
-		pack_error = true;
-		return;
-	}
-
-	size_t string_length = value.length();
-
-	switch(simple_type->get_type())
-	{
-		case ST_char:
-		case ST_uint8:
-		case ST_int8:
-			m_array_size_range.validate(string_length, range_error);
-			if(m_num_length_bytes != 0)
-			{
-				assert(m_num_length_bytes == sizeof(length_tag_t));
-				do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
-			}
-			pack_data.append_data(value.data(), string_length);
-			break;
-
-		default:
-			pack_error = true;
-	}
-}
-
-// pack_default_value packs the ArrayParameter's specified default value
-//     (or a sensible default if no value is specified) into the stream.
-//     Returns true if the default value is packed, or false if the
-//     ArrayParameter doesn't know how to pack its default value.
-bool ArrayParameter::pack_default_value(PackData &pack_data, bool &pack_error) const
-{
-	// We only want to call up if the Field can pack the value immediately --
-	// we don't trust the Field to generate the default value (since it doesn't
-	// know how large the minimum length array is).
-	if(m_has_default_value && !m_default_value_stale)
-	{
-		return Field::pack_default_value(pack_data, pack_error);
-	}
-
-	// If a default value is not specified for a variable-length array,
-	// the default is the minimum array.
-	unsigned int minimum_length = 0;
-	if(!m_array_size_range.is_empty())
-	{
-		minimum_length = m_array_size_range.get_min(0);
-	}
-
-	Packer packer;
-	packer.begin_pack(this);
-	packer.push();
-	for(unsigned int i = 0; i < minimum_length; i++)
-	{
-		packer.pack_default_value();
-	}
-	packer.pop();
-	if(!packer.end_pack())
-	{
-		pack_error = true;
-	}
-	else
-	{
-		pack_data.append_data(packer.get_data(), packer.get_length());
-	}
-
-	return true;
-}
-
-// unpack_string unpacks the current numeric or string value from the stream.
-void ArrayParameter::unpack_string(const char *data, size_t length, size_t &p, std::string &value,
-                                   bool &pack_error, bool &range_error) const
-{
-	// We can only unpack a string if the array element type is char or int8_t.
-	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
-	if(simple_type == (SimpleParameter*)NULL)
-	{
-		pack_error = true;
-		return;
-	}
-
-	size_t string_length;
-
-	switch(simple_type->get_type())
-	{
-		case ST_char:
-		case ST_uint8:
-		case ST_int8:
-			if(m_num_length_bytes != 0)
-			{
-				string_length = do_unpack_length_tag(data + p);
-				p += sizeof(length_tag_t);
-			}
-			else
-			{
-				assert(m_array_size >= 0);
-				string_length = m_array_size;
-			}
-			if(p + string_length > length)
-			{
-				pack_error = true;
-				return;
-			}
-			value.assign(data + p, string_length);
-			p += string_length;
-			break;
-
-		default:
-			pack_error = true;
-	}
-}
-
-// do_check_match returns true if the other interface is bitwise the same as
-//     this one--that is, a uint32 only matches a uint32, etc.
-//     Names of components, and range limits, are not compared.
-bool ArrayParameter::do_check_match(const PackerInterface *other) const
-{
-	return other->do_check_match_array_parameter(this);
-}
-
-// do_check_match_simple_parameter returns true if this field matches the
-//     indicated simple parameter, or false otherwise.
-bool ArrayParameter::do_check_match_simple_parameter(const SimpleParameter *other) const
-{
-	return ((const PackerInterface*)other)->do_check_match_array_parameter(this);
-}
-
-// do_check_match_class_parameter returns true if this field matches the
-//     indicated class parameter, or false otherwise.
-bool ArrayParameter::do_check_match_class_parameter(const ClassParameter *other) const
-{
-	return ((const PackerInterface*)other)->do_check_match_array_parameter(this);
-}
-
-// do_check_match_array_parameter returns true if this field matches the
-//    indicated array parameter, or false otherwise.
-bool ArrayParameter::do_check_match_array_parameter(const ArrayParameter *other) const
-{
-	if(m_array_size != other->m_array_size)
-	{
-		return false;
-	}
-	return m_element_type->check_match(other->m_element_type);
 }
 
 

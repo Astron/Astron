@@ -1,0 +1,1044 @@
+// Filename: Parser.yxx
+// Created by: drose (05 Oct, 2000)
+//
+
+%{
+#include "LexerDefs.h"
+#include "ParserDefs.h"
+#include "../File.h"
+#include "../Class.h"
+#include "../AtomicField.h"
+#include "../MolecularField.h"
+#include "../ClassParameter.h"
+#include "../ArrayParameter.h"
+#include "../SimpleParameter.h"
+#include "../Typedef.h"
+#include "../Keyword.h"
+#include "../NumericRange.h"
+#include "../DataType.h"
+
+#include <assert.h>
+#include <unistd.h>
+
+using namespace dclass;
+#define yylex dcyylex
+#define yyerror dcyyerror
+
+// Because our token type contains objects of type std::string, which
+// require correct copy construction (and not simply memcpying), we
+// cannot use bison's built-in auto-stack-grow feature.  As an easy
+// solution, we ensure here that we have enough yacc stack to start
+// with, and that it doesn't ever try to grow.
+#define YYINITDEPTH 1000
+#define YYMAXDEPTH 1000
+
+	File *dc_file = (File *)NULL;
+	static Class *current_class = (Class *)NULL;
+	static AtomicField *current_atomic = (AtomicField *)NULL;
+	static MolecularField *current_molecular = (MolecularField *)NULL;
+	static Parameter *current_parameter = (Parameter *)NULL;
+	static KeywordList current_keyword_list;
+	static DoubleRange double_range;
+	static Field *parameter_description = (Field *)NULL;
+
+	/* Helper functions */
+	static Parameter* param_with_modulus(Parameter* p, double mod);
+	static Parameter* param_with_divisor(Parameter* p, uint32_t div);
+
+////////////////////////////////////////////////////////////////////
+// Defining the interface to the parser.
+////////////////////////////////////////////////////////////////////
+
+	void
+	dc_init_parser(std::istream & in, const std::string & filename, File & file)
+	{
+		dc_file = &file;
+		dc_init_lexer(in, filename);
+	}
+
+	void
+	dc_init_parser_parameter_value(std::istream & in, const std::string & filename)
+	{
+		dc_file = NULL;
+		dc_init_lexer(in, filename);
+		dc_start_parameter_value();
+	}
+
+	void
+	dc_init_parser_parameter_description(std::istream & in, const std::string & filename,
+	File * file)
+	{
+		dc_file = file;
+		dc_init_lexer(in, filename);
+		parameter_description = NULL;
+		dc_start_parameter_description();
+	}
+
+	Field *
+	dc_get_parameter_description()
+	{
+		return parameter_description;
+	}
+
+	void
+	dc_cleanup_parser()
+	{
+		dc_file = (File *)NULL;
+	}
+
+%}
+
+/* Value tokens */
+%token <u.uint64> UNSIGNED_INTEGER
+%token <u.int64> SIGNED_INTEGER
+%token <u.real> REAL
+%token <str> STRING HEX_STRING IDENTIFIER
+%token <u.keyword> KEYWORD
+
+/* Initial Tokens */
+// These special tokens are used to set the starting state of the parser.
+//     The lexer places the appropriate one of these on the head of the input stream.
+%token START_DC
+%token START_PARAMETER_VALUE
+%token START_PARAMETER_DESCRIPTION
+
+/* Define keywords */
+// Declaration Keywords
+%token KW_DCLASS
+%token KW_STRUCT
+%token KW_FROM
+%token KW_IMPORT
+%token KW_TYPEDEF
+%token KW_KEYWORD
+
+// Type Keywords
+%token KW_INT8
+%token KW_INT16
+%token KW_INT32
+%token KW_INT64
+%token KW_UINT8
+%token KW_UINT16
+%token KW_UINT32
+%token KW_UINT64
+%token KW_FLOAT32
+%token KW_FLOAT64
+%token KW_STRING
+%token KW_BLOB
+%token KW_CHAR
+
+
+/* Abstract Nonterminals */
+%type <u.dclass> dclass
+%type <u.dclass> struct
+%type <u.field> atomic_field
+%type <u.field> molecular_field
+%type <u.parameter> parameter
+%type <u.parameter> named_parameter
+%type <u.parameter> unnamed_parameter
+%type <str> parameter_value
+
+/* Concrete Nonterminals */
+%type <u.parameter> param_w_typ // parameter w/ type only
+%type <u.parameter> param_w_rng // parameter w/ type + range
+%type <u.parameter> param_w_mod // parameter w/ type + modulus        (+rng)
+%type <u.parameter> param_w_div // parameter w/ type + divisor        (+rng, +mod)
+%type <u.parameter> param_w_nam // parameter w/ type + name           (+rng, +mod, +div)
+%type <u.parameter> param_u_arr // parameter w/ type + array          (+rng, +mod, +div)
+%type <u.parameter> param_u_def // parameter w/ type + default        (+rng, +mod, +div, +arr)
+%type <u.parameter> param_n_arr // parameter w/ type + name + array   (+rng, +mod, +div)
+%type <u.parameter> param_n_def // parameter w/ type + name + default (+rng, +mod, +div, +arr)
+
+/* TODO: Categorize nonterminals */
+%type <u.atomic> atomic_name
+%type <u.dclass> dclass_or_struct
+%type <u.dclass> dclass_name
+%type <u.field> dclass_field
+%type <u.dclass> struct_name
+%type <u.field> struct_field
+%type <u.field> parameter_description
+%type <u.datatype> type_token
+
+%type <str> import_identifier
+%type <str> slash_identifier
+%type <u.uint32> char_or_uint
+%type <u.uint32> small_unsigned_integer
+%type <u.uint32> small_negative_integer
+%type <u.real> char_or_number
+%type <u.real> number
+%type <urange> uint_range;
+
+%%
+
+grammar
+	: START_DC dc
+	| START_PARAMETER_VALUE parameter_value
+	| START_PARAMETER_DESCRIPTION parameter_description { parameter_description = $2; }
+	;
+
+
+dc	: empty
+	| dc ';'
+	| dc dclass_or_struct
+	{
+		if(!dc_file->add_class($2))
+		{
+			Class *old_class = dc_file->get_class_by_name($2->get_name());
+			if(old_class != (Class *)NULL && old_class->is_bogus_class())
+			{
+				yyerror("Base class defined after its first reference: " + $2->get_name());
+			}
+			else
+			{
+				yyerror("Duplicate class name: " + $2->get_name());
+			}
+		}
+	}
+	| dc import
+	| dc typedef_decl
+	| dc keyword_decl
+	;
+
+slash_identifier:
+  IDENTIFIER
+| slash_identifier '/' IDENTIFIER
+{
+	$$ = $1 + std::string("/") + $3;
+}
+;
+
+import_identifier:
+  slash_identifier
+| import_identifier '.' slash_identifier
+{
+	$$ = $1 + std::string(".") + $3;
+}
+;
+
+import:
+  KW_IMPORT import_identifier
+{
+	dc_file->add_import_module($2);
+}
+| KW_FROM import_identifier KW_IMPORT
+{
+	dc_file->add_import_module($2);
+}
+import_symbol_list_or_star
+;
+
+import_symbol_list_or_star:
+  import_symbol_list
+| '*'
+{
+	dc_file->add_import_symbol("*");
+}
+;
+
+import_symbol_list:
+  slash_identifier
+{
+	dc_file->add_import_symbol($1);
+}
+| import_symbol_list ',' slash_identifier
+{
+	dc_file->add_import_symbol($3);
+}
+;
+
+typedef_decl:
+  KW_TYPEDEF parameter
+{
+	if($2 != (Parameter *)NULL)
+	{
+		Typedef *dtypedef = new Typedef($2);
+
+		if(!dc_file->add_typedef(dtypedef))
+		{
+			Typedef *old_typedef = dc_file->get_typedef_by_name(dtypedef->get_name());
+			if(old_typedef->is_bogus_typedef())
+			{
+				yyerror("typedef defined after its first reference: " + dtypedef->get_name());
+			}
+			else
+			{
+				yyerror("Duplicate typedef name: " + dtypedef->get_name());
+			}
+		}
+	}
+}
+;
+
+keyword_decl:
+  KW_KEYWORD keyword_decl_list
+;
+
+keyword_decl_list:
+  empty
+| keyword_decl_list IDENTIFIER
+{
+	dc_file->add_keyword($2);
+}
+| keyword_decl_list KEYWORD
+{
+	// This keyword has already been defined.  But since we are now
+	// explicitly defining it, clear its bitmask, so that we will have a
+	// new hash code--doing this will allow us to phase out the
+	// historical hash code support later.
+	((Keyword *)$2)->clear_historical_flag();
+}
+;
+
+dclass_or_struct
+	: dclass
+	| struct
+;
+
+dclass
+	: KW_DCLASS IDENTIFIER
+	{
+		current_class = new Class(dc_file, $2, false, false);
+	}
+	  dclass_derivation '{' dclass_fields '}'
+	{
+		$$ = current_class;
+		current_class = $<u.dclass>3;
+	}
+	;
+
+dclass_name:
+  IDENTIFIER
+{
+	if(dc_file == (File *)NULL)
+	{
+		yyerror("No File available, so no class names are predefined.");
+		$$ = NULL;
+
+	}
+	else {
+		Class *dclass = dc_file->get_class_by_name($1);
+		if(dclass == (Class *)NULL)
+		{
+			// Create a bogus class as a forward reference.
+			dclass = new Class(dc_file, $1, false, true);
+			dc_file->add_class(dclass);
+		}
+		if(dclass->is_struct())
+		{
+			yyerror("struct name not allowed");
+		}
+
+		$$ = dclass;
+	}
+}
+;
+
+dclass_derivation:
+  empty
+| ':' dclass_base_list
+;
+
+dclass_base_list:
+  dclass_name
+{
+	if($1 != (Class *)NULL)
+	{
+		current_class->add_parent($1);
+	}
+}
+| dclass_base_list ',' dclass_name
+{
+	if($3 != (Class *)NULL)
+	{
+			current_class->add_parent($3);
+	}
+}
+;
+
+dclass_fields:
+  empty
+| dclass_fields ';'
+| dclass_fields dclass_field ';'
+{
+	if($2 == (Field *)NULL)
+	{
+		// Pass this error up.
+	}
+	else if(!current_class->add_field($2))
+	{
+		yyerror("Duplicate field name: " + $2->get_name());
+	}
+	else if($2->get_number() < 0)
+	{
+		yyerror("A non-network field cannot be stored on a dclass");
+	}
+}
+;
+
+dclass_field:
+  atomic_field keyword_list
+{
+	if($1 != (Field *)NULL)
+	{
+		if($1->get_name().empty())
+		{
+			yyerror("Field name required.");
+		}
+		$1->copy_keywords(current_keyword_list);
+	}
+	$$ = $1;
+}
+| molecular_field no_keyword_list
+| unnamed_parameter keyword_list
+{
+	yyerror("Unnamed parameters are not allowed on a dclass");
+	if($1 != (Field *)NULL)
+	{
+		$1->copy_keywords(current_keyword_list);
+	}
+	$$ = $1;
+}
+| named_parameter keyword_list
+{
+	if($1 != (Field *)NULL)
+	{
+		$1->copy_keywords(current_keyword_list);
+	}
+	$$ = $1;
+}
+;
+
+struct:
+  KW_STRUCT IDENTIFIER
+{
+	current_class = new Class(dc_file, $2, true, false);
+}
+  struct_derivation '{' struct_fields '}'
+{
+	$$ = current_class;
+	current_class = $<u.dclass>3;
+}
+;
+
+struct_name:
+  IDENTIFIER
+{
+	if(dc_file == (File *)NULL)
+	{
+		yyerror("No File available, so no struct names are predefined.");
+		$$ = NULL;
+
+	}
+	else
+	{
+		Class *dstruct = dc_file->get_class_by_name($1);
+		if(dstruct == (Class *)NULL)
+		{
+			// Create a bogus class as a forward reference.
+			dstruct = new Class(dc_file, $1, false, true);
+			dc_file->add_class(dstruct);
+		}
+		if(!dstruct->is_struct())
+		{
+			yyerror("struct name required");
+		}
+
+		$$ = dstruct;
+	}
+}
+;
+
+struct_derivation
+	: empty
+	| ':' struct_base_list
+	;
+
+struct_base_list
+	: struct_name
+	{
+		if($1 != (Class *)NULL)
+		{
+			current_class->add_parent($1);
+		}
+	}
+	| struct_base_list ',' struct_name
+	{
+		if($3 != (Class *)NULL)
+		{
+			current_class->add_parent($3);
+		}
+	}
+	;
+
+struct_fields
+	: empty
+	| struct_fields ';'
+	| struct_fields struct_field ';'
+	{
+		if($2 == (Field *)NULL)
+		{
+			// Pass this error up.
+		}
+		else if(!current_class->add_field($2))
+		{
+			yyerror("Duplicate field name: " + $2->get_name());
+		}
+	}
+	;
+
+struct_field
+	: atomic_field no_keyword_list
+	{
+		if($1->get_name().empty())
+		{
+			yyerror("Field name required.");
+		}
+		$$ = $1;
+	}
+	| molecular_field no_keyword_list
+	| unnamed_parameter no_keyword_list { $$ = $1; }
+	| named_parameter no_keyword_list { $$ = $1; }
+	;
+
+atomic_field
+	: IDENTIFIER '('
+	{
+		if(current_class == (Class *)NULL)
+		{
+			yyerror("Cannot define a method outside of a struct or class.");
+			Class *temp_class = new Class(dc_file, "temp", false, false);  // memory leak.
+			current_atomic = new AtomicField($1, temp_class, false);
+		}
+		else {
+			current_atomic = new AtomicField($1, current_class, false);
+		}
+	}
+	parameter_list ')'
+	{
+		$$ = current_atomic;
+		current_atomic = $<u.atomic>3;
+	}
+	;
+
+parameter_list
+	: empty
+	| nonempty_parameter_list
+	;
+
+nonempty_parameter_list
+	: atomic_element
+	| nonempty_parameter_list ',' atomic_element
+	;
+
+atomic_element
+	: parameter
+	{
+		if($1 != (Parameter *)NULL)
+		{
+			current_atomic->add_element($1);
+		}
+	}
+	;
+
+named_parameter
+	: param_w_nam { $$ = $1; }
+	| param_n_arr { $$ = $1; }
+	| param_n_def { $$ = $1; }
+	;
+
+unnamed_parameter
+	: param_w_typ { $$ = $1; }
+	| param_w_rng { $$ = $1; }
+	| param_w_mod { $$ = $1; }
+	| param_w_div { $$ = $1; }
+	| param_u_arr { $$ = $1; }
+	| param_u_def { $$ = $1; }
+	;
+
+parameter
+	: named_parameter   { $$ = $1; }
+	| unnamed_parameter { $$ = $1; }
+	;
+
+parameter_description
+	: atomic_field no_keyword_list
+	{
+		$$ = $1;
+	}
+	| unnamed_parameter no_keyword_list
+	{
+		$$ = $1;
+	}
+	| named_parameter no_keyword_list
+	{
+		$$ = $1;
+	}
+	;
+
+param_w_typ
+	: type_token { $$ = new SimpleParameter($1); }
+	| IDENTIFIER
+	{
+		Typedef *dtypedef = dc_file->get_typedef_by_name($1);
+		if(dtypedef == (Typedef *)NULL)
+		{
+			// Maybe it's a class name.
+			Class *dclass = dc_file->get_class_by_name($1);
+			if(dclass != (Class *)NULL)
+			{
+				// Create an implicit typedef for this.
+				dtypedef = new Typedef(new ClassParameter(dclass), true);
+			}
+			else
+			{
+				// It's an undefined typedef.  Create a bogus forward reference.
+				dtypedef = new Typedef($1);
+			}
+
+			dc_file->add_typedef(dtypedef);
+		}
+
+		$$ = dtypedef->make_new_parameter();
+	}
+	;
+
+param_w_rng
+	: type_token '(' double_range ')'
+	{
+		SimpleParameter *simple_param = new SimpleParameter($1);
+		if(simple_param == NULL
+		|| simple_param->get_typedef() != (Typedef*)NULL)
+		{
+			yyerror("Ranges are only valid for numeric, string, or blob types.");
+		}
+		if(!simple_param->set_range(double_range))
+		{
+			yyerror("Inappropriate range for type.");
+		}
+
+		$$ = simple_param;
+	}
+	;
+
+param_w_mod
+	: param_w_typ '%' number { $$ = param_with_modulus($1, $3); }
+	| param_w_rng '%' number { $$ = param_with_modulus($1, $3); }
+	;
+
+param_w_div
+	: param_w_typ '/' small_unsigned_integer { $$ = param_with_divisor($1, $3); }
+	| param_w_rng '/' small_unsigned_integer { $$ = param_with_divisor($1, $3); }
+	| param_w_mod '/' small_unsigned_integer { $$ = param_with_divisor($1, $3); }
+	;
+
+param_w_nam
+	: param_w_typ IDENTIFIER { $$ = $1; $1->set_name($2); }
+	| param_w_rng IDENTIFIER { $$ = $1; $1->set_name($2); }
+	| param_w_mod IDENTIFIER { $$ = $1; $1->set_name($2); }
+	| param_w_div IDENTIFIER { $$ = $1; $1->set_name($2); }
+	;
+
+param_u_arr
+	: param_w_typ '[' uint_range ']' { $$ = $1->append_array_specification($3); }
+	| param_w_rng '[' uint_range ']' { $$ = $1->append_array_specification($3); }
+	| param_w_mod '[' uint_range ']' { $$ = $1->append_array_specification($3); }
+	| param_w_div '[' uint_range ']' { $$ = $1->append_array_specification($3); }
+	;
+
+param_n_arr
+	: param_w_nam '[' uint_range ']' { $$ = $1->append_array_specification($3); }
+	;
+
+param_u_def
+	: param_w_typ '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	| param_w_rng '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	| param_w_mod '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	| param_w_div '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	| param_u_arr '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	;
+
+param_n_def
+	: param_w_nam '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	| param_n_arr '=' parameter_value { $$ = $1; $1->set_default_value($3); }
+	;
+
+double_range
+	: empty { double_range.clear(); }
+	| char_or_number
+	{
+		double_range.clear();
+		if(!double_range.add_range($1, $1))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| char_or_number '-' char_or_number
+	{
+		double_range.clear();
+		if(!double_range.add_range($1, $3))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| char_or_number number
+	{
+		double_range.clear();
+		if($2 >= 0)
+		{
+			yyerror("Syntax error");
+		}
+		else if(!double_range.add_range($1, -$2))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| double_range ',' char_or_number
+	{
+		if(!double_range.add_range($3, $3))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| double_range ',' char_or_number '-' char_or_number
+	{
+		if(!double_range.add_range($3, $5))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| double_range ',' char_or_number number
+	{
+		if($4 >= 0)
+		{
+			yyerror("Syntax error");
+		}
+		else if(!double_range.add_range($3, -$4))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	;
+
+uint_range
+	: empty { $$ = UnsignedIntRange(); }
+	| char_or_uint
+	{
+		UnsignedIntRange uint_range;
+		if(!uint_range.add_range($1, $1))
+		{
+			yyerror("Overlapping range");
+		}
+		$$ = uint_range;
+	}
+	| char_or_uint '-' char_or_uint
+	{
+		UnsignedIntRange uint_range;
+		if(!uint_range.add_range($1, $3))
+		{
+			yyerror("Overlapping range");
+		}
+		$$ = uint_range;
+	}
+	| char_or_uint small_negative_integer
+	{
+		UnsignedIntRange uint_range;
+		if(!uint_range.add_range($1, $2))
+		{
+			yyerror("Overlapping range");
+		}
+		$$ = uint_range;
+	}
+	| uint_range ',' char_or_uint
+	{
+		if(!$1.add_range($3, $3))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| uint_range ',' char_or_uint '-' char_or_uint
+	{
+		if(!$1.add_range($3, $5))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	| uint_range ',' char_or_uint small_negative_integer
+	{
+		if(!$1.add_range($3, $4))
+		{
+			yyerror("Overlapping range");
+		}
+	}
+	;
+
+char_or_uint
+	: STRING
+	{
+		if($1.length() != 1)
+		{
+			yyerror("Single character required.");
+			$$ = 0;
+		}
+		else {
+			$$ = (unsigned char)$1[0];
+		}
+	}
+	| small_unsigned_integer
+	;
+
+small_unsigned_integer
+	: UNSIGNED_INTEGER
+	{
+		$$ = (unsigned int)$1;
+		if($$ != $1)
+		{
+			yyerror("Number out of range.");
+			$$ = 1;
+		}
+	}
+	;
+
+small_negative_integer
+	: SIGNED_INTEGER
+	{
+		$$ = (unsigned int) - $1;
+		if($1 >= 0)
+		{
+			yyerror("Syntax error while parsing small_negative_integer.");
+		}
+		else if($$ != -$1)
+		{
+			yyerror("Number out of range.");
+			$$ = 1;
+		}
+	}
+	;
+
+number
+	: UNSIGNED_INTEGER { $$ = (double)$1; }
+	| SIGNED_INTEGER { $$ = (double)$1; }
+	| REAL
+;
+
+char_or_number
+	: STRING
+	{
+		if($1.length() != 1)
+		{
+			yyerror("Single character required.");
+			$$ = 0;
+		}
+		else {
+			$$ = (double)(unsigned char)$1[0];
+		}
+	}
+	| number
+	;
+
+parameter_value
+	: SIGNED_INTEGER
+	{
+		$$ = std::string((char*)&$1, sizeof(int64_t));
+	}
+	| UNSIGNED_INTEGER
+	{
+		$$ = std::string((char*)&$1, sizeof(uint64_t));
+	}
+	| REAL
+	{
+		$$ = std::string((char*)&$1, sizeof(double));
+	}
+	| STRING
+	{
+		$$ = $1;
+	}
+	| HEX_STRING
+	{
+		$$ = $1;
+	}
+	| '{' array '}' // array composition
+	{
+		// todo
+	}
+	| SIGNED_INTEGER '*' small_unsigned_integer // array expansion
+	{
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(int64_t));
+		}
+	}
+	| UNSIGNED_INTEGER '*' small_unsigned_integer // array expansion
+	{
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(uint64_t));
+		}
+	}
+	| REAL '*' small_unsigned_integer // array expansion
+	{
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(double));
+		}
+	}
+	| HEX_STRING '*' small_unsigned_integer // array expansion
+	{
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val += $1;
+		}
+	}
+	;
+
+array
+	: maybe_comma
+	| array_def maybe_comma
+	;
+
+maybe_comma
+	: empty
+	| ','
+	;
+
+array_def
+	: parameter_value
+	| array_def ',' parameter_value
+	;
+
+type_token
+	: KW_INT8 { $$ = DT_int8; }
+	| KW_INT16 { $$ = DT_int16; }
+	| KW_INT32 { $$ = DT_int32; }
+	| KW_INT64 { $$ = DT_int64; }
+	| KW_UINT8 { $$ = DT_uint8; }
+	| KW_UINT16 { $$ = DT_uint16; }
+	| KW_UINT32 { $$ = DT_uint32; }
+	| KW_UINT64 { $$ = DT_uint64; }
+	| KW_FLOAT32 { $$ = DT_float32; }
+	| KW_FLOAT64 { $$ = DT_float64; }
+	| KW_STRING { $$ = DT_string; }
+	| KW_BLOB { $$ = DT_blob; }
+	| KW_CHAR { $$ = DT_char; }
+	;
+
+keyword_list
+	: empty { current_keyword_list.clear_keywords(); }
+	| keyword_list KEYWORD { current_keyword_list.add_keyword($2); }
+	;
+
+no_keyword_list
+	: keyword_list
+	{
+		if(current_keyword_list.get_num_keywords() != 0)
+		{
+			yyerror("Keywords are not allowed here.");
+		}
+	}
+	;
+
+molecular_field
+	: IDENTIFIER ':' { current_molecular = new MolecularField($1, current_class); }
+	  molecular_atom_list { $$ = current_molecular; }
+	;
+
+atomic_name
+	: IDENTIFIER
+	{
+		Field *field = current_class->get_field_by_name($1);
+		$$ = (AtomicField *)NULL;
+		if(field == (Field *)NULL)
+		{
+			// Maybe the field is unknown because the class is partially
+			// bogus.  In that case, allow it for now; create a bogus field as
+			// a placeholder.
+			if(current_class->inherits_from_bogus_class())
+			{
+				$$ = new AtomicField($1, current_class, true);
+				current_class->add_field($$);
+
+			}
+			else
+			{
+				// Nope, it's a fully-defined class, so this is a real error.
+				yyerror("Unknown field: " + $1);
+			}
+
+		}
+		else {
+			$$ = field->as_atomic_field();
+			if($$ == (AtomicField *)NULL)
+			{
+				yyerror("Not an atomic field: " + $1);
+			}
+		}
+	}
+	;
+
+molecular_atom_list
+	: atomic_name
+	{
+		if($1 != (AtomicField *)NULL)
+		{
+			current_molecular->add_atomic($1);
+		}
+	}
+	| molecular_atom_list ',' atomic_name
+	{
+		if($3 != (AtomicField *)NULL)
+		{
+			current_molecular->add_atomic($3);
+			if(!$3->is_bogus_field() && !current_molecular->compare_keywords(*$3))
+			{
+				yyerror("Mismatched keywords in molecule between " +
+				current_molecular->get_atomic(0)->get_name() + " and " +
+				$3->get_name());
+			}
+		}
+	}
+	;
+
+empty
+	:
+	;
+
+
+%% /* Start helper function section */
+
+
+Parameter* param_with_modulus(Parameter* p, double mod)
+{
+	SimpleParameter *simple_param = p->as_simple_parameter();
+	if(simple_param == NULL
+	|| simple_param->get_typedef() != (Typedef*)NULL
+	|| !simple_param->is_numeric_type())
+	{
+		yyerror("A modulus is only valid on a numeric type.");
+	}
+	else if(!simple_param->set_modulus(mod))
+	{
+		yyerror("Invalid modulus.");
+	}
+
+	return simple_param;
+}
+
+Parameter* param_with_divisor(Parameter* p, uint32_t div)
+{
+	SimpleParameter *simple_param = p->as_simple_parameter();
+	if(simple_param == NULL
+	|| simple_param->get_typedef() != (Typedef*)NULL
+	|| !simple_param->is_numeric_type())
+	{
+		yyerror("A divisor is only valid on a numeric type.");
+
+	}
+	else if(!simple_param->set_divisor(div))
+	{
+		yyerror("Invalid divisor.");
+	}
+
+	return simple_param;	
+}

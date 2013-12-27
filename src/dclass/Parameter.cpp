@@ -21,8 +21,6 @@ namespace dclass   // open namespace dclass
 Parameter::Parameter()
 {
 	m_typedef = NULL;
-	m_has_fixed_byte_size = false;
-	m_num_nested_fields = -1;
 }
 
 // copy constructor

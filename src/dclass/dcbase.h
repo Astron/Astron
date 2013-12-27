@@ -15,8 +15,3 @@
 #include <stdint.h>
 #include <string> // for std::string
 #include <iostream> // for std::ostream, std::istream
-#ifdef DCPARSER_32BIT_LENGTH_TAG
-	typedef uint32_t length_tag_t;
-#else
-	typedef uint16_t length_tag_t;
-#endif

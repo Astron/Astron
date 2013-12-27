@@ -1,3 +1,4 @@
+// Filename: read.h
 #pragma once
 
 #include "ParserDefs.h"
@@ -34,7 +35,7 @@ bool append(File* f, const std::string &filename)
 
 // read opens the given file or stream and parses it as a .dc file.  Classes defined in
 //     the file are added to a new File object, and a pointer to that object is returned.
-// When reading from a stream, a filename is optional only used when reporting errors.
+//     When reading from a stream, a filename is optional only used when reporting errors.
 const File* read(std::istream &in, const std::string &filename)
 {
 	File* f = new File();

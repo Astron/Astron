@@ -10,14 +10,13 @@
 
 #pragma once
 #include "dcbase.h"
-#include "PackerInterface.h"
+#include "Element.h"
 #include "KeywordList.h"
 namespace dclass   // open namespace
 {
 
 
 // Forward declarations
-class Packer;
 class AtomicField;
 class MolecularField;
 class Parameter;
@@ -25,7 +24,7 @@ class Class;
 class HashGenerator;
 
 // A Field is a single field of a Distributed Class, either atomic or molecular.
-class Field : public PackerInterface, public KeywordList
+class Field : public Element, public KeywordList
 {
 	public:
 		Field();
@@ -59,18 +58,6 @@ class Field : public PackerInterface, public KeywordList
 		//     pointer, if this is in fact a parameter; otherwise, returns NULL.
 		virtual Parameter *as_parameter();
 		virtual const Parameter *as_parameter() const;
-
-		// format_data accepts a blob that represents the packed data for this field,
-		//     returns a string formatting it for human consumption.
-		//     Returns empty string if there is an error.
-		std::string format_data(const std::string &packed_data, bool show_field_names = true);
-
-		// parse_string given a human-formatted string (for instance, as
-		//     returned by format_data(), above) that represents the value of this field,
-		//     parse the string and return the corresponding packed data.
-		//     Returns empty string if there is an error.
-		std::string parse_string(const std::string &formatted_string);
-
 
 		// validate_ranges verifies that all of the packed values in the field data are
 		//     within the specified ranges and that there are no extra bytes on the end
@@ -119,10 +106,6 @@ class Field : public PackerInterface, public KeywordList
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
-		// pack_default_value packs the default value for this field into <pack_data>
-		//     If a default value hasn't been set, packs an implicit default.
-		virtual bool pack_default_value(PackData &pack_data, bool &pack_error) const;
-
 		// set_name sets the name of this field.
 		virtual void set_name(const std::string &name);
 
@@ -137,12 +120,18 @@ class Field : public PackerInterface, public KeywordList
 		// set_default_value establishes a default value for this field.
 		inline void set_default_value(const std::string &default_value);
 
+		inline const std::string & get_name() const
+		{
+			return m_name;
+		}
+
 	protected:
 		// refresh_default_value recomputes the default value of the field by repacking it.
 		void refresh_default_value();
 
 	protected:
 		Class *m_class; // the class that this field belongs to
+		std::string m_name;
 		int m_number; // the unique index of the field in the .dc file
 		bool m_default_value_stale; // is true if the default value hasn't been computed
 		bool m_has_default_value; // is true if an explicity default has been set

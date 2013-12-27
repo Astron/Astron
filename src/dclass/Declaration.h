@@ -10,7 +10,6 @@
 
 #pragma once
 #include "dcbase.h"
-#include "PackerCatalog.h"
 namespace dclass   // open namespace
 {
 

@@ -50,26 +50,15 @@ class MolecularField : public Field
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
-		// get_nested_field returns the PackerInterface object that represents the nth nested field.
-		//     Will return null if the field is out of the range 0 <= n < get_num_nested_fields().
-		virtual PackerInterface *get_nested_field(int n) const;
-
-	protected:
-		// do_check_match returns true if the other interface is bitwise the same as
-		//     this one that is, a uint32 only matches a uint32, etc.
-		//     Names of components, and range limits, are not compared.
-		virtual bool do_check_match(const PackerInterface *other) const;
-		virtual bool do_check_match_molecular_field(const MolecularField *other) const;
-
 	private:
 		// These members define the primary interface to the molecular field
 		// definition as read from the file.
 		std::vector<AtomicField*> m_fields;
 		bool m_got_keywords;
 
-		Parameter* get_next_pack_element();
+		//Parameter* get_next_pack_element();
 
-		std::vector<PackerInterface*> m_nested_fields;
+		//std::vector<PackerInterface*> m_nested_fields;
 };
 
 

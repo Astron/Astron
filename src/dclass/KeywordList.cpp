@@ -11,6 +11,7 @@
 #include "KeywordList.h"
 #include "Keyword.h"
 #include "HashGenerator.h"
+#include <assert.h>
 namespace dclass   // open namespace dclass
 {
 

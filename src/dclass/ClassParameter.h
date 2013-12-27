@@ -40,10 +40,6 @@ class ClassParameter : public Parameter
 		// get_class returns the class that this parameter represents
 		const Class *get_class() const;
 
-		// get_nested_field returns the PackerInterface object that represents the nth nested field.
-		//     The return is NULL if 'n' is out-of-bounds of 0 <= n < get_num_nested_fields().
-		virtual PackerInterface *get_nested_field(int n) const;
-
 		// output_instance formats the parameter to the syntax of an class parameter in a .dc file
 		//     as CLASS_IDENTIFIER PARAM_IDENTIFIER with optional PARAM_IDENTIFIER,
 		//     and outputs the formatted string to the stream.
@@ -53,17 +49,8 @@ class ClassParameter : public Parameter
 		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
-	protected:
-		// do_check_match returns true if the other interface is bitwise the same as
-		//     this one--that is, a uint32 only matches a uint32, etc.
-		//     Names of components, and range limits, are not compared.
-		virtual bool do_check_match(const PackerInterface *other) const;
-		virtual bool do_check_match_class_parameter(const ClassParameter *other) const;
-		virtual bool do_check_match_array_parameter(const ArrayParameter *other) const;
-
 	private:
 		const Class *m_class; // class type of parameter
-		std::vector<PackerInterface*> m_nested_fields; // list of nested fields in parameter
 };
 
 

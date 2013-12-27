@@ -11,7 +11,6 @@
 #pragma once
 #include "dcbase.h"
 #include "Field.h"
-#include "SubatomicType.h"
 #include "Parameter.h"
 #include <math.h>
 namespace dclass   // open namespace
@@ -54,18 +53,6 @@ class AtomicField : public Field
 
 		// generate_hash accumulates the properties of this field into the hash
 		virtual void generate_hash(HashGenerator &hashgen) const;
-
-		// get_nested_field returns the PackerInterface object that represents the nth
-		//     nested field.  This may return NULL if there is no such field (but it
-		//     shouldn't do this if n is in the range 0 <= n < get_num_nested_fields()).
-		virtual PackerInterface *get_nested_field(int n) const;
-
-	protected:
-		// do_check_match returns true if the other interface is bitwise the same as
-		//     this one--that is, a uint32 only matches a uint32, etc.
-		//     Names of components, and range limits, are not compared.
-		virtual bool do_check_match(const PackerInterface *other) const;
-		virtual bool do_check_match_atomic_field(const AtomicField *other) const;
 
 	private:
 		// output_element formats a parameter as an element for output into .dc file syntax.

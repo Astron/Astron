@@ -240,21 +240,24 @@ inline void NumericRange<NUM>::output_minmax(std::ostream &out, Number divisor, 
 	}
 }
 
+
 // output_minmax_char outputs a single element of the range description.
 template <class NUM>
 inline void NumericRange<NUM>::output_minmax_char(std::ostream &out, const MinMax &range) const
 {
+	// TODO: Fix
 	if(range.m_min == range.m_max)
 	{
-		Packer::enquote_string(out, '\'', std::string(1, range.m_min));
+		//Packer::enquote_string(out, '\'', std::string(1, range.m_min));
 	}
 	else
 	{
-		Packer::enquote_string(out, '\'', std::string(1, range.m_min));
+		//Packer::enquote_string(out, '\'', std::string(1, range.m_min));
 		out << "-";
-		Packer::enquote_string(out, '\'', std::string(1, range.m_max));
+		//Packer::enquote_string(out, '\'', std::string(1, range.m_max));
 	}
 }
+
 
 
 } // close namespace dclass

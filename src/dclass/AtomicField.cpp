@@ -11,7 +11,6 @@
 #include "AtomicField.h"
 #include "SimpleParameter.h"
 #include "HashGenerator.h"
-#include "Packer.h"
 #include "indent.h"
 #include <assert.h>
 namespace dclass   // open namespace
@@ -112,21 +111,13 @@ void AtomicField::generate_hash(HashGenerator &hashgen) const
 	KeywordList::generate_hash(hashgen);
 }
 
-// get_nested_field returns the PackerInterface object that represents the nth
-//     nested field.  This may return NULL if there is no such field (but it
-//     shouldn't do this if n is in the range 0 <= n < get_num_nested_fields()).
-PackerInterface *AtomicField::get_nested_field(int n) const
-{
-	assert(n >= 0 && n < (int)m_elements.size());
-	return m_elements[n];
-}
-
 // add_element adds a new element (parameter) to the field.
 //     Normally this is called only during parsing.  The AtomicField object
 //     becomes the owner of the new pointer and will delete it upon destruction.
 void AtomicField::add_element(Parameter *element)
 {
 	m_elements.push_back(element);
+	/*
 	m_num_nested_fields = (int)m_elements.size();
 
 	// See if we still have a fixed byte size.
@@ -139,38 +130,12 @@ void AtomicField::add_element(Parameter *element)
 	{
 		m_has_range_limits = element->has_range_limits();
 	}
+	*/
 	if(!m_has_default_value)
 	{
 		m_has_default_value = element->has_default_value();
 	}
 	m_default_value_stale = true;
-}
-
-// do_check_match returns true if the other interface is bitwise the same as
-//     this one--that is, a uint32 only matches a uint32, etc.
-//     Names of components, and range limits, are not compared.
-bool AtomicField::do_check_match(const PackerInterface *other) const
-{
-	return other->do_check_match_atomic_field(this);
-}
-
-// do_check_match_atomic_field returns true if this field matches the
-//     indicated atomic field, or false otherwise.
-bool AtomicField::do_check_match_atomic_field(const AtomicField *other) const
-{
-	if(m_elements.size() != other->m_elements.size())
-	{
-		return false;
-	}
-	for(size_t i = 0; i < m_elements.size(); i++)
-	{
-		if(!m_elements[i]->check_match(other->m_elements[i]))
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 // output_element formats a parameter as an element for output into .dc file syntax.
@@ -182,11 +147,14 @@ void AtomicField::output_element(std::ostream &out, bool brief, Parameter *eleme
 	if(!brief && element->has_default_value())
 	{
 		out << " = ";
+		// TODO: Fix
+		/*
 		Packer packer;
 		packer.set_unpack_data(element->get_default_value());
 		packer.begin_unpack(element);
 		packer.unpack_and_format(out, false);
 		packer.end_unpack();
+		*/
 	}
 }
 

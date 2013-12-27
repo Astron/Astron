@@ -26,7 +26,7 @@ Typedef::Typedef(Parameter *parameter, bool implicit) :
 
 // bogus constructor -- creates a bogus typedef reference.
 Typedef::Typedef(const std::string &name) :
-	m_parameter(new SimpleParameter(ST_invalid)), m_bogus_typedef(true),
+	m_parameter(new SimpleParameter(DT_invalid)), m_bogus_typedef(true),
 	m_implicit_typedef(false), m_number(-1)
 {
 	m_parameter->set_name(name);
