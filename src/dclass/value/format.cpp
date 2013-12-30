@@ -341,7 +341,18 @@ string format(const Element *element, const vector<uint8_t> &packed)
 	format(element, packed, ss);
 	return ss.str();
 }
+string format(const Element *element, const string &packed)
+{
+	ostringstream ss;
+	format(element, packed, ss);
+	return ss.str();
+}
 void format(const Element *element, const vector<uint8_t> &packed, ostream &out)
+{
+	Formatter formatter(packed, out);
+	formatter.format(element);
+}
+void format(const Element *element, const string &packed, ostream &out)
 {
 	Formatter formatter(packed, out);
 	formatter.format(element);

@@ -281,6 +281,11 @@ class DatagramIterator
 						std::cerr << "Found DT_method that is not molecular or atomic.\n";
 					}
 				}
+				case DT_invalid:
+				{
+					// temporary warning
+					std::cerr << "Bad distributed class parsing\n";
+				}
 				default:
 				{
 					//temporar warning
@@ -356,6 +361,11 @@ class DatagramIterator
 						//#include 
 						std::cerr << "Found DT_method that is not molecular or atomic.\n";
 					}
+				}
+				case DT_invalid:
+				{
+					// temporary warning
+					std::cerr << "Bad distributed class parsing\n";
 				}
 				default:
 				{

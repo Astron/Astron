@@ -15,10 +15,14 @@
 #include <unistd.h>
 using namespace dclass;
 
-#define yywrap dcyywrap
 
 	static int yyinput(void);        // declared by flex.
+	extern int dcyylex();
 	extern "C" int dcyywrap();
+	extern YYSTYPE dcyylval;
+
+	#define YY_DECL int dcyylex(void)
+	#define yywrap dcyywrap
 
 ////////////////////////////////////////////////////////////////////
 // Static variables
@@ -579,20 +583,20 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	yylval.str = yytext;
-	yylval.u.uint64 = 0;
+	dcyylval.str = yytext;
+	dcyylval.u.uint64 = 0;
 	const char *p = yytext;
 	while(*p != '\0')
 	{
-		uint64_t next_value = yylval.u.uint64 * 10;
-		if(next_value < yylval.u.uint64)
+		uint64_t next_value = dcyylval.u.uint64 * 10;
+		if(next_value < dcyylval.u.uint64)
 		{
 			dcyyerror("Number out of range.");
-			yylval.u.uint64 = 1;
+			dcyylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
-		yylval.u.uint64 = next_value + (*p - '0');
+		dcyylval.u.uint64 = next_value + (*p - '0');
 		++p;
 	}
 
@@ -604,7 +608,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	yylval.str = yytext;
+	dcyylval.str = yytext;
 
 	bool neg = false;
 	const char *p = yytext;
@@ -625,7 +629,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 		if(next_value < value)
 		{
 			dcyyerror("Number out of range.");
-			yylval.u.int64 = 1;
+			dcyylval.u.int64 = 1;
 			return SIGNED_INTEGER;
 		}
 
@@ -635,19 +639,19 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 
 	if(neg)
 	{
-		yylval.u.int64 = -(int64_t)value;
-		if(yylval.u.int64 > 0)
+		dcyylval.u.int64 = -(int64_t)value;
+		if(dcyylval.u.int64 > 0)
 		{
 			dcyyerror("Number out of range.");
-			yylval.u.int64 = 1;
+			dcyylval.u.int64 = 1;
 		}
 	}
 	else {
-		yylval.u.int64 = (int64_t)value;
-		if(yylval.u.int64 < 0)
+		dcyylval.u.int64 = (int64_t)value;
+		if(dcyylval.u.int64 < 0)
 		{
 			dcyyerror("Number out of range.");
-			yylval.u.int64 = 1;
+			dcyylval.u.int64 = 1;
 		}
 	}
 
@@ -659,26 +663,26 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// As above, we'll decode the hex string by hand.
-	yylval.str = yytext;
-	yylval.u.uint64 = 0;
+	dcyylval.str = yytext;
+	dcyylval.u.uint64 = 0;
 	const char *p = yytext + 2;
 	while(*p != '\0')
 	{
-		uint64_t next_value = yylval.u.uint64 * 16;
-		if(next_value < yylval.u.uint64)
+		uint64_t next_value = dcyylval.u.uint64 * 16;
+		if(next_value < dcyylval.u.uint64)
 		{
 			dcyyerror("Number out of range.");
-			yylval.u.uint64 = 1;
+			dcyylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
 		if(isalpha(*p))
 		{
-			yylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
+			dcyylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
 		}
 		else
 		{
-			yylval.u.uint64 = next_value + (*p - '0');
+			dcyylval.u.uint64 = next_value + (*p - '0');
 		}
 		++p;
 	}
@@ -689,43 +693,43 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 {REALNUM} {
 	// A floating-point number.
 	accept();
-	yylval.u.real = atof(yytext);
-	yylval.str = yytext;
+	dcyylval.u.real = atof(yytext);
+	dcyylval.str = yytext;
 	return REAL;
 }
 
 ["] {
  // Quoted string.
  accept();
- yylval.str = scan_quoted_string('"');
+ dcyylval.str = scan_quoted_string('"');
  return STRING;
  }
 
 ['] {
 	// Single-quoted string.
 	accept();
-	yylval.str = scan_quoted_string('\'');
+	dcyylval.str = scan_quoted_string('\'');
 	return STRING;
 }
 
 [<] {
 	// Long hex string.
 	accept();
-	yylval.str = scan_hex_string();
+	dcyylval.str = scan_hex_string();
 	return HEX_STRING;
 }
 
 [A-Za-z_][A-Za-z_0-9]* {
 	// Identifier or keyword.
 	accept();
-	yylval.str = yytext;
+	dcyylval.str = yytext;
 
 	if(dc_file != (File *)NULL)
 	{
-		const Keyword *keyword = dc_file->get_keyword_by_name(yylval.str);
+		const Keyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
 		if(keyword != (Keyword *)NULL)
 		{
-			yylval.u.keyword = keyword;
+			dcyylval.u.keyword = keyword;
 			return KEYWORD;
 		}
 	}

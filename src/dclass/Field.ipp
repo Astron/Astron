@@ -132,6 +132,11 @@ inline void Field::set_class(Class *dclass)
 	m_class = dclass;
 }
 
+inline void Field::set_name(const std::string& name)
+{
+	m_name = name;
+}
+
 // set_default_value establishes a default value for this field.
 inline void Field::set_default_value(const std::string &default_value)
 {

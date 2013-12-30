@@ -105,7 +105,7 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 
 	if(m_nested_type != DT_invalid)
 	{
-		m_nested_field = create_nested_field(m_nested_type, m_divisor);
+		m_nested_field = new SimpleParameter(m_nested_type, m_divisor);
 	}
 	else
 	{

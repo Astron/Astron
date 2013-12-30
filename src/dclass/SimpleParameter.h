@@ -48,10 +48,6 @@ class SimpleParameter : public Parameter
 		                             const std::string &name, const std::string &postname) const;
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
-
-	private:
-		static SimpleParameter *create_nested_field(DataType type, unsigned int divisor);
-
 	private:
 		unsigned int m_divisor;
 
