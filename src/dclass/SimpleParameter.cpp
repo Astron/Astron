@@ -24,8 +24,7 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 	m_divisor(1), m_has_modulus(false), m_nested_type(DT_invalid), m_bytes_per_element(0)
 {
 	m_datatype = type;
-	//m_has_nested_fields = false;
-	//m_num_length_bytes = sizeof(length_tag_t);
+	m_nested_type = DT_invalid;
 
 	// Check for one of the built-in array types.  For these types, we
 	// must present a packing interface that has a variable number of
@@ -34,65 +33,68 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 	{
 		case DT_blob:
 			m_nested_type = DT_uint8;
-			//m_has_nested_fields = true;
 			m_bytes_per_element = 1;
 			break;
 
 		case DT_string:
 			m_nested_type = DT_char;
-			//m_has_nested_fields = true;
 			m_bytes_per_element = 1;
 			break;
 
 			// The simple types can be packed directly.
 		case DT_int8:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 1;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(int8_t);
 			break;
 
 		case DT_int16:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 2;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(int16_t);
 			break;
 
 		case DT_int32:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 4;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(int32_t);
 			break;
 
 		case DT_int64:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 8;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(int64_t);
 			break;
 
 		case DT_char:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 1;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(char);
 			break;
 
 		case DT_uint8:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 1;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(uint8_t);
 			break;
 
 		case DT_uint16:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 2;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(uint16_t);
 			break;
 
 		case DT_uint32:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 4;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(uint32_t);
 			break;
 
 		case DT_uint64:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 8;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(uint64_t);
+			break;
+
+		case DT_float32:
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(float);
 			break;
 
 		case DT_float64:
-			//m_has_fixed_byte_size = true;
-			//m_fixed_byte_size = 8;
+			m_has_fixed_size = true;
+			m_bytesize = sizeof(double);
 			break;
 
 		case DT_invalid:
@@ -104,7 +106,6 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 	if(m_nested_type != DT_invalid)
 	{
 		m_nested_field = create_nested_field(m_nested_type, m_divisor);
-
 	}
 	else
 	{
@@ -395,8 +396,8 @@ bool SimpleParameter::set_range(const DoubleRange &range)
 			{
 				uint64_t min = (uint64_t)floor(range.get_min(i) * m_divisor + 0.5);
 				uint64_t max = (uint64_t)floor(range.get_max(i) * m_divisor + 0.5);
-				//validate_uint64_limits(min, sizeof(length_tag_t) * 8, range_error);
-				//validate_uint64_limits(max, sizeof(length_tag_t) * 8, range_error);
+				//validate_uint64_limits(min, sizeof(sizetag_t) * 8, range_error);
+				//validate_uint64_limits(max, sizeof(sizetag_t) * 8, range_error);
 				m_uint_range.add_range((unsigned int)min, (unsigned int)max);
 			}
 			if(m_uint_range.has_one_value())
@@ -409,7 +410,7 @@ bool SimpleParameter::set_range(const DoubleRange &range)
 			}
 			else
 			{
-				//m_num_length_bytes = sizeof(length_tag_t);
+				//m_num_length_bytes = sizeof(sizetag_t);
 				//m_has_fixed_byte_size = false;
 			}
 			break;

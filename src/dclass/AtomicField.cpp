@@ -12,6 +12,7 @@
 #include "SimpleParameter.h"
 #include "HashGenerator.h"
 #include "indent.h"
+#include "value/format.h"
 #include <assert.h>
 namespace dclass   // open namespace
 {
@@ -117,15 +118,16 @@ void AtomicField::generate_hash(HashGenerator &hashgen) const
 void AtomicField::add_element(Parameter *element)
 {
 	m_elements.push_back(element);
-	/*
-	m_num_nested_fields = (int)m_elements.size();
-
-	// See if we still have a fixed byte size.
-	if(m_has_fixed_byte_size)
+	if(!element->has_fixed_size())
 	{
-		m_has_fixed_byte_size = element->has_fixed_byte_size();
-		m_fixed_byte_size += element->get_fixed_byte_size();
+		m_has_fixed_size = false;
+		m_bytesize = 0;
 	}
+	else if(m_has_fixed_size)
+	{
+		m_bytesize += element->get_size();
+	}
+	/*
 	if(!m_has_range_limits)
 	{
 		m_has_range_limits = element->has_range_limits();
@@ -147,14 +149,7 @@ void AtomicField::output_element(std::ostream &out, bool brief, Parameter *eleme
 	if(!brief && element->has_default_value())
 	{
 		out << " = ";
-		// TODO: Fix
-		/*
-		Packer packer;
-		packer.set_unpack_data(element->get_default_value());
-		packer.begin_unpack(element);
-		packer.unpack_and_format(out, false);
-		packer.end_unpack();
-		*/
+		format(element, element->get_default_value(), out);
 	}
 }
 

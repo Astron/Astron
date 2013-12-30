@@ -54,34 +54,28 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 		}
 	}
 
-	/*
-	if(m_array_size >= 0 && m_element_type->has_fixed_byte_size())
+	if(m_array_size >= 0 && m_element_type->has_fixed_size())
 	{
-		m_has_fixed_byte_size = true;
-		m_fixed_byte_size = m_array_size * m_element_type->get_fixed_byte_size();
-
+		m_bytesize = m_array_size * sizeof(m_element_type);
+		m_has_fixed_size = true;
 	}
 	else
 	{
-		// We only need to store the length bytes if the array has a
-		// variable size.
-		m_num_length_bytes = sizeof(length_tag_t);
+		m_bytesize = 0;
+		m_has_fixed_size = false;
 	}
 
+	/*
 	if(m_element_type->has_range_limits())
 	{
 		m_has_range_limits = true;
 	}
-
 	*/
 
 	if(m_element_type->has_default_value())
 	{
 		m_has_default_value = true;
 	}
-
-	//m_has_nested_fields = true;
-	//m_num_nested_fields = m_array_size;
 }
 
 // copy constructor

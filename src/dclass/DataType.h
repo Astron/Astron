@@ -7,9 +7,9 @@ namespace dclass   // open namespace dclass
 
 
 #ifdef DCLASS_32BIT_LENGTH_TAG
-    typedef uint32_t length_tag_t;
+    typedef uint32_t sizetag_t;
 #else
-    typedef uint16_t length_tag_t;
+    typedef uint16_t sizetag_t;
 #endif
 
 // A DataType defines the numeric type of any distributed element.

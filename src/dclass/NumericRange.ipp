@@ -245,16 +245,15 @@ inline void NumericRange<NUM>::output_minmax(std::ostream &out, Number divisor, 
 template <class NUM>
 inline void NumericRange<NUM>::output_minmax_char(std::ostream &out, const MinMax &range) const
 {
-	// TODO: Fix
 	if(range.m_min == range.m_max)
 	{
-		//Packer::enquote_string(out, '\'', std::string(1, range.m_min));
+		format_quoted('\'', std::string(1, range.m_min), out);
 	}
 	else
 	{
-		//Packer::enquote_string(out, '\'', std::string(1, range.m_min));
+		format_quoted('\'', std::string(1, range.m_min), out);
 		out << "-";
-		//Packer::enquote_string(out, '\'', std::string(1, range.m_max));
+		format_quoted('\'', std::string(1, range.m_max), out);
 	}
 }
 

@@ -1,11 +1,13 @@
 #pragma once
 #include "Datagram.h"
 #include "dclass/Class.h"
+#include "dclass/Element.h"
+#include "dclass/Field.h"
+#include "dclass/AtomicField.h" // temporary
+#include "dclass/MolecularField.h" // temporary
 #ifdef _DEBUG
 #include <fstream>
 #endif
-
-using dclass::PackerInterface;
 
 // A DatagramIteratorEOF is an exception that is thrown when attempting to read
 // past the end of a datagram.
@@ -224,102 +226,143 @@ class DatagramIterator
 		}
 
 		// unpack_field accepts a Field type and reads the value of the field into a buffer.
-		void unpack_field(PackerInterface *field, std::vector<uint8_t> &buffer)
+		void unpack_field(const dclass::Element* element, std::vector<uint8_t> &buffer)
 		{
-			// If field is a fixed-sized type like uint, int, float, etc
-			if(field->has_fixed_byte_size())
+			using namespace dclass;
+			if(element->has_fixed_size())
 			{
-				std::vector<uint8_t> data = read_data(field->get_fixed_byte_size());
+				// If field is a fixed-sized type like uint, int, float, etc
+				std::vector<uint8_t> data = read_data(element->get_size());
 				buffer.insert(buffer.end(), data.begin(), data.end());
-				return;
 			}
-
-			// If field is a variable-sized type like string, blob, etc type with a "length" prefix
-			size_t length = field->get_num_length_bytes();
-			if(length > 0)
+			switch(element->get_type())
 			{
-				// Read length of field data
-				switch(length)
+				case DT_varstring:
+				case DT_varblob:
+				case DT_vararray:
 				{
-					case 2:
-					{
-						uint16_t l = read_uint16();
-						buffer.insert(buffer.end(), (uint8_t*)&l, (uint8_t*)&l + 2);
-						length = l;
-					}
-					break;
-					case 4:
-					{
-						uint32_t l = read_uint32();
-						buffer.insert(buffer.end(), (uint8_t*)&l, (uint8_t*)&l + 4);
-						length = l;
-					}
-					break;
+					std::vector<uint8_t> blob = read_blob();
+					buffer.insert(buffer.end(), blob.begin(), blob.end());
 				}
-
-				// Read field data into buffer
-				std::vector<uint8_t> data = read_data(length);
-				buffer.insert(buffer.end(), data.begin(), data.end());
-				return;
-			}
-
-			// If field is non-atomic, process each nested field
-			int num_nested = field->get_num_nested_fields();
-			for(int i = 0; i < num_nested; ++i)
-			{
-				unpack_field(field->get_nested_field(i), buffer);
+				case DT_struct:
+				{
+					const Class* cls = element->as_class();
+					size_t num_fields = cls->get_num_inherited_fields();
+					for(unsigned int i = 0; i < num_fields; ++i)
+					{
+						unpack_field(cls->get_inherited_field(i), buffer);
+					}
+				}
+				case DT_method:
+				{
+					const Field* field = element->as_field();
+					if(field->as_molecular_field())
+					{
+						const MolecularField* mol = field->as_molecular_field();
+						size_t num_fields = mol->get_num_atomics();
+						for(unsigned int i = 0; i < num_fields; ++i)
+						{
+							unpack_field(mol->get_atomic(i), buffer);
+						}
+					}
+					else if(field->as_atomic_field())
+					{
+						const AtomicField* atomic = field->as_atomic_field();
+						size_t num_fields = atomic->get_num_elements();
+						for(unsigned int i = 0; i < num_fields; ++i)
+						{
+							unpack_field(atomic->get_element(i), buffer);
+						}
+					}
+					else
+					{
+						//temporary warning
+						//#include 
+						std::cerr << "Found DT_method that is not molecular or atomic.\n";
+					}
+				}
+				default:
+				{
+					//temporar warning
+					//#include
+					std::cerr << "Unrecognized distributed class datatype.\n";
+				}
 			}
 		}
 
 		// unpack_field can also be called without a reference to unpack into a new buffer.
-		std::vector<uint8_t> unpack_field(PackerInterface *field)
+		std::vector<uint8_t> unpack_field(const dclass::Element *element)
 		{
 			std::vector<uint8_t> buffer;
-			unpack_field(field, buffer);
+			unpack_field(element, buffer);
 			return buffer;
 		}
 
 		// skip_field can be used to seek past the packed field data for a Field.
 		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip_field(PackerInterface *field)
+		void skip_field(const dclass::Element *element)
 		{
-			// Skip over fields with fixed byte size
-			if(field->has_fixed_byte_size())
+			using namespace dclass;
+			if(element->has_fixed_size())
 			{
-				check_read_length(field->get_fixed_byte_size());
-				m_offset += field->get_fixed_byte_size();
-				return;
-			}
-
-			// Skip over fields with variable byte size
-			size_t length = field->get_num_length_bytes();
-			if(length > 0)
-			{
-				// Get length of data
-				switch(length)
-				{
-					case 2:
-					{
-						length = read_uint16();
-					}
-					break;
-					case 4:
-					{
-						length = read_uint32();
-					}
-					break;
-				}
-
-				// Skip over data
+				dgsize_t length = element->get_size();
 				check_read_length(length);
 				m_offset += length;
-				return;
 			}
-			// If field is non-atomic, process each nested field
-			int num_nested = field->get_num_nested_fields();
-			for(int i = 0; i < num_nested; ++i)
+
+			switch(element->get_type())
 			{
-				skip_field(field->get_nested_field(i));
+				case DT_varstring:
+				case DT_varblob:
+				case DT_vararray:
+				{
+					dgsize_t length = read_size();
+					check_read_length(length);
+					m_offset += length;
+				}
+				case DT_struct:
+				{
+					const Class* cls = element->as_class();
+					size_t num_fields = cls->get_num_inherited_fields();
+					for(unsigned int i = 0; i < num_fields; ++i)
+					{
+						skip_field(cls->get_inherited_field(i));
+					}
+				}
+				case DT_method:
+				{
+					const Field* field = element->as_field();
+					if(field->as_molecular_field())
+					{
+						const MolecularField* mol = field->as_molecular_field();
+						size_t num_fields = mol->get_num_atomics();
+						for(unsigned int i = 0; i < num_fields; ++i)
+						{
+							skip_field(mol->get_atomic(i));
+						}
+					}
+					else if(field->as_atomic_field())
+					{
+						const AtomicField* atomic = field->as_atomic_field();
+						size_t num_fields = atomic->get_num_elements();
+						for(unsigned int i = 0; i < num_fields; ++i)
+						{
+							skip_field(atomic->get_element(i));
+						}
+					}
+					else
+					{
+						//temporary warning
+						//#include 
+						std::cerr << "Found DT_method that is not molecular or atomic.\n";
+					}
+				}
+				default:
+				{
+					//temporar warning
+					//#include
+					std::cerr << "Unrecognized distributed class datatype.\n";
+				}
 			}
 		}
 

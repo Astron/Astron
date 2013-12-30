@@ -68,21 +68,17 @@ void MolecularField::add_atomic(AtomicField *atomic)
 	}
 	m_fields.push_back(atomic);
 
-	/*
-	int num_atomic_fields = atomic->get_num_nested_fields();
-	for(int i = 0; i < num_atomic_fields; i++)
-	{
-		m_nested_fields.push_back(atomic->get_nested_field(i));
-	}
-
-	m_num_nested_fields = m_nested_fields.size();
-
 	// See if we still have a fixed byte size.
-	if(m_has_fixed_byte_size)
+	if(!atomic->has_fixed_size())
 	{
-		m_has_fixed_byte_size = atomic->has_fixed_byte_size();
-		m_fixed_byte_size += atomic->get_fixed_byte_size();
+		m_has_fixed_size = false;
+		m_bytesize = 0;
 	}
+	else if(m_has_fixed_size)
+	{
+		m_bytesize += atomic->get_size();
+	}
+	/*
 	if(!m_has_range_limits)
 	{
 		m_has_range_limits = atomic->has_range_limits();

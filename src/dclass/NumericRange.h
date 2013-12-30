@@ -11,6 +11,7 @@
 #pragma once
 #include "dcbase.h"
 #include "HashGenerator.h"
+#include "value/format.h"
 #include <vector> // for std::vector
 #include <assert.h> // for assert(condition) macro
 namespace dclass   // open namespace dclass

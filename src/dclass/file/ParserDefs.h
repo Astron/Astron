@@ -24,10 +24,6 @@ namespace dclass
 }
 
 void dc_init_parser(std::istream &in, const std::string &filename, dclass::File &file);
-void dc_init_parser_parameter_value(std::istream &in, const std::string &filename);
-void dc_init_parser_parameter_description(std::istream &in, const std::string &filename,
-                                          dclass::File *file);
-dclass::Field *dc_get_parameter_description();
 void dc_cleanup_parser();
 int dcyyparse();
 
@@ -56,7 +52,8 @@ class TokenType
       const dclass::Keyword *keyword;
     } u;
     std::string str;
-    dclass::UnsignedIntRange urange;
+    dclass::DoubleRange double_range;
+    dclass::UnsignedIntRange uint_range;
 };
 
 // The yacc-generated code expects to use the symbol 'YYSTYPE' to

@@ -21,6 +21,7 @@ namespace dclass   // open namespace dclass
 Parameter::Parameter()
 {
 	m_typedef = NULL;
+	m_datatype = DT_invalid;
 }
 
 // copy constructor

@@ -55,10 +55,6 @@ class MolecularField : public Field
 		// definition as read from the file.
 		std::vector<AtomicField*> m_fields;
 		bool m_got_keywords;
-
-		//Parameter* get_next_pack_element();
-
-		//std::vector<PackerInterface*> m_nested_fields;
 };
 
 

@@ -109,7 +109,6 @@ class Field : public Element, public KeywordList
 		// set_name sets the name of this field.
 		virtual void set_name(const std::string &name);
 
-
 		// set_number assigns the unique number to this field.  This is normally
 		//     called only by the Class interface as the field is added.
 		inline void set_number(int number);

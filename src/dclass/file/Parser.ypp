@@ -17,12 +17,19 @@
 #include "../NumericRange.h"
 #include "../DataType.h"
 
+
 #include <assert.h>
 #include <unistd.h>
 
 using namespace dclass;
+#define yyparse dcyyparse
 #define yylex dcyylex
 #define yyerror dcyyerror
+#define yywarning dcyywarning
+#define yylval dcyylval
+#define yychar dcyychar
+#define yydebug dcyydebug
+#define yynerrs dcyynerrs
 
 // Because our token type contains objects of type std::string, which
 // require correct copy construction (and not simply memcpying), we
@@ -32,14 +39,13 @@ using namespace dclass;
 #define YYINITDEPTH 1000
 #define YYMAXDEPTH 1000
 
-	File *dc_file = (File *)NULL;
-	static Class *current_class = (Class *)NULL;
-	static AtomicField *current_atomic = (AtomicField *)NULL;
-	static MolecularField *current_molecular = (MolecularField *)NULL;
-	static Parameter *current_parameter = (Parameter *)NULL;
+	File *dc_file = (File*)NULL;
+
+	static Class *current_class = (Class*)NULL;
+	static AtomicField *current_atomic = (AtomicField*)NULL;
+	static MolecularField *current_molecular = (MolecularField*)NULL;
+	static Parameter *current_parameter = (Parameter*)NULL;
 	static KeywordList current_keyword_list;
-	static DoubleRange double_range;
-	static Field *parameter_description = (Field *)NULL;
 
 	/* Helper functions */
 	static Parameter* param_with_modulus(Parameter* p, double mod);
@@ -49,39 +55,13 @@ using namespace dclass;
 // Defining the interface to the parser.
 ////////////////////////////////////////////////////////////////////
 
-	void
-	dc_init_parser(std::istream & in, const std::string & filename, File & file)
+	void dc_init_parser(std::istream & in, const std::string & filename, File & file)
 	{
 		dc_file = &file;
 		dc_init_lexer(in, filename);
 	}
 
-	void
-	dc_init_parser_parameter_value(std::istream & in, const std::string & filename)
-	{
-		dc_file = NULL;
-		dc_init_lexer(in, filename);
-		dc_start_parameter_value();
-	}
-
-	void
-	dc_init_parser_parameter_description(std::istream & in, const std::string & filename,
-	File * file)
-	{
-		dc_file = file;
-		dc_init_lexer(in, filename);
-		parameter_description = NULL;
-		dc_start_parameter_description();
-	}
-
-	Field *
-	dc_get_parameter_description()
-	{
-		return parameter_description;
-	}
-
-	void
-	dc_cleanup_parser()
+	void dc_cleanup_parser()
 	{
 		dc_file = (File *)NULL;
 	}
@@ -99,8 +79,6 @@ using namespace dclass;
 // These special tokens are used to set the starting state of the parser.
 //     The lexer places the appropriate one of these on the head of the input stream.
 %token START_DC
-%token START_PARAMETER_VALUE
-%token START_PARAMETER_DESCRIPTION
 
 /* Define keywords */
 // Declaration Keywords
@@ -135,7 +113,6 @@ using namespace dclass;
 %type <u.parameter> parameter
 %type <u.parameter> named_parameter
 %type <u.parameter> unnamed_parameter
-%type <str> parameter_value
 
 /* Concrete Nonterminals */
 %type <u.parameter> param_w_typ // parameter w/ type only
@@ -155,24 +132,25 @@ using namespace dclass;
 %type <u.field> dclass_field
 %type <u.dclass> struct_name
 %type <u.field> struct_field
-%type <u.field> parameter_description
 %type <u.datatype> type_token
 
 %type <str> import_identifier
-%type <str> slash_identifier
+%type <str> import_path
+%type <str> array
+%type <str> array_value
+%type <str> parameter_value
 %type <u.uint32> char_or_uint
 %type <u.uint32> small_unsigned_integer
 %type <u.uint32> small_negative_integer
 %type <u.real> char_or_number
 %type <u.real> number
-%type <urange> uint_range;
+%type <double_range> double_range
+%type <uint_range> uint_range
 
 %%
 
 grammar
 	: START_DC dc
-	| START_PARAMETER_VALUE parameter_value
-	| START_PARAMETER_DESCRIPTION parameter_description { parameter_description = $2; }
 	;
 
 
@@ -198,52 +176,45 @@ dc	: empty
 	| dc keyword_decl
 	;
 
-slash_identifier:
-  IDENTIFIER
-| slash_identifier '/' IDENTIFIER
-{
-	$$ = $1 + std::string("/") + $3;
-}
-;
+import
+	: KW_IMPORT import_identifier
+	{
+		dc_file->add_import_module($2);
+	}
+	| KW_FROM import_identifier KW_IMPORT
+	{
+		dc_file->add_import_module($2);
+	}
+	  import_symbol_list_or_star
+	;
 
-import_identifier:
-  slash_identifier
-| import_identifier '.' slash_identifier
-{
-	$$ = $1 + std::string(".") + $3;
-}
-;
 
-import:
-  KW_IMPORT import_identifier
-{
-	dc_file->add_import_module($2);
-}
-| KW_FROM import_identifier KW_IMPORT
-{
-	dc_file->add_import_module($2);
-}
+import_identifier
+	: import_path
+	| import_identifier '.' import_path
+	{
+		$$ = $1 + std::string(".") + $3;
+	}
+	;
+
+import_path
+	: IDENTIFIER
+	| import_path '/' IDENTIFIER
+	{
+		$$ = $1 + std::string("/") + $3;
+	}
+	;
+
+
 import_symbol_list_or_star
-;
+	: import_symbol_list
+	| '*' { dc_file->add_import_symbol("*"); }
+	;
 
-import_symbol_list_or_star:
-  import_symbol_list
-| '*'
-{
-	dc_file->add_import_symbol("*");
-}
-;
-
-import_symbol_list:
-  slash_identifier
-{
-	dc_file->add_import_symbol($1);
-}
-| import_symbol_list ',' slash_identifier
-{
-	dc_file->add_import_symbol($3);
-}
-;
+import_symbol_list
+	: import_path { dc_file->add_import_symbol($1); }
+	| import_symbol_list ',' import_path { dc_file->add_import_symbol($3); }
+	;
 
 typedef_decl:
   KW_TYPEDEF parameter
@@ -559,23 +530,8 @@ parameter
 	| unnamed_parameter { $$ = $1; }
 	;
 
-parameter_description
-	: atomic_field no_keyword_list
-	{
-		$$ = $1;
-	}
-	| unnamed_parameter no_keyword_list
-	{
-		$$ = $1;
-	}
-	| named_parameter no_keyword_list
-	{
-		$$ = $1;
-	}
-	;
-
 param_w_typ
-	: type_token { $$ = new SimpleParameter($1); }
+	: type_token { $$ = current_parameter = new SimpleParameter($1);   }
 	| IDENTIFIER
 	{
 		Typedef *dtypedef = dc_file->get_typedef_by_name($1);
@@ -597,7 +553,7 @@ param_w_typ
 			dc_file->add_typedef(dtypedef);
 		}
 
-		$$ = dtypedef->make_new_parameter();
+		$$ = current_parameter = dtypedef->make_new_parameter();
 	}
 	;
 
@@ -610,12 +566,12 @@ param_w_rng
 		{
 			yyerror("Ranges are only valid for numeric, string, or blob types.");
 		}
-		if(!simple_param->set_range(double_range))
+		if(!simple_param->set_range($3))
 		{
 			yyerror("Inappropriate range for type.");
 		}
 
-		$$ = simple_param;
+		$$ = current_parameter = simple_param;
 	}
 	;
 
@@ -662,26 +618,28 @@ param_n_def
 	;
 
 double_range
-	: empty { double_range.clear(); }
+	: empty { $$ = DoubleRange(); }
 	| char_or_number
 	{
-		double_range.clear();
+		DoubleRange double_range;
 		if(!double_range.add_range($1, $1))
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = double_range;
 	}
 	| char_or_number '-' char_or_number
 	{
-		double_range.clear();
+		DoubleRange double_range;
 		if(!double_range.add_range($1, $3))
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = double_range;
 	}
 	| char_or_number number
 	{
-		double_range.clear();
+		DoubleRange double_range;
 		if($2 >= 0)
 		{
 			yyerror("Syntax error");
@@ -690,20 +648,23 @@ double_range
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = double_range;
 	}
 	| double_range ',' char_or_number
 	{
-		if(!double_range.add_range($3, $3))
+		if(!$1.add_range($3, $3))
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	| double_range ',' char_or_number '-' char_or_number
 	{
-		if(!double_range.add_range($3, $5))
+		if(!$1.add_range($3, $5))
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	| double_range ',' char_or_number number
 	{
@@ -711,10 +672,11 @@ double_range
 		{
 			yyerror("Syntax error");
 		}
-		else if(!double_range.add_range($3, -$4))
+		else if(!$1.add_range($3, -$4))
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	;
 
@@ -753,6 +715,7 @@ uint_range
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	| uint_range ',' char_or_uint '-' char_or_uint
 	{
@@ -760,6 +723,7 @@ uint_range
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	| uint_range ',' char_or_uint small_negative_integer
 	{
@@ -767,6 +731,7 @@ uint_range
 		{
 			yyerror("Overlapping range");
 		}
+		$$ = $1;
 	}
 	;
 
@@ -817,7 +782,7 @@ number
 	: UNSIGNED_INTEGER { $$ = (double)$1; }
 	| SIGNED_INTEGER { $$ = (double)$1; }
 	| REAL
-;
+	;
 
 char_or_number
 	: STRING
@@ -827,7 +792,8 @@ char_or_number
 			yyerror("Single character required.");
 			$$ = 0;
 		}
-		else {
+		else
+		{
 			$$ = (double)(unsigned char)$1[0];
 		}
 	}
@@ -837,75 +803,134 @@ char_or_number
 parameter_value
 	: SIGNED_INTEGER
 	{
+		// TODO: check for range limits
 		$$ = std::string((char*)&$1, sizeof(int64_t));
 	}
 	| UNSIGNED_INTEGER
 	{
+		// TODO: check for range limits
 		$$ = std::string((char*)&$1, sizeof(uint64_t));
 	}
 	| REAL
 	{
+		// TODO: check for range limits
 		$$ = std::string((char*)&$1, sizeof(double));
 	}
 	| STRING
 	{
-		$$ = $1;
+		DataType type = current_parameter->get_type();
+		if(type == DT_string)
+		{
+			if($1.length() != current_parameter->get_size())
+			{
+				yyerror("Default value for fixed-length string has incorrect length.");
+		 		$$ = $1;
+			}
+		}
+		else // DT_varstring
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			$$ = std::string((char*)&length, sizeof(sizetag_t)) + $1;
+		}
 	}
 	| HEX_STRING
 	{
+		// TODO: check for range limits... maybe?
 		$$ = $1;
 	}
-	| '{' array '}' // array composition
+	| '[' array_value ']' // array composition
 	{
-		// todo
-	}
-	| SIGNED_INTEGER '*' small_unsigned_integer // array expansion
-	{
-		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+		DataType type = current_parameter->get_type();
+		if(type == DT_vararray)
 		{
-			val.append((char*)&$1, sizeof(int64_t));
+			sizetag_t length = $2.length();
+			$$ = std::string((char*)&length, sizeof(sizetag_t)) + $2;
+		}
+		else // DT_array
+		{
+			// TODO: Check range limits
+			$$ = $2;
 		}
 	}
-	| UNSIGNED_INTEGER '*' small_unsigned_integer // array expansion
+	| '{' array_value '}' // array composition -- deprecated, will turn into struct compositon
 	{
-		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+		DataType type = current_parameter->get_type();
+		if(type == DT_vararray)
 		{
-			val.append((char*)&$1, sizeof(uint64_t));
+			sizetag_t length = $2.length();
+			$$ = std::string((char*)&length, sizeof(sizetag_t)) + $2;
 		}
-	}
-	| REAL '*' small_unsigned_integer // array expansion
-	{
-		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+		else if(type == DT_struct)
 		{
-			val.append((char*)&$1, sizeof(double));
+			yywarning("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
+			$$ = $2;
 		}
-	}
-	| HEX_STRING '*' small_unsigned_integer // array expansion
-	{
-		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+		else // DT_array
 		{
-			val += $1;
+			// TODO: Check range limits
+			$$ = $2;
 		}
 	}
 	;
 
 array
-	: maybe_comma
-	| array_def maybe_comma
+	: empty { $$ = ""; }
+	| array_value { $$ = $1; }
 	;
 
-maybe_comma
-	: empty
-	| ','
-	;
-
-array_def
+array_value
 	: parameter_value
-	| array_def ',' parameter_value
+	{
+		// TODO: Check array type matches parameter type
+		$$ = $1;
+	}
+	| SIGNED_INTEGER '*' small_unsigned_integer // array expansion
+	{
+		// TODO: Check array type compatible with SIGNED_INTEGER
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(int64_t));
+		}
+		$$ = val;
+	}
+	| UNSIGNED_INTEGER '*' small_unsigned_integer // array expansion
+	{
+		// TODO: Check array type compatible with UNSIGNED_INTEGER
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(uint64_t));
+		}
+		$$ = val;
+	}
+	| REAL '*' small_unsigned_integer // array expansion
+	{
+		// TODO: Check array type compatible with REAL
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val.append((char*)&$1, sizeof(double));
+		}
+		$$ = val;
+	}
+	| HEX_STRING '*' small_unsigned_integer // array expansion
+	{
+		// TODO: Check array type compatible with HEX_STRING
+		std::string val;
+		for(unsigned int i = 0; i < $3; i++)
+		{
+			val += $1;
+		}
+		$$ = val;
+	}
+	| array_value ',' parameter_value
+	{
+		// TODO: Check array type matches parameter type
+		$$ = $1 + $3;
+	}
 	;
 
 type_token

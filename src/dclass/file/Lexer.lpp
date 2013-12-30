@@ -15,6 +15,7 @@
 #include <unistd.h>
 using namespace dclass;
 
+#define yywrap dcyywrap
 
 	static int yyinput(void);        // declared by flex.
 	extern "C" int dcyywrap();
@@ -61,20 +62,6 @@ using namespace dclass;
 		error_count = 0;
 		warning_count = 0;
 		initial_token = START_DC;
-	}
-
-	void dc_start_parameter_value()
-	{
-		/* Set the initial state to begin parsing a parameter value, instead
-		   of at the beginning of the dc file. */
-		initial_token = START_PARAMETER_VALUE;
-	}
-
-	void dc_start_parameter_description()
-	{
-		/* Set the initial state to begin parsing a parameter description, instead
-		   of at the beginning of the dc file. */
-		initial_token = START_PARAMETER_DESCRIPTION;
 	}
 
 	int dc_error_count()
