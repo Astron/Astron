@@ -60,7 +60,7 @@ class Struct : public Declaration, public virtual DistributedType
 		                     const std::string &name, const std::string &postname) const;
 
 	protected:
-		Struct(); // Parameter constructor
+		Struct(const Struct*); // Parameter constructor
 
 		File *m_file;
 		std::string m_name;

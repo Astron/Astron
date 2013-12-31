@@ -24,6 +24,7 @@ class StructParameter : public Parameter, public Struct
 		StructParameter(const StructParameter &copy); // copy constructor
 
 		using Parameter::get_name;
+		using Parameter::get_id;
 
 		// as_struct_parameter returns the same parameter pointer converted to a struct parameter
 		//     pointer, if this is in fact an struct parameter; otherwise, returns NULL.
@@ -48,6 +49,7 @@ class StructParameter : public Parameter, public Struct
 	private:
 		const Struct *m_class; // class type of parameter
 		using Parameter::m_name;
+		using Parameter::m_id;
 
 };
 

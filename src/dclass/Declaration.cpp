@@ -18,6 +18,20 @@ Declaration::~Declaration()
 {
 }
 
+// as_struct returns the same declaration pointer converted to a class
+//     pointer, if this is in fact a struct; otherwise, returns NULL.
+Struct* Declaration::as_struct()
+{
+	return (Struct*)NULL;
+}
+
+// as_struct returns the same declaration pointer converted to a class
+//     pointer, if this is in fact a struct; otherwise, returns NULL.
+const Struct* Declaration::as_struct() const
+{
+	return (Struct*)NULL;
+}
+
 // as_class returns the same declaration pointer converted to a class
 //     pointer, if this is in fact a class; otherwise, returns NULL.
 Class* Declaration::as_class()

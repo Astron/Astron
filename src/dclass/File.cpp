@@ -111,7 +111,7 @@ int File::get_num_classes() const
 }
 
 // get_class returns the nth class read from the .dc file(s).
-Class* File::get_class(int n) const
+Struct* File::get_class(int n) const
 {
 	assert(n >= 0 && n < (int)m_classes.size());
 	return m_classes[n];
@@ -119,15 +119,15 @@ Class* File::get_class(int n) const
 
 // get_class_by_name returns the class that has the indicated name,
 //     or NULL if there is no such class.
-Class* File::get_class_by_name(const std::string &name) const
+Struct* File::get_class_by_name(const std::string &name) const
 {
 	auto class_it = m_things_by_name.find(name);
 	if(class_it != m_things_by_name.end())
 	{
-		return class_it->second->as_class();
+		return class_it->second->as_struct();
 	}
 
-	return (Class*)NULL;
+	return (Struct*)NULL;
 }
 
 // get_field_by_id returns a pointer to the Field that has index number <id>.
@@ -257,15 +257,17 @@ void File::generate_hash(HashGenerator &hashgen) const
 //     Returns true if the class is successfully added, or false if there was a name conflict.
 bool File::add_class(Class *dclass)
 {
-	if(!dclass->get_name().empty())
+	// Classes have to have a name
+	if(dclass->get_name().empty())
 	{
-		bool inserted = m_things_by_name.insert(
-			std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
+		return false;
+	}
 
-		if(!inserted)
-		{
-			return false;
-		}
+	bool inserted = m_things_by_name.insert(
+		std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
+	if(!inserted)
+	{
+		return false;
 	}
 
 	dclass->set_id(get_num_classes());
@@ -275,6 +277,34 @@ bool File::add_class(Class *dclass)
 
 	return true;
 }
+
+
+// add_struct adds the newly-allocated distributed struct definition to the file.
+//     The File becomes the owner of the pointer and will delete it when it destructs.
+//     Returns true if the struct is successfully added, or false if there was a name conflict.
+bool File::add_struct(Struct *dclass)
+{
+	// Structs have to have a name
+	if(dclass->get_name().empty())
+	{
+		return false;
+	}
+
+	bool inserted = m_things_by_name.insert(
+		std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
+	if(!inserted)
+	{
+		return false;
+	}
+
+	dclass->set_id(get_num_classes());
+	m_classes.push_back(dclass);
+
+	m_things_to_delete.push_back(dclass);
+
+	return true;
+}
+
 
 // add_import_module adds a new name to the list of names of Python modules that
 //     are to be imported by the client or AI to define the code that is associated
@@ -401,7 +431,11 @@ void File::rebuild_inherited_fields()
 	m_inherited_fields_stale = false;
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		(*it)->rebuild_fields();
+		Class* cls = (*it)->as_class();
+		if(cls != (Class*)NULL)
+		{
+			cls->rebuild_fields();
+		}
 	}
 }
 

@@ -18,7 +18,7 @@ namespace dclass   // open namespace
 
 
 // construct from class definition
-StructParameter::StructParameter(const Struct *dclass) : m_class(dclass)
+StructParameter::StructParameter(const Struct *dclass) : Struct(dclass), m_class(dclass)
 {
 	m_name = dclass->get_name();
 	m_datatype = DT_struct;
@@ -50,7 +50,8 @@ StructParameter::StructParameter(const Struct *dclass) : m_class(dclass)
 }
 
  // copy constructor
-StructParameter::StructParameter(const StructParameter &copy) : Parameter(copy), m_class(copy.m_class)
+StructParameter::StructParameter(const StructParameter &copy) :
+	Struct(copy), Parameter(copy), m_class(copy.m_class)
 {
 	m_file = copy.m_file;
 	m_name = string(copy.m_name);

@@ -577,19 +577,19 @@ static const yytype_uint16 yyrline[] =
 {
        0,   151,   151,   155,   156,   157,   164,   171,   172,   173,
      177,   182,   181,   190,   191,   198,   199,   207,   208,   212,
-     213,   217,   231,   235,   236,   240,   252,   251,   263,   291,
-     292,   296,   303,   313,   314,   315,   329,   341,   342,   351,
-     363,   362,   373,   374,   375,   389,   390,   395,   394,   413,
-     414,   418,   419,   423,   433,   434,   435,   439,   440,   441,
-     442,   443,   444,   448,   449,   453,   454,   479,   497,   498,
-     502,   503,   504,   508,   509,   510,   511,   515,   516,   517,
-     518,   522,   526,   527,   528,   529,   530,   534,   535,   539,
-     540,   541,   542,   546,   547,   548,   549,   553,   564,   568,
-     580,   596,   597,   598,   602,   614,   618,   623,   628,   633,
-     652,   657,   671,   698,   703,   713,   723,   733,   743,   751,
-     752,   753,   754,   755,   756,   757,   758,   759,   760,   761,
-     762,   763,   767,   768,   772,   782,   782,   787,   807,   814,
-     829
+     213,   217,   231,   235,   236,   240,   252,   251,   263,   290,
+     291,   295,   302,   312,   313,   314,   328,   340,   341,   350,
+     362,   361,   372,   373,   374,   388,   389,   394,   393,   412,
+     413,   417,   418,   422,   432,   433,   434,   438,   439,   440,
+     441,   442,   443,   447,   448,   452,   453,   485,   503,   504,
+     508,   509,   510,   514,   515,   516,   517,   521,   522,   523,
+     524,   528,   532,   533,   534,   535,   536,   540,   541,   545,
+     546,   547,   548,   552,   553,   554,   555,   559,   570,   574,
+     586,   602,   603,   604,   608,   620,   624,   629,   634,   639,
+     658,   663,   677,   704,   709,   719,   729,   739,   749,   757,
+     758,   759,   760,   761,   762,   763,   764,   765,   766,   767,
+     768,   769,   773,   774,   778,   788,   788,   793,   813,   820,
+     835
 };
 #endif
 
@@ -1768,27 +1768,26 @@ yyreduce:
 		}
 		else
 		{
-			Class *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-			if(dclass == (Class *)NULL)
+			Struct *dc_struct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
+			if(dc_struct == (Class*)NULL)
 			{
 				yyerror("dclass '" + std::string((yyvsp[(1) - (1)].str)) + "' has not been declared.");
 			}
-			// TODO: Output this helpful info
-			/*
-			if(dc_file->get_struct_by_name($1))
+
+			Class* dc_class = dc_struct->as_class();
+			if(dc_class == (Class*)NULL)
 			{
 				yyerror("dclass cannot inherit from a struct");
 			}
-			*/
 
-			(yyval.u.dclass) = dclass;
+			(yyval.u.dclass) = dc_class;
 		}
 	}
     break;
 
   case 31:
 /* Line 1787 of yacc.c  */
-#line 297 "Parser.ypp"
+#line 296 "Parser.ypp"
     {
 		if((yyvsp[(1) - (1)].u.dclass) != (Class*)NULL)
 		{
@@ -1799,7 +1798,7 @@ yyreduce:
 
   case 32:
 /* Line 1787 of yacc.c  */
-#line 304 "Parser.ypp"
+#line 303 "Parser.ypp"
     {
 		if((yyvsp[(3) - (3)].u.dclass) != (Class*)NULL)
 		{
@@ -1810,7 +1809,7 @@ yyreduce:
 
   case 35:
 /* Line 1787 of yacc.c  */
-#line 316 "Parser.ypp"
+#line 315 "Parser.ypp"
     {
 		if((yyvsp[(2) - (3)].u.field) == (Field*)NULL)
 		{
@@ -1825,7 +1824,7 @@ yyreduce:
 
   case 36:
 /* Line 1787 of yacc.c  */
-#line 330 "Parser.ypp"
+#line 329 "Parser.ypp"
     {
 		if((yyvsp[(1) - (2)].u.field) != (Field*)NULL)
 		{
@@ -1841,7 +1840,7 @@ yyreduce:
 
   case 38:
 /* Line 1787 of yacc.c  */
-#line 343 "Parser.ypp"
+#line 342 "Parser.ypp"
     {
 		yyerror("Unnamed parameters are not allowed on a dclass");
 		if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
@@ -1854,7 +1853,7 @@ yyreduce:
 
   case 39:
 /* Line 1787 of yacc.c  */
-#line 352 "Parser.ypp"
+#line 351 "Parser.ypp"
     {
 		if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
 		{
@@ -1866,7 +1865,7 @@ yyreduce:
 
   case 40:
 /* Line 1787 of yacc.c  */
-#line 363 "Parser.ypp"
+#line 362 "Parser.ypp"
     {
 		current_class = new Struct(dc_file, (yyvsp[(2) - (2)].str));
 	}
@@ -1874,7 +1873,7 @@ yyreduce:
 
   case 41:
 /* Line 1787 of yacc.c  */
-#line 367 "Parser.ypp"
+#line 366 "Parser.ypp"
     {
 		(yyval.u.dstruct) = current_class;
 	}
@@ -1882,7 +1881,7 @@ yyreduce:
 
   case 44:
 /* Line 1787 of yacc.c  */
-#line 376 "Parser.ypp"
+#line 375 "Parser.ypp"
     {
 		if((yyvsp[(2) - (2)].u.field) == (Field *)NULL)
 		{
@@ -1897,19 +1896,19 @@ yyreduce:
 
   case 45:
 /* Line 1787 of yacc.c  */
-#line 389 "Parser.ypp"
+#line 388 "Parser.ypp"
     { (yyval.u.field) = (yyvsp[(1) - (2)].u.parameter); }
     break;
 
   case 46:
 /* Line 1787 of yacc.c  */
-#line 390 "Parser.ypp"
+#line 389 "Parser.ypp"
     { (yyval.u.field) = (yyvsp[(1) - (2)].u.parameter); }
     break;
 
   case 47:
 /* Line 1787 of yacc.c  */
-#line 395 "Parser.ypp"
+#line 394 "Parser.ypp"
     {
 		if(current_class == (Class *)NULL)
 		{
@@ -1924,7 +1923,7 @@ yyreduce:
 
   case 48:
 /* Line 1787 of yacc.c  */
-#line 406 "Parser.ypp"
+#line 405 "Parser.ypp"
     {
 		(yyval.u.field) = current_atomic;
 		current_atomic = (yyvsp[(3) - (5)].u.atomic);
@@ -1933,7 +1932,7 @@ yyreduce:
 
   case 53:
 /* Line 1787 of yacc.c  */
-#line 424 "Parser.ypp"
+#line 423 "Parser.ypp"
     {
 		if((yyvsp[(1) - (1)].u.parameter) != (Parameter *)NULL)
 		{
@@ -1944,89 +1943,96 @@ yyreduce:
 
   case 54:
 /* Line 1787 of yacc.c  */
-#line 433 "Parser.ypp"
+#line 432 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 55:
 /* Line 1787 of yacc.c  */
-#line 434 "Parser.ypp"
+#line 433 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 56:
 /* Line 1787 of yacc.c  */
-#line 435 "Parser.ypp"
+#line 434 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 57:
 /* Line 1787 of yacc.c  */
-#line 439 "Parser.ypp"
+#line 438 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 58:
 /* Line 1787 of yacc.c  */
-#line 440 "Parser.ypp"
+#line 439 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 59:
 /* Line 1787 of yacc.c  */
-#line 441 "Parser.ypp"
+#line 440 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 60:
 /* Line 1787 of yacc.c  */
-#line 442 "Parser.ypp"
+#line 441 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 61:
 /* Line 1787 of yacc.c  */
-#line 443 "Parser.ypp"
+#line 442 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 62:
 /* Line 1787 of yacc.c  */
-#line 444 "Parser.ypp"
+#line 443 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 63:
 /* Line 1787 of yacc.c  */
-#line 448 "Parser.ypp"
+#line 447 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 64:
 /* Line 1787 of yacc.c  */
-#line 449 "Parser.ypp"
+#line 448 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
     break;
 
   case 65:
 /* Line 1787 of yacc.c  */
-#line 453 "Parser.ypp"
+#line 452 "Parser.ypp"
     { (yyval.u.parameter) = current_parameter = new SimpleParameter((yyvsp[(1) - (1)].u.datatype));   }
     break;
 
   case 66:
 /* Line 1787 of yacc.c  */
-#line 455 "Parser.ypp"
+#line 454 "Parser.ypp"
     {
 		Typedef *dtypedef = dc_file->get_typedef_by_name((yyvsp[(1) - (1)].str));
-		if(dtypedef == (Typedef *)NULL)
+		if(dtypedef == (Typedef*)NULL)
 		{
 			// Maybe it's a class name.
-			Class *dclass = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-			if(dclass != (Class *)NULL)
+			Struct *dc_struct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
+			if(dc_struct != (Struct*)NULL)
 			{
-				// Create an implicit typedef for this.
-				dtypedef = new Typedef(new StructParameter(dclass), true);
+				if(dc_struct->as_class() != (Class*)NULL)
+				{
+					yyerror("Cannot use distributed class '" + (yyvsp[(1) - (1)].str) + "' as parameter type.");
+				}
+				else
+				{
+					// Create an implicit typedef for this.
+					dtypedef = new Typedef(new StructParameter(dc_struct), true);
+				}
 			}
 			else
 			{
@@ -2042,7 +2048,7 @@ yyreduce:
 
   case 67:
 /* Line 1787 of yacc.c  */
-#line 480 "Parser.ypp"
+#line 486 "Parser.ypp"
     {
 		SimpleParameter *simple_param = new SimpleParameter((yyvsp[(1) - (4)].u.datatype));
 		if(simple_param == NULL
@@ -2061,181 +2067,181 @@ yyreduce:
 
   case 68:
 /* Line 1787 of yacc.c  */
-#line 497 "Parser.ypp"
+#line 503 "Parser.ypp"
     { (yyval.u.parameter) = param_with_modulus((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.real)); }
     break;
 
   case 69:
 /* Line 1787 of yacc.c  */
-#line 498 "Parser.ypp"
+#line 504 "Parser.ypp"
     { (yyval.u.parameter) = param_with_modulus((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.real)); }
     break;
 
   case 70:
 /* Line 1787 of yacc.c  */
-#line 502 "Parser.ypp"
+#line 508 "Parser.ypp"
     { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
     break;
 
   case 71:
 /* Line 1787 of yacc.c  */
-#line 503 "Parser.ypp"
+#line 509 "Parser.ypp"
     { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
     break;
 
   case 72:
 /* Line 1787 of yacc.c  */
-#line 504 "Parser.ypp"
+#line 510 "Parser.ypp"
     { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
     break;
 
   case 73:
 /* Line 1787 of yacc.c  */
-#line 508 "Parser.ypp"
+#line 514 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
     break;
 
   case 74:
 /* Line 1787 of yacc.c  */
-#line 509 "Parser.ypp"
+#line 515 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
     break;
 
   case 75:
 /* Line 1787 of yacc.c  */
-#line 510 "Parser.ypp"
+#line 516 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
     break;
 
   case 76:
 /* Line 1787 of yacc.c  */
-#line 511 "Parser.ypp"
+#line 517 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
     break;
 
   case 77:
 /* Line 1787 of yacc.c  */
-#line 515 "Parser.ypp"
+#line 521 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
     break;
 
   case 78:
 /* Line 1787 of yacc.c  */
-#line 516 "Parser.ypp"
+#line 522 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
     break;
 
   case 79:
 /* Line 1787 of yacc.c  */
-#line 517 "Parser.ypp"
+#line 523 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
     break;
 
   case 80:
 /* Line 1787 of yacc.c  */
-#line 518 "Parser.ypp"
+#line 524 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
     break;
 
   case 81:
 /* Line 1787 of yacc.c  */
-#line 522 "Parser.ypp"
+#line 528 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
     break;
 
   case 82:
 /* Line 1787 of yacc.c  */
-#line 526 "Parser.ypp"
+#line 532 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 83:
 /* Line 1787 of yacc.c  */
-#line 527 "Parser.ypp"
+#line 533 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 84:
 /* Line 1787 of yacc.c  */
-#line 528 "Parser.ypp"
+#line 534 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 85:
 /* Line 1787 of yacc.c  */
-#line 529 "Parser.ypp"
+#line 535 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 86:
 /* Line 1787 of yacc.c  */
-#line 530 "Parser.ypp"
+#line 536 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 87:
 /* Line 1787 of yacc.c  */
-#line 534 "Parser.ypp"
+#line 540 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 88:
 /* Line 1787 of yacc.c  */
-#line 535 "Parser.ypp"
+#line 541 "Parser.ypp"
     { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
     break;
 
   case 89:
 /* Line 1787 of yacc.c  */
-#line 539 "Parser.ypp"
+#line 545 "Parser.ypp"
     { (yyval.range) = NumericRange(); }
     break;
 
   case 90:
 /* Line 1787 of yacc.c  */
-#line 540 "Parser.ypp"
+#line 546 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.real), (yyvsp[(1) - (1)].u.real)); }
     break;
 
   case 91:
 /* Line 1787 of yacc.c  */
-#line 541 "Parser.ypp"
+#line 547 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.real), (yyvsp[(3) - (3)].u.real)); }
     break;
 
   case 92:
 /* Line 1787 of yacc.c  */
-#line 542 "Parser.ypp"
+#line 548 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.real), (yyvsp[(2) - (2)].u.real)); }
     break;
 
   case 93:
 /* Line 1787 of yacc.c  */
-#line 546 "Parser.ypp"
+#line 552 "Parser.ypp"
     { (yyval.range) = NumericRange(); }
     break;
 
   case 94:
 /* Line 1787 of yacc.c  */
-#line 547 "Parser.ypp"
+#line 553 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.uint32), (yyvsp[(1) - (1)].u.uint32)); }
     break;
 
   case 95:
 /* Line 1787 of yacc.c  */
-#line 548 "Parser.ypp"
+#line 554 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.uint32), (yyvsp[(3) - (3)].u.uint32)); }
     break;
 
   case 96:
 /* Line 1787 of yacc.c  */
-#line 549 "Parser.ypp"
+#line 555 "Parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.uint32), (yyvsp[(2) - (2)].u.uint32)); }
     break;
 
   case 97:
 /* Line 1787 of yacc.c  */
-#line 554 "Parser.ypp"
+#line 560 "Parser.ypp"
     {
 		if((yyvsp[(1) - (1)].str).length() != 1)
 		{
@@ -2250,7 +2256,7 @@ yyreduce:
 
   case 99:
 /* Line 1787 of yacc.c  */
-#line 569 "Parser.ypp"
+#line 575 "Parser.ypp"
     {
 		(yyval.u.uint32) = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
 		if((yyval.u.uint32) != (yyvsp[(1) - (1)].u.uint64))
@@ -2263,7 +2269,7 @@ yyreduce:
 
   case 100:
 /* Line 1787 of yacc.c  */
-#line 581 "Parser.ypp"
+#line 587 "Parser.ypp"
     {
 		(yyval.u.uint32) = (unsigned int) - (yyvsp[(1) - (1)].u.int64);
 		if((yyvsp[(1) - (1)].u.int64) >= 0)
@@ -2280,19 +2286,19 @@ yyreduce:
 
   case 101:
 /* Line 1787 of yacc.c  */
-#line 596 "Parser.ypp"
+#line 602 "Parser.ypp"
     { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.uint64); }
     break;
 
   case 102:
 /* Line 1787 of yacc.c  */
-#line 597 "Parser.ypp"
+#line 603 "Parser.ypp"
     { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.int64); }
     break;
 
   case 104:
 /* Line 1787 of yacc.c  */
-#line 603 "Parser.ypp"
+#line 609 "Parser.ypp"
     {
 		if((yyvsp[(1) - (1)].str).length() != 1)
 		{
@@ -2308,7 +2314,7 @@ yyreduce:
 
   case 106:
 /* Line 1787 of yacc.c  */
-#line 619 "Parser.ypp"
+#line 625 "Parser.ypp"
     {
 		// TODO: check for range limits
 		(yyval.str) = std::string((char*)&(yyvsp[(1) - (1)].u.int64), sizeof(int64_t));
@@ -2317,7 +2323,7 @@ yyreduce:
 
   case 107:
 /* Line 1787 of yacc.c  */
-#line 624 "Parser.ypp"
+#line 630 "Parser.ypp"
     {
 		// TODO: check for range limits
 		(yyval.str) = std::string((char*)&(yyvsp[(1) - (1)].u.uint64), sizeof(uint64_t));
@@ -2326,7 +2332,7 @@ yyreduce:
 
   case 108:
 /* Line 1787 of yacc.c  */
-#line 629 "Parser.ypp"
+#line 635 "Parser.ypp"
     {
 		// TODO: check for range limits
 		(yyval.str) = std::string((char*)&(yyvsp[(1) - (1)].u.real), sizeof(double));
@@ -2335,7 +2341,7 @@ yyreduce:
 
   case 109:
 /* Line 1787 of yacc.c  */
-#line 634 "Parser.ypp"
+#line 640 "Parser.ypp"
     {
 		DataType type = current_parameter->get_datatype();
 		if(type == DT_string)
@@ -2358,7 +2364,7 @@ yyreduce:
 
   case 110:
 /* Line 1787 of yacc.c  */
-#line 653 "Parser.ypp"
+#line 659 "Parser.ypp"
     {
 		// TODO: check for range limits... maybe?
 		(yyval.str) = (yyvsp[(1) - (1)].str);
@@ -2367,7 +2373,7 @@ yyreduce:
 
   case 111:
 /* Line 1787 of yacc.c  */
-#line 658 "Parser.ypp"
+#line 664 "Parser.ypp"
     {
 		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
@@ -2385,7 +2391,7 @@ yyreduce:
 
   case 112:
 /* Line 1787 of yacc.c  */
-#line 672 "Parser.ypp"
+#line 678 "Parser.ypp"
     {
 		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
@@ -2408,7 +2414,7 @@ yyreduce:
 
   case 113:
 /* Line 1787 of yacc.c  */
-#line 699 "Parser.ypp"
+#line 705 "Parser.ypp"
     {
 		// TODO: Check array type matches parameter type
 		(yyval.str) = (yyvsp[(1) - (1)].str);
@@ -2417,7 +2423,7 @@ yyreduce:
 
   case 114:
 /* Line 1787 of yacc.c  */
-#line 704 "Parser.ypp"
+#line 710 "Parser.ypp"
     {
 		// TODO: Check array type compatible with SIGNED_INTEGER
 		std::string val;
@@ -2431,7 +2437,7 @@ yyreduce:
 
   case 115:
 /* Line 1787 of yacc.c  */
-#line 714 "Parser.ypp"
+#line 720 "Parser.ypp"
     {
 		// TODO: Check array type compatible with UNSIGNED_INTEGER
 		std::string val;
@@ -2445,7 +2451,7 @@ yyreduce:
 
   case 116:
 /* Line 1787 of yacc.c  */
-#line 724 "Parser.ypp"
+#line 730 "Parser.ypp"
     {
 		// TODO: Check array type compatible with REAL
 		std::string val;
@@ -2459,7 +2465,7 @@ yyreduce:
 
   case 117:
 /* Line 1787 of yacc.c  */
-#line 734 "Parser.ypp"
+#line 740 "Parser.ypp"
     {
 		// TODO: Check array type compatible with HEX_STRING
 		std::string val;
@@ -2473,7 +2479,7 @@ yyreduce:
 
   case 118:
 /* Line 1787 of yacc.c  */
-#line 744 "Parser.ypp"
+#line 750 "Parser.ypp"
     {
 		// TODO: Check array type matches parameter type
 		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
@@ -2482,97 +2488,97 @@ yyreduce:
 
   case 119:
 /* Line 1787 of yacc.c  */
-#line 751 "Parser.ypp"
+#line 757 "Parser.ypp"
     { (yyval.u.datatype) = DT_int8; }
     break;
 
   case 120:
 /* Line 1787 of yacc.c  */
-#line 752 "Parser.ypp"
+#line 758 "Parser.ypp"
     { (yyval.u.datatype) = DT_int16; }
     break;
 
   case 121:
 /* Line 1787 of yacc.c  */
-#line 753 "Parser.ypp"
+#line 759 "Parser.ypp"
     { (yyval.u.datatype) = DT_int32; }
     break;
 
   case 122:
 /* Line 1787 of yacc.c  */
-#line 754 "Parser.ypp"
+#line 760 "Parser.ypp"
     { (yyval.u.datatype) = DT_int64; }
     break;
 
   case 123:
 /* Line 1787 of yacc.c  */
-#line 755 "Parser.ypp"
+#line 761 "Parser.ypp"
     { (yyval.u.datatype) = DT_uint8; }
     break;
 
   case 124:
 /* Line 1787 of yacc.c  */
-#line 756 "Parser.ypp"
+#line 762 "Parser.ypp"
     { (yyval.u.datatype) = DT_uint16; }
     break;
 
   case 125:
 /* Line 1787 of yacc.c  */
-#line 757 "Parser.ypp"
+#line 763 "Parser.ypp"
     { (yyval.u.datatype) = DT_uint32; }
     break;
 
   case 126:
 /* Line 1787 of yacc.c  */
-#line 758 "Parser.ypp"
+#line 764 "Parser.ypp"
     { (yyval.u.datatype) = DT_uint64; }
     break;
 
   case 127:
 /* Line 1787 of yacc.c  */
-#line 759 "Parser.ypp"
+#line 765 "Parser.ypp"
     { (yyval.u.datatype) = DT_float32; }
     break;
 
   case 128:
 /* Line 1787 of yacc.c  */
-#line 760 "Parser.ypp"
+#line 766 "Parser.ypp"
     { (yyval.u.datatype) = DT_float64; }
     break;
 
   case 129:
 /* Line 1787 of yacc.c  */
-#line 761 "Parser.ypp"
+#line 767 "Parser.ypp"
     { (yyval.u.datatype) = DT_string; }
     break;
 
   case 130:
 /* Line 1787 of yacc.c  */
-#line 762 "Parser.ypp"
+#line 768 "Parser.ypp"
     { (yyval.u.datatype) = DT_blob; }
     break;
 
   case 131:
 /* Line 1787 of yacc.c  */
-#line 763 "Parser.ypp"
+#line 769 "Parser.ypp"
     { (yyval.u.datatype) = DT_char; }
     break;
 
   case 132:
 /* Line 1787 of yacc.c  */
-#line 767 "Parser.ypp"
+#line 773 "Parser.ypp"
     { current_keyword_list.clear_keywords(); }
     break;
 
   case 133:
 /* Line 1787 of yacc.c  */
-#line 768 "Parser.ypp"
+#line 774 "Parser.ypp"
     { current_keyword_list.add_keyword((yyvsp[(2) - (2)].u.keyword)); }
     break;
 
   case 134:
 /* Line 1787 of yacc.c  */
-#line 773 "Parser.ypp"
+#line 779 "Parser.ypp"
     {
 		if(current_keyword_list.get_num_keywords() != 0)
 		{
@@ -2583,19 +2589,19 @@ yyreduce:
 
   case 135:
 /* Line 1787 of yacc.c  */
-#line 782 "Parser.ypp"
+#line 788 "Parser.ypp"
     { current_molecular = new MolecularField((yyvsp[(1) - (2)].str), current_class); }
     break;
 
   case 136:
 /* Line 1787 of yacc.c  */
-#line 783 "Parser.ypp"
+#line 789 "Parser.ypp"
     { (yyval.u.field) = current_molecular; }
     break;
 
   case 137:
 /* Line 1787 of yacc.c  */
-#line 788 "Parser.ypp"
+#line 794 "Parser.ypp"
     {
 		Field *field = current_class->get_field_by_name((yyvsp[(1) - (1)].str));
 		(yyval.u.atomic) = (AtomicField *)NULL;
@@ -2616,7 +2622,7 @@ yyreduce:
 
   case 138:
 /* Line 1787 of yacc.c  */
-#line 808 "Parser.ypp"
+#line 814 "Parser.ypp"
     {
 		if((yyvsp[(1) - (1)].u.atomic) != (AtomicField *)NULL)
 		{
@@ -2627,7 +2633,7 @@ yyreduce:
 
   case 139:
 /* Line 1787 of yacc.c  */
-#line 815 "Parser.ypp"
+#line 821 "Parser.ypp"
     {
 		if((yyvsp[(3) - (3)].u.atomic) != (AtomicField *)NULL)
 		{
@@ -2644,7 +2650,7 @@ yyreduce:
 
 
 /* Line 1787 of yacc.c  */
-#line 2648 "Parser.cpp"
+#line 2654 "Parser.cpp"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2876,7 +2882,7 @@ yyreturn:
 
 
 /* Line 2050 of yacc.c  */
-#line 834 "Parser.ypp"
+#line 840 "Parser.ypp"
  /* Start helper function section */
 
 

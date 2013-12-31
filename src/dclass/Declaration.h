@@ -16,6 +16,7 @@ namespace dclass   // open namespace
 
 // Forward declarations
 class Class;
+class Struct;
 
 // A Declaration is a common interface for a declaration in a DC file.
 //     This is either a class, typedef, or keyword declaration.
@@ -23,6 +24,11 @@ class Declaration
 {
 	public:
 		virtual ~Declaration();
+
+		// as_struct returns the same declaration pointer converted to a class
+		//     pointer, if this is in fact a struct; otherwise, returns NULL.
+		virtual Struct *as_struct();
+		virtual const Struct *as_struct() const;
 
 		// as_class returns the same declaration pointer converted to a class
 		//     pointer, if this is in fact a class; otherwise, returns NULL.

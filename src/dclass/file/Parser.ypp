@@ -269,20 +269,19 @@ dclass_name
 		}
 		else
 		{
-			Class *dclass = dc_file->get_class_by_name($1);
-			if(dclass == (Class *)NULL)
+			Struct *dc_struct = dc_file->get_class_by_name($1);
+			if(dc_struct == (Class*)NULL)
 			{
 				yyerror("dclass '" + std::string($1) + "' has not been declared.");
 			}
-			// TODO: Output this helpful info
-			/*
-			if(dc_file->get_struct_by_name($1))
+
+			Class* dc_class = dc_struct->as_class();
+			if(dc_class == (Class*)NULL)
 			{
 				yyerror("dclass cannot inherit from a struct");
 			}
-			*/
 
-			$$ = dclass;
+			$$ = dc_class;
 		}
 	}
 	;
@@ -454,14 +453,21 @@ param_w_typ
 	| IDENTIFIER
 	{
 		Typedef *dtypedef = dc_file->get_typedef_by_name($1);
-		if(dtypedef == (Typedef *)NULL)
+		if(dtypedef == (Typedef*)NULL)
 		{
 			// Maybe it's a class name.
-			Class *dclass = dc_file->get_class_by_name($1);
-			if(dclass != (Class *)NULL)
+			Struct *dc_struct = dc_file->get_class_by_name($1);
+			if(dc_struct != (Struct*)NULL)
 			{
-				// Create an implicit typedef for this.
-				dtypedef = new Typedef(new StructParameter(dclass), true);
+				if(dc_struct->as_class() != (Class*)NULL)
+				{
+					yyerror("Cannot use distributed class '" + $1 + "' as parameter type.");
+				}
+				else
+				{
+					// Create an implicit typedef for this.
+					dtypedef = new Typedef(new StructParameter(dc_struct), true);
+				}
 			}
 			else
 			{

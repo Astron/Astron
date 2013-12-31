@@ -19,7 +19,7 @@ namespace dclass   // open namespace dclass
 // A SimpleParameter is a parameter with any non-composing datatype (ie. not arrays or structs).
 //     It may also optionally have a divisor, which is meaningful only for the numeric types,
 //     where a divisor represents a fixed-point numeric convention.
-class SimpleParameter : public Parameter, public Struct
+class SimpleParameter : public Parameter
 {
 	public:
 		// Type constructor

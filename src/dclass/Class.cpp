@@ -51,151 +51,6 @@ const Class* Class::as_class() const
 	return this;
 }
 
-/* TODO: Move and update appropriately
-// output formats a string representation of the class in .dc file syntax
-//     as "dclass IDENTIFIER" or "struct IDENTIFIER" with structs having optional IDENTIFIER,
-//     and outputs the formatted string to the stream.
-void Class::output(ostream &out) const
-{
-	if(m_is_struct)
-	{
-		out << "struct";
-	}
-	else
-	{
-		out << "dclass";
-	}
-	if(!m_name.empty())
-	{
-		out << " " << m_name;
-	}
-}
-
-// output formats a string representation of the class in .dc file syntax
-//     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
-//     and outputs the formatted string to the stream.
-void Class::output(ostream &out, bool brief) const
-{
-	output_instance(out, brief, "", "", "");
-}
-
-// write formats a string representation of the class in .dc file syntax
-//     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
-//     and outputs the formatted string to the stream.
-void Class::write(ostream &out, bool brief, int indent_level) const
-{
-	indent(out, indent_level);
-	if(m_is_struct)
-	{
-		out << "struct";
-	}
-	else
-	{
-		out << "dclass";
-	}
-	if(!m_name.empty())
-	{
-		out << " " << m_name;
-	}
-
-	if(!m_parents.empty())
-	{
-		auto it = m_parents.begin();
-		out << " : " << (*it)->m_name;
-		++it;
-		while(it != m_parents.end())
-		{
-			out << ", " << (*it)->m_name;
-			++it;
-		}
-	}
-
-	out << " {";
-	if(!brief && m_number >= 0)
-	{
-		out << "  // index " << m_number;
-	}
-	out << "\n";
-
-	if(m_constructor != (Field*)NULL)
-	{
-		m_constructor->write(out, brief, indent_level + 2);
-	}
-
-	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
-	{
-		(*it)->write(out, brief, indent_level + 2);
-
-		
-		//if (true || (*fi)->has_default_value()) {
-		//  indent(out, indent_level + 2) << "// = ";
-		//  Packer packer;
-		//  packer.set_unpack_data((*fi)->get_default_value());
-		//  packer.begin_unpack(*fi);
-		//  packer.unpack_and_format(out, false);
-		//  if (!packer.end_unpack()) {
-		//    out << "<error>";
-		//  }
-		//  out << "\n";
-		//}
-	}
-
-	indent(out, indent_level) << "};\n";
-}
-
-// output_instance formats a string representation of the class in .dc file syntax
-//     as dclass IDENTIFIER : SUPERCLASS, ... {FIELD, ...}; with optional SUPERCLASSES and FIELDS,
-//     and outputs the formatted string to the stream.
-void Class::output_instance(ostream &out, bool brief, const string &prename,
-                            const string &name, const string &postname) const
-{
-	if(m_is_struct)
-	{
-		out << "struct";
-	}
-	else
-	{
-		out << "dclass";
-	}
-	if(!m_name.empty())
-	{
-		out << " " << m_name;
-	}
-
-	if(!m_parents.empty())
-	{
-		auto it = m_parents.begin();
-		out << " : " << (*it)->m_name;
-		++it;
-		while(it != m_parents.end())
-		{
-			out << ", " << (*it)->m_name;
-			++it;
-		}
-	}
-
-	out << " {";
-
-	if(m_constructor != (Field*)NULL)
-	{
-		m_constructor->output(out, brief);
-		out << "; ";
-	}
-
-	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
-	{
-		(*it)->output(out, brief);
-		out << "; ";
-	}
-
-	out << "}";
-	if(!prename.empty() || !name.empty() || !postname.empty())
-	{
-		out << " " << prename << name << postname;
-	}
-}
-*/
-
 // rebuild_fields recomputes the list of inherited fields for the class.
 void Class::rebuild_fields()
 {
@@ -220,8 +75,11 @@ void Class::rebuild_fields()
 				{
 					// The earlier parent shadows the later parent.
 					m_fields.push_back(field);
-					m_bytesize += field->get_size();
-					m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
+					if(!field->as_molecular_field())
+					{
+						m_bytesize += field->get_size();
+						m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
+					}
 				}
 			}
 		}
@@ -252,8 +110,11 @@ void Class::rebuild_fields()
 
 		// Now add the local field.
 		m_fields.push_back(field);
-		m_bytesize += field->get_size();
-		m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
+		if(!field->as_molecular_field())
+		{
+			m_bytesize += field->get_size();
+			m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
+		}
 	}
 
 	// The fields must be sorted by id

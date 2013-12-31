@@ -141,13 +141,29 @@ int main(int argc, char *argv[])
 		{
 			YAML::Node udnode = *it;
 			Uberdog ud;
-			ud.dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
-			if(!ud.dcc)
+
+			// Get the uberdog's class
+			dclass::Struct* dc_struct = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
+			if(!dc_struct)
 			{
-				mainlog.fatal() << "DCClass " << udnode["class"].as<std::string>()
-				               << "Does not exist!" << std::endl;
+				// Make sure it exists
+				mainlog.fatal() << "Distributed class " << udnode["class"].as<std::string>()
+				                << "Does not exist!" << std::endl;
 				exit(1);
 			}
+
+			// Make sure it is a class and not a struct
+			dclass::Class* dc_class = dc_struct->as_class();
+			if(!dc_struct)
+			{
+				// Make sure it exists
+				mainlog.fatal() << "Distributed type " << udnode["class"].as<std::string>()
+				                << " is a struct, not a class." << std::endl;
+				exit(1);
+			}
+
+			// Setup uberdog
+			ud.dcc = dc_class;
 			ud.anonymous = udnode["anonymous"].as<bool>();
 			g_uberdogs[udnode["id"].as<doid_t>()] = ud;
 		}

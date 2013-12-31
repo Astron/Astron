@@ -60,7 +60,7 @@ class Parameter : public Field
 		virtual const ArrayParameter *as_array_parameter() const;
 
 		// copy returns a deep copy of this parameter
-		virtual Parameter* copy() const;
+		virtual Parameter* copy() const = 0;
 
 		// get_typedef returns the Typedef instance if this type has been referenced from a typedef, or NULL.
 		const Typedef *get_typedef() const;

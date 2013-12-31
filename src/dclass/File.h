@@ -42,12 +42,12 @@ class File
 		// get_num_classes returns the number of classes read from the .dc file(s).
 		int get_num_classes() const;
 		// get_class returns the nth class read from the .dc file(s).
-		Class *get_class(int n) const;
+		Struct* get_class(int n) const;
 		// get_class_by_name returns the requested class or NULL if there is no such class.
-		Class *get_class_by_name(const std::string &name) const;
+		Struct* get_class_by_name(const std::string &name) const;
 		// get_field_by_id returns a pointer to the Field that has index number <id>.
 		//     Returns NULL if no field exists in the file with that id.
-		Field *get_field_by_id(int id) const;
+		Field* get_field_by_id(int id) const;
 
 		// get_num_import_modules returns the number of import lines read from the .dc file(s).
 		int get_num_import_modules() const;
@@ -124,7 +124,7 @@ class File
 		void setup_default_keywords();
 		void rebuild_inherited_fields();
 
-		std::vector<Class*> m_classes; // list of classes associated with the file
+		std::vector<Struct*> m_classes; // list of classes associated with the file
 		std::unordered_map<std::string, Declaration*> m_things_by_name; // classes in the file by name
 
 		class Import

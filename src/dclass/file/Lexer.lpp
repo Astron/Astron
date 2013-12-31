@@ -436,6 +436,8 @@ using namespace dclass;
 
 %}
 
+%option nounput
+
 UNSIGNED_INTEGERNUM  ([0-9]+)
 SIGNED_INTEGERNUM    ([+-]([0-9]+))
 UNSIGNED_HEXNUM      (0x[0-9a-fA-F]*)

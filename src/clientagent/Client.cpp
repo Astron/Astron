@@ -340,7 +340,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 				obj.id = do_id;
 				obj.parent = parent;
 				obj.zone = zone;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class(dc_id)->as_class();
 				m_visible_objects[do_id] = obj;
 			}
 
@@ -401,7 +401,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			{
 				VisibleObject obj;
 				obj.id = do_id;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class(dc_id)->as_class();
 				obj.parent = parent;
 				obj.zone = zone;
 				m_visible_objects[do_id] = obj;

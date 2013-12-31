@@ -78,8 +78,8 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 // copy constructor
 SimpleParameter::SimpleParameter(const SimpleParameter &copy) :
 	Parameter(copy), m_divisor(copy.m_divisor), m_has_modulus(copy.m_has_modulus),
-	m_orig_range(copy.m_orig_range), m_orig_modulus(copy.m_orig_modulus),
-	m_range(m_range), m_modulus(m_modulus)
+	m_orig_modulus(copy.m_orig_modulus), m_orig_range(copy.m_orig_range),
+	m_modulus(m_modulus), m_range(m_range)
 {
 	m_datatype = copy.m_datatype;
 }
@@ -99,7 +99,7 @@ const SimpleParameter *SimpleParameter::as_simple_parameter() const
 }
 
 // copy returns a parameter copy of this parameter
-Parameter *SimpleParameter::copy() const
+Parameter* SimpleParameter::copy() const
 {
 	return new SimpleParameter(*this);
 }

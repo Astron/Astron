@@ -42,7 +42,7 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const NumericRange &size
 			// We make a special case for char[] arrays: these have the string DataType.
 			// Note: A string is equivalent to an int8[] or uint8[] except that it is
 			//       treated semantically as character data, and is printed as a string.
-			if(m_datatype = DT_array)
+			if(m_datatype == DT_array)
 			{
 				m_datatype = DT_string;
 			}

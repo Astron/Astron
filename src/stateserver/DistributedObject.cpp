@@ -24,9 +24,9 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 	m_log = new LogCategory("object", name.str());
 	set_con_name(name.str());
 
-	for(int i = 0; i < m_dclass->get_num_inherited_fields(); ++i)
+	for(unsigned int i = 0; i < m_dclass->get_num_fields(); ++i)
 	{
-		Field *field = m_dclass->get_inherited_field(i);
+		Field *field = m_dclass->get_field(i);
 		if(field->is_required() && !field->as_molecular_field())
 		{
 			dgi.unpack_field(field, m_required_fields[field]);
@@ -91,10 +91,10 @@ void DistributedObject::append_required_data(Datagram &dg, bool client_only, boo
 	dg.add_doid(m_do_id);
 	dg.add_location(m_parent_id, m_zone_id);
 	dg.add_uint16(m_dclass->get_id());
-	uint32_t field_count = m_dclass->get_num_inherited_fields();
+	uint32_t field_count = m_dclass->get_num_fields();
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
-		Field *field = m_dclass->get_inherited_field(i);
+		Field *field = m_dclass->get_field(i);
 		if(field->is_required() && !field->as_molecular_field() && (!client_only
 		        || field->is_broadcast() || field->is_clrecv() || (also_owner && field->is_ownrecv())))
 		{
