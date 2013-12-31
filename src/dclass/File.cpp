@@ -28,13 +28,6 @@ File::File() : m_inherited_fields_stale(false)
 //destructor
 File::~File()
 {
-	clear();
-}
-
-// clear removes all of the classes defined within the
-//     File and prepares it for reading a new file.
-void File::clear()
-{
 	for(auto it = m_declarations.begin(); it != m_declarations.end(); ++it)
 	{
 		delete(*it);
@@ -52,9 +45,6 @@ void File::clear()
 	m_keywords.clear_keywords();
 	m_declarations.clear();
 	m_things_to_delete.clear();
-	setup_default_keywords();
-
-	m_inherited_fields_stale = false;
 }
 
 // write opens the indicated filename for output and writes a parseable
@@ -140,18 +130,13 @@ Class* File::get_class_by_name(const std::string &name) const
 	return (Class*)NULL;
 }
 
-// get_field_by_index returns a pointer to the one Field that has the indicated
-//     index number, of all the Fields across all classes in the file.
-//     This method is only valid if dc-multiple-inheritance is set true in the
-//     Config.prc file.  Without this setting, different Fields may share the
-//     same index number, so this global lookup is not possible.
-Field* File::get_field_by_index(int index_number) const
+// get_field_by_id returns a pointer to the Field that has index number <id>.
+//     Returns NULL if no field exists in the file with that id.
+Field* File::get_field_by_id(int index_number) const
 {
-	assert(dc_multiple_inheritance);
-
-	if(index_number >= 0 && index_number < (int)m_fields_by_index.size())
+	if(index_number >= 0 && index_number < (int)m_fields_by_id.size())
 	{
-		return m_fields_by_index[index_number];
+		return m_fields_by_id[index_number];
 	}
 
 	return NULL;
@@ -367,12 +352,12 @@ void File::add_thing_to_delete(Declaration *decl)
 	m_things_to_delete.push_back(decl);
 }
 
-// set_new_index_number sets the next sequential available index number on the indicated field.
-//     This is only meant to be called by Class::add_field(), while the dc file is being parsed.
-void File::set_new_index_number(Field *field)
+// add_field sets the next sequential available index number on the indicated field.
+//     This is only meant to be called by Class::add_field().
+void File::add_field(Field *field)
 {
-	field->set_id((int)m_fields_by_index.size());
-	m_fields_by_index.push_back(field);
+	field->set_id((unsigned int)m_fields_by_id.size());
+	m_fields_by_id.push_back(field);
 }
 
 // setup_default_keywords adds an entry for each of the default keywords
@@ -414,15 +399,9 @@ void File::setup_default_keywords()
 void File::rebuild_inherited_fields()
 {
 	m_inherited_fields_stale = false;
-
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		// TODO: fix
-		//(*it)->clear_inherited_fields();
-	}
-	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
-	{
-		(*it)->rebuild_inherited_fields();
+		(*it)->rebuild_fields();
 	}
 }
 

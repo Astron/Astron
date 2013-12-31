@@ -29,17 +29,17 @@ inline Field* Class::get_constructor() const
 	return m_constructor;
 }
 
-// get_num_inherited_fields returns the total declared and inherited fields in this class.
-inline size_t Class::get_num_inherited_fields() const
+// get_num_base_fields returns the number of fields declared directly in this class.
+inline size_t Class::get_num_base_fields() const
 {
-	return m_inherited_fields.size();
+	return m_base_fields.size();
 }
 
-// get_inherited_field returns the <n>th field from all declared and inherited fields.
-inline Field* Class::get_inherited_field(unsigned int n) const
+// get_base_field returns the <n>th field from the class excluding any inherited fields.
+inline Field* Class::get_base_field(unsigned int n) const
 {
-	assert(n < m_inherited_fields.size());
-	return m_inherited_fields[n];
+	assert(n < m_base_fields.size());
+	return m_base_fields[n];
 }
 
 

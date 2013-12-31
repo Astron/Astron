@@ -2036,7 +2036,7 @@ yyreduce:
 			dc_file->add_typedef(dtypedef);
 		}
 
-		(yyval.u.parameter) = current_parameter = dtypedef->make_new_parameter();
+		(yyval.u.parameter) = current_parameter = dtypedef->new_parameter();
 	}
     break;
 
@@ -2337,7 +2337,7 @@ yyreduce:
 /* Line 1787 of yacc.c  */
 #line 634 "Parser.ypp"
     {
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_string)
 		{
 			if((yyvsp[(1) - (1)].str).length() != current_parameter->get_size())
@@ -2369,7 +2369,7 @@ yyreduce:
 /* Line 1787 of yacc.c  */
 #line 658 "Parser.ypp"
     {
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
 		{
 			sizetag_t length = (yyvsp[(2) - (3)].str).length();
@@ -2387,7 +2387,7 @@ yyreduce:
 /* Line 1787 of yacc.c  */
 #line 672 "Parser.ypp"
     {
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
 		{
 			sizetag_t length = (yyvsp[(2) - (3)].str).length();

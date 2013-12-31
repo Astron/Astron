@@ -10,9 +10,9 @@
 
 #pragma once
 #include "KeywordList.h"
-#include <string> // std::string
-#include <vector> // std::vector
-#include <map>
+#include <string>        // std::string
+#include <vector>        // std::vector
+#include <unordered_map> // std::unordered_map
 namespace dclass   // open namespace
 {
 
@@ -34,8 +34,6 @@ class File
 		File();
 		~File();
 
-		void clear();
-
 		// write writes a parseable description of all the known distributed classes to the output.
 		//     Returns true if the description is successfully written, false otherwise.
 		bool write(std::string filename, bool brief) const;
@@ -47,13 +45,9 @@ class File
 		Class *get_class(int n) const;
 		// get_class_by_name returns the requested class or NULL if there is no such class.
 		Class *get_class_by_name(const std::string &name) const;
-		// get_field_by_index returns a pointer to the one Field that has the indicated
-		//     index number, of all the Fields across all classes in the file.
-		Field *get_field_by_index(int index_number) const;
-
-		// all_objects_valid returns true if all of the classes read from the DC
-		//     file were defined and valid, or false if any of them were undefined.
-		inline bool all_objects_valid() const;
+		// get_field_by_id returns a pointer to the Field that has index number <id>.
+		//     Returns NULL if no field exists in the file with that id.
+		Field *get_field_by_id(int id) const;
 
 		// get_num_import_modules returns the number of import lines read from the .dc file(s).
 		int get_num_import_modules() const;
@@ -114,8 +108,10 @@ class File
 		//     be deleted when the file's destructor is called.
 		void add_thing_to_delete(Declaration *decl);
 
-		// set_new_index_number sets the next sequential available index number on the indicated field.
-		void set_new_index_number(Field *field);
+		// add_field gives the field a unique id within the file.
+		//     Field ids are sequentially assigned as the field is called.
+		//     This is only meant to be called by Class::add_field().
+		void add_field(Field *field);
 
 		// check_inherited_fields rebuilds all of the inherited fields tables, if necessary.
 		inline void check_inherited_fields();
@@ -129,7 +125,7 @@ class File
 		void rebuild_inherited_fields();
 
 		std::vector<Class*> m_classes; // list of classes associated with the file
-		std::map<std::string, Declaration*> m_things_by_name; // classes in the file by name
+		std::unordered_map<std::string, Declaration*> m_things_by_name; // classes in the file by name
 
 		class Import
 		{
@@ -141,7 +137,7 @@ class File
 		std::vector<Import> m_imports; // list of python imports in the file
 		std::vector<Typedef*> m_typedefs; // list of typedefs in the file
 
-		std::map<std::string, Typedef*> m_typedefs_by_name; // typedefs in the file by name
+		std::unordered_map<std::string, Typedef*> m_typedefs_by_name; // typedefs in the file by name
 
 		KeywordList m_keywords; // list of keywords read from the file
 		KeywordList m_default_keywords; // list of keywords in the file, provided for legacy reasons
@@ -149,7 +145,7 @@ class File
 		std::vector<Declaration*> m_declarations; // composite list of classes and switches in the file
 		std::vector<Declaration*> m_things_to_delete; // list of objects to delete in destructor
 
-		std::vector<Field*> m_fields_by_index; // fields in the file by unique integer id
+		std::vector<Field*> m_fields_by_id; // fields in the file by unique integer id
 
 		bool m_inherited_fields_stale; // true if inherited fields have not be calculated.
 };

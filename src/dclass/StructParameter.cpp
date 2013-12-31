@@ -12,6 +12,7 @@
 #include "Class.h"
 #include "ArrayParameter.h"
 #include "HashGenerator.h"
+using namespace std;
 namespace dclass   // open namespace
 {
 
@@ -22,53 +23,38 @@ StructParameter::StructParameter(const Struct *dclass) : m_class(dclass)
 	m_name = dclass->get_name();
 	m_datatype = DT_struct;
 
-	int num_fields = 0;
-	if(dclass->as_class())
+	size_t num_fields = dclass->get_num_fields();
+	for(unsigned int i = 0 ; i < num_fields; i++)
 	{
-		const Class* cls = dclass->as_class();
-		num_fields = cls->get_num_inherited_fields();
-		if(cls->has_constructor())
+		Field *field = dclass->get_field(i);
+		if(!field->as_molecular_field()) // Field is Atomic or Parameter
 		{
-			Field *field = cls->get_constructor();
-			num_fields++;
+			m_fields.push_back(field);
 		}
 	}
-	else
+
+	// If all of the nested fields have a fixed byte size, then so does the class
+	// (and its byte size is the sum of all of its fields).
+	for(unsigned int i = 0; i < m_fields.size(); i++)
 	{
-		num_fields = dclass->get_num_fields();
+		Field *field = m_fields[i];
+		if(!field->has_fixed_size())
+		{
+			m_has_fixed_size = false;
+			m_bytesize = 0;
+			break;
+		}
+
+		m_bytesize += field->get_size();
 	}
-
-
-
-	int i;
-	for(i = 0 ; i < num_fields; i++)
-	{
-		//Field *field = m_class->get_inherited_field(i);
-		//if(!field->as_molecular_field())
-		//{
-			//m_nested_fields.push_back(field);
-			//m_has_default_value = m_has_default_value || field->has_default_value();
-		//}
-	}
-
-	// If all of the nested fields have a fixed byte size, then so does
-	// the class (and its byte size is the sum of all of the nested
-	// fields).
-	/*
-	for(i = 0; i < m_num_nested_fields; i++)
-	{
-		PackerInterface *field = get_nested_field(i);
-		m_has_fixed_byte_size = m_has_fixed_byte_size && field->has_fixed_byte_size();
-		m_fixed_byte_size += field->get_fixed_byte_size();
-
-		m_has_range_limits = m_has_range_limits || field->has_range_limits();
-	}
-	*/
 }
 
  // copy constructor
 StructParameter::StructParameter(const StructParameter &copy) : Parameter(copy), m_class(copy.m_class)
 {
+	m_file = copy.m_file;
+	m_name = string(copy.m_name);
+	m_fields = vector<Field*>(copy.m_fields);
 }
 
 // as_class_parameter returns the same parameter pointer converted to a class parameter
@@ -86,17 +72,10 @@ const StructParameter *StructParameter::as_struct_parameter() const
 	return this;
 }
 
-// make_copy returns a deep copy of this parameter
-Parameter *StructParameter::make_copy() const
+// copy returns a deep copy of this parameter
+Parameter *StructParameter::copy() const
 {
 	return new StructParameter(*this);
-}
-
-// is_valid returns false if the element type is an invalid type
-//     (e.g. declared from an undefined typedef), or true if it is valid.
-bool StructParameter::is_valid() const
-{
-	return true;
 }
 
 // get_class returns the class that this parameter represents
@@ -105,12 +84,11 @@ const Struct *StructParameter::get_class() const
 	return m_class;
 }
 
-
 // output_instance formats the parameter to the syntax of an class parameter in a .dc file
 //     as CLASS_IDENTIFIER PARAM_IDENTIFIER with optional PARAM_IDENTIFIER,
 //     and outputs the formatted string to the stream.
-void StructParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
-                                     const std::string &name, const std::string &postname) const
+void StructParameter::output_instance(ostream &out, bool brief, const string &prename,
+                                     const string &name, const string &postname) const
 {
 	if(get_typedef() != (Typedef*)NULL)
 	{
@@ -128,6 +106,11 @@ void StructParameter::generate_hash(HashGenerator &hashgen) const
 {
 	Parameter::generate_hash(hashgen);
 	m_class->generate_hash(hashgen);
+}
+
+bool add_field(Field* field)
+{
+	return false;
 }
 
 

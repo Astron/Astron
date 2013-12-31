@@ -16,7 +16,7 @@ class File;
 
 // A Struct provides DataType composition by combining multiple Fields.
 //     Structs may have both anonymous and named Fields.
-class Struct : public Declaration, public DistributedType
+class Struct : public Declaration, public virtual DistributedType
 {
 	public:
 		Struct(File* file, const std::string &name);
@@ -34,6 +34,7 @@ class Struct : public Declaration, public DistributedType
 		// get_id returns a unique index number associated with this struct.
 		//     This is defined implicitly when a .dc file is read.
 		inline unsigned int get_id() const;
+
 		// get_num_fields returns the number of fields defined directly in the struct.
 		inline size_t get_num_fields() const;
 		// get_field returns the <n>th field defined directly in the struct or NULL if out-of-range.

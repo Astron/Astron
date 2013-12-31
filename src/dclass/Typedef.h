@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Declaration.h"
 namespace dclass   // open namespace dclass
 {
@@ -19,7 +18,7 @@ namespace dclass   // open namespace dclass
 class Parameter;
 
 // A Typedef represents a single typedef declaration in the dc file.
-//     It assigns a particular type to a new name, ust like a C typedef.
+//     It assigns a particular type to a new name, just like a C typedef.
 class Typedef : public Declaration
 {
 	public:
@@ -33,7 +32,7 @@ class Typedef : public Declaration
 
 		bool is_implicit_typedef() const;
 
-		Parameter *make_new_parameter() const;
+		Parameter *new_parameter() const;
 
 		void set_number(int number);
 		virtual void output(std::ostream &out, bool brief) const;

@@ -40,19 +40,24 @@ class Class : public Struct
 		//     or NULL if the class uses the default constructor.
 		inline Field* get_constructor() const;
 
-		// get_num_inherited_fields returns the total declared and inherited fields in this class.
-		inline size_t get_num_inherited_fields() const;
-		// get_inherited_field returns the <n>th field from all declared and inherited fields.
-		inline Field* get_inherited_field(unsigned int n) const;
+		// get_num_base_fields returns the number of fields declared directly in this class.
+		inline size_t get_num_base_fields() const;
+		// get_base_field returns the <n>th field from the class excluding any inherited fields.
+		inline Field* get_base_field(unsigned int n) const;
 
-		void rebuild_inherited_fields();
+		// add_field adds a new Field to the class.
+		virtual bool add_field(Field* field);
 
+		// add_parent set this class as a subclass to target parent.
 		void add_parent(Class *parent);
+
+		// rebuild_fields recomputes the list of inherited fields for the class.
+		void rebuild_fields();
 
 	private:
 		Field* m_constructor;
 		std::vector<Class*> m_parents;
-		std::vector<Field*> m_inherited_fields;
+		std::vector<Field*> m_base_fields;
 };
 
 

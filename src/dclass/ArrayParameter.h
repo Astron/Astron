@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Parameter.h"
 #include "NumericRange.h"
 #include <sstream> // for std::ostringstream
@@ -35,12 +34,8 @@ class ArrayParameter : public Parameter
 		virtual ArrayParameter* as_array_parameter();
 		virtual const ArrayParameter* as_array_parameter() const;
 
-		// make_copy returns a deep copy of this parameter
-		virtual Parameter* make_copy() const;
-
-		// is_valid returns false if the element type is an invalid type
-		//     (e.g. declared from an undefined typedef), or true if it is valid.
-		virtual bool is_valid() const;
+		// copy returns a deep copy of this ArrayParameter
+		Parameter* copy() const;
 
 		// get_element_type returns the type of the individual elements of this array.
 		Parameter* get_element_type() const;

@@ -98,16 +98,10 @@ const SimpleParameter *SimpleParameter::as_simple_parameter() const
 	return this;
 }
 
-// make_copy returns a parameter copy of this parameter
-Parameter *SimpleParameter::make_copy() const
+// copy returns a parameter copy of this parameter
+Parameter *SimpleParameter::copy() const
 {
 	return new SimpleParameter(*this);
-}
-
-// is_valid returns false if the type is an invalid type (e.g. declared from an undefined typedef).
-bool SimpleParameter::is_valid() const
-{
-	return m_datatype != DT_invalid;
 }
 
 // has_modulus returns true if there is a modulus associated, false otherwise.
@@ -129,7 +123,7 @@ double SimpleParameter::get_modulus() const
 //     but if this is other than one it represents the scale to apply when packing and
 //     unpacking numeric values (to store fixed-point values in an integer field).
 //     It is only meaningful for numeric-type fields.
-int SimpleParameter::get_divisor() const
+unsigned int SimpleParameter::get_divisor() const
 {
 	return m_divisor;
 }

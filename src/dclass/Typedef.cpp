@@ -10,7 +10,6 @@
 
 #include "Typedef.h"
 #include "Parameter.h"
-#include "SimpleParameter.h"
 #include "indent.h"
 #include <sstream>
 namespace dclass   // open namespace dclass
@@ -57,11 +56,11 @@ bool Typedef::is_implicit_typedef() const
 	return m_implicit_typedef;
 }
 
-// make_new_parameter returns a newly-allocated Parameter object that uses the
+// new_parameter returns a newly-allocated Parameter object that uses the
 //     same type as that named by the typedef.
-Parameter *Typedef::make_new_parameter() const
+Parameter *Typedef::new_parameter() const
 {
-	Parameter *new_parameter = m_parameter->make_copy();
+	Parameter *new_parameter = m_parameter->copy();
 	new_parameter->set_name(std::string());
 	new_parameter->set_typedef(this);
 	return new_parameter;

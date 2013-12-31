@@ -471,7 +471,7 @@ param_w_typ
 			dc_file->add_typedef(dtypedef);
 		}
 
-		$$ = current_parameter = dtypedef->make_new_parameter();
+		$$ = current_parameter = dtypedef->new_parameter();
 	}
 	;
 
@@ -632,7 +632,7 @@ parameter_value
 	}
 	| STRING
 	{
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_string)
 		{
 			if($1.length() != current_parameter->get_size())
@@ -656,7 +656,7 @@ parameter_value
 	}
 	| '[' array_value ']' // array composition
 	{
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
 		{
 			sizetag_t length = $2.length();
@@ -670,7 +670,7 @@ parameter_value
 	}
 	| '{' array_value '}' // array composition -- deprecated, will turn into struct compositon
 	{
-		DataType type = current_parameter->get_type();
+		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
 		{
 			sizetag_t length = $2.length();

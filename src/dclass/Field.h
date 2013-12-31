@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "DistributedType.h"
 #include "KeywordList.h"
 namespace dclass   // open namespace
@@ -24,7 +23,7 @@ class Class;
 class HashGenerator;
 
 // A Field is a single field of a DistributedClass either an Atomic, Molecular, or Parameter
-class Field : public DistributedType, public KeywordList
+class Field : public virtual DistributedType, public KeywordList
 {
 	public:
 		Field();

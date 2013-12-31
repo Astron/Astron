@@ -9,7 +9,7 @@
 //
 
 #pragma once
-#include "dcbase.h"
+#include <iostream> // temporary until file/write rewrite
 namespace dclass   // open namespace
 {
 

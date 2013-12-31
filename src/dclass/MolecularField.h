@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Field.h"
 
 namespace dclass   // open namespace dclass

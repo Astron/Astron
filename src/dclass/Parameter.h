@@ -28,11 +28,14 @@ class HashGenerator;
 //     the referenced type, but a different name.
 class Parameter : public Field
 {
+	friend class Typedef;
+
 	protected:
 		// null constructor
 		Parameter();
 		// copy constructor
 		Parameter(const Parameter &copy);
+
 	public:
 		virtual ~Parameter();
 
@@ -51,20 +54,16 @@ class Parameter : public Field
 		virtual StructParameter *as_struct_parameter();
 		virtual const StructParameter *as_struct_parameter() const;
 
-		// as_array_parameter returns the same parameter pointer converted to an array parameter,
-		//     if this is in fact an array parameter; otherwise, returns NULL.
+		// as_array_parameter returns the same parameter pointer converted to a class parameter,
+		//     if this is in fact a array parameter; otherwise, returns NULL.
 		virtual ArrayParameter *as_array_parameter();
 		virtual const ArrayParameter *as_array_parameter() const;
 
-		virtual Parameter *make_copy() const = 0;
-		virtual bool is_valid() const = 0;
+		// copy returns a deep copy of this parameter
+		virtual Parameter* copy() const;
 
 		// get_typedef returns the Typedef instance if this type has been referenced from a typedef, or NULL.
 		const Typedef *get_typedef() const;
-
-		// set_typedef records the Typedef object that generated this parameter.
-		//     This is normally called only from Typedef::make_new_parameter().
-		void set_typedef(const Typedef *dtypedef);
 
 		// append_array_specification returns the type represented by this_type[size].
 		//     In the case of a generic Parameter, it returns an ArrayParameter wrapped around this type.
@@ -92,6 +91,7 @@ class Parameter : public Field
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	private:
+		void set_typedef(const Typedef*);
 		const Typedef *m_typedef;
 };
 

@@ -9,8 +9,7 @@
 //
 
 #pragma once
-#include "dcbase.h"
-
+#include <iostream>
 // indent outputs the indicated number of spaces to the given output stream, returning the
 //     stream itself.  Useful for indenting a series of lines of text by a given amount.
 std::ostream &indent(std::ostream &out, int indent_level);

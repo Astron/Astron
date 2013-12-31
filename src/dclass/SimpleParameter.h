@@ -9,17 +9,17 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Parameter.h"
+#include "Struct.h"
 #include "NumericRange.h"
 namespace dclass   // open namespace dclass
 {
 
 
-// A SimpleParameter is the most fundamental kind of parameter type: a single number or string,
-//     one of the SubatomicType elements.  It may also optionally have a divisor, which is
-//     meaningful only for the numeric type elements (and represents a fixed-point numeric convention).
-class SimpleParameter : public Parameter
+// A SimpleParameter is a parameter with any non-composing datatype (ie. not arrays or structs).
+//     It may also optionally have a divisor, which is meaningful only for the numeric types,
+//     where a divisor represents a fixed-point numeric convention.
+class SimpleParameter : public Parameter, public Struct
 {
 	public:
 		// Type constructor
@@ -29,17 +29,22 @@ class SimpleParameter : public Parameter
 
 		// as_simple_parameter returns the same parameter pointer converted to a simple parameter,
 		//     if this is in fact a simple parameter; otherwise, returns NULL.
-		virtual SimpleParameter *as_simple_parameter();
-		virtual const SimpleParameter *as_simple_parameter() const;
+		virtual SimpleParameter* as_simple_parameter();
+		virtual const SimpleParameter* as_simple_parameter() const;
 
-		virtual Parameter *make_copy() const;
-		virtual bool is_valid() const;
+		// copy returns a deep copy of this parameter
+		virtual Parameter* copy() const;
 
 		bool has_modulus() const;
+		bool has_range() const;
+
 		double get_modulus() const;
-		int get_divisor() const;
+		unsigned int get_divisor() const;
+		NumericRange get_range() const;
 
 		bool is_numeric_type() const;
+		bool is_array() const;
+
 		bool set_modulus(double modulus);
 		bool set_divisor(unsigned int divisor);
 		bool set_range(const NumericRange &range);

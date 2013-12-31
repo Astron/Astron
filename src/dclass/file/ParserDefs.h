@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "../dcbase.h"
 #include "../DataType.h"
 #include "../NumericRange.h"
 

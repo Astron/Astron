@@ -17,11 +17,13 @@ namespace dclass   // open namespace
 
 // A StructParameter represents a struct (or class) object used as a parameter itself.
 //     This means that all the fields of the class get packed into the message.
-class StructParameter : public Parameter
+class StructParameter : public Parameter, public Struct
 {
 	public:
 		StructParameter(const Struct *dclass); // construct from class definition
 		StructParameter(const StructParameter &copy); // copy constructor
+
+		using Parameter::get_name;
 
 		// as_struct_parameter returns the same parameter pointer converted to a struct parameter
 		//     pointer, if this is in fact an struct parameter; otherwise, returns NULL.
@@ -29,11 +31,7 @@ class StructParameter : public Parameter
 		virtual const StructParameter *as_struct_parameter() const;
 
 		// make_copy returns a deep copy of this parameter
-		virtual Parameter *make_copy() const;
-
-		// is_valid returns false if the element type is an invalid type
-		//     (e.g. declared from an undefined typedef), or true if it is valid.
-		virtual bool is_valid() const;
+		virtual Parameter *copy() const;
 
 		// get_class returns the class that this parameter represents
 		const Struct *get_class() const;
@@ -49,6 +47,8 @@ class StructParameter : public Parameter
 
 	private:
 		const Struct *m_class; // class type of parameter
+		using Parameter::m_name;
+
 };
 
 

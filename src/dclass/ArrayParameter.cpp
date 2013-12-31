@@ -79,7 +79,7 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const NumericRange &size
 
 // copy constructor
 ArrayParameter::ArrayParameter(const ArrayParameter &copy) : Parameter(copy),
-	m_element_type(copy.m_element_type->make_copy()),
+	m_element_type(copy.m_element_type->copy()),
 	m_array_size(copy.m_array_size), m_array_range(copy.m_array_range)
 {
 }
@@ -103,17 +103,10 @@ const ArrayParameter *ArrayParameter::as_array_parameter() const
 	return this;
 }
 
-// make_copy returns a deep copy of this parameter
-Parameter* ArrayParameter::make_copy() const
+// copy returns a deep copy of this parameter
+Parameter* ArrayParameter::copy() const
 {
 	return new ArrayParameter(*this);
-}
-
-// is_valid returns false if the element type is an invalid type
-//     (e.g. declared from an undefined typedef), or true if it is valid.
-bool ArrayParameter::is_valid() const
-{
-	return m_element_type->is_valid();
 }
 
 // get_element_type returns the type of the individual elements of this array.

@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include <map> // for std::map
 #include <vector> // for std::vector
 namespace dclass   // open namespace dclass

@@ -9,7 +9,8 @@
 //
 
 #pragma once
-#include "../dcbase.h"
+#include <iostream>
+#include <string>
 
 void dc_init_lexer(std::istream &in, const std::string &filename);
 int dc_error_count();

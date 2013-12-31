@@ -9,8 +9,8 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "PrimeNumberGenerator.h"
+#include <string> // std::string
 namespace dclass   // open namespace dclass
 {
 

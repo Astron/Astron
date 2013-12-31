@@ -217,7 +217,7 @@ struct Formatter
 			case DT_array:
 			{
 				out << '[';
-				ArrayParameter* arr = (ArrayParameter*)dtype;
+				const ArrayParameter* arr = dtype->as_field()->as_parameter()->as_array_parameter();
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				for(int i = 1; i < arr->get_array_size(); ++i)
@@ -243,7 +243,7 @@ struct Formatter
 					return false;
 				size_t array_end = offset + length;
 
-				ArrayParameter* arr = (ArrayParameter*)dtype;
+				const ArrayParameter* arr = dtype->as_field()->as_parameter()->as_array_parameter();
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				while(offset < array_end)
@@ -265,15 +265,15 @@ struct Formatter
 			case DT_struct:
 			{
 				out << '{';
-				Class* cls = (Class*)dtype;
-				size_t num_fields = cls->get_num_inherited_fields();
+				const Struct* cls = dtype->as_struct();
+				size_t num_fields = cls->get_num_fields();
 				if(num_fields > 0)
 				{
-					bool ok = format(cls->get_inherited_field(0));
+					bool ok = format(cls->get_field(0));
 					if(!ok) return false;
 					for(unsigned int i = 1; i < num_fields; ++i)
 					{
-						ok = format(cls->get_inherited_field(i));
+						ok = format(cls->get_field(i));
 						if(!ok) return false;
 						out << ", ";
 					}
@@ -284,7 +284,7 @@ struct Formatter
 			case DT_method:
 			{
 				out << '(';
-				const Field* field = (Field*)dtype;
+				const Field* field = dtype->as_field();
 				if(field->as_atomic_field())
 				{
 					const AtomicField* atomic = field->as_atomic_field();
@@ -320,6 +320,12 @@ struct Formatter
 					}
 					out << ')';
 					break;
+				}
+				else
+				{
+					// Temporary until Field revisions
+					out << "<error>";
+					return false;
 				}
 
 			}
