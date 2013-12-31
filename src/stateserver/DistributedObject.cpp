@@ -39,7 +39,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 		for(int i = 0; i < count; ++i)
 		{
 			uint16_t field_id = dgi.read_uint16();
-			Field *field = m_dclass->get_field_by_index(field_id);
+			Field *field = m_dclass->get_field_by_id(field_id);
 			if(field->is_ram())
 			{
 				dgi.unpack_field(field, m_ram_fields[field]);
@@ -90,7 +90,7 @@ void DistributedObject::append_required_data(Datagram &dg, bool client_only, boo
 {
 	dg.add_doid(m_do_id);
 	dg.add_location(m_parent_id, m_zone_id);
-	dg.add_uint16(m_dclass->get_number());
+	dg.add_uint16(m_dclass->get_id());
 	uint32_t field_count = m_dclass->get_num_inherited_fields();
 	for(uint32_t i = 0; i < field_count; ++i)
 	{
@@ -119,7 +119,7 @@ void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool a
 		dg.add_uint16(broadcast_fields.size());
 		for(auto it = broadcast_fields.begin(); it != broadcast_fields.end(); ++it)
 		{
-			dg.add_uint16((*it)->get_number());
+			dg.add_uint16((*it)->get_id());
 			dg.add_data(m_ram_fields[*it]);
 		}
 	}
@@ -128,7 +128,7 @@ void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool a
 		dg.add_uint16(m_ram_fields.size());
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
-			dg.add_uint16(it->first->get_number());
+			dg.add_uint16(it->first->get_id());
 			dg.add_data(it->second);
 		}
 	}
@@ -370,7 +370,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 {
 	std::vector<uint8_t> data;
 	uint16_t field_id = dgi.read_uint16();
-	Field *field = m_dclass->get_field_by_index(field_id);
+	Field *field = m_dclass->get_field_by_id(field_id);
 	if(!field)
 	{
 		m_log->error() << "Received update for missing field ID="
@@ -438,7 +438,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
                                        bool succeed_if_unset, bool is_subfield)
 {
-	Field *field = m_dclass->get_field_by_index(field_id);
+	Field *field = m_dclass->get_field_by_id(field_id);
 	if(!field)
 	{
 		m_log->error() << "Received get_field for field: " << field_id
@@ -454,7 +454,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 		out.add_uint16(field_id);
 		for(int i = 0; i < n; ++i)
 		{
-			if(!handle_one_get(out, molecular->get_atomic(i)->get_number(), succeed_if_unset, true))
+			if(!handle_one_get(out, molecular->get_atomic(i)->get_id(), succeed_if_unset, true))
 			{
 				return false;
 			}

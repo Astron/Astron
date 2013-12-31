@@ -20,7 +20,7 @@ namespace dclass   // open namespace
 
 
 // constructor
-File::File() : m_all_objects_valid(true), m_inherited_fields_stale(false)
+File::File() : m_inherited_fields_stale(false)
 {
 	setup_default_keywords();
 }
@@ -54,7 +54,6 @@ void File::clear()
 	m_things_to_delete.clear();
 	setup_default_keywords();
 
-	m_all_objects_valid = true;
 	m_inherited_fields_stale = false;
 }
 
@@ -284,25 +283,10 @@ bool File::add_class(Class *dclass)
 		}
 	}
 
-	if(!dclass->is_struct())
-	{
-		dclass->set_number(get_num_classes());
-	}
+	dclass->set_id(get_num_classes());
 	m_classes.push_back(dclass);
 
-	if(dclass->is_bogus_class())
-	{
-		m_all_objects_valid = false;
-	}
-
-	if(!dclass->is_bogus_class())
-	{
-		m_declarations.push_back(dclass);
-	}
-	else
-	{
-		m_things_to_delete.push_back(dclass);
-	}
+	m_things_to_delete.push_back(dclass);
 
 	return true;
 }
@@ -343,12 +327,7 @@ bool File::add_typedef(Typedef *dtypedef)
 	dtypedef->set_number(get_num_typedefs());
 	m_typedefs.push_back(dtypedef);
 
-	if(dtypedef->is_bogus_typedef())
-	{
-		m_all_objects_valid = false;
-	}
-
-	if(!dtypedef->is_bogus_typedef() && !dtypedef->is_implicit_typedef())
+	if(!dtypedef->is_implicit_typedef())
 	{
 		m_declarations.push_back(dtypedef);
 	}
@@ -392,7 +371,7 @@ void File::add_thing_to_delete(Declaration *decl)
 //     This is only meant to be called by Class::add_field(), while the dc file is being parsed.
 void File::set_new_index_number(Field *field)
 {
-	field->set_number((int)m_fields_by_index.size());
+	field->set_id((int)m_fields_by_index.size());
 	m_fields_by_index.push_back(field);
 }
 
@@ -438,7 +417,8 @@ void File::rebuild_inherited_fields()
 
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
-		(*it)->clear_inherited_fields();
+		// TODO: fix
+		//(*it)->clear_inherited_fields();
 	}
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{

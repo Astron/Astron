@@ -17,6 +17,7 @@ namespace dclass
 {
 	class File;
 	class Class;
+  class Struct;
 	class Field;
 	class AtomicField;
 	class Parameter;
@@ -31,6 +32,7 @@ extern dclass::File *dc_file;
 
 class TokenType
 {
+
   public:
     union U
     {
@@ -45,6 +47,7 @@ class TokenType
       double real;
       bool flag;
       dclass::Class *dclass;
+      dclass::Struct *dstruct;
       dclass::Field *field;
       dclass::AtomicField *atomic;
       dclass::DataType datatype;
@@ -52,8 +55,7 @@ class TokenType
       const dclass::Keyword *keyword;
     } u;
     std::string str;
-    dclass::DoubleRange double_range;
-    dclass::UnsignedIntRange uint_range;
+    dclass::NumericRange range;
 };
 
 // The yacc-generated code expects to use the symbol 'YYSTYPE' to

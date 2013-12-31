@@ -1,4 +1,4 @@
-// Filename: ClassParameter.h
+// Filename: StructParameter.h
 // Created by: drose (18 Jun, 2004)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
@@ -9,26 +9,24 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Parameter.h"
+#include "Struct.h"
 namespace dclass   // open namespace
 {
 
-// Forward declaration of class
-class Class;
 
-// A ClassParameter represents a class (or struct) object used as a parameter itself.
+// A StructParameter represents a struct (or class) object used as a parameter itself.
 //     This means that all the fields of the class get packed into the message.
-class ClassParameter : public Parameter
+class StructParameter : public Parameter
 {
 	public:
-		ClassParameter(const Class *dclass); // construct from class definition
-		ClassParameter(const ClassParameter &copy); // copy constructor
+		StructParameter(const Struct *dclass); // construct from class definition
+		StructParameter(const StructParameter &copy); // copy constructor
 
-		// as_class_parameter returns the same parameter pointer converted to a class parameter
-		//     pointer, if this is in fact an class parameter; otherwise, returns NULL.
-		virtual ClassParameter *as_class_parameter();
-		virtual const ClassParameter *as_class_parameter() const;
+		// as_struct_parameter returns the same parameter pointer converted to a struct parameter
+		//     pointer, if this is in fact an struct parameter; otherwise, returns NULL.
+		virtual StructParameter *as_struct_parameter();
+		virtual const StructParameter *as_struct_parameter() const;
 
 		// make_copy returns a deep copy of this parameter
 		virtual Parameter *make_copy() const;
@@ -38,7 +36,7 @@ class ClassParameter : public Parameter
 		virtual bool is_valid() const;
 
 		// get_class returns the class that this parameter represents
-		const Class *get_class() const;
+		const Struct *get_class() const;
 
 		// output_instance formats the parameter to the syntax of an class parameter in a .dc file
 		//     as CLASS_IDENTIFIER PARAM_IDENTIFIER with optional PARAM_IDENTIFIER,
@@ -50,7 +48,7 @@ class ClassParameter : public Parameter
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	private:
-		const Class *m_class; // class type of parameter
+		const Struct *m_class; // class type of parameter
 };
 
 

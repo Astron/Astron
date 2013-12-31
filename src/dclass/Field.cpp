@@ -17,22 +17,17 @@ namespace dclass   // open namespace
 
 
 // nameless constructor (for structs)
-Field::Field() : m_class(NULL), m_number(-1), m_default_value_stale(true),
-	m_has_default_value(false), m_bogus_field(false)
+Field::Field() : m_class(NULL), m_id(0),
+	m_default_value_stale(true), m_has_default_value(false)
 {
 	m_datatype = DT_method;
-	m_has_fixed_size = true;
-	m_bytesize = 0;
 }
 
 // named constructor (for classes)
-Field::Field(const std::string &name, Class *dclass) : m_name(name),
-	m_class(dclass), m_number(-1), m_default_value_stale(true),
-	m_has_default_value(false), m_bogus_field(false)
+Field::Field(const std::string &name, Struct *dclass) : m_name(name), m_class(dclass),
+	m_id(0), m_default_value_stale(true), m_has_default_value(false)
 {
 	m_datatype = DT_method;
-	m_has_fixed_size = false;
-	m_bytesize = 0;
 }
 
 // destructor
@@ -107,7 +102,7 @@ void Field::generate_hash(HashGenerator &hashgen) const
 
 	// Actually, we add _number anyway, since we need to ensure the hash
 	// code comes out different in the dc_multiple_inheritance case.
-	hashgen.add_int(m_number);
+	hashgen.add_int(m_id);
 }
 
 void Field::refresh_default_value()

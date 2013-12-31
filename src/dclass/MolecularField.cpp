@@ -18,7 +18,7 @@ namespace dclass   // open namespace dclass
 
 
 // constructor
-MolecularField::MolecularField(const std::string &name, Class *dclass) : Field(name, dclass)
+MolecularField::MolecularField(const std::string &name, Struct *dclass) : Field(name, dclass)
 {
 	m_got_keywords = false;
 }
@@ -57,14 +57,11 @@ AtomicField *MolecularField::get_atomic(int n) const
 //     atomic field (e.g. by adding more elements) after adding it to a molecular field.
 void MolecularField::add_atomic(AtomicField *atomic)
 {
-	if(!atomic->is_bogus_field())
+	if(!m_got_keywords)
 	{
-		if(!m_got_keywords)
-		{
-			// The first non-bogus atomic field determines our keywords.
-			copy_keywords(*atomic);
-			m_got_keywords = true;
-		}
+		// The first atomic field determines our keywords.
+		copy_keywords(*atomic);
+		m_got_keywords = true;
 	}
 	m_fields.push_back(atomic);
 
@@ -118,7 +115,7 @@ void MolecularField::write(std::ostream &out, bool brief, int indent_level) cons
 	output(out, brief);
 	if(!brief)
 	{
-		out << "  // field " << m_number;
+		out << "  // field " << m_id;
 	}
 	out << "\n";
 }

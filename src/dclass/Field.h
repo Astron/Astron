@@ -10,7 +10,7 @@
 
 #pragma once
 #include "dcbase.h"
-#include "Element.h"
+#include "DistributedType.h"
 #include "KeywordList.h"
 namespace dclass   // open namespace
 {
@@ -23,21 +23,19 @@ class Parameter;
 class Class;
 class HashGenerator;
 
-// A Field is a single field of a Distributed Class, either atomic or molecular.
-class Field : public Element, public KeywordList
+// A Field is a single field of a DistributedClass either an Atomic, Molecular, or Parameter
+class Field : public DistributedType, public KeywordList
 {
 	public:
 		Field();
-		Field(const std::string &name, Class *dclass);
+		Field(const std::string &name, Struct *dclass);
 		virtual ~Field();
 
-		// get_number returns a unique index number associated with this field.
-		//     This is defined implicitly when the .dc file(s) are read.
-		inline int get_number() const;
+		// get_id returns a unique index number associated with this field.
+		inline unsigned int get_id() const;
 
-		// get_class returns the Class pointer for the class that contains this field.
-		inline Class *get_class() const;
-
+		// get_struct returns the Struct pointer for the class that contains this field.
+		inline Struct *get_class() const;
 
 		// as_field returns the same pointer converted to a field pointer,
 		//     if this is in fact a field; otherwise, returns NULL.
@@ -59,22 +57,14 @@ class Field : public Element, public KeywordList
 		virtual Parameter *as_parameter();
 		virtual const Parameter *as_parameter() const;
 
-		// validate_ranges verifies that all of the packed values in the field data are
-		//     within the specified ranges and that there are no extra bytes on the end
-		//     of the record.  Returns true if all fields are valid, false otherwise.
-		bool validate_ranges(const std::string &packed_data) const;
-
-		// has_default_value returns true if a default value has been explicitly
+		// has_default_value returns true if a default value was defined for this field,
+		//     or false if the field is undefined
 		//     established for this field, false otherwise.
 		inline bool has_default_value() const;
 
 		// get_default_value returns the default value for this field.
 		//     If a default value hasn't been set, returns an implicit default.
 		inline const std::string &get_default_value() const;
-
-		// is_bogus_field returns true if the field has been flagged as a bogus field.
-		//     This can occur during parsing, but should not occur in a normal valid dc file.
-		inline bool is_bogus_field() const;
 
 		// is_required returns true if the "required" flag is set for this field, false otherwise.
 		inline bool is_required() const;
@@ -109,12 +99,12 @@ class Field : public Element, public KeywordList
 		// set_name sets the name of this field.
 		virtual void set_name(const std::string &name);
 
-		// set_number assigns the unique number to this field.  This is normally
+		// set_id assigns the unique number to this field.  This is normally
 		//     called only by the Class interface as the field is added.
-		inline void set_number(int number);
+		inline void set_id(unsigned int id);
 		// set_class assigns the class pointer to this field.  This is normally
 		//     called only by the Class interface as the field is added.
-		inline void set_class(Class *dclass);
+		inline void set_class(Struct *dclass);
 
 		// set_default_value establishes a default value for this field.
 		inline void set_default_value(const std::string &default_value);
@@ -129,12 +119,11 @@ class Field : public Element, public KeywordList
 		void refresh_default_value();
 
 	protected:
-		Class *m_class; // the class that this field belongs to
+		Struct *m_class; // the class that this field belongs to
 		std::string m_name;
-		int m_number; // the unique index of the field in the .dc file
+		unsigned int m_id; // the unique index of the field in the .dc file
 		bool m_default_value_stale; // is true if the default value hasn't been computed
 		bool m_has_default_value; // is true if an explicity default has been set
-		bool m_bogus_field; // is true if the field is incomplete (only encountered during parsing)
 
 	private:
 		std::string m_default_value; // the binary data of the default value encoded in a string

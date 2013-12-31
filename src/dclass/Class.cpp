@@ -9,7 +9,6 @@
 //
 
 #include "Class.h"
-#include "ClassParameter.h"
 #include "AtomicField.h"
 #include "HashGenerator.h"
 #include "File.h"
@@ -27,15 +26,13 @@ class SortFieldsByIndex
 	public:
 		inline bool operator()(const Field* a, const Field* b) const
 		{
-			return a->get_number() < b->get_number();
+			return a->get_id() < b->get_id();
 		}
 };
 
 // constructor
-Class::Class(File* dc_file, const std::string &name, bool is_struct, bool bogus_class) :
-	m_file(dc_file), m_name(name), m_is_struct(is_struct), m_bogus_class(bogus_class)
+Class::Class(File* file, const std::string &name) : Struct(file, name), m_constructor(NULL)
 {
-	m_number = -1;
 	m_constructor = NULL;
 }
 
@@ -46,11 +43,6 @@ Class::~Class()
 	{
 		delete m_constructor;
 	}
-
-	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
-	{
-		delete(*it);
-	}
 }
 
 // as_class returns the same pointer converted to a class pointer
@@ -59,272 +51,12 @@ Class* Class::as_class()
 {
 	return this;
 }
-
-// as_class returns the same pointer converted to a class pointer
-//     if this is in fact a class; otherwise, returns NULL.
 const Class* Class::as_class() const
 {
 	return this;
 }
 
-// get_num_parents returns the number of base classes this class inherits from.
-size_t Class::get_num_parents() const
-{
-	return m_parents.size();
-}
-
-// get_parent returns the nth parent class this class inherits from.
-Class* Class::get_parent(unsigned int n) const
-{
-	assert(n >= 0 && n < m_parents.size());
-	return m_parents[n];
-}
-
-// has_constructor returns true if this class has a constructor method,
-//     or false if it just uses the default constructor.
-bool Class::has_constructor() const
-{
-	return (m_constructor != (Field*)NULL);
-}
-
-// get_constructor returns the constructor method for this class if it
-//     is defined, or NULL if the class uses the default constructor.
-Field* Class::get_constructor() const
-{
-	return m_constructor;
-}
-
-// get_num_fields returns the number of fields defined directly in this class, ignoring inheritance.
-size_t Class::get_num_fields() const
-{
-	return m_fields.size();
-}
-
-// get_field returns the nth field in the class.  This is not the field with index n;
-//     this is the nth field defined in the class directly, ignoring inheritance.
-Field* Class::get_field(unsigned int n) const
-{
-	assert(n >= 0 && n < m_fields.size());
-	return m_fields[n];
-}
-
-// get_field_by_name returns a pointer to the declared or inherited Field with name 'name';
-//     Returns NULL if there is no such field defined.
-Field* Class::get_field_by_name(const std::string &name) const
-{
-	auto field_it = m_fields_by_name.find(name);
-	if(field_it != m_fields_by_name.end())
-	{
-		return (*field_it).second;
-	}
-
-	// We didn't have such a field, so check our parents.
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-	{
-		Field* field = (*it)->get_field_by_name(name);
-		if(field != (Field*)NULL)
-		{
-			return field;
-		}
-	}
-
-	// Nobody knew what this field is.
-	return (Field*)NULL;
-}
-
-// get_field_by_index returns a pointer to the declared or inherited Field with unique id 'index';
-//     Returns NULL if there is no such field defined.
-Field *Class::get_field_by_index(int index) const
-{
-	auto field_it = m_fields_by_index.find(index);
-	if(field_it != m_fields_by_index.end())
-	{
-		return (*field_it).second;
-	}
-
-	// We didn't have such a field, so check our parents.
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-	{
-		Field *field = (*it)->get_field_by_index(index);
-		if(field != (Field*)NULL)
-		{
-			// Cache this result for future lookups.
-			// Disabled because should not be caching a value in a const function.
-			//m_fields_by_index[index] = field;
-			return field;
-		}
-	}
-
-	// Nobody knew what this field is.
-	return (Field*)NULL;
-}
-
-// get_field_by_index returns a pointer to the declared or inherited Field with unique id 'index';
-//     Returns NULL if there is no such field defined.
-Field *Class::get_field_by_index(int index)
-{
-	auto field_it = m_fields_by_index.find(index);
-	if(field_it != m_fields_by_index.end())
-	{
-		return (*field_it).second;
-	}
-
-	// We didn't have such a field, so check our parents.
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-	{
-		Field *field = (*it)->get_field_by_index(index);
-		if(field != (Field*)NULL)
-		{
-			// Cache this result for future lookups.
-			m_fields_by_index[index] = field;
-			return field;
-		}
-	}
-
-	// Nobody knew what this field is.
-	return (Field*)NULL;
-}
-
-// get_num_inherited_fields returns the total declared and inherited fields in this class.
-size_t Class::get_num_inherited_fields()
-{
-	if(m_file != (File*)NULL)
-	{
-		m_file->check_inherited_fields();
-		if(m_inherited_fields.empty())
-		{
-			rebuild_inherited_fields();
-		}
-
-		// This assertion causes trouble when we are only parsing an incomplete  file.
-		//assert(is_bogus_class() || !_inherited_fields.empty(), 0);
-		return m_inherited_fields.size();
-	}
-	else
-	{
-		size_t num_fields = get_num_fields();
-
-		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-		{
-			num_fields += (*it)->get_num_inherited_fields();
-		}
-
-		return num_fields;
-	}
-}
-
-// get_num_inherited_fields returns the total declared and inherited fields in this class.
-size_t Class::get_num_inherited_fields() const
-{
-	if(m_file != (File*)NULL)
-	{
-		m_file->check_inherited_fields();
-		if(m_inherited_fields.empty())
-		{
-			// Hacky print statement that makes it obvious this needs to be fixed
-			std::cerr << "\nTried to get_num_inherited_fields on a possibly uninitialized class with a const class pointer.\n\n";
-		}
-
-		// This assertion causes trouble when we are only parsing an incomplete  file.
-		//assert(is_bogus_class() || !_inherited_fields.empty(), 0);
-		return m_inherited_fields.size();
-	}
-	else
-	{
-		size_t num_fields = get_num_fields();
-
-		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-		{
-			num_fields += (*it)->get_num_inherited_fields();
-		}
-
-		return num_fields;
-	}
-}
-
-// get_inherited_field returns the nth field from all declared and inherited fields in the class.
-Field *Class::get_inherited_field(int n)
-{
-	if(m_file != (File *)NULL)
-	{
-		m_file->check_inherited_fields();
-		if(m_inherited_fields.empty())
-		{
-			rebuild_inherited_fields();
-		}
-		assert(n >= 0 && n < (int)m_inherited_fields.size());
-		return m_inherited_fields[n];
-	}
-	else
-	{
-		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-		{
-			size_t num_fields = (*it)->get_num_inherited_fields();
-			if(n < num_fields)
-			{
-				return (*it)->get_inherited_field(n);
-			}
-
-			n -= num_fields;
-		}
-
-		return get_field(n);
-	}
-}
-
-
-
-// get_inherited_field returns the nth field from all declared and inherited fields in the class.
-Field *Class::get_inherited_field(int n) const
-{
-	if(m_file != (File *)NULL)
-	{
-		m_file->check_inherited_fields();
-		if(m_inherited_fields.empty())
-		{
-			// Hacky print statement that makes it obvious this needs to be fixed
-			std::cerr << "\nTried to get_inherited_field on a possibly uninitialized class with a const class pointer.\n\n";
-		}
-		assert(n >= 0 && n < (int)m_inherited_fields.size());
-		return m_inherited_fields[n];
-	}
-	else
-	{
-		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-		{
-			size_t num_fields = (*it)->get_num_inherited_fields();
-			if(n < num_fields)
-			{
-				return (*it)->get_inherited_field(n);
-			}
-
-			n -= num_fields;
-		}
-
-		return get_field(n);
-	}
-}
-
-// inherits_from_bogus_class returns true if this class, or any class in the inheritance
-//     heirarchy for this class, is a forward reference to an as-yet-undefined class.
-bool Class::inherits_from_bogus_class() const
-{
-	if(is_bogus_class())
-	{
-		return true;
-	}
-
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-	{
-		if((*it)->inherits_from_bogus_class())
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
+/* TODO: Move and update appropriately
 // output formats a string representation of the class in .dc file syntax
 //     as "dclass IDENTIFIER" or "struct IDENTIFIER" with structs having optional IDENTIFIER,
 //     and outputs the formatted string to the stream.
@@ -397,24 +129,20 @@ void Class::write(std::ostream &out, bool brief, int indent_level) const
 
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
-		if(!(*it)->is_bogus_field())
-		{
-			(*it)->write(out, brief, indent_level + 2);
+		(*it)->write(out, brief, indent_level + 2);
 
-			/*
-			if (true || (*fi)->has_default_value()) {
-			  indent(out, indent_level + 2) << "// = ";
-			  Packer packer;
-			  packer.set_unpack_data((*fi)->get_default_value());
-			  packer.begin_unpack(*fi);
-			  packer.unpack_and_format(out, false);
-			  if (!packer.end_unpack()) {
-			    out << "<error>";
-			  }
-			  out << "\n";
-			}
-			*/
-		}
+		
+		//if (true || (*fi)->has_default_value()) {
+		//  indent(out, indent_level + 2) << "// = ";
+		//  Packer packer;
+		//  packer.set_unpack_data((*fi)->get_default_value());
+		//  packer.begin_unpack(*fi);
+		//  packer.unpack_and_format(out, false);
+		//  if (!packer.end_unpack()) {
+		//    out << "<error>";
+		//  }
+		//  out << "\n";
+		//}
 	}
 
 	indent(out, indent_level) << "};\n";
@@ -461,11 +189,8 @@ void Class::output_instance(std::ostream &out, bool brief, const std::string &pr
 
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
-		if(!(*it)->is_bogus_field())
-		{
-			(*it)->output(out, brief);
-			out << "; ";
-		}
+		(*it)->output(out, brief);
+		out << "; ";
 	}
 
 	out << "}";
@@ -474,41 +199,7 @@ void Class::output_instance(std::ostream &out, bool brief, const std::string &pr
 		out << " " << prename << name << postname;
 	}
 }
-
-// generate_hash accumulates the properties of this class into the hash.
-void Class::generate_hash(HashGenerator &hashgen) const
-{
-	hashgen.add_string(m_name);
-
-	if(is_struct())
-	{
-		hashgen.add_int(1);
-	}
-
-	hashgen.add_int(m_parents.size());
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
-	{
-		hashgen.add_int((*it)->get_number());
-	}
-
-	if(m_constructor != (Field*)NULL)
-	{
-		m_constructor->generate_hash(hashgen);
-	}
-
-	hashgen.add_int(m_fields.size());
-	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
-	{
-		(*it)->generate_hash(hashgen);
-	}
-}
-
-// clear_inherited_fields empties the list of inherited fields for the class, so that it
-//    may be rebuilt.  This is normally only called by File::rebuild_inherited_fields().
-void Class::clear_inherited_fields()
-{
-	m_inherited_fields.clear();
-}
+*/
 
 // rebuild_inherited_fields recomputes the list of inherited fields for the class.
 void Class::rebuild_inherited_fields()
@@ -553,9 +244,17 @@ void Class::rebuild_inherited_fields()
 			bool inserted = names.insert(field->get_name()).second;
 			if(!inserted)
 			{
-				// This local field shadows an inherited field.  Remove the
-				// parent's field from our list.
-				shadow_inherited_field(field->get_name());
+				// This local field shadows an inherited field.
+				// Remove the parent's field from our list.
+				for(auto it = m_inherited_fields.begin(); it != m_inherited_fields.end(); ++it)
+				{
+					Field *shadow = (*it);
+					if(shadow->get_name() == field->get_name())
+					{
+						m_inherited_fields.erase(it);
+						return;
+					}
+				}
 			}
 
 			// Now add the local field.
@@ -566,25 +265,7 @@ void Class::rebuild_inherited_fields()
 	sort(m_inherited_fields.begin(), m_inherited_fields.end(), SortFieldsByIndex());
 }
 
-// shadow_inherited_field this is called only by rebuild_inherited_fields().
-//     It removes the named field from the list of m_inherited_fields,
-//     presumably in preparation for adding a new definition below.
-void Class::shadow_inherited_field(const std::string &name)
-{
-	for(auto it = m_inherited_fields.begin(); it != m_inherited_fields.end(); ++it)
-	{
-		Field *field = (*it);
-		if(field->get_name() == name)
-		{
-			m_inherited_fields.erase(it);
-			return;
-		}
-	}
-
-	// If we get here, the named field wasn't in the list.  Huh.
-	assert(false);
-}
-
+/*
 // add_field adds the newly-allocated field to the class.  The class becomes the
 //     owner of the pointer and will delete it when it destructs.
 //     Returns true if the field is successfully added,
@@ -643,6 +324,7 @@ bool Class::add_field(Field *field)
 	m_fields.push_back(field);
 	return true;
 }
+*/
 
 // add_parent adds a new parent to the inheritance hierarchy of the class.
 //     Note: This is normally called only during parsing.
@@ -650,13 +332,6 @@ void Class::add_parent(Class *parent)
 {
 	m_parents.push_back(parent);
 	m_file->mark_inherited_fields_stale();
-}
-
-// set_number assigns the unique number to this class.
-//     Note: This is normally called only by the File interface as the class is added.
-void Class::set_number(int number)
-{
-	m_number = number;
 }
 
 

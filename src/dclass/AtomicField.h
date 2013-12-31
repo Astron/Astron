@@ -24,7 +24,7 @@ namespace dclass   // open namespace
 class AtomicField : public Field
 {
 	public:
-		AtomicField(const std::string &name, Class *dcc, bool bogus_field);
+		AtomicField(const std::string &name, Struct *dcc);
 		virtual ~AtomicField();
 
 		// as_atomic_field returns the same field pointer converted to an atomic field

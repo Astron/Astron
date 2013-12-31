@@ -1,6 +1,6 @@
 // Filename: unpack.cpp
 #include "format.h"
-#include "../Element.h"
+#include "../DistributedType.h"
 #include "../Class.h"
 #include "../AtomicField.h"
 #include "../MolecularField.h"
@@ -11,7 +11,7 @@ using namespace std;
 namespace dclass   // open namespace dclass
 {
 
-// A Formatter steps through packed data and unpacks it as a .dc file parameter value.
+// A Formatter steps through packed data and unpacks it as a .dc file parameter format.
 //     This is created and called by format() to handle formatting.
 struct Formatter
 {
@@ -47,9 +47,9 @@ struct Formatter
 		return v;
 	}
 
-	bool format(const Element* element)
+	bool format(const DistributedType* dtype)
 	{
-		DataType type = element->get_type();
+		DataType type = dtype->get_datatype();
 		switch(type)
 		{
 			case DT_invalid:
@@ -153,7 +153,7 @@ struct Formatter
 			case DT_string:
 			{
 				// Read string length
-				sizetag_t length = element->get_size();
+				sizetag_t length = dtype->get_size();
 
 				// Read string
 				if(!remaining(length))
@@ -185,7 +185,7 @@ struct Formatter
 			case DT_blob:
 			{
 				// Read blob length
-				sizetag_t length = element->get_size();
+				sizetag_t length = dtype->get_size();
 
 				// Read blob
 				if(!remaining(length))
@@ -217,7 +217,7 @@ struct Formatter
 			case DT_array:
 			{
 				out << '[';
-				ArrayParameter* arr = (ArrayParameter*)element;
+				ArrayParameter* arr = (ArrayParameter*)dtype;
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				for(int i = 1; i < arr->get_array_size(); ++i)
@@ -243,7 +243,7 @@ struct Formatter
 					return false;
 				size_t array_end = offset + length;
 
-				ArrayParameter* arr = (ArrayParameter*)element;
+				ArrayParameter* arr = (ArrayParameter*)dtype;
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				while(offset < array_end)
@@ -265,7 +265,7 @@ struct Formatter
 			case DT_struct:
 			{
 				out << '{';
-				Class* cls = (Class*)element;
+				Class* cls = (Class*)dtype;
 				size_t num_fields = cls->get_num_inherited_fields();
 				if(num_fields > 0)
 				{
@@ -284,7 +284,7 @@ struct Formatter
 			case DT_method:
 			{
 				out << '(';
-				const Field* field = (Field*)element;
+				const Field* field = (Field*)dtype;
 				if(field->as_atomic_field())
 				{
 					const AtomicField* atomic = field->as_atomic_field();
@@ -335,27 +335,27 @@ struct Formatter
 
 // format unpacks the packed data into a string formatted for a .dc file.
 //     This is used to produce default values when outputting a distributed class to a file.
-string format(const Element *element, const vector<uint8_t> &packed)
+string format(const DistributedType *dtype, const vector<uint8_t> &packed)
 {
 	ostringstream ss;
-	format(element, packed, ss);
+	format(dtype, packed, ss);
 	return ss.str();
 }
-string format(const Element *element, const string &packed)
+string format(const DistributedType *dtype, const string &packed)
 {
 	ostringstream ss;
-	format(element, packed, ss);
+	format(dtype, packed, ss);
 	return ss.str();
 }
-void format(const Element *element, const vector<uint8_t> &packed, ostream &out)
+void format(const DistributedType *dtype, const vector<uint8_t> &packed, ostream &out)
 {
 	Formatter formatter(packed, out);
-	formatter.format(element);
+	formatter.format(dtype);
 }
-void format(const Element *element, const string &packed, ostream &out)
+void format(const DistributedType *dtype, const string &packed, ostream &out)
 {
 	Formatter formatter(packed, out);
-	formatter.format(element);
+	formatter.format(dtype);
 }
 
 // format_hex outputs <str> to <out> as a hexidecimal constant enclosed in angle-brackets (<>).

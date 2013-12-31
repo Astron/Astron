@@ -62,16 +62,16 @@ const SimpleParameter *Parameter::as_simple_parameter() const
 	return NULL;
 }
 
-// as_class_parameter returns the same parameter pointer converted to a class parameter,
-//     if this is in fact a class parameter; otherwise, returns NULL.
-ClassParameter *Parameter::as_class_parameter()
+// as_struct_parameter returns the same parameter pointer converted to a class parameter,
+//     if this is in fact a struct parameter; otherwise, returns NULL.
+StructParameter *Parameter::as_struct_parameter()
 {
 	return NULL;
 }
 
-// as_class_parameter returns the same parameter pointer converted to a class parameter,
+// as_struct_parameter returns the same parameter pointer converted to a class parameter,
 //     if this is in fact a class parameter; otherwise, returns NULL.
-const ClassParameter *Parameter::as_class_parameter() const
+const StructParameter *Parameter::as_struct_parameter() const
 {
 	return NULL;
 }
@@ -105,7 +105,7 @@ void Parameter::set_typedef(const Typedef *dtypedef)
 
 // append_array_specification returns the type represented by this_type[size].
 //     In the case of a generic Parameter, it returns an ArrayParameter wrapped around this type.
-Parameter *Parameter::append_array_specification(const UnsignedIntRange &size)
+Parameter *Parameter::append_array_specification(const NumericRange &size)
 {
 	return new ArrayParameter(this, size);
 }
@@ -139,9 +139,9 @@ void Parameter::write_instance(std::ostream &out, bool brief, int indent_level,
 	output_instance(out, brief, prename, name, postname);
 	output_keywords(out);
 	out << ";";
-	if(!brief && m_number >= 0)
+	if(!brief && m_id >= 0)
 	{
-		out << "  // field " << m_number;
+		out << "  // field " << m_id;
 	}
 	out << "\n";
 }
@@ -169,9 +169,9 @@ void Parameter::write_typedef_name(std::ostream &out, bool brief, int indent_lev
 	}
 	output_keywords(out);
 	out << ";";
-	if(!brief && m_number >= 0)
+	if(!brief && m_id >= 0)
 	{
-		out << "  // field " << m_number;
+		out << "  // field " << m_id;
 	}
 	out << "\n";
 }

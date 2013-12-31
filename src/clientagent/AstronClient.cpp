@@ -394,7 +394,7 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Check that the client sent a field that actually exists in the class.
-			Field *field = dcc->get_field_by_index(field_id);
+			Field *field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
 				std::stringstream ss;

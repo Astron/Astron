@@ -9,15 +9,16 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "KeywordList.h"
-#include <vector>
+#include <string> // std::string
+#include <vector> // std::vector
 #include <map>
 namespace dclass   // open namespace
 {
 
 
 // Forward declarations
+class Struct;
 class Class;
 class Field;
 class HashGenerator;
@@ -91,6 +92,10 @@ class File
 		//     Returns true if the class is successfully added, or false if there was a name conflict.
 		bool add_class(Class *dclass);
 
+		// add_struct adds the newly-allocated struct definition to the file.
+		//     Returns true if the class is successfully added, or false if there was a name conflict.
+		bool add_struct(Struct *dstruct);
+
 		// add_import_module adds a new name to the list of names of Python modules.
 		void add_import_module(const std::string &import_module);
 
@@ -146,7 +151,6 @@ class File
 
 		std::vector<Field*> m_fields_by_index; // fields in the file by unique integer id
 
-		bool m_all_objects_valid; // true if there are no object has an incomplete defintion.
 		bool m_inherited_fields_stale; // true if inherited fields have not be calculated.
 };
 

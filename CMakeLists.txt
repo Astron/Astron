@@ -350,17 +350,19 @@ add_library(dclass
 	src/dclass/File.cpp
 	src/dclass/Declaration.cpp
 	src/dclass/Typedef.cpp
-	src/dclass/Class.cpp
+	src/dclass/DataType.cpp
 	src/dclass/Keyword.cpp
 	src/dclass/KeywordList.cpp
-	src/dclass/DataType.cpp
 
-	src/dclass/AtomicField.cpp
+	src/dclass/Struct.cpp
+	src/dclass/Class.cpp
+
 	src/dclass/Field.cpp
+	src/dclass/AtomicField.cpp
 	src/dclass/MolecularField.cpp
 
 	src/dclass/Parameter.cpp
-	src/dclass/ClassParameter.cpp
+	src/dclass/StructParameter.cpp
 	src/dclass/ArrayParameter.cpp
 	src/dclass/SimpleParameter.cpp
 

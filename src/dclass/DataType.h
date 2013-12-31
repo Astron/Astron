@@ -12,7 +12,7 @@ namespace dclass   // open namespace dclass
     typedef uint16_t sizetag_t;
 #endif
 
-// A DataType defines the numeric type of any distributed element.
+// A DataType defines the numeric type of any distributed type.
 //     This type specifies the layout of the element in memory.
 enum DataType
 {

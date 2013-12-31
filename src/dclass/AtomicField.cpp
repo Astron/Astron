@@ -19,9 +19,8 @@ namespace dclass   // open namespace
 
 
 // constructor
-AtomicField::AtomicField(const std::string &name, Class *dcc, bool bogus_field) : Field(name, dcc)
+AtomicField::AtomicField(const std::string &name, Struct *dcc) : Field(name, dcc)
 {
-	m_bogus_field = bogus_field;
 }
 
 // destructor
@@ -91,9 +90,9 @@ void AtomicField::write(std::ostream &out, bool brief, int indent_level) const
 	indent(out, indent_level);
 	output(out, brief);
 	out << ";";
-	if(!brief && m_number >= 0)
+	if(!brief && m_id >= 0)
 	{
-		out << "  // field " << m_number;
+		out << "  // field " << m_id;
 	}
 	out << "\n";
 }

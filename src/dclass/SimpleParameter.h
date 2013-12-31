@@ -42,7 +42,7 @@ class SimpleParameter : public Parameter
 		bool is_numeric_type() const;
 		bool set_modulus(double modulus);
 		bool set_divisor(unsigned int divisor);
-		bool set_range(const DoubleRange &range);
+		bool set_range(const NumericRange &range);
 
 		virtual void output_instance(std::ostream &out, bool brief, const std::string &prename,
 		                             const std::string &name, const std::string &postname) const;
@@ -51,28 +51,14 @@ class SimpleParameter : public Parameter
 	private:
 		unsigned int m_divisor;
 
-		DataType m_nested_type;
-		Element *m_nested_field;
-		size_t m_bytes_per_element;
-
-		// These are the range and modulus values as specified by the user,
-		// unscaled by the divisor.
-		DoubleRange m_orig_range;
+		// These are the original range and modulus values from the file, unscaled by the divisor.
 		bool m_has_modulus;
 		double m_orig_modulus;
+		NumericRange m_orig_range;
 
-		// Only the range appropriate to this type will be filled in.
-		IntRange m_int_range;
-		UnsignedIntRange m_uint_range;
-		Int64Range m_int64_range;
-		UnsignedInt64Range m_uint64_range;
-		DoubleRange m_double_range;
-
-		// All of these modulus values will be filled in, regardless of the
-		// type.
-		unsigned int m_uint_modulus;
-		uint64_t m_uint64_modulus;
-		double m_double_modulus;
+		// These are the range and modulus values after scaling by the divisor.
+		Number m_modulus;
+		NumericRange m_range;
 };
 
 

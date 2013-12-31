@@ -9,7 +9,7 @@
 #include "../Class.h"
 #include "../AtomicField.h"
 #include "../MolecularField.h"
-#include "../ClassParameter.h"
+#include "../StructParameter.h"
 #include "../ArrayParameter.h"
 #include "../SimpleParameter.h"
 #include "../Typedef.h"
@@ -41,7 +41,7 @@ using namespace dclass;
 
 	File *dc_file = (File*)NULL;
 
-	static Class *current_class = (Class*)NULL;
+	static Struct *current_class = (Struct*)NULL;
 	static AtomicField *current_atomic = (AtomicField*)NULL;
 	static MolecularField *current_molecular = (MolecularField*)NULL;
 	static Parameter *current_parameter = (Parameter*)NULL;
@@ -107,7 +107,7 @@ using namespace dclass;
 
 /* Abstract Nonterminals */
 %type <u.dclass> dclass
-%type <u.dclass> struct
+%type <u.dstruct> dstruct
 %type <u.field> atomic_field
 %type <u.field> molecular_field
 %type <u.parameter> parameter
@@ -127,10 +127,8 @@ using namespace dclass;
 
 /* TODO: Categorize nonterminals */
 %type <u.atomic> atomic_name
-%type <u.dclass> dclass_or_struct
 %type <u.dclass> dclass_name
 %type <u.field> dclass_field
-%type <u.dclass> struct_name
 %type <u.field> struct_field
 %type <u.datatype> type_token
 
@@ -144,8 +142,8 @@ using namespace dclass;
 %type <u.uint32> small_negative_integer
 %type <u.real> char_or_number
 %type <u.real> number
-%type <double_range> double_range
-%type <uint_range> uint_range
+%type <range> double_range
+%type <range> uint_range
 
 %%
 
@@ -156,19 +154,18 @@ grammar
 
 dc	: empty
 	| dc ';'
-	| dc dclass_or_struct
+	| dc dclass
 	{
 		if(!dc_file->add_class($2))
 		{
-			Class *old_class = dc_file->get_class_by_name($2->get_name());
-			if(old_class != (Class *)NULL && old_class->is_bogus_class())
-			{
-				yyerror("Base class defined after its first reference: " + $2->get_name());
-			}
-			else
-			{
-				yyerror("Duplicate class name: " + $2->get_name());
-			}
+			yyerror("Duplicate class name: " + $2->get_name());
+		}
+	}
+	| dc dstruct
+	{
+		if(!dc_file->add_struct($2))
+		{
+			yyerror("Duplicate class name: " + $2->get_name());
 		}
 	}
 	| dc import
@@ -216,28 +213,19 @@ import_symbol_list
 	| import_symbol_list ',' import_path { dc_file->add_import_symbol($3); }
 	;
 
-typedef_decl:
-  KW_TYPEDEF parameter
-{
-	if($2 != (Parameter *)NULL)
+typedef_decl
+	: KW_TYPEDEF named_parameter
 	{
-		Typedef *dtypedef = new Typedef($2);
-
-		if(!dc_file->add_typedef(dtypedef))
+		if($2 != (Parameter*)NULL)
 		{
-			Typedef *old_typedef = dc_file->get_typedef_by_name(dtypedef->get_name());
-			if(old_typedef->is_bogus_typedef())
-			{
-				yyerror("typedef defined after its first reference: " + dtypedef->get_name());
-			}
-			else
+			Typedef *dtypedef = new Typedef($2);
+			if(!dc_file->add_typedef(dtypedef))
 			{
 				yyerror("Duplicate typedef name: " + dtypedef->get_name());
 			}
 		}
 	}
-}
-;
+	;
 
 keyword_decl:
   KW_KEYWORD keyword_decl_list
@@ -259,191 +247,132 @@ keyword_decl_list:
 }
 ;
 
-dclass_or_struct
-	: dclass
-	| struct
-;
-
 dclass
 	: KW_DCLASS IDENTIFIER
 	{
-		current_class = new Class(dc_file, $2, false, false);
+		current_class = new Class(dc_file, $2);
 	}
-	  dclass_derivation '{' dclass_fields '}'
+	  dclass_inheritance '{' dclass_fields '}'
 	{
-		$$ = current_class;
+		$$ = current_class->as_class();
 		current_class = $<u.dclass>3;
 	}
 	;
 
-dclass_name:
-  IDENTIFIER
-{
-	if(dc_file == (File *)NULL)
+dclass_name
+	: IDENTIFIER
 	{
-		yyerror("No File available, so no class names are predefined.");
-		$$ = NULL;
-
-	}
-	else {
-		Class *dclass = dc_file->get_class_by_name($1);
-		if(dclass == (Class *)NULL)
+		if(dc_file == (File *)NULL)
 		{
-			// Create a bogus class as a forward reference.
-			dclass = new Class(dc_file, $1, false, true);
-			dc_file->add_class(dclass);
+			yyerror("No File available, so no class names are predefined.");
+			$$ = NULL;
 		}
-		if(dclass->is_struct())
+		else
 		{
-			yyerror("struct name not allowed");
+			Class *dclass = dc_file->get_class_by_name($1);
+			if(dclass == (Class *)NULL)
+			{
+				yyerror("dclass '" + std::string($1) + "' has not been declared.");
+			}
+			// TODO: Output this helpful info
+			/*
+			if(dc_file->get_struct_by_name($1))
+			{
+				yyerror("dclass cannot inherit from a struct");
+			}
+			*/
+
+			$$ = dclass;
 		}
-
-		$$ = dclass;
 	}
-}
-;
-
-dclass_derivation:
-  empty
-| ':' dclass_base_list
-;
-
-dclass_base_list:
-  dclass_name
-{
-	if($1 != (Class *)NULL)
-	{
-		current_class->add_parent($1);
-	}
-}
-| dclass_base_list ',' dclass_name
-{
-	if($3 != (Class *)NULL)
-	{
-			current_class->add_parent($3);
-	}
-}
-;
-
-dclass_fields:
-  empty
-| dclass_fields ';'
-| dclass_fields dclass_field ';'
-{
-	if($2 == (Field *)NULL)
-	{
-		// Pass this error up.
-	}
-	else if(!current_class->add_field($2))
-	{
-		yyerror("Duplicate field name: " + $2->get_name());
-	}
-	else if($2->get_number() < 0)
-	{
-		yyerror("A non-network field cannot be stored on a dclass");
-	}
-}
-;
-
-dclass_field:
-  atomic_field keyword_list
-{
-	if($1 != (Field *)NULL)
-	{
-		if($1->get_name().empty())
-		{
-			yyerror("Field name required.");
-		}
-		$1->copy_keywords(current_keyword_list);
-	}
-	$$ = $1;
-}
-| molecular_field no_keyword_list
-| unnamed_parameter keyword_list
-{
-	yyerror("Unnamed parameters are not allowed on a dclass");
-	if($1 != (Field *)NULL)
-	{
-		$1->copy_keywords(current_keyword_list);
-	}
-	$$ = $1;
-}
-| named_parameter keyword_list
-{
-	if($1 != (Field *)NULL)
-	{
-		$1->copy_keywords(current_keyword_list);
-	}
-	$$ = $1;
-}
-;
-
-struct:
-  KW_STRUCT IDENTIFIER
-{
-	current_class = new Class(dc_file, $2, true, false);
-}
-  struct_derivation '{' struct_fields '}'
-{
-	$$ = current_class;
-	current_class = $<u.dclass>3;
-}
-;
-
-struct_name:
-  IDENTIFIER
-{
-	if(dc_file == (File *)NULL)
-	{
-		yyerror("No File available, so no struct names are predefined.");
-		$$ = NULL;
-
-	}
-	else
-	{
-		Class *dstruct = dc_file->get_class_by_name($1);
-		if(dstruct == (Class *)NULL)
-		{
-			// Create a bogus class as a forward reference.
-			dstruct = new Class(dc_file, $1, false, true);
-			dc_file->add_class(dstruct);
-		}
-		if(!dstruct->is_struct())
-		{
-			yyerror("struct name required");
-		}
-
-		$$ = dstruct;
-	}
-}
-;
-
-struct_derivation
-	: empty
-	| ':' struct_base_list
 	;
 
-struct_base_list
-	: struct_name
+dclass_inheritance
+	: empty
+	| ':' dclass_parents
+	;
+
+dclass_parents
+	: dclass_name
 	{
-		if($1 != (Class *)NULL)
+		if($1 != (Class*)NULL)
 		{
-			current_class->add_parent($1);
+			current_class->as_class()->add_parent($1);
 		}
 	}
-	| struct_base_list ',' struct_name
+	| dclass_parents ',' dclass_name
 	{
-		if($3 != (Class *)NULL)
+		if($3 != (Class*)NULL)
 		{
-			current_class->add_parent($3);
+			current_class->as_class()->add_parent($3);
 		}
+	}
+	;
+
+dclass_fields
+	: empty
+	| dclass_fields ';'
+	| dclass_fields dclass_field ';'
+	{
+		if($2 == (Field*)NULL)
+		{
+			// Pass this error up.
+		}
+		else if(!current_class->add_field($2))
+		{
+			yyerror("Duplicate field name: " + $2->get_name());
+		}
+	}
+	;
+
+dclass_field
+	: atomic_field keyword_list
+	{
+		if($1 != (Field*)NULL)
+		{
+			if($1->get_name().empty())
+			{
+				yyerror("Field name required.");
+			}
+			$1->copy_keywords(current_keyword_list);
+		}
+		$$ = $1;
+	}
+	| molecular_field no_keyword_list
+	| unnamed_parameter keyword_list
+	{
+		yyerror("Unnamed parameters are not allowed on a dclass");
+		if($1 != (Field *)NULL)
+		{
+			$1->copy_keywords(current_keyword_list);
+		}
+		$$ = $1;
+	}
+	| named_parameter keyword_list
+	{
+		if($1 != (Field *)NULL)
+		{
+			$1->copy_keywords(current_keyword_list);
+		}
+		$$ = $1;
+	}
+	;
+
+dstruct
+	: KW_STRUCT IDENTIFIER
+	{
+		current_class = new Struct(dc_file, $2);
+	}
+	  '{' struct_fields '}'
+	{
+		$$ = current_class;
 	}
 	;
 
 struct_fields
 	: empty
 	| struct_fields ';'
-	| struct_fields struct_field ';'
+	| struct_fields struct_field
 	{
 		if($2 == (Field *)NULL)
 		{
@@ -457,17 +386,8 @@ struct_fields
 	;
 
 struct_field
-	: atomic_field no_keyword_list
-	{
-		if($1->get_name().empty())
-		{
-			yyerror("Field name required.");
-		}
-		$$ = $1;
-	}
-	| molecular_field no_keyword_list
-	| unnamed_parameter no_keyword_list { $$ = $1; }
-	| named_parameter no_keyword_list { $$ = $1; }
+	: unnamed_parameter ';' { $$ = $1; }
+	| named_parameter ';' { $$ = $1; }
 	;
 
 atomic_field
@@ -476,14 +396,13 @@ atomic_field
 		if(current_class == (Class *)NULL)
 		{
 			yyerror("Cannot define a method outside of a struct or class.");
-			Class *temp_class = new Class(dc_file, "temp", false, false);  // memory leak.
-			current_atomic = new AtomicField($1, temp_class, false);
 		}
-		else {
-			current_atomic = new AtomicField($1, current_class, false);
+		else
+		{
+			current_atomic = new AtomicField($1, current_class);
 		}
 	}
-	parameter_list ')'
+	  parameter_list ')'
 	{
 		$$ = current_atomic;
 		current_atomic = $<u.atomic>3;
@@ -542,12 +461,11 @@ param_w_typ
 			if(dclass != (Class *)NULL)
 			{
 				// Create an implicit typedef for this.
-				dtypedef = new Typedef(new ClassParameter(dclass), true);
+				dtypedef = new Typedef(new StructParameter(dclass), true);
 			}
 			else
 			{
-				// It's an undefined typedef.  Create a bogus forward reference.
-				dtypedef = new Typedef($1);
+				yyerror("Cannot use undefined type '" + $1 + "' as parameter type.");
 			}
 
 			dc_file->add_typedef(dtypedef);
@@ -618,121 +536,17 @@ param_n_def
 	;
 
 double_range
-	: empty { $$ = DoubleRange(); }
-	| char_or_number
-	{
-		DoubleRange double_range;
-		if(!double_range.add_range($1, $1))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = double_range;
-	}
-	| char_or_number '-' char_or_number
-	{
-		DoubleRange double_range;
-		if(!double_range.add_range($1, $3))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = double_range;
-	}
-	| char_or_number number
-	{
-		DoubleRange double_range;
-		if($2 >= 0)
-		{
-			yyerror("Syntax error");
-		}
-		else if(!double_range.add_range($1, -$2))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = double_range;
-	}
-	| double_range ',' char_or_number
-	{
-		if(!$1.add_range($3, $3))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
-	| double_range ',' char_or_number '-' char_or_number
-	{
-		if(!$1.add_range($3, $5))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
-	| double_range ',' char_or_number number
-	{
-		if($4 >= 0)
-		{
-			yyerror("Syntax error");
-		}
-		else if(!$1.add_range($3, -$4))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
+	: empty { $$ = NumericRange(); }
+	| char_or_number { $$ = NumericRange($1, $1); }
+	| char_or_number '-' char_or_number { $$ = NumericRange($1, $3); }
+	| char_or_number number { $$ = NumericRange($1, $2); }
 	;
 
 uint_range
-	: empty { $$ = UnsignedIntRange(); }
-	| char_or_uint
-	{
-		UnsignedIntRange uint_range;
-		if(!uint_range.add_range($1, $1))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = uint_range;
-	}
-	| char_or_uint '-' char_or_uint
-	{
-		UnsignedIntRange uint_range;
-		if(!uint_range.add_range($1, $3))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = uint_range;
-	}
-	| char_or_uint small_negative_integer
-	{
-		UnsignedIntRange uint_range;
-		if(!uint_range.add_range($1, $2))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = uint_range;
-	}
-	| uint_range ',' char_or_uint
-	{
-		if(!$1.add_range($3, $3))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
-	| uint_range ',' char_or_uint '-' char_or_uint
-	{
-		if(!$1.add_range($3, $5))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
-	| uint_range ',' char_or_uint small_negative_integer
-	{
-		if(!$1.add_range($3, $4))
-		{
-			yyerror("Overlapping range");
-		}
-		$$ = $1;
-	}
+	: empty { $$ = NumericRange(); }
+	| char_or_uint { $$ = NumericRange($1, $1); }
+	| char_or_uint '-' char_or_uint { $$ = NumericRange($1, $3); }
+	| char_or_uint small_negative_integer { $$ = NumericRange($1, $2); }
 	;
 
 char_or_uint
@@ -976,25 +790,12 @@ atomic_name
 		$$ = (AtomicField *)NULL;
 		if(field == (Field *)NULL)
 		{
-			// Maybe the field is unknown because the class is partially
-			// bogus.  In that case, allow it for now; create a bogus field as
-			// a placeholder.
-			if(current_class->inherits_from_bogus_class())
-			{
-				$$ = new AtomicField($1, current_class, true);
-				current_class->add_field($$);
-
-			}
-			else
-			{
-				// Nope, it's a fully-defined class, so this is a real error.
-				yyerror("Unknown field: " + $1);
-			}
-
+			yyerror("Unknown field: " + $1);
 		}
-		else {
+		else
+		{
 			$$ = field->as_atomic_field();
-			if($$ == (AtomicField *)NULL)
+			if($$ == (AtomicField*)NULL)
 			{
 				yyerror("Not an atomic field: " + $1);
 			}
@@ -1015,7 +816,7 @@ molecular_atom_list
 		if($3 != (AtomicField *)NULL)
 		{
 			current_molecular->add_atomic($3);
-			if(!$3->is_bogus_field() && !current_molecular->compare_keywords(*$3))
+			if(!current_molecular->compare_keywords(*$3))
 			{
 				yyerror("Mismatched keywords in molecule between " +
 				current_molecular->get_atomic(0)->get_name() + " and " +

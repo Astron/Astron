@@ -10,35 +10,34 @@
 
 #include "ArrayParameter.h"
 #include "SimpleParameter.h"
-#include "ClassParameter.h"
 #include "HashGenerator.h"
 namespace dclass   // open namespace
 {
 
 
 // basic constructor
-ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &size) :
-	m_element_type(element_type), m_array_size_range(size)
+ArrayParameter::ArrayParameter(Parameter *element_type, const NumericRange &size) :
+	m_element_type(element_type), m_array_range(size)
 {
 	set_name(m_element_type->get_name());
 	m_element_type->set_name(std::string());
 
-	m_array_size = -1;
-	if(m_array_size_range.has_one_value())
+	if(m_array_range.min == m_array_range.max)
 	{
 		m_datatype = DT_array;
-		m_array_size = m_array_size_range.get_one_value();
+		m_array_size = m_array_range.min.uinteger;
 	}
 	else
 	{
 		m_datatype = DT_vararray;
+		m_array_size = 0;
 	}
 
 
 	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
 	if(simple_type != (SimpleParameter *)NULL)
 	{
-		if(simple_type->get_type() == DT_char)
+		if(simple_type->get_datatype() == DT_char)
 		{
 			// We make a special case for char[] arrays: these have the string DataType.
 			// Note: A string is equivalent to an int8[] or uint8[] except that it is
@@ -81,7 +80,7 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const UnsignedIntRange &
 // copy constructor
 ArrayParameter::ArrayParameter(const ArrayParameter &copy) : Parameter(copy),
 	m_element_type(copy.m_element_type->make_copy()),
-	m_array_size(copy.m_array_size), m_array_size_range(copy.m_array_size_range)
+	m_array_size(copy.m_array_size), m_array_range(copy.m_array_range)
 {
 }
 
@@ -133,7 +132,7 @@ int ArrayParameter::get_array_size() const
 // append_array_specification returns the type represented by this type[size].
 //     As an ArrayParameter, this same pointer is returned, but the inner type of the array
 //     becomes an array type (ie. type[] becomes type[][]).
-Parameter* ArrayParameter::append_array_specification(const UnsignedIntRange &size)
+Parameter* ArrayParameter::append_array_specification(const NumericRange &size)
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
@@ -162,7 +161,8 @@ void ArrayParameter::output_instance(std::ostream &out, bool brief, const std::s
 		std::ostringstream strm;
 
 		strm << "[";
-		m_array_size_range.output(strm);
+		// TODO: fix
+		//m_array_size_range.output(strm);
 		strm << "]";
 
 		m_element_type->output_instance(out, brief, prename, name,
@@ -175,7 +175,8 @@ void ArrayParameter::generate_hash(HashGenerator &hashgen) const
 {
 	Parameter::generate_hash(hashgen);
 	m_element_type->generate_hash(hashgen);
-	m_array_size_range.generate_hash(hashgen);
+	// TODO: fix
+	//m_array_size_range.generate_hash(hashgen);
 }
 
 

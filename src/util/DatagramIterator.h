@@ -1,7 +1,7 @@
 #pragma once
 #include "Datagram.h"
+#include "dclass/DistributedType.h"
 #include "dclass/Class.h"
-#include "dclass/Element.h"
 #include "dclass/Field.h"
 #include "dclass/AtomicField.h" // temporary
 #include "dclass/MolecularField.h" // temporary
@@ -226,16 +226,16 @@ class DatagramIterator
 		}
 
 		// unpack_field accepts a Field type and reads the value of the field into a buffer.
-		void unpack_field(const dclass::Element* element, std::vector<uint8_t> &buffer)
+		void unpack_field(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
 		{
 			using namespace dclass;
-			if(element->has_fixed_size())
+			if(dtype->has_fixed_size())
 			{
 				// If field is a fixed-sized type like uint, int, float, etc
-				std::vector<uint8_t> data = read_data(element->get_size());
+				std::vector<uint8_t> data = read_data(dtype->get_size());
 				buffer.insert(buffer.end(), data.begin(), data.end());
 			}
-			switch(element->get_type())
+			switch(dtype->get_datatype())
 			{
 				case DT_varstring:
 				case DT_varblob:
@@ -246,16 +246,16 @@ class DatagramIterator
 				}
 				case DT_struct:
 				{
-					const Class* cls = element->as_class();
-					size_t num_fields = cls->get_num_inherited_fields();
+					const Struct* cls = dtype->as_struct();
+					size_t num_fields = cls->get_num_fields();
 					for(unsigned int i = 0; i < num_fields; ++i)
 					{
-						unpack_field(cls->get_inherited_field(i), buffer);
+						unpack_field(cls->get_field(i), buffer);
 					}
 				}
 				case DT_method:
 				{
-					const Field* field = element->as_field();
+					const Field* field = dtype->as_field();
 					if(field->as_molecular_field())
 					{
 						const MolecularField* mol = field->as_molecular_field();
@@ -296,26 +296,26 @@ class DatagramIterator
 		}
 
 		// unpack_field can also be called without a reference to unpack into a new buffer.
-		std::vector<uint8_t> unpack_field(const dclass::Element *element)
+		std::vector<uint8_t> unpack_field(const dclass::DistributedType *dtype)
 		{
 			std::vector<uint8_t> buffer;
-			unpack_field(element, buffer);
+			unpack_field(dtype, buffer);
 			return buffer;
 		}
 
 		// skip_field can be used to seek past the packed field data for a Field.
 		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip_field(const dclass::Element *element)
+		void skip_field(const dclass::DistributedType *dtype)
 		{
 			using namespace dclass;
-			if(element->has_fixed_size())
+			if(dtype->has_fixed_size())
 			{
-				dgsize_t length = element->get_size();
+				dgsize_t length = dtype->get_size();
 				check_read_length(length);
 				m_offset += length;
 			}
 
-			switch(element->get_type())
+			switch(dtype->get_datatype())
 			{
 				case DT_varstring:
 				case DT_varblob:
@@ -327,16 +327,16 @@ class DatagramIterator
 				}
 				case DT_struct:
 				{
-					const Class* cls = element->as_class();
-					size_t num_fields = cls->get_num_inherited_fields();
+					const Struct* cls = dtype->as_struct();
+					size_t num_fields = cls->get_num_fields();
 					for(unsigned int i = 0; i < num_fields; ++i)
 					{
-						skip_field(cls->get_inherited_field(i));
+						skip_field(cls->get_field(i));
 					}
 				}
 				case DT_method:
 				{
-					const Field* field = element->as_field();
+					const Field* field = dtype->as_field();
 					if(field->as_molecular_field())
 					{
 						const MolecularField* mol = field->as_molecular_field();

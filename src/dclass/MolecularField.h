@@ -26,7 +26,7 @@ class Parameter;
 class MolecularField : public Field
 {
 	public:
-		MolecularField(const std::string &name, Class *dclass);
+		MolecularField(const std::string &name, Struct *dclass);
 
 		// as_molecular_field returns the same field pointer converted to a molecular field pointer,
 		//     if this is in fact a molecular field; otherwise, returns NULL.

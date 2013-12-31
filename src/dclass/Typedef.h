@@ -31,7 +31,6 @@ class Typedef : public Declaration
 		const std::string &get_name() const;
 		std::string get_description() const;
 
-		bool is_bogus_typedef() const;
 		bool is_implicit_typedef() const;
 
 		Parameter *make_new_parameter() const;
@@ -42,7 +41,6 @@ class Typedef : public Declaration
 
 	private:
 		Parameter *m_parameter;
-		bool m_bogus_typedef;
 		bool m_implicit_typedef;
 		int m_number;
 };

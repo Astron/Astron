@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "dcbase.h"
 #include "Field.h"
 #include "NumericRange.h"
 namespace dclass   // open namespace dclass
@@ -18,7 +17,7 @@ namespace dclass   // open namespace dclass
 
 // Foward declarations
 class SimpleParameter;
-class ClassParameter;
+class StructParameter;
 class ArrayParameter;
 class Typedef;
 class HashGenerator;
@@ -37,7 +36,7 @@ class Parameter : public Field
 	public:
 		virtual ~Parameter();
 
-		// as_parameter returns the same field pointer converted to a parameter,
+		// as_parameter returns the same pointer converted to a parameter,
 		//     if this is in fact a parameter; otherwise, returns NULL.
 		virtual Parameter *as_parameter();
 		virtual const Parameter *as_parameter() const;
@@ -47,10 +46,10 @@ class Parameter : public Field
 		virtual SimpleParameter *as_simple_parameter();
 		virtual const SimpleParameter *as_simple_parameter() const;
 
-		// as_class_parameter returns the same parameter pointer converted to a class parameter,
-		//     if this is in fact a class parameter; otherwise, returns NULL.
-		virtual ClassParameter *as_class_parameter();
-		virtual const ClassParameter *as_class_parameter() const;
+		// as_struct_parameter returns the same parameter pointer converted to a class parameter,
+		//     if this is in fact a struct parameter; otherwise, returns NULL.
+		virtual StructParameter *as_struct_parameter();
+		virtual const StructParameter *as_struct_parameter() const;
 
 		// as_array_parameter returns the same parameter pointer converted to an array parameter,
 		//     if this is in fact an array parameter; otherwise, returns NULL.
@@ -69,7 +68,7 @@ class Parameter : public Field
 
 		// append_array_specification returns the type represented by this_type[size].
 		//     In the case of a generic Parameter, it returns an ArrayParameter wrapped around this type.
-		virtual Parameter *append_array_specification(const UnsignedIntRange &size);
+		virtual Parameter *append_array_specification(const NumericRange &size);
 
 		// output and write write a representation of the parameter to an output stream.
 		virtual void output(std::ostream &out, bool brief) const;
