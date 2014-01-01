@@ -234,6 +234,7 @@ class DatagramIterator
 				// If field is a fixed-sized type like uint, int, float, etc
 				std::vector<uint8_t> data = read_data(dtype->get_size());
 				buffer.insert(buffer.end(), data.begin(), data.end());
+				return;
 			}
 			switch(dtype->get_datatype())
 			{
@@ -241,8 +242,12 @@ class DatagramIterator
 				case DT_varblob:
 				case DT_vararray:
 				{
-					std::vector<uint8_t> blob = read_blob();
+					dgsize_t len = read_size();
+					buffer.insert(buffer.end(), (uint8_t*)&len, (uint8_t*)&len + sizeof(dgsize_t));
+
+					std::vector<uint8_t> blob = read_data(len);
 					buffer.insert(buffer.end(), blob.begin(), blob.end());
+					break;
 				}
 				case DT_struct:
 				{
@@ -252,6 +257,7 @@ class DatagramIterator
 					{
 						unpack_field(cls->get_field(i), buffer);
 					}
+					break;
 				}
 				case DT_method:
 				{
@@ -264,6 +270,7 @@ class DatagramIterator
 						{
 							unpack_field(mol->get_atomic(i), buffer);
 						}
+						break;
 					}
 					else if(field->as_atomic_field())
 					{
@@ -273,24 +280,15 @@ class DatagramIterator
 						{
 							unpack_field(atomic->get_element(i), buffer);
 						}
+						break;
 					}
-					else
-					{
-						//temporary warning
-						//#include 
-						std::cerr << "Found DT_method that is not molecular or atomic.\n";
-					}
-				}
-				case DT_invalid:
-				{
-					// temporary warning
-					std::cerr << "Bad distributed class parsing\n";
 				}
 				default:
 				{
 					//temporar warning
 					//#include
 					std::cerr << "Unrecognized distributed class datatype.\n";
+					break;
 				}
 			}
 		}
@@ -313,6 +311,7 @@ class DatagramIterator
 				dgsize_t length = dtype->get_size();
 				check_read_length(length);
 				m_offset += length;
+				return;
 			}
 
 			switch(dtype->get_datatype())
