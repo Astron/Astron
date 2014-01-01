@@ -177,7 +177,7 @@ bool Class::add_field(Field *field)
 	// Also, tell the file to update any subclasses of this class.
 	if(m_file != (File*)NULL)
 	{
-		m_file->mark_inherited_fields_stale();
+		m_file->update_inheritance(this);
 	}
 
 	return true;
@@ -188,7 +188,8 @@ bool Class::add_field(Field *field)
 void Class::add_parent(Class *parent)
 {
 	m_parents.push_back(parent);
-	m_file->mark_inherited_fields_stale();
+	rebuild_fields();
+	m_file->update_inheritance(this);
 }
 
 

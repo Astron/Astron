@@ -254,6 +254,7 @@ dclass
 	}
 	  dclass_inheritance '{' dclass_fields '}'
 	{
+		current_class->as_class()->rebuild_fields();
 		$$ = current_class->as_class();
 		current_class = $<u.dclass>3;
 	}

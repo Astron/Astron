@@ -20,7 +20,7 @@ namespace dclass   // open namespace
 
 
 // constructor
-File::File() : m_inherited_fields_stale(false)
+File::File()
 {
 	setup_default_keywords();
 }
@@ -425,10 +425,30 @@ void File::setup_default_keywords()
 	}
 }
 
+// update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
+void File::update_inheritance(Class* dclass)
+{
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
+	{
+		Class* cls = (*it)->as_class();
+		if(cls != (Class*)NULL)
+		{
+			size_t num_parents = cls->get_num_parents();
+			for(unsigned int i = 0; i < num_parents; ++i)
+			{
+				if(cls->get_parent(i) == dclass)
+				{
+					cls->rebuild_fields();
+					break;
+				}
+			}
+		}
+	}
+}
+
 // rebuild_inherited_fields reconstructs the inherited fields table of all classes.
 void File::rebuild_inherited_fields()
 {
-	m_inherited_fields_stale = false;
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
 		Class* cls = (*it)->as_class();

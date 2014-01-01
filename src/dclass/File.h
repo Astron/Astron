@@ -113,12 +113,8 @@ class File
 		//     This is only meant to be called by Class::add_field().
 		void add_field(Field *field);
 
-		// check_inherited_fields rebuilds all of the inherited fields tables, if necessary.
-		inline void check_inherited_fields();
-
-		// mark_inherited_fields_stale indicates that something has changed in one or more
-		//     of the inheritance chains or the set of fields.
-		inline void mark_inherited_fields_stale();
+		// update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
+		void update_inheritance(Class* dclass);
 
 	private:
 		void setup_default_keywords();
@@ -146,11 +142,7 @@ class File
 		std::vector<Declaration*> m_things_to_delete; // list of objects to delete in destructor
 
 		std::vector<Field*> m_fields_by_id; // fields in the file by unique integer id
-
-		bool m_inherited_fields_stale; // true if inherited fields have not be calculated.
 };
 
 
 } // close namespace dclass
-
-#include "File.ipp"
