@@ -115,7 +115,6 @@ class Field : public virtual DistributedType, public KeywordList
 		// refresh_default_value recomputes the default value of the field by repacking it.
 		virtual void refresh_default_value() = 0;
 
-	protected:
 		Struct *m_class; // the class that this field belongs to
 		std::string m_name;
 		unsigned int m_id; // the unique index of the field in the .dc file

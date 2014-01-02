@@ -12,8 +12,7 @@ Struct::Struct(File* file, const string& name) : m_file(file), m_name(name), m_i
 }
 
 // parameter constructer
-Struct::Struct(const Struct* base) : m_file(base->m_file),
-	m_name(base->m_name), m_id(base->m_id), m_fields(base->m_fields)
+Struct::Struct(const Struct* base) : m_file(base->m_file), m_name(base->m_name), m_id(base->m_id)
 {
 }
 

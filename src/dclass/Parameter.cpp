@@ -25,7 +25,7 @@ Parameter::Parameter()
 }
 
 // copy constructor
-Parameter::Parameter(const Parameter &copy) : Field(copy), m_typedef(copy.m_typedef)
+Parameter::Parameter(const Parameter &copy) : DistributedType(copy), Field(copy), m_typedef(copy.m_typedef)
 {
 }
 

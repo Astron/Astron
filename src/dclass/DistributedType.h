@@ -12,11 +12,19 @@ class Field;
 // An DistributedType represents any part of a .dc file which can have 
 class DistributedType
 {
-    public:
+    protected:
+        // null constructor
         DistributedType() : m_datatype(DT_invalid), m_bytesize(0), m_has_fixed_size(true)
         {
         }
 
+        // copy constructor
+        DistributedType(const DistributedType& copy) : m_datatype(copy.m_datatype),
+            m_bytesize(copy.m_bytesize), m_has_fixed_size(copy.m_has_fixed_size)
+        {
+        }
+
+    public:
         // get_size returns the size of the DistributedType in bytes.
         //     If the type has variable size, 0 is returned instead.
         inline sizetag_t get_size() const
