@@ -167,5 +167,26 @@ void ArrayParameter::generate_hash(HashGenerator &hashgen) const
 	//m_array_size_range.generate_hash(hashgen);
 }
 
+void ArrayParameter::refresh_default_value()
+{
+	switch(m_datatype)
+	{
+		case DT_array:
+		{
+			m_default_value = std::string(m_bytesize, '\0');
+			break;
+		}
+		case DT_vararray:
+		{
+			sizetag_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(sizetag_t));
+			break;
+		}
+		default:
+			m_default_value = std::string();
+	}
+	m_default_value_stale = false;
+}
+
 
 } // close namespace dclass

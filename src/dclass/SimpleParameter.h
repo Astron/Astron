@@ -53,6 +53,9 @@ class SimpleParameter : public Parameter
 		                             const std::string &name, const std::string &postname) const;
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
+	protected:
+		virtual void refresh_default_value();
+
 	private:
 		unsigned int m_divisor;
 

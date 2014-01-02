@@ -58,6 +58,9 @@ class ArrayParameter : public Parameter
 		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
+	protected:
+		virtual void refresh_default_value();
+
 	private:
 		Parameter *m_element_type; // type of the elements contained in the array
 		unsigned int m_array_size; // number of elements in the array if it is a constant (or 0)

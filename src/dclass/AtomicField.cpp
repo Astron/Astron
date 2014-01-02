@@ -152,5 +152,15 @@ void AtomicField::output_element(std::ostream &out, bool brief, Parameter *eleme
 	}
 }
 
+void AtomicField::refresh_default_value()
+{
+	m_default_value = std::string();
+	for(auto it = m_elements.begin(); it != m_elements.end(); ++it)
+	{
+		m_default_value += (*it)->get_default_value();
+	}
+	m_default_value_stale = false;
+}
+
 
 } // close namespace dclass

@@ -49,6 +49,9 @@ class MolecularField : public Field
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
+	protected:
+		virtual void refresh_default_value();
+
 	private:
 		// These members define the primary interface to the molecular field
 		// definition as read from the file.

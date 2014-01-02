@@ -109,11 +109,20 @@ void StructParameter::generate_hash(HashGenerator &hashgen) const
 	m_class->generate_hash(hashgen);
 }
 
-bool add_field(Field* field)
+bool StructParameter::add_field(Field* field)
 {
 	return false;
 }
 
+void StructParameter::refresh_default_value()
+{
+	m_default_value = std::string();
+	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
+	{
+		m_default_value += (*it)->get_default_value();
+	}
+	m_default_value_stale = false;
+}
 
 
 } // close namespace dclass

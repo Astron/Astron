@@ -105,10 +105,5 @@ void Field::generate_hash(HashGenerator &hashgen) const
 	hashgen.add_int(m_id);
 }
 
-void Field::refresh_default_value()
-{
-	// TODO: this
-}
-
 
 } // close namespace dclass

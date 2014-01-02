@@ -46,6 +46,13 @@ class StructParameter : public Parameter, public Struct
 		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
+		// add_field always returns false on a StructParameter.
+		//     Struct parameters are not allowed to modify their own fields.
+		virtual bool add_field(Field* field);
+
+	protected:
+		virtual void refresh_default_value();
+
 	private:
 		const Struct *m_class; // class type of parameter
 		using Parameter::m_name;

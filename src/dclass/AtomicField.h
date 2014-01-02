@@ -53,6 +53,9 @@ class AtomicField : public Field
 		// generate_hash accumulates the properties of this field into the hash
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
+	protected:
+		virtual void refresh_default_value();
+
 	private:
 		// output_element formats a parameter as an element for output into .dc file syntax.
 		void output_element(std::ostream &out, bool brief, Parameter *element) const;

@@ -36,6 +36,9 @@ class Field : public virtual DistributedType, public KeywordList
 		// get_struct returns the Struct pointer for the class that contains this field.
 		inline Struct *get_class() const;
 
+		// get_name returns the field's name.  An unnamed field returns the empty string.
+		inline const std::string & get_name() const;
+
 		// as_field returns the same pointer converted to a field pointer,
 		//     if this is in fact a field; otherwise, returns NULL.
 		virtual Field *as_field();
@@ -108,14 +111,9 @@ class Field : public virtual DistributedType, public KeywordList
 		// set_default_value establishes a default value for this field.
 		inline void set_default_value(const std::string &default_value);
 
-		inline const std::string & get_name() const
-		{
-			return m_name;
-		}
-
 	protected:
 		// refresh_default_value recomputes the default value of the field by repacking it.
-		void refresh_default_value();
+		virtual void refresh_default_value() = 0;
 
 	protected:
 		Struct *m_class; // the class that this field belongs to
@@ -123,8 +121,6 @@ class Field : public virtual DistributedType, public KeywordList
 		unsigned int m_id; // the unique index of the field in the .dc file
 		bool m_default_value_stale; // is true if the default value hasn't been computed
 		bool m_has_default_value; // is true if an explicity default has been set
-
-	private:
 		std::string m_default_value; // the binary data of the default value encoded in a string
 
 };

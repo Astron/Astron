@@ -18,9 +18,15 @@ inline unsigned int Field::get_id() const
 }
 
 // get_class returns the Class pointer for the class that contains this field.
-inline Struct *Field::get_class() const
+inline Struct* Field::get_class() const
 {
 	return m_class;
+}
+
+// get_name returns the field's name.  An unnamed field returns the empty string.
+inline const std::string& Field::get_name() const
+{
+	return m_name;
 }
 
 // has_default_value returns true if a default value has been explicitly
@@ -33,7 +39,7 @@ inline bool Field::has_default_value() const
 // get_default_value returns the default value for this field.  If a
 //     default value has been explicitly set (e.g. has_default_value() returns true),
 //     returns that value; otherwise, returns an implicit default for the field.
-inline const std::string &Field::get_default_value() const
+inline const std::string& Field::get_default_value() const
 {
 	if(m_default_value_stale)
 	{

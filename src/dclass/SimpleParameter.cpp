@@ -37,9 +37,7 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 		case DT_int64:
 			m_bytesize = sizeof(int64_t);
 			break;
-		case DT_char:
-			m_bytesize = sizeof(char);
-			break;
+
 		case DT_uint8:
 			m_bytesize = sizeof(uint8_t);
 			break;
@@ -52,22 +50,34 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 		case DT_uint64:
 			m_bytesize = sizeof(uint64_t);
 			break;
+
 		case DT_float32:
 			m_bytesize = sizeof(float);
 			break;
 		case DT_float64:
 			m_bytesize = sizeof(double);
 			break;
+
+		case DT_char:
+			m_bytesize = sizeof(char);
+			break;
+
+		// Strings are variable by default, they become fixed
+		// only after setting a fixed-width range.
 		case DT_string:
-			// Strings are variable by default, they become static
-			// only after setting a fixed-width range.
 			m_datatype = DT_varstring;
+		case DT_varstring:
 			m_has_fixed_size = false;
+			break;
+
+		// Blobs are variable by default, they become fixed
+		// only after setting a fixed-width range.
 		case DT_blob:
-			// Blobs are variable by default, they become static
-			// only after setting a fixed-width range.
 			m_datatype = DT_varblob;
+		case DT_varblob:
 			m_has_fixed_size = false;
+			break;
+
 		case DT_invalid:
 			break;
 		default:
@@ -407,6 +417,91 @@ void SimpleParameter::generate_hash(HashGenerator &hashgen) const
 	//m_uint_range.generate_hash(hashgen);
 	//m_uint64_range.generate_hash(hashgen);
 	//m_double_range.generate_hash(hashgen);
+}
+
+
+void SimpleParameter::refresh_default_value()
+{
+	// TODO: this
+	switch(m_datatype)
+	{
+		case DT_int8:
+		{
+			int8_t v = 0;	
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(int8_t));
+			break;
+		}
+		case DT_int16:
+		{
+			int16_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(int16_t));
+			break;
+		}
+		case DT_int32:
+		{
+			int32_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(int32_t));
+			break;
+		}
+		case DT_int64:
+		{
+			int64_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(int64_t));
+			break;
+		}
+		case DT_uint8:
+		{
+			uint8_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(uint8_t));
+			break;
+		}
+		case DT_uint16:
+		{
+			uint16_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(uint16_t));
+			break;
+		}
+		case DT_uint32:
+		{
+			uint32_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(uint32_t));
+			break;
+		}
+		case DT_uint64:
+		{
+			uint64_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(uint64_t));
+			break;
+		}
+		case DT_float32:
+		{
+			float v = 0.0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(float));
+			break;
+		}
+		case DT_float64:
+		{
+			double v = 0.0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(double));
+			break;
+		}
+		case DT_string:
+		case DT_blob:
+		{
+			m_default_value = std::string(m_bytesize, '\0');
+			break;
+		}
+		case DT_varstring:
+		case DT_varblob:
+		{
+			sizetag_t v = 0;
+			m_default_value = std::string((char*)&v, (char*)&v + sizeof(sizetag_t));
+			break;
+		}
+		default:
+			m_default_value = std::string();
+	}
+	m_default_value_stale = false;
 }
 
 
