@@ -20,14 +20,17 @@ endif()
 
 ### Define astron’s git aha for use in program ###
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
-	exec_program(
-		"git"
-		${CMAKE_CURRENT_SOURCE_DIR}
-		ARGS "describe --abbrev=8 --dirty --always"
-		OUTPUT_VARIABLE GIT_SHA_VERSION
-	)
+	find_package(Git)
+	if(GIT_FOUND)
+		exec_program(
+			${GIT_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}
+			ARGS "describe --abbrev=8 --dirty --always"
+			OUTPUT_VARIABLE GIT_SHA_VERSION
+		)
 
-	add_definitions(-DGIT_SHA1="${GIT_SHA_VERSION}")
+		add_definitions(-DGIT_SHA1="${GIT_SHA_VERSION}")
+	endif()
 endif()
 
 
