@@ -1,5 +1,6 @@
 // Filename: NumericRange.h
 #pragma once
+#include <limits>
 namespace dclass   // open namespace dclass
 {
 
@@ -43,7 +44,12 @@ struct NumericRange
 	Number min;
 	Number max;
 
-	inline NumericRange()                           : type(NT_none),  min(),    max()    {}
+	inline NumericRange() : type(NT_none)
+	{
+		min.type = max.type = NT_none;
+		min.floating = -std::numeric_limits<double>::infinity();
+		max.floating =  std::numeric_limits<double>::infinity();
+	}
 	inline NumericRange(int32_t min, int32_t max)   : type(NT_sint),  min(min), max(max) {}
 	inline NumericRange(int64_t min, int64_t max)   : type(NT_sint),  min(min), max(max) {}
 	inline NumericRange(uint32_t min, uint32_t max) : type(NT_uint),  min(min), max(max) {}

@@ -9,7 +9,6 @@
 //
 
 #include "ArrayParameter.h"
-#include "SimpleParameter.h"
 #include "HashGenerator.h"
 namespace dclass   // open namespace
 {
@@ -22,7 +21,7 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const NumericRange &size
 	set_name(m_element_type->get_name());
 	m_element_type->set_name(std::string());
 
-	if(m_array_range.min == m_array_range.max)
+	if(!m_array_range.is_empty() && m_array_range.min == m_array_range.max)
 	{
 		m_datatype = DT_array;
 		m_array_size = m_array_range.min.uinteger;
@@ -34,26 +33,22 @@ ArrayParameter::ArrayParameter(Parameter *element_type, const NumericRange &size
 	}
 
 
-	SimpleParameter *simple_type = m_element_type->as_simple_parameter();
-	if(simple_type != (SimpleParameter *)NULL)
+	if(m_element_type->get_datatype() == DT_char)
 	{
-		if(simple_type->get_datatype() == DT_char)
+		// We make a special case for char[] arrays: these have the string DataType.
+		// Note: A string is equivalent to an int8[] or uint8[] except that it is
+		//       treated semantically as character data, and is printed as a string.
+		if(m_datatype == DT_array)
 		{
-			// We make a special case for char[] arrays: these have the string DataType.
-			// Note: A string is equivalent to an int8[] or uint8[] except that it is
-			//       treated semantically as character data, and is printed as a string.
-			if(m_datatype == DT_array)
-			{
-				m_datatype = DT_string;
-			}
-			else
-			{
-				m_datatype = DT_varstring;
-			}
+			m_datatype = DT_string;
+		}
+		else
+		{
+			m_datatype = DT_varstring;
 		}
 	}
 
-	if(m_array_size >= 0 && m_element_type->has_fixed_size())
+	if(m_array_size > 0 && m_element_type->has_fixed_size())
 	{
 		m_bytesize = m_array_size * sizeof(m_element_type);
 		m_has_fixed_size = true;
@@ -116,7 +111,7 @@ Parameter* ArrayParameter::get_element_type() const
 }
 
 // get_array_size returns the fixed number of elements in this array,
-//     or -1 if the array may contain a variable number of elements.
+//     or 0 if the array may contain a variable number of elements.
 int ArrayParameter::get_array_size() const
 {
 	return m_array_size;

@@ -108,6 +108,7 @@ struct Formatter
 					return false;
 				unsigned int v = *(uint16_t*)(in+offset);
 				offset += sizeof(uint16_t);
+				out << v;
 				break;
 			}
 			case DT_uint32:
@@ -116,6 +117,7 @@ struct Formatter
 					return false;
 				unsigned int v = *(uint32_t*)(in+offset);
 				offset += sizeof(uint32_t);
+				out << v;
 				break;
 			}
 			case DT_uint64:
@@ -124,6 +126,7 @@ struct Formatter
 					return false;
 				unsigned int v = *(uint64_t*)(in+offset);
 				offset += sizeof(uint64_t);
+				out << v;
 				break;
 			}
 			case DT_float32:
@@ -132,6 +135,7 @@ struct Formatter
 					return false;
 				float v = *(float*)(in+offset);
 				offset += sizeof(float);
+				out << v;
 				break;
 			}
 			case DT_float64:
@@ -140,6 +144,7 @@ struct Formatter
 					return false;
 				double v = *(double*)(in+offset);
 				offset += sizeof(double);
+				out << v;
 				break;
 			}
 			case DT_char:
@@ -341,24 +346,24 @@ struct Formatter
 
 // format unpacks the packed data into a string formatted for a .dc file.
 //     This is used to produce default values when outputting a distributed class to a file.
-string format(const DistributedType *dtype, const vector<uint8_t> &packed)
+string format_value(const DistributedType *dtype, const vector<uint8_t> &packed)
 {
 	ostringstream ss;
-	format(dtype, packed, ss);
+	format_value(dtype, packed, ss);
 	return ss.str();
 }
-string format(const DistributedType *dtype, const string &packed)
+string format_value(const DistributedType *dtype, const string &packed)
 {
 	ostringstream ss;
-	format(dtype, packed, ss);
+	format_value(dtype, packed, ss);
 	return ss.str();
 }
-void format(const DistributedType *dtype, const vector<uint8_t> &packed, ostream &out)
+void format_value(const DistributedType *dtype, const vector<uint8_t> &packed, ostream &out)
 {
 	Formatter formatter(packed, out);
 	formatter.format(dtype);
 }
-void format(const DistributedType *dtype, const string &packed, ostream &out)
+void format_value(const DistributedType *dtype, const string &packed, ostream &out)
 {
 	Formatter formatter(packed, out);
 	formatter.format(dtype);

@@ -148,7 +148,7 @@ void AtomicField::output_element(std::ostream &out, bool brief, Parameter *eleme
 	if(!brief && element->has_default_value())
 	{
 		out << " = ";
-		format(element, element->get_default_value(), out);
+		format_value(element, element->get_default_value(), out);
 	}
 }
 

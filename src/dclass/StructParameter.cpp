@@ -51,7 +51,7 @@ StructParameter::StructParameter(const Struct *dclass) : Struct(dclass), m_class
 
  // copy constructor
 StructParameter::StructParameter(const StructParameter &copy) :
-	Struct(copy), Parameter(copy), m_class(copy.m_class)
+	Parameter(copy), Struct(copy), m_class(copy.m_class)
 {
 	m_file = copy.m_file;
 	m_name = string(copy.m_name);

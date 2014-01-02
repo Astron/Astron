@@ -57,6 +57,8 @@ void Class::rebuild_fields()
 	unordered_set<string> names;
 
 	m_fields.clear();
+	m_fields_by_name.clear();
+	m_fields_by_id.clear();
 	m_bytesize = 0;
 	m_has_fixed_size = true;
 
@@ -75,6 +77,12 @@ void Class::rebuild_fields()
 				{
 					// The earlier parent shadows the later parent.
 					m_fields.push_back(field);
+					m_fields_by_name.insert(unordered_map<string, Field*>::value_type(field->get_name(), field));
+					if(m_file != (File*)NULL)
+					{
+						m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field));
+					}
+
 					if(!field->as_molecular_field())
 					{
 						m_bytesize += field->get_size();
@@ -103,6 +111,8 @@ void Class::rebuild_fields()
 				if(shadowed->get_name() == field->get_name())
 				{
 					m_fields.erase(it);
+					m_fields_by_id.erase(shadowed->get_id());
+					m_fields_by_name.erase(shadowed->get_name());
 					return;
 				}
 			}
@@ -110,6 +120,11 @@ void Class::rebuild_fields()
 
 		// Now add the local field.
 		m_fields.push_back(field);
+		m_fields_by_name.insert(unordered_map<string, Field*>::value_type(field->get_name(), field));
+		if(m_file != (File*)NULL)
+		{
+			m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field));
+		}
 		if(!field->as_molecular_field())
 		{
 			m_bytesize += field->get_size();

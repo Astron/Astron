@@ -24,7 +24,7 @@ Field::Field() : m_class(NULL), m_id(0),
 }
 
 // named constructor (for classes)
-Field::Field(const std::string &name, Struct *dclass) : m_name(name), m_class(dclass),
+Field::Field(const std::string &name, Struct *dclass) : m_class(dclass), m_name(name),
 	m_id(0), m_default_value_stale(true), m_has_default_value(false)
 {
 	m_datatype = DT_method;

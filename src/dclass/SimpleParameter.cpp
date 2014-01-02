@@ -79,7 +79,7 @@ SimpleParameter::SimpleParameter(DataType type, unsigned int divisor) :
 SimpleParameter::SimpleParameter(const SimpleParameter &copy) :
 	Parameter(copy), m_divisor(copy.m_divisor), m_has_modulus(copy.m_has_modulus),
 	m_orig_modulus(copy.m_orig_modulus), m_orig_range(copy.m_orig_range),
-	m_modulus(m_modulus), m_range(m_range)
+	m_modulus(copy.m_modulus), m_range(copy.m_range)
 {
 	m_datatype = copy.m_datatype;
 }
