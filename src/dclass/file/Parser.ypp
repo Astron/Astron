@@ -17,9 +17,10 @@
 #include "../NumericRange.h"
 #include "../DataType.h"
 
-
 #include <assert.h>
 #include <unistd.h>
+#include <stdint.h> // Fixed width integer limits
+#include <math.h>   // Float INFINITY
 
 using namespace dclass;
 #define yyparse dcyyparse
@@ -51,6 +52,9 @@ using namespace dclass;
 	/* Helper functions */
 	static Parameter* param_with_modulus(Parameter* p, double mod);
 	static Parameter* param_with_divisor(Parameter* p, uint32_t div);
+	static std::string number_value(DataType type, double &number);
+	static std::string number_value(DataType type, int64_t &number);
+	static std::string number_value(DataType type, uint64_t &number);
 
 ////////////////////////////////////////////////////////////////////
 // Defining the interface to the parser.
@@ -642,18 +646,15 @@ char_or_number
 parameter_value
 	: SIGNED_INTEGER
 	{
-		// TODO: check for range limits
-		$$ = std::string((char*)&$1, sizeof(int64_t));
+		$$ = number_value(current_parameter->get_datatype(), $1);
 	}
 	| UNSIGNED_INTEGER
 	{
-		// TODO: check for range limits
-		$$ = std::string((char*)&$1, sizeof(uint64_t));
+		$$ = number_value(current_parameter->get_datatype(), $1);
 	}
 	| REAL
 	{
-		// TODO: check for range limits
-		$$ = std::string((char*)&$1, sizeof(double));
+		$$ = number_value(current_parameter->get_datatype(), $1);
 	}
 	| STRING
 	{
@@ -663,15 +664,21 @@ parameter_value
 			if($1.length() != current_parameter->get_size())
 			{
 				yyerror("Default value for fixed-length string has incorrect length.");
-		 		$$ = $1;
 			}
+
+	 		$$ = $1;
 		}
-		else // DT_varstring
+		else if(type == DT_varstring) // DT_varstring
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
 			sizetag_t length = $1.length();
 			$$ = std::string((char*)&length, sizeof(sizetag_t)) + $1;
+		}
+		else
+		{
+			yyerror("Cannot use string value for non-string datatype.");
+			$$ = $1;
 		}
 	}
 	| HEX_STRING
@@ -679,7 +686,7 @@ parameter_value
 		// TODO: check for range limits... maybe?
 		$$ = $1;
 	}
-	| '[' array_value ']' // array composition
+	| '[' array ']' // array composition
 	{
 		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
@@ -693,7 +700,7 @@ parameter_value
 			$$ = $2;
 		}
 	}
-	| '{' array_value '}' // array composition -- deprecated, will turn into struct compositon
+	| '{' array '}' // array composition -- deprecated, will turn into struct compositon
 	{
 		DataType type = current_parameter->get_datatype();
 		if(type == DT_vararray)
@@ -701,14 +708,19 @@ parameter_value
 			sizetag_t length = $2.length();
 			$$ = std::string((char*)&length, sizeof(sizetag_t)) + $2;
 		}
-		else if(type == DT_struct)
-		{
-			yywarning("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
-			$$ = $2;
-		}
-		else // DT_array
+		else if(type == DT_array)
 		{
 			// TODO: Check range limits
+			$$ = $2;
+		}
+		else if(type == DT_struct)
+		{
+			yyerror("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
+			$$ = $2;
+		}
+		else
+		{
+			yyerror("Cannot use array composition as value for non-array type.");
 			$$ = $2;
 		}
 	}
@@ -722,51 +734,92 @@ array
 array_value
 	: parameter_value
 	{
+		// BUG: parameter_value consumed here will always produce a yyerror,
+		//      except for arrays of HEX_STRING values.
 		// TODO: Check array type matches parameter type
 		$$ = $1;
 	}
 	| SIGNED_INTEGER '*' small_unsigned_integer // array expansion
 	{
-		// TODO: Check array type compatible with SIGNED_INTEGER
 		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+
+		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
+		if(arr == (ArrayParameter*)NULL)
 		{
-			val.append((char*)&$1, sizeof(int64_t));
+			yyerror("Cannot use array expansion as value for non-array parameter.");
 		}
+		else
+		{
+			for(unsigned int i = 0; i < $3; i++)
+			{
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
+			}
+		}
+
 		$$ = val;
 	}
 	| UNSIGNED_INTEGER '*' small_unsigned_integer // array expansion
 	{
-		// TODO: Check array type compatible with UNSIGNED_INTEGER
 		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+
+		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
+		if(arr == (ArrayParameter*)NULL)
 		{
-			val.append((char*)&$1, sizeof(uint64_t));
+			yyerror("Cannot use array expansion as value for non-array parameter.");
 		}
+		else
+		{
+			for(unsigned int i = 0; i < $3; i++)
+			{
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
+			}
+		}
+
 		$$ = val;
 	}
 	| REAL '*' small_unsigned_integer // array expansion
 	{
-		// TODO: Check array type compatible with REAL
 		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+
+		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
+		if(arr == (ArrayParameter*)NULL)
 		{
-			val.append((char*)&$1, sizeof(double));
+			yyerror("Cannot use array expansion as value for non-array parameter.");
 		}
+		else
+		{
+			for(unsigned int i = 0; i < $3; i++)
+			{
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
+			}
+		}
+
 		$$ = val;
 	}
 	| HEX_STRING '*' small_unsigned_integer // array expansion
 	{
-		// TODO: Check array type compatible with HEX_STRING
 		std::string val;
-		for(unsigned int i = 0; i < $3; i++)
+
+		// TODO: Check array type compatible with HEX_STRING,
+		//       and check integer bounds if current parameter has integer type.
+		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
+		if(arr == (ArrayParameter*)NULL)
 		{
-			val += $1;
+			yyerror("Cannot use array expansion as value for non-array parameter.");
+		}
+		else
+		{
+			for(unsigned int i = 0; i < $3; i++)
+			{
+				val += $1;
+			}
 		}
 		$$ = val;
 	}
 	| array_value ',' parameter_value
 	{
+		// BUG: parameter_value consumed here will always produce a yyerror,
+		//      except for arrays of HEX_STRING values.
 		// TODO: Check array type matches parameter type
 		$$ = $1 + $3;
 	}
@@ -858,6 +911,173 @@ empty
 
 %% /* Start helper function section */
 
+std::string number_value(DataType type, double &number)
+{
+	switch(type)
+	{
+		case DT_float32:
+		{
+			float v = number;
+			if(v == INFINITY || v == -INFINITY)
+			{
+				yyerror("Value is out of range for type 'float32'.");
+			}
+
+			return std::string((char*)&v, sizeof(float));
+		}
+		case DT_float64:
+		{
+			return std::string((char*)&number, sizeof(double));
+		}
+		case DT_int8:
+		case DT_int16:
+		case DT_int32:
+		case DT_int64:
+		case DT_uint8:
+		case DT_uint16:
+		case DT_uint32:
+		case DT_uint64:
+		{
+			yyerror("Cannot use floating-point value for integer datatype.");
+			return std::string();
+		}
+		default:
+		{
+			yyerror("Cannot use floating-point value for non-numeric datatype.");
+			return std::string();
+		}
+	}
+}
+
+std::string number_value(DataType type, int64_t &number)
+{
+	switch(type)
+	{
+		case DT_int8:
+		{
+			if(INT8_MIN > number || number > INT8_MAX)
+			{
+				yyerror("Signed integer out of range for type 'int8'.");
+			}
+
+			int8_t v = number;
+			return std::string((char*)&v, sizeof(int8_t));
+		}
+		case DT_int16:
+		{
+			if(INT16_MIN > number || number > INT16_MAX)
+			{
+				yyerror("Signed integer out of range for type 'int16'.");
+			}
+
+			uint16_t v = number;
+			return std::string((char*)&v, sizeof(int16_t));
+		}
+		case DT_int32:
+		{
+			if(INT32_MIN > number || number > INT32_MAX)
+			{
+				yyerror("Signed integer out of range for type 'int32'.");
+			}
+
+			int32_t v = number;
+			return std::string((char*)&v, sizeof(int32_t));
+		}
+		case DT_int64:
+		{
+			return std::string((char*)&number, sizeof(int64_t));
+		}
+		case DT_uint8:
+		case DT_uint16:
+		case DT_uint32:
+		case DT_uint64:
+		{
+			if(number < 0)
+			{
+				yyerror("Can't use negative value for unsigned integer datatype.");
+			}
+			uint64_t v = number;
+			return number_value(type, v);
+		}
+		case DT_float32:
+		case DT_float64:
+		{
+			// Note: Expecting number to be converted to a double by value (ie. -1 becomes -1.0)
+			double v = number;
+			return number_value(type, v);
+		}
+		default:
+		{
+			yyerror("Cannot use signed integer value for non-numeric datatype.");
+			return std::string();
+		}
+	}
+}
+
+std::string number_value(DataType type, uint64_t &number)
+{
+	switch(type)
+	{
+		case DT_uint8:
+		{
+			if(number > UINT8_MAX)
+			{
+				yyerror("Unsigned integer out of range for type 'uint8'.");
+			}
+
+			uint8_t v = number;
+			return std::string((char*)&v, sizeof(uint8_t));
+		}
+		case DT_uint16:
+		{
+			if(number > UINT16_MAX)
+			{
+				yyerror("Unsigned integer out of range for type 'uint16'.");
+			}
+
+			uint16_t v = number;
+			return std::string((char*)&v, sizeof(uint16_t));
+		}
+		case DT_uint32:
+		{
+			if(number > UINT32_MAX)
+			{
+				yyerror("Unsigned integer out of range for type 'uint32'.");
+			}
+
+			uint32_t v = number;
+			return std::string((char*)&v, sizeof(uint32_t));
+		}
+		case DT_uint64:
+		{
+			return std::string((char*)&number, sizeof(uint64_t));
+		}
+		case DT_int8:
+		case DT_int16:
+		case DT_int32:
+		case DT_int64:
+		{
+			if(number > INT64_MAX)
+			{
+				yyerror("Unsigned integer out of range for signed integer datatype.");
+			}
+			int64_t v = number;
+			return number_value(type, v);
+		}
+		case DT_float32:
+		case DT_float64:
+		{
+			// Note: Expecting number to be converted to a double by value (ie. 3 becomes 3.0)
+			double v = number;
+			return number_value(type, v);
+		}
+		default:
+		{
+			yyerror("Cannot use unsigned integer value for non-numeric datatype.");
+			return std::string();
+		}
+	}
+}
 
 Parameter* param_with_modulus(Parameter* p, double mod)
 {
