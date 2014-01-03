@@ -18,7 +18,7 @@ namespace dclass   // open namespace dclass
 string parse_value(const DistributedType* dtype, const string &formatted)
 {
 	istringstream strm(formatted);
-	return parse_value(dtype, formatted);
+	return parse_value(dtype, strm);
 
 }
 string parse_value(const DistributedType* dtype, istream &in)
@@ -26,6 +26,15 @@ string parse_value(const DistributedType* dtype, istream &in)
 	string value;
 	switch(dtype->get_datatype())
 	{
+		case DT_struct:
+		{
+			const Struct* dstruct = dtype->as_struct();
+			size_t num_fields = dstruct->get_num_fields();
+			for(unsigned int i = 0; i < num_fields; ++i)
+			{
+				value += parse_value(dstruct->get_field(i), in);
+			}
+		}
 		case DT_method:
 		{
 			// TODO: Update Atomic and Molecular heirarchy so I dont have to be silly like this
@@ -38,10 +47,11 @@ string parse_value(const DistributedType* dtype, istream &in)
 				{
 					value += parse_value(molecular->get_atomic(i), in);
 				}
+				break;
 			}
 			else if(field->as_atomic_field())
 			{
-				const AtomicField* atomic = atomic->as_atomic_field();
+				const AtomicField* atomic = field->as_atomic_field();
 				size_t num_params = atomic->get_num_elements();
 				for(unsigned int i = 0; i < num_params; ++i)
 				{
@@ -49,15 +59,6 @@ string parse_value(const DistributedType* dtype, istream &in)
 				}
 			}
 			break;
-		}
-		case DT_struct:
-		{
-			const Struct* dstruct = dtype->as_struct();
-			size_t num_fields = dstruct->get_num_fields();
-			for(unsigned int i = 0; i < num_fields; ++i)
-			{
-				value += parse_value(dstruct->get_field(i), in);
-			}
 		}
 		default:
 		{
