@@ -1,4 +1,4 @@
-// Filename: PrimeNumberGenerator.h
+// Filename: Hashable.h
 // Created by: drose (22 Mar, 2001)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
@@ -13,7 +13,6 @@
 namespace dclass   // open namespace dclass
 {
 
-
 // A PrimeNumberGenerator this class generates a table of prime numbers, up to the limit of an int.
 //     For a given integer n, it will return the nth prime number.  This will involve a recompute
 //     step only if n is greater than any previous n.
@@ -25,11 +24,42 @@ class PrimeNumberGenerator
 		// the indexing operator returns the nth prime number.  this[0] returns 2, this[1] returns 3;
 		//     successively larger values of n return larger prime numbers, up to the largest prime
 		//     number that can be represented in an int.
-		int operator [](int n);
+		unsigned int operator [](unsigned int n);
 
 	private:
-		std::vector<int> m_primes;
+		std::vector<unsigned int> m_primes;
+};
+
+// A HashGenerator generates an arbitrary hash number from a sequence of ints.
+class HashGenerator
+{
+	public:
+		HashGenerator();
+
+		// add_int adds another integer to the hash so far.
+		void add_int(int num);
+
+		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
+		void add_string(const std::string &str);
+
+		uint32_t get_hash() const;
+
+	private:
+		uint32_t m_hash;
+		unsigned int m_index;
+		PrimeNumberGenerator m_primes;
+};
+
+class Hashable
+{
+	public:
+		// get_hash returns a 32-bit hash representing the Hashable.
+		inline uint32_t get_hash() const;
+
+		// generate_hash accumulates the properties of the Hashable into the hash.
+		virtual void generate_hash(HashGenerator &hashgen) const = 0;
 };
 
 
 } // close namespace dclass
+#include "Hashable.ipp"

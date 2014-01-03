@@ -8,11 +8,54 @@
 // with this source code in a file named "LICENSE."
 //
 
-#include "HashGenerator.h"
-#include "PrimeNumberGenerator.h"
-#include <assert.h>
+#include "Hashable.h"
 namespace dclass   // open namespace dclass
 {
+
+
+/* PrimeNumberGenerator */
+
+// constructor
+PrimeNumberGenerator::PrimeNumberGenerator()
+{
+	m_primes.push_back(2);
+}
+
+// the indexing operator returns the nth prime number.  this[0] returns 2, this[1] returns 3;
+//     successively larger values of n return larger prime numbers, up to the largest prime
+//     number that can be represented in an int.
+unsigned int PrimeNumberGenerator::operator [](unsigned int n)
+{
+	// Compute the prime numbers between the last-computed prime number and n.
+	unsigned int candidate = m_primes.back() + 1;
+	while(m_primes.size() <= n)
+	{
+		// Is candidate prime?  It is not if any one of the already-found
+		// prime numbers (up to its square root) divides it evenly.
+		bool maybe_prime = true;
+		unsigned int j = 0;
+		while(maybe_prime && m_primes[j] * m_primes[j] <= candidate)
+		{
+			if((m_primes[j] * (candidate / m_primes[j])) == candidate)
+			{
+				// This one is not prime.
+				maybe_prime = false;
+			}
+			j++;
+		}
+		if(maybe_prime)
+		{
+			// Hey, we found a prime!
+			m_primes.push_back(candidate);
+		}
+		candidate++;
+	}
+
+	return m_primes[n];
+}
+
+
+/* HashGenerator */
 
 // We multiply each consecutive integer by the next prime number and
 // add it to the total.  This will generate pretty evenly-distributed
@@ -33,7 +76,6 @@ HashGenerator::HashGenerator() : m_hash(0), m_index(0)
 // add_int adds another integer to the hash so far.
 void HashGenerator::add_int(int num)
 {
-	assert(m_index >= 0 && m_index < MAX_PRIME_NUMBERS);
 	m_hash += m_primes[m_index] * num;
 	m_index = (m_index + 1) % MAX_PRIME_NUMBERS;
 }
