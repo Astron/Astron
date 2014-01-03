@@ -13,6 +13,7 @@
 #include <string>
 
 void dc_init_lexer(std::istream &in, const std::string &filename);
+void dc_start_parameter_value();
 int dc_error_count();
 int dc_warning_count();
 

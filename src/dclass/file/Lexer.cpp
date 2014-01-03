@@ -603,6 +603,11 @@ using namespace dclass;
 		initial_token = START_DC;
 	}
 
+	void dc_start_parameter_value()
+	{
+	  initial_token = START_PARAMETER_VALUE;
+	}
+
 	int dc_error_count()
 	{
 		return error_count;
@@ -969,7 +974,7 @@ using namespace dclass;
 		col_number += yyleng;
 	}
 
-#line 973 "Lexer.cpp"
+#line 978 "Lexer.cpp"
 
 #define INITIAL 0
 
@@ -1154,7 +1159,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 446 "Lexer.lpp"
+#line 451 "Lexer.lpp"
 
 
 
@@ -1166,7 +1171,7 @@ YY_DECL
 	}
 
 
-#line 1170 "Lexer.cpp"
+#line 1175 "Lexer.cpp"
 
 	if ( !(yy_init) )
 		{
@@ -1252,7 +1257,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 457 "Lexer.lpp"
+#line 462 "Lexer.lpp"
 {
 	// New line.  Save a copy of the line so we can print it out for the
 	// benefit of the user in case we get an error.
@@ -1269,7 +1274,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 471 "Lexer.lpp"
+#line 476 "Lexer.lpp"
 {
 	// Eat whitespace.
 	accept();
@@ -1277,7 +1282,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 476 "Lexer.lpp"
+#line 481 "Lexer.lpp"
 {
 	// Eat C++-style comments.
 	accept();
@@ -1285,7 +1290,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 481 "Lexer.lpp"
+#line 486 "Lexer.lpp"
 {
 	// Eat C-style comments.
 	accept();
@@ -1294,7 +1299,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 488 "Lexer.lpp"
+#line 493 "Lexer.lpp"
 {
 	accept();
 	return KW_DCLASS;
@@ -1302,7 +1307,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 493 "Lexer.lpp"
+#line 498 "Lexer.lpp"
 {
 	accept();
 	return KW_STRUCT;
@@ -1310,7 +1315,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 498 "Lexer.lpp"
+#line 503 "Lexer.lpp"
 {
 	accept();
 	return KW_FROM;
@@ -1318,7 +1323,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 503 "Lexer.lpp"
+#line 508 "Lexer.lpp"
 {
 	accept();
 	return KW_IMPORT;
@@ -1326,7 +1331,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 508 "Lexer.lpp"
+#line 513 "Lexer.lpp"
 {
 	accept();
 	return KW_KEYWORD;
@@ -1334,7 +1339,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 513 "Lexer.lpp"
+#line 518 "Lexer.lpp"
 {
 	accept();
 	return KW_TYPEDEF;
@@ -1342,7 +1347,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 518 "Lexer.lpp"
+#line 523 "Lexer.lpp"
 {
 	accept();
 	return KW_INT8;
@@ -1350,7 +1355,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 523 "Lexer.lpp"
+#line 528 "Lexer.lpp"
 {
 	accept();
 	return KW_INT16;
@@ -1358,7 +1363,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 528 "Lexer.lpp"
+#line 533 "Lexer.lpp"
 {
 	accept();
 	return KW_INT32;
@@ -1366,7 +1371,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 533 "Lexer.lpp"
+#line 538 "Lexer.lpp"
 {
 	accept();
 	return KW_INT64;
@@ -1374,7 +1379,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 538 "Lexer.lpp"
+#line 543 "Lexer.lpp"
 {
 	accept();
 	return KW_UINT8;
@@ -1382,7 +1387,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 543 "Lexer.lpp"
+#line 548 "Lexer.lpp"
 {
 	accept();
 	return KW_UINT16;
@@ -1390,7 +1395,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 548 "Lexer.lpp"
+#line 553 "Lexer.lpp"
 {
 	accept();
 	return KW_UINT32;
@@ -1398,7 +1403,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 553 "Lexer.lpp"
+#line 558 "Lexer.lpp"
 {
 	accept();
 	return KW_UINT64;
@@ -1406,7 +1411,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 558 "Lexer.lpp"
+#line 563 "Lexer.lpp"
 {
 	accept();
 	return KW_FLOAT32;
@@ -1414,7 +1419,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 563 "Lexer.lpp"
+#line 568 "Lexer.lpp"
 {
 	accept();
 	return KW_FLOAT64;
@@ -1422,7 +1427,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 568 "Lexer.lpp"
+#line 573 "Lexer.lpp"
 {
 	accept();
 	return KW_STRING;
@@ -1430,7 +1435,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 573 "Lexer.lpp"
+#line 578 "Lexer.lpp"
 {
 	accept();
 	return KW_BLOB;
@@ -1438,7 +1443,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 578 "Lexer.lpp"
+#line 583 "Lexer.lpp"
 {
 	accept();
 	return KW_CHAR;
@@ -1446,7 +1451,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 583 "Lexer.lpp"
+#line 588 "Lexer.lpp"
 {
 	// An unsigned integer number.
 	accept();
@@ -1474,7 +1479,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 608 "Lexer.lpp"
+#line 613 "Lexer.lpp"
 {
 	// A signed integer number.
 	accept();
@@ -1532,7 +1537,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 663 "Lexer.lpp"
+#line 668 "Lexer.lpp"
 {
 	// A hexadecimal integer number.
 	accept();
@@ -1567,7 +1572,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 695 "Lexer.lpp"
+#line 700 "Lexer.lpp"
 {
 	// A floating-point number.
 	accept();
@@ -1578,7 +1583,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 703 "Lexer.lpp"
+#line 708 "Lexer.lpp"
 {
  // Quoted string.
  accept();
@@ -1588,7 +1593,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 710 "Lexer.lpp"
+#line 715 "Lexer.lpp"
 {
 	// Single-quoted string.
 	accept();
@@ -1598,7 +1603,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 717 "Lexer.lpp"
+#line 722 "Lexer.lpp"
 {
 	// Long hex string.
 	accept();
@@ -1608,7 +1613,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 724 "Lexer.lpp"
+#line 729 "Lexer.lpp"
 {
 	// Identifier or keyword.
 	accept();
@@ -1628,7 +1633,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 742 "Lexer.lpp"
+#line 747 "Lexer.lpp"
 {
 	// Send any other printable character as itself.
 	accept();
@@ -1637,10 +1642,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 747 "Lexer.lpp"
+#line 752 "Lexer.lpp"
 ECHO;
 	YY_BREAK
-#line 1644 "Lexer.cpp"
+#line 1649 "Lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2601,4 +2606,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 747 "Lexer.lpp"
+#line 752 "Lexer.lpp"

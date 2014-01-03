@@ -374,6 +374,7 @@ add_library(dclass
 	src/dclass/file/Lexer.cpp
 	src/dclass/file/Parser.cpp
 	src/dclass/value/format.cpp
+	src/dclass/value/parse.cpp
 )
 
 add_dependencies(astrond dclass)

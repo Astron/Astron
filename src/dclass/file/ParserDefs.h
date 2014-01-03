@@ -24,6 +24,8 @@ namespace dclass
 }
 
 void dc_init_parser(std::istream &in, const std::string &filename, dclass::File &file);
+void dc_init_value_parser(std::istream &in, const std::string &filename,
+                          const dclass::Parameter* param, std::string &output);
 void dc_cleanup_parser();
 int dcyyparse();
 

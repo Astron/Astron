@@ -68,6 +68,11 @@ using namespace dclass;
 		initial_token = START_DC;
 	}
 
+	void dc_start_parameter_value()
+	{
+	  initial_token = START_PARAMETER_VALUE;
+	}
+
 	int dc_error_count()
 	{
 		return error_count;

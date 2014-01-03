@@ -40,6 +40,7 @@ using namespace dclass;
 #define YYMAXDEPTH 1000
 
 	File *dc_file = (File*)NULL;
+	std::string *output_value = (std::string*)NULL;
 
 	static Struct *current_class = (Struct*)NULL;
 	static AtomicField *current_atomic = (AtomicField*)NULL;
@@ -55,15 +56,23 @@ using namespace dclass;
 // Defining the interface to the parser.
 ////////////////////////////////////////////////////////////////////
 
-	void dc_init_parser(std::istream & in, const std::string & filename, File & file)
+	void dc_init_parser(std::istream& in, const std::string& filename, File& file)
 	{
 		dc_file = &file;
 		dc_init_lexer(in, filename);
 	}
 
+	void dc_init_value_parser(std::istream& in, const std::string& source, const Parameter* parameter, std::string& output)
+	{
+		output_value = &output;
+		dc_init_lexer(in, source);
+		dc_start_parameter_value();
+	}
+
 	void dc_cleanup_parser()
 	{
-		dc_file = (File *)NULL;
+		dc_file = (File*)NULL;
+		output_value = (std::string*)NULL;
 	}
 
 %}
@@ -79,6 +88,7 @@ using namespace dclass;
 // These special tokens are used to set the starting state of the parser.
 //     The lexer places the appropriate one of these on the head of the input stream.
 %token START_DC
+%token START_PARAMETER_VALUE
 
 /* Define keywords */
 // Declaration Keywords
@@ -149,6 +159,7 @@ using namespace dclass;
 
 grammar
 	: START_DC dc
+	| START_PARAMETER_VALUE output_parameter_value
 	;
 
 
@@ -171,6 +182,13 @@ dc	: empty
 	| dc import
 	| dc typedef_decl
 	| dc keyword_decl
+	;
+
+output_parameter_value
+	: parameter_value
+	{
+		output_value->assign($1);
+	}
 	;
 
 import
