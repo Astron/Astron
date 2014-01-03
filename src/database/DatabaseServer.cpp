@@ -66,10 +66,20 @@ class DatabaseServer : public Role
 
 					// Get DistributedClass
 					uint16_t dc_id = dgi.read_uint16();
-					Class *dcc = g_dcf->get_class(dc_id);
+					if(dc_id >= g_dcf->get_num_classes())
+					{
+						m_log->error() << "Received create_object with unknown dclass '"
+						               << dc_id << "'.\n";
+						resp.add_doid(INVALID_DO_ID);
+						route_datagram(resp);
+						return;
+					}
+
+					Class *dcc = g_dcf->get_class(dc_id)->as_class();
 					if(!dcc)
 					{
-						m_log->error() << "Invalid Class when creating object: #" << dc_id << std::endl;
+						m_log->error() << "Received create_object for struct type '"
+						               << g_dcf->get_class(dc_id) << "'.\n";
 						resp.add_doid(INVALID_DO_ID);
 						route_datagram(resp);
 						return;
@@ -84,7 +94,7 @@ class DatabaseServer : public Role
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							Field *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_id(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -93,7 +103,7 @@ class DatabaseServer : public Role
 								}
 								else
 								{
-									m_log->warning() << "Recieved non-db field in CREATE_STORED_OBJECT." << std::endl;
+									m_log->warning() << "Recieved non-db field in create_object.\n";
 									dgi.skip_field(field);
 								}
 							}
@@ -111,9 +121,9 @@ class DatabaseServer : public Role
 
 					// Populate with defaults
 					m_log->trace() << "Checking all required fields exist..." << std::endl;
-					for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
+					for(int i = 0; i < dcc->get_num_fields(); ++i)
 					{
-						Field *field = dcc->get_inherited_field(i);
+						Field *field = dcc->get_field(i);
 						if(field->is_db() && !field->as_molecular_field()
 						        && dbo.fields.find(field) == dbo.fields.end() && field->has_default_value())
 						{
@@ -163,9 +173,9 @@ class DatabaseServer : public Role
 						resp.add_uint16(dbo.fields.size());
 						for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 						{
-							resp.add_uint16(it->first->get_number());
+							resp.add_uint16(it->first->get_id());
 							resp.add_data(it->second);
-							m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
+							m_log->trace() << "Recieved field id-" << it->first->get_id() << ", value-" << std::string(
 							                  it->second.begin(), it->second.end()) << std::endl;
 						}
 					}
@@ -199,7 +209,7 @@ class DatabaseServer : public Role
 					}
 
 					uint16_t field_id = dgi.read_uint16();
-					Field *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_id(field_id);
 
 					// Make sure field exists and is a database field
 					if(field && field->is_db())
@@ -230,7 +240,7 @@ class DatabaseServer : public Role
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							Field *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_id(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -276,7 +286,7 @@ class DatabaseServer : public Role
 
 					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
-					Field *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_id(field_id);
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
@@ -326,7 +336,7 @@ class DatabaseServer : public Role
 
 					// Verify the field is a database field
 					uint16_t field_id = dgi.read_uint16();
-					Field *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_id(field_id);
 					if(!field->is_db())
 					{
 						resp.add_uint8(FAILURE);
@@ -386,7 +396,7 @@ class DatabaseServer : public Role
 						for(uint16_t i = 0; i < field_count; ++i)
 						{
 							uint16_t field_id = dgi.read_uint16();
-							Field *field = dcc->get_field_by_index(field_id);
+							Field *field = dcc->get_field_by_id(field_id);
 							if(field)
 							{
 								if(field->is_db())
@@ -428,7 +438,7 @@ class DatabaseServer : public Role
 						resp.add_uint16(values.size());
 						for(auto it = values.begin(); it != values.end(); ++it)
 						{
-							resp.add_uint16(it->first->get_number());
+							resp.add_uint16(it->first->get_id());
 							resp.add_data(it->second);
 						}
 					}
@@ -460,7 +470,7 @@ class DatabaseServer : public Role
 
 					// Get field from datagram
 					uint16_t field_id = dgi.read_uint16();
-					Field *field = dcc->get_field_by_index(field_id);
+					Field *field = dcc->get_field_by_id(field_id);
 					if(!field)
 					{
 						m_log->error() << "Asked for invalid field,"
@@ -516,7 +526,7 @@ class DatabaseServer : public Role
 					for(uint16_t i = 0; i < field_count; ++i)
 					{
 						uint16_t field_id = dgi.read_uint16();
-						Field *field = dcc->get_field_by_index(field_id);
+						Field *field = dcc->get_field_by_id(field_id);
 						if(!field)
 						{
 							m_log->error() << "Asked for invalid field(s),"
@@ -543,7 +553,7 @@ class DatabaseServer : public Role
 					resp.add_uint16(values.size());
 					for(auto it = values.begin(); it != values.end(); ++it)
 					{
-						resp.add_uint16(it->first->get_number());
+						resp.add_uint16(it->first->get_id());
 						resp.add_data(it->second);
 					}
 					route_datagram(resp);
@@ -565,7 +575,7 @@ class DatabaseServer : public Role
 
 					// Check the field exists
 					uint16_t field_id = dgi.read_uint16();
-					Field* field = dcc->get_field_by_index(field_id);
+					Field* field = dcc->get_field_by_id(field_id);
 					if(!field)
 					{
 						m_log->error() << "Tried to delete an invalid field:" << field_id
@@ -624,7 +634,7 @@ class DatabaseServer : public Role
 					{
 						// Check that field actually exists
 						uint16_t field_id = dgi.read_uint16();
-						Field* field = dcc->get_field_by_index(field_id);
+						Field* field = dcc->get_field_by_id(field_id);
 						if(!field)
 						{
 							m_log->error() << "Tried to delete an invalid field:" << field_id

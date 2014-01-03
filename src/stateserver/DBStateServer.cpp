@@ -76,15 +76,20 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 			return;
 		}
 
-		Class *dclass = g_dcf->get_class(dc_id);
+		Class *dcc = g_dcf->get_class(dc_id)->as_class();
+		if(!dcc)
+		{
+			m_log->error() << "Tried to actvate_other with distributed struct"
+			               << " '" << g_dcf->get_class(dc_id)->get_name() << "'\n";
+		}
 		auto load_it = m_inactive_loads.find(do_id);
 		if(load_it == m_inactive_loads.end())
 		{
-			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi);
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dcc, dgi);
 		}
 		else
 		{
-			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dclass, dgi, load_it->second);
+			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dcc, dgi, load_it->second);
 		}
 		m_loading[do_id]->begin();
 	}
@@ -153,7 +158,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			doid_t do_id = dgi.read_doid();
 			uint16_t field_id = dgi.read_uint16();
 
-			Field* field = g_dcf->get_field_by_index(field_id);
+			Field* field = g_dcf->get_field_by_id(field_id);
 			if(field && field->is_db())
 			{
 				m_log->trace() << "Forwarding SetField for field with id " << field_id
@@ -176,7 +181,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				Field* field = g_dcf->get_field_by_index(field_id);
+				Field* field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
 					m_log->warning() << "Received invalid field in SetFields"
@@ -198,7 +203,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint16(field_count);
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
-					dg.add_uint16(it->first->get_number());
+					dg.add_uint16(it->first->get_id());
 					dg.add_data(it->second);
 				}
 				route_datagram(dg);
@@ -223,7 +228,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			              << " on inactive object with id " << r_do_id << std::endl;
 
 			// Check field is "ram db" or "required"
-			Field* field = g_dcf->get_field_by_index(field_id);
+			Field* field = g_dcf->get_field_by_id(field_id);
 			if(!field || !(field->is_required() ||
 			               (field->is_ram() && field->is_db())))
 			{
@@ -328,7 +333,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				Field* field = g_dcf->get_field_by_index(field_id);
+				Field* field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
 					Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
@@ -365,7 +370,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				m_context_datagrams[db_context].add_uint16(ram_fields.size() + db_fields.size());
 				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
 				{
-					m_context_datagrams[db_context].add_uint16((*it)->get_number());
+					m_context_datagrams[db_context].add_uint16((*it)->get_id());
 					m_context_datagrams[db_context].add_data((*it)->get_default_value());
 				}
 
@@ -376,7 +381,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint16(db_fields.size());
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
-					dg.add_uint16((*it)->get_number());
+					dg.add_uint16((*it)->get_id());
 				}
 				route_datagram(dg);
 			}
@@ -388,7 +393,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				dg.add_uint16(ram_fields.size());
 				for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
 				{
-					dg.add_uint16((*it)->get_number());
+					dg.add_uint16((*it)->get_id());
 					dg.add_data((*it)->get_default_value());
 				}
 				route_datagram(dg);
@@ -543,25 +548,25 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				               << " - id:" << dc_id << std::endl;
 				break;
 			}
-			Class* r_dclass = g_dcf->get_class(dc_id);
+			Class* r_class = g_dcf->get_class(dc_id)->as_class();
 
 			// Get fields from database
 			std::unordered_map<Field*, std::vector<uint8_t> > required_fields;
 			std::map<Field*, std::vector<uint8_t> > ram_fields;
-			if(!unpack_db_fields(dgi, r_dclass, required_fields, ram_fields))
+			if(!unpack_db_fields(dgi, r_class, required_fields, ram_fields))
 			{
 				m_log->error() << "Error while unpacking fields from database." << std::endl;
 				break;
 			}
 
 			// Add class to response
-			dg.add_uint16(r_dclass->get_number());
+			dg.add_uint16(r_class->get_id());
 
 			// Add required fields to datagram
-			int dcc_field_count = r_dclass->get_num_inherited_fields();
+			int dcc_field_count = r_class->get_num_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				Field *field = r_dclass->get_inherited_field(i);
+				Field *field = r_class->get_field(i);
 				if(!field->as_molecular_field() && field->is_required())
 				{
 					auto req_it = required_fields.find(field);
@@ -580,7 +585,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			dg.add_uint16(ram_fields.size());
 			for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it)
 			{
-				dg.add_uint16(it->first->get_number());
+				dg.add_uint16(it->first->get_id());
 				dg.add_data(it->second);
 			}
 
@@ -613,7 +618,7 @@ void DBStateServer::discard_loader(doid_t do_id)
 	m_loading.erase(do_id);
 }
 
-bool unpack_db_fields(DatagramIterator &dgi, Class* dclass,
+bool unpack_db_fields(DatagramIterator &dgi, Class* dc_class,
                       std::unordered_map<Field*, std::vector<uint8_t> > &required,
                       std::map<Field*, std::vector<uint8_t> > &ram)
 {
@@ -622,7 +627,7 @@ bool unpack_db_fields(DatagramIterator &dgi, Class* dclass,
 	for(uint16_t i = 0; i < db_field_count; ++i)
 	{
 		uint16_t field_id = dgi.read_uint16();
-		Field *field = dclass->get_field_by_index(field_id);
+		Field *field = dc_class->get_field_by_id(field_id);
 		if(!field)
 		{
 			return false;

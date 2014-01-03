@@ -9,7 +9,7 @@ namespace dclass   // open namespace dclass
 // Forward declarations
 class DistributedType;
 
-// format steps through packed data and unpacks it as a .dc file parameter value.
+// format_value steps through packed data and unpacks it as a .dc file parameter value.
 //     An DistributedType represents any type with defined structure (Class, Field, method, etc...)
 std::string format_value(const DistributedType*, const std::vector<uint8_t> &packed);
 std::string format_value(const DistributedType*, const std::string &packed);

@@ -111,11 +111,11 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			Class *r_dclass = g_dcf->get_class(dc_id);
+			Class *r_dclass = g_dcf->get_class(dc_id)->as_class();
 			if(m_dclass && r_dclass != m_dclass)
 			{
-				m_log->error() << "Requested object of class " << m_dclass->get_number()
-				               << ", but received class " << dc_id << std::endl;
+				m_log->error() << "Requested object of class '" << m_dclass->get_id()
+				               << "', but received class " << dc_id << std::endl;
 				m_dbss->discard_loader(m_do_id);
 				break;
 			}
@@ -128,10 +128,10 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Add default values and updated values
-			int dcc_field_count = r_dclass->get_num_inherited_fields();
+			int dcc_field_count = r_dclass->get_num_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				Field *field = r_dclass->get_inherited_field(i);
+				Field *field = r_dclass->get_field(i);
 				if(!field->as_molecular_field())
 				{
 					if(field->is_required())

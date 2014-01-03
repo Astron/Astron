@@ -1,23 +1,22 @@
 #include "DatabaseBackend.h"
 #include "DBBackendFactory.h"
 
-#include "util/Datagram.h"
-#include "util/DatagramIterator.h"
-#include "core/Logger.h"
 #include "core/global.h"
-#include "dclass/SubatomicType.h"
-#include "dclass/AtomicField.h"
-#include "dclass/Field.h"
+#include "util/DatagramIterator.h"
 #include "dclass/Class.h"
+#include "dclass/Field.h"
+#include "dclass/AtomicField.h"
+#include "dclass/value/format.h"
+#include "dclass/value/parse.h"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <list>
 
-using dclass::SubatomicType;
-using dclass::AtomicField;
-using dclass::Field;
+using dclass::DataType;
 using dclass::Class;
+using dclass::Field;
+using dclass::AtomicField;
 
 static ConfigVariable<std::string> foldername("foldername", "yaml_db");
 LogCategory yamldb_log("yamldb", "YAML Database Engine");
@@ -140,7 +139,7 @@ class YAMLDatabase : public DatabaseBackend
 			}
 		#endif
 
-			std::string packed_data = const_cast<Field*>(field)->parse_string(node.as<std::string>());
+			std::string packed_data = dclass::parse_value(field, node.as<std::string>());
 			std::vector<uint8_t> result(packed_data.begin(), packed_data.end());
 			return result;
 		}
@@ -149,7 +148,7 @@ class YAMLDatabase : public DatabaseBackend
 		{
 			out << YAML::Key << field->get_name() << YAML::Value;
 			std::string packed_data(value.begin(), value.end());
-			out << const_cast<Field*>(field)->format_data(packed_data, false);
+			out << dclass::format_value(field, packed_data);
 		}
 
 		bool write_yaml_object(doid_t do_id, Class* dcc, const ObjectData &dbo)
@@ -224,7 +223,7 @@ class YAMLDatabase : public DatabaseBackend
 				return 0;
 			}
 
-			Class *dcc = g_dcf->get_class(dbo.dc_id);
+			Class *dcc = g_dcf->get_class(dbo.dc_id)->as_class();
 
 			if(write_yaml_object(do_id, dcc, dbo))
 			{
@@ -256,8 +255,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Read object's DistributedClass
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			dbo.dc_id = dcc->get_number();
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			dbo.dc_id = dcc->get_id();
 
 			// Read object's fields
 			YAML::Node fields = document["fields"];
@@ -293,7 +292,7 @@ class YAMLDatabase : public DatabaseBackend
 				return NULL;
 			}
 
-			return g_dcf->get_class_by_name(document["class"].as<std::string>());
+			return g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
 		}
 
 
@@ -311,8 +310,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -348,8 +347,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -385,8 +384,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -420,8 +419,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -466,8 +465,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get current field values from the file
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -509,8 +508,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get current field values from the file
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
@@ -552,8 +551,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get current field values from the file
-			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			Class* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>())->as_class();
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
