@@ -5,7 +5,7 @@ namespace dclass   // open namespace dclass
 
 // null constructor
 inline DistributedType::DistributedType() :
-    m_type(DT_invalid), m_size(0), m_has_fixed_size(true)
+    m_type(INVALID), m_size(0), m_has_fixed_size(true)
 {
 }
 

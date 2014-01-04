@@ -13,31 +13,31 @@ NumericType::NumericType(Type type) :
 	m_type = type;
 	switch(type)
 	{
-		case DT_char:
-		case DT_int8:
-		case DT_uint8:
+		case CHAR:
+		case INT8:
+		case UINT8:
 			m_size = sizeof(int8_t);
 			break;
-		case DT_int16:
-		case DT_uint16:
+		case INT16:
+		case UINT16:
 			m_size = sizeof(int16_t);
 			break;
-		case DT_int32:
-		case DT_uint32:
+		case INT32:
+		case UINT32:
 			m_size = sizeof(int32_t);
 			break;
-		case DT_int64:
-		case DT_uint64:
+		case INT64:
+		case UINT64:
 			m_size = sizeof(int64_t);
 			break;
-		case DT_float32:
+		case FLOAT32:
 			m_size = sizeof(float);
 			break;
-		case DT_float64:
+		case FLOAT64:
 			m_size = sizeof(double);
 			break;
 		default:
-			m_type = DT_invalid;
+			m_type = INVALID;
 	}
 }
 
@@ -89,65 +89,65 @@ bool NumericType::set_modulus(double modulus)
 	// Check the range.  A valid range for the modulus is 1 to (maximum_value + 1) after scaling.
 	switch(m_datatype)
 	{
-		case DT_char:
-		case DT_uint8:
+		case CHAR:
+		case UINT8:
 			if(uint_modulus < 1 || UINT8_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_uint16:
+		case UINT16:
 			if(uint_modulus < 1 || UINT16_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_uint32:
+		case UINT32:
 			if(uint_modulus < 1 || UINT32_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_uint64:
+		case UINT64:
 			if(uint_modulus < 1)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_int8:
+		case INT8:
 			if(uint_modulus < 1 || INT8_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_int16:
+		case INT16:
 			if(uint_modulus < 1 || INT16_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_int32:
+		case INT32:
 			if(uint_modulus < 1 || INT32_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_int64:
+		case INT64:
 			if(uint_modulus < 1 || INT64_MAX+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
-		case DT_float32:
-		case DT_float64:
+		case FLOAT32:
+		case FLOAT64:
 			m_modulus = float_modulus;
 			break;
 		default:
@@ -171,10 +171,10 @@ bool NumericType::set_range(const NumericRange &range)
 	m_orig_range = range;
 	switch(m_datatype)
 	{
-		case DT_int8:
-		case DT_int16:
-		case DT_int32:
-		case DT_int64:
+		case INT8:
+		case INT16:
+		case INT32:
+		case INT64:
 		{
 			int64_t min = (int64_t)floor(range.min.floating * m_divisor + 0.5);
 			int64_t max = (int64_t)floor(range.max.floating * m_divisor + 0.5);
@@ -182,11 +182,11 @@ bool NumericType::set_range(const NumericRange &range)
 			// TODO: Validate range, i.e. => min and max within (INT[N]_MIN - INT[N]MAX) 
 			break;
 		}
-		case DT_char:
-		case DT_uint8:
-		case DT_uint16:
-		case DT_uint32:
-		case DT_uint64:
+		case CHAR:
+		case UINT8:
+		case UINT16:
+		case UINT32:
+		case UINT64:
 		{
 			uint64_t min = (uint64_t)floor(range.min.floating * m_divisor + 0.5);
 			uint64_t max = (uint64_t)floor(range.max.floating * m_divisor + 0.5);
@@ -194,8 +194,8 @@ bool NumericType::set_range(const NumericRange &range)
 			// TODO: Validate range, i.e. => min and max within (UINT[N]_MIN - UINT[N]MAX) 
 			break;
 		}
-		case DT_float32:
-		case DT_float64:
+		case FLOAT32:
+		case FLOAT64:
 		{
 			double min = range.min.floating * m_divisor;
 			double max = range.max.floating * m_divisor;

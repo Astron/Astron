@@ -40,7 +40,8 @@ class Parameter
 		bool set_name(const std::string& name);
 
 		// set_type sets the distributed type of the parameter and clear's the default value.
-		void set_type(DistributedType* type);
+		//     Returns false if a parameter cannot represent <type>.
+		bool set_type(DistributedType* type);
 
 		// set_default_value defines a default value for this parameter.
 		//     Returns false if the value is invalid for the parameter's type.

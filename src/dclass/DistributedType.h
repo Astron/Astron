@@ -28,26 +28,26 @@ class DistributedType
         enum Type
         {
             /* Numeric Types */
-            DT_int8,    DT_int16,   DT_int32,  DT_int64,
-            DT_uint8,   DT_uint16,  DT_uint32, DT_uint64,
-            DT_float32, DT_float64,
-            DT_char,        // equivalent to uint8, except that it should be printed as a string
+            CHAR,           // equivalent to uint8, except that it should be printed as a string
+            INT8, INT16, INT32, INT64,
+            UINT8, UINT16, UINT32, UINT64,
+            FLOAT32, FLOAT64
 
             /* Array Types */
-            DT_string,      // a human-printable string with fixed length
-            DT_varstring,   // a human-printable string with variable length
-            DT_blob,        // any binary data stored as a string, fixed length
-            DT_varblob,     // any binary data stored as a varstring, variable length
-            DT_array,       // any array with fixed byte-length (fixed array-size and element-length)
-            DT_vararray,    // any array with variable array-size or variable length elements
+            STRING,      // a human-printable string with fixed length
+            VARSTRING,   // a human-printable string with variable length
+            BLOB,        // any binary data stored as a string, fixed length
+            VARBLOB,     // any binary data stored as a varstring, variable length
+            ARRAY,       // any array with fixed byte-length (fixed array-size and element-length)
+            VARARRAY,    // any array with variable array-size or variable length elements
 
             /* Complex Types */
-            DT_struct,
-            DT_method,
+            STRUCT,
+            METHOD,
 
             // New additions should be added at the end to prevent the file hash from changing.
 
-            DT_invalid
+            INAVLID
         };
 
         // get_type returns the type's fundamental type as an integer constant.

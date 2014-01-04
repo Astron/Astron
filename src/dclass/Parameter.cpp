@@ -27,8 +27,13 @@ bool Parameter::set_name(const std::string& name)
 }
 
 // set_type sets the distributed type of the parameter and clear's the default value.
-void Parameter::set_type(DistributedType* type)
+bool Parameter::set_type(DistributedType* type)
 {
+	if(type->get_type() == METHOD)
+	{
+		return false;
+	}
+
 	m_type = type;
 	m_has_default_value = false;
 	m_default_value.clear();
