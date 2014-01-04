@@ -15,8 +15,9 @@ class ArrayType
 class MethodType;
 class NumericType;
 class StructType;
+class HashGenerator;
 
-// An DistributedType represents any part of a .dc file which can have 
+// A DistributedType is a shared type with a defined layout of data.
 class DistributedType
 {
     protected:
@@ -72,6 +73,9 @@ class DistributedType
         // as_method returns this as a MethodType if it is a method, or NULL otherwise.
         virtual MethodType* as_method();
         virtual const MethodType* as_method() const;
+
+        // generate_hash accumulates the properties of this file into the hash.
+        virtual void generate_hash(HashGenerator& hashgen) const;
 
     protected:
         Type m_type;

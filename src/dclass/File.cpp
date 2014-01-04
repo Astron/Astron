@@ -13,6 +13,7 @@
 #include "Struct.h"
 #include "Field.h"
 #include "DistributedType.h"
+#include "HashGenerator.h"
 namespace dclass   // open namespace
 {
 
@@ -47,23 +48,6 @@ File::~File()
 	m_fields_by_id.clear();
 	m_imports.clear();
 	m_keywords.clear();
-}
-
-
-// generate_hash accumulates the properties of this file into the hash.
-void File::generate_hash(HashGenerator &hashgen) const
-{
-	hashgen.add_int(m_classes.size());
-	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
-	{
-		(*it)->generate_hash(hashgen);
-	}
-
-	hashgen.add_int(m_structs.size());
-	for(auto it = m_structs.begin(); it != m_structs.end(); ++it)
-	{
-		(*it)->generate_hash(hashgen);
-	}
 }
 
 // add_class adds the newly-allocated class to the file.
@@ -183,6 +167,35 @@ void File::rebuild_inherited_fields()
 		{
 			cls->rebuild_fields();
 		}
+	}
+}
+
+uint32_t Hashable::get_hash() const
+{
+	HashGenerator hashgen;
+	generate_hash(hashgen);
+	return hashgen.get_hash();
+}
+
+// generate_hash accumulates the properties of this file into the hash.
+void File::generate_hash(HashGenerator& hashgen) const
+{
+	hashgen.add_int(m_classes.size());
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
+	{
+		(*it)->generate_hash(hashgen);
+	}
+
+	hashgen.add_int(m_structs.size());
+	for(auto it = m_structs.begin(); it != m_structs.end(); ++it)
+	{
+		(*it)->generate_hash(hashgen);
+	}
+
+	hashgen.add_int(m_keywords.size());
+	for(auto it = m_keywords.begin(); it != m_keywords.end(); ++it)
+	{
+		hashgen.add_string(*it);
 	}
 }
 

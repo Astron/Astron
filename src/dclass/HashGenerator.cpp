@@ -8,7 +8,7 @@
 // with this source code in a file named "LICENSE."
 //
 
-#include "Hashable.h"
+#include "HashGenerator.h"
 namespace dclass   // open namespace dclass
 {
 
@@ -81,7 +81,7 @@ void HashGenerator::add_int(int num)
 }
 
 // add_string adds a string to the hash, by breaking it down into a sequence of integers.
-void HashGenerator::add_string(const std::string &str)
+void HashGenerator::add_string(const std::string& str)
 {
 	add_int(str.length());
 	for(auto it = str.begin(); it != str.end(); ++it)

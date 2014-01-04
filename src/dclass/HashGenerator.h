@@ -1,4 +1,4 @@
-// Filename: Hashable.h
+// Filename: HashGenerator.h
 // Created by: drose (22 Mar, 2001)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
@@ -40,7 +40,7 @@ class HashGenerator
 		void add_int(int num);
 
 		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
-		void add_string(const std::string &str);
+		void add_string(const std::string& str);
 
 		uint32_t get_hash() const;
 
@@ -50,16 +50,5 @@ class HashGenerator
 		PrimeNumberGenerator m_primes;
 };
 
-class Hashable
-{
-	public:
-		// get_hash returns a 32-bit hash representing the Hashable.
-		inline uint32_t get_hash() const;
-
-		// generate_hash accumulates the properties of the Hashable into the hash.
-		virtual void generate_hash(HashGenerator &hashgen) const = 0;
-};
-
 
 } // close namespace dclass
-#include "Hashable.ipp"

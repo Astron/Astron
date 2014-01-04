@@ -9,7 +9,6 @@
 //
 
 #pragma once
-#include "Hashable.h"
 #include <string>        // std::string
 #include <vector>        // std::vector
 #include <unordered_map> // std::unordered_map
@@ -21,6 +20,7 @@ namespace dclass   // open namespace
 class Class;
 class Struct;
 class Field;
+class HashGenerator;
 
 struct Import
 {
@@ -31,7 +31,7 @@ struct Import
 };
 
 // A File represents the complete list of Distributed Class descriptions as read from a .dc file.
-class File : Hashable
+class File : public Hashable
 {
 
 	public:
@@ -74,9 +74,6 @@ class File : Hashable
 		// get_keyword returns the <n>th keyword declared in the file.
 		inline const std::string& *get_keyword(unsigned int n) const;
 
-		// generate_hash accumulates the properties of this file into the hash.
-		virtual void generate_hash(HashGenerator &hashgen) const;
-
 		// add_class adds the newly-allocated class to the file.
 		//     Returns false if there is a name conflict.
 		bool add_class(Class *dclass);
@@ -98,6 +95,12 @@ class File : Hashable
 
 		// update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
 		void update_inheritance(Class* dclass);
+
+		// get_hash returns a 32-bit hash representing the file.
+		inline uint32_t get_hash() const;
+
+		// generate_hash accumulates the properties of this file into the hash.
+		virtual void generate_hash(HashGenerator& hashgen) const;
 
 	private:
 		// add_field gives the field a unique id within the file.
