@@ -10,419 +10,146 @@
 
 #include "File.h"
 #include "Class.h"
-#include "Typedef.h"
-#include "Keyword.h"
-#include "HashGenerator.h"
-#include <assert.h>
-#include <fstream>
+#include "Struct.h"
+#include "Field.h"
+#include "DistributedType.h"
 namespace dclass   // open namespace
 {
 
 
+typedef std::unordered_map<std::string, DistributedType*>::value_type TypeName;
+
 // constructor
 File::File()
 {
-	setup_default_keywords();
 }
 
 //destructor
 File::~File()
 {
-	for(auto it = m_declarations.begin(); it != m_declarations.end(); ++it)
+	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
 		delete(*it);
 	}
-	for(auto it = m_things_to_delete.begin(); it != m_things_to_delete.end(); ++it)
+	for(auto it = m_structs.begin(); it != m_classes.end(); ++it)
+	{
+		delete(*it);
+	}
+	for(auto it = m_imports.begin(); it != m_imports.end(); ++it)
 	{
 		delete(*it);
 	}
 
 	m_classes.clear();
+	m_structs.clear();
+	m_types_by_id.clear();
+	m_types_by_name.clear();
+	m_fields_by_id.clear();
 	m_imports.clear();
-	m_things_by_name.clear();
-	m_typedefs.clear();
-	m_typedefs_by_name.clear();
-	m_keywords.clear_keywords();
-	m_declarations.clear();
-	m_things_to_delete.clear();
+	m_keywords.clear();
 }
 
-// write opens the indicated filename for output and writes a parseable
-//     description of all the known distributed classes to the file.
-//     Returns true if the description is successfully written, false otherwise.
-bool File::write(std::string filename, bool brief) const
-{
-	std::ofstream out;
-
-	out.open(filename.c_str());
-
-	if(!out)
-	{
-		std::cerr << "Can't open " << filename << " for output.\n";
-		return false;
-	}
-	return write(out, brief);
-}
-
-// write writes a parseable description of all the known distributed classes to the stream.
-//     Returns true if the description is successfully written, false otherwise.
-bool File::write(std::ostream &out, bool brief) const
-{
-	if(!m_imports.empty())
-	{
-		for(auto imp_it = m_imports.begin(); imp_it != m_imports.end(); ++imp_it)
-		{
-			const Import &import = (*imp_it);
-			if(import.m_symbols.empty())
-			{
-				out << "import " << import.m_module << "\n";
-			}
-			else
-			{
-				out << "from " << import.m_module << " import ";
-				auto sym_it = import.m_symbols.begin();
-				out << *sym_it;
-				++sym_it;
-				while(sym_it != import.m_symbols.end())
-				{
-					out << ", " << *sym_it;
-					++sym_it;
-				}
-				out << "\n";
-			}
-		}
-		out << "\n";
-	}
-
-
-	for(auto it = m_declarations.begin(); it != m_declarations.end(); ++it)
-	{
-		(*it)->write(out, brief, 0);
-		out << "\n";
-	}
-
-	return !out.fail();
-}
-
-// get_num_classes returns the number of classes read from the .dc file(s).
-int File::get_num_classes() const
-{
-	return m_classes.size();
-}
-
-// get_class returns the nth class read from the .dc file(s).
-Struct* File::get_class(int n) const
-{
-	assert(n >= 0 && n < (int)m_classes.size());
-	return m_classes[n];
-}
-
-// get_class_by_name returns the class that has the indicated name,
-//     or NULL if there is no such class.
-Struct* File::get_class_by_name(const std::string &name) const
-{
-	auto class_it = m_things_by_name.find(name);
-	if(class_it != m_things_by_name.end())
-	{
-		return class_it->second->as_struct();
-	}
-
-	return (Struct*)NULL;
-}
-
-// get_field_by_id returns a pointer to the Field that has index number <id>.
-//     Returns NULL if no field exists in the file with that id.
-Field* File::get_field_by_id(int index_number) const
-{
-	if(index_number >= 0 && index_number < (int)m_fields_by_id.size())
-	{
-		return m_fields_by_id[index_number];
-	}
-
-	return NULL;
-}
-
-// get_num_import_modules returns the number of import lines read from the .dc file(s).
-int File::get_num_import_modules() const
-{
-	return m_imports.size();
-}
-
-// get_import_module returns the module named by the nth import line read from the .dc file(s).
-std::string File::get_import_module(int n) const
-{
-	assert(n >= 0 && n < (int)m_imports.size());
-	return m_imports[n].m_module;
-}
-
-// get_num_import_symbols returns the number of symbols explicitly imported by
-//     the nth import line.  If this is 0, the line is "import modulename";
-//     if it is more than 0, the line is "from modulename import symbol, symbol ... ".
-int File::get_num_import_symbols(int n) const
-{
-	assert(n >= 0 && n < (int)m_imports.size());
-	return m_imports[n].m_symbols.size();
-}
-
-// get_import_symbol returns the ith symbol named by the nth import line read from the .dc file(s).
-std::string File::get_import_symbol(int n, int i) const
-{
-	assert(n >= 0 && n < (int)m_imports.size());
-	assert(i >= 0 && i < (int)m_imports[n].m_symbols.size());
-	return m_imports[n].m_symbols[i];
-}
-
-// get_num_typedefs returns the number of typedefs read from the .dc file(s).
-int File::get_num_typedefs() const
-{
-	return m_typedefs.size();
-}
-
-// get_typedef returns the nth typedef read from the .dc file(s).
-Typedef *File::get_typedef(int n) const
-{
-	assert(n >= 0 && n < (int)m_typedefs.size());
-	return m_typedefs[n];
-}
-
-// get_typedef_by_name returns the typedef that has the indicated name,
-//     or NULL if there is no such typedef name.
-Typedef *File::get_typedef_by_name(const std::string &name) const
-{
-	auto typ_it = m_typedefs_by_name.find(name);
-	if(typ_it != m_typedefs_by_name.end())
-	{
-		return typ_it->second;
-	}
-
-	return NULL;
-}
-
-// get_num_keywords returns the number of keywords read from the .dc file(s).
-int File::get_num_keywords() const
-{
-	return m_keywords.get_num_keywords();
-}
-
-// get_keyword returns the nth keyword read from the .dc file(s).
-const Keyword *File::get_keyword(int n) const
-{
-	return m_keywords.get_keyword(n);
-}
-
-// get_keyword_by_name returns the keyword that has the indicated name,
-//     or NULL if there is no such keyword name.
-const Keyword *File::get_keyword_by_name(const std::string &name) const
-{
-	const Keyword *keyword = m_keywords.get_keyword_by_name(name);
-	if(keyword == (const Keyword*)NULL)
-	{
-		keyword = m_default_keywords.get_keyword_by_name(name);
-		if(keyword != (const Keyword*)NULL)
-		{
-			// One of the historical default keywords was used, but wasn't
-			// defined.  Define it implicitly right now.
-			((File*)this)->m_keywords.add_keyword(keyword);
-		}
-	}
-
-	return keyword;
-}
-
-// get_hash returns a 32-bit hash index associated with this file.
-//     This number is guaranteed to be consistent if the contents of the file
-//     have not changed, and it is very likely to be different if the
-//     contents of the file do change.
-uint32_t File::get_hash() const
-{
-	HashGenerator hashgen;
-	generate_hash(hashgen);
-	return hashgen.get_hash();
-}
 
 // generate_hash accumulates the properties of this file into the hash.
 void File::generate_hash(HashGenerator &hashgen) const
 {
-	// Legacy requires adding this number right now
-	hashgen.add_int(1);
 	hashgen.add_int(m_classes.size());
 	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
 	{
 		(*it)->generate_hash(hashgen);
 	}
+
+	hashgen.add_int(m_structs.size());
+	for(auto it = m_structs.begin(); it != m_structs.end(); ++it)
+	{
+		(*it)->generate_hash(hashgen);
+	}
 }
 
-// add_class adds the newly-allocated distributed class definition to the file.
+// add_class adds the newly-allocated class to the file.
+//     Returns false if there is a name conflict.
 //     The File becomes the owner of the pointer and will delete it when it destructs.
-//     Returns true if the class is successfully added, or false if there was a name conflict.
-bool File::add_class(Class *dclass)
+bool File::add_class(Class *cls)
 {
 	// Classes have to have a name
-	if(dclass->get_name().empty())
+	if(cls->get_name().empty())
 	{
 		return false;
 	}
 
-	bool inserted = m_things_by_name.insert(
-		std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
+	// A Class can't share a name with any other type.
+	bool inserted = m_types_by_name.insert(TypeName(cls->get_name(), cls).second;
 	if(!inserted)
 	{
 		return false;
 	}
 
-	dclass->set_id(get_num_classes());
-	m_classes.push_back(dclass);
-
-	m_things_to_delete.push_back(dclass);
-
+	cls->set_id(m_types_by_id.size());
+	m_types_by_id.push_back(cls);
+	m_classes.push_back(cls);
 	return true;
 }
 
-
-// add_struct adds the newly-allocated distributed struct definition to the file.
+// add_struct adds the newly-allocated struct to the file.
+//     Returns false if there is a name conflict.
 //     The File becomes the owner of the pointer and will delete it when it destructs.
-//     Returns true if the struct is successfully added, or false if there was a name conflict.
-bool File::add_struct(Struct *dclass)
+bool File::add_struct(Struct *srct)
 {
 	// Structs have to have a name
-	if(dclass->get_name().empty())
+	if(strct->get_name().empty())
 	{
 		return false;
 	}
 
-	bool inserted = m_things_by_name.insert(
-		std::map<std::string, Declaration*>::value_type(dclass->get_name(), dclass)).second;
+	// A Struct can't share a name with any other type.
+	bool inserted = m_types_by_name.insert(TypeName(strct->get_name(), strct).second;
 	if(!inserted)
 	{
 		return false;
 	}
 
-	dclass->set_id(get_num_classes());
-	m_classes.push_back(dclass);
-
-	m_things_to_delete.push_back(dclass);
-
+	strct->set_id(m_types_by_id.size());
+	m_types_by_id.push_back(strct);
+	m_classes.push_back(strct);
 	return true;
 }
 
-
-// add_import_module adds a new name to the list of names of Python modules that
-//     are to be imported by the client or AI to define the code that is associated
-//     with the class interfaces named within the .dc file.
-void File::add_import_module(const std::string &import_module)
+// add_typedef adds the alias <name> to the file for the type <type>.
+//     Returns false if there is a name conflict.
+bool File::add_typedef(const std::string& name, DistributedType* type)
 {
-	Import import;
-	import.m_module = import_module;
+	// Typedefs can't use the empty string as a name
+	if(name.empty())
+	{
+		return false;
+	}
+
+	// A type alias can't share a name with any other type.
+	return m_types_by_name.insert(TypeName(name, type)).second;
+}
+
+// add_import adds a newly-allocated import to the file.
+//     Imports with duplicate modules are combined.
+void File::add_import(Import* import)
+{
+	// TODO: Combine duplicates
 	m_imports.push_back(import);
 }
 
-// add_import_symbol adds a new name to the list of symbols that are to be
-//     explicitly imported from the most-recently added module, e.g.
-//     "from module_name import symbol".  If the list of symbols is empty,
-//     the syntax is taken to  be "import module_name".
-void File::add_import_symbol(const std::string &import_symbol)
+// add_keyword adds a keyword with the name <keyword> to the list of declared keywords.
+void File::add_keyword(const std::string &keyword)
 {
-	assert(!m_imports.empty());
-	m_imports.back().m_symbols.push_back(import_symbol);
+	if(!has_keyword(keyword))
+	{
+		m_keywords.push_back(keyword);
+	}
 }
 
-// add_typedef adds the newly-allocated distributed typedef definition to the file.
-//     The File becomes the owner of the pointer and will delete it when it destructs.
-//     Returns true if the typedef is successfully added, or  false if there was a name conflict.
-bool File::add_typedef(Typedef *dtypedef)
-{
-	bool inserted = m_typedefs_by_name.insert(
-		std::map<std::string, Typedef*>::value_type(dtypedef->get_name(), dtypedef)).second;
-
-	if(!inserted)
-	{
-		return false;
-	}
-
-	dtypedef->set_number(get_num_typedefs());
-	m_typedefs.push_back(dtypedef);
-
-	if(!dtypedef->is_implicit_typedef())
-	{
-		m_declarations.push_back(dtypedef);
-	}
-	else
-	{
-		m_things_to_delete.push_back(dtypedef);
-	}
-
-	return true;
-}
-
-// add_keyword adds the indicated keyword string to the list of keywords known to the File.
-//     These keywords may then be added to Fields.
-//     It is not an error to add a particular keyword more than once.
-bool File::add_keyword(const std::string &name)
-{
-	Keyword *keyword = new Keyword(name);
-	bool added = m_keywords.add_keyword(keyword);
-
-	if(added)
-	{
-		m_declarations.push_back(keyword);
-	}
-	else
-	{
-		delete keyword;
-	}
-
-	return added;
-}
-
-// add_thing_to_delete adds the indicated declaration to the list of declarations
-//     that are not reported with the file, but will be deleted when the File object destructs.
-//     That is, transfers ownership of the indicated pointer to the File.
-void File::add_thing_to_delete(Declaration *decl)
-{
-	m_things_to_delete.push_back(decl);
-}
-
-// add_field sets the next sequential available index number on the indicated field.
-//     This is only meant to be called by Class::add_field().
+// add_field gives the field a unique id within the file.
 void File::add_field(Field *field)
 {
 	field->set_id((unsigned int)m_fields_by_id.size());
 	m_fields_by_id.push_back(field);
-}
-
-// setup_default_keywords adds an entry for each of the default keywords
-//     that are defined for every File for legacy reasons.
-void File::setup_default_keywords()
-{
-	struct KeywordDef
-	{
-		const char *name;
-		int flag;
-	};
-	static KeywordDef default_keywords[] =
-	{
-		{ "required", 0x0001 },
-		{ "broadcast", 0x0002 },
-		{ "ownrecv", 0x0004 },
-		{ "ram", 0x0008 },
-		{ "db", 0x0010 },
-		{ "clsend", 0x0020 },
-		{ "clrecv", 0x0040 },
-		{ "ownsend", 0x0080 },
-		{ "airecv", 0x0100 },
-		{ NULL, 0 }
-	};
-
-	m_default_keywords.clear_keywords();
-	for(int i = 0; default_keywords[i].name != NULL; ++i)
-	{
-		Keyword *keyword =
-		    new Keyword(default_keywords[i].name,
-		                  default_keywords[i].flag);
-
-		m_default_keywords.add_keyword(keyword);
-		m_things_to_delete.push_back(keyword);
-	}
 }
 
 // update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
