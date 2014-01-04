@@ -15,94 +15,64 @@
 namespace dclass   // open namespace
 {
 
-
-// nameless constructor (for structs)
-Field::Field() : m_class(NULL), m_id(0),
-	m_default_value_stale(true), m_has_default_value(false)
-{
-	m_datatype = DT_method;
-}
-
-// named constructor (for classes)
-Field::Field(const std::string &name, Struct *dclass) : m_class(dclass), m_name(name),
-	m_id(0), m_default_value_stale(true), m_has_default_value(false)
-{
-	m_datatype = DT_method;
-}
-
-// destructor
-Field::~Field()
+// constructor
+Field::Field(Struct* strct, const std::string &name) :
+	m_struct(strct), m_id(0), m_name(name), m_type(NULL), m_has_default_value(false)
 {
 }
 
-// as_field returns the same pointer converted to a field pointer,
-//     if this is in fact a field; otherwise, returns NULL.
-Field* Field::as_field()
+// set_name sets the name of this field.  Returns false if a field with
+//     the same name already exists in the containing struct.
+bool set_name(const std::string& name)
 {
-	return this;
+	// Check to make sure no other fields in our struct have this name
+	if(m_struct->get_field_by_name(name))
+	{
+		return false;
+	}
+
+	m_name = name;
+	return true;
 }
 
-// as_field returns the same pointer converted to a field pointer,
-//     if this is in fact a field; otherwise, returns NULL.
-const Field* Field::as_field() const
+// set_type sets the distributed type of the field and clear's the default value.
+void set_type(DistributedType* type)
 {
-	return this;
+	m_type = type;
+	m_default_value.clear();
 }
 
-// as_atomic_field returns the same field pointer converted to an atomic field
-//     pointer, if this is in fact an atomic field; otherwise, returns NULL.
-AtomicField* Field::as_atomic_field()
+// set_default_value establishes a default value for this field.
+//     Returns false if the value is invalid for the field.
+bool set_default_value(const std::string& default_value)
 {
-	return (AtomicField*)NULL;
+	// TODO: Validate defualt value
+	m_has_default_value = true;
+	m_default_value = default_value;
+	return true;
 }
 
-// as_atomic_field returns the same field pointer converted to an atomic field
-//     pointer, if this is in fact an atomic field; otherwise, returns NULL.
-const AtomicField* Field::as_atomic_field() const
+// set_id sets the unique index number associated with the field.
+void set_id(unsigned int id)
 {
-	return (AtomicField*)NULL;
+	m_id = id;
 }
+friend bool File::add_field(Field* field);
 
-// as_molecular_field returns the same field pointer converted to a molecular field
-//     pointer, if this is in fact a molecular field; otherwise, returns NULL.
-MolecularField* Field::as_molecular_field()
+// set_struct sets a pointer to the struct containing the field.
+void set_struct(Struct *strct)
 {
-	return (MolecularField*)NULL;
+	m_struct = strct;
 }
-
-// as_molecular_field returns the same field pointer converted to a molecular field
-//     pointer, if this is in fact a molecular field; otherwise, returns NULL.
-const MolecularField* Field::as_molecular_field() const
-{
-	return (MolecularField*)NULL;
-}
-
-// as_parameter returns the same field pointer converted to a parameter
-//     pointer, if this is in fact a parameter; otherwise, returns NULL.
-Parameter* Field::as_parameter()
-{
-	return (Parameter*)NULL;
-}
-
-// as_parameter returns the same field pointer converted to a parameter
-//     pointer, if this is in fact a parameter; otherwise, returns NULL.
-const Parameter* Field::as_parameter() const
-{
-	return (Parameter*)NULL;
-}
+friend bool Struct::add_field(Field* field);
 
 // generate_hash accumulates the properties of this field into the hash.
-void Field::generate_hash(HashGenerator &hashgen) const
+void Field::generate_hash(HashGenerator& hashgen) const
 {
-	// It shouldn't be necessary to explicitly add _number to the
-	// hash--this is computed based on the relative position of this
-	// field with the other fields, so adding it explicitly will be
-	// redundant.  However, the field name is significant.
-	hashgen.add_string(m_name);
-
-	// Actually, we add _number anyway, since we need to ensure the hash
-	// code comes out different in the dc_multiple_inheritance case.
 	hashgen.add_int(m_id);
+	hashgen.add_string(m_name);
+	m_type->generate_hash(hashgen);
+	KeywordList::generate_hash(hashgen);
 }
 
 
