@@ -9,14 +9,13 @@
 //
 
 #pragma once
-#include <map> // for std::map
 #include <vector> // for std::vector
+#include <unordered_map> // for std::unordered_map
 namespace dclass   // open namespace dclass
 {
 
 
 // Forward declaration
-class Keyword;
 class HashGenerator;
 
 // KeywordList this is a list of keywords (see Keyword) that may be set on a particular field.
@@ -57,15 +56,12 @@ class KeywordList
 		// clear_keywords removes all keywords from the field.
 		void clear_keywords();
 
-		// output_keywords writes the keywords in the list to the output stream.
-		void output_keywords(std::ostream &out) const;
-
 		// generate_hash accumulates the properties of these keywords into the hash.
 		void generate_hash(HashGenerator &hashgen) const;
 
 	private:
 		std::vector<const Keyword*> m_keywords; // the actual list of keywords
-		std::map<std::string, const Keyword*> m_keywords_by_name; // a map of name to keywords in list
+		std::unordered_map<std::string, const Keyword*> m_keywords_by_name; // a map of name to keywords in list
 
 		int m_flags;
 };
