@@ -58,7 +58,7 @@ class DistributedType
         // get_size returns the size of the DistributedType in bytes or 0 if it is variable.
         inline sizetag_t get_size() const;
 
-        // as_number returns this as a NumericType if it is numeric, or NULL otherwise.
+        // as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
         virtual NumericType* as_numeric();
         virtual const NumericType* as_numeric() const;
 
