@@ -24,21 +24,21 @@ inline const std::string& Field::get_name() const
 }
 
 // get_type returns the DistributedType of the field.
-inline DistributedType* get_type()
+inline DistributedType* Field::get_type()
 {
 	return m_type;
 }
-inline const DistributedType* get_type() const
+inline const DistributedType* Field::get_type() const
 {
 	return m_type;
 }
 
-// get_struct returns the struct pointer for the class that contains this field.
-inline Struct* get_struct()
+// get_struct returns the StructType that contains this field.
+inline StructType* Field::get_struct()
 {
 	return m_struct;
 }
-inline const Struct* get_struct() const
+inline const StructType* Field::get_struct() const
 {
 	return m_struct;
 }
