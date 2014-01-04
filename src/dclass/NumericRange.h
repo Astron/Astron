@@ -77,7 +77,7 @@ struct NumericRange
 
 	inline bool is_empty() const
 	{
-		return (type == NT_none);
+		return (type == Number::NONE);
 	}
 };
 

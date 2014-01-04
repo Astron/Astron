@@ -1,4 +1,4 @@
-// Filename: Parameter.ipp
+// Filename: NumericType.ipp
 namespace dclass   // open namespace
 {
 
@@ -24,7 +24,7 @@ inline double NumericType::get_modulus() const
 // has_range returns true if the numeric is constrained by a range.
 inline bool NumericType::has_range() const
 {
-	return m_orig_range.is_empty();
+	return !m_orig_range.is_empty();
 }
 // get_range returns the NumericRange that constrains the type's values.
 inline NumericRange NumericType::get_range() const

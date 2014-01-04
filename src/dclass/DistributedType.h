@@ -80,7 +80,6 @@ class DistributedType
     protected:
         Type m_type;
         sizetag_t m_size;
-        bool m_has_fixed_size;
 };
 
 

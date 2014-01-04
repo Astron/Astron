@@ -60,3 +60,4 @@ class NumericType : public DistributedType
 
 
 } // close namespace dclass
+#include "NumericType.ipp"
