@@ -33,14 +33,10 @@ class KeywordList
 
 		// has_keyword returns true if this list includes the indicated keyword, false otherwise.
 		bool has_keyword(const std::string &name) const;
-		// has_keyword returns true if this list includes the indicated keyword, false otherwise.
-		bool has_keyword(const Keyword *keyword) const;
 		// get_num_keywords returns the number of keywords in the list.
-		int get_num_keywords() const;
+		size_t get_num_keywords() const;
 		// get_keyword returns the nth keyword in the list.
-		const Keyword *get_keyword(int n) const;
-		// get_keyword_by_name returns the requested keyword if it exists.
-		const Keyword *get_keyword_by_name(const std::string &name) const;
+		const std::string *get_keyword(unsigned int n) const;
 
 		// compare_keywords returns true if this list has the same keywords as the other list,
 		//     false if some keywords differ. Order is not considered important.
@@ -60,10 +56,8 @@ class KeywordList
 		void generate_hash(HashGenerator &hashgen) const;
 
 	private:
-		std::vector<const Keyword*> m_keywords; // the actual list of keywords
-		std::unordered_map<std::string, const Keyword*> m_keywords_by_name; // a map of name to keywords in list
-
-		int m_flags;
+		std::vector<std::string> m_keywords; // the actual list of keywords
+		std::unordered_set<std::string> m_keywords_by_name; // a map of name to keywords in list
 };
 
 
