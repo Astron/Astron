@@ -1,72 +1,81 @@
 // Filename: DistributedType.h
 #pragma once
-#include "DataType.h"
 namespace dclass   // open namespace dclass
 {
 
 
+#ifdef DCLASS_32BIT_SIZETAG
+    typedef uint32_t sizetag_t;
+#else
+    typedef uint16_t sizetag_t;
+#endif
+
 // Forward declaration
-class Struct;
-class Field;
+class ArrayType
+class MethodType;
+class NumericType;
+class StructType;
 
 // An DistributedType represents any part of a .dc file which can have 
 class DistributedType
 {
     protected:
-        // null constructor
-        DistributedType() : m_datatype(DT_invalid), m_bytesize(0), m_has_fixed_size(true)
-        {
-        }
-
-        // copy constructor
-        DistributedType(const DistributedType& copy) : m_datatype(copy.m_datatype),
-            m_bytesize(copy.m_bytesize), m_has_fixed_size(copy.m_has_fixed_size)
-        {
-        }
+        inline DistributedType();
+        inline DistributedType(const DistributedType& copy);
 
     public:
-        // get_size returns the size of the DistributedType in bytes.
-        //     If the type has variable size, 0 is returned instead.
-        inline sizetag_t get_size() const
+        enum Type
         {
-            return m_bytesize;
-        }
+            /* Numeric Types */
+            DT_int8,    DT_int16,   DT_int32,  DT_int64,
+            DT_uint8,   DT_uint16,  DT_uint32, DT_uint64,
+            DT_float32, DT_float64,
+            DT_char,        // equivalent to uint8, except that it should be printed as a string
 
-        inline DataType get_datatype() const
-        {
-            return m_datatype;
-        }
+            /* Array Types */
+            DT_string,      // a human-printable string with fixed length
+            DT_varstring,   // a human-printable string with variable length
+            DT_blob,        // any binary data stored as a string, fixed length
+            DT_varblob,     // any binary data stored as a varstring, variable length
+            DT_array,       // any array with fixed byte-length (fixed array-size and element-length)
+            DT_vararray,    // any array with variable array-size or variable length elements
 
-        inline bool has_fixed_size() const
-        {
-            return m_has_fixed_size;
-        }
+            /* Complex Types */
+            DT_struct,
+            DT_method,
 
-        // as_struct returns the same pointer converted to a struct pointer,
-        //     if this is in fact a struct; otherwise, returns NULL.
-        virtual const Struct* as_struct() const
-        {
-            return NULL;
-        }
-        virtual Struct* as_struct()
-        {
-            return NULL;            
-        }
+            // New additions should be added at the end to prevent the file hash from changing.
 
-        // as_field returns the same pointer converted to a field pointer,
-        //     if this is in fact a field; otherwise, returns NULL.
-        virtual const Field* as_field() const
-        {
-            return NULL;            
-        }
-        virtual Field* as_field()
-        {
-            return NULL;            
-        }
+            DT_invalid
+        };
+
+        // get_type returns the type's fundamental type as an integer constant.
+        inline Type get_type() const;
+
+        // has_fixed_size returns true if the DistributedType has a fixed size in bytes.
+        inline bool has_fixed_size() const;
+        // get_size returns the size of the DistributedType in bytes or 0 if it is variable.
+        inline sizetag_t get_size() const;
+
+        // as_number returns this as a NumericType if it is numeric, or NULL otherwise.
+        virtual NumericType* as_numeric();
+        virtual const NumericType* as_numeric() const;
+
+        // as_array returns this as an ArrayType if it is an array, or NULL otherwise.
+        virtual ArrayType* as_array();
+        virtual const ArrayType* as_array() const;
+
+        // as_struct returns this as a StructType if it is a struct, or NULL otherwise.
+        virtual StructType* as_struct();
+        virtual const StructType* as_struct() const;
+
+        // as_method returns this as a MethodType if it is a method, or NULL otherwise.
+        virtual MethodType* as_method();
+        virtual const MethodType* as_method() const;
 
     protected:
-        DataType m_datatype;
-        sizetag_t m_bytesize;
+        Type m_type;
+        sizetag_t m_size;
         bool m_has_fixed_size;
 };
 
