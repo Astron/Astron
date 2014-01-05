@@ -18,16 +18,14 @@ KeywordList::KeywordList()
 {
 }
 
-// TODO: Evaluate whether this is being used
 // copy constructor
 KeywordList::KeywordList(const KeywordList& copy) :
 	m_keywords(copy.m_keywords), m_keywords_by_name(copy.m_keywords_by_name)
 {
 }
 
-// TODO: Evaluate whether this is being used
 // copy assignment operator
-void KeywordList::operator = (const KeywordList& copy)
+void KeywordList::operator=(const KeywordList& copy)
 {
 	m_keywords = copy.m_keywords;
 	m_keywords_by_name = copy.m_keywords_by_name;

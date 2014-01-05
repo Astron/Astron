@@ -28,8 +28,6 @@ class KeywordList
 		KeywordList(const KeywordList &copy);
 		// copy assignment operator
 		void operator = (const KeywordList &copy);
-		// destructor
-		~KeywordList();
 
 		// has_keyword returns true if this list includes the indicated keyword, false otherwise.
 		bool has_keyword(const std::string &name) const;

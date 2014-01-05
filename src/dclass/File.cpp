@@ -43,10 +43,10 @@ File::~File()
 
 	m_classes.clear();
 	m_structs.clear();
+	m_imports.clear();
 	m_types_by_id.clear();
 	m_types_by_name.clear();
 	m_fields_by_id.clear();
-	m_imports.clear();
 	m_keywords.clear();
 }
 

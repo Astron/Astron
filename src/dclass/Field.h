@@ -53,7 +53,7 @@ class Field : public KeywordList
 		bool set_default_value(const std::string& default_value);
 
 		// generate_hash accumulates the properties of this field into the hash.
-		void generate_hash(HashGenerator& hashgen) const;
+		virtual void generate_hash(HashGenerator& hashgen) const;
 
 	private:
 		// set_id sets the unique index number associated with the field.

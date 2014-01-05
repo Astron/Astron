@@ -7,6 +7,7 @@ namespace dclass   // open namespace dclass
 // constructor
 StructType::StructType(File* file, const string& name) : m_file(file), m_name(name), m_id(0)
 {
+	m_type = STRUCT;
 }
 
 // destructor
