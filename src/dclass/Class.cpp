@@ -1,34 +1,14 @@
 // Filename: Class.cpp
-// Created by: drose (05 Oct, 2000)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-
 #include "Class.h"
-#include "File.h"
 #include "HashGenerator.h"
-
-#include "indent.h"
-
-#include <algorithm>     // std::sort
-#include <unordered_set> // std::unordered_set
 using namespace std;
 namespace dclass   // open namespace
 {
 
-inline bool sort_fields_by_id(const Field* a, const Field* b)
-{
-	return (a->get_id()  <  b->get_id());
-}
 
 // constructor
 Class::Class(File* file, const string &name) : Struct(file, name), m_constructor(NULL)
 {
-	m_constructor = NULL;
 }
 
 // destructor
@@ -40,8 +20,7 @@ Class::~Class()
 	}
 }
 
-// as_class returns the same pointer converted to a class pointer
-//     if this is in fact a class; otherwise, returns NULL.
+// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
 Class* Class::as_class()
 {
 	return this;
@@ -51,96 +30,23 @@ const Class* Class::as_class() const
 	return this;
 }
 
-// rebuild_fields recomputes the list of inherited fields for the class.
-void Class::rebuild_fields()
+// add_parent adds a new parent to the inheritance hierarchy of the class.
+//     Note: This is normally called only during parsing.
+void Class::add_parent(Class *parent)
 {
-	unordered_set<string> names;
+	parent.add_child(this);
+	m_parents.push_back(parent);
 
-	m_fields.clear();
-	m_fields_by_name.clear();
-	m_fields_by_id.clear();
-	m_bytesize = 0;
-	m_has_fixed_size = true;
+	// We know there will be this many fields, so allocate ahead of time
+	const vector<Field*>& parent_fields = parent->m_fields;
+	m_fields.reserve(m_fields.size() + parent_fields.size());
 
-	// First, all of the inherited fields from our parent are at the top of the list.
-	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+	// Add all of the parents fields
+	for(auto it = parent_fields.begin(); it != parent_fields.end(); ++it)
 	{
-		const Class *parent = (*it);
-		size_t num_inherited_fields = parent->get_num_fields();
-		for(unsigned int i = 0; i < num_inherited_fields; ++i)
-		{
-			Field *field = parent->get_field(i);
-			if(!field->get_name().empty())
-			{
-				bool inserted = names.insert(field->get_name()).second;
-				if(inserted)
-				{
-					// The earlier parent shadows the later parent.
-					m_fields.push_back(field);
-					m_fields_by_name.insert(unordered_map<string, Field*>::value_type(field->get_name(), field));
-					if(m_file != (File*)NULL)
-					{
-						m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field));
-					}
-
-					if(!field->as_molecular_field())
-					{
-						m_bytesize += field->get_size();
-						m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
-					}
-				}
-			}
-		}
-	}
-
-	// Now add the local fields at the end of the list.
-	// If any fields n this list were already defined by a parent,
-	// we will shadow the parent definition (ie. remove the parent's field).
-	for(auto it = m_base_fields.begin(); it != m_base_fields.end(); ++it)
-	{
-		Field *field = (*it);
-
-		bool inserted = names.insert(field->get_name()).second;
-		if(!inserted)
-		{
-			// This local field shadows an inherited field.
-			// Remove the parent's field from our list.
-			for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
-			{
-				Field *shadowed = (*it);
-				if(shadowed->get_name() == field->get_name())
-				{
-					m_fields.erase(it);
-					m_fields_by_id.erase(shadowed->get_id());
-					m_fields_by_name.erase(shadowed->get_name());
-					return;
-				}
-			}
-		}
-
-		// Now add the local field.
-		m_fields.push_back(field);
-		m_fields_by_name.insert(unordered_map<string, Field*>::value_type(field->get_name(), field));
-		if(m_file != (File*)NULL)
-		{
-			m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field));
-		}
-		if(!field->as_molecular_field())
-		{
-			m_bytesize += field->get_size();
-			m_has_fixed_size = m_has_fixed_size && field->has_fixed_size();
-		}
-	}
-
-	// The fields must be sorted by id
-	sort(m_fields.begin(), m_fields.end(), sort_fields_by_id);
-
-	if(!m_has_fixed_size)
-	{
-		m_bytesize = 0;
+		add_inherited_field(parent, (*it));
 	}
 }
-
 
 // add_field adds the newly-allocated field to the class.  The class becomes
 //     the owner of the pointer and will delete it when it destructs.
@@ -174,37 +80,176 @@ bool Class::add_field(Field *field)
 			return false;
 		}
 
+		// The constructor has to be the first declared field.
+		//     Note: This is the case because the constructor should
+		//           always have the earliest field id.
+		if(m_base_fields.size() > 0)
+		{
+			return false;
+		}
+
 		field->set_class(this);
 		m_constructor = field;
-		m_fields_by_name.insert(unordered_map<string, Field*>::value_type(field->get_name(), field));
+
+		m_file->add_field(field);
+		m_fields_by_id[field->get_id()] = field;
+		m_fields_by_name[field->get_name()] = field;
 		return true;
 	}
 
-	// Try to add the field as a normal field
-	if(!Struct::add_field(field))
+	// Try to add the field
+	bool inserted = m_base_fields_by_name.insert(
+		unordered_map<string, Field*>::value_type(field->get_name(), field)).second;
+	// Fail if there is a name conflict
+	if(!inserted)
 	{
-		return false; // But it failed
+		return false;
 	}
-
-	// A Class has to keep track of which fields are not inherted.
 	m_base_fields.push_back(field);
 
-	// Also, tell the file to update any subclasses of this class.
-	if(m_file != (File*)NULL)
+	// If a parent has a field with the same name, shadow it
+	auto prev_field = m_fields_by_name.find(field);
+	if(prev_field != m_fields_by_name.end())
 	{
-		m_file->update_inheritance(this);
+		shadow_field(*prev_field);
+	}
+
+	// Add the field to our full field list
+	field->set_class(this);
+	m_fields.push_back(field); // Don't have to try to sort; id is always last
+
+	// Add the field to the lookups
+	m_file->add_field(field);
+	m_fields_by_id[field->get_id()] = field;
+	m_fields_by_name[field->get_name()] = field;
+
+	// Update our size
+	if(has_fixed_size() || m_fields.size() == 1)
+	{
+		m_size += field->get_type()->get_size();
+	}
+
+	// Tell our children about the new field
+	for(auto it = m_children.begin(); it != m_children.end(); ++it)
+	{
+		(*it)->add_inherited_field(this, field);
 	}
 
 	return true;
 }
 
-// add_parent adds a new parent to the inheritance hierarchy of the class.
-//     Note: This is normally called only during parsing.
-void Class::add_parent(Class *parent)
+// add_inherited_field updates a classes's fields after a parent adds a new field.
+void add_inherited_field(Class* parent, Field* field)
 {
-	m_parents.push_back(parent);
-	rebuild_fields();
-	m_file->update_inheritance(this);
+	// If the field name matches any base field, it is shadowed.
+	if(m_base_fields_by_name.find(field->get_name()) != m_base_fields_by_name.end())
+	{
+		return;
+	}
+
+	// If another superclass provides a field with that name, the first parent takes precedence
+	auto prev_field = m_fields_by_name.find(field);
+	if(prev_field != m_fields_by_name.end())
+	{
+		StructType* parentB = (*prev_field)->get_struct();
+		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+		{
+			if((*it) == parentB)
+			{
+				// The early parent's field takes precedence over the new field
+				return;
+			}
+			else if((*it) == parent)
+			{
+				// This parent was added before the later parent, so shadow its field
+				shadow_field(*prev_field);
+			}
+		}
+	}
+
+	// Add the field to our lookup tables
+	m_fields_by_id[field->get_id()] = field;
+	m_fields_by_name[field->get_name()] = field;
+
+	// Add the field to the list of fields, sorted by id
+	// Note: Iterate in reverse because fields added later are more likely to be at the end
+	for(auto it = m_fields.rbegin(); it != m_fields.r_end(); ++it)
+	{
+		if((*it)->get_id() < field->get_id())
+		{
+			m_fields.insert(it.base(), field);
+		}
+	}
+
+	// Update our size
+	if(has_fixed_size() || m_fields.size() == 1)
+	{
+		m_size += field->get_type()->get_size();
+	}
+
+	// Tell our children about the new field
+	for(auto it = m_children.begin(); it != m_children.end(); ++it)
+	{
+		(*it)->add_inherited_field(this, field);
+	}
+}
+
+// shadow_field removes the field from all of the Class's field accessors,
+//     so that another field with the same name can be inserted.
+void shadow_field(Field* field)
+{
+	if(has_fixed_size())
+	{
+		m_size -= field->get_type()->get_size();
+	}
+
+	m_fields_by_id.erase(field->get_id());
+	m_fields_by_name.erase(field->get_name());
+	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
+	{
+		if((*it) == field)
+		{
+			m_fields.erase(it);
+			break;
+		}
+	}
+
+	// Tell our children to shadow the field
+	for(auto it = m_children.begin(); it != m_children.end(); ++it)
+	{
+		Class* child = (*it);
+		if(child.get_field_by_id(field->get_id()) == field)
+		{
+			child->shadow_field(field);
+		}
+	}
+}
+
+// generate_hash accumulates the properties of this class into the hash.
+void Class::generate_hash(HashGenerator& hashgen) const
+{
+	DistributedType::generate_hash(hashgen);
+	hashgen.add_string(m_name);
+
+	// Hash our inheritence tree
+	hashgen.add_int(m_parents.size());
+	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
+	{
+		hashgen.add_int((*it)->get_id());
+	}
+
+	// Hash our constructor
+	if(m_constructor != (Field*)NULL)
+	{
+		m_constructor->generate_hash(hashgen);
+	}
+
+	// Hash our base fields
+	hashgen.add_int(m_base_fields.size());
+	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
+	{
+		(*it)->generate_hash(hashgen);
+	}
 }
 
 

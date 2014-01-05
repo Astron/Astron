@@ -1,63 +1,73 @@
 // Filename: Class.h
-// Created by: drose (05 Oct, 2000)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-
 #pragma once
-#include "Struct.h"
+#include "StructType.h"
 namespace dclass   // open namespace
 {
 
 
-// A Class defines a particular DistributedClass as read from an input .dc file.
-//     Classes are advanced structs which provide inheritence as well as a constructor.
-//     Unlike basic structs, classes cannot have anonymous fields.
-class Class : public Struct
+// A Class is a special type of struct that have a couple advanced object-oriented features:
+//     Classes can inherit from other classes (ie. have super-/sub-classes).
+//     Classes can have methods including a special constructor method.
+//     Unlike other structs, classes cannot have anonymous fields.
+class Class : public StructType
 {
 	public:
 		Class(File *dc_file, const std::string &name);
 		~Class();
 
-		// as_class returns the same Declaration pointer converted to a class
-		//     pointer, if this is in fact a class; otherwise, returns NULL.
+		// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
 		virtual Class* as_class();
 		virtual const Class* as_class() const;
 
-		// get_num_parents returns the number of base classes this class inherits from.
+		// get_num_parents returns the number of superclasses this class inherits from.
 		inline size_t get_num_parents() const;
-		// get_parent returns the nth parent class this class inherits from.
-		inline Class* get_parent(unsigned int n) const;
+		// get_parent returns the <n>th parent-/super-class this class inherits from.
+		inline Class* get_parent(unsigned int n);
+		inline const Class* get_parent(unsigned int n) const;
+		// get_num_children returns the number of subclasses that inherit from this class.
+		inline size_t get_num_children() const;
+		// get_child returns the <n>th child-/sub-class that inherits this class.
+		inline Class* get_child(unsigned int n);
+		inline const Class* get_child(unsigned int n) const;
 
 		// has_constructor returns true if this class has a constructor method,
 		//     or false if it just uses the default constructor.
 		inline bool has_constructor() const;
 		// get_constructor returns the constructor method for this class if it is defined,
 		//     or NULL if the class uses the default constructor.
-		inline Field* get_constructor() const;
+		inline Field* get_constructor();
+		inline const Field* get_constructor() const;
 
-		// get_num_base_fields returns the number of fields declared directly in this class.
-		inline size_t get_num_base_fields() const;
-		// get_base_field returns the <n>th field from the class excluding any inherited fields.
-		inline Field* get_base_field(unsigned int n) const;
-
-		// add_field adds a new Field to the class.
-		virtual bool add_field(Field* field);
+		// get_num_fields returns the number of fields in the Class, including inherited fields.
+		virtual size_t get_num_fields() const;
+		// get_field returns the <n>th field of the struct (with inherited) or NULL if out-of-range.
+		virtual Field* get_field(unsigned int n);
+		virtual const Field* get_field(unsigned int n) const;
 
 		// add_parent set this class as a subclass to target parent.
 		void add_parent(Class *parent);
 
-		// rebuild_fields recomputes the list of inherited fields for the class.
-		void rebuild_fields();
+		// add_field adds a new Field to the class.
+		virtual bool add_field(Field* field);
+
+		// generate_hash accumulates the properties of this type into the hash.
+		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	private:
+		// add_child marks a class as a child of this class.
+		void add_child(Class* child);
+		// add_inherited_field updates a classes's fields after a parent adds a new field.
+		void add_inherited_field(Class* parent, Field* field);
+		// shadow_field removes the field from all of the Class's field accessors,
+		//     so that another field with the same name can be inserted.
+		void shadow_field(Field* field);
+
 		Field* m_constructor;
-		std::vector<Class*> m_parents;
 		std::vector<Field*> m_base_fields;
+		std::unorered_map<std::string, Field*> m_base_fields_by_name;
+
+		std::vector<Class*> m_parents;
+		std::vector<Class*> m_children;
 };
 
 
