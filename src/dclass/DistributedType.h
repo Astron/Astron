@@ -22,7 +22,7 @@ class DistributedType
 {
     protected:
         inline DistributedType();
-        inline DistributedType(const DistributedType& copy);
+        virtual ~DistributedType();
 
     public:
         enum Type

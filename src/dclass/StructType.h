@@ -18,7 +18,7 @@ class Struct : public DistributedType
 {
 	public:
 		StructType(File* file, const std::string &name);
-		~StructType();
+		virtual ~StructType();
 
 		// as_struct returns this as a StructType if it is a StructType, or NULL otherwise.
 		virtual StructType* as_struct();

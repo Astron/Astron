@@ -19,16 +19,16 @@ inline const Class* Class::get_parent(unsigned int n) const
 }
 
 // get_num_children returns the number of subclasses that inherit from this class.
-inline size_t get_num_children() const
+inline size_t Class::get_num_children() const
 {
 	return m_children.size();
 }
 // get_child returns the <n>th child-/sub-class that inherits this class.
-inline Class* get_child(unsigned int n)
+inline Class* Class::get_child(unsigned int n)
 {
 	return m_children.at(n);
 }
-inline const Class* get_child(unsigned int n) const
+inline const Class* Class::get_child(unsigned int n) const
 {
 	return m_children.at(n);
 }

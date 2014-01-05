@@ -9,12 +9,6 @@ inline DistributedType::DistributedType() :
 {
 }
 
-// copy constructor
-inline DistributedType::DistributedType(const DistributedType& copy) :
-    m_type(copy.m_type), m_size(copy.m_size), m_has_fixed_size(copy.m_has_fixed_size)
-{
-}
-
 // get_type returns the type's fundamental type as an integer constant.
 inline Type DistributedType::get_type() const
 {

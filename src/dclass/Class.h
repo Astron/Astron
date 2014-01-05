@@ -13,7 +13,7 @@ class Class : public StructType
 {
 	public:
 		Class(File *dc_file, const std::string &name);
-		~Class();
+		virtual ~Class();
 
 		// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
 		virtual Class* as_class();

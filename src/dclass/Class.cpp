@@ -139,7 +139,7 @@ bool Class::add_field(Field *field)
 }
 
 // add_inherited_field updates a classes's fields after a parent adds a new field.
-void add_inherited_field(Class* parent, Field* field)
+void Class::add_inherited_field(Class* parent, Field* field)
 {
 	// If the field name matches any base field, it is shadowed.
 	if(m_base_fields_by_name.find(field->get_name()) != m_base_fields_by_name.end())
@@ -196,7 +196,7 @@ void add_inherited_field(Class* parent, Field* field)
 
 // shadow_field removes the field from all of the Class's field accessors,
 //     so that another field with the same name can be inserted.
-void shadow_field(Field* field)
+void Class::shadow_field(Field* field)
 {
 	if(has_fixed_size())
 	{
