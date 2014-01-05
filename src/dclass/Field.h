@@ -16,6 +16,7 @@ namespace dclass   // open namespace
 // Foward declarations
 class DistributedType;
 class StructType;
+class MolecularField;
 class HashGenerator;
 
 // A Field is a member of a class or struct.
@@ -23,6 +24,10 @@ class Field : public KeywordList
 {
 	public:
 		Field(StructType* strct, const std::string &name = "");
+
+		// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
+		virtual MolecularField* as_molecular();
+		virtual const MolecularField* as_molecular() const;
 
 		// get_id returns a unique index number associated with this field.
 		inline unsigned int get_id() const;
@@ -50,7 +55,7 @@ class Field : public KeywordList
 
 		// set_default_value defines a default value for this field.
 		//     Returns false if the value is invalid for the field's type.
-		bool set_default_value(const std::string& default_value);
+		virtual bool set_default_value(const std::string& default_value);
 
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator& hashgen) const;

@@ -70,7 +70,10 @@ void Field::generate_hash(HashGenerator& hashgen) const
 {
 	hashgen.add_int(m_id);
 	hashgen.add_string(m_name);
-	hashgen.add_string(m_default_value);
+	if(has_default_value())
+	{
+		hashgen.add_string(m_default_value);
+	}
 	m_type->generate_hash(hashgen);
 	KeywordList::generate_hash(hashgen);
 }

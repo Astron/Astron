@@ -57,6 +57,8 @@ class Struct : public DistributedType
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	protected:
+		StructType(File* file);
+
 		// set_id sets the index number associated with this struct.
 		void set_id(unsigned int id);
 		friend bool File::add_struct(StructType* strct);

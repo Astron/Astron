@@ -245,20 +245,25 @@ void Class::generate_hash(HashGenerator& hashgen) const
 	DistributedType::generate_hash(hashgen);
 	hashgen.add_string(m_name);
 
-	// Hash our inheritence tree
+	/* Hash our inheritence tree */
+	// We aren't the owener of our parents so we only add their id
+	// We shouldn't hash our children because they aren't part of this class
+	// and that relationship will be hashed when each child is hashed.
 	hashgen.add_int(m_parents.size());
 	for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
 	{
 		hashgen.add_int((*it)->get_id());
 	}
 
-	// Hash our constructor
+	/* Hash our constructor */
 	if(m_constructor != (Field*)NULL)
 	{
 		m_constructor->generate_hash(hashgen);
 	}
 
-	// Hash our base fields
+	/* Hash our base fields */
+	// We don't hash our inherited fields because thats implicit in the hash of our parents; also,
+	// it is a bad idea to hash any thing we're not considered the owner of (could cause looping).
 	hashgen.add_int(m_base_fields.size());
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{

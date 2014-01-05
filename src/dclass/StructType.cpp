@@ -4,8 +4,14 @@ using namespace std;
 namespace dclass   // open namespace dclass
 {
 
-// constructor
+// public constructor
 StructType::StructType(File* file, const string& name) : m_file(file), m_name(name), m_id(0)
+{
+	m_type = STRUCT;
+}
+
+// protected constructor
+StructType::StructType(File* file) : m_file(file), m_id(0)
 {
 	m_type = STRUCT;
 }
