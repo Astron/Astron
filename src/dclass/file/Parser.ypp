@@ -643,6 +643,15 @@ char_or_number
 	| number
 	;
 
+value
+	: empty
+	| parameter_value
+	| '(' method_value ')'
+	{
+		DataType type = current_parameter->get_datatype();
+		if(type != m_method)
+	}
+
 parameter_value
 	: SIGNED_INTEGER
 	{

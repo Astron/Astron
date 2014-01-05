@@ -346,30 +346,7 @@ endif()
 #endforeach(sourcefile)
 #source_group("Header Files" FILES ${ASTROND_HEADERS})
 
-add_library(dclass
-	src/dclass/HashGenerator.cpp
-
-	src/dclass/DistributedType.cpp
-	src/dclass/NumericType.cpp
-	src/dclass/ArrayType.cpp
-	src/dclass/StructType.cpp
-	src/dclass/MethodType.cpp
-
-	src/dclass/File.cpp
-	src/dclass/Struct.cpp
-	src/dclass/Class.cpp
-	src/dclass/AtomicMethod.cpp
-	src/dclass/MolecularMethod.cpp
-
-	src/dclass/KeywordList.cpp
-	src/dclass/Field.cpp
-	src/dclass/Parameter.cpp
-
-	src/dclass/file/Lexer.cpp
-	src/dclass/file/Parser.cpp
-	src/dclass/value/format.cpp
-	src/dclass/value/parse.cpp
-)
+add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
 target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
