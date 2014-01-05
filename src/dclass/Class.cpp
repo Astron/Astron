@@ -126,7 +126,14 @@ bool Class::add_field(Field *field)
 	// Update our size
 	if(has_fixed_size() || m_fields.size() == 1)
 	{
-		m_size += field->get_type()->get_size();
+		if(field->get_type()->has_fixed_size())
+		{
+			m_size += field->get_type()->get_size();
+		}
+		else
+		{
+			m_size = 0;
+		}
 	}
 
 	// Tell our children about the new field
@@ -184,7 +191,14 @@ void Class::add_inherited_field(Class* parent, Field* field)
 	// Update our size
 	if(has_fixed_size() || m_fields.size() == 1)
 	{
-		m_size += field->get_type()->get_size();
+		if(field->get_type()->has_fixed_size())
+		{
+			m_size += field->get_type()->get_size();
+		}
+		else
+		{
+			m_size = 0;
+		}
 	}
 
 	// Tell our children about the new field

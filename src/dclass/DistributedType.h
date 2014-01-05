@@ -25,6 +25,7 @@ class DistributedType
         virtual ~DistributedType();
 
     public:
+        // The Type enum are numeric constants representing the layout of the DistributedType
         enum Type
         {
             /* Numeric Types */

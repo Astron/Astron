@@ -87,9 +87,9 @@ bool StructType::add_field(Field* field)
 	m_fields.push_back(field);
 	if(has_fixed_size() || m_fields.size() == 1)
 	{
-		if(field->has_fixed_size())
+		if(field->get_type()->has_fixed_size())
 		{
-			m_size += field->get_size();
+			m_size += field->get_type()->get_size();
 		}
 		else
 		{
