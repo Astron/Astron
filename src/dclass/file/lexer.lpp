@@ -1,14 +1,14 @@
 /*
-// Filename: Lexer.lxx
+// Filename: lexer.lxx
 // Created by: drose (05 Oct, 2000)
 */
 
 %{
 
 	#include "File.h"
-	#include "file/LexerDefs.h"
-	#include "file/ParserDefs.h"
-	#include "file/Parser.h"
+	#include "file/lexerDefs.h"
+	#include "file/parserDefs.h"
+	#include "file/parser.h"
 	#include "file/write.h" // indent
 	#include <iostream>
 	#include <unistd.h>

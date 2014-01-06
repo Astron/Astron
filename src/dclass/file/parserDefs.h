@@ -1,4 +1,4 @@
-// Filename: ParserDefs.h
+// Filename: parserDefs.h
 #pragma once
 #include "NumericRange.h"
 #include <string>

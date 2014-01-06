@@ -18,8 +18,9 @@ add_library(dclass
 	Field.cpp
 	MolecularField.cpp
 
-	file/Lexer.cpp
-	file/Parser.cpp
+	file/lexer.cpp
+	file/parser.cpp
+	file/write.cpp
 	value/format.cpp
 	value/parse.cpp
 )

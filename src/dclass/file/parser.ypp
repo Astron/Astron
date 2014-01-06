@@ -1,5 +1,4 @@
-// Filename: Parser.yxx
-// Created by: drose (05 Oct, 2000)
+// Filename: parser.yxx
 //
 
 %{

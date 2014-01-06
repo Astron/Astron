@@ -1,2 +1,2 @@
-bison --defines=Parser.h --output=Parser.cpp Parser.ypp
-flex --outfile=Lexer.cpp Lexer.lpp
+bison --defines=parser.h --output=parser.cpp parser.ypp
+flex --outfile=lexer.cpp lexer.lpp
