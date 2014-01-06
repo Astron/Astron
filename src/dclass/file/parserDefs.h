@@ -7,7 +7,6 @@ namespace dclass   // open namespace dclass
 
 // Foward declarations
 class File;
-
 class DistributedType;
 class Struct;
 class Class;

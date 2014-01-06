@@ -1,8 +1,10 @@
 // Filename: lexerDefs.h
-// Created by: drose (05 Oct, 2000)
 #pragma once
 #include <iostream>
 #include <string>
+namespace dclass   // open namespace dclass
+{
+
 
 void init_file_lexer(std::istream &in, const std::string &filename);
 void init_value_lexer(std::istream &in, const std::string &filename);
@@ -17,3 +19,6 @@ void lexer_warning(const std::string &msg);
 
 // we always read files
 #define YY_NEVER_INTERACTIVE 1
+
+
+} // close namespace dclass

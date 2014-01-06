@@ -21,6 +21,7 @@ add_library(dclass
 	file/lexer.cpp
 	file/parser.cpp
 	file/write.cpp
+	file/read.cpp
 	value/format.cpp
 	value/parse.cpp
 )
