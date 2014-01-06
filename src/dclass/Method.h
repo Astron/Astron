@@ -1,4 +1,4 @@
-// Filename: MethodType.h
+// Filename: Method.h
 #pragma once
 #include "DistributedType.h"
 #include <string.h>      // size_t
@@ -11,15 +11,15 @@ namespace dclass   // open namespace
 class Parameter;
 
 // A Method is a field for a distributed Class that typically represents a remote procedure call.
-class MethodType : public DistributedType
+class Method : public DistributedType
 {
 	public:
-		MethodType();
-		virtual ~MethodType();
+		Method();
+		virtual ~Method();
 
-        // as_method returns this as a MethodType if it is a method, or NULL otherwise.
-        virtual MethodType* as_method();
-        virtual const MethodType* as_method() const;
+        // as_method returns this as a Method if it is a method, or NULL otherwise.
+        virtual Method* as_method();
+        virtual const Method* as_method() const;
 
 		// get_num_parameters returns the number of parameters/arguments of the method.
 		inline size_t get_num_parameters() const;
@@ -44,4 +44,4 @@ class MethodType : public DistributedType
 
 
 } // close namespace dclass
-#include "MethodType.ipp"
+#include "Method.ipp"

@@ -10,7 +10,7 @@
 
 #include "File.h"
 #include "Class.h"
-#include "StructType.h"
+#include "Struct.h"
 #include "Field.h"
 #include "DistributedType.h"
 #include "HashGenerator.h"
@@ -77,7 +77,7 @@ bool File::add_class(Class *cls)
 // add_struct adds the newly-allocated struct to the file.
 //     Returns false if there is a name conflict.
 //     The File becomes the owner of the pointer and will delete it when it destructs.
-bool File::add_struct(StructType *strct)
+bool File::add_struct(Struct *strct)
 {
 	// Structs have to have a name
 	if(strct->get_name().empty())

@@ -19,7 +19,7 @@ namespace dclass   // open namespace
 // Forward declarations
 class DistributedType;
 class Class;
-class StructType;
+class Struct;
 class Field;
 class HashGenerator;
 
@@ -48,8 +48,8 @@ class File
 		// get_num_structs returns the number of structs in the file.
 		inline size_t get_num_structs() const;
 		// get_struct returns the <n>th struct in the file.
-		inline StructType* get_struct(unsigned int n);
-		inline const StructType* get_struct(unsigned int n) const;
+		inline Struct* get_struct(unsigned int n);
+		inline const Struct* get_struct(unsigned int n) const;
 
 		// get_type_by_id returns the requested type or NULL if there is no such type.
 		inline DistributedType* get_type_by_id(unsigned int id);
@@ -81,7 +81,7 @@ class File
 
 		// add_struct adds the newly-allocated struct definition to the file.
 		//     Returns false if there is a name conflict.
-		bool add_struct(StructType *dstruct);
+		bool add_struct(Struct *dstruct);
 
 		// add_typedef adds the alias <name> to the file for the type <type>.
 		//     Returns false if there is a name conflict.
@@ -104,9 +104,9 @@ class File
 		// add_field gives the field a unique id within the file.
 		void add_field(Field *field);
 		friend class Class;
-		friend class StructType;
+		friend class Struct;
 
-		std::vector<StructType*> m_structs;
+		std::vector<Struct*> m_structs;
 		std::vector<Class*> m_classes;
 		std::vector<Import*> m_imports; // list of python imports in the file
 		std::vector<std::string> m_keywords;

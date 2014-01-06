@@ -1,6 +1,6 @@
 // Filename: Parameter.cpp
 #include "Parameter.h"
-#include "MethodType.h"
+#include "Method.h"
 #include "HashGenerator.h"
 namespace dclass   // open namespace dclass
 {
@@ -50,7 +50,7 @@ bool Parameter::set_default_value(const std::string& default_value)
 }
 
 // set_method sets a pointer to the method containing the parameter.
-void Parameter::set_method(MethodType* method)
+void Parameter::set_method(Method* method)
 {
 	m_method = method;
 }

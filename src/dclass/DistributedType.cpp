@@ -28,24 +28,24 @@ const ArrayType* DistributedType::as_array() const
 	return (const ArrayType*)NULL;
 }
 
-// as_struct returns this as a StructType if it is a struct, or NULL otherwise.
-StructType* DistributedType::as_struct()
+// as_struct returns this as a Struct if it is a struct, or NULL otherwise.
+Struct* DistributedType::as_struct()
 {
-	return (StructType*)NULL;
+	return (Struct*)NULL;
 }
-const StructType* DistributedType::as_struct() const
+const Struct* DistributedType::as_struct() const
 {
-	return (const StructType*)NULL;
+	return (const Struct*)NULL;
 }
 
-// as_method returns this as a MethodType if it is a method, or NULL otherwise.
-MethodType* DistributedType::as_method()
+// as_method returns this as a Method if it is a method, or NULL otherwise.
+Method* DistributedType::as_method()
 {
-	return (MethodType*)NULL;
+	return (Method*)NULL;
 }
-const MethodType* DistributedType::as_method() const
+const Method* DistributedType::as_method() const
 {
-	return (const MethodType*)NULL;
+	return (const Method*)NULL;
 }
 
 // generate_hash accumulates the properties of this field into the hash.

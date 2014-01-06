@@ -24,11 +24,11 @@ inline size_t File::get_num_structs() const
 	return m_structs.size();
 }
 // get_struct returns the <n>th struct in the file.
-inline StructType* File::get_struct(unsigned int n)
+inline Struct* File::get_struct(unsigned int n)
 {
 	return m_structs.at(n);
 }
-inline const StructType* File::get_struct(unsigned int n) const
+inline const Struct* File::get_struct(unsigned int n) const
 {
 	return m_structs.at(n);
 }

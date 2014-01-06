@@ -13,9 +13,9 @@ namespace dclass   // open namespace dclass
 
 // Forward declaration
 class ArrayType;
-class MethodType;
+class Method;
 class NumericType;
-class StructType;
+class Struct;
 class HashGenerator;
 
 
@@ -70,13 +70,13 @@ class DistributedType
         virtual ArrayType* as_array();
         virtual const ArrayType* as_array() const;
 
-        // as_struct returns this as a StructType if it is a struct, or NULL otherwise.
-        virtual StructType* as_struct();
-        virtual const StructType* as_struct() const;
+        // as_struct returns this as a Struct if it is a struct, or NULL otherwise.
+        virtual Struct* as_struct();
+        virtual const Struct* as_struct() const;
 
-        // as_method returns this as a MethodType if it is a method, or NULL otherwise.
-        virtual MethodType* as_method();
-        virtual const MethodType* as_method() const;
+        // as_method returns this as a Method if it is a method, or NULL otherwise.
+        virtual Method* as_method();
+        virtual const Method* as_method() const;
 
         // generate_hash accumulates the properties of this file into the hash.
         virtual void generate_hash(HashGenerator& hashgen) const;

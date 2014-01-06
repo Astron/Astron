@@ -10,13 +10,13 @@
 
 #include "Field.h"
 #include "File.h"
-#include "StructType.h"
+#include "Struct.h"
 #include "HashGenerator.h"
 namespace dclass   // open namespace
 {
 
 // constructor
-Field::Field(StructType* strct, const std::string &name) :
+Field::Field(Struct* strct, const std::string &name) :
 	m_struct(strct), m_id(0), m_name(name), m_type(NULL), m_has_default_value(false)
 {
 }
@@ -60,7 +60,7 @@ void Field::set_id(unsigned int id)
 }
 
 // set_struct sets a pointer to the struct containing the field.
-void Field::set_struct(StructType* strct)
+void Field::set_struct(Struct* strct)
 {
 	m_struct = strct;
 }

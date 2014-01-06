@@ -7,7 +7,7 @@ namespace dclass   // open namespace dclass
 
 // Foward declarations
 class DistributedType;
-class MethodType;
+class Method;
 class HashGenerator;
 
 // A Parameter is a single argument/parameter of a Method.
@@ -21,9 +21,9 @@ class Parameter
 		// get_type returns the DistributedType of the Parameter.
 		inline DistributedType* get_type();
 		inline const DistributedType* get_type() const;
-		// get_method returns the MethodType that contains the Parameter.
-		inline MethodType* get_method();
-		inline const MethodType* get_method() const;
+		// get_method returns the Method that contains the Parameter.
+		inline Method* get_method();
+		inline const Method* get_method() const;
 
 		// has_default_value returns true if a default value was defined for this parameter.
 		inline bool has_default_value() const;
@@ -53,13 +53,13 @@ class Parameter
 
 	private:
 		// set_method sets a pointer to the method containing the parameter.
-		void set_method(MethodType* method);
-		friend class MethodType;
+		void set_method(Method* method);
+		friend class Method;
 
 		std::string m_name;
 		std::string m_type_alias;
-		DistributedType* m_type; // cannot be a MethodType object
-		MethodType* m_method;
+		DistributedType* m_type; // cannot be a Method object
+		Method* m_method;
 
 		bool m_has_default_value; // is true if an explicity default has been set
 		std::string m_default_value; // the binary data of the default value encoded in a string

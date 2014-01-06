@@ -14,19 +14,19 @@ class File;
 class Class;
 class Field;
 
-// A StructType provides type composition by combining multiple Fields each with their own type.
+// A Struct provides type composition by combining multiple Fields each with their own type.
 //     Structs may have both anonymous and named Fields.
-class StructType : public DistributedType
+class Struct : public DistributedType
 {
 	public:
-		StructType(File* file, const std::string &name);
-		virtual ~StructType();
+		Struct(File* file, const std::string &name);
+		virtual ~Struct();
 
-		// as_struct returns this as a StructType if it is a StructType, or NULL otherwise.
-		virtual StructType* as_struct();
-		virtual const StructType* as_struct() const;
+		// as_struct returns this as a Struct if it is a Struct, or NULL otherwise.
+		virtual Struct* as_struct();
+		virtual const Struct* as_struct() const;
 
-		// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
+		// as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
 		virtual Class* as_class();
 		virtual const Class* as_class() const;
 
@@ -59,7 +59,7 @@ class StructType : public DistributedType
 		virtual void generate_hash(HashGenerator &hashgen) const;
 
 	protected:
-		StructType(File* file);
+		Struct(File* file);
 
 		// set_id sets the index number associated with this struct.
 		void set_id(unsigned int id);
@@ -76,4 +76,4 @@ class StructType : public DistributedType
 
 
 } // close namespace dclass
-#include "StructType.ipp"
+#include "Struct.ipp"

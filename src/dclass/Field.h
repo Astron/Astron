@@ -17,7 +17,7 @@ namespace dclass   // open namespace
 class DistributedType;
 class File;
 class Class;
-class StructType;
+class Struct;
 class MolecularField;
 class HashGenerator;
 
@@ -25,7 +25,7 @@ class HashGenerator;
 class Field : public KeywordList
 {
 	public:
-		Field(StructType* strct, const std::string &name = "");
+		Field(Struct* strct, const std::string &name = "");
 
 		// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
 		virtual MolecularField* as_molecular();
@@ -38,9 +38,9 @@ class Field : public KeywordList
 		// get_type returns the DistributedType of the field.
 		inline DistributedType* get_type();
 		inline const DistributedType* get_type() const;
-		// get_struct returns the StructType that contains this field.
-		inline StructType* get_struct();
-		inline const StructType* get_struct() const;
+		// get_struct returns the Struct that contains this field.
+		inline Struct* get_struct();
+		inline const Struct* get_struct() const;
 
 		// has_default_value returns true if a default value was defined for this field.
 		inline bool has_default_value() const;
@@ -68,14 +68,14 @@ class Field : public KeywordList
 		friend class File;
 
 		// set_struct sets a pointer to the struct containing the field.
-		void set_struct(StructType* strct);
-		friend class StructType;
+		void set_struct(Struct* strct);
+		friend class Struct;
 		friend class Class;
 
 		unsigned int m_id;
 		std::string m_name;
 		DistributedType* m_type;
-		StructType* m_struct;
+		Struct* m_struct;
 
 		bool m_has_default_value; // is true if an explicity default has been set
 		std::string m_default_value; // the binary data of the default value encoded in a string

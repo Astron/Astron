@@ -1,6 +1,6 @@
 // Filename: Class.h
 #pragma once
-#include "StructType.h"
+#include "Struct.h"
 #include <unordered_map> // std::unordered_map
 namespace dclass   // open namespace
 {
@@ -10,13 +10,13 @@ namespace dclass   // open namespace
 //     Classes can inherit from other classes (ie. have super-/sub-classes).
 //     Classes can have methods including a special constructor method.
 //     Unlike other structs, classes cannot have anonymous fields.
-class Class : public StructType
+class Class : public Struct
 {
 	public:
 		Class(File *dc_file, const std::string &name);
 		virtual ~Class();
 
-		// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
+		// as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
 		virtual Class* as_class();
 		virtual const Class* as_class() const;
 

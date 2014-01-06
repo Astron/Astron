@@ -1,4 +1,4 @@
-#include "StructType.h"
+#include "Struct.h"
 #include "HashGenerator.h"
 #include "File.h"
 #include "Field.h"
@@ -7,19 +7,19 @@ namespace dclass   // open namespace dclass
 {
 
 // public constructor
-StructType::StructType(File* file, const string& name) : m_file(file), m_name(name), m_id(0)
+Struct::Struct(File* file, const string& name) : m_file(file), m_name(name), m_id(0)
 {
 	m_type = STRUCT;
 }
 
 // protected constructor
-StructType::StructType(File* file) : m_file(file), m_id(0)
+Struct::Struct(File* file) : m_file(file), m_id(0)
 {
 	m_type = STRUCT;
 }
 
 // destructor
-StructType::~StructType()
+Struct::~Struct()
 {
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
@@ -27,28 +27,28 @@ StructType::~StructType()
 	}
 }
 
-// as_struct returns this as a StructType if it is a StructType, or NULL otherwise.
-StructType* StructType::as_struct()
+// as_struct returns this as a Struct if it is a Struct, or NULL otherwise.
+Struct* Struct::as_struct()
 {
 	return this;
 }
-const StructType* StructType::as_struct() const
+const Struct* Struct::as_struct() const
 {
 	return this;
 }
 
-// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
-Class* StructType::as_class()
+// as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
+Class* Struct::as_class()
 {
 	return (Class*)NULL;
 }
-const Class* StructType::as_class() const
+const Class* Struct::as_class() const
 {
 	return (const Class*)NULL;
 }
 
 // add_field adds a new Field to the struct.
-bool StructType::add_field(Field* field)
+bool Struct::add_field(Field* field)
 {
 	// Structs can't share a field
 	if(field->get_struct() != NULL && field->get_struct() != this)
@@ -108,7 +108,7 @@ bool StructType::add_field(Field* field)
 }
 
 // generate_hash accumulates the properties of this class into the hash.
-void StructType::generate_hash(HashGenerator& hashgen) const
+void Struct::generate_hash(HashGenerator& hashgen) const
 {
 	DistributedType::generate_hash(hashgen);
 	hashgen.add_string(m_name);

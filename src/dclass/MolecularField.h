@@ -1,14 +1,14 @@
 // Filename: MolecularField.h
 #pragma once
 #include "Field.h"
-#include "StructType.h"
+#include "Struct.h"
 namespace dclass   // open namespace dclass
 {
 
 
 // A MolecularField is an abstract field which provides an interface that can
 //     be used to access multiple other fields at the same time.
-class MolecularField : public Field, public StructType
+class MolecularField : public Field, public Struct
 {
 	public:
 		MolecularField(Class* cls, const std::string &name);

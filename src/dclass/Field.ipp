@@ -33,12 +33,12 @@ inline const DistributedType* Field::get_type() const
 	return m_type;
 }
 
-// get_struct returns the StructType that contains this field.
-inline StructType* Field::get_struct()
+// get_struct returns the Struct that contains this field.
+inline Struct* Field::get_struct()
 {
 	return m_struct;
 }
-inline const StructType* Field::get_struct() const
+inline const Struct* Field::get_struct() const
 {
 	return m_struct;
 }

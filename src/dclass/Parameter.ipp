@@ -19,12 +19,12 @@ inline const DistributedType* Parameter::get_type() const
 	return m_type;
 }
 
-// get_method returns the MethodType that contains the Parameter.
-inline MethodType* Parameter::get_method()
+// get_method returns the Method that contains the Parameter.
+inline Method* Parameter::get_method()
 {
 	return m_method;
 }
-inline const MethodType* Parameter::get_method() const
+inline const Method* Parameter::get_method() const
 {
 	return m_method;
 }

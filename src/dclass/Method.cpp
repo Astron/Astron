@@ -1,5 +1,5 @@
-// Filename: MethodType.cpp
-#include "MethodType.h"
+// Filename: Method.cpp
+#include "Method.h"
 #include "HashGenerator.h"
 #include "Parameter.h"
 using namespace std;
@@ -8,13 +8,13 @@ namespace dclass   // open namespace
 
 
 // constructor
-MethodType::MethodType()
+Method::Method()
 {
 	m_type = METHOD;
 }
 
 // destructor
-MethodType::~MethodType()
+Method::~Method()
 {
 	for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it)
 	{
@@ -23,18 +23,18 @@ MethodType::~MethodType()
 	m_parameters.clear();
 }
 
-// as_method returns this as a MethodType if it is a method, or NULL otherwise.
-MethodType* MethodType::as_method()
+// as_method returns this as a Method if it is a method, or NULL otherwise.
+Method* Method::as_method()
 {
 	return this;
 }
-const MethodType* MethodType::as_method() const
+const Method* Method::as_method() const
 {
 	return this;
 }
 
 // add_parameter adds a new parameter to the method.
-bool MethodType::add_parameter(Parameter *param)
+bool Method::add_parameter(Parameter *param)
 {
 	// Try to add the parameter
 	bool inserted = m_parameters_by_name.insert(
@@ -64,7 +64,7 @@ bool MethodType::add_parameter(Parameter *param)
 }
 
 // generate_hash accumulates the properties of this method into the hash
-void MethodType::generate_hash(HashGenerator& hashgen) const
+void Method::generate_hash(HashGenerator& hashgen) const
 {
 	DistributedType::generate_hash(hashgen);
 	hashgen.add_int(m_parameters.size());

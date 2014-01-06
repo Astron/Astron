@@ -9,7 +9,7 @@ namespace dclass   // open namespace
 
 
 // constructor
-Class::Class(File* file, const string &name) : StructType(file, name), m_constructor(NULL)
+Class::Class(File* file, const string &name) : Struct(file, name), m_constructor(NULL)
 {
 }
 
@@ -22,7 +22,7 @@ Class::~Class()
 	}
 }
 
-// as_class returns this StructType as a Class if it is a Class, or NULL otherwise.
+// as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
 Class* Class::as_class()
 {
 	return this;
@@ -161,7 +161,7 @@ void Class::add_inherited_field(Class* parent, Field* field)
 	auto prev_field = m_fields_by_name.find(field->get_name());
 	if(prev_field != m_fields_by_name.end())
 	{
-		StructType* parentB = prev_field->second->get_struct();
+		Struct* parentB = prev_field->second->get_struct();
 		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
 		{
 			if((*it) == parentB)
