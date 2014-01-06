@@ -2,8 +2,10 @@
 #pragma once
 #include "DistributedType.h"
 #include "NumericRange.h"
+#include <string.h> // size_t
 namespace dclass   // open namespace
 {
+
 
 
 // An ArrayType represents an array of some other kind of object, meaning

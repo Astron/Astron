@@ -73,8 +73,8 @@ void ArrayType::generate_hash(HashGenerator& hashgen) const
 	m_element_type->generate_hash(hashgen);
 	if(has_range())
 	{
-		hashgen.add_int(m_range.min.integer);
-		hashgen.add_int(m_range.max.integer);
+		hashgen.add_int(m_array_range.min.integer);
+		hashgen.add_int(m_array_range.max.integer);
 	}
 	else
 	{

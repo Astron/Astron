@@ -16,7 +16,7 @@ namespace dclass   // open namespace
 {
 
 // constructor
-Field::Field(Struct* strct, const std::string &name) :
+Field::Field(StructType* strct, const std::string &name) :
 	m_struct(strct), m_id(0), m_name(name), m_type(NULL), m_has_default_value(false)
 {
 }

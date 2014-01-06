@@ -4,7 +4,7 @@ namespace dclass   // open namespace
 
 
 // get_divisor returns the divisor of the numeric, with a default value of one.
-inline unsigned int SimpleParameter::get_divisor() const
+inline unsigned int NumericType::get_divisor() const
 {
 	return m_divisor;
 }

@@ -1,13 +1,15 @@
 // Filename: Class.cpp
 #include "Class.h"
 #include "HashGenerator.h"
+#include "File.h"
+#include "Field.h"
 using namespace std;
 namespace dclass   // open namespace
 {
 
 
 // constructor
-Class::Class(File* file, const string &name) : Struct(file, name), m_constructor(NULL)
+Class::Class(File* file, const string &name) : StructType(file, name), m_constructor(NULL)
 {
 }
 
@@ -34,7 +36,7 @@ const Class* Class::as_class() const
 //     Note: This is normally called only during parsing.
 void Class::add_parent(Class *parent)
 {
-	parent.add_child(this);
+	parent->add_child(this);
 	m_parents.push_back(parent);
 
 	// We know there will be this many fields, so allocate ahead of time
@@ -54,7 +56,7 @@ void Class::add_parent(Class *parent)
 bool Class::add_field(Field *field)
 {
 	// Classes can't share fields.
-	if(field->get_class() != NULL && field->get_class() != this)
+	if(field->get_struct() != NULL && field->get_struct() != this)
 	{
 		return false;
 	}
@@ -75,7 +77,7 @@ bool Class::add_field(Field *field)
 		}
 
 		// The constructor must be an atomic field.
-		if(field->as_atomic_field() == (AtomicField*)NULL)
+		if(field->as_molecular())
 		{
 			return false;
 		}
@@ -88,7 +90,7 @@ bool Class::add_field(Field *field)
 			return false;
 		}
 
-		field->set_class(this);
+		field->set_struct(this);
 		m_constructor = field;
 
 		m_file->add_field(field);
@@ -108,14 +110,14 @@ bool Class::add_field(Field *field)
 	m_base_fields.push_back(field);
 
 	// If a parent has a field with the same name, shadow it
-	auto prev_field = m_fields_by_name.find(field);
+	auto prev_field = m_fields_by_name.find(field->get_name());
 	if(prev_field != m_fields_by_name.end())
 	{
-		shadow_field(*prev_field);
+		shadow_field(prev_field->second);
 	}
 
 	// Add the field to our full field list
-	field->set_class(this);
+	field->set_struct(this);
 	m_fields.push_back(field); // Don't have to try to sort; id is always last
 
 	// Add the field to the lookups
@@ -124,7 +126,8 @@ bool Class::add_field(Field *field)
 	m_fields_by_name[field->get_name()] = field;
 
 	// Update our size
-	if(has_fixed_size() || m_fields.size() == 1)
+	if(field->as_molecular() == (MolecularField*)NULL
+	&& (has_fixed_size() || m_fields.size() == 1))
 	{
 		if(field->get_type()->has_fixed_size())
 		{
@@ -155,10 +158,10 @@ void Class::add_inherited_field(Class* parent, Field* field)
 	}
 
 	// If another superclass provides a field with that name, the first parent takes precedence
-	auto prev_field = m_fields_by_name.find(field);
+	auto prev_field = m_fields_by_name.find(field->get_name());
 	if(prev_field != m_fields_by_name.end())
 	{
-		StructType* parentB = (*prev_field)->get_struct();
+		StructType* parentB = prev_field->second->get_struct();
 		for(auto it = m_parents.begin(); it != m_parents.end(); ++it)
 		{
 			if((*it) == parentB)
@@ -169,7 +172,7 @@ void Class::add_inherited_field(Class* parent, Field* field)
 			else if((*it) == parent)
 			{
 				// This parent was added before the later parent, so shadow its field
-				shadow_field(*prev_field);
+				shadow_field(prev_field->second);
 			}
 		}
 	}
@@ -180,7 +183,7 @@ void Class::add_inherited_field(Class* parent, Field* field)
 
 	// Add the field to the list of fields, sorted by id
 	// Note: Iterate in reverse because fields added later are more likely to be at the end
-	for(auto it = m_fields.rbegin(); it != m_fields.r_end(); ++it)
+	for(auto it = m_fields.rbegin(); it != m_fields.rend(); ++it)
 	{
 		if((*it)->get_id() < field->get_id())
 		{
@@ -232,7 +235,7 @@ void Class::shadow_field(Field* field)
 	for(auto it = m_children.begin(); it != m_children.end(); ++it)
 	{
 		Class* child = (*it);
-		if(child.get_field_by_id(field->get_id()) == field)
+		if(child->get_field_by_id(field->get_id()) == field)
 		{
 			child->shadow_field(field);
 		}

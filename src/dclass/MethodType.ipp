@@ -1,0 +1,42 @@
+// Filename: MethodType.ipp
+namespace dclass   // open namespace
+{
+
+
+// get_num_parameters returns the number of parameters/arguments of the method.
+inline size_t MethodType::get_num_parameters() const
+{
+	return m_parameters.size();
+}
+// get_element returns the <n>th parameter of the method.
+inline Parameter* MethodType::get_parameter(unsigned int n)
+{
+	return m_parameters.at(n);
+}
+inline const Parameter* MethodType::get_parameter(unsigned int n) const\
+{
+	return m_parameters.at(n);
+}
+
+// get_parameter_by_name returns the parameter with <name>, or NULL if no such param exists.
+inline Parameter* MethodType::get_parameter_by_name(const std::string& name)
+{
+	auto it = m_parameters_by_name.find(name);
+	if(it == m_parameters_by_name.end())
+	{
+		return (Parameter*)NULL;
+	}
+	return it->second;
+}
+inline const Parameter* MethodType::get_parameter_by_name(const std::string& name) const
+{
+	auto it = m_parameters_by_name.find(name);
+	if(it == m_parameters_by_name.end())
+	{
+		return (Parameter*)NULL;
+	}
+	return it->second;
+}
+
+
+} // close namespace dclass

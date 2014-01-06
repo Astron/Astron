@@ -1,6 +1,7 @@
 // Filename: Class.h
 #pragma once
 #include "StructType.h"
+#include <unordered_map> // std::unordered_map
 namespace dclass   // open namespace
 {
 
@@ -38,6 +39,12 @@ class Class : public StructType
 		inline Field* get_constructor();
 		inline const Field* get_constructor() const;
 
+		// get_num_base_fields returns the number of fields declared directly in this class.
+		inline size_t get_num_base_fields() const;
+		// get_base_field returns the <n>th field from the class excluding any inherited fields.
+		inline Field* get_base_field(unsigned int n);
+		inline const Field* get_base_field(unsigned int n) const;
+
 		// get_num_fields returns the number of fields in the Class, including inherited fields.
 		virtual size_t get_num_fields() const;
 		// get_field returns the <n>th field of the struct (with inherited) or NULL if out-of-range.
@@ -64,7 +71,7 @@ class Class : public StructType
 
 		Field* m_constructor;
 		std::vector<Field*> m_base_fields;
-		std::unorered_map<std::string, Field*> m_base_fields_by_name;
+		std::unordered_map<std::string, Field*> m_base_fields_by_name;
 
 		std::vector<Class*> m_parents;
 		std::vector<Class*> m_children;

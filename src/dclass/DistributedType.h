@@ -1,5 +1,6 @@
 // Filename: DistributedType.h
 #pragma once
+#include <stdint.h>
 namespace dclass   // open namespace dclass
 {
 
@@ -11,11 +12,39 @@ namespace dclass   // open namespace dclass
 #endif
 
 // Forward declaration
-class ArrayType
+class ArrayType;
 class MethodType;
 class NumericType;
 class StructType;
 class HashGenerator;
+
+
+// The Type enum are numeric constants representing the layout of the DistributedType
+enum Type
+{
+    /* Numeric Types */
+    CHAR,           // equivalent to uint8, except that it should be printed as a string
+    INT8, INT16, INT32, INT64,
+    UINT8, UINT16, UINT32, UINT64,
+    FLOAT32, FLOAT64,
+
+    /* Array Types */
+    STRING,      // a human-printable string with fixed length
+    VARSTRING,   // a human-printable string with variable length
+    BLOB,        // any binary data stored as a string, fixed length
+    VARBLOB,     // any binary data stored as a varstring, variable length
+    ARRAY,       // any array with fixed byte-length (fixed array-size and element-length)
+    VARARRAY,    // any array with variable array-size or variable length elements
+
+    /* Complex Types */
+    STRUCT,
+    METHOD,
+
+    // New additions should be added at the end to prevent the file hash from changing.
+
+    INVALID
+};
+
 
 // A DistributedType is a shared type with a defined layout of data.
 class DistributedType
@@ -25,32 +54,6 @@ class DistributedType
         virtual ~DistributedType();
 
     public:
-        // The Type enum are numeric constants representing the layout of the DistributedType
-        enum Type
-        {
-            /* Numeric Types */
-            CHAR,           // equivalent to uint8, except that it should be printed as a string
-            INT8, INT16, INT32, INT64,
-            UINT8, UINT16, UINT32, UINT64,
-            FLOAT32, FLOAT64
-
-            /* Array Types */
-            STRING,      // a human-printable string with fixed length
-            VARSTRING,   // a human-printable string with variable length
-            BLOB,        // any binary data stored as a string, fixed length
-            VARBLOB,     // any binary data stored as a varstring, variable length
-            ARRAY,       // any array with fixed byte-length (fixed array-size and element-length)
-            VARARRAY,    // any array with variable array-size or variable length elements
-
-            /* Complex Types */
-            STRUCT,
-            METHOD,
-
-            // New additions should be added at the end to prevent the file hash from changing.
-
-            INAVLID
-        };
-
         // get_type returns the type's fundamental type as an integer constant.
         inline Type get_type() const;
 
@@ -85,3 +88,4 @@ class DistributedType
 
 
 } // close namespace dclass
+#include "DistributedType.ipp"

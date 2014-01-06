@@ -24,11 +24,11 @@ inline size_t File::get_num_structs() const
 	return m_structs.size();
 }
 // get_struct returns the <n>th struct in the file.
-inline Struct* File::get_struct(unsigned int n)
+inline StructType* File::get_struct(unsigned int n)
 {
 	return m_structs.at(n);
 }
-inline const Struct* File::get_struct(unsigned int n) const
+inline const StructType* File::get_struct(unsigned int n) const
 {
 	return m_structs.at(n);
 }
@@ -41,7 +41,7 @@ inline DistributedType* File::get_type_by_id(unsigned int id)
 		return m_types_by_id[id];
 	}
 
-	return (DistributedType*)NULL:
+	return (DistributedType*)NULL;
 }
 inline const DistributedType* File::get_type_by_id(unsigned int id) const
 {
@@ -50,7 +50,7 @@ inline const DistributedType* File::get_type_by_id(unsigned int id) const
 		return m_types_by_id[id];
 	}
 
-	return (const DistributedType*)NULL:
+	return (const DistributedType*)NULL;
 }
 // get_type_by_name returns the requested type or NULL if there is no such type.
 inline DistributedType* File::get_type_by_name(const std::string &name)
@@ -127,7 +127,7 @@ inline size_t File::get_num_keywords() const
 	return m_keywords.size();
 }
 // get_keyword returns the <n>th keyword declared in the file.
-inline const std::string& *File::get_keyword(unsigned int n) const
+inline const std::string& File::get_keyword(unsigned int n) const
 {
 	return m_keywords.at(n);
 }

@@ -1,9 +1,7 @@
 // Filename: MolecularField.cpp
 #include "MolecularField.h"
-#include "AtomicField.h"
 #include "HashGenerator.h"
-#include "indent.h"
-#include <assert.h>
+#include "Class.h"
 namespace dclass   // open namespace dclass
 {
 
@@ -16,11 +14,11 @@ MolecularField::MolecularField(Class* cls, const std::string &name) :
 }
 
 // as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
-virtual MolecularField* as_molecular()
+MolecularField* MolecularField::as_molecular()
 {
 	return this;
 }
-virtual const MolecularField* as_molecular() const
+const MolecularField* MolecularField::as_molecular() const
 {
 	return this;
 }
@@ -35,10 +33,19 @@ bool MolecularField::add_field(Field* field)
 		return false;
 	}
 
+	// Copy our keywords from the first add field
 	if(m_fields.size() == 0)
 	{
 		copy_keywords(*field);
 	}
+
+	// Each field has to have the same set of keywords
+	else if(!has_matching_keywords(*field))
+	{
+		return false;
+	}
+
+	// Add the field
 	m_fields.push_back(field);
 
 	// See if we still have a fixed byte size.
@@ -46,7 +53,7 @@ bool MolecularField::add_field(Field* field)
 	{
 		if(field->get_type()->has_fixed_size())
 		{
-			m_size += field->get_size();
+			m_size += field->get_type()->get_size();
 		}
 		else
 		{
@@ -67,7 +74,7 @@ bool MolecularField::add_field(Field* field)
 	}
 }
 
-virtual bool set_default_value(const std::string& default_value)
+bool MolecularField::set_default_value(const std::string& default_value)
 {
 	// MolecularField default values are implict from their
 	// atomic components and cannot be defined manually.
@@ -79,13 +86,11 @@ void MolecularField::generate_hash(HashGenerator& hashgen) const
 {
 	hashgen.add_int(Field::m_id);
 	hashgen.add_string(Field::m_name);
-	hashgen.add_
-
 	// We aren't the owner of the fields so we only use their id in the hash
 	hashgen.add_int(m_fields.size());
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
-		hashgen.add_int(field->get_id())
+		hashgen.add_int((*it)->get_id());
 	}
 }
 

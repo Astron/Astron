@@ -42,11 +42,11 @@ NumericType::NumericType(Type type) :
 }
 
 // as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
-NumericType* as_numeric()
+NumericType* NumericType::as_numeric()
 {
 	return this;
 }
-const NumericType* as_numeric() const
+const NumericType* NumericType::as_numeric() const
 {
 	return this;
 }
@@ -83,11 +83,11 @@ bool NumericType::set_modulus(double modulus)
 		return false;
 	}
 
-	double float_modulus = modulus * m_divisor
+	double float_modulus = modulus * m_divisor;
 	uint64_t uint_modulus = floor(modulus * m_divisor + 0.5);
 
 	// Check the range.  A valid range for the modulus is 1 to (maximum_value + 1) after scaling.
-	switch(m_datatype)
+	switch(m_type)
 	{
 		case CHAR:
 		case UINT8:
@@ -133,14 +133,14 @@ bool NumericType::set_modulus(double modulus)
 			m_modulus = uint_modulus;
 			break;
 		case INT32:
-			if(uint_modulus < 1 || INT32_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || INT32_MAX+1l < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
 		case INT64:
-			if(uint_modulus < 1 || INT64_MAX+1 < uint_modulus)
+			if(uint_modulus < 1)
 			{
 				return false;
 			}
@@ -163,13 +163,13 @@ bool NumericType::set_modulus(double modulus)
 bool NumericType::set_range(const NumericRange &range)
 {
 	// TODO: Accept integer ranges
-	if(NumericRange.type != Number::FLOAT)
+	if(range.type != Number::FLOAT)
 	{
 		return false;
 	}
 
 	m_orig_range = range;
-	switch(m_datatype)
+	switch(m_type)
 	{
 		case INT8:
 		case INT16:
@@ -215,7 +215,6 @@ bool NumericType::set_range(const NumericRange &range)
 void NumericType::generate_hash(HashGenerator &hashgen) const
 {
 	DistributedType::generate_hash(hashgen);
-	hashgen.add_int(m_datatype);
 	hashgen.add_int(m_divisor);
 	if(has_modulus())
 	{

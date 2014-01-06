@@ -56,9 +56,9 @@ void Parameter::set_method(MethodType* method)
 }
 
 // generate_hash accumulates the properties of this type into the hash.
-void Parameter::generate_hash(HashGenerator &hashgen) const
+void Parameter::generate_hash(HashGenerator& hashgen) const
 {
-	hashgen.add_int(m_name);
+	hashgen.add_string(m_name);
 	hashgen.add_string(m_default_value);
 	if(has_type_alias())
 	{

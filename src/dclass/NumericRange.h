@@ -48,9 +48,9 @@ struct NumericRange
 	Number min;
 	Number max;
 
-	inline NumericRange() : type(NONE)
+	inline NumericRange() : type(Number::NONE)
 	{
-		min.type = max.type = NONE;
+		min.type = max.type = Number::NONE;
 		min.floating = -INFINITY;
 		max.floating =  INFINITY;
 	}

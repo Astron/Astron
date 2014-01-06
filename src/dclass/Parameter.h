@@ -1,5 +1,6 @@
 // Filename: Parameter.h
 #pragma once
+#include <string> // std::string
 namespace dclass   // open namespace dclass
 {
 
@@ -31,7 +32,7 @@ class Parameter
 		inline const std::string& get_default_value() const;
 
 		// has_type_alias returns true if this parameter was defined with an alias of a type.
-		inline bool has_type_alias();
+		inline bool has_type_alias() const;
 		// get_type_alias returns the type name used to define the parameter, or the empty string.
 		inline const std::string& get_type_alias() const;
 
@@ -53,10 +54,10 @@ class Parameter
 	private:
 		// set_method sets a pointer to the method containing the parameter.
 		void set_method(MethodType* method);
-		friend bool Method::add_parameter(Parameter* param);
+		friend class MethodType;
 
-		std::string name;
-		std::string type_alias;
+		std::string m_name;
+		std::string m_type_alias;
 		DistributedType* m_type; // cannot be a MethodType object
 		MethodType* m_method;
 
@@ -66,3 +67,4 @@ class Parameter
 
 
 } // close namespace dclass
+#include "Parameter.ipp"

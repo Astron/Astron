@@ -4,7 +4,7 @@ namespace dclass   // open namespace
 
 
 // get_id returns a unique index number associated with this struct.
-inline unsigned int Struct::get_id() const
+inline unsigned int StructType::get_id() const
 {
 	return m_id;
 }
@@ -43,7 +43,7 @@ inline const Field* StructType::get_field(unsigned int n) const
 }
 
 // get_field_by_id returns the field with the index <id>, or NULL if no such field exists.
-inline Field* Struct::get_field_by_id(unsigned int id)
+inline Field* StructType::get_field_by_id(unsigned int id)
 {
 	auto it = m_fields_by_id.find(id);
 	if(it == m_fields_by_id.end())
@@ -52,7 +52,7 @@ inline Field* Struct::get_field_by_id(unsigned int id)
 	}
 	return it->second;
 }
-inline const Field* Struct::get_field_by_id(unsigned int id) const
+inline const Field* StructType::get_field_by_id(unsigned int id) const
 {
 	auto it = m_fields_by_id.find(id);
 	if(it == m_fields_by_id.end())
@@ -83,7 +83,7 @@ inline const Field* StructType::get_field_by_name(const std::string& name) const
 }
 
 // set_id sets the index number associated with this struct.
-inline void Struct::set_id(unsigned int id)
+inline void StructType::set_id(unsigned int id)
 {
 	m_id = id;
 }

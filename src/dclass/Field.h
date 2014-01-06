@@ -15,6 +15,8 @@ namespace dclass   // open namespace
 
 // Foward declarations
 class DistributedType;
+class File;
+class Class;
 class StructType;
 class MolecularField;
 class HashGenerator;
@@ -60,14 +62,15 @@ class Field : public KeywordList
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator& hashgen) const;
 
-	private:
+	protected:
 		// set_id sets the unique index number associated with the field.
 		void set_id(unsigned int id);
-		friend bool File::add_field(Field* field);
+		friend class File;
 
 		// set_struct sets a pointer to the struct containing the field.
 		void set_struct(StructType* strct);
-		friend bool StructType::add_field(Field* field);
+		friend class StructType;
+		friend class Class;
 
 		unsigned int m_id;
 		std::string m_name;

@@ -45,7 +45,7 @@ inline const std::string& Parameter::get_default_value() const
 
 
 // has_type_alias returns true if this parameter was defined with an alias of a type.
-inline bool Parameter::has_type_alias()
+inline bool Parameter::has_type_alias() const
 {
 	return (m_type_alias.length() > 0);
 }

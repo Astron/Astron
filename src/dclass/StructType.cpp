@@ -1,5 +1,7 @@
 #include "StructType.h"
 #include "HashGenerator.h"
+#include "File.h"
+#include "Field.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

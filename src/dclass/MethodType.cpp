@@ -1,6 +1,8 @@
 // Filename: MethodType.cpp
 #include "MethodType.h"
 #include "HashGenerator.h"
+#include "Parameter.h"
+using namespace std;
 namespace dclass   // open namespace
 {
 
@@ -31,25 +33,23 @@ const MethodType* MethodType::as_method() const
 	return this;
 }
 
-// get_num_parameters returns the number of parameters/arguments of the method.
-inline size_t MethodType::get_num_parameters() const
-{
-	return m_parameters.size();
-}
-// get_element returns the <n>th parameter of the method.
-inline Parameter* MethodType::get_parameter(unsigned int n)
-{
-	return m_parameters.at(n);
-}
-inline const Parameter* MethodType::get_parameter(unsigned int n) const\
-{
-	return m_parameters.at(n);
-}
-
 // add_parameter adds a new parameter to the method.
-void MethodType::add_parameter(Parameter *param)
+bool MethodType::add_parameter(Parameter *param)
 {
+	// Try to add the parameter
+	bool inserted = m_parameters_by_name.insert(
+		unordered_map<string, Parameter*>::value_type(param->get_name(), param)).second;
+	if(!inserted)
+	{
+		// But the parameter had a name conflict
+		return false;
+	}
+
+	// Add the parameter to the main list
+	param->set_method(this);
 	m_parameters.push_back(param);
+
+	// Update our size
 	if(has_fixed_size() || m_parameters.size() == 1)
 	{
 		if(param->get_type()->has_fixed_size())
@@ -67,7 +67,7 @@ void MethodType::add_parameter(Parameter *param)
 void MethodType::generate_hash(HashGenerator& hashgen) const
 {
 	DistributedType::generate_hash(hashgen);
-	hashgen.add_int(m_.size());
+	hashgen.add_int(m_parameters.size());
 	for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it)
 	{
 		(*it)->generate_hash(hashgen);

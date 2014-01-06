@@ -1,7 +1,7 @@
 // Filename: MolecularField.h
 #pragma once
 #include "Field.h"
-#include "StrucType.h"
+#include "StructType.h"
 namespace dclass   // open namespace dclass
 {
 
@@ -21,15 +21,21 @@ class MolecularField : public Field, public StructType
 		using Field::get_id;
 		using Field::get_name;
 		using Field::get_type;
-		using Field::set_id;
 		using Field::set_name;
 
 		// add_field adds a new Field as part of the Molecular.
 		//     Returns false if the field could not be added.
 		virtual bool add_field(Field *field);
 
+		// set_default_value defines a default value for this field.
+		//     For a molecular field, this always returns false (molecular defaults are implict).
+		virtual bool set_default_value(const std::string& default_value);
+
 		// generate_hash accumulates the properties of this field into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;
+
+	protected:
+		using Field::set_id;
 };
 
 

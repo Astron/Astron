@@ -17,8 +17,9 @@ namespace dclass   // open namespace
 
 
 // Forward declarations
+class DistributedType;
 class Class;
-class Struct;
+class StructType;
 class Field;
 class HashGenerator;
 
@@ -31,7 +32,7 @@ struct Import
 };
 
 // A File represents the complete list of Distributed Class descriptions as read from a .dc file.
-class File : public Hashable
+class File
 {
 
 	public:
@@ -47,8 +48,8 @@ class File : public Hashable
 		// get_num_structs returns the number of structs in the file.
 		inline size_t get_num_structs() const;
 		// get_struct returns the <n>th struct in the file.
-		inline Struct* get_struct(unsigned int n);
-		inline const Struct* get_struct(unsigned int n) const;
+		inline StructType* get_struct(unsigned int n);
+		inline const StructType* get_struct(unsigned int n) const;
 
 		// get_type_by_id returns the requested type or NULL if there is no such type.
 		inline DistributedType* get_type_by_id(unsigned int id);
@@ -72,7 +73,7 @@ class File : public Hashable
 		// get_num_keywords returns the number of keywords declared in the file.
 		inline size_t get_num_keywords() const;
 		// get_keyword returns the <n>th keyword declared in the file.
-		inline const std::string& *get_keyword(unsigned int n) const;
+		inline const std::string& get_keyword(unsigned int n) const;
 
 		// add_class adds the newly-allocated class to the file.
 		//     Returns false if there is a name conflict.
@@ -80,7 +81,7 @@ class File : public Hashable
 
 		// add_struct adds the newly-allocated struct definition to the file.
 		//     Returns false if there is a name conflict.
-		bool add_struct(Struct *dstruct);
+		bool add_struct(StructType *dstruct);
 
 		// add_typedef adds the alias <name> to the file for the type <type>.
 		//     Returns false if there is a name conflict.
@@ -93,9 +94,6 @@ class File : public Hashable
 		// add_keyword adds a keyword with the name <keyword> to the list of declared keywords.
 		void add_keyword(const std::string &keyword);
 
-		// update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
-		void update_inheritance(Class* dclass);
-
 		// get_hash returns a 32-bit hash representing the file.
 		inline uint32_t get_hash() const;
 
@@ -105,10 +103,10 @@ class File : public Hashable
 	private:
 		// add_field gives the field a unique id within the file.
 		void add_field(Field *field);
-		friend bool Class::add_field(Field* field);
-		friend bool Struct::add_field(Field* field);
+		friend class Class;
+		friend class StructType;
 
-		std::vector<Struct*> m_structs;
+		std::vector<StructType*> m_structs;
 		std::vector<Class*> m_classes;
 		std::vector<Import*> m_imports; // list of python imports in the file
 		std::vector<std::string> m_keywords;
@@ -120,3 +118,4 @@ class File : public Hashable
 
 
 } // close namespace dclass
+#include "File.ipp"

@@ -11,10 +11,12 @@ namespace dclass   // open namespace
 // Foward declarations
 class HashGenerator;
 class File;
+class Class;
+class Field;
 
 // A StructType provides type composition by combining multiple Fields each with their own type.
 //     Structs may have both anonymous and named Fields.
-class Struct : public DistributedType
+class StructType : public DistributedType
 {
 	public:
 		StructType(File* file, const std::string &name);
@@ -61,8 +63,7 @@ class Struct : public DistributedType
 
 		// set_id sets the index number associated with this struct.
 		void set_id(unsigned int id);
-		friend bool File::add_struct(StructType* strct);
-		friend bool File::add_class(Class* cls);
+		friend class File;
 
 		File *m_file;
 		unsigned int m_id;

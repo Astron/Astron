@@ -9,7 +9,8 @@
 //
 
 #pragma once
-#include <vector>
+#include <string> // std::string
+#include <vector> // std::vector
 namespace dclass   // open namespace dclass
 {
 

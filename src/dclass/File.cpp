@@ -10,7 +10,7 @@
 
 #include "File.h"
 #include "Class.h"
-#include "Struct.h"
+#include "StructType.h"
 #include "Field.h"
 #include "DistributedType.h"
 #include "HashGenerator.h"
@@ -32,7 +32,7 @@ File::~File()
 	{
 		delete(*it);
 	}
-	for(auto it = m_structs.begin(); it != m_classes.end(); ++it)
+	for(auto it = m_structs.begin(); it != m_structs.end(); ++it)
 	{
 		delete(*it);
 	}
@@ -62,7 +62,7 @@ bool File::add_class(Class *cls)
 	}
 
 	// A Class can't share a name with any other type.
-	bool inserted = m_types_by_name.insert(TypeName(cls->get_name(), cls).second;
+	bool inserted = m_types_by_name.insert(TypeName(cls->get_name(), cls)).second;
 	if(!inserted)
 	{
 		return false;
@@ -77,7 +77,7 @@ bool File::add_class(Class *cls)
 // add_struct adds the newly-allocated struct to the file.
 //     Returns false if there is a name conflict.
 //     The File becomes the owner of the pointer and will delete it when it destructs.
-bool File::add_struct(Struct *srct)
+bool File::add_struct(StructType *strct)
 {
 	// Structs have to have a name
 	if(strct->get_name().empty())
@@ -86,7 +86,7 @@ bool File::add_struct(Struct *srct)
 	}
 
 	// A Struct can't share a name with any other type.
-	bool inserted = m_types_by_name.insert(TypeName(strct->get_name(), strct).second;
+	bool inserted = m_types_by_name.insert(TypeName(strct->get_name(), strct)).second;
 	if(!inserted)
 	{
 		return false;
@@ -94,7 +94,7 @@ bool File::add_struct(Struct *srct)
 
 	strct->set_id(m_types_by_id.size());
 	m_types_by_id.push_back(strct);
-	m_classes.push_back(strct);
+	m_structs.push_back(strct);
 	return true;
 }
 
@@ -136,41 +136,7 @@ void File::add_field(Field *field)
 	m_fields_by_id.push_back(field);
 }
 
-// update_inheritance updates the field inheritance of all classes inheriting from <dclass>.
-void File::update_inheritance(Class* dclass)
-{
-	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
-	{
-		Class* cls = (*it)->as_class();
-		if(cls != (Class*)NULL)
-		{
-			size_t num_parents = cls->get_num_parents();
-			for(unsigned int i = 0; i < num_parents; ++i)
-			{
-				if(cls->get_parent(i) == dclass)
-				{
-					cls->rebuild_fields();
-					break;
-				}
-			}
-		}
-	}
-}
-
-// rebuild_inherited_fields reconstructs the inherited fields table of all classes.
-void File::rebuild_inherited_fields()
-{
-	for(auto it = m_classes.begin(); it != m_classes.end(); ++it)
-	{
-		Class* cls = (*it)->as_class();
-		if(cls != (Class*)NULL)
-		{
-			cls->rebuild_fields();
-		}
-	}
-}
-
-uint32_t Hashable::get_hash() const
+uint32_t File::get_hash() const
 {
 	HashGenerator hashgen;
 	generate_hash(hashgen);
