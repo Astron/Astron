@@ -1,35 +1,35 @@
 // Filename: ParserDefs.h
-// Created by: drose (05 Oct, 2000)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-
 #pragma once
-#include "../DataType.h"
-#include "../NumericRange.h"
-
-namespace dclass
+#include "NumericRange.h"
+#include <string>
+namespace dclass   // open namespace dclass
 {
-	class File;
-	class Class;
-  class Struct;
-	class Field;
-	class AtomicField;
-	class Parameter;
-	class Keyword;
-}
 
-void dc_init_parser(std::istream &in, const std::string &filename, dclass::File &file);
-void dc_init_value_parser(std::istream &in, const std::string &filename,
-                          const dclass::Parameter* param, std::string &output);
-void dc_cleanup_parser();
-int dcyyparse();
+// Foward declarations
+class File;
 
-extern dclass::File *dc_file;
+class DistributedType;
+class Struct;
+class Class;
+class Field;
+class Method;
+class Parameter;
+
+// init_file_parser sets up a parsing session for reading an entire .dc file
+void init_file_parser(std::istream &in, const std::string &filename, File &file);
+// init_value_parser sets up a parsing session for reading a field or parameter value
+void init_value_parser(std::istream &in, const std::string &filename,
+                       const Parameter* param, std::string &output);
+// run_parser runs the current parsing session
+int run_parser();
+// cleanup_parser cleans up after the last parsing session
+void cleanup_parser();
+
+int parser_error_count();
+int parser_warning_count();
+
+void parser_error(const std::string &msg);
+void parser_warning(const std::string &msg);
 
 class TokenType
 {
@@ -47,18 +47,18 @@ class TokenType
       uint64_t uint64;
       double real;
       bool flag;
-      dclass::Class *dclass;
-      dclass::Struct *dstruct;
-      dclass::Field *field;
-      dclass::AtomicField *atomic;
-      dclass::DataType datatype;
-      dclass::Parameter *parameter;
-      const dclass::Keyword *keyword;
+      Class *dc_class;
+      Struct *dc_struct;
+      Field *dc_field;
+      Method *dc_method;
+      Parameter *dc_param;
+      DistributedType* *dc_type;
     } u;
     std::string str;
     dclass::NumericRange range;
 };
 
-// The yacc-generated code expects to use the symbol 'YYSTYPE' to
-// refer to the above class.
+// The bison-generated code expects to use the symbol 'YYSTYPE' to refer to the above class.
 #define YYSTYPE TokenType
+
+} // close namespace dclass

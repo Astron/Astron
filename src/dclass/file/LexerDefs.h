@@ -12,15 +12,10 @@
 #include <iostream>
 #include <string>
 
-void dc_init_lexer(std::istream &in, const std::string &filename);
-void dc_start_parameter_value();
-int dc_error_count();
-int dc_warning_count();
+void init_file_lexer(std::istream &in, const std::string &filename);
+void init_value_lexer(std::istream &in, const std::string &filename);
 
-void dcyyerror(const std::string &msg);
-void dcyywarning(const std::string &msg);
-
-int dcyylex();
+int run_lexer();
 
 // we always read files
 #define YY_NEVER_INTERACTIVE 1

@@ -1,3 +1,22 @@
+// Filename: write.cpp
+#include "write.h"
+namespace dclass   // open namespace dclass
+{
+
+
+std::ostream& indent(std::ostream& out, unsigned int indent_level)
+{
+	for(int i = 0; i < indent_level; i++)
+	{
+		out << ' ';
+	}
+	return out;
+}
+
+
+} // close namespace dclass
+
+/*
 // write opens the indicated filename for output and writes a parseable
 //     description of all the known distributed classes to the file.
 //     Returns true if the description is successfully written, false otherwise.
@@ -238,7 +257,6 @@ void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::
 			default:
 				break;
 		}
-		*/
 
 		if(!prename.empty() || !name.empty() || !postname.empty())
 		{
@@ -272,7 +290,7 @@ void ArrayParameter::output_instance(std::ostream &out, bool brief, const std::s
 	}
 }
 
-/* TODO: Move and update appropriately */
+/* TODO: Move and update appropriately
 // output formats a string representation of the class in .dc file syntax
 //     as "dclass IDENTIFIER" or "struct IDENTIFIER" with structs having optional IDENTIFIER,
 //     and outputs the formatted string to the stream.
@@ -332,7 +350,7 @@ void Struct::write(ostream &out, bool brief, int indent_level) const
 			++it;
 		}
 	}
-	*/
+	
 
 	out << " {";
 	if(!brief && m_id >= 0)
@@ -347,7 +365,7 @@ void Struct::write(ostream &out, bool brief, int indent_level) const
 	{
 		m_constructor->write(out, brief, indent_level + 2);
 	}
-	*/
+	
 
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
@@ -401,7 +419,7 @@ void Struct::output_instance(ostream &out, bool brief, const string &prename,
 			++it;
 		}
 	}
-	*/
+	
 
 	out << " {";
 
@@ -411,7 +429,7 @@ void Struct::output_instance(ostream &out, bool brief, const string &prename,
 		m_constructor->output(out, brief);
 		out << "; ";
 	}
-	*/
+	
 
 	for(auto it = m_fields.begin(); it != m_fields.end(); ++it)
 	{
