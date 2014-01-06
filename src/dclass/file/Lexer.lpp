@@ -5,13 +5,12 @@
 
 %{
 
-	#include "LexerDefs.h"
-	#include "ParserDefs.h"
-	#include "Parser.h"
 	#include "File.h"
+	#include "file/LexerDefs.h"
+	#include "file/ParserDefs.h"
+	#include "file/Parser.h"
 	#include "file/write.h" // indent
 	#include <iostream>
-	#include <assert.h>
 	#include <unistd.h>
 	namespace dclass   // open namespace dclass
 	{
@@ -127,7 +126,6 @@
 	// stdio FILE pointer.  This is flex-specific.
 	static void input_chars(char *buffer, int &result, int max_size)
 	{
-		assert(input_p != NULL);
 		if(*input_p)
 		{
 			input_p->read(buffer, max_size);
@@ -592,20 +590,20 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	dcyylval.str = yytext;
-	dcyylval.u.uint64 = 0;
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
 	const char *p = yytext;
 	while(*p != '\0')
 	{
-		uint64_t next_value = dcyylval.u.uint64 * 10;
-		if(next_value < dcyylval.u.uint64)
+		uint64_t next_value = yylval.u.uint64 * 10;
+		if(next_value < yylval.u.uint64)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.uint64 = 1;
+			yylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
-		dcyylval.u.uint64 = next_value + (*p - '0');
+		yylval.u.uint64 = next_value + (*p - '0');
 		++p;
 	}
 
@@ -617,7 +615,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	dcyylval.str = yytext;
+	yylval.str = yytext;
 
 	bool neg = false;
 	const char *p = yytext;
@@ -638,7 +636,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 		if(next_value < value)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 			return SIGNED_INTEGER;
 		}
 
@@ -648,19 +646,19 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 
 	if(neg)
 	{
-		dcyylval.u.int64 = -(int64_t)value;
-		if(dcyylval.u.int64 > 0)
+		yylval.u.int64 = -(int64_t)value;
+		if(yylval.u.int64 > 0)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 		}
 	}
 	else {
-		dcyylval.u.int64 = (int64_t)value;
-		if(dcyylval.u.int64 < 0)
+		yylval.u.int64 = (int64_t)value;
+		if(yylval.u.int64 < 0)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 		}
 	}
 
@@ -672,26 +670,26 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 
 	// As above, we'll decode the hex string by hand.
-	dcyylval.str = yytext;
-	dcyylval.u.uint64 = 0;
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
 	const char *p = yytext + 2;
 	while(*p != '\0')
 	{
-		uint64_t next_value = dcyylval.u.uint64 * 16;
-		if(next_value < dcyylval.u.uint64)
+		uint64_t next_value = yylval.u.uint64 * 16;
+		if(next_value < yylval.u.uint64)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.uint64 = 1;
+			yylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
 		if(isalpha(*p))
 		{
-			dcyylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
+			yylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
 		}
 		else
 		{
-			dcyylval.u.uint64 = next_value + (*p - '0');
+			yylval.u.uint64 = next_value + (*p - '0');
 		}
 		++p;
 	}
@@ -702,43 +700,43 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 {REALNUM} {
 	// A floating-point number.
 	accept();
-	dcyylval.u.real = atof(yytext);
-	dcyylval.str = yytext;
+	yylval.u.real = atof(yytext);
+	yylval.str = yytext;
 	return REAL;
 }
 
 ["] {
  // Quoted string.
  accept();
- dcyylval.str = scan_quoted_string('"');
+ yylval.str = scan_quoted_string('"');
  return STRING;
  }
 
 ['] {
 	// Single-quoted string.
 	accept();
-	dcyylval.str = scan_quoted_string('\'');
+	yylval.str = scan_quoted_string('\'');
 	return STRING;
 }
 
 [<] {
 	// Long hex string.
 	accept();
-	dcyylval.str = scan_hex_string();
+	yylval.str = scan_hex_string();
 	return HEX_STRING;
 }
 
 [A-Za-z_][A-Za-z_0-9]* {
 	// Identifier or keyword.
 	accept();
-	dcyylval.str = yytext;
+	yylval.str = yytext;
 
 	if(dc_file != (File *)NULL)
 	{
-		const Keyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
+		const Keyword *keyword = dc_file->get_keyword_by_name(yylval.str);
 		if(keyword != (Keyword *)NULL)
 		{
-			dcyylval.u.keyword = keyword;
+			yylval.u.keyword = keyword;
 			return KEYWORD;
 		}
 	}
@@ -751,3 +749,8 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 	return yytext[0];
 }
+
+%%
+
+
+} // close namespace dclass

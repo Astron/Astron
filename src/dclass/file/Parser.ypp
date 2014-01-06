@@ -3,51 +3,47 @@
 //
 
 %{
-#include "LexerDefs.h"
-#include "ParserDefs.h"
-#include "../File.h"
-#include "../Class.h"
-#include "../AtomicField.h"
-#include "../MolecularField.h"
-#include "../StructParameter.h"
-#include "../ArrayParameter.h"
-#include "../SimpleParameter.h"
-#include "../Typedef.h"
-#include "../Keyword.h"
-#include "../NumericRange.h"
-#include "../DataType.h"
+	#include "file/LexerDefs.h"
+	#include "file/ParserDefs.h"
+	#include "File.h"
+	#include "DistributedType.h"
+	#include "NumericRange.h"
+	#include "NumericType.h"
+	#include "ArrayType.h"
+	#include "Struct.h"
+	#include "Class.h"
+	#include "Field.h"
+	#include "Method.h"
+	#include "Parameter.h"
+	#include "MolecularField.h"
 
-#include <assert.h>
-#include <unistd.h>
-#include <stdint.h> // Fixed width integer limits
-#include <math.h>   // Float INFINITY
+	#include <unistd.h>
+	#include <stdint.h> // Fixed width integer limits
+	#include <math.h>   // Float INFINITY
 
-using namespace dclass;
-#define yyparse dcyyparse
-#define yylex dcyylex
-#define yyerror dcyyerror
-#define yywarning dcyywarning
-#define yylval dcyylval
-#define yychar dcyychar
-#define yydebug dcyydebug
-#define yynerrs dcyynerrs
+	#define yyparse run_parser
+	#define yylex run_lexer
+	#define yyerror parser_error
+	#define yywarning parser_warning
+	#define yylval dcyylval
+	#define yychar dcyychar
+	#define yydebug dcyydebug
+	#define yynerrs dcyynerrs
 
-// Because our token type contains objects of type std::string, which
-// require correct copy construction (and not simply memcpying), we
-// cannot use bison's built-in auto-stack-grow feature.  As an easy
-// solution, we ensure here that we have enough yacc stack to start
-// with, and that it doesn't ever try to grow.
-#define YYINITDEPTH 1000
-#define YYMAXDEPTH 1000
+	// Because our token type contains objects of type std::string, which
+	// require correct copy construction (and not simply memcpying), we
+	// cannot use bison's built-in auto-stack-grow feature.  As an easy
+	// solution, we ensure here that we have enough yacc stack to start
+	// with, and that it doesn't ever try to grow.
+	#define YYINITDEPTH 1000
+	#define YYMAXDEPTH 1000
 
-	File *dc_file = (File*)NULL;
-	std::string *output_value = (std::string*)NULL;
+	namespace dclass   // open namespace dclass
+	{
+	
 
-	static Struct *current_class = (Struct*)NULL;
-	static AtomicField *current_atomic = (AtomicField*)NULL;
-	static MolecularField *current_molecular = (MolecularField*)NULL;
-	static Parameter *current_parameter = (Parameter*)NULL;
-	static KeywordList current_keyword_list;
+	static File* parsed_file = (File*)NULL;
+	static std::string* parsed_value = (std::string*)NULL;
 
 	/* Helper functions */
 	static Parameter* param_with_modulus(Parameter* p, double mod);
@@ -60,25 +56,42 @@ using namespace dclass;
 // Defining the interface to the parser.
 ////////////////////////////////////////////////////////////////////
 
-	void dc_init_parser(std::istream& in, const std::string& filename, File& file)
+	void init_file_parser(std::istream& in, const std::string& filename, File& file)
 	{
 		dc_file = &file;
 		dc_init_lexer(in, filename);
 	}
 
-	void dc_init_value_parser(std::istream& in, const std::string& source, const Parameter* parameter, std::string& output)
+	void init_value_parser(std::istream& in, const std::string& source, const Parameter* parameter, std::string& output)
 	{
 		output_value = &output;
 		dc_init_lexer(in, source);
 		dc_start_parameter_value();
 	}
 
-	void dc_cleanup_parser()
+	void cleanup_parser()
 	{
 		dc_file = (File*)NULL;
 		output_value = (std::string*)NULL;
 	}
 
+	int parser_error_count()
+	{
+		return lexer_error_count();
+	}
+	int parser_warning_count()
+	{
+		return lexer_warning_count();
+	}
+
+	void parser_error(const std::string &msg)
+	{
+		lexer_error(msg);
+	}
+	void parser_warning(const std::string &msg)
+	{
+		parser_error(msg);
+	}
 %}
 
 /* Value tokens */
@@ -1122,3 +1135,6 @@ Parameter* param_with_divisor(Parameter* p, uint32_t div)
 
 	return simple_param;	
 }
+
+
+} // close namespace dclass

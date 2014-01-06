@@ -55,7 +55,7 @@ class TokenType
       DistributedType* *dc_type;
     } u;
     std::string str;
-    dclass::NumericRange range;
+    NumericRange range;
 };
 
 // The bison-generated code expects to use the symbol 'YYSTYPE' to refer to the above class.

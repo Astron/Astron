@@ -339,6 +339,8 @@ void yyfree (void *  );
 
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
+/* Begin user sect3 */
+
 typedef unsigned char YY_CHAR;
 
 FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
@@ -540,51 +542,51 @@ char *yytext;
 */
 #line 7 "Lexer.lpp"
 
-#include "LexerDefs.h"
-#include "ParserDefs.h"
-#include "Parser.h"
-#include "../File.h"
-#include "../indent.h"
-#include <iostream>
-#include <assert.h>
-#include <unistd.h>
-using namespace dclass;
+	#include "File.h"
+	#include "file/LexerDefs.h"
+	#include "file/ParserDefs.h"
+	#include "file/Parser.h"
+	#include "file/write.h" // indent
+	#include <iostream>
+	#include <unistd.h>
+	namespace dclass   // open namespace dclass
+	{
 
 
-	static int yyinput(void);        // declared by flex.
-	extern int dcyylex();
-	extern "C" int dcyywrap();
-	extern YYSTYPE dcyylval;
+	static int yyinput(void); // declared by flex.
+	extern int run_lexer();
+	extern "C" int should_lexer_wrap();
+	extern YYSTYPE yylval;
 
-	#define YY_DECL int dcyylex(void)
-	#define yywrap dcyywrap
+	#define YY_DECL int run_lexer(void)
+	#define yywrap should_lexer_wrap
 
 ////////////////////////////////////////////////////////////////////
 // Static variables
 ////////////////////////////////////////////////////////////////////
 
-    // We'll increment line_number and col_number as we parse the file, so
-    // that we can report the position of an error.
+	// We'll increment line_number and col_number as we parse the file, so
+	// that we can report the position of an error.
 	static int line_number = 0;
 	static int col_number = 0;
 
-    // current_line holds as much of the current line as will fit.  Its
-    // only purpose is for printing it out to report an error to the user.
+	// current_line holds as much of the current line as will fit.  Its
+	// only purpose is for printing it out to report an error to the user.
 	static const int max_error_width = 1024;
 	static char current_line[max_error_width + 1];
 
 	static int error_count = 0;
 	static int warning_count = 0;
 
-    // This is the pointer to the current input stream.
+	// This is the pointer to the current input stream.
 	static std::istream *input_p = NULL;
 
-    // This is the name of the dc file we're parsing.  We keep it so we
-    // can print it out for error messages.
+	// This is the name of the dc file we're parsing.  We keep it so we
+	// can print it out for error messages.
 	static std::string dc_filename;
 
-    // This is the initial token state returned by the lexer.  It allows
-    // the yacc grammar to start from initial points.
+	// This is the initial token state returned by the lexer.  It allows
+	// the yacc grammar to start from initial points.
 	static int initial_token;
 
 
@@ -592,7 +594,7 @@ using namespace dclass;
 // Defining the interface to the lexer.
 ////////////////////////////////////////////////////////////////////
 
-	void dc_init_lexer(std::istream &in, const std::string &filename)
+	void init_file_lexer(std::istream& in, const std::string& filename)
 	{
 		input_p = &in;
 		dc_filename = filename;
@@ -603,17 +605,18 @@ using namespace dclass;
 		initial_token = START_DC;
 	}
 
-	void dc_start_parameter_value()
+	void init_value_lexer(std::istream& in, const std::string& filename)
 	{
-	  initial_token = START_PARAMETER_VALUE;
+		init_file_lexer(in, filename);
+		initial_token = START_PARAMETER_VALUE;
 	}
 
-	int dc_error_count()
+	int lexer_error_count()
 	{
 		return error_count;
 	}
 
-	int dc_warning_count()
+	int lexer_warning_count()
 	{
 		return warning_count;
 	}
@@ -623,12 +626,12 @@ using namespace dclass;
 // Internal support functions.
 ////////////////////////////////////////////////////////////////////
 
-	int dcyywrap(void)
+	int should_lexer_wrap(void)
 	{
 		return 1;
 	}
 
-	void dcyyerror(const std::string & msg)
+	void lexer_error(const std::string & msg)
 	{
 		std::cerr << "\nError";
 		if(!dc_filename.empty())
@@ -636,13 +639,13 @@ using namespace dclass;
 			std::cerr << " in " << dc_filename;
 		}
 		std::cerr << " at line " << line_number << ", column " << col_number
-                  << ":\n" << current_line << "\n";
+	              << ":\n" << current_line << "\n";
 		indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
 
 		error_count++;
 	}
 
-	void dcyywarning(const std::string & msg)
+	void lexer_warning(const std::string & msg)
 	{
 		std::cerr << "\nWarning";
 		if(!dc_filename.empty())
@@ -650,17 +653,16 @@ using namespace dclass;
 			std::cerr << " in " << dc_filename;
 		}
 		std::cerr << " at line " << line_number << ", column " << col_number
-                  << ":\n" << current_line << "\n";
+	              << ":\n" << current_line << "\n";
 		indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
 
 		warning_count++;
 	}
 
-    // Now define a function to take input from an istream instead of a
-    // stdio FILE pointer.  This is flex-specific.
+	// Now define a function to take input from an istream instead of a
+	// stdio FILE pointer.  This is flex-specific.
 	static void input_chars(char *buffer, int &result, int max_size)
 	{
-		assert(input_p != NULL);
 		if(*input_p)
 		{
 			input_p->read(buffer, max_size);
@@ -697,15 +699,15 @@ using namespace dclass;
 			result = 0;
 		}
 	}
-#undef YY_INPUT
+	#undef YY_INPUT
 
-// Define this macro carefully, since different flex versions call it
-// with a different type for result.
-#define YY_INPUT(buffer, result, max_size) { \
-		int int_result; \
-		input_chars((buffer), int_result, (max_size)); \
-		(result) = int_result; \
-	}
+	// Define this macro carefully, since different flex versions call it
+	// with a different type for result.
+	#define YY_INPUT(buffer, result, max_size) { \
+			int int_result; \
+			input_chars((buffer), int_result, (max_size)); \
+			(result) = int_result; \
+		}
 
 	// read_char reads and returns a single character, incrementing the
 	// supplied line and column numbers as appropriate.  A convenience
@@ -849,7 +851,7 @@ using namespace dclass;
 
 		if(c == EOF)
 		{
-			dcyyerror("This quotation mark is unterminated.");
+			lexer_error("This quotation mark is unterminated.");
 		}
 
 		line_number = line;
@@ -899,7 +901,7 @@ using namespace dclass;
 			{
 				line_number = line;
 				col_number = col;
-				dcyyerror("Invalid hex digit.");
+				lexer_error("Invalid hex digit.");
 				return std::string();
 			}
 
@@ -917,12 +919,12 @@ using namespace dclass;
 
 		if(c == EOF)
 		{
-			dcyyerror("This hex string is unterminated.");
+			lexer_error("This hex string is unterminated.");
 			return std::string();
 		}
 		else if(odd)
 		{
-			dcyyerror("Odd number of hex digits.");
+			lexer_error("Odd number of hex digits.");
 			return std::string();
 		}
 
@@ -950,7 +952,7 @@ using namespace dclass;
 		{
 			if(last_c == '/' && c == '*')
 			{
-				dcyywarning("This comment contains a nested /* symbol--possibly unclosed?");
+				lexer_warning("This comment contains a nested /* symbol--possibly unclosed?");
 			}
 			last_c = c;
 			c = read_char(line, col);
@@ -958,7 +960,7 @@ using namespace dclass;
 
 		if(c == EOF)
 		{
-			dcyyerror("This comment marker is unclosed.");
+			lexer_error("This comment marker is unclosed.");
 		}
 
 		line_number = line;
@@ -974,7 +976,7 @@ using namespace dclass;
 		col_number += yyleng;
 	}
 
-#line 978 "Lexer.cpp"
+#line 980 "Lexer.cpp"
 
 #define INITIAL 0
 
@@ -1171,7 +1173,7 @@ YY_DECL
 	}
 
 
-#line 1175 "Lexer.cpp"
+#line 1177 "Lexer.cpp"
 
 	if ( !(yy_init) )
 		{
@@ -1465,7 +1467,7 @@ YY_RULE_SETUP
 		uint64_t next_value = dcyylval.u.uint64 * 10;
 		if(next_value < dcyylval.u.uint64)
 		{
-			dcyyerror("Number out of range.");
+			lexer_error("Number out of range.");
 			dcyylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
@@ -1505,7 +1507,7 @@ YY_RULE_SETUP
 		uint64_t next_value = value * 10;
 		if(next_value < value)
 		{
-			dcyyerror("Number out of range.");
+			lexer_error("Number out of range.");
 			dcyylval.u.int64 = 1;
 			return SIGNED_INTEGER;
 		}
@@ -1519,7 +1521,7 @@ YY_RULE_SETUP
 		dcyylval.u.int64 = -(int64_t)value;
 		if(dcyylval.u.int64 > 0)
 		{
-			dcyyerror("Number out of range.");
+			lexer_error("Number out of range.");
 			dcyylval.u.int64 = 1;
 		}
 	}
@@ -1527,7 +1529,7 @@ YY_RULE_SETUP
 		dcyylval.u.int64 = (int64_t)value;
 		if(dcyylval.u.int64 < 0)
 		{
-			dcyyerror("Number out of range.");
+			lexer_error("Number out of range.");
 			dcyylval.u.int64 = 1;
 		}
 	}
@@ -1551,7 +1553,7 @@ YY_RULE_SETUP
 		uint64_t next_value = dcyylval.u.uint64 * 16;
 		if(next_value < dcyylval.u.uint64)
 		{
-			dcyyerror("Number out of range.");
+			lexer_error("Number out of range.");
 			dcyylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
@@ -1642,10 +1644,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 752 "Lexer.lpp"
+#line 753 "Lexer.lpp"
 ECHO;
 	YY_BREAK
-#line 1649 "Lexer.cpp"
+#line 1651 "Lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2606,4 +2608,10 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 752 "Lexer.lpp"
+#line 753 "Lexer.lpp"
+
+
+
+
+} // close namespace dclass
+
