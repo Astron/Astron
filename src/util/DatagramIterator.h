@@ -1,10 +1,9 @@
 #pragma once
 #include "Datagram.h"
-#include "dclass/DistributedType.h"
-#include "dclass/Class.h"
+#include "dclass/Struct.h"
+#include "dclass/Method.h"
 #include "dclass/Field.h"
-#include "dclass/AtomicField.h" // temporary
-#include "dclass/MolecularField.h" // temporary
+#include "dclass/Parameter.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif
@@ -225,22 +224,41 @@ class DatagramIterator
 			return read_data(m_dg.size() - m_offset);
 		}
 
-		// unpack_field accepts a Field type and reads the value of the field into a buffer.
-		void unpack_field(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
+
+		// unpack_field accepts a Field of a distributed class
+		//     and returns the packed value for the field.
+		std::vector<uint8_t> unpack_field(const dclass::Field* field)
+		{
+			std::vector<uint8_t> buffer;
+			unpack_field(field, buffer);
+			return buffer;
+		}
+
+		// unpack_field can also be called to read into an existing buffer.
+		void unpack_field(const dclass::Field* field, std::vector<uint8_t> &buffer)
+		{
+			unpack_dtype(field->get_type(), buffer);
+		}
+
+		// unpack_dtype accepts a DistributedType and copies the data for the value into a buffer.
+		void unpack_dtype(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
 		{
 			using namespace dclass;
 			if(dtype->has_fixed_size())
 			{
 				// If field is a fixed-sized type like uint, int, float, etc
+				// Also any other type lucky enough to be fixed size will be computed faster
 				std::vector<uint8_t> data = read_data(dtype->get_size());
 				buffer.insert(buffer.end(), data.begin(), data.end());
 				return;
 			}
-			switch(dtype->get_datatype())
+
+			// For the unlucky types, we have to figure out their size manually
+			switch(dtype->get_type())
 			{
-				case DT_varstring:
-				case DT_varblob:
-				case DT_vararray:
+				case VARSTRING:
+				case VARBLOB:
+				case VARARRAY:
 				{
 					dgsize_t len = read_size();
 					buffer.insert(buffer.end(), (uint8_t*)&len, (uint8_t*)&len + sizeof(dgsize_t));
@@ -249,61 +267,43 @@ class DatagramIterator
 					buffer.insert(buffer.end(), blob.begin(), blob.end());
 					break;
 				}
-				case DT_struct:
+				case STRUCT:
 				{
-					const Struct* cls = dtype->as_struct();
-					size_t num_fields = cls->get_num_fields();
+					const Struct* dstruct = dtype->as_struct();
+					size_t num_fields = dstruct->get_num_fields();
 					for(unsigned int i = 0; i < num_fields; ++i)
 					{
-						unpack_field(cls->get_field(i), buffer);
+						unpack_dtype(dstruct->get_field(i)->get_type(), buffer);
 					}
 					break;
 				}
-				case DT_method:
+				case METHOD:
 				{
-					const Field* field = dtype->as_field();
-					if(field->as_molecular_field())
+					const Method* dmethod = dtype->as_method();
+					size_t num_params = dmethod->get_num_parameters();
+					for(unsigned int i = 0; i < num_params; ++i)
 					{
-						const MolecularField* mol = field->as_molecular_field();
-						size_t num_fields = mol->get_num_atomics();
-						for(unsigned int i = 0; i < num_fields; ++i)
-						{
-							unpack_field(mol->get_atomic(i), buffer);
-						}
-						break;
-					}
-					else if(field->as_atomic_field())
-					{
-						const AtomicField* atomic = field->as_atomic_field();
-						size_t num_fields = atomic->get_num_elements();
-						for(unsigned int i = 0; i < num_fields; ++i)
-						{
-							unpack_field(atomic->get_element(i), buffer);
-						}
-						break;
+						unpack_dtype(dmethod->get_parameter(i)->get_type(), buffer);
 					}
 				}
 				default:
 				{
-					//temporar warning
-					//#include
-					std::cerr << "Unrecognized distributed class datatype.\n";
+					// This case should be impossible, but a default is required by compilers
 					break;
 				}
 			}
 		}
 
-		// unpack_field can also be called without a reference to unpack into a new buffer.
-		std::vector<uint8_t> unpack_field(const dclass::DistributedType *dtype)
-		{
-			std::vector<uint8_t> buffer;
-			unpack_field(dtype, buffer);
-			return buffer;
-		}
-
 		// skip_field can be used to seek past the packed field data for a Field.
 		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip_field(const dclass::DistributedType *dtype)
+		void skip_field(const dclass::Field* field)
+		{
+			skip_dtype(field->get_type());
+		}
+
+		// skip_dtype can be used to seek past the packed data for a DistributedType.
+		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
+		void skip_dtype(const dclass::DistributedType *dtype)
 		{
 			using namespace dclass;
 			if(dtype->has_fixed_size())
@@ -314,63 +314,38 @@ class DatagramIterator
 				return;
 			}
 
-			switch(dtype->get_datatype())
+			switch(dtype->get_type())
 			{
-				case DT_varstring:
-				case DT_varblob:
-				case DT_vararray:
+				case dclass::VARSTRING:
+				case dclass::VARBLOB:
+				case dclass::VARARRAY:
 				{
 					dgsize_t length = read_size();
 					check_read_length(length);
 					m_offset += length;
 				}
-				case DT_struct:
+				case dclass::STRUCT:
 				{
-					const Struct* cls = dtype->as_struct();
-					size_t num_fields = cls->get_num_fields();
+					const Struct* dstruct = dtype->as_struct();
+					size_t num_fields = dstruct->get_num_fields();
 					for(unsigned int i = 0; i < num_fields; ++i)
 					{
-						skip_field(cls->get_field(i));
+						skip_dtype(dstruct->get_field(i)->get_type());
 					}
 				}
-				case DT_method:
+				case dclass::METHOD:
 				{
-					const Field* field = dtype->as_field();
-					if(field->as_molecular_field())
+					const Method* dmethod = dtype->as_method();
+					size_t num_params = dmethod->get_num_parameters();
+					for(unsigned int i = 0; i < num_params; ++i)
 					{
-						const MolecularField* mol = field->as_molecular_field();
-						size_t num_fields = mol->get_num_atomics();
-						for(unsigned int i = 0; i < num_fields; ++i)
-						{
-							skip_field(mol->get_atomic(i));
-						}
+						skip_dtype(dmethod->get_parameter(i)->get_type());
 					}
-					else if(field->as_atomic_field())
-					{
-						const AtomicField* atomic = field->as_atomic_field();
-						size_t num_fields = atomic->get_num_elements();
-						for(unsigned int i = 0; i < num_fields; ++i)
-						{
-							skip_field(atomic->get_element(i));
-						}
-					}
-					else
-					{
-						//temporary warning
-						//#include 
-						std::cerr << "Found DT_method that is not molecular or atomic.\n";
-					}
-				}
-				case DT_invalid:
-				{
-					// temporary warning
-					std::cerr << "Bad distributed class parsing\n";
 				}
 				default:
 				{
-					//temporar warning
-					//#include
-					std::cerr << "Unrecognized distributed class datatype.\n";
+					// This case should be impossible, but a default is required by compilers
+					break;
 				}
 			}
 		}

@@ -50,9 +50,10 @@ class DistributedType
 {
     protected:
         inline DistributedType();
-        virtual ~DistributedType();
 
     public:
+        virtual ~DistributedType();
+
         // get_type returns the type's fundamental type as an integer constant.
         inline Type get_type() const;
 

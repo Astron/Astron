@@ -21,6 +21,22 @@ Field::Field(DistributedType* type, const std::string &name) :
 {
 }
 
+// destructor
+Field::~Field()
+{
+	delete m_type;
+}
+
+// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
+MolecularField* Field::as_molecular()
+{
+	return (MolecularField*)NULL;
+}
+const MolecularField* Field::as_molecular() const
+{
+	return (MolecularField*)NULL;
+}
+
 // set_name sets the name of this field.  Returns false if a field with
 //     the same name already exists in the containing struct.
 bool Field::set_name(const std::string& name)

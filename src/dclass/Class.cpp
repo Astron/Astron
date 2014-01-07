@@ -50,6 +50,12 @@ void Class::add_parent(Class *parent)
 	}
 }
 
+// add_child marks a class as a child of this class.
+void Class::add_child(Class* child)
+{
+	m_children.push_back(child);
+}
+
 // add_field adds the newly-allocated field to the class.  The class becomes
 //     the owner of the pointer and will delete it when it destructs.
 //     Returns true if the field is successfully added, or false if the field cannot be added.

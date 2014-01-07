@@ -13,6 +13,11 @@ MolecularField::MolecularField(Class* cls, const std::string &name) :
 	Field::m_type = this;
 }
 
+// destructor
+MolecularField::~MolecularField()
+{
+}
+
 // as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
 MolecularField* MolecularField::as_molecular()
 {

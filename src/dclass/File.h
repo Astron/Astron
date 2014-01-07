@@ -51,6 +51,13 @@ class File
 		inline Struct* get_struct(unsigned int n);
 		inline const Struct* get_struct(unsigned int n) const;
 
+		// get_class_by_id returns the requested class or NULL if there is no such class.
+		Class* get_class_by_id(unsigned int id);
+		const Class* get_class_by_id(unsigned int id) const;
+		// get_class_by_name returns the requested class or NULL if there is no such class.
+		Class* get_class_by_name(const std::string &name);
+		const Class* get_class_by_name(const std::string &name) const;
+
 		// get_type_by_id returns the requested type or NULL if there is no such type.
 		inline DistributedType* get_type_by_id(unsigned int id);
 		inline const DistributedType* get_type_by_id(unsigned int id) const;
@@ -95,7 +102,7 @@ class File
 		void add_keyword(const std::string &keyword);
 
 		// get_hash returns a 32-bit hash representing the file.
-		inline uint32_t get_hash() const;
+		uint32_t get_hash() const;
 
 		// generate_hash accumulates the properties of this file into the hash.
 		virtual void generate_hash(HashGenerator& hashgen) const;

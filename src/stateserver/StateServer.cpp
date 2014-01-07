@@ -52,11 +52,11 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	}
 
 	// Make sure we are not trying to make an object out of a struct
-	Class *dc_class = g_dcf->get_class(dc_id)->as_class();
+	const Class *dc_class = g_dcf->get_class_by_id(dc_id);
 	if(!dc_class)
 	{
 		m_log->warning() << "Received create for object non-class type: "
-		                 << g_dcf->get_class(dc_id)->get_name() << std::endl;
+		                 << g_dcf->get_class_by_id(dc_id)->get_name() << std::endl;
 	}
 
 	// Create the object

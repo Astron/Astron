@@ -50,6 +50,37 @@ File::~File()
 	m_keywords.clear();
 }
 
+// get_class_by_id returns the requested class or NULL if there is no such class.
+Class* File::get_class_by_id(unsigned int id)
+{
+	DistributedType* dt = get_type_by_id(id);
+	if(dt == NULL) return NULL;
+	if(dt->as_struct() == NULL) return NULL;
+	return dt->as_struct()->as_class();
+}
+const Class* File::get_class_by_id(unsigned int id) const
+{
+	const DistributedType* dt = get_type_by_id(id);
+	if(dt == NULL) return NULL;
+	if(dt->as_struct() == NULL) return NULL;
+	return dt->as_struct()->as_class();
+}
+// get_class_by_name returns the requested class or NULL if there is no such class.
+Class* File::get_class_by_name(const std::string &name)
+{
+	DistributedType* dt = get_type_by_name(name);
+	if(dt == NULL) return NULL;
+	if(dt->as_struct() == NULL) return NULL;
+	return dt->as_struct()->as_class();
+}
+const Class* File::get_class_by_name(const std::string &name) const
+{
+	const DistributedType* dt = get_type_by_name(name);
+	if(dt == NULL) return NULL;
+	if(dt->as_struct() == NULL) return NULL;
+	return dt->as_struct()->as_class();
+}
+
 // add_class adds the newly-allocated class to the file.
 //     Returns false if there is a name conflict.
 //     The File becomes the owner of the pointer and will delete it when it destructs.

@@ -552,7 +552,9 @@ char *yytext;
 	static int yyinput(void); // declared by flex.
 	extern int dclass::run_lexer();
 	extern "C" int should_lexer_wrap();
-	extern YYSTYPE yylval;
+
+	#define YYSTYPE dclass::TokenType
+	extern YYSTYPE yyltype;
 
 	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap
@@ -972,7 +974,7 @@ char *yytext;
 		col_number += yyleng;
 	}
 
-#line 976 "lexer.cpp"
+#line 978 "lexer.cpp"
 
 #define INITIAL 0
 
@@ -1157,7 +1159,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 449 "lexer.lpp"
+#line 451 "lexer.lpp"
 
 
 
@@ -1169,7 +1171,7 @@ YY_DECL
 	}
 
 
-#line 1173 "lexer.cpp"
+#line 1175 "lexer.cpp"
 
 	if ( !(yy_init) )
 		{
@@ -1255,7 +1257,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 460 "lexer.lpp"
+#line 462 "lexer.lpp"
 {
 	// New line.  Save a copy of the line so we can print it out for the
 	// benefit of the user in case we get an error.
@@ -1272,7 +1274,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 474 "lexer.lpp"
+#line 476 "lexer.lpp"
 {
 	// Eat whitespace.
 	accept();
@@ -1280,7 +1282,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 479 "lexer.lpp"
+#line 481 "lexer.lpp"
 {
 	// Eat C++-style comments.
 	accept();
@@ -1288,7 +1290,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 484 "lexer.lpp"
+#line 486 "lexer.lpp"
 {
 	// Eat C-style comments.
 	accept();
@@ -1297,7 +1299,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 491 "lexer.lpp"
+#line 493 "lexer.lpp"
 {
 	accept();
 	return KW_DCLASS;
@@ -1305,7 +1307,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 496 "lexer.lpp"
+#line 498 "lexer.lpp"
 {
 	accept();
 	return KW_STRUCT;
@@ -1313,7 +1315,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 501 "lexer.lpp"
+#line 503 "lexer.lpp"
 {
 	accept();
 	return KW_FROM;
@@ -1321,7 +1323,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 506 "lexer.lpp"
+#line 508 "lexer.lpp"
 {
 	accept();
 	return KW_IMPORT;
@@ -1329,7 +1331,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 511 "lexer.lpp"
+#line 513 "lexer.lpp"
 {
 	accept();
 	return KW_KEYWORD;
@@ -1337,7 +1339,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 516 "lexer.lpp"
+#line 518 "lexer.lpp"
 {
 	accept();
 	return KW_TYPEDEF;
@@ -1345,7 +1347,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 521 "lexer.lpp"
+#line 523 "lexer.lpp"
 {
 	accept();
 	return KW_INT8;
@@ -1353,7 +1355,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 526 "lexer.lpp"
+#line 528 "lexer.lpp"
 {
 	accept();
 	return KW_INT16;
@@ -1361,7 +1363,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 531 "lexer.lpp"
+#line 533 "lexer.lpp"
 {
 	accept();
 	return KW_INT32;
@@ -1369,7 +1371,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 536 "lexer.lpp"
+#line 538 "lexer.lpp"
 {
 	accept();
 	return KW_INT64;
@@ -1377,7 +1379,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 541 "lexer.lpp"
+#line 543 "lexer.lpp"
 {
 	accept();
 	return KW_UINT8;
@@ -1385,7 +1387,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 546 "lexer.lpp"
+#line 548 "lexer.lpp"
 {
 	accept();
 	return KW_UINT16;
@@ -1393,7 +1395,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 551 "lexer.lpp"
+#line 553 "lexer.lpp"
 {
 	accept();
 	return KW_UINT32;
@@ -1401,7 +1403,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 556 "lexer.lpp"
+#line 558 "lexer.lpp"
 {
 	accept();
 	return KW_UINT64;
@@ -1409,7 +1411,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 561 "lexer.lpp"
+#line 563 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT32;
@@ -1417,7 +1419,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 566 "lexer.lpp"
+#line 568 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT64;
@@ -1425,7 +1427,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 571 "lexer.lpp"
+#line 573 "lexer.lpp"
 {
 	accept();
 	return KW_STRING;
@@ -1433,7 +1435,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 576 "lexer.lpp"
+#line 578 "lexer.lpp"
 {
 	accept();
 	return KW_BLOB;
@@ -1441,7 +1443,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 581 "lexer.lpp"
+#line 583 "lexer.lpp"
 {
 	accept();
 	return KW_CHAR;
@@ -1449,7 +1451,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 586 "lexer.lpp"
+#line 588 "lexer.lpp"
 {
 	// An unsigned integer number.
 	accept();
@@ -1477,7 +1479,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 611 "lexer.lpp"
+#line 613 "lexer.lpp"
 {
 	// A signed integer number.
 	accept();
@@ -1535,7 +1537,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 666 "lexer.lpp"
+#line 668 "lexer.lpp"
 {
 	// A hexadecimal integer number.
 	accept();
@@ -1570,7 +1572,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 698 "lexer.lpp"
+#line 700 "lexer.lpp"
 {
 	// A floating-point number.
 	accept();
@@ -1581,7 +1583,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 706 "lexer.lpp"
+#line 708 "lexer.lpp"
 {
  // Quoted string.
  accept();
@@ -1591,7 +1593,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 713 "lexer.lpp"
+#line 715 "lexer.lpp"
 {
 	// Single-quoted string.
 	accept();
@@ -1601,7 +1603,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 720 "lexer.lpp"
+#line 722 "lexer.lpp"
 {
 	// Long hex string.
 	accept();
@@ -1611,7 +1613,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 727 "lexer.lpp"
+#line 729 "lexer.lpp"
 {
 	// Identifier or keyword.
 	accept();
@@ -1621,7 +1623,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 735 "lexer.lpp"
+#line 737 "lexer.lpp"
 {
 	// Send any other printable character as itself.
 	accept();
@@ -1630,10 +1632,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 740 "lexer.lpp"
+#line 742 "lexer.lpp"
 ECHO;
 	YY_BREAK
-#line 1637 "lexer.cpp"
+#line 1639 "lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2594,4 +2596,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 740 "lexer.lpp"
+#line 742 "lexer.lpp"

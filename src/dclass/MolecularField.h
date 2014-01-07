@@ -12,6 +12,7 @@ class MolecularField : public Field, public Struct
 {
 	public:
 		MolecularField(Class* cls, const std::string &name);
+		virtual ~MolecularField();
 
 		// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
 		virtual MolecularField* as_molecular();

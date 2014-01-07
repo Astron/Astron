@@ -26,6 +26,7 @@ class Field : public KeywordList
 {
 	public:
 		Field(DistributedType* type, const std::string &name = "");
+		virtual ~Field();
 
 		// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
 		virtual MolecularField* as_molecular();

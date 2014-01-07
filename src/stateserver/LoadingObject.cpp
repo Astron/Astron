@@ -1,5 +1,7 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "dclass/Class.h"
+#include "dclass/Field.h"
 
 #include "LoadingObject.h"
 
@@ -22,7 +24,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id,
-                             zone_t zone_id, Class *dclass, DatagramIterator &dgi,
+                             zone_t zone_id, const Class *dclass, DatagramIterator &dgi,
                              const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
 	m_dclass(dclass), m_valid_contexts(contexts)
@@ -111,7 +113,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			Class *r_dclass = g_dcf->get_class(dc_id)->as_class();
+			const Class *r_dclass = g_dcf->get_class_by_id(dc_id);
 			if(m_dclass && r_dclass != m_dclass)
 			{
 				m_log->error() << "Requested object of class '" << m_dclass->get_id()
@@ -131,10 +133,10 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			int dcc_field_count = r_dclass->get_num_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				Field *field = r_dclass->get_field(i);
-				if(!field->as_molecular_field())
+				const Field *field = r_dclass->get_field(i);
+				if(!field->as_molecular())
 				{
-					if(field->is_required())
+					if(field->has_keyword("required"))
 					{
 						if(m_field_updates.find(field) != m_field_updates.end())
 						{
@@ -146,7 +148,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 							m_required_fields[field] = std::vector<uint8_t>(val.begin(), val.end());
 						}
 					}
-					else if(field->is_ram())
+					else if(field->has_keyword("ram"))
 					{
 						if(m_field_updates.find(field) != m_field_updates.end())
 						{

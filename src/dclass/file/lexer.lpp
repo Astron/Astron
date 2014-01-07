@@ -17,7 +17,9 @@
 	static int yyinput(void); // declared by flex.
 	extern int dclass::run_lexer();
 	extern "C" int should_lexer_wrap();
-	extern YYSTYPE yylval;
+
+	#define YYSTYPE dclass::TokenType
+	extern YYSTYPE yyltype;
 
 	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap

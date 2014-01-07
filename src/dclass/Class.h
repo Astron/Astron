@@ -45,12 +45,6 @@ class Class : public Struct
 		inline Field* get_base_field(unsigned int n);
 		inline const Field* get_base_field(unsigned int n) const;
 
-		// get_num_fields returns the number of fields in the Class, including inherited fields.
-		virtual size_t get_num_fields() const;
-		// get_field returns the <n>th field of the struct (with inherited) or NULL if out-of-range.
-		virtual Field* get_field(unsigned int n);
-		virtual const Field* get_field(unsigned int n) const;
-
 		// add_parent set this class as a subclass to target parent.
 		void add_parent(Class *parent);
 

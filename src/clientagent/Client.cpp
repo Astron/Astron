@@ -53,7 +53,7 @@ void Client::log_event(const std::list<std::string> &event)
 
 // lookup_object returns the class of the object with a do_id.
 // If that object is not visible to the client, NULL will be returned instead.
-Class *Client::lookup_object(doid_t do_id)
+const Class *Client::lookup_object(doid_t do_id)
 {
 	// First see if it's an UberDOG:
 	if(g_uberdogs.find(do_id) != g_uberdogs.end())
@@ -340,7 +340,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 				obj.id = do_id;
 				obj.parent = parent;
 				obj.zone = zone;
-				obj.dcc = g_dcf->get_class(dc_id)->as_class();
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				m_visible_objects[do_id] = obj;
 			}
 
@@ -401,7 +401,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			{
 				VisibleObject obj;
 				obj.id = do_id;
-				obj.dcc = g_dcf->get_class(dc_id)->as_class();
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				obj.parent = parent;
 				obj.zone = zone;
 				m_visible_objects[do_id] = obj;

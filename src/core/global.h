@@ -14,13 +14,13 @@
 struct Uberdog
 {
 	doid_t do_id;
-	dclass::Class *dcc;
+	const dclass::Class *dcc;
 	bool anonymous;
 };
 
+extern const dclass::File *g_dcf;
 extern Logger *g_logger;
 extern ConfigFile *g_config;
-extern dclass::File *g_dcf;
 extern EventSender g_eventsender;
 extern boost::asio::io_service io_service;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;

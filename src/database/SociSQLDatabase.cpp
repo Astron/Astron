@@ -45,7 +45,7 @@ class SociSQLDatabase : public DatabaseBackend
 		{
 			string field_name;
 			vector<uint8_t> field_value;
-			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
+			Class *dcc = g_dcf->get_class_by_id(dbo.dc_id);
 			bool storable = is_storable(dbo.dc_id);
 
 			uint32_t do_id = pop_next_id();
@@ -120,7 +120,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 			return true;
 		}
-		DCClass* get_class(doid_t do_id)
+		Class* get_class(doid_t do_id)
 		{
 			int dc_id = -1;
 			indicator ind;
@@ -139,7 +139,7 @@ class SociSQLDatabase : public DatabaseBackend
 				return NULL;
 			}
 
-			return g_dcf->get_class(dc_id);
+			return g_dcf->get_class_by_id(dc_id);
 		}
 		void del_field(doid_t do_id, DCField* field)
 		{
@@ -220,7 +220,7 @@ class SociSQLDatabase : public DatabaseBackend
 				return false; // Class has no database fields
 			}
 
-			if(!field->is_db())
+			if(!field->has_keyword("db"))
 			{
 				value.clear();
 				return false;
@@ -269,7 +269,7 @@ class SociSQLDatabase : public DatabaseBackend
 				for(auto it = values.begin(); it != values.end(); ++it)
 				{
 					DCField* field = it->first;
-					if(field->is_db())
+					if(field->has_keyword("db"))
 					{
 						m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
 						      << " WHERE object_id=" << do_id << ";", into(value, ind);
@@ -320,7 +320,7 @@ class SociSQLDatabase : public DatabaseBackend
 				return false; // Class has no database fields
 			}
 
-			if(!field->is_db())
+			if(!field->has_keyword("db"))
 			{
 				return false;
 			}
@@ -376,7 +376,7 @@ class SociSQLDatabase : public DatabaseBackend
 				for(auto it = equals.begin(); it != equals.end(); ++it)
 				{
 					DCField* field = it->first;
-					if(field->is_db())
+					if(field->has_keyword("db"))
 					{
 						m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
 						      << " WHERE object_id=" << do_id << ";", into(value, ind);
@@ -539,7 +539,7 @@ class SociSQLDatabase : public DatabaseBackend
 				}
 				else
 				{
-					DCClass* dcc = g_dcf->get_class(dc_id);
+					DCClass* dcc = g_dcf->get_class_by_id(dc_id);
 
 					// Create fields table for the class
 					storable = create_fields_table(dcc);
@@ -614,7 +614,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 		void check_class(uint16_t id, string name, unsigned long hash)
 		{
-			DCClass* dcc = g_dcf->get_class(id);
+			DCClass* dcc = g_dcf->get_class_by_id(id);
 			if(name != dcc->get_name())
 			{
 				// TODO: Try and update the database instead of exiting
@@ -650,7 +650,7 @@ class SociSQLDatabase : public DatabaseBackend
 			for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 			{
 				DCField* field = dcc->get_inherited_field(i);
-				if(field->is_db() && !field->as_molecular_field())
+				if(field->has_keyword("db") && !field->as_molecular())
 				{
 					db_field_count += 1;
 					// TODO: Store SimpleParameters and fields with 1 SimpleParameter
@@ -689,7 +689,7 @@ class SociSQLDatabase : public DatabaseBackend
 			for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
 			{
 				DCField* field = dcc->get_inherited_field(i);
-				if(field->is_db())
+				if(field->has_keyword("db"))
 				{
 					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
 					      << " WHERE object_id=" << id << ";", into(value, ind);
@@ -711,7 +711,7 @@ class SociSQLDatabase : public DatabaseBackend
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
 				DCField* field = *it;
-				if(field->is_db())
+				if(field->has_keyword("db"))
 				{
 					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
 					      << " WHERE object_id=" << id << ";", into(value, ind);
@@ -730,7 +730,7 @@ class SociSQLDatabase : public DatabaseBackend
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
-				if(it->first->is_db())
+				if(it->first->has_keyword("db"))
 				{
 					name = it->first->get_name();
 
@@ -749,7 +749,7 @@ class SociSQLDatabase : public DatabaseBackend
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
 				DCField* field = *it;
-				if(field->is_db())
+				if(field->has_keyword("db"))
 				{
 					m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << field->get_name()
 					      << "=NULL WHERE object_id=" << id << ";";

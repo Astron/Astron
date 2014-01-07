@@ -68,8 +68,10 @@ class TokenType
 		} nametype;
 };
 
+// The bison-generated code expects to use the symbol 'YYSTYPE' to refer to the above class.
+#ifndef YYSTYPE
+#define YYSTYPE dclass::TokenType
+#endif
+extern YYSTYPE yylval;
 
 } // close namespace dclass
-
-// The bison-generated code expects to use the symbol 'YYSTYPE' to refer to the above class.
-#define YYSTYPE dclass::TokenType

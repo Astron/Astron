@@ -1,5 +1,7 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "dclass/Class.h"
+#include "dclass/Field.h"
 #include <unordered_set>
 
 #include "DBStateServer.h"
@@ -76,11 +78,11 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 			return;
 		}
 
-		Class *dcc = g_dcf->get_class(dc_id)->as_class();
+		const Class *dcc = g_dcf->get_class_by_id(dc_id);
 		if(!dcc)
 		{
 			m_log->error() << "Tried to actvate_other with distributed struct"
-			               << " '" << g_dcf->get_class(dc_id)->get_name() << "'\n";
+			               << " '" << g_dcf->get_class_by_id(dc_id)->get_name() << "'\n";
 		}
 		auto load_it = m_inactive_loads.find(do_id);
 		if(load_it == m_inactive_loads.end())
@@ -158,8 +160,8 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			doid_t do_id = dgi.read_doid();
 			uint16_t field_id = dgi.read_uint16();
 
-			Field* field = g_dcf->get_field_by_id(field_id);
-			if(field && field->is_db())
+			const Field* field = g_dcf->get_field_by_id(field_id);
+			if(field && field->has_keyword("db"))
 			{
 				m_log->trace() << "Forwarding SetField for field with id " << field_id
 				              << ", on object " << do_id << " to database." << std::endl;
@@ -177,18 +179,18 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			doid_t do_id = dgi.read_doid();
 			uint16_t field_count = dgi.read_uint16();
 
-			std::unordered_map<Field*, std::vector<uint8_t> > db_fields;
+			std::unordered_map<const Field*, std::vector<uint8_t> > db_fields;
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				Field* field = g_dcf->get_field_by_id(field_id);
+				const Field* field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
 					m_log->warning() << "Received invalid field in SetFields"
 					                 " with id " << field_id << std::endl;
 					break;
 				}
-				if(field->is_db())
+				if(field->has_keyword("db"))
 				{
 					dgi.unpack_field(field, db_fields[field]);
 				}
@@ -228,9 +230,9 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			              << " on inactive object with id " << r_do_id << std::endl;
 
 			// Check field is "ram db" or "required"
-			Field* field = g_dcf->get_field_by_id(field_id);
-			if(!field || !(field->is_required() ||
-			               (field->is_ram() && field->is_db())))
+			const Field* field = g_dcf->get_field_by_id(field_id);
+			if(!field || !(field->has_keyword("required") ||
+			               (field->has_keyword("ram") && field->has_keyword("db"))))
 			{
 				Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 				dg.add_uint32(r_context);
@@ -238,7 +240,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				route_datagram(dg);
 			}
 
-			if(field->is_db())
+			if(field->has_keyword("db"))
 			{
 				// Get context for db query
 				uint32_t db_context = m_next_context++;
@@ -328,12 +330,12 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			m_log->trace() << "Received GetFields for inactive object with id " << r_do_id << std::endl;
 
 			// Read requested fields from datagram
-			std::list<Field*> db_fields; // Ram|required db fields in request
-			std::list<Field*> ram_fields; // Ram|required but not-db fields in request
+			std::list<const Field*> db_fields; // Ram|required db fields in request
+			std::list<const Field*> ram_fields; // Ram|required but not-db fields in request
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				Field* field = g_dcf->get_field_by_id(field_id);
+				const Field* field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
 					Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
@@ -341,9 +343,9 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					dg.add_uint8(false);
 					route_datagram(dg);
 				}
-				else if(field->is_ram() || field->is_required())
+				else if(field->has_keyword("ram") || field->has_keyword("required"))
 				{
-					if(field->is_db())
+					if(field->has_keyword("db"))
 					{
 						db_fields.push_back(field);
 					}
@@ -548,11 +550,11 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				               << " - id:" << dc_id << std::endl;
 				break;
 			}
-			Class* r_class = g_dcf->get_class(dc_id)->as_class();
+			const Class* r_class = g_dcf->get_class_by_id(dc_id);
 
 			// Get fields from database
-			std::unordered_map<Field*, std::vector<uint8_t> > required_fields;
-			std::map<Field*, std::vector<uint8_t> > ram_fields;
+			std::unordered_map<const Field*, std::vector<uint8_t> > required_fields;
+			std::map<const Field*, std::vector<uint8_t> > ram_fields;
 			if(!unpack_db_fields(dgi, r_class, required_fields, ram_fields))
 			{
 				m_log->error() << "Error while unpacking fields from database." << std::endl;
@@ -566,8 +568,8 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			int dcc_field_count = r_class->get_num_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				Field *field = r_class->get_field(i);
-				if(!field->as_molecular_field() && field->is_required())
+				const Field *field = r_class->get_field(i);
+				if(!field->as_molecular() && field->has_keyword("required"))
 				{
 					auto req_it = required_fields.find(field);
 					if(req_it != required_fields.end())
@@ -618,25 +620,25 @@ void DBStateServer::discard_loader(doid_t do_id)
 	m_loading.erase(do_id);
 }
 
-bool unpack_db_fields(DatagramIterator &dgi, Class* dc_class,
-                      std::unordered_map<Field*, std::vector<uint8_t> > &required,
-                      std::map<Field*, std::vector<uint8_t> > &ram)
+bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
+                      std::unordered_map<const Field*, std::vector<uint8_t> > &required,
+                      std::map<const Field*, std::vector<uint8_t> > &ram)
 {
 	// Unload ram and required fields from database resp
 	uint16_t db_field_count = dgi.read_uint16();
 	for(uint16_t i = 0; i < db_field_count; ++i)
 	{
 		uint16_t field_id = dgi.read_uint16();
-		Field *field = dc_class->get_field_by_id(field_id);
+		const Field *field = dc_class->get_field_by_id(field_id);
 		if(!field)
 		{
 			return false;
 		}
-		if(field->is_ram())
+		if(field->has_keyword("ram"))
 		{
 			dgi.unpack_field(field, ram[field]);
 		}
-		else if(field->is_required())
+		else if(field->has_keyword("required"))
 		{
 			dgi.unpack_field(field, required[field]);
 		}

@@ -28,7 +28,6 @@
 	#define yylex run_lexer
 	#define yyerror parser_error
 	#define yywarning parser_warning
-	#define yylval dcyylval
 	#define yychar dcyychar
 	#define yydebug dcyydebug
 	#define yynerrs dcyynerrs
@@ -44,7 +43,7 @@
 	using namespace std;
 	namespace dclass   // open namespace dclass
 	{
-	
+
 
 	// Parser output
 	static File* parsed_file = (File*)NULL;
