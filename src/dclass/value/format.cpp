@@ -1,10 +1,11 @@
-// Filename: unpack.cpp
-#include "format.h"
-#include "../DistributedType.h"
-#include "../Class.h"
-#include "../AtomicField.h"
-#include "../MolecularField.h"
-#include "../ArrayParameter.h"
+// Filename: format.cpp
+#include "value/format.h"
+#include "DistributedType.h"
+#include "ArrayType.h"
+#include "Struct.h"
+#include "Method.h"
+#include "Field.h"
+#include "Parameter.h"
 #include <cctype>   // std::isprint()
 #include <sstream>  // std::ostringstream
 using namespace std;
@@ -49,15 +50,15 @@ struct Formatter
 
 	bool format(const DistributedType* dtype)
 	{
-		DataType type = dtype->get_datatype();
+		Type type = dtype->get_type();
 		switch(type)
 		{
-			case DT_invalid:
+			case INVALID:
 			{
 				out << "<invalid>";
 				break;
 			}
-			case DT_int8:
+			case INT8:
 			{
 				if(!remaining(sizeof(int8_t)))
 					return false;
@@ -66,7 +67,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_int16:
+			case INT16:
 			{
 				if(!remaining(sizeof(int16_t)))
 					return false;
@@ -75,7 +76,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_int32:
+			case INT32:
 			{
 				if(!remaining(sizeof(int32_t)))
 					return false;
@@ -84,7 +85,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_int64:
+			case INT64:
 			{
 				if(!remaining(sizeof(int64_t)))
 					return false;
@@ -93,7 +94,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_uint8:
+			case UINT8:
 			{
 				if(!remaining(sizeof(uint8_t)))
 					return false;
@@ -102,7 +103,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_uint16:
+			case UINT16:
 			{
 				if(!remaining(sizeof(uint16_t)))
 					return false;
@@ -111,7 +112,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_uint32:
+			case UINT32:
 			{
 				if(!remaining(sizeof(uint32_t)))
 					return false;
@@ -120,7 +121,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_uint64:
+			case UINT64:
 			{
 				if(!remaining(sizeof(uint64_t)))
 					return false;
@@ -129,7 +130,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_float32:
+			case FLOAT32:
 			{
 				if(!remaining(sizeof(float)))
 					return false;
@@ -138,7 +139,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_float64:
+			case FLOAT64:
 			{
 				if(!remaining(sizeof(double)))
 					return false;
@@ -147,7 +148,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case DT_char:
+			case CHAR:
 			{
 				if(!remaining(sizeof(char)))
 					return false;
@@ -155,7 +156,7 @@ struct Formatter
 				format_quoted('\'', string(1, v), out);
 				break;
 			}
-			case DT_string:
+			case STRING:
 			{
 				// Read string length
 				sizetag_t length = dtype->get_size();
@@ -170,7 +171,7 @@ struct Formatter
 				format_quoted('"', str, out);
 				break;
 			}
-			case DT_varstring:
+			case VARSTRING:
 			{
 				// Read string length
 				if(!remaining(sizeof(sizetag_t)))
@@ -187,7 +188,7 @@ struct Formatter
 				format_quoted('"', str, out);
 				break;
 			}
-			case DT_blob:
+			case BLOB:
 			{
 				// Read blob length
 				sizetag_t length = dtype->get_size();
@@ -202,7 +203,7 @@ struct Formatter
 				format_hex(blob, out);
 				break;
 			}
-			case DT_varblob:
+			case VARBLOB:
 			{
 				// Read blob length
 				if(!remaining(sizeof(sizetag_t)))
@@ -219,10 +220,10 @@ struct Formatter
 				format_hex(blob, out);
 				break;
 			}
-			case DT_array:
+			case ARRAY:
 			{
 				out << '[';
-				const ArrayParameter* arr = dtype->as_field()->as_parameter()->as_array_parameter();
+				const ArrayType* arr = dtype->as_array();
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				for(int i = 1; i < arr->get_array_size(); ++i)
@@ -235,7 +236,7 @@ struct Formatter
 				out << ']';
 				break;
 			}
-			case DT_vararray:
+			case VARARRAY:
 			{
 				out << '[';
 				// Read array byte length
@@ -248,7 +249,7 @@ struct Formatter
 					return false;
 				size_t array_end = offset + length;
 
-				const ArrayParameter* arr = dtype->as_field()->as_parameter()->as_array_parameter();
+				const ArrayType* arr = dtype->as_array();
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
 				while(offset < array_end)
@@ -267,18 +268,18 @@ struct Formatter
 				out << ']';
 				break;
 			}
-			case DT_struct:
+			case STRUCT:
 			{
 				out << '{';
-				const Struct* cls = dtype->as_struct();
-				size_t num_fields = cls->get_num_fields();
+				const Struct* strct = dtype->as_struct();
+				size_t num_fields = strct->get_num_fields();
 				if(num_fields > 0)
 				{
-					bool ok = format(cls->get_field(0));
+					bool ok = format(strct->get_field(0)->get_type());
 					if(!ok) return false;
 					for(unsigned int i = 1; i < num_fields; ++i)
 					{
-						ok = format(cls->get_field(i));
+						ok = format(strct->get_field(i)->get_type());
 						if(!ok) return false;
 						out << ", ";
 					}
@@ -286,53 +287,24 @@ struct Formatter
 				out << '}';
 				break;
 			}
-			case DT_method:
+			case METHOD:
 			{
 				out << '(';
-				const Field* field = dtype->as_field();
-				if(field->as_atomic_field())
+				const Method* method = dtype->as_method();
+				size_t num_params = method->get_num_parameters();
+				if(num_params > 0)
 				{
-					const AtomicField* atomic = field->as_atomic_field();
-					size_t num_fields = atomic->get_num_elements();
-					if(num_fields > 0)
+					bool ok = format(method->get_parameter(0)->get_type());
+					if(!ok) return false;
+					for(unsigned int i = 1; i < num_params; ++i)
 					{
-						bool ok = format(atomic->get_element(0));
+						ok = format(method->get_parameter(i)->get_type());
 						if(!ok) return false;
-						for(unsigned int i = 1; i < num_fields; ++i)
-						{
-							ok = format(atomic->get_element(i));
-							if(!ok) return false;
-							out << ", ";
-						}
+						out << ", ";
 					}
+				}
 					out << ')';
 					break;
-				}
-				else if(field->as_molecular_field())
-				{
-					const MolecularField* mol = field->as_molecular_field();
-					size_t num_fields = mol->get_num_atomics();
-					if(num_fields > 0)
-					{
-						bool ok = format(mol->get_atomic(0));
-						if(!ok) return false;
-						for(unsigned int i = 1; i < num_fields; ++i)
-						{
-							ok = format(mol->get_atomic(i));
-							if(!ok) return false;
-							out << ", ";
-						}
-					}
-					out << ')';
-					break;
-				}
-				else
-				{
-					// Temporary until Field revisions
-					out << "<error>";
-					return false;
-				}
-
 			}
 			default:
 			{
