@@ -16,8 +16,8 @@ namespace dclass   // open namespace
 {
 
 // constructor
-Field::Field(Struct* strct, const std::string &name) :
-	m_struct(strct), m_id(0), m_name(name), m_type(NULL), m_has_default_value(false)
+Field::Field(DistributedType* type, const std::string &name) :
+	m_struct(NULL), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
 {
 }
 
@@ -26,7 +26,7 @@ Field::Field(Struct* strct, const std::string &name) :
 bool Field::set_name(const std::string& name)
 {
 	// Check to make sure no other fields in our struct have this name
-	if(m_struct->get_field_by_name(name) != (Field*)NULL)
+	if(m_struct != (Struct*)NULL && m_struct->get_field_by_name(name) != (Field*)NULL)
 	{
 		return false;
 	}

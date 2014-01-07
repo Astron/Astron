@@ -63,87 +63,126 @@
 
 /* Copy the first part of user declarations.  */
 /* Line 371 of yacc.c  */
-#line 5 "Parser.ypp"
+#line 4 "parser.ypp"
 
-#include "LexerDefs.h"
-#include "ParserDefs.h"
-#include "../File.h"
-#include "../Class.h"
-#include "../AtomicField.h"
-#include "../MolecularField.h"
-#include "../StructParameter.h"
-#include "../ArrayParameter.h"
-#include "../SimpleParameter.h"
-#include "../Typedef.h"
-#include "../Keyword.h"
-#include "../NumericRange.h"
-#include "../DataType.h"
+	#include "file/lexerDefs.h"
+	#include "file/parserDefs.h"
+	#include "file/parser.h"
+	#include "file/write.h" // to_string(Type);
 
-#include <assert.h>
-#include <unistd.h>
-#include <stdint.h> // Fixed width integer limits
-#include <math.h>   // Float INFINITY
+	#include "File.h"
+	#include "DistributedType.h"
+	#include "NumericRange.h"
+	#include "NumericType.h"
+	#include "ArrayType.h"
+	#include "Struct.h"
+	#include "Class.h"
+	#include "Field.h"
+	#include "Method.h"
+	#include "Parameter.h"
+	#include "MolecularField.h"
 
-using namespace dclass;
-#define yyparse dcyyparse
-#define yylex dcyylex
-#define yyerror dcyyerror
-#define yywarning dcyywarning
-#define yylval dcyylval
-#define yychar dcyychar
-#define yydebug dcyydebug
-#define yynerrs dcyynerrs
+	#include <unistd.h>
+	#include <stdint.h> // Fixed width integer limits
+	#include <math.h>   // Float INFINITY
+	#include <stack>    // std::stack
 
-// Because our token type contains objects of type std::string, which
-// require correct copy construction (and not simply memcpying), we
-// cannot use bison's built-in auto-stack-grow feature.  As an easy
-// solution, we ensure here that we have enough yacc stack to start
-// with, and that it doesn't ever try to grow.
-#define YYINITDEPTH 1000
-#define YYMAXDEPTH 1000
+	#define yyparse run_parser
+	#define yylex run_lexer
+	#define yyerror parser_error
+	#define yywarning parser_warning
+	#define yylval dcyylval
+	#define yychar dcyychar
+	#define yydebug dcyydebug
+	#define yynerrs dcyynerrs
 
-	File *dc_file = (File*)NULL;
-	std::string *output_value = (std::string*)NULL;
+	// Because our token type contains objects of type string, which
+	// require correct copy construction (and not simply memcpying), we
+	// cannot use bison's built-in auto-stack-grow feature.  As an easy
+	// solution, we ensure here that we have enough yacc stack to start
+	// with, and that it doesn't ever try to grow.
+	#define YYINITDEPTH 1000
+	#define YYMAXDEPTH 1000
 
-	static Struct *current_class = (Struct*)NULL;
-	static AtomicField *current_atomic = (AtomicField*)NULL;
-	static MolecularField *current_molecular = (MolecularField*)NULL;
-	static Parameter *current_parameter = (Parameter*)NULL;
-	static KeywordList current_keyword_list;
+	using namespace std;
+	namespace dclass   // open namespace dclass
+	{
+	
+
+	// Parser output
+	static File* parsed_file = (File*)NULL;
+	static string* parsed_value = (string*)NULL;
+
+	// Parser state
+	static Class* current_class = (Class*)NULL;
+	static Struct* current_struct = (Struct*)NULL;
+
+	// Stack of distributed types for parsing values
+	struct TypeAndDepth
+	{
+		int depth;
+		const DistributedType* type;
+		TypeAndDepth(const DistributedType* t, int d) : depth(d), type(t) {}
+	};
+	static stack<TypeAndDepth> type_stack;
+	static int current_depth;
 
 	/* Helper functions */
-	static Parameter* param_with_modulus(Parameter* p, double mod);
-	static Parameter* param_with_divisor(Parameter* p, uint32_t div);
-	static std::string number_value(DataType type, double &number);
-	static std::string number_value(DataType type, int64_t &number);
-	static std::string number_value(DataType type, uint64_t &number);
+	static bool check_depth();
+	static bool check_depth(int depth);
+	static void depth_error(string what);
+	static void depth_error(int depth, string what);
+	static string number_value(Type type, double &number);
+	static string number_value(Type type, int64_t &number);
+	static string number_value(Type type, uint64_t &number);
 
 ////////////////////////////////////////////////////////////////////
 // Defining the interface to the parser.
 ////////////////////////////////////////////////////////////////////
 
-	void dc_init_parser(std::istream& in, const std::string& filename, File& file)
+	void init_file_parser(istream& in, const string& filename, File& file)
 	{
-		dc_file = &file;
-		dc_init_lexer(in, filename);
+		parsed_file = &file;
+		init_file_lexer(in, filename);
 	}
 
-	void dc_init_value_parser(std::istream& in, const std::string& source, const Parameter* parameter, std::string& output)
+	void init_value_parser(istream& in, const string& source,
+	                       const DistributedType* type, string& output)
 	{
-		output_value = &output;
-		dc_init_lexer(in, source);
-		dc_start_parameter_value();
+		parsed_value = &output;
+		current_depth = 0;
+		type_stack.push(TypeAndDepth(type, 0));
+		init_value_lexer(in, source);
 	}
 
-	void dc_cleanup_parser()
+	void cleanup_parser()
 	{
-		dc_file = (File*)NULL;
-		output_value = (std::string*)NULL;
+		current_depth = 0;
+		type_stack = stack<TypeAndDepth>();
+		parsed_file = (File*)NULL;
+		parsed_value = (string*)NULL;
 	}
 
+	int parser_error_count()
+	{
+		return lexer_error_count();
+	}
+	int parser_warning_count()
+	{
+		return lexer_warning_count();
+	}
+
+	void parser_error(const string &msg)
+	{
+		lexer_error(msg);
+	}
+	void parser_warning(const string &msg)
+	{
+		parser_error(msg);
+	}
 
 /* Line 371 of yacc.c  */
-#line 147 "Parser.cpp"
+#line 186 "parser.cpp"
 
 # ifndef YY_NULL
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -162,7 +201,7 @@ using namespace dclass;
 #endif
 
 /* In a future release of Bison, this section will be replaced
-   by #include "Parser.h".  */
+   by #include "parser.h".  */
 #ifndef YY_YY_PARSER_H_INCLUDED
 # define YY_YY_PARSER_H_INCLUDED
 /* Enabling traces.  */
@@ -185,9 +224,9 @@ extern int yydebug;
      STRING = 261,
      HEX_STRING = 262,
      IDENTIFIER = 263,
-     KEYWORD = 264,
-     START_DC = 265,
-     START_PARAMETER_VALUE = 266,
+     CHAR = 264,
+     START_DC_FILE = 265,
+     START_DC_VALUE = 266,
      KW_DCLASS = 267,
      KW_STRUCT = 268,
      KW_FROM = 269,
@@ -238,7 +277,7 @@ int yyparse ();
 /* Copy the second part of user declarations.  */
 
 /* Line 390 of yacc.c  */
-#line 242 "Parser.cpp"
+#line 281 "parser.cpp"
 
 #ifdef short
 # undef short
@@ -465,18 +504,18 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  15
+#define YYFINAL  20
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   220
+#define YYLAST   235
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  46
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  59
+#define YYNNTS  77
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  144
+#define YYNRULES  165
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  223
+#define YYNSTATES  246
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
@@ -491,13 +530,13 @@ static const yytype_uint8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,    41,     2,     2,
-      39,    40,    34,     2,    35,    45,    32,    33,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,    44,     2,     2,
+      42,    43,    33,     2,    34,    45,    32,    35,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,    38,    31,
-       2,    44,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,    39,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    42,     2,    43,     2,     2,     2,     2,     2,     2,
+       2,    40,     2,    41,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,    36,     2,    37,     2,     2,     2,     2,
@@ -525,86 +564,95 @@ static const yytype_uint8 yytranslate[] =
 static const yytype_uint16 yyprhs[] =
 {
        0,     0,     3,     6,     9,    11,    14,    17,    20,    23,
-      26,    29,    31,    34,    35,    41,    43,    47,    49,    53,
-      55,    57,    59,    63,    66,    69,    71,    74,    77,    78,
-      86,    88,    90,    93,    95,    99,   101,   104,   108,   111,
-     114,   117,   120,   121,   128,   130,   133,   136,   139,   142,
-     143,   149,   151,   153,   155,   159,   161,   163,   165,   167,
-     169,   171,   173,   175,   177,   179,   181,   183,   185,   187,
-     192,   196,   200,   204,   208,   212,   215,   218,   221,   224,
-     229,   234,   239,   244,   249,   253,   257,   261,   265,   269,
-     273,   277,   279,   281,   285,   288,   290,   292,   296,   299,
-     301,   303,   305,   307,   309,   311,   313,   315,   317,   319,
-     321,   323,   325,   327,   331,   335,   337,   339,   341,   345,
-     349,   353,   357,   361,   363,   365,   367,   369,   371,   373,
-     375,   377,   379,   381,   383,   385,   387,   389,   392,   394,
-     395,   400,   402,   404,   408
+      26,    29,    31,    33,    35,    38,    43,    45,    49,    51,
+      53,    55,    59,    61,    65,    68,    71,    73,    76,    78,
+      81,    82,    90,    92,    95,    97,   101,   103,   105,   108,
+     112,   115,   117,   118,   125,   127,   130,   134,   136,   138,
+     140,   142,   144,   146,   148,   149,   154,   156,   161,   162,
+     167,   168,   173,   174,   180,   183,   185,   187,   189,   191,
+     193,   198,   203,   208,   212,   216,   218,   220,   225,   227,
+     229,   231,   233,   235,   240,   244,   248,   252,   256,   260,
+     263,   266,   269,   273,   275,   277,   279,   281,   282,   287,
+     290,   295,   296,   301,   302,   307,   309,   311,   315,   318,
+     320,   322,   326,   329,   331,   333,   335,   337,   339,   341,
+     343,   345,   347,   349,   351,   353,   355,   357,   359,   361,
+     362,   367,   369,   373,   374,   379,   381,   383,   387,   391,
+     394,   395,   400,   402,   404,   408,   412,   416,   420,   424,
+     428,   430,   432,   434,   436,   438,   440,   442,   444,   446,
+     448,   450,   452,   454,   456,   459
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      47,     0,    -1,    10,    48,    -1,    11,    49,    -1,   104,
-      -1,    48,    31,    -1,    48,    59,    -1,    48,    66,    -1,
-      48,    50,    -1,    48,    56,    -1,    48,    57,    -1,    94,
-      -1,    15,    52,    -1,    -1,    14,    52,    15,    51,    54,
-      -1,    53,    -1,    52,    32,    53,    -1,     8,    -1,    53,
-      33,     8,    -1,    55,    -1,    34,    -1,    53,    -1,    55,
-      35,    53,    -1,    16,    75,    -1,    17,    58,    -1,   104,
-      -1,    58,     8,    -1,    58,     9,    -1,    -1,    12,     8,
-      60,    62,    36,    64,    37,    -1,     8,    -1,   104,    -1,
-      38,    63,    -1,    61,    -1,    63,    35,    61,    -1,   104,
-      -1,    64,    31,    -1,    64,    65,    31,    -1,    70,    98,
-      -1,   100,    99,    -1,    76,    98,    -1,    75,    98,    -1,
-      -1,    13,     8,    67,    36,    68,    37,    -1,   104,    -1,
-      68,    31,    -1,    68,    69,    -1,    76,    31,    -1,    75,
-      31,    -1,    -1,     8,    39,    71,    72,    40,    -1,   104,
-      -1,    73,    -1,    74,    -1,    73,    35,    74,    -1,    77,
-      -1,    82,    -1,    84,    -1,    86,    -1,    78,    -1,    79,
-      -1,    80,    -1,    81,    -1,    83,    -1,    85,    -1,    75,
-      -1,    76,    -1,    97,    -1,     8,    -1,    97,    39,    87,
-      40,    -1,    78,    41,    92,    -1,    79,    41,    92,    -1,
-      78,    33,    90,    -1,    79,    33,    90,    -1,    80,    33,
-      90,    -1,    78,     8,    -1,    79,     8,    -1,    80,     8,
-      -1,    81,     8,    -1,    78,    42,    88,    43,    -1,    79,
-      42,    88,    43,    -1,    80,    42,    88,    43,    -1,    81,
-      42,    88,    43,    -1,    82,    42,    88,    43,    -1,    78,
-      44,    94,    -1,    79,    44,    94,    -1,    80,    44,    94,
-      -1,    81,    44,    94,    -1,    83,    44,    94,    -1,    82,
-      44,    94,    -1,    84,    44,    94,    -1,   104,    -1,    93,
-      -1,    93,    45,    93,    -1,    93,    92,    -1,   104,    -1,
-      89,    -1,    89,    45,    89,    -1,    89,    91,    -1,     6,
-      -1,    90,    -1,     3,    -1,     4,    -1,     3,    -1,     4,
-      -1,     5,    -1,     6,    -1,    92,    -1,     4,    -1,     3,
-      -1,     5,    -1,     6,    -1,     7,    -1,    42,    95,    43,
-      -1,    36,    95,    37,    -1,   104,    -1,    96,    -1,    94,
-      -1,     4,    34,    90,    -1,     3,    34,    90,    -1,     5,
-      34,    90,    -1,     7,    34,    90,    -1,    96,    35,    94,
-      -1,    18,    -1,    19,    -1,    20,    -1,    21,    -1,    22,
-      -1,    23,    -1,    24,    -1,    25,    -1,    26,    -1,    27,
-      -1,    28,    -1,    29,    -1,    30,    -1,   104,    -1,    98,
-       9,    -1,    98,    -1,    -1,     8,    38,   101,   103,    -1,
-       8,    -1,   102,    -1,   103,    35,   102,    -1,    -1
+      47,     0,    -1,    10,    48,    -1,    11,    49,    -1,   122,
+      -1,    48,    31,    -1,    48,    60,    -1,    48,    67,    -1,
+      48,    50,    -1,    48,    55,    -1,    48,    58,    -1,   122,
+      -1,   108,    -1,   109,    -1,    15,    51,    -1,    14,    51,
+      15,    52,    -1,    54,    -1,    51,    32,    54,    -1,    53,
+      -1,    33,    -1,    54,    -1,    53,    34,    54,    -1,     8,
+      -1,    54,    35,     8,    -1,    16,    56,    -1,    81,     8,
+      -1,     8,    -1,    17,    59,    -1,   122,    -1,    59,     8,
+      -1,    -1,    12,     8,    61,    62,    36,    65,    37,    -1,
+     122,    -1,    38,    63,    -1,    64,    -1,    63,    34,    64,
+      -1,     8,    -1,   122,    -1,    65,    31,    -1,    65,    66,
+      31,    -1,    71,   121,    -1,    84,    -1,    -1,    13,     8,
+      68,    36,    69,    37,    -1,   122,    -1,    69,    31,    -1,
+      69,    70,    31,    -1,    71,    -1,    72,    -1,    74,    -1,
+      75,    -1,    76,    -1,    80,    -1,    81,    -1,    -1,    81,
+      39,    73,   108,    -1,    56,    -1,    74,    40,   102,    41,
+      -1,    -1,    74,    39,    77,   108,    -1,    -1,    75,    39,
+      78,   108,    -1,    -1,    80,    39,   109,    79,   108,    -1,
+       8,    92,    -1,    82,    -1,    83,    -1,    57,    -1,    87,
+      -1,    86,    -1,    87,    40,   102,    41,    -1,    57,    40,
+     102,    41,    -1,    86,    40,   102,    41,    -1,     8,    38,
+      85,    -1,    84,    34,    85,    -1,     8,    -1,   119,    -1,
+     119,    42,   102,    43,    -1,    88,    -1,    89,    -1,    90,
+      -1,    91,    -1,   120,    -1,    88,    42,   101,    43,    -1,
+      88,    44,   106,    -1,    89,    44,   106,    -1,    88,    35,
+     104,    -1,    89,    35,   104,    -1,    90,    35,   104,    -1,
+      42,    43,    -1,    93,    43,    -1,    42,    94,    -1,    93,
+      34,    94,    -1,    96,    -1,    97,    -1,    98,    -1,    81,
+      -1,    -1,    81,    39,    95,   108,    -1,    82,     8,    -1,
+      96,    40,   102,    41,    -1,    -1,    96,    39,    99,   108,
+      -1,    -1,    97,    39,   100,   108,    -1,   122,    -1,   107,
+      -1,   107,    45,   107,    -1,   107,   106,    -1,   122,    -1,
+     103,    -1,   103,    45,   103,    -1,   103,   105,    -1,     9,
+      -1,   104,    -1,     3,    -1,     4,    -1,     3,    -1,     4,
+      -1,     5,    -1,     9,    -1,   106,    -1,     4,    -1,     3,
+      -1,     5,    -1,     6,    -1,     7,    -1,   115,    -1,   112,
+      -1,    -1,    42,   110,   111,    43,    -1,   108,    -1,   111,
+      34,   108,    -1,    -1,    36,   113,   114,    37,    -1,   108,
+      -1,   109,    -1,   114,    34,   108,    -1,   114,    34,   109,
+      -1,    40,    41,    -1,    -1,    40,   116,   117,    41,    -1,
+     108,    -1,   118,    -1,   117,    34,   108,    -1,   117,    34,
+     118,    -1,     4,    33,   104,    -1,     3,    33,   104,    -1,
+       5,    33,   104,    -1,     7,    33,   104,    -1,    28,    -1,
+      29,    -1,    30,    -1,    18,    -1,    19,    -1,    20,    -1,
+      21,    -1,    22,    -1,    23,    -1,    24,    -1,    25,    -1,
+      26,    -1,    27,    -1,   122,    -1,   121,     8,    -1,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   165,   165,   166,   170,   171,   172,   179,   186,   187,
-     188,   192,   199,   204,   203,   212,   213,   220,   221,   229,
-     230,   234,   235,   239,   253,   257,   258,   262,   274,   273,
-     286,   313,   314,   318,   325,   335,   336,   337,   351,   363,
-     364,   373,   385,   384,   395,   396,   397,   411,   412,   417,
-     416,   435,   436,   440,   441,   445,   455,   456,   457,   461,
-     462,   463,   464,   465,   466,   470,   471,   475,   476,   508,
-     526,   527,   531,   532,   533,   537,   538,   539,   540,   544,
-     545,   546,   547,   551,   555,   556,   557,   558,   559,   563,
-     564,   568,   569,   570,   571,   575,   576,   577,   578,   582,
-     593,   597,   609,   625,   626,   627,   631,   643,   647,   651,
-     655,   659,   684,   689,   703,   730,   731,   735,   742,   761,
-     780,   799,   819,   829,   830,   831,   832,   833,   834,   835,
-     836,   837,   838,   839,   840,   841,   845,   846,   850,   860,
-     860,   865,   885,   892,   907
+       0,   224,   224,   225,   230,   231,   232,   233,   234,   235,
+     236,   240,   246,   252,   261,   266,   275,   276,   283,   284,
+     291,   295,   303,   304,   311,   353,   363,   378,   382,   383,
+     391,   390,   430,   431,   435,   442,   452,   483,   484,   485,
+     523,   546,   554,   553,   593,   594,   595,   629,   630,   634,
+     635,   636,   637,   641,   646,   645,   663,   670,   679,   678,
+     691,   690,   703,   702,   717,   724,   725,   729,   747,   751,
+     755,   759,   763,   770,   774,   799,   821,   832,   846,   847,
+     848,   849,   853,   857,   869,   878,   890,   897,   904,   914,
+     918,   925,   935,   948,   949,   950,   951,   956,   955,   971,
+     978,   987,   986,   999,   998,  1013,  1014,  1015,  1016,  1020,
+    1021,  1022,  1023,  1027,  1039,  1043,  1055,  1071,  1072,  1073,
+    1077,  1089,  1093,  1102,  1111,  1120,  1150,  1180,  1181,  1201,
+    1200,  1237,  1238,  1246,  1245,  1282,  1283,  1284,  1288,  1295,
+    1301,  1300,  1330,  1331,  1332,  1333,  1337,  1358,  1379,  1400,
+    1425,  1426,  1430,  1431,  1432,  1433,  1434,  1435,  1436,  1437,
+    1438,  1439,  1440,  1444,  1448,  1461
 };
 #endif
 
@@ -614,27 +662,32 @@ static const yytype_uint16 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "UNSIGNED_INTEGER", "SIGNED_INTEGER",
-  "REAL", "STRING", "HEX_STRING", "IDENTIFIER", "KEYWORD", "START_DC",
-  "START_PARAMETER_VALUE", "KW_DCLASS", "KW_STRUCT", "KW_FROM",
-  "KW_IMPORT", "KW_TYPEDEF", "KW_KEYWORD", "KW_INT8", "KW_INT16",
-  "KW_INT32", "KW_INT64", "KW_UINT8", "KW_UINT16", "KW_UINT32",
-  "KW_UINT64", "KW_FLOAT32", "KW_FLOAT64", "KW_STRING", "KW_BLOB",
-  "KW_CHAR", "';'", "'.'", "'/'", "'*'", "','", "'{'", "'}'", "':'", "'('",
-  "')'", "'%'", "'['", "']'", "'='", "'-'", "$accept", "grammar", "dc",
-  "output_parameter_value", "import", "$@1", "import_identifier",
-  "import_path", "import_symbol_list_or_star", "import_symbol_list",
-  "typedef_decl", "keyword_decl", "keyword_decl_list", "dclass", "@2",
-  "dclass_name", "dclass_inheritance", "dclass_parents", "dclass_fields",
-  "dclass_field", "dstruct", "$@3", "struct_fields", "struct_field",
-  "atomic_field", "@4", "parameter_list", "nonempty_parameter_list",
-  "atomic_element", "named_parameter", "unnamed_parameter", "parameter",
-  "param_w_typ", "param_w_rng", "param_w_mod", "param_w_div",
-  "param_w_nam", "param_u_arr", "param_n_arr", "param_u_def",
-  "param_n_def", "double_range", "uint_range", "char_or_uint",
-  "small_unsigned_integer", "small_negative_integer", "number",
-  "char_or_number", "parameter_value", "array", "array_value",
-  "type_token", "keyword_list", "no_keyword_list", "molecular_field",
-  "$@5", "atomic_name", "molecular_atom_list", "empty", YY_NULL
+  "REAL", "STRING", "HEX_STRING", "IDENTIFIER", "CHAR", "START_DC_FILE",
+  "START_DC_VALUE", "KW_DCLASS", "KW_STRUCT", "KW_FROM", "KW_IMPORT",
+  "KW_TYPEDEF", "KW_KEYWORD", "KW_INT8", "KW_INT16", "KW_INT32",
+  "KW_INT64", "KW_UINT8", "KW_UINT16", "KW_UINT32", "KW_UINT64",
+  "KW_FLOAT32", "KW_FLOAT64", "KW_STRING", "KW_BLOB", "KW_CHAR", "';'",
+  "'.'", "'*'", "','", "'/'", "'{'", "'}'", "':'", "'='", "'['", "']'",
+  "'('", "')'", "'%'", "'-'", "$accept", "grammar", "file", "value",
+  "import", "import_module", "import_symbols", "import_symbol_list",
+  "import_alternatives", "typedef", "nonmethod_type_with_name",
+  "defined_type", "keyword_decl", "keyword_decl_list", "dclass", "$@1",
+  "class_inheritance", "class_parents", "defined_class", "class_fields",
+  "class_field", "dstruct", "$@2", "struct_fields", "struct_field",
+  "named_field", "unnamed_field", "$@3", "field_with_name",
+  "field_with_name_as_array", "field_with_name_and_default", "$@4", "$@5",
+  "$@6", "method_as_field", "nonmethod_type", "nonmethod_type_no_array",
+  "type_with_array", "molecular", "defined_field", "builtin_array_type",
+  "numeric_type", "numeric_token_only", "numeric_with_range",
+  "numeric_with_modulus", "numeric_with_divisor", "method", "method_body",
+  "parameter", "$@7", "param_with_name", "param_with_name_as_array",
+  "param_with_name_and_default", "$@8", "$@9", "numeric_range",
+  "array_range", "char_or_uint", "small_unsigned_integer",
+  "small_negative_integer", "number", "char_or_number", "type_value",
+  "method_value", "$@10", "parameter_values", "struct_value", "$@11",
+  "field_values", "array_value", "$@12", "element_values",
+  "array_expansion", "array_type_token", "numeric_type_token",
+  "keyword_list", "empty", YY_NULL
 };
 #endif
 
@@ -646,8 +699,8 @@ static const yytype_uint16 yytoknum[] =
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-     285,    59,    46,    47,    42,    44,   123,   125,    58,    40,
-      41,    37,    91,    93,    61,    45
+     285,    59,    46,    42,    44,    47,   123,   125,    58,    61,
+      91,    93,    40,    41,    37,    45
 };
 # endif
 
@@ -655,40 +708,44 @@ static const yytype_uint16 yytoknum[] =
 static const yytype_uint8 yyr1[] =
 {
        0,    46,    47,    47,    48,    48,    48,    48,    48,    48,
-      48,    49,    50,    51,    50,    52,    52,    53,    53,    54,
-      54,    55,    55,    56,    57,    58,    58,    58,    60,    59,
-      61,    62,    62,    63,    63,    64,    64,    64,    65,    65,
-      65,    65,    67,    66,    68,    68,    68,    69,    69,    71,
-      70,    72,    72,    73,    73,    74,    75,    75,    75,    76,
-      76,    76,    76,    76,    76,    77,    77,    78,    78,    79,
-      80,    80,    81,    81,    81,    82,    82,    82,    82,    83,
-      83,    83,    83,    84,    85,    85,    85,    85,    85,    86,
-      86,    87,    87,    87,    87,    88,    88,    88,    88,    89,
-      89,    90,    91,    92,    92,    92,    93,    93,    94,    94,
-      94,    94,    94,    94,    94,    95,    95,    96,    96,    96,
-      96,    96,    96,    97,    97,    97,    97,    97,    97,    97,
-      97,    97,    97,    97,    97,    97,    98,    98,    99,   101,
-     100,   102,   103,   103,   104
+      48,    49,    49,    49,    50,    50,    51,    51,    52,    52,
+      53,    53,    54,    54,    55,    56,    57,    58,    59,    59,
+      61,    60,    62,    62,    63,    63,    64,    65,    65,    65,
+      66,    66,    68,    67,    69,    69,    69,    70,    70,    71,
+      71,    71,    71,    72,    73,    72,    74,    75,    77,    76,
+      78,    76,    79,    76,    80,    81,    81,    82,    82,    82,
+      83,    83,    83,    84,    84,    85,    86,    86,    87,    87,
+      87,    87,    88,    89,    90,    90,    91,    91,    91,    92,
+      92,    93,    93,    94,    94,    94,    94,    95,    94,    96,
+      97,    99,    98,   100,    98,   101,   101,   101,   101,   102,
+     102,   102,   102,   103,   103,   104,   105,   106,   106,   106,
+     107,   107,   108,   108,   108,   108,   108,   108,   108,   110,
+     109,   111,   111,   113,   112,   114,   114,   114,   114,   115,
+     116,   115,   117,   117,   117,   117,   118,   118,   118,   118,
+     119,   119,   120,   120,   120,   120,   120,   120,   120,   120,
+     120,   120,   120,   121,   121,   122
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
        0,     2,     2,     2,     1,     2,     2,     2,     2,     2,
-       2,     1,     2,     0,     5,     1,     3,     1,     3,     1,
-       1,     1,     3,     2,     2,     1,     2,     2,     0,     7,
-       1,     1,     2,     1,     3,     1,     2,     3,     2,     2,
-       2,     2,     0,     6,     1,     2,     2,     2,     2,     0,
-       5,     1,     1,     1,     3,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     4,
-       3,     3,     3,     3,     3,     2,     2,     2,     2,     4,
-       4,     4,     4,     4,     3,     3,     3,     3,     3,     3,
-       3,     1,     1,     3,     2,     1,     1,     3,     2,     1,
+       2,     1,     1,     1,     2,     4,     1,     3,     1,     1,
+       1,     3,     1,     3,     2,     2,     1,     2,     1,     2,
+       0,     7,     1,     2,     1,     3,     1,     1,     2,     3,
+       2,     1,     0,     6,     1,     2,     3,     1,     1,     1,
+       1,     1,     1,     1,     0,     4,     1,     4,     0,     4,
+       0,     4,     0,     5,     2,     1,     1,     1,     1,     1,
+       4,     4,     4,     3,     3,     1,     1,     4,     1,     1,
+       1,     1,     1,     4,     3,     3,     3,     3,     3,     2,
+       2,     2,     3,     1,     1,     1,     1,     0,     4,     2,
+       4,     0,     4,     0,     4,     1,     1,     3,     2,     1,
+       1,     3,     2,     1,     1,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     1,     1,     0,
+       4,     1,     3,     0,     4,     1,     1,     3,     3,     2,
+       0,     4,     1,     1,     3,     3,     3,     3,     3,     3,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     3,     3,     1,     1,     1,     3,     3,
-       3,     3,     3,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     2,     1,     0,
-       4,     1,     1,     3,     0
+       1,     1,     1,     1,     2,     0
 };
 
 /* YYDEFACT[STATE-NAME] -- Default reduction number in state STATE-NUM.
@@ -696,81 +753,89 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,   144,     0,     0,     2,     4,   109,   108,   110,   111,
-     112,   144,   144,     3,    11,     1,     0,     0,     0,     0,
-       0,   144,     5,     8,     9,    10,     6,     7,   109,   108,
-     110,   112,   117,     0,   116,   115,     0,    28,    42,    17,
-       0,    15,    12,    68,   123,   124,   125,   126,   127,   128,
-     129,   130,   131,   132,   133,   134,   135,    23,     0,     0,
-       0,     0,    56,    57,    58,    67,    24,    25,     0,     0,
-       0,     0,   114,     0,   113,   144,     0,    13,     0,     0,
-      75,     0,     0,    76,     0,     0,    77,     0,    78,   144,
-       0,     0,   144,    26,    27,   101,   119,   118,   120,   121,
-     122,     0,     0,    31,   144,     0,    16,    18,    72,   103,
-     104,   105,    70,    73,    71,    74,    99,     0,    96,   100,
-      95,    89,    90,   106,     0,   107,    92,    91,    30,    33,
-      32,   144,     0,    44,    20,    21,    14,    19,    83,   102,
-       0,    98,    69,     0,    94,     0,     0,    35,    45,    43,
-      46,     0,     0,    59,    60,    61,    62,    63,    64,     0,
-      97,    93,    34,    68,    36,    29,     0,   144,   144,   144,
-     144,    48,    47,   144,     0,   144,     0,   144,     0,   144,
-       0,     0,    22,   139,    49,    37,    38,   136,    41,    40,
-     138,    39,     0,    84,     0,    85,     0,    86,     0,    87,
-      88,     0,   144,   137,    79,    80,    81,    82,   141,   142,
-     140,     0,    52,    53,    65,    66,    55,    51,     0,    50,
-       0,   143,    54
+       0,   165,   165,     0,     2,     4,   123,   122,   124,   125,
+     126,   133,   140,   129,     3,    12,    13,   128,   127,    11,
+       1,     0,     0,     0,     0,     0,   165,     5,     8,     9,
+      10,     6,     7,     0,   139,     0,     0,    30,    42,    22,
+       0,    16,    14,    26,   153,   154,   155,   156,   157,   158,
+     159,   160,   161,   162,   150,   151,   152,    24,    67,     0,
+      65,    66,    69,    68,    78,    79,    80,    81,    76,    82,
+      27,    28,   135,   136,     0,   123,   122,   124,   126,   142,
+       0,   143,   131,     0,   165,     0,     0,     0,     0,   165,
+      25,   165,   165,     0,   165,     0,     0,     0,     0,   165,
+      29,     0,   134,     0,     0,     0,     0,     0,   141,     0,
+     130,     0,     0,    32,   165,    19,    15,    18,    20,    17,
+      23,   115,   113,     0,   110,   114,   109,     0,     0,    86,
+     117,   118,   119,   120,     0,   121,   106,   105,    84,    87,
+      85,    88,     0,   137,   138,   147,   146,   148,   149,   144,
+     145,   132,    36,    33,    34,   165,     0,    44,     0,    71,
+     116,     0,   112,    72,    70,    83,     0,   108,    77,     0,
+       0,    37,    26,    45,    43,    56,     0,    47,    48,    49,
+      50,    51,    52,    53,    21,   111,   107,    35,    26,    38,
+      31,     0,   165,    41,     0,    64,     0,    46,    58,   165,
+      60,     0,    54,     0,    39,    40,   163,     0,    89,    96,
+      65,    91,    93,    94,    95,     0,    90,     0,     0,     0,
+      62,     0,    75,    73,   164,    74,    97,    99,   101,   165,
+     103,    92,    59,    57,    61,     0,    55,     0,     0,     0,
+       0,    63,    98,   102,   100,   104
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-      -1,     3,     4,    13,    23,   105,    40,    41,   136,   137,
-      24,    25,    66,    26,    75,   129,   102,   130,   146,   166,
-      27,    76,   132,   150,   167,   202,   211,   212,   213,   214,
-     215,   216,   153,   154,   155,   156,    62,   157,    63,   158,
-      64,   124,   117,   118,   119,   141,   125,   126,    32,    33,
-      34,    65,   186,   191,   170,   201,   209,   210,   120
+      -1,     3,     4,    14,    28,    40,   116,   117,    41,    29,
+     175,    58,    30,    70,    31,    84,   112,   153,   154,   170,
+     191,    32,    85,   156,   176,   177,   178,   221,   179,   180,
+     181,   217,   219,   235,   182,    59,    60,    61,   193,   223,
+      62,    63,    64,    65,    66,    67,   195,   196,   211,   237,
+     212,   213,   214,   238,   240,   134,   123,   124,   125,   162,
+     135,   136,    15,    16,    36,    83,    17,    33,    74,    18,
+      35,    80,    81,    68,    69,   205,   126
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -107
+#define YYPACT_NINF -169
 static const yytype_int16 yypact[] =
 {
-      61,  -107,     9,    17,    73,  -107,  -107,  -107,  -107,  -107,
-    -107,    18,    18,  -107,  -107,  -107,    28,    31,    34,    34,
-     190,  -107,  -107,  -107,  -107,  -107,  -107,  -107,     0,    16,
-      35,    43,  -107,    42,    49,  -107,    51,  -107,  -107,  -107,
-      26,    79,    88,  -107,  -107,  -107,  -107,  -107,  -107,  -107,
-    -107,  -107,  -107,  -107,  -107,  -107,  -107,  -107,    29,    40,
-      10,   114,   -14,    81,  -107,    84,   101,  -107,   121,   121,
-     121,   121,  -107,     9,  -107,    90,    93,  -107,    34,   118,
-    -107,   121,   102,  -107,   121,   102,  -107,   121,  -107,    32,
-       9,     9,    96,  -107,  -107,  -107,  -107,  -107,  -107,  -107,
-    -107,   137,   110,  -107,  -107,    25,    79,  -107,  -107,  -107,
-    -107,  -107,  -107,  -107,  -107,  -107,  -107,   104,     1,  -107,
-    -107,  -107,  -107,  -107,   108,  -107,     4,  -107,  -107,  -107,
-     116,  -107,   113,  -107,  -107,    79,  -107,   117,  -107,  -107,
-      32,  -107,  -107,    96,  -107,   137,   166,  -107,  -107,  -107,
-    -107,   122,   123,    11,    23,    24,    19,   105,  -107,    34,
-    -107,  -107,  -107,    80,  -107,  -107,   124,  -107,  -107,  -107,
-    -107,  -107,  -107,    32,     9,    32,     9,    32,     9,    32,
-       9,     9,    79,  -107,  -107,  -107,   147,  -107,   147,   147,
-     147,  -107,   115,  -107,   119,  -107,   120,  -107,   127,  -107,
-    -107,   149,   190,  -107,  -107,  -107,  -107,  -107,  -107,  -107,
-     125,   131,   126,  -107,  -107,  -107,  -107,  -107,   149,  -107,
-     190,  -107,  -107
+      67,  -169,    18,    37,   134,  -169,  -169,  -169,  -169,  -169,
+    -169,  -169,   -28,  -169,  -169,  -169,  -169,  -169,  -169,  -169,
+    -169,    40,    53,    75,    75,   190,  -169,  -169,  -169,  -169,
+    -169,  -169,  -169,    18,  -169,    27,    35,  -169,  -169,  -169,
+      13,     0,    64,  -169,  -169,  -169,  -169,  -169,  -169,  -169,
+    -169,  -169,  -169,  -169,  -169,  -169,  -169,  -169,    72,   105,
+    -169,  -169,    85,   100,    20,    -8,   106,  -169,   101,  -169,
+     144,  -169,  -169,  -169,    16,   109,   120,   121,   122,  -169,
+      32,  -169,  -169,    22,   118,   123,    11,    75,   149,    43,
+    -169,    43,    43,   158,   115,    90,   158,    90,   158,    43,
+    -169,    18,  -169,   158,   158,   158,   158,    27,  -169,    35,
+    -169,   154,   127,  -169,  -169,  -169,  -169,   130,     0,     0,
+    -169,  -169,  -169,   125,     6,  -169,  -169,   126,   146,  -169,
+    -169,  -169,  -169,  -169,   142,  -169,    12,  -169,  -169,  -169,
+    -169,  -169,   147,  -169,  -169,  -169,  -169,  -169,  -169,  -169,
+    -169,  -169,  -169,   157,  -169,  -169,   108,  -169,    75,  -169,
+    -169,    43,  -169,  -169,  -169,  -169,   115,  -169,  -169,   154,
+     152,  -169,   150,  -169,  -169,  -169,   137,  -169,  -169,    46,
+     155,  -169,   160,     4,     0,  -169,  -169,  -169,    73,  -169,
+    -169,   162,  -169,   163,    80,  -169,    38,  -169,  -169,    43,
+    -169,   159,  -169,   188,  -169,   192,  -169,   188,  -169,   164,
+     198,  -169,    82,   182,  -169,   190,  -169,    35,   181,    35,
+    -169,    35,  -169,  -169,  -169,  -169,  -169,  -169,  -169,    43,
+    -169,  -169,  -169,  -169,  -169,    35,  -169,    35,    35,   183,
+      35,  -169,  -169,  -169,  -169,  -169
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -107,  -107,  -107,  -107,  -107,  -107,   140,   -76,  -107,  -107,
-    -107,  -107,  -107,  -107,  -107,    20,  -107,  -107,  -107,  -107,
-    -107,  -107,  -107,  -107,  -107,  -107,  -107,  -107,   -56,   -19,
-    -106,  -107,   152,   153,   155,   157,  -107,  -107,  -107,  -107,
-    -107,  -107,   -97,    39,    27,  -107,   -79,    38,     2,   187,
-    -107,  -107,   -53,  -107,  -107,  -107,   -18,  -107,    -1
+    -169,  -169,  -169,  -169,  -169,   199,  -169,  -169,   -78,  -169,
+     200,  -169,  -169,  -169,  -169,  -169,  -169,  -169,    57,  -169,
+    -169,  -169,  -169,  -169,  -169,    58,  -169,  -169,  -169,  -169,
+    -169,  -169,  -169,  -169,  -169,  -145,  -168,  -169,  -169,    23,
+    -169,  -169,  -169,  -169,  -169,  -169,  -169,  -169,    14,  -169,
+    -169,  -169,  -169,  -169,  -169,  -169,   -85,    66,   -14,  -169,
+     -77,    65,   -33,   -32,  -169,  -169,  -169,  -169,  -169,  -169,
+    -169,  -169,   128,  -169,  -169,  -169,     3
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -779,91 +844,95 @@ static const yytype_int16 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-       5,    57,   106,   112,    14,   139,   114,   109,   110,   111,
-      35,    35,     6,     7,     8,     9,    10,    15,    86,    80,
-      67,    28,    29,    30,     9,    31,   152,    88,    89,   135,
-      90,    83,    86,    39,    68,    95,    37,    80,   116,    38,
-     169,    77,    39,    87,    81,    11,   140,   144,    83,   143,
-      69,    12,    82,   173,    11,   174,    84,    87,    78,   134,
-      12,   179,    81,   180,    85,   175,   177,   176,   178,    70,
-      82,     1,     2,    84,   103,   100,   192,    71,   194,    72,
-     196,    85,   198,   182,    73,    16,    17,    18,    19,    20,
-      21,   127,   121,   122,    74,    96,    97,    98,    99,   109,
-     110,   111,   123,   133,    22,   109,   110,   111,   108,    93,
-      94,   113,    79,   151,   115,   188,   189,   190,   183,   184,
-      78,    43,    88,    92,    95,    91,   107,   168,   101,   104,
-     147,    44,    45,    46,    47,    48,    49,    50,    51,    52,
-      53,    54,    55,    56,   148,   128,   131,   138,   142,   181,
-     149,   145,   159,   171,   172,   185,   203,   208,   204,    42,
-     218,   220,   205,   206,   222,   162,   187,   187,   187,   187,
-     207,   219,    58,    59,   163,    60,   193,    61,   195,   160,
-     197,   161,   199,   200,    44,    45,    46,    47,    48,    49,
-      50,    51,    52,    53,    54,    55,    56,   164,    43,    36,
-     221,   217,     0,   165,     0,     0,     0,     0,    44,    45,
+      72,    73,    79,    82,     5,    19,   127,   128,   118,   119,
+     160,   183,    90,    34,   142,   130,   131,   132,   138,    39,
+     140,     6,     7,     8,     9,    10,   210,    96,    86,    71,
+      75,    76,    77,     9,    78,    88,    97,    20,     6,     7,
+       8,     9,    10,   202,   115,    87,   121,   210,    37,   209,
+     101,   161,   122,   102,    11,    93,   109,   166,    12,   167,
+      13,    38,    94,    11,    95,   110,   107,    12,   143,   144,
+     209,    11,   215,   108,   149,    12,   151,     1,     2,   129,
+     184,   216,   139,    39,   141,   198,   199,   113,    43,   145,
+     146,   147,   148,   130,   131,   132,    87,   137,    44,    45,
       46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
-      56
+      56,   203,    89,    90,   218,   194,   172,   157,   130,   131,
+     132,   228,   229,   208,   133,    91,    44,    45,    46,    47,
+      48,    49,    50,    51,    52,    53,    54,    55,    56,   173,
+      92,    98,   103,    99,   239,   174,    21,    22,    23,    24,
+      25,    26,   100,   104,   105,   106,   111,   120,   171,   114,
+     188,   121,   152,   155,   158,    27,   159,   163,   197,   220,
+      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
+      54,    55,    56,   189,   232,   165,   234,   164,   236,   190,
+     168,   169,   194,   204,   200,   206,   222,   207,    43,   201,
+     224,    13,   241,   226,   242,   243,   227,   245,    44,    45,
+      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
+      56,   230,   233,    42,   244,    57,   187,   185,   192,   231,
+     225,   186,     0,     0,     0,   150
 };
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-107)))
+  (!!((Yystate) == (-169)))
 
 #define yytable_value_is_error(Yytable_value) \
   YYID (0)
 
 static const yytype_int16 yycheck[] =
 {
-       1,    20,    78,    82,     2,     4,    85,     3,     4,     5,
-      11,    12,     3,     4,     5,     6,     7,     0,     8,     8,
-      21,     3,     4,     5,     6,     7,   132,     8,    42,   105,
-      44,     8,     8,     8,    34,     3,     8,     8,     6,     8,
-     146,    15,     8,    33,    33,    36,    45,   126,     8,    45,
-      34,    42,    41,    42,    36,    44,    33,    33,    32,    34,
-      42,    42,    33,    44,    41,    42,    42,    44,    44,    34,
-      41,    10,    11,    33,    75,    73,   173,    34,   175,    37,
-     177,    41,   179,   159,    35,    12,    13,    14,    15,    16,
-      17,    92,    90,    91,    43,    68,    69,    70,    71,     3,
-       4,     5,     6,   104,    31,     3,     4,     5,    81,     8,
-       9,    84,    33,   132,    87,   168,   169,   170,    38,    39,
-      32,     8,     8,    39,     3,    44,     8,   146,    38,    36,
-     131,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,    31,     8,    36,    43,    40,    44,
-      37,    35,    35,    31,    31,    31,     9,     8,    43,    19,
-      35,    35,    43,    43,   220,   145,   167,   168,   169,   170,
-      43,    40,    20,    20,     8,    20,   174,    20,   176,   140,
-     178,   143,   180,   181,    18,    19,    20,    21,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,    31,     8,    12,
-     218,   202,    -1,    37,    -1,    -1,    -1,    -1,    18,    19,
+      33,    33,    35,    36,     1,     2,    91,    92,    86,    87,
+       4,   156,     8,    41,    99,     3,     4,     5,    95,     8,
+      97,     3,     4,     5,     6,     7,   194,    35,    15,    26,
+       3,     4,     5,     6,     7,    35,    44,     0,     3,     4,
+       5,     6,     7,    39,    33,    32,     3,   215,     8,   194,
+      34,    45,     9,    37,    36,    35,    34,    45,    40,   136,
+      42,     8,    42,    36,    44,    43,    34,    40,   101,   101,
+     215,    36,    34,    41,   107,    40,   109,    10,    11,    93,
+     158,    43,    96,     8,    98,    39,    40,    84,     8,   103,
+     104,   105,   106,     3,     4,     5,    32,    94,    18,    19,
       20,    21,    22,    23,    24,    25,    26,    27,    28,    29,
-      30
+      30,    38,    40,     8,   199,    42,     8,   114,     3,     4,
+       5,    39,    40,    43,     9,    40,    18,    19,    20,    21,
+      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
+      40,    35,    33,    42,   229,    37,    12,    13,    14,    15,
+      16,    17,     8,    33,    33,    33,    38,     8,   155,    36,
+       8,     3,     8,    36,    34,    31,    41,    41,    31,   201,
+      18,    19,    20,    21,    22,    23,    24,    25,    26,    27,
+      28,    29,    30,    31,   217,    43,   219,    41,   221,    37,
+      43,    34,    42,    31,    39,   192,     8,    34,     8,    39,
+       8,    42,   235,    39,   237,   238,     8,   240,    18,    19,
+      20,    21,    22,    23,    24,    25,    26,    27,    28,    29,
+      30,    39,    41,    24,    41,    25,   169,   161,   170,   215,
+     207,   166,    -1,    -1,    -1,   107
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    10,    11,    47,    48,   104,     3,     4,     5,     6,
-       7,    36,    42,    49,    94,     0,    12,    13,    14,    15,
-      16,    17,    31,    50,    56,    57,    59,    66,     3,     4,
-       5,     7,    94,    95,    96,   104,    95,     8,     8,     8,
-      52,    53,    52,     8,    18,    19,    20,    21,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,    75,    78,    79,
-      80,    81,    82,    84,    86,    97,    58,   104,    34,    34,
-      34,    34,    37,    35,    43,    60,    67,    15,    32,    33,
-       8,    33,    41,     8,    33,    41,     8,    33,     8,    42,
-      44,    44,    39,     8,     9,     3,    90,    90,    90,    90,
-      94,    38,    62,   104,    36,    51,    53,     8,    90,     3,
-       4,     5,    92,    90,    92,    90,     6,    88,    89,    90,
-     104,    94,    94,     6,    87,    92,    93,   104,     8,    61,
-      63,    36,    68,   104,    34,    53,    54,    55,    43,     4,
-      45,    91,    40,    45,    92,    35,    64,   104,    31,    37,
-      69,    75,    76,    78,    79,    80,    81,    83,    85,    35,
-      89,    93,    61,     8,    31,    37,    65,    70,    75,    76,
-     100,    31,    31,    42,    44,    42,    44,    42,    44,    42,
-      44,    44,    53,    38,    39,    31,    98,   104,    98,    98,
-      98,    99,    88,    94,    88,    94,    88,    94,    88,    94,
-      94,   101,    71,     9,    43,    43,    43,    43,     8,   102,
-     103,    72,    73,    74,    75,    76,    77,   104,    35,    40,
-      35,   102,    74
+       0,    10,    11,    47,    48,   122,     3,     4,     5,     6,
+       7,    36,    40,    42,    49,   108,   109,   112,   115,   122,
+       0,    12,    13,    14,    15,    16,    17,    31,    50,    55,
+      58,    60,    67,   113,    41,   116,   110,     8,     8,     8,
+      51,    54,    51,     8,    18,    19,    20,    21,    22,    23,
+      24,    25,    26,    27,    28,    29,    30,    56,    57,    81,
+      82,    83,    86,    87,    88,    89,    90,    91,   119,   120,
+      59,   122,   108,   109,   114,     3,     4,     5,     7,   108,
+     117,   118,   108,   111,    61,    68,    15,    32,    35,    40,
+       8,    40,    40,    35,    42,    44,    35,    44,    35,    42,
+       8,    34,    37,    33,    33,    33,    33,    34,    41,    34,
+      43,    38,    62,   122,    36,    33,    52,    53,    54,    54,
+       8,     3,     9,   102,   103,   104,   122,   102,   102,   104,
+       3,     4,     5,     9,   101,   106,   107,   122,   106,   104,
+     106,   104,   102,   108,   109,   104,   104,   104,   104,   108,
+     118,   108,     8,    63,    64,    36,    69,   122,    34,    41,
+       4,    45,   105,    41,    41,    43,    45,   106,    43,    34,
+      65,   122,     8,    31,    37,    56,    70,    71,    72,    74,
+      75,    76,    80,    81,    54,   103,   107,    64,     8,    31,
+      37,    66,    71,    84,    42,    92,    93,    31,    39,    40,
+      39,    39,    39,    38,    31,   121,   122,    34,    43,    81,
+      82,    94,    96,    97,    98,    34,    43,    77,   102,    78,
+     109,    73,     8,    85,     8,    85,    39,     8,    39,    40,
+      39,    94,   108,    41,   108,    79,   108,    95,    99,   102,
+     100,   108,   108,   108,    41,   108
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1654,685 +1723,1025 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 6:
+        case 11:
 /* Line 1787 of yacc.c  */
-#line 173 "Parser.ypp"
+#line 241 "parser.ypp"
     {
-		if(!dc_file->add_class((yyvsp[(2) - (2)].u.dclass)))
-		{
-			yyerror("Duplicate class name: " + (yyvsp[(2) - (2)].u.dclass)->get_name());
-		}
-	}
-    break;
-
-  case 7:
-/* Line 1787 of yacc.c  */
-#line 180 "Parser.ypp"
-    {
-		if(!dc_file->add_struct((yyvsp[(2) - (2)].u.dstruct)))
-		{
-			yyerror("Duplicate class name: " + (yyvsp[(2) - (2)].u.dstruct)->get_name());
-		}
-	}
-    break;
-
-  case 11:
-/* Line 1787 of yacc.c  */
-#line 193 "Parser.ypp"
-    {
-		output_value->assign((yyvsp[(1) - (1)].str));
+		parsed_value->clear();
+		if(!check_depth(0)) depth_error(0);
+		type_stack.pop();
 	}
     break;
 
   case 12:
 /* Line 1787 of yacc.c  */
-#line 200 "Parser.ypp"
+#line 247 "parser.ypp"
     {
-		dc_file->add_import_module((yyvsp[(2) - (2)].str));
+		parsed_value->assign((yyvsp[(1) - (1)].str));
+		if(!check_depth(0)) depth_error(0, "type");
+		type_stack.pop();
 	}
     break;
 
   case 13:
 /* Line 1787 of yacc.c  */
-#line 204 "Parser.ypp"
+#line 253 "parser.ypp"
     {
-		dc_file->add_import_module((yyvsp[(2) - (3)].str));
+		parsed_value->assign((yyvsp[(1) - (1)].str));
+		if(!check_depth(0)) depth_error(0, "method");
+		type_stack.pop();
+	}
+    break;
+
+  case 14:
+/* Line 1787 of yacc.c  */
+#line 262 "parser.ypp"
+    {
+		Import* import = new Import((yyvsp[(2) - (2)].str));
+		parsed_file->add_import(import);
+	}
+    break;
+
+  case 15:
+/* Line 1787 of yacc.c  */
+#line 267 "parser.ypp"
+    {
+		Import* import = new Import((yyvsp[(2) - (4)].str));
+		import->symbols.assign((yyvsp[(4) - (4)].strings).begin(), (yyvsp[(4) - (4)].strings).end());
+		parsed_file->add_import(import);
 	}
     break;
 
   case 16:
 /* Line 1787 of yacc.c  */
-#line 214 "Parser.ypp"
+#line 275 "parser.ypp"
+    { (yyval.str) = (yyvsp[(1) - (1)].str); }
+    break;
+
+  case 17:
+/* Line 1787 of yacc.c  */
+#line 277 "parser.ypp"
     {
-		(yyval.str) = (yyvsp[(1) - (3)].str) + std::string(".") + (yyvsp[(3) - (3)].str);
+		(yyval.str) = (yyvsp[(1) - (3)].str) + string(".") + (yyvsp[(3) - (3)].str);
 	}
     break;
 
   case 18:
 /* Line 1787 of yacc.c  */
-#line 222 "Parser.ypp"
+#line 283 "parser.ypp"
+    { (yyval.strings) = (yyvsp[(1) - (1)].strings); }
+    break;
+
+  case 19:
+/* Line 1787 of yacc.c  */
+#line 285 "parser.ypp"
     {
-		(yyval.str) = (yyvsp[(1) - (3)].str) + std::string("/") + (yyvsp[(3) - (3)].str);
+		(yyval.strings) = vector<string>();
 	}
     break;
 
   case 20:
 /* Line 1787 of yacc.c  */
-#line 230 "Parser.ypp"
-    { dc_file->add_import_symbol("*"); }
+#line 292 "parser.ypp"
+    {
+		(yyval.strings) = vector<string>(1, (yyvsp[(1) - (1)].str));
+	}
     break;
 
   case 21:
 /* Line 1787 of yacc.c  */
-#line 234 "Parser.ypp"
-    { dc_file->add_import_symbol((yyvsp[(1) - (1)].str)); }
+#line 296 "parser.ypp"
+    {
+		(yyvsp[(1) - (3)].strings).push_back((yyvsp[(3) - (3)].str));
+		(yyval.strings) = (yyvsp[(1) - (3)].strings);
+	}
     break;
 
   case 22:
 /* Line 1787 of yacc.c  */
-#line 235 "Parser.ypp"
-    { dc_file->add_import_symbol((yyvsp[(3) - (3)].str)); }
+#line 303 "parser.ypp"
+    { (yyval.str) = (yyvsp[(1) - (1)].str); }
     break;
 
   case 23:
 /* Line 1787 of yacc.c  */
-#line 240 "Parser.ypp"
+#line 305 "parser.ypp"
     {
-		if((yyvsp[(2) - (2)].u.parameter) != (Parameter*)NULL)
+		(yyval.str) = (yyvsp[(1) - (3)].str) + string("/") + (yyvsp[(3) - (3)].str);
+	}
+    break;
+
+  case 24:
+/* Line 1787 of yacc.c  */
+#line 312 "parser.ypp"
+    {
+		if((yyvsp[(2) - (2)].nametype).type == (DistributedType*)NULL)
 		{
-			Typedef *dtypedef = new Typedef((yyvsp[(2) - (2)].u.parameter));
-			if(!dc_file->add_typedef(dtypedef))
+			// TODO: Figure out if we need to do anything here
+			break;
+		}
+
+		bool type_added	= parsed_file->add_typedef((yyvsp[(2) - (2)].nametype).name, (yyvsp[(2) - (2)].nametype).type);
+		if(!type_added)
+		{
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[(2) - (2)].nametype).name);
+			if(dtype == (DistributedType*)NULL)
 			{
-				yyerror("Duplicate typedef name: " + dtypedef->get_name());
+				parser_error("Unknown error adding typedef to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'typedef " + (yyvsp[(2) - (2)].nametype).name
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'typedef " + (yyvsp[(2) - (2)].nametype).name
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'typedef " + (yyvsp[(2) - (2)].nametype).name
+				             + "' to file because a struct was already declared with that name.");
 			}
 		}
+	}
+    break;
+
+  case 25:
+/* Line 1787 of yacc.c  */
+#line 354 "parser.ypp"
+    {
+		TokenType::NameType nt;
+		nt.type = (yyvsp[(1) - (2)].u.dtype);
+		nt.name = (yyvsp[(2) - (2)].str);
+		(yyval.nametype) = nt;
 	}
     break;
 
   case 26:
 /* Line 1787 of yacc.c  */
-#line 259 "Parser.ypp"
+#line 364 "parser.ypp"
     {
-	dc_file->add_keyword((yyvsp[(2) - (2)].str));
-}
-    break;
+		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[(1) - (1)].str));
+		if(dtype == (DistributedType*)NULL)
+		{
+			parser_error("Type '" + string((yyvsp[(1) - (1)].str)) + "' has not been declared.");
+			(yyval.u.dtype) = NULL;
+			break;
+		}
 
-  case 27:
-/* Line 1787 of yacc.c  */
-#line 263 "Parser.ypp"
-    {
-	// This keyword has already been defined.  But since we are now
-	// explicitly defining it, clear its bitmask, so that we will have a
-	// new hash code--doing this will allow us to phase out the
-	// historical hash code support later.
-	((Keyword *)(yyvsp[(2) - (2)].u.keyword))->clear_historical_flag();
-}
-    break;
-
-  case 28:
-/* Line 1787 of yacc.c  */
-#line 274 "Parser.ypp"
-    {
-		current_class = new Class(dc_file, (yyvsp[(2) - (2)].str));
+		(yyval.u.dtype) = dtype;
 	}
     break;
 
   case 29:
 /* Line 1787 of yacc.c  */
-#line 278 "Parser.ypp"
+#line 384 "parser.ypp"
     {
-		current_class->as_class()->rebuild_fields();
-		(yyval.u.dclass) = current_class->as_class();
-		current_class = (yyvsp[(3) - (7)].u.dclass);
+		parsed_file->add_keyword((yyvsp[(2) - (2)].str));
 	}
     break;
 
   case 30:
 /* Line 1787 of yacc.c  */
-#line 287 "Parser.ypp"
+#line 391 "parser.ypp"
     {
-		if(dc_file == (File *)NULL)
-		{
-			yyerror("No File available, so no class names are predefined.");
-			(yyval.u.dclass) = NULL;
-		}
-		else
-		{
-			Struct *dc_struct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-			if(dc_struct == (Class*)NULL)
-			{
-				yyerror("dclass '" + std::string((yyvsp[(1) - (1)].str)) + "' has not been declared.");
-			}
-
-			Class* dc_class = dc_struct->as_class();
-			if(dc_class == (Class*)NULL)
-			{
-				yyerror("dclass cannot inherit from a struct");
-			}
-
-			(yyval.u.dclass) = dc_class;
-		}
+		current_class = new Class(parsed_file, (yyvsp[(2) - (2)].str));
 	}
     break;
 
-  case 33:
+  case 31:
 /* Line 1787 of yacc.c  */
-#line 319 "Parser.ypp"
+#line 395 "parser.ypp"
     {
-		if((yyvsp[(1) - (1)].u.dclass) != (Class*)NULL)
+		bool class_added = parsed_file->add_class(current_class);
+		if(!class_added)
 		{
-			current_class->as_class()->add_parent((yyvsp[(1) - (1)].u.dclass));
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name(current_class->get_name());
+			if(dtype == (DistributedType*)NULL)
+			{
+				parser_error("Unknown error adding class to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a struct was already declared with that name.");
+			}
 		}
 	}
     break;
 
   case 34:
 /* Line 1787 of yacc.c  */
-#line 326 "Parser.ypp"
+#line 436 "parser.ypp"
+    {
+		if((yyvsp[(1) - (1)].u.dclass) != (Class*)NULL)
+		{
+			current_class->add_parent((yyvsp[(1) - (1)].u.dclass));
+		}
+	}
+    break;
+
+  case 35:
+/* Line 1787 of yacc.c  */
+#line 443 "parser.ypp"
     {
 		if((yyvsp[(3) - (3)].u.dclass) != (Class*)NULL)
 		{
-			current_class->as_class()->add_parent((yyvsp[(3) - (3)].u.dclass));
+			current_class->add_parent((yyvsp[(3) - (3)].u.dclass));
 		}
 	}
     break;
 
-  case 37:
+  case 36:
 /* Line 1787 of yacc.c  */
-#line 338 "Parser.ypp"
+#line 453 "parser.ypp"
     {
-		if((yyvsp[(2) - (3)].u.field) == (Field*)NULL)
+		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[(1) - (1)].str));
+		if(dtype == (DistributedType*)NULL)
 		{
-			// Pass this error up.
+			parser_error("'dclass " + string((yyvsp[(1) - (1)].str)) + "' has not been declared.");
+			(yyval.u.dclass) = NULL;
+			break;
 		}
-		else if(!current_class->add_field((yyvsp[(2) - (3)].u.field)))
+
+		Struct* dstruct = dtype->as_struct();
+		if(dstruct == (Struct*)NULL)
 		{
-			yyerror("Duplicate field name: " + (yyvsp[(2) - (3)].u.field)->get_name());
+			parser_error("class cannot inherit from non-class type '" + string((yyvsp[(1) - (1)].str)) + "'.");
+			(yyval.u.dclass) = NULL;
+			break;
 		}
+
+		Class* dclass = dstruct->as_class();
+		if(dclass == (Class*)NULL)
+		{
+			parser_error("class cannot inherit from struct type '" + string((yyvsp[(1) - (1)].str)) + "'.");
+			(yyval.u.dclass) = NULL;
+			break;
+		}
+
+		(yyval.u.dclass) = dclass;
 	}
     break;
 
-  case 38:
+  case 39:
 /* Line 1787 of yacc.c  */
-#line 352 "Parser.ypp"
+#line 486 "parser.ypp"
     {
-		if((yyvsp[(1) - (2)].u.field) != (Field*)NULL)
+		if((yyvsp[(2) - (3)].u.dfield) == (Field*)NULL)
 		{
-			if((yyvsp[(1) - (2)].u.field)->get_name().empty())
+			// Ignore this field, it should have already generated a parser error
+			break;
+		}
+
+		bool field_added = current_class->add_field((yyvsp[(2) - (3)].u.dfield));
+		if(!field_added)
+		{
+			// Lets be really descriptive about why this failed
+			if(current_class->get_field_by_name((yyvsp[(2) - (3)].u.dfield)->get_name()))
 			{
-				yyerror("Field name required.");
+				parser_error("Cannot add field '" + (yyvsp[(2) - (3)].u.dfield)->get_name()
+				             + "', a field with that name already exists in 'dclass "
+				             + current_class->get_name() + "'.");
 			}
-			(yyvsp[(1) - (2)].u.field)->copy_keywords(current_keyword_list);
+			else if(current_class->get_name() == (yyvsp[(2) - (3)].u.dfield)->get_name())
+			{
+				if((yyvsp[(2) - (3)].u.dfield)->as_molecular())
+				{
+					parser_error("Cannot use a molecular field as a constructor.");
+				}
+				else
+				{
+					parser_error("The constructor must be the first field in the class.");
+				}
+			}
+			else
+			{
+				parser_error("Unknown error adding field to class.");
+			}
 		}
-		(yyval.u.field) = (yyvsp[(1) - (2)].u.field);
 	}
     break;
 
   case 40:
 /* Line 1787 of yacc.c  */
-#line 365 "Parser.ypp"
+#line 524 "parser.ypp"
     {
-		yyerror("Unnamed parameters are not allowed on a dclass");
-		if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
+		if((yyvsp[(1) - (2)].u.dfield) == (Field*)NULL)
 		{
-			(yyvsp[(1) - (2)].u.parameter)->copy_keywords(current_keyword_list);
+			// Ignore this field, it should have already generated a parser error
+			break;
 		}
-		(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
+
+		if((yyvsp[(1) - (2)].u.dfield)->get_name().empty())
+		{
+			parser_error("An unnamed field can't be defined in a class.");
+			(yyval.u.dfield) = NULL;
+			break;
+		}
+
+		// Add the keywords to the class
+		for(auto it = (yyvsp[(2) - (2)].strings).begin(); it != (yyvsp[(2) - (2)].strings).end(); ++it)
+		{
+			(yyvsp[(1) - (2)].u.dfield)->add_keyword(*it);
+		}
+
+		(yyval.u.dfield) = (yyvsp[(1) - (2)].u.dfield);
 	}
     break;
 
   case 41:
 /* Line 1787 of yacc.c  */
-#line 374 "Parser.ypp"
+#line 547 "parser.ypp"
     {
-		if((yyvsp[(1) - (2)].u.parameter) != (Field *)NULL)
-		{
-			(yyvsp[(1) - (2)].u.parameter)->copy_keywords(current_keyword_list);
-		}
-		(yyval.u.field) = (yyvsp[(1) - (2)].u.parameter);
+		(yyval.u.dfield) = (Field*)(yyvsp[(1) - (1)].u.dmolecule);
 	}
     break;
 
   case 42:
 /* Line 1787 of yacc.c  */
-#line 385 "Parser.ypp"
+#line 554 "parser.ypp"
     {
-		current_class = new Struct(dc_file, (yyvsp[(2) - (2)].str));
+		current_struct = new Struct(parsed_file, (yyvsp[(2) - (2)].str));
 	}
     break;
 
   case 43:
 /* Line 1787 of yacc.c  */
-#line 389 "Parser.ypp"
+#line 558 "parser.ypp"
     {
-		(yyval.u.dstruct) = current_class;
+		bool struct_added = parsed_file->add_struct(current_struct);
+		if(!struct_added)
+		{
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name(current_struct->get_name());
+			if(dtype == (DistributedType*)NULL)
+			{
+				parser_error("Unknown error adding struct to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a struct was already declared with that name.");
+			}
+		}
 	}
     break;
 
   case 46:
 /* Line 1787 of yacc.c  */
-#line 398 "Parser.ypp"
+#line 596 "parser.ypp"
     {
-		if((yyvsp[(2) - (2)].u.field) == (Field *)NULL)
+		if((yyvsp[(2) - (3)].u.dfield) == (Field*)NULL)
 		{
-			// Pass this error up.
+			// Ignore this field, it should have already generated a parser error
+			break;
 		}
-		else if(!current_class->add_field((yyvsp[(2) - (2)].u.field)))
+
+		if(!current_struct->add_field((yyvsp[(2) - (3)].u.dfield)))
 		{
-			yyerror("Duplicate field name: " + (yyvsp[(2) - (2)].u.field)->get_name());
+			// Lets be really descriptive about why this failed
+			if(current_struct->get_field_by_name((yyvsp[(2) - (3)].u.dfield)->get_name()))
+			{
+				parser_error("Cannot add field '" + (yyvsp[(2) - (3)].u.dfield)->get_name()
+				             + "', a field with that name already exists in 'struct "
+				             + current_struct->get_name() + "'.");
+			}
+			else if(current_struct->get_name() == (yyvsp[(2) - (3)].u.dfield)->get_name())
+			{
+				parser_error("A constructor can't be defined in a struct.");
+			}
+			else if((yyvsp[(2) - (3)].u.dfield)->get_type()->as_method())
+			{
+				parser_error("A method can't be defined in a struct.");
+			}
+			else
+			{
+				parser_error("Unknown error adding field to struct.");
+			}
 		}
 	}
     break;
 
-  case 47:
+  case 53:
 /* Line 1787 of yacc.c  */
-#line 411 "Parser.ypp"
-    { (yyval.u.field) = (yyvsp[(1) - (2)].u.parameter); }
-    break;
-
-  case 48:
-/* Line 1787 of yacc.c  */
-#line 412 "Parser.ypp"
-    { (yyval.u.field) = (yyvsp[(1) - (2)].u.parameter); }
-    break;
-
-  case 49:
-/* Line 1787 of yacc.c  */
-#line 417 "Parser.ypp"
+#line 642 "parser.ypp"
     {
-		if(current_class == (Class *)NULL)
-		{
-			yyerror("Cannot define a method outside of a struct or class.");
-		}
-		else
-		{
-			current_atomic = new AtomicField((yyvsp[(1) - (2)].str), current_class);
-		}
+		(yyval.u.dfield) = new Field((yyvsp[(1) - (1)].u.dtype));
 	}
     break;
 
-  case 50:
+  case 54:
 /* Line 1787 of yacc.c  */
-#line 428 "Parser.ypp"
+#line 646 "parser.ypp"
     {
-		(yyval.u.field) = current_atomic;
-		current_atomic = (yyvsp[(3) - (5)].u.atomic);
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dtype), 0));
 	}
     break;
 
   case 55:
 /* Line 1787 of yacc.c  */
-#line 446 "Parser.ypp"
+#line 651 "parser.ypp"
     {
-		if((yyvsp[(1) - (1)].u.parameter) != (Parameter *)NULL)
-		{
-			current_atomic->add_element((yyvsp[(1) - (1)].u.parameter));
-		}
+		Field* field = new Field((yyvsp[(1) - (4)].u.dtype));
+		(yyval.u.dfield) = new Field((yyvsp[(1) - (4)].u.dtype));
+
+
+		if(!check_depth(0)) depth_error(0, "unnamed field");
+		type_stack.pop();
+		field->set_default_value((yyvsp[(4) - (4)].str));
 	}
     break;
 
   case 56:
 /* Line 1787 of yacc.c  */
-#line 455 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 664 "parser.ypp"
+    {
+		(yyval.u.dfield) = new Field((yyvsp[(1) - (1)].nametype).type, (yyvsp[(1) - (1)].nametype).name);
+	}
     break;
 
   case 57:
 /* Line 1787 of yacc.c  */
-#line 456 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 671 "parser.ypp"
+    {
+		(yyvsp[(1) - (4)].u.dfield)->set_type(new ArrayType((yyvsp[(1) - (4)].u.dfield)->get_type(), (yyvsp[(3) - (4)].range)));
+		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
+	}
     break;
 
   case 58:
 /* Line 1787 of yacc.c  */
-#line 457 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 679 "parser.ypp"
+    {
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dfield)->get_type(), 0));
+	}
     break;
 
   case 59:
 /* Line 1787 of yacc.c  */
-#line 461 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 684 "parser.ypp"
+    {
+		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
+		if(!check_depth(0)) depth_error(0, "field '" + (yyvsp[(1) - (4)].u.dfield)->get_name() + "'");
+		type_stack.pop();
+		(yyvsp[(1) - (4)].u.dfield)->set_default_value((yyvsp[(4) - (4)].str));
+	}
     break;
 
   case 60:
 /* Line 1787 of yacc.c  */
-#line 462 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 691 "parser.ypp"
+    {
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dfield)->get_type(), 0));
+	}
     break;
 
   case 61:
 /* Line 1787 of yacc.c  */
-#line 463 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 696 "parser.ypp"
+    {
+		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
+		if(!check_depth(0)) depth_error(0, "field '" + (yyvsp[(1) - (4)].u.dfield)->get_name() + "'");
+		type_stack.pop();
+		(yyvsp[(1) - (4)].u.dfield)->set_default_value((yyvsp[(4) - (4)].str));
+	}
     break;
 
   case 62:
 /* Line 1787 of yacc.c  */
-#line 464 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 703 "parser.ypp"
+    {
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (3)].u.dfield)->get_type(), 0));
+	}
     break;
 
   case 63:
 /* Line 1787 of yacc.c  */
-#line 465 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 708 "parser.ypp"
+    {
+		(yyval.u.dfield) = (yyvsp[(1) - (5)].u.dfield);
+		if(!check_depth(0)) depth_error(0, "method");
+		type_stack.pop();
+		(yyvsp[(1) - (5)].u.dfield)->set_default_value((yyvsp[(3) - (5)].str));
+	}
     break;
 
   case 64:
 /* Line 1787 of yacc.c  */
-#line 466 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
-    break;
-
-  case 65:
-/* Line 1787 of yacc.c  */
-#line 470 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
-    break;
-
-  case 66:
-/* Line 1787 of yacc.c  */
-#line 471 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (1)].u.parameter); }
+#line 718 "parser.ypp"
+    {
+		(yyval.u.dfield) = new Field((yyvsp[(2) - (2)].u.dmethod), (yyvsp[(1) - (2)].str));
+	}
     break;
 
   case 67:
 /* Line 1787 of yacc.c  */
-#line 475 "Parser.ypp"
-    { (yyval.u.parameter) = current_parameter = new SimpleParameter((yyvsp[(1) - (1)].u.datatype));   }
+#line 730 "parser.ypp"
+    {
+		if((yyvsp[(1) - (1)].u.dtype) == (DistributedType*)NULL)
+		{
+			// defined_type should have output an error, pass NULL upstream
+			(yyval.u.dtype) = NULL;
+			break;
+		}
+
+		if((yyvsp[(1) - (1)].u.dtype)->get_type() == METHOD)
+		{
+			parser_error("Cannot use a method type here.");
+			(yyval.u.dtype) = NULL;
+			break;
+		}
+
+		(yyval.u.dtype) = (yyvsp[(1) - (1)].u.dtype);
+	}
     break;
 
   case 68:
 /* Line 1787 of yacc.c  */
-#line 477 "Parser.ypp"
+#line 748 "parser.ypp"
     {
-		Typedef *dtypedef = dc_file->get_typedef_by_name((yyvsp[(1) - (1)].str));
-		if(dtypedef == (Typedef*)NULL)
-		{
-			// Maybe it's a class name.
-			Struct *dc_struct = dc_file->get_class_by_name((yyvsp[(1) - (1)].str));
-			if(dc_struct != (Struct*)NULL)
-			{
-				if(dc_struct->as_class() != (Class*)NULL)
-				{
-					yyerror("Cannot use distributed class '" + (yyvsp[(1) - (1)].str) + "' as parameter type.");
-				}
-				else
-				{
-					// Create an implicit typedef for this.
-					dtypedef = new Typedef(new StructParameter(dc_struct), true);
-				}
-			}
-			else
-			{
-				yyerror("Cannot use undefined type '" + (yyvsp[(1) - (1)].str) + "' as parameter type.");
-			}
-
-			dc_file->add_typedef(dtypedef);
-		}
-
-		(yyval.u.parameter) = current_parameter = dtypedef->new_parameter();
-	}
-    break;
-
-  case 69:
-/* Line 1787 of yacc.c  */
-#line 509 "Parser.ypp"
-    {
-		SimpleParameter *simple_param = new SimpleParameter((yyvsp[(1) - (4)].u.datatype));
-		if(simple_param == NULL
-		|| simple_param->get_typedef() != (Typedef*)NULL)
-		{
-			yyerror("Ranges are only valid for numeric, string, or blob types.");
-		}
-		if(!simple_param->set_range((yyvsp[(3) - (4)].range)))
-		{
-			yyerror("Inappropriate range for type.");
-		}
-
-		(yyval.u.parameter) = current_parameter = simple_param;
+		(yyval.u.dtype) = (DistributedType*)(yyvsp[(1) - (1)].u.dnumeric);
 	}
     break;
 
   case 70:
 /* Line 1787 of yacc.c  */
-#line 526 "Parser.ypp"
-    { (yyval.u.parameter) = param_with_modulus((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.real)); }
+#line 756 "parser.ypp"
+    {
+		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dnumeric), (yyvsp[(3) - (4)].range));
+	}
     break;
 
   case 71:
 /* Line 1787 of yacc.c  */
-#line 527 "Parser.ypp"
-    { (yyval.u.parameter) = param_with_modulus((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.real)); }
+#line 760 "parser.ypp"
+    {
+		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dtype), (yyvsp[(3) - (4)].range));
+	}
     break;
 
   case 72:
 /* Line 1787 of yacc.c  */
-#line 531 "Parser.ypp"
-    { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
+#line 764 "parser.ypp"
+    {
+		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dtype), (yyvsp[(3) - (4)].range));
+	}
     break;
 
   case 73:
 /* Line 1787 of yacc.c  */
-#line 532 "Parser.ypp"
-    { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
+#line 771 "parser.ypp"
+    {
+		(yyval.u.dmolecule) = new MolecularField(current_class, (yyvsp[(1) - (3)].str));
+	}
     break;
 
   case 74:
 /* Line 1787 of yacc.c  */
-#line 533 "Parser.ypp"
-    { (yyval.u.parameter) = param_with_divisor((yyvsp[(1) - (3)].u.parameter), (yyvsp[(3) - (3)].u.uint32)); }
+#line 775 "parser.ypp"
+    {
+		(yyval.u.dmolecule) = (yyvsp[(1) - (3)].u.dmolecule);
+
+		if((yyvsp[(3) - (3)].u.dfield) == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+		}
+
+		bool field_added = (yyvsp[(1) - (3)].u.dmolecule)->add_field((yyvsp[(3) - (3)].u.dfield));
+		if(!field_added)
+		{
+			if((yyvsp[(3) - (3)].u.dfield)->as_molecular())
+			{
+				parser_error("Cannot add molecular '" + (yyvsp[(3) - (3)].u.dfield)->get_name() + "' to a molecular field.");
+			}
+			else if(!(yyvsp[(1) - (3)].u.dmolecule)->has_matching_keywords(*(yyvsp[(3) - (3)].u.dfield)))
+			{
+				parser_error("Mismatched keywords in molecular between " +
+					(yyvsp[(1) - (3)].u.dmolecule)->get_field(0)->get_name() + " and " + (yyvsp[(3) - (3)].u.dfield)->get_name() + ".");
+			}
+		}
+	}
     break;
 
   case 75:
 /* Line 1787 of yacc.c  */
-#line 537 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
+#line 800 "parser.ypp"
+    {
+		if(!current_class)
+		{
+			parser_error("Field '" + (yyvsp[(1) - (1)].str) + "' not defined in current class.");
+			(yyval.u.dfield) = NULL;
+			break;
+		}
+
+		Field *field = current_class->get_field_by_name((yyvsp[(1) - (1)].str));
+		if(field == (Field*)NULL)
+		{
+			parser_error("Field '" + (yyvsp[(1) - (1)].str) + "' not defined in current class.");
+			(yyval.u.dfield) = NULL;
+			break;
+		}
+
+		(yyval.u.dfield) = field;
+	}
     break;
 
   case 76:
 /* Line 1787 of yacc.c  */
-#line 538 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
+#line 822 "parser.ypp"
+    {
+		if((yyvsp[(1) - (1)].u.type) == STRING)
+		{
+			(yyval.u.dtype) = new ArrayType(new NumericType(CHAR));
+		}
+		else
+		{
+			(yyval.u.dtype) = new ArrayType(new NumericType(UINT8));
+		}
+	}
     break;
 
   case 77:
 /* Line 1787 of yacc.c  */
-#line 539 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
-    break;
-
-  case 78:
-/* Line 1787 of yacc.c  */
-#line 540 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (2)].u.parameter); (yyvsp[(1) - (2)].u.parameter)->set_name((yyvsp[(2) - (2)].str)); }
-    break;
-
-  case 79:
-/* Line 1787 of yacc.c  */
-#line 544 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
-    break;
-
-  case 80:
-/* Line 1787 of yacc.c  */
-#line 545 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
-    break;
-
-  case 81:
-/* Line 1787 of yacc.c  */
-#line 546 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
+#line 833 "parser.ypp"
+    {
+		if((yyvsp[(1) - (4)].u.type) == STRING)
+		{
+			(yyval.u.dtype) = new ArrayType(new NumericType(CHAR), (yyvsp[(3) - (4)].range));
+		}
+		else
+		{
+			(yyval.u.dtype) = new ArrayType(new NumericType(UINT8), (yyvsp[(3) - (4)].range));
+		}
+	}
     break;
 
   case 82:
 /* Line 1787 of yacc.c  */
-#line 547 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
+#line 853 "parser.ypp"
+    { (yyval.u.dnumeric) = new NumericType((yyvsp[(1) - (1)].u.type)); }
     break;
 
   case 83:
 /* Line 1787 of yacc.c  */
-#line 551 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (4)].u.parameter)->append_array_specification((yyvsp[(3) - (4)].range)); }
+#line 858 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (4)].u.dnumeric)->set_range((yyvsp[(3) - (4)].range)))
+		{
+			parser_error("Invalid range for type.");
+		}
+
+		(yyval.u.dnumeric) = (yyvsp[(1) - (4)].u.dnumeric);
+	}
     break;
 
   case 84:
 /* Line 1787 of yacc.c  */
-#line 555 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 870 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_modulus((yyvsp[(3) - (3)].u.real)))
+		{
+			parser_error("Invalid modulus for type.");
+		}
+
+		(yyval.u.dnumeric) = (yyvsp[(1) - (3)].u.dnumeric);
+	}
     break;
 
   case 85:
 /* Line 1787 of yacc.c  */
-#line 556 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 879 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_modulus((yyvsp[(3) - (3)].u.real)))
+		{
+			parser_error("Invalid modulus for type.");
+		}
+
+		(yyval.u.dnumeric) = (yyvsp[(1) - (3)].u.dnumeric);
+	}
     break;
 
   case 86:
 /* Line 1787 of yacc.c  */
-#line 557 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 891 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
+		{
+			parser_error("Invalid divisor for type.");
+		}
+	}
     break;
 
   case 87:
 /* Line 1787 of yacc.c  */
-#line 558 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 898 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
+		{
+			parser_error("Invalid divisor for type.");
+		}
+	}
     break;
 
   case 88:
 /* Line 1787 of yacc.c  */
-#line 559 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 905 "parser.ypp"
+    {
+		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
+		{
+			parser_error("Invalid divisor for type.");
+		}
+	}
     break;
 
   case 89:
 /* Line 1787 of yacc.c  */
-#line 563 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 915 "parser.ypp"
+    {
+		(yyval.u.dmethod) = new Method();
+	}
     break;
 
   case 90:
 /* Line 1787 of yacc.c  */
-#line 564 "Parser.ypp"
-    { (yyval.u.parameter) = (yyvsp[(1) - (3)].u.parameter); (yyvsp[(1) - (3)].u.parameter)->set_default_value((yyvsp[(3) - (3)].str)); }
+#line 919 "parser.ypp"
+    {
+		(yyval.u.dmethod) = (yyvsp[(1) - (2)].u.dmethod);
+	}
     break;
 
   case 91:
 /* Line 1787 of yacc.c  */
-#line 568 "Parser.ypp"
-    { (yyval.range) = NumericRange(); }
+#line 926 "parser.ypp"
+    {
+		Method* fn = new Method();
+		bool param_added = fn->add_parameter((yyvsp[(2) - (2)].u.dparam));
+		if(!param_added)
+		{
+			parser_error("Unknown error adding parameter to method.");
+		}
+		(yyval.u.dmethod) = fn;
+	}
     break;
 
   case 92:
 /* Line 1787 of yacc.c  */
-#line 569 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.real), (yyvsp[(1) - (1)].u.real)); }
-    break;
-
-  case 93:
-/* Line 1787 of yacc.c  */
-#line 570 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.real), (yyvsp[(3) - (3)].u.real)); }
-    break;
-
-  case 94:
-/* Line 1787 of yacc.c  */
-#line 571 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.real), (yyvsp[(2) - (2)].u.real)); }
-    break;
-
-  case 95:
-/* Line 1787 of yacc.c  */
-#line 575 "Parser.ypp"
-    { (yyval.range) = NumericRange(); }
+#line 936 "parser.ypp"
+    {
+		bool param_added = (yyvsp[(1) - (3)].u.dmethod)->add_parameter((yyvsp[(3) - (3)].u.dparam));
+		if(!param_added)
+		{
+			parser_error("Cannot add parameter '" + (yyvsp[(3) - (3)].u.dparam)->get_name()
+			             + "', a parameter with that name is already used in this method.");
+		}
+		(yyval.u.dmethod) = (yyvsp[(1) - (3)].u.dmethod);
+	}
     break;
 
   case 96:
 /* Line 1787 of yacc.c  */
-#line 576 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.uint32), (yyvsp[(1) - (1)].u.uint32)); }
+#line 952 "parser.ypp"
+    {
+		(yyval.u.dparam) = new Parameter((yyvsp[(1) - (1)].u.dtype));
+	}
     break;
 
   case 97:
 /* Line 1787 of yacc.c  */
-#line 577 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.uint32), (yyvsp[(3) - (3)].u.uint32)); }
+#line 956 "parser.ypp"
+    {
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dtype),0));
+	}
     break;
 
   case 98:
 /* Line 1787 of yacc.c  */
-#line 578 "Parser.ypp"
-    { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.uint32), (yyvsp[(2) - (2)].u.uint32)); }
+#line 961 "parser.ypp"
+    {
+		Parameter* param = new Parameter((yyvsp[(1) - (4)].u.dtype));
+		(yyval.u.dparam) = param;
+
+		if(!check_depth(0)) depth_error(0, "type");
+		type_stack.pop();
+		param->set_default_value((yyvsp[(4) - (4)].str));
+	}
     break;
 
   case 99:
 /* Line 1787 of yacc.c  */
-#line 583 "Parser.ypp"
+#line 972 "parser.ypp"
     {
-		if((yyvsp[(1) - (1)].str).length() != 1)
-		{
-			yyerror("Single character required.");
-			(yyval.u.uint32) = 0;
-		}
-		else {
-			(yyval.u.uint32) = (unsigned char)(yyvsp[(1) - (1)].str)[0];
-		}
+		(yyval.u.dparam) = new Parameter((yyvsp[(1) - (2)].u.dtype), (yyvsp[(2) - (2)].str));
+	}
+    break;
+
+  case 100:
+/* Line 1787 of yacc.c  */
+#line 979 "parser.ypp"
+    {
+		(yyvsp[(1) - (4)].u.dparam)->set_type(new ArrayType((yyvsp[(1) - (4)].u.dparam)->get_type(), (yyvsp[(3) - (4)].range)));
+		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
 	}
     break;
 
   case 101:
 /* Line 1787 of yacc.c  */
-#line 598 "Parser.ypp"
+#line 987 "parser.ypp"
     {
-		(yyval.u.uint32) = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
-		if((yyval.u.uint32) != (yyvsp[(1) - (1)].u.uint64))
-		{
-			yyerror("Number out of range.");
-			(yyval.u.uint32) = 1;
-		}
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dparam)->get_type(), 0));
 	}
     break;
 
   case 102:
 /* Line 1787 of yacc.c  */
-#line 610 "Parser.ypp"
+#line 992 "parser.ypp"
     {
-		(yyval.u.uint32) = (unsigned int) - (yyvsp[(1) - (1)].u.int64);
-		if((yyvsp[(1) - (1)].u.int64) >= 0)
-		{
-			yyerror("Syntax error while parsing small_negative_integer.");
-		}
-		else if((yyval.u.uint32) != -(yyvsp[(1) - (1)].u.int64))
-		{
-			yyerror("Number out of range.");
-			(yyval.u.uint32) = 1;
-		}
+		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
+		if(!check_depth(0)) depth_error(0, "parameter '" + (yyvsp[(1) - (4)].u.dparam)->get_name() + "'");
+		type_stack.pop();
+		(yyvsp[(1) - (4)].u.dparam)->set_default_value((yyvsp[(4) - (4)].str));
 	}
     break;
 
   case 103:
 /* Line 1787 of yacc.c  */
-#line 625 "Parser.ypp"
-    { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.uint64); }
+#line 999 "parser.ypp"
+    {
+		current_depth = 0;
+		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dparam)->get_type(), 0));
+	}
     break;
 
   case 104:
 /* Line 1787 of yacc.c  */
-#line 626 "Parser.ypp"
-    { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.int64); }
+#line 1004 "parser.ypp"
+    {
+		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
+		if(!check_depth(0)) depth_error(0, "parameter '" + (yyvsp[(1) - (4)].u.dparam)->get_name() + "'");
+		type_stack.pop();
+		(yyvsp[(1) - (4)].u.dparam)->set_default_value((yyvsp[(4) - (4)].str));
+	}
+    break;
+
+  case 105:
+/* Line 1787 of yacc.c  */
+#line 1013 "parser.ypp"
+    { (yyval.range) = NumericRange(); }
     break;
 
   case 106:
 /* Line 1787 of yacc.c  */
-#line 632 "Parser.ypp"
+#line 1014 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.real), (yyvsp[(1) - (1)].u.real)); }
+    break;
+
+  case 107:
+/* Line 1787 of yacc.c  */
+#line 1015 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.real), (yyvsp[(3) - (3)].u.real)); }
+    break;
+
+  case 108:
+/* Line 1787 of yacc.c  */
+#line 1016 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.real), (yyvsp[(2) - (2)].u.real)); }
+    break;
+
+  case 109:
+/* Line 1787 of yacc.c  */
+#line 1020 "parser.ypp"
+    { (yyval.range) = NumericRange(); }
+    break;
+
+  case 110:
+/* Line 1787 of yacc.c  */
+#line 1021 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.uint32), (yyvsp[(1) - (1)].u.uint32)); }
+    break;
+
+  case 111:
+/* Line 1787 of yacc.c  */
+#line 1022 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.uint32), (yyvsp[(3) - (3)].u.uint32)); }
+    break;
+
+  case 112:
+/* Line 1787 of yacc.c  */
+#line 1023 "parser.ypp"
+    { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.uint32), (yyvsp[(2) - (2)].u.uint32)); }
+    break;
+
+  case 113:
+/* Line 1787 of yacc.c  */
+#line 1028 "parser.ypp"
     {
 		if((yyvsp[(1) - (1)].str).length() != 1)
 		{
-			yyerror("Single character required.");
+			parser_error("Single character required.");
+			(yyval.u.uint32) = 0;
+		}
+		else
+		{
+			(yyval.u.uint32) = (unsigned char)(yyvsp[(1) - (1)].str)[0];
+		}
+	}
+    break;
+
+  case 115:
+/* Line 1787 of yacc.c  */
+#line 1044 "parser.ypp"
+    {
+		(yyval.u.uint32) = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
+		if((yyval.u.uint32) != (yyvsp[(1) - (1)].u.uint64))
+		{
+			parser_error("Number out of range.");
+			(yyval.u.uint32) = 1;
+		}
+	}
+    break;
+
+  case 116:
+/* Line 1787 of yacc.c  */
+#line 1056 "parser.ypp"
+    {
+		(yyval.u.uint32) = (unsigned int) - (yyvsp[(1) - (1)].u.int64);
+		if((yyvsp[(1) - (1)].u.int64) >= 0)
+		{
+			parser_error("Syntax error while parsing small_negative_integer.");
+		}
+		else if((yyval.u.uint32) != -(yyvsp[(1) - (1)].u.int64))
+		{
+			parser_error("Number out of range.");
+			(yyval.u.uint32) = 1;
+		}
+	}
+    break;
+
+  case 117:
+/* Line 1787 of yacc.c  */
+#line 1071 "parser.ypp"
+    { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.uint64); }
+    break;
+
+  case 118:
+/* Line 1787 of yacc.c  */
+#line 1072 "parser.ypp"
+    { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.int64); }
+    break;
+
+  case 120:
+/* Line 1787 of yacc.c  */
+#line 1078 "parser.ypp"
+    {
+		if((yyvsp[(1) - (1)].str).length() != 1)
+		{
+			parser_error("Single character required.");
 			(yyval.u.real) = 0;
 		}
 		else
@@ -2342,406 +2751,490 @@ yyreduce:
 	}
     break;
 
-  case 108:
+  case 122:
 /* Line 1787 of yacc.c  */
-#line 648 "Parser.ypp"
+#line 1094 "parser.ypp"
     {
-		(yyval.str) = number_value(current_parameter->get_datatype(), (yyvsp[(1) - (1)].u.int64));
+		if(!check_depth()) depth_error("signed integer");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		type_stack.pop(); // Remove numeric type from stack
+
+		(yyval.str) = number_value(dtype->get_type(), (yyvsp[(1) - (1)].u.int64));
 	}
     break;
 
-  case 109:
+  case 123:
 /* Line 1787 of yacc.c  */
-#line 652 "Parser.ypp"
+#line 1103 "parser.ypp"
     {
-		(yyval.str) = number_value(current_parameter->get_datatype(), (yyvsp[(1) - (1)].u.uint64));
+		if(!check_depth()) depth_error("unsigned integer");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		type_stack.pop(); // Remove numeric type from stack
+
+		(yyval.str) = number_value(dtype->get_type(), (yyvsp[(1) - (1)].u.uint64));
 	}
     break;
 
-  case 110:
+  case 124:
 /* Line 1787 of yacc.c  */
-#line 656 "Parser.ypp"
+#line 1112 "parser.ypp"
     {
-		(yyval.str) = number_value(current_parameter->get_datatype(), (yyvsp[(1) - (1)].u.real));
+		if(!check_depth()) depth_error("floating point");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		type_stack.pop(); // Remove numeric type from stack
+
+		(yyval.str) = number_value(dtype->get_type(), (yyvsp[(1) - (1)].u.real));
 	}
     break;
 
-  case 111:
+  case 125:
 /* Line 1787 of yacc.c  */
-#line 660 "Parser.ypp"
+#line 1121 "parser.ypp"
     {
-		DataType type = current_parameter->get_datatype();
-		if(type == DT_string)
+		if(!check_depth()) depth_error("string");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		type_stack.pop(); // Remove string type from stack
+
+		if(dtype->get_type() == STRING)
 		{
-			if((yyvsp[(1) - (1)].str).length() != current_parameter->get_size())
+			if((yyvsp[(1) - (1)].str).length() != dtype->get_size())
 			{
-				yyerror("Default value for fixed-length string has incorrect length.");
+				parser_error("Value for fixed-length string has incorrect length.");
 			}
 
-	 		(yyval.str) = (yyvsp[(1) - (1)].str);
+			(yyval.str) = (yyvsp[(1) - (1)].str);
 		}
-		else if(type == DT_varstring) // DT_varstring
+		else if(dtype->get_type() == VARSTRING)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
 			sizetag_t length = (yyvsp[(1) - (1)].str).length();
-			(yyval.str) = std::string((char*)&length, sizeof(sizetag_t)) + (yyvsp[(1) - (1)].str);
+			(yyval.str) = string((char*)&length, sizeof(sizetag_t)) + (yyvsp[(1) - (1)].str);
 		}
 		else
 		{
-			yyerror("Cannot use string value for non-string datatype.");
+			parser_error("Cannot use string value for non-string type '"
+			             + to_string(dtype->get_type()) + "'.");
 			(yyval.str) = (yyvsp[(1) - (1)].str);
 		}
 	}
     break;
 
-  case 112:
+  case 126:
 /* Line 1787 of yacc.c  */
-#line 685 "Parser.ypp"
+#line 1151 "parser.ypp"
     {
-		// TODO: check for range limits... maybe?
-		(yyval.str) = (yyvsp[(1) - (1)].str);
+		if(!check_depth()) depth_error("hex-string");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		type_stack.pop(); // Remove type from stack
+
+		if(dtype->get_type() == BLOB)
+		{
+			if((yyvsp[(1) - (1)].str).length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length blob has incorrect length.");
+			}
+
+			(yyval.str) = (yyvsp[(1) - (1)].str);
+		}
+		else if(dtype->get_type() == VARBLOB)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = (yyvsp[(1) - (1)].str).length();
+			(yyval.str) = string((char*)&length, sizeof(sizetag_t)) + (yyvsp[(1) - (1)].str);
+		}
+		else
+		{
+			parser_error("Cannot use hex value for non-blob type '"
+			             + to_string(dtype->get_type()) + "'.");
+			(yyval.str) = (yyvsp[(1) - (1)].str);
+		}
 	}
     break;
 
-  case 113:
+  case 128:
 /* Line 1787 of yacc.c  */
-#line 690 "Parser.ypp"
+#line 1182 "parser.ypp"
     {
-		DataType type = current_parameter->get_datatype();
-		if(type == DT_vararray)
-		{
-			sizetag_t length = (yyvsp[(2) - (3)].str).length();
-			(yyval.str) = std::string((char*)&length, sizeof(sizetag_t)) + (yyvsp[(2) - (3)].str);
-		}
-		else // DT_array
-		{
-			// TODO: Check range limits
-			(yyval.str) = (yyvsp[(2) - (3)].str);
-		}
-	}
-    break;
-
-  case 114:
-/* Line 1787 of yacc.c  */
-#line 704 "Parser.ypp"
-    {
-		DataType type = current_parameter->get_datatype();
-		if(type == DT_vararray)
-		{
-			sizetag_t length = (yyvsp[(2) - (3)].str).length();
-			(yyval.str) = std::string((char*)&length, sizeof(sizetag_t)) + (yyvsp[(2) - (3)].str);
-		}
-		else if(type == DT_array)
-		{
-			// TODO: Check range limits
-			(yyval.str) = (yyvsp[(2) - (3)].str);
-		}
+		// TODO
+		/*
 		else if(type == DT_struct)
 		{
-			yyerror("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
-			(yyval.str) = (yyvsp[(2) - (3)].str);
+			parser_warning("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
+			$$ = $1;
 		}
 		else
 		{
-			yyerror("Cannot use array composition as value for non-array type.");
-			(yyval.str) = (yyvsp[(2) - (3)].str);
+			parser_error("Cannot use array composition as value for non-array type.");
+			$$ = $1;
+		}
+		*/
+	}
+    break;
+
+  case 129:
+/* Line 1787 of yacc.c  */
+#line 1201 "parser.ypp"
+    {
+		if(!check_depth()) depth_error("method");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		if(dtype->as_method())
+		{
+			current_depth++;
+			const Method* method = dtype->as_method();
+
+			size_t num_params = method->get_num_parameters();
+			for(unsigned int i = 1; i <= num_params; ++i)
+			{
+				// Reverse iteration
+				const Parameter* param = method->get_parameter(num_params-i);
+				// Add parameter types to stack such that the first is on top
+				type_stack.push(TypeAndDepth(param->get_type(), current_depth));
+			}
+		}
+		else
+		{
+			parser_error("Cannot use method-value for non-method type '"
+			             + to_string(dtype->get_type()) + "'.");
 		}
 	}
     break;
 
-  case 115:
+  case 130:
 /* Line 1787 of yacc.c  */
-#line 730 "Parser.ypp"
-    { (yyval.str) = ""; }
-    break;
-
-  case 116:
-/* Line 1787 of yacc.c  */
-#line 731 "Parser.ypp"
-    { (yyval.str) = (yyvsp[(1) - (1)].str); }
-    break;
-
-  case 117:
-/* Line 1787 of yacc.c  */
-#line 736 "Parser.ypp"
+#line 1226 "parser.ypp"
     {
-		// BUG: parameter_value consumed here will always produce a yyerror,
-		//      except for arrays of HEX_STRING values.
-		// TODO: Check array type matches parameter type
-		(yyval.str) = (yyvsp[(1) - (1)].str);
+		if(type_stack.top().type->as_method())
+		{
+			current_depth--;
+		}
+		type_stack.pop(); // Remove method type from the stack
+		(yyval.str) = (yyvsp[(3) - (4)].str);
 	}
     break;
 
-  case 118:
+  case 132:
 /* Line 1787 of yacc.c  */
-#line 743 "Parser.ypp"
+#line 1239 "parser.ypp"
     {
-		std::string val;
+		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
+	}
+    break;
+
+  case 133:
+/* Line 1787 of yacc.c  */
+#line 1246 "parser.ypp"
+    {
+		if(!check_depth()) depth_error("struct");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		if(dtype->as_struct())
+		{
+			current_depth++;
+			const Struct* dstruct = dtype->as_struct();
+
+			size_t num_fields = dstruct->get_num_fields();
+			for(unsigned int i = 1; i <= num_fields; ++i)
+			{
+				// Reverse iteration
+				const Field* field = dstruct->get_field(num_fields-i);
+				// Add field types to stack such that the first is on top
+				type_stack.push(TypeAndDepth(field->get_type(), current_depth));
+			}
+		}
+		else
+		{
+			parser_error("Cannot use struct-composition for non-struct type '"
+			             + to_string(dtype->get_type()) + "'.");
+		}
+	}
+    break;
+
+  case 134:
+/* Line 1787 of yacc.c  */
+#line 1271 "parser.ypp"
+    {
+		if(type_stack.top().type->as_struct())
+		{
+			current_depth--;
+		}
+		type_stack.pop(); // Remove method type from the stack
+		(yyval.str) = (yyvsp[(3) - (4)].str);
+	}
+    break;
+
+  case 137:
+/* Line 1787 of yacc.c  */
+#line 1285 "parser.ypp"
+    {
+		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
+	}
+    break;
+
+  case 138:
+/* Line 1787 of yacc.c  */
+#line 1289 "parser.ypp"
+    {
+		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
+	}
+    break;
+
+  case 139:
+/* Line 1787 of yacc.c  */
+#line 1296 "parser.ypp"
+    {
+		// TODO: deal with fixed sized and varsized array
+		(yyval.str) = "";
+	}
+    break;
+
+  case 140:
+/* Line 1787 of yacc.c  */
+#line 1301 "parser.ypp"
+    {
+		if(!check_depth()) depth_error("array");
+
+		const DistributedType* dtype = type_stack.top().type;;
+		if(dtype->as_array())
+		{
+			current_depth++;
+			const ArrayType* array = dtype->as_array();
+
+			// TODO: Cry in pain...
+		}
+		else
+		{
+			parser_error("Cannot use array-composition for non-array type '"
+			             + to_string(dtype->get_type()) + "'.");
+		}
+	}
+    break;
+
+  case 141:
+/* Line 1787 of yacc.c  */
+#line 1319 "parser.ypp"
+    {
+		if(type_stack.top().type->as_array())
+		{
+			current_depth--;
+		}
+		type_stack.pop(); // Remove method type from the stack
+		(yyval.str) = (yyvsp[(3) - (4)].str);
+	}
+    break;
+
+  case 146:
+/* Line 1787 of yacc.c  */
+#line 1338 "parser.ypp"
+    {
+		/*
+		string val;
 
 		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
 		if(arr == (ArrayParameter*)NULL)
 		{
-			yyerror("Cannot use array expansion as value for non-array parameter.");
+			parser_error("Cannot use array expansion as value for non-array parameter.");
 		}
 		else
 		{
-			for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.uint32); i++)
+			for(unsigned int i = 0; i < $3; i++)
 			{
-				val += number_value(arr->get_element_type()->get_datatype(), (yyvsp[(1) - (3)].u.int64));
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
 			}
 		}
 
-		(yyval.str) = val;
+		$$ = val;
+		*/
 	}
     break;
 
-  case 119:
+  case 147:
 /* Line 1787 of yacc.c  */
-#line 762 "Parser.ypp"
+#line 1359 "parser.ypp"
     {
-		std::string val;
+		/*
+		string val;
 
 		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
 		if(arr == (ArrayParameter*)NULL)
 		{
-			yyerror("Cannot use array expansion as value for non-array parameter.");
+			parser_error("Cannot use array expansion as value for non-array parameter.");
 		}
 		else
 		{
-			for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.uint32); i++)
+			for(unsigned int i = 0; i < $3; i++)
 			{
-				val += number_value(arr->get_element_type()->get_datatype(), (yyvsp[(1) - (3)].u.uint64));
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
 			}
 		}
 
-		(yyval.str) = val;
+		$$ = val;
+		*/
 	}
     break;
 
-  case 120:
+  case 148:
 /* Line 1787 of yacc.c  */
-#line 781 "Parser.ypp"
+#line 1380 "parser.ypp"
     {
-		std::string val;
+		/*
+		string val;
 
 		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
 		if(arr == (ArrayParameter*)NULL)
 		{
-			yyerror("Cannot use array expansion as value for non-array parameter.");
+			parser_error("Cannot use array expansion as value for non-array parameter.");
 		}
 		else
 		{
-			for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.uint32); i++)
+			for(unsigned int i = 0; i < $3; i++)
 			{
-				val += number_value(arr->get_element_type()->get_datatype(), (yyvsp[(1) - (3)].u.real));
+				val += number_value(arr->get_element_type()->get_datatype(), $1);
 			}
 		}
 
-		(yyval.str) = val;
+		$$ = val;
+		*/
 	}
     break;
 
-  case 121:
+  case 149:
 /* Line 1787 of yacc.c  */
-#line 800 "Parser.ypp"
+#line 1401 "parser.ypp"
     {
-		std::string val;
+		/*
+		string val;
 
 		// TODO: Check array type compatible with HEX_STRING,
 		//       and check integer bounds if current parameter has integer type.
 		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
 		if(arr == (ArrayParameter*)NULL)
 		{
-			yyerror("Cannot use array expansion as value for non-array parameter.");
+			parser_error("Cannot use array expansion as value for non-array parameter.");
 		}
 		else
 		{
-			for(unsigned int i = 0; i < (yyvsp[(3) - (3)].u.uint32); i++)
+			for(unsigned int i = 0; i < $3; i++)
 			{
-				val += (yyvsp[(1) - (3)].str);
+				val += $1;
 			}
 		}
-		(yyval.str) = val;
+		$$ = val;
+		*/
 	}
     break;
 
-  case 122:
+  case 150:
 /* Line 1787 of yacc.c  */
-#line 820 "Parser.ypp"
+#line 1425 "parser.ypp"
+    { (yyval.u.type) = STRING; }
+    break;
+
+  case 151:
+/* Line 1787 of yacc.c  */
+#line 1426 "parser.ypp"
+    { (yyval.u.type) = BLOB; }
+    break;
+
+  case 152:
+/* Line 1787 of yacc.c  */
+#line 1430 "parser.ypp"
+    { (yyval.u.type) = CHAR; }
+    break;
+
+  case 153:
+/* Line 1787 of yacc.c  */
+#line 1431 "parser.ypp"
+    { (yyval.u.type) = INT8; }
+    break;
+
+  case 154:
+/* Line 1787 of yacc.c  */
+#line 1432 "parser.ypp"
+    { (yyval.u.type) = INT16; }
+    break;
+
+  case 155:
+/* Line 1787 of yacc.c  */
+#line 1433 "parser.ypp"
+    { (yyval.u.type) = INT32; }
+    break;
+
+  case 156:
+/* Line 1787 of yacc.c  */
+#line 1434 "parser.ypp"
+    { (yyval.u.type) = INT64; }
+    break;
+
+  case 157:
+/* Line 1787 of yacc.c  */
+#line 1435 "parser.ypp"
+    { (yyval.u.type) = UINT8; }
+    break;
+
+  case 158:
+/* Line 1787 of yacc.c  */
+#line 1436 "parser.ypp"
+    { (yyval.u.type) = UINT16; }
+    break;
+
+  case 159:
+/* Line 1787 of yacc.c  */
+#line 1437 "parser.ypp"
+    { (yyval.u.type) = UINT32; }
+    break;
+
+  case 160:
+/* Line 1787 of yacc.c  */
+#line 1438 "parser.ypp"
+    { (yyval.u.type) = UINT64; }
+    break;
+
+  case 161:
+/* Line 1787 of yacc.c  */
+#line 1439 "parser.ypp"
+    { (yyval.u.type) = FLOAT32; }
+    break;
+
+  case 162:
+/* Line 1787 of yacc.c  */
+#line 1440 "parser.ypp"
+    { (yyval.u.type) = FLOAT64; }
+    break;
+
+  case 163:
+/* Line 1787 of yacc.c  */
+#line 1445 "parser.ypp"
     {
-		// BUG: parameter_value consumed here will always produce a yyerror,
-		//      except for arrays of HEX_STRING values.
-		// TODO: Check array type matches parameter type
-		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
+		(yyval.strings) = vector<string>();
 	}
     break;
 
-  case 123:
+  case 164:
 /* Line 1787 of yacc.c  */
-#line 829 "Parser.ypp"
-    { (yyval.u.datatype) = DT_int8; }
-    break;
-
-  case 124:
-/* Line 1787 of yacc.c  */
-#line 830 "Parser.ypp"
-    { (yyval.u.datatype) = DT_int16; }
-    break;
-
-  case 125:
-/* Line 1787 of yacc.c  */
-#line 831 "Parser.ypp"
-    { (yyval.u.datatype) = DT_int32; }
-    break;
-
-  case 126:
-/* Line 1787 of yacc.c  */
-#line 832 "Parser.ypp"
-    { (yyval.u.datatype) = DT_int64; }
-    break;
-
-  case 127:
-/* Line 1787 of yacc.c  */
-#line 833 "Parser.ypp"
-    { (yyval.u.datatype) = DT_uint8; }
-    break;
-
-  case 128:
-/* Line 1787 of yacc.c  */
-#line 834 "Parser.ypp"
-    { (yyval.u.datatype) = DT_uint16; }
-    break;
-
-  case 129:
-/* Line 1787 of yacc.c  */
-#line 835 "Parser.ypp"
-    { (yyval.u.datatype) = DT_uint32; }
-    break;
-
-  case 130:
-/* Line 1787 of yacc.c  */
-#line 836 "Parser.ypp"
-    { (yyval.u.datatype) = DT_uint64; }
-    break;
-
-  case 131:
-/* Line 1787 of yacc.c  */
-#line 837 "Parser.ypp"
-    { (yyval.u.datatype) = DT_float32; }
-    break;
-
-  case 132:
-/* Line 1787 of yacc.c  */
-#line 838 "Parser.ypp"
-    { (yyval.u.datatype) = DT_float64; }
-    break;
-
-  case 133:
-/* Line 1787 of yacc.c  */
-#line 839 "Parser.ypp"
-    { (yyval.u.datatype) = DT_string; }
-    break;
-
-  case 134:
-/* Line 1787 of yacc.c  */
-#line 840 "Parser.ypp"
-    { (yyval.u.datatype) = DT_blob; }
-    break;
-
-  case 135:
-/* Line 1787 of yacc.c  */
-#line 841 "Parser.ypp"
-    { (yyval.u.datatype) = DT_char; }
-    break;
-
-  case 136:
-/* Line 1787 of yacc.c  */
-#line 845 "Parser.ypp"
-    { current_keyword_list.clear_keywords(); }
-    break;
-
-  case 137:
-/* Line 1787 of yacc.c  */
-#line 846 "Parser.ypp"
-    { current_keyword_list.add_keyword((yyvsp[(2) - (2)].u.keyword)); }
-    break;
-
-  case 138:
-/* Line 1787 of yacc.c  */
-#line 851 "Parser.ypp"
+#line 1449 "parser.ypp"
     {
-		if(current_keyword_list.get_num_keywords() != 0)
+		(yyval.strings) = (yyvsp[(1) - (2)].strings);
+		if(!parsed_file->has_keyword((yyvsp[(2) - (2)].str)))
 		{
-			yyerror("Keywords are not allowed here.");
+			parser_error("Keyword '" + (yyvsp[(2) - (2)].str) + "' has not been declared.");
+			break;
 		}
-	}
-    break;
 
-  case 139:
-/* Line 1787 of yacc.c  */
-#line 860 "Parser.ypp"
-    { current_molecular = new MolecularField((yyvsp[(1) - (2)].str), current_class); }
-    break;
-
-  case 140:
-/* Line 1787 of yacc.c  */
-#line 861 "Parser.ypp"
-    { (yyval.u.field) = current_molecular; }
-    break;
-
-  case 141:
-/* Line 1787 of yacc.c  */
-#line 866 "Parser.ypp"
-    {
-		Field *field = current_class->get_field_by_name((yyvsp[(1) - (1)].str));
-		(yyval.u.atomic) = (AtomicField *)NULL;
-		if(field == (Field *)NULL)
-		{
-			yyerror("Unknown field: " + (yyvsp[(1) - (1)].str));
-		}
-		else
-		{
-			(yyval.u.atomic) = field->as_atomic_field();
-			if((yyval.u.atomic) == (AtomicField*)NULL)
-			{
-				yyerror("Not an atomic field: " + (yyvsp[(1) - (1)].str));
-			}
-		}
-	}
-    break;
-
-  case 142:
-/* Line 1787 of yacc.c  */
-#line 886 "Parser.ypp"
-    {
-		if((yyvsp[(1) - (1)].u.atomic) != (AtomicField *)NULL)
-		{
-			current_molecular->add_atomic((yyvsp[(1) - (1)].u.atomic));
-		}
-	}
-    break;
-
-  case 143:
-/* Line 1787 of yacc.c  */
-#line 893 "Parser.ypp"
-    {
-		if((yyvsp[(3) - (3)].u.atomic) != (AtomicField *)NULL)
-		{
-			current_molecular->add_atomic((yyvsp[(3) - (3)].u.atomic));
-			if(!current_molecular->compare_keywords(*(yyvsp[(3) - (3)].u.atomic)))
-			{
-				yyerror("Mismatched keywords in molecule between " +
-				current_molecular->get_atomic(0)->get_name() + " and " +
-				(yyvsp[(3) - (3)].u.atomic)->get_name());
-			}
-		}
+		(yyvsp[(1) - (2)].strings).push_back((yyvsp[(2) - (2)].str));
 	}
     break;
 
 
 /* Line 1787 of yacc.c  */
-#line 2745 "Parser.cpp"
+#line 3238 "parser.cpp"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -2973,99 +3466,134 @@ yyreturn:
 
 
 /* Line 2050 of yacc.c  */
-#line 912 "Parser.ypp"
+#line 1465 "parser.ypp"
  /* Start helper function section */
 
-std::string number_value(DataType type, double &number)
+
+bool check_depth()
+{
+	return (!type_stack.empty() && current_depth == type_stack.top().depth);
+}
+
+bool check_depth(int depth)
+{
+	return (current_depth == depth && check_depth());
+}
+
+void depth_error(string what)
+{
+	if(type_stack.empty() || current_depth < type_stack.top().depth)
+	{
+		parser_error("Too many nested values while parsing value for " + what + ".");
+	}
+	else
+	{
+		parser_error("Too few nested values while parsing value for " + what + ".");	
+	}
+}
+
+void depth_error(int depth, string what)
+{
+	if(current_depth > depth)
+	{
+		parser_error("Too few nested values before this " + what + " value.");
+	}
+	else
+	{
+		parser_error("Too many nested values before this " + what + " value.");
+	}
+}
+
+string number_value(Type type, double &number)
 {
 	switch(type)
 	{
-		case DT_float32:
+		case FLOAT32:
 		{
 			float v = number;
 			if(v == INFINITY || v == -INFINITY)
 			{
-				yyerror("Value is out of range for type 'float32'.");
+				parser_error("Value is out of range for type 'float32'.");
 			}
 
-			return std::string((char*)&v, sizeof(float));
+			return string((char*)&v, sizeof(float));
 		}
-		case DT_float64:
+		case FLOAT64:
 		{
-			return std::string((char*)&number, sizeof(double));
+			return string((char*)&number, sizeof(double));
 		}
-		case DT_int8:
-		case DT_int16:
-		case DT_int32:
-		case DT_int64:
-		case DT_uint8:
-		case DT_uint16:
-		case DT_uint32:
-		case DT_uint64:
+		case INT8:
+		case INT16:
+		case INT32:
+		case INT64:
+		case UINT8:
+		case UINT16:
+		case UINT32:
+		case UINT64:
 		{
-			yyerror("Cannot use floating-point value for integer datatype.");
-			return std::string();
+			parser_error("Cannot use floating-point value for integer datatype.");
+			return string();
 		}
 		default:
 		{
-			yyerror("Cannot use floating-point value for non-numeric datatype.");
-			return std::string();
+			parser_error("Cannot use floating-point value for non-numeric datatype.");
+			return string();
 		}
 	}
 }
 
-std::string number_value(DataType type, int64_t &number)
+string number_value(Type type, int64_t &number)
 {
 	switch(type)
 	{
-		case DT_int8:
+		case INT8:
 		{
 			if(INT8_MIN > number || number > INT8_MAX)
 			{
-				yyerror("Signed integer out of range for type 'int8'.");
+				parser_error("Signed integer out of range for type 'int8'.");
 			}
 
 			int8_t v = number;
-			return std::string((char*)&v, sizeof(int8_t));
+			return string((char*)&v, sizeof(int8_t));
 		}
-		case DT_int16:
+		case INT16:
 		{
 			if(INT16_MIN > number || number > INT16_MAX)
 			{
-				yyerror("Signed integer out of range for type 'int16'.");
+				parser_error("Signed integer out of range for type 'int16'.");
 			}
 
 			uint16_t v = number;
-			return std::string((char*)&v, sizeof(int16_t));
+			return string((char*)&v, sizeof(int16_t));
 		}
-		case DT_int32:
+		case INT32:
 		{
 			if(INT32_MIN > number || number > INT32_MAX)
 			{
-				yyerror("Signed integer out of range for type 'int32'.");
+				parser_error("Signed integer out of range for type 'int32'.");
 			}
 
 			int32_t v = number;
-			return std::string((char*)&v, sizeof(int32_t));
+			return string((char*)&v, sizeof(int32_t));
 		}
-		case DT_int64:
+		case INT64:
 		{
-			return std::string((char*)&number, sizeof(int64_t));
+			return string((char*)&number, sizeof(int64_t));
 		}
-		case DT_uint8:
-		case DT_uint16:
-		case DT_uint32:
-		case DT_uint64:
+		case UINT8:
+		case UINT16:
+		case UINT32:
+		case UINT64:
 		{
 			if(number < 0)
 			{
-				yyerror("Can't use negative value for unsigned integer datatype.");
+				parser_error("Can't use negative value for unsigned integer datatype.");
 			}
 			uint64_t v = number;
 			return number_value(type, v);
 		}
-		case DT_float32:
-		case DT_float64:
+		case FLOAT32:
+		case FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. -1 becomes -1.0)
 			double v = number;
@@ -3073,64 +3601,64 @@ std::string number_value(DataType type, int64_t &number)
 		}
 		default:
 		{
-			yyerror("Cannot use signed integer value for non-numeric datatype.");
-			return std::string();
+			parser_error("Cannot use signed integer value for non-numeric datatype.");
+			return string();
 		}
 	}
 }
 
-std::string number_value(DataType type, uint64_t &number)
+string number_value(Type type, uint64_t &number)
 {
 	switch(type)
 	{
-		case DT_uint8:
+		case UINT8:
 		{
 			if(number > UINT8_MAX)
 			{
-				yyerror("Unsigned integer out of range for type 'uint8'.");
+				parser_error("Unsigned integer out of range for type 'uint8'.");
 			}
 
 			uint8_t v = number;
-			return std::string((char*)&v, sizeof(uint8_t));
+			return string((char*)&v, sizeof(uint8_t));
 		}
-		case DT_uint16:
+		case UINT16:
 		{
 			if(number > UINT16_MAX)
 			{
-				yyerror("Unsigned integer out of range for type 'uint16'.");
+				parser_error("Unsigned integer out of range for type 'uint16'.");
 			}
 
 			uint16_t v = number;
-			return std::string((char*)&v, sizeof(uint16_t));
+			return string((char*)&v, sizeof(uint16_t));
 		}
-		case DT_uint32:
+		case UINT32:
 		{
 			if(number > UINT32_MAX)
 			{
-				yyerror("Unsigned integer out of range for type 'uint32'.");
+				parser_error("Unsigned integer out of range for type 'uint32'.");
 			}
 
 			uint32_t v = number;
-			return std::string((char*)&v, sizeof(uint32_t));
+			return string((char*)&v, sizeof(uint32_t));
 		}
-		case DT_uint64:
+		case UINT64:
 		{
-			return std::string((char*)&number, sizeof(uint64_t));
+			return string((char*)&number, sizeof(uint64_t));
 		}
-		case DT_int8:
-		case DT_int16:
-		case DT_int32:
-		case DT_int64:
+		case INT8:
+		case INT16:
+		case INT32:
+		case INT64:
 		{
 			if(number > INT64_MAX)
 			{
-				yyerror("Unsigned integer out of range for signed integer datatype.");
+				parser_error("Unsigned integer out of range for signed integer datatype.");
 			}
 			int64_t v = number;
 			return number_value(type, v);
 		}
-		case DT_float32:
-		case DT_float64:
+		case FLOAT32:
+		case FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. 3 becomes 3.0)
 			double v = number;
@@ -3138,43 +3666,11 @@ std::string number_value(DataType type, uint64_t &number)
 		}
 		default:
 		{
-			yyerror("Cannot use unsigned integer value for non-numeric datatype.");
-			return std::string();
+			parser_error("Cannot use unsigned integer value for non-numeric datatype.");
+			return string();
 		}
 	}
 }
 
-Parameter* param_with_modulus(Parameter* p, double mod)
-{
-	SimpleParameter *simple_param = p->as_simple_parameter();
-	if(simple_param == NULL
-	|| simple_param->get_typedef() != (Typedef*)NULL
-	|| !simple_param->is_numeric_type())
-	{
-		yyerror("A modulus is only valid on a numeric type.");
-	}
-	else if(!simple_param->set_modulus(mod))
-	{
-		yyerror("Invalid modulus.");
-	}
 
-	return simple_param;
-}
-
-Parameter* param_with_divisor(Parameter* p, uint32_t div)
-{
-	SimpleParameter *simple_param = p->as_simple_parameter();
-	if(simple_param == NULL
-	|| simple_param->get_typedef() != (Typedef*)NULL
-	|| !simple_param->is_numeric_type())
-	{
-		yyerror("A divisor is only valid on a numeric type.");
-
-	}
-	else if(!simple_param->set_divisor(div))
-	{
-		yyerror("Invalid divisor.");
-	}
-
-	return simple_param;	
-}
+} // close namespace dclass

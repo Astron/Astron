@@ -5,7 +5,7 @@ namespace dclass   // open namespace
 {
 
 
-// constructor
+// type constructor
 ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
 	m_element_type(element_type), m_array_range(size)
 {

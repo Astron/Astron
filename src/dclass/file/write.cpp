@@ -535,3 +535,4 @@ void MolecularField::write(std::ostream &out, bool brief, int indent_level) cons
 	}
 	out << "\n";
 }
+*/

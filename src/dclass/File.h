@@ -83,13 +83,13 @@ class File
 		//     Returns false if there is a name conflict.
 		bool add_struct(Struct *dstruct);
 
-		// add_typedef adds the alias <name> to the file for the type <type>.
-		//     Returns false if there is a name conflict.
-		bool add_typedef(const std::string& name, DistributedType* type);
-
 		// add_import adds a newly-allocated import to the file.
 		//     Imports with duplicate modules are combined.
 		void add_import(Import* import);
+
+		// add_typedef adds the alias <name> to the file for the type <type>.
+		//     Returns false if there is a name conflict.
+		bool add_typedef(const std::string& name, DistributedType* type);
 
 		// add_keyword adds a keyword with the name <keyword> to the list of declared keywords.
 		void add_keyword(const std::string &keyword);

@@ -14,7 +14,7 @@ class HashGenerator;
 class Parameter
 {
 	public:
-		Parameter(const std::string& name = "");
+		Parameter(DistributedType* type, const std::string& name = "");
 
 		// get_name returns the parameter's name.  An unnamed parameter returns the empty string.
 		inline const std::string& get_name() const;

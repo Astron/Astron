@@ -1,6 +1,6 @@
-#line 2 "Lexer.cpp"
+#line 2 "lexer.cpp"
 
-#line 4 "Lexer.cpp"
+#line 4 "lexer.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -339,8 +339,6 @@ void yyfree (void *  );
 
 #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
 
-/* Begin user sect3 */
-
 typedef unsigned char YY_CHAR;
 
 FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
@@ -535,30 +533,28 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "Lexer.lpp"
+#line 1 "lexer.lpp"
 /*
-// Filename: Lexer.lxx
+// Filename: lexer.lxx
 // Created by: drose (05 Oct, 2000)
 */
-#line 7 "Lexer.lpp"
+#line 7 "lexer.lpp"
 
 	#include "File.h"
-	#include "file/LexerDefs.h"
-	#include "file/ParserDefs.h"
-	#include "file/Parser.h"
+	#include "file/lexerDefs.h"
+	#include "file/parserDefs.h"
+	#include "file/parser.h"
 	#include "file/write.h" // indent
 	#include <iostream>
 	#include <unistd.h>
-	namespace dclass   // open namespace dclass
-	{
-
+	using namespace dclass;
 
 	static int yyinput(void); // declared by flex.
-	extern int run_lexer();
+	extern int dclass::run_lexer();
 	extern "C" int should_lexer_wrap();
 	extern YYSTYPE yylval;
 
-	#define YY_DECL int run_lexer(void)
+	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap
 
 ////////////////////////////////////////////////////////////////////
@@ -594,7 +590,7 @@ char *yytext;
 // Defining the interface to the lexer.
 ////////////////////////////////////////////////////////////////////
 
-	void init_file_lexer(std::istream& in, const std::string& filename)
+	void dclass::init_file_lexer(std::istream& in, const std::string& filename)
 	{
 		input_p = &in;
 		dc_filename = filename;
@@ -602,21 +598,21 @@ char *yytext;
 		col_number = 0;
 		error_count = 0;
 		warning_count = 0;
-		initial_token = START_DC;
+		initial_token = START_DC_FILE;
 	}
 
-	void init_value_lexer(std::istream& in, const std::string& filename)
+	void dclass::init_value_lexer(std::istream& in, const std::string& filename)
 	{
 		init_file_lexer(in, filename);
-		initial_token = START_PARAMETER_VALUE;
+		initial_token = START_DC_VALUE;
 	}
 
-	int lexer_error_count()
+	int dclass::lexer_error_count()
 	{
 		return error_count;
 	}
 
-	int lexer_warning_count()
+	int dclass::lexer_warning_count()
 	{
 		return warning_count;
 	}
@@ -631,7 +627,7 @@ char *yytext;
 		return 1;
 	}
 
-	void lexer_error(const std::string & msg)
+	void dclass::lexer_error(const std::string & msg)
 	{
 		std::cerr << "\nError";
 		if(!dc_filename.empty())
@@ -645,7 +641,7 @@ char *yytext;
 		error_count++;
 	}
 
-	void lexer_warning(const std::string & msg)
+	void dclass::lexer_warning(const std::string & msg)
 	{
 		std::cerr << "\nWarning";
 		if(!dc_filename.empty())
@@ -976,7 +972,7 @@ char *yytext;
 		col_number += yyleng;
 	}
 
-#line 980 "Lexer.cpp"
+#line 976 "lexer.cpp"
 
 #define INITIAL 0
 
@@ -1161,7 +1157,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 451 "Lexer.lpp"
+#line 449 "lexer.lpp"
 
 
 
@@ -1173,7 +1169,7 @@ YY_DECL
 	}
 
 
-#line 1177 "Lexer.cpp"
+#line 1173 "lexer.cpp"
 
 	if ( !(yy_init) )
 		{
@@ -1259,7 +1255,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 462 "Lexer.lpp"
+#line 460 "lexer.lpp"
 {
 	// New line.  Save a copy of the line so we can print it out for the
 	// benefit of the user in case we get an error.
@@ -1276,7 +1272,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 476 "Lexer.lpp"
+#line 474 "lexer.lpp"
 {
 	// Eat whitespace.
 	accept();
@@ -1284,7 +1280,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 481 "Lexer.lpp"
+#line 479 "lexer.lpp"
 {
 	// Eat C++-style comments.
 	accept();
@@ -1292,7 +1288,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 486 "Lexer.lpp"
+#line 484 "lexer.lpp"
 {
 	// Eat C-style comments.
 	accept();
@@ -1301,7 +1297,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 493 "Lexer.lpp"
+#line 491 "lexer.lpp"
 {
 	accept();
 	return KW_DCLASS;
@@ -1309,7 +1305,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 498 "Lexer.lpp"
+#line 496 "lexer.lpp"
 {
 	accept();
 	return KW_STRUCT;
@@ -1317,7 +1313,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 503 "Lexer.lpp"
+#line 501 "lexer.lpp"
 {
 	accept();
 	return KW_FROM;
@@ -1325,7 +1321,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 508 "Lexer.lpp"
+#line 506 "lexer.lpp"
 {
 	accept();
 	return KW_IMPORT;
@@ -1333,7 +1329,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 513 "Lexer.lpp"
+#line 511 "lexer.lpp"
 {
 	accept();
 	return KW_KEYWORD;
@@ -1341,7 +1337,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 518 "Lexer.lpp"
+#line 516 "lexer.lpp"
 {
 	accept();
 	return KW_TYPEDEF;
@@ -1349,7 +1345,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 523 "Lexer.lpp"
+#line 521 "lexer.lpp"
 {
 	accept();
 	return KW_INT8;
@@ -1357,7 +1353,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 528 "Lexer.lpp"
+#line 526 "lexer.lpp"
 {
 	accept();
 	return KW_INT16;
@@ -1365,7 +1361,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 533 "Lexer.lpp"
+#line 531 "lexer.lpp"
 {
 	accept();
 	return KW_INT32;
@@ -1373,7 +1369,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 538 "Lexer.lpp"
+#line 536 "lexer.lpp"
 {
 	accept();
 	return KW_INT64;
@@ -1381,7 +1377,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 543 "Lexer.lpp"
+#line 541 "lexer.lpp"
 {
 	accept();
 	return KW_UINT8;
@@ -1389,7 +1385,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 548 "Lexer.lpp"
+#line 546 "lexer.lpp"
 {
 	accept();
 	return KW_UINT16;
@@ -1397,7 +1393,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 553 "Lexer.lpp"
+#line 551 "lexer.lpp"
 {
 	accept();
 	return KW_UINT32;
@@ -1405,7 +1401,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 558 "Lexer.lpp"
+#line 556 "lexer.lpp"
 {
 	accept();
 	return KW_UINT64;
@@ -1413,7 +1409,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 563 "Lexer.lpp"
+#line 561 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT32;
@@ -1421,7 +1417,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 568 "Lexer.lpp"
+#line 566 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT64;
@@ -1429,7 +1425,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 573 "Lexer.lpp"
+#line 571 "lexer.lpp"
 {
 	accept();
 	return KW_STRING;
@@ -1437,7 +1433,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 578 "Lexer.lpp"
+#line 576 "lexer.lpp"
 {
 	accept();
 	return KW_BLOB;
@@ -1445,7 +1441,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 583 "Lexer.lpp"
+#line 581 "lexer.lpp"
 {
 	accept();
 	return KW_CHAR;
@@ -1453,26 +1449,26 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 588 "Lexer.lpp"
+#line 586 "lexer.lpp"
 {
 	// An unsigned integer number.
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	dcyylval.str = yytext;
-	dcyylval.u.uint64 = 0;
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
 	const char *p = yytext;
 	while(*p != '\0')
 	{
-		uint64_t next_value = dcyylval.u.uint64 * 10;
-		if(next_value < dcyylval.u.uint64)
+		uint64_t next_value = yylval.u.uint64 * 10;
+		if(next_value < yylval.u.uint64)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.uint64 = 1;
+			yylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
-		dcyylval.u.uint64 = next_value + (*p - '0');
+		yylval.u.uint64 = next_value + (*p - '0');
 		++p;
 	}
 
@@ -1481,13 +1477,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 613 "Lexer.lpp"
+#line 611 "lexer.lpp"
 {
 	// A signed integer number.
 	accept();
 
 	// atoll isn't fully portable, so we'll decode the integer by hand.
-	dcyylval.str = yytext;
+	yylval.str = yytext;
 
 	bool neg = false;
 	const char *p = yytext;
@@ -1508,7 +1504,7 @@ YY_RULE_SETUP
 		if(next_value < value)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 			return SIGNED_INTEGER;
 		}
 
@@ -1518,19 +1514,19 @@ YY_RULE_SETUP
 
 	if(neg)
 	{
-		dcyylval.u.int64 = -(int64_t)value;
-		if(dcyylval.u.int64 > 0)
+		yylval.u.int64 = -(int64_t)value;
+		if(yylval.u.int64 > 0)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 		}
 	}
 	else {
-		dcyylval.u.int64 = (int64_t)value;
-		if(dcyylval.u.int64 < 0)
+		yylval.u.int64 = (int64_t)value;
+		if(yylval.u.int64 < 0)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.int64 = 1;
+			yylval.u.int64 = 1;
 		}
 	}
 
@@ -1539,32 +1535,32 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 668 "Lexer.lpp"
+#line 666 "lexer.lpp"
 {
 	// A hexadecimal integer number.
 	accept();
 
 	// As above, we'll decode the hex string by hand.
-	dcyylval.str = yytext;
-	dcyylval.u.uint64 = 0;
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
 	const char *p = yytext + 2;
 	while(*p != '\0')
 	{
-		uint64_t next_value = dcyylval.u.uint64 * 16;
-		if(next_value < dcyylval.u.uint64)
+		uint64_t next_value = yylval.u.uint64 * 16;
+		if(next_value < yylval.u.uint64)
 		{
 			lexer_error("Number out of range.");
-			dcyylval.u.uint64 = 1;
+			yylval.u.uint64 = 1;
 			return UNSIGNED_INTEGER;
 		}
 
 		if(isalpha(*p))
 		{
-			dcyylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
+			yylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
 		}
 		else
 		{
-			dcyylval.u.uint64 = next_value + (*p - '0');
+			yylval.u.uint64 = next_value + (*p - '0');
 		}
 		++p;
 	}
@@ -1574,68 +1570,58 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 700 "Lexer.lpp"
+#line 698 "lexer.lpp"
 {
 	// A floating-point number.
 	accept();
-	dcyylval.u.real = atof(yytext);
-	dcyylval.str = yytext;
+	yylval.u.real = atof(yytext);
+	yylval.str = yytext;
 	return REAL;
 }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 708 "Lexer.lpp"
+#line 706 "lexer.lpp"
 {
  // Quoted string.
  accept();
- dcyylval.str = scan_quoted_string('"');
+ yylval.str = scan_quoted_string('"');
  return STRING;
  }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 715 "Lexer.lpp"
+#line 713 "lexer.lpp"
 {
 	// Single-quoted string.
 	accept();
-	dcyylval.str = scan_quoted_string('\'');
-	return STRING;
+	yylval.str = scan_quoted_string('\'');
+	return CHAR;
 }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 722 "Lexer.lpp"
+#line 720 "lexer.lpp"
 {
 	// Long hex string.
 	accept();
-	dcyylval.str = scan_hex_string();
+	yylval.str = scan_hex_string();
 	return HEX_STRING;
 }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 729 "Lexer.lpp"
+#line 727 "lexer.lpp"
 {
 	// Identifier or keyword.
 	accept();
-	dcyylval.str = yytext;
-
-	if(dc_file != (File *)NULL)
-	{
-		const Keyword *keyword = dc_file->get_keyword_by_name(dcyylval.str);
-		if(keyword != (Keyword *)NULL)
-		{
-			dcyylval.u.keyword = keyword;
-			return KEYWORD;
-		}
-	}
+	yylval.str = yytext;
 	return IDENTIFIER;
 }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 747 "Lexer.lpp"
+#line 735 "lexer.lpp"
 {
 	// Send any other printable character as itself.
 	accept();
@@ -1644,10 +1630,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 753 "Lexer.lpp"
+#line 740 "lexer.lpp"
 ECHO;
 	YY_BREAK
-#line 1651 "Lexer.cpp"
+#line 1637 "lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2608,10 +2594,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 753 "Lexer.lpp"
-
-
-
-
-} // close namespace dclass
-
+#line 740 "lexer.lpp"

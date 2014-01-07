@@ -23,9 +23,9 @@ class HashGenerator;
 enum Type
 {
     /* Numeric Types */
-    CHAR,           // equivalent to uint8, except that it should be printed as a string
     INT8, INT16, INT32, INT64,
     UINT8, UINT16, UINT32, UINT64,
+    CHAR, // equivalent to uint8, except that it should be printed as a string
     FLOAT32, FLOAT64,
 
     /* Array Types */
@@ -44,7 +44,6 @@ enum Type
 
     INVALID
 };
-
 
 // A DistributedType is a shared type with a defined layout of data.
 class DistributedType

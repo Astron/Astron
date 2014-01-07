@@ -25,7 +25,7 @@ class HashGenerator;
 class Field : public KeywordList
 {
 	public:
-		Field(Struct* strct, const std::string &name = "");
+		Field(DistributedType* type, const std::string &name = "");
 
 		// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
 		virtual MolecularField* as_molecular();

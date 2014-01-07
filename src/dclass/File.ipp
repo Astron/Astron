@@ -3,6 +3,12 @@ namespace dclass   // open namespace
 {
 
 
+inline Import::Import(const std::string& module_name) :
+	module(module_name)
+{
+}
+
+
 // get_num_classes returns the number of classes in the file
 inline size_t File::get_num_classes() const
 {

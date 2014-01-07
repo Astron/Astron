@@ -12,16 +12,14 @@
 	#include "file/write.h" // indent
 	#include <iostream>
 	#include <unistd.h>
-	namespace dclass   // open namespace dclass
-	{
-
+	using namespace dclass;
 
 	static int yyinput(void); // declared by flex.
-	extern int run_lexer();
+	extern int dclass::run_lexer();
 	extern "C" int should_lexer_wrap();
 	extern YYSTYPE yylval;
 
-	#define YY_DECL int run_lexer(void)
+	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap
 
 ////////////////////////////////////////////////////////////////////
@@ -57,7 +55,7 @@
 // Defining the interface to the lexer.
 ////////////////////////////////////////////////////////////////////
 
-	void init_file_lexer(std::istream& in, const std::string& filename)
+	void dclass::init_file_lexer(std::istream& in, const std::string& filename)
 	{
 		input_p = &in;
 		dc_filename = filename;
@@ -65,21 +63,21 @@
 		col_number = 0;
 		error_count = 0;
 		warning_count = 0;
-		initial_token = START_DC;
+		initial_token = START_DC_FILE;
 	}
 
-	void init_value_lexer(std::istream& in, const std::string& filename)
+	void dclass::init_value_lexer(std::istream& in, const std::string& filename)
 	{
 		init_file_lexer(in, filename);
-		initial_token = START_PARAMETER_VALUE;
+		initial_token = START_DC_VALUE;
 	}
 
-	int lexer_error_count()
+	int dclass::lexer_error_count()
 	{
 		return error_count;
 	}
 
-	int lexer_warning_count()
+	int dclass::lexer_warning_count()
 	{
 		return warning_count;
 	}
@@ -94,7 +92,7 @@
 		return 1;
 	}
 
-	void lexer_error(const std::string & msg)
+	void dclass::lexer_error(const std::string & msg)
 	{
 		std::cerr << "\nError";
 		if(!dc_filename.empty())
@@ -108,7 +106,7 @@
 		error_count++;
 	}
 
-	void lexer_warning(const std::string & msg)
+	void dclass::lexer_warning(const std::string & msg)
 	{
 		std::cerr << "\nWarning";
 		if(!dc_filename.empty())
@@ -716,7 +714,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	// Single-quoted string.
 	accept();
 	yylval.str = scan_quoted_string('\'');
-	return STRING;
+	return CHAR;
 }
 
 [<] {
@@ -730,16 +728,6 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	// Identifier or keyword.
 	accept();
 	yylval.str = yytext;
-
-	if(dc_file != (File *)NULL)
-	{
-		const Keyword *keyword = dc_file->get_keyword_by_name(yylval.str);
-		if(keyword != (Keyword *)NULL)
-		{
-			yylval.u.keyword = keyword;
-			return KEYWORD;
-		}
-	}
 	return IDENTIFIER;
 }
 
@@ -749,8 +737,3 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	accept();
 	return yytext[0];
 }
-
-%%
-
-
-} // close namespace dclass
