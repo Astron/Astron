@@ -53,7 +53,6 @@ inline bool Field::has_default_value() const
 //     If a default value hasn't been set, returns an implicit default.
 inline const std::string& Field::get_default_value() const
 {
-	// TODO: Somehow set the initial default value
 	return m_default_value;
 }
 

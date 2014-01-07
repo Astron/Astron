@@ -75,14 +75,6 @@ bool KeywordList::add_keyword(const std::string& keyword)
 	return inserted;
 }
 
-// TODO: Evaluate whether this is being used
-// clear_keywords removes all keywords from the field.
-void KeywordList::clear_keywords()
-{
-	m_keywords.clear();
-	m_keywords_by_name.clear();
-}
-
 // generate_hash accumulates the properties of these keywords into the hash.
 void KeywordList::generate_hash(HashGenerator &hashgen) const
 {

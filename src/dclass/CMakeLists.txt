@@ -51,5 +51,6 @@ add_library(dclass
 	file/read.cpp
 	value/format.cpp
 	value/parse.cpp
+	value/default.cpp
 )
 SET_TARGET_PROPERTIES(dclass PROPERTIES LINK_FLAGS -lfl)

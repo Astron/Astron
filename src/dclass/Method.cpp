@@ -61,6 +61,8 @@ bool Method::add_parameter(Parameter *param)
 			m_size = 0;
 		}
 	}
+
+	return true;
 }
 
 // generate_hash accumulates the properties of this method into the hash

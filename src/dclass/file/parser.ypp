@@ -239,20 +239,17 @@ value
 	: empty
 	{
 		parsed_value->clear();
-		if(!check_depth(0)) depth_error(0);
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0);
 	}
 	| type_value
 	{
 		parsed_value->assign($1);
-		if(!check_depth(0)) depth_error(0, "type");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "type");
 	}
 	| method_value
 	{
 		parsed_value->assign($1);
-		if(!check_depth(0)) depth_error(0, "method");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "method");
 	}
 	;
 
@@ -652,8 +649,7 @@ unnamed_field
 		$$ = new Field($1);
 
 
-		if(!check_depth(0)) depth_error(0, "unnamed field");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "unnamed field");
 		field->set_default_value($4);
 	}
 	;
@@ -682,8 +678,7 @@ field_with_name_and_default
 	  type_value
 	{
 		$$ = $1;
-		if(!check_depth(0)) depth_error(0, "field '" + $1->get_name() + "'");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
 		$1->set_default_value($4);
 	}
 	| field_with_name_as_array '='
@@ -694,8 +689,7 @@ field_with_name_and_default
 	  type_value
 	{
 		$$ = $1;
-		if(!check_depth(0)) depth_error(0, "field '" + $1->get_name() + "'");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
 		$1->set_default_value($4);
 	}
 	| method_as_field '=' method_value
@@ -706,8 +700,7 @@ field_with_name_and_default
 	  type_value
 	{
 		$$ = $1;
-		if(!check_depth(0)) depth_error(0, "method");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "method");
 		$1->set_default_value($3);
 	}
 	;
@@ -961,8 +954,7 @@ parameter
 		Parameter* param = new Parameter($1);
 		$$ = param;
 
-		if(!check_depth(0)) depth_error(0, "type");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "type");
 		param->set_default_value($4);
 	}
 
@@ -990,8 +982,7 @@ param_with_name_and_default
 	  type_value
 	{
 		$$ = $1;
-		if(!check_depth(0)) depth_error(0, "parameter '" + $1->get_name() + "'");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
 		$1->set_default_value($4);
 	}
 	| param_with_name_as_array '='
@@ -1002,8 +993,7 @@ param_with_name_and_default
 	  type_value
 	{
 		$$ = $1;
-		if(!check_depth(0)) depth_error(0, "parameter '" + $1->get_name() + "'");
-		type_stack.pop();
+		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
 		$1->set_default_value($4);
 	}
 	;
@@ -1299,7 +1289,7 @@ array_value
 
 		// set to the obvious default value
 		uint64_t min_array_elements = array->get_range().min.uinteger;
-		$$ = string('\0', min_array_elements);
+		$$ = string(min_array_elements, '\0');
 	}
 	| '['
 	{
@@ -1622,6 +1612,7 @@ string number_value(Type type, double &number)
 		case INT16:
 		case INT32:
 		case INT64:
+		case CHAR:
 		case UINT8:
 		case UINT16:
 		case UINT32:
@@ -1676,6 +1667,7 @@ string number_value(Type type, int64_t &number)
 		{
 			return string((char*)&number, sizeof(int64_t));
 		}
+		case CHAR:
 		case UINT8:
 		case UINT16:
 		case UINT32:
@@ -1707,6 +1699,7 @@ string number_value(Type type, uint64_t &number)
 {
 	switch(type)
 	{
+		case CHAR:
 		case UINT8:
 		{
 			if(number > UINT8_MAX)

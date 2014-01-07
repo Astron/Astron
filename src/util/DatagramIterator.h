@@ -316,15 +316,15 @@ class DatagramIterator
 
 			switch(dtype->get_type())
 			{
-				case dclass::VARSTRING:
-				case dclass::VARBLOB:
-				case dclass::VARARRAY:
+				case VARSTRING:
+				case VARBLOB:
+				case VARARRAY:
 				{
 					dgsize_t length = read_size();
 					check_read_length(length);
 					m_offset += length;
 				}
-				case dclass::STRUCT:
+				case STRUCT:
 				{
 					const Struct* dstruct = dtype->as_struct();
 					size_t num_fields = dstruct->get_num_fields();
@@ -333,7 +333,7 @@ class DatagramIterator
 						skip_dtype(dstruct->get_field(i)->get_type());
 					}
 				}
-				case dclass::METHOD:
+				case METHOD:
 				{
 					const Method* dmethod = dtype->as_method();
 					size_t num_params = dmethod->get_num_parameters();

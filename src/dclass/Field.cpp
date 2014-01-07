@@ -1,17 +1,9 @@
 // Filename: Field.cpp
-// Created by: drose (11 Oct, 2000)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-
 #include "Field.h"
 #include "File.h"
 #include "Struct.h"
 #include "HashGenerator.h"
+#include "value/default.h"
 namespace dclass   // open namespace
 {
 
@@ -19,6 +11,7 @@ namespace dclass   // open namespace
 Field::Field(DistributedType* type, const std::string &name) :
 	m_struct(NULL), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
 {
+	m_default_value = create_default_value(type);
 }
 
 // destructor
@@ -56,7 +49,7 @@ void Field::set_type(DistributedType* type)
 {
 	m_type = type;
 	m_has_default_value = false;
-	m_default_value.clear();
+	m_default_value = create_default_value(type);
 }
 
 // set_default_value establishes a default value for this field.

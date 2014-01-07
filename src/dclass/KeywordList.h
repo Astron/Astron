@@ -47,9 +47,6 @@ class KeywordList
 		//     Returns true if it is added, false if it was already there.
 		bool add_keyword(const std::string& keyword);
 
-		// clear_keywords removes all keywords from the field.
-		void clear_keywords();
-
 		// generate_hash accumulates the properties of these keywords into the hash.
 		void generate_hash(HashGenerator& hashgen) const;
 
