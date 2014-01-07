@@ -1,6 +1,6 @@
 // Filename: NumericRange.h
 #pragma once
-#include <math.h>
+#include <math.h> // INFINITY
 namespace dclass   // open namespace dclass
 {
 

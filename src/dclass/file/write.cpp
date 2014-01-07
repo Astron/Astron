@@ -1,16 +1,67 @@
 // Filename: write.cpp
 #include "write.h"
+#include "DistributedType.h"
+using namespace std;
 namespace dclass   // open namespace dclass
 {
 
 
-std::ostream& indent(std::ostream& out, unsigned int indent_level)
+ostream& indent(ostream& out, unsigned int indent_level)
 {
 	for(int i = 0; i < indent_level; i++)
 	{
 		out << ' ';
 	}
 	return out;
+}
+
+string format_type(unsigned int type)
+{
+	switch(type)
+	{
+		case CHAR:
+			return "char";
+		case INT8:
+			return "int8";
+		case INT16:
+			return "int16";
+		case INT32:
+			return "int32";
+		case INT64:
+			return "int64";
+		case UINT8:
+			return "uint8";
+		case UINT16:
+			return "uint16";
+		case UINT32:
+			return "uint32";
+		case UINT64:
+			return "uint64";
+		case FLOAT32:
+			return "float32";
+		case FLOAT64:
+			return "float64";
+		case STRING:
+			return "string";
+		case VARSTRING:
+			return "varstring";
+		case BLOB:
+			return "blob";
+		case VARBLOB:
+			return "varblob";
+		case ARRAY:
+			return "array";
+		case VARARRAY:
+			return "vararray";
+		case STRUCT:
+			return "struct";
+		case METHOD:
+			return "method";
+		case INVALID:
+			return "invalid";
+		default:
+			return "error";
+	}
 }
 
 
@@ -20,15 +71,15 @@ std::ostream& indent(std::ostream& out, unsigned int indent_level)
 // write opens the indicated filename for output and writes a parseable
 //     description of all the known distributed classes to the file.
 //     Returns true if the description is successfully written, false otherwise.
-bool File::write(std::string filename, bool brief) const
+bool File::write(string filename, bool brief) const
 {
-	std::ofstream out;
+	ofstream out;
 
 	out.open(filename.c_str());
 
 	if(!out)
 	{
-		std::cerr << "Can't open " << filename << " for output.\n";
+		cerr << "Can't open " << filename << " for output.\n";
 		return false;
 	}
 	return write(out, brief);
@@ -36,7 +87,7 @@ bool File::write(std::string filename, bool brief) const
 
 // write writes a parseable description of all the known distributed classes to the stream.
 //     Returns true if the description is successfully written, false otherwise.
-bool File::write(std::ostream &out, bool brief) const
+bool File::write(ostream &out, bool brief) const
 {
 	if(!m_imports.empty())
 	{
@@ -75,7 +126,7 @@ bool File::write(std::ostream &out, bool brief) const
 }
 
 // output_keywords writes the keywords in the list to the output stream.
-void KeywordList::output_keywords(std::ostream &out) const
+void KeywordList::output_keywords(ostream &out) const
 {
 	for(auto it = m_keywords.begin(); it != m_keywords.end(); ++it)
 	{
@@ -85,21 +136,21 @@ void KeywordList::output_keywords(std::ostream &out) const
 
 
 // output writes a string representation of this instance to <out>.
-void Keyword::output(std::ostream &out, bool brief) const
+void Keyword::output(ostream &out, bool brief) const
 {
 	out << "keyword " << m_name;
 }
 
 // write writes a string representation of this instance to <out>.
-void Keyword::write(std::ostream &out, bool, int indent_level) const
+void Keyword::write(ostream &out, bool, int indent_level) const
 {
 	indent(out, indent_level) << "keyword " << m_name << ";\n";
 }
 
 // output writes a representation of the parameter to an output stream
-void Parameter::output(std::ostream &out, bool brief) const
+void Parameter::output(ostream &out, bool brief) const
 {
-	std::string name;
+	string name;
 	if(!brief)
 	{
 		name = get_name();
@@ -108,7 +159,7 @@ void Parameter::output(std::ostream &out, bool brief) const
 }
 
 // write writes a representation of the parameter to an output stream
-void Parameter::write(std::ostream &out, bool brief, int indent_level) const
+void Parameter::write(ostream &out, bool brief, int indent_level) const
 {
 	// we must always output the name when the parameter occurs by
 	// itself within a class, so we pass get_name() even if brief is
@@ -117,9 +168,9 @@ void Parameter::write(std::ostream &out, bool brief, int indent_level) const
 }
 
 // write_instance formats the parameter in the C++-like dc syntax as a typename and identifier.
-void Parameter::write_instance(std::ostream &out, bool brief, int indent_level,
-                               const std::string &prename, const std::string &name,
-                               const std::string &postname) const
+void Parameter::write_instance(ostream &out, bool brief, int indent_level,
+                               const string &prename, const string &name,
+                               const string &postname) const
 {
 	indent(out, indent_level);
 	output_instance(out, brief, prename, name, postname);
@@ -133,8 +184,8 @@ void Parameter::write_instance(std::ostream &out, bool brief, int indent_level,
 }
 
 // output_typedef_name formats the instance like output_instance, but uses the typedef name instead.
-void Parameter::output_typedef_name(std::ostream &out, bool, const std::string &prename,
-                                    const std::string &name, const std::string &postname) const
+void Parameter::output_typedef_name(ostream &out, bool, const string &prename,
+                                    const string &name, const string &postname) const
 {
 	out << get_typedef()->get_name();
 	if(!prename.empty() || !name.empty() || !postname.empty())
@@ -144,9 +195,9 @@ void Parameter::output_typedef_name(std::ostream &out, bool, const std::string &
 }
 
 // write_typedef_name formats the instance like write_instance, but uses the typedef name instead.
-void Parameter::write_typedef_name(std::ostream &out, bool brief, int indent_level,
-                                   const std::string &prename, const std::string &name,
-                                   const std::string &postname) const
+void Parameter::write_typedef_name(ostream &out, bool brief, int indent_level,
+                                   const string &prename, const string &name,
+                                   const string &postname) const
 {
 	indent(out, indent_level) << get_typedef()->get_name();
 	if(!prename.empty() || !name.empty() || !postname.empty())
@@ -164,8 +215,8 @@ void Parameter::write_typedef_name(std::ostream &out, bool brief, int indent_lev
 
 
 // output_instance formats the parameter in .dc syntax as a typename and identifier.
-void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
-                                      const std::string &name, const std::string &postname) const
+void SimpleParameter::output_instance(ostream &out, bool brief, const string &prename,
+                                      const string &name, const string &postname) const
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
@@ -268,8 +319,8 @@ void SimpleParameter::output_instance(std::ostream &out, bool brief, const std::
 // output_instance formats the parameter to the syntax of an array parameter in a .dc file
 //     as TYPE IDENTIFIER[RANGE] with optional IDENTIFIER and RANGE,
 //     and outputs the formatted string to the stream.
-void ArrayParameter::output_instance(std::ostream &out, bool brief, const std::string &prename,
-                                     const std::string &name, const std::string &postname) const
+void ArrayParameter::output_instance(ostream &out, bool brief, const string &prename,
+                                     const string &name, const string &postname) const
 {
 	if(get_typedef() != (Typedef *)NULL)
 	{
@@ -278,7 +329,7 @@ void ArrayParameter::output_instance(std::ostream &out, bool brief, const std::s
 	}
 	else
 	{
-		std::ostringstream strm;
+		ostringstream strm;
 
 		strm << "[";
 		// TODO: fix
@@ -447,7 +498,7 @@ void Struct::output_instance(ostream &out, bool brief, const string &prename,
 // output formats the field to the syntax of an atomic field in a .dc file
 //     as IDENTIFIER(ELEMENTS, ...) KEYWORDS with optional ELEMENTS and KEYWORDS,
 //     and outputs the formatted string to the stream.
-void AtomicField::output(std::ostream &out, bool brief) const
+void AtomicField::output(ostream &out, bool brief) const
 {
 	out << m_name << "(";
 
@@ -469,7 +520,7 @@ void AtomicField::output(std::ostream &out, bool brief) const
 }
 
 // write generates a parseable description of the object to the indicated output stream.
-void AtomicField::write(std::ostream &out, bool brief, int indent_level) const
+void AtomicField::write(ostream &out, bool brief, int indent_level) const
 {
 	indent(out, indent_level);
 	output(out, brief);
@@ -483,7 +534,7 @@ void AtomicField::write(std::ostream &out, bool brief, int indent_level) const
 
 // output_element formats a parameter as an element for output into .dc file syntax.
 //     Used internally by AtomicField's output() method.
-void AtomicField::output_element(std::ostream &out, bool brief, Parameter *element) const
+void AtomicField::output_element(ostream &out, bool brief, Parameter *element) const
 {
 	element->output(out, brief);
 
@@ -496,7 +547,7 @@ void AtomicField::output_element(std::ostream &out, bool brief, Parameter *eleme
 
 void AtomicField::refresh_default_value()
 {
-	m_default_value = std::string();
+	m_default_value = string();
 	for(auto it = m_elements.begin(); it != m_elements.end(); ++it)
 	{
 		m_default_value += (*it)->get_default_value();
@@ -505,7 +556,7 @@ void AtomicField::refresh_default_value()
 }
 
 // output writes a representation of the field to an output stream
-void MolecularField::output(std::ostream &out, bool brief) const
+void MolecularField::output(ostream &out, bool brief) const
 {
 	out << m_name;
 
@@ -525,7 +576,7 @@ void MolecularField::output(std::ostream &out, bool brief) const
 }
 
 // write writes a representation of the field to an output stream
-void MolecularField::write(std::ostream &out, bool brief, int indent_level) const
+void MolecularField::write(ostream &out, bool brief, int indent_level) const
 {
 	indent(out, indent_level);
 	output(out, brief);

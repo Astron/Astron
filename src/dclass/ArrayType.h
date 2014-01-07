@@ -29,10 +29,11 @@ class ArrayType : public DistributedType
 		//     or 0 if the array may contain a variable number of elements.
 		inline size_t get_array_size() const;
 
-		// has_range returns true if the type has a variable range of valid array sizes.
+		// has_range returns true if there is a constraint on the range of valid array sizes.
+		//     This is always true for fixed-size arrays.
 		inline bool has_range() const;
-		// get_array_range returns the range of sizes that the array may have.
-		inline NumericRange get_array_range() const;
+		// get_range returns the range of sizes that the array may have.
+		inline NumericRange get_range() const;
 
 		// generate_hash accumulates the properties of this type into the hash.
 		virtual void generate_hash(HashGenerator &hashgen) const;

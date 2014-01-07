@@ -5,7 +5,7 @@
 	#include "file/lexerDefs.h"
 	#include "file/parserDefs.h"
 	#include "file/parser.h"
-	#include "file/write.h" // to_string(Type);
+	#include "file/write.h" // format_type(Type);
 
 	#include "File.h"
 	#include "DistributedType.h"
@@ -1094,7 +1094,7 @@ type_value
 	{
 		if(!check_depth()) depth_error("signed integer");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1103,7 +1103,7 @@ type_value
 	{
 		if(!check_depth()) depth_error("unsigned integer");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1112,7 +1112,7 @@ type_value
 	{
 		if(!check_depth()) depth_error("floating point");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1121,7 +1121,7 @@ type_value
 	{
 		if(!check_depth()) depth_error("string");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove string type from stack
 
 		if(dtype->get_type() == STRING)
@@ -1143,7 +1143,7 @@ type_value
 		else
 		{
 			parser_error("Cannot use string value for non-string type '"
-			             + to_string(dtype->get_type()) + "'.");
+			             + format_type(dtype->get_type()) + "'.");
 			$$ = $1;
 		}
 	}
@@ -1151,7 +1151,7 @@ type_value
 	{
 		if(!check_depth()) depth_error("hex-string");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove type from stack
 
 		if(dtype->get_type() == BLOB)
@@ -1173,27 +1173,12 @@ type_value
 		else
 		{
 			parser_error("Cannot use hex value for non-blob type '"
-			             + to_string(dtype->get_type()) + "'.");
+			             + format_type(dtype->get_type()) + "'.");
 			$$ = $1;
 		}
 	}
 	| array_value
 	| struct_value
-	{
-		// TODO
-		/*
-		else if(type == DT_struct)
-		{
-			parser_warning("The {val} format is still parsed as an array value, values may not be properly validated or packed for a struct.");
-			$$ = $1;
-		}
-		else
-		{
-			parser_error("Cannot use array composition as value for non-array type.");
-			$$ = $1;
-		}
-		*/
-	}
 	;
 
 method_value
@@ -1201,7 +1186,7 @@ method_value
 	{
 		if(!check_depth()) depth_error("method");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		if(dtype->as_method())
 		{
 			current_depth++;
@@ -1219,7 +1204,7 @@ method_value
 		else
 		{
 			parser_error("Cannot use method-value for non-method type '"
-			             + to_string(dtype->get_type()) + "'.");
+			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
 	  parameter_values ')'
@@ -1246,7 +1231,7 @@ struct_value
 	{
 		if(!check_depth()) depth_error("struct");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		if(dtype->as_struct())
 		{
 			current_depth++;
@@ -1264,7 +1249,7 @@ struct_value
 		else
 		{
 			parser_error("Cannot use struct-composition for non-struct type '"
-			             + to_string(dtype->get_type()) + "'.");
+			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
 	  field_values '}'
@@ -1292,132 +1277,249 @@ field_values
 	;
 
 array_value
-	: '[' ']'
+	: '[' ']' // default value
 	{
-		// TODO: deal with fixed sized and varsized array
-		$$ = "";
+		if(!check_depth()) depth_error("array");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop();
+		if(!dtype->as_array())
+		{
+			parser_error("Cannot use array-composition for non-array type '"
+			             + format_type(dtype->get_type()) + "'.");
+			$$ = "";
+			break;
+		}
+
+		const ArrayType* array = dtype->as_array();
+		if(!array->has_range()) // Simplest case
+		{
+			$$ = "";
+			break;
+		}
+
+		// set to the obvious default value
+		uint64_t min_array_elements = array->get_range().min.uinteger;
+		$$ = string('\0', min_array_elements);
 	}
 	| '['
 	{
 		if(!check_depth()) depth_error("array");
 
-		const DistributedType* dtype = type_stack.top().type;;
+		const DistributedType* dtype = type_stack.top().type;
 		if(dtype->as_array())
 		{
-			current_depth++;
 			const ArrayType* array = dtype->as_array();
 
-			// TODO: Cry in pain...
+			// For arrays we're going to do something pretty hacky:
+			//    For every element we had we are going to increment the depth,
+			//    and after we finish the element_values production we will compare
+			//    the current_depth to the depth of our original symbol to check
+			//    if the array size is proper.
+			type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
 		}
 		else
 		{
 			parser_error("Cannot use array-composition for non-array type '"
-			             + to_string(dtype->get_type()) + "'.");
+			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
 	  element_values ']'
 	{
 		if(type_stack.top().type->as_array())
 		{
-			current_depth--;
+			uint64_t actual_size = current_depth - type_stack.top().depth;
+			const ArrayType* array = type_stack.top().type->as_array();
+			if(array->has_range())
+			{
+				if(actual_size > array->get_range().max.uinteger)
+				{
+					parser_error("Too many elements in array value, maximum "
+					             + to_string(array->get_range().max.uinteger) + ".");
+				}
+				else if(actual_size < array->get_range().min.uinteger)
+				{
+					parser_error("Too few elements in array value, minimum "
+					             + to_string(array->get_range().min.uinteger) + ".");
+				}
+			}
+			current_depth = type_stack.top().depth;
 		}
-		type_stack.pop(); // Remove method type from the stack
+		type_stack.pop(); // Remove array type from the stack
 		$$ = $3;
 	}
 	;
 
 element_values
-	: type_value
-	| array_expansion
-	| element_values ',' type_value
-	| element_values ',' array_expansion
+	: array_expansion
+	| element_values ',' 
+	{
+		// We popped off the only element we added, so we're back to the array
+		// Don't increment the depth; the array_expansion will add to
+		// the current_depth depending on the number of elements it adds.
+		const ArrayType* array = type_stack.top().type->as_array();
+		type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
+	}
+	  array_expansion
+	{
+		$$ = $1 + $4;
+	}
 	;
 
 array_expansion
-	: SIGNED_INTEGER '*' small_unsigned_integer
+	: type_value
 	{
-		/*
+		current_depth++;
+		$$ = $1;
+	}
+	| SIGNED_INTEGER '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
 		string val;
-
-		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
-		if(arr == (ArrayParameter*)NULL)
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
 		{
-			parser_error("Cannot use array expansion as value for non-array parameter.");
+			val += base;
 		}
-		else
-		{
-			for(unsigned int i = 0; i < $3; i++)
-			{
-				val += number_value(arr->get_element_type()->get_datatype(), $1);
-			}
-		}
-
 		$$ = val;
-		*/
 	}
 	| UNSIGNED_INTEGER '*' small_unsigned_integer
 	{
-		/*
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
 		string val;
-
-		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
-		if(arr == (ArrayParameter*)NULL)
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
 		{
-			parser_error("Cannot use array expansion as value for non-array parameter.");
+			val += base;
 		}
-		else
-		{
-			for(unsigned int i = 0; i < $3; i++)
-			{
-				val += number_value(arr->get_element_type()->get_datatype(), $1);
-			}
-		}
-
 		$$ = val;
-		*/
 	}
 	| REAL '*' small_unsigned_integer
 	{
-		/*
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
 		string val;
-
-		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
-		if(arr == (ArrayParameter*)NULL)
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
 		{
-			parser_error("Cannot use array expansion as value for non-array parameter.");
+			val += base;
 		}
-		else
-		{
-			for(unsigned int i = 0; i < $3; i++)
-			{
-				val += number_value(arr->get_element_type()->get_datatype(), $1);
-			}
-		}
-
 		$$ = val;
-		*/
 	}
-	| HEX_STRING '*' small_unsigned_integer
+	| STRING '*' small_unsigned_integer
 	{
-		/*
-		string val;
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
 
-		// TODO: Check array type compatible with HEX_STRING,
-		//       and check integer bounds if current parameter has integer type.
-		ArrayParameter* arr = current_parameter->as_field()->as_parameter()->as_array_parameter();
-		if(arr == (ArrayParameter*)NULL)
+		if(dtype->get_type() == STRING)
 		{
-			parser_error("Cannot use array expansion as value for non-array parameter.");
-		}
-		else
-		{
-			for(unsigned int i = 0; i < $3; i++)
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length string has incorrect length.");
+			}
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
 			{
 				val += $1;
 			}
+			$$ = val;
 		}
-		$$ = val;
-		*/
+		else if(dtype->get_type() == VARSTRING)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			string base = string((char*)&length, sizeof(sizetag_t)) + $1;
+
+			string val;
+			val.reserve(base.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += base;
+			}
+			$$ = val;
+		}
+		else
+		{
+			parser_error("Cannot use string value for non-string type '"
+			             + format_type(dtype->get_type()) + "'.");
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+	}
+	| HEX_STRING '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		if(dtype->get_type() == BLOB)
+		{
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length blob has incorrect length.");
+			}
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+		else if(dtype->get_type() == VARBLOB)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			string base = string((char*)&length, sizeof(sizetag_t)) + $1;
+
+			string val;
+			val.reserve(base.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += base;
+			}
+			$$ = val;
+
+		}
+		else
+		{
+			parser_error("Cannot use hex value for non-blob type '"
+			             + format_type(dtype->get_type()) + "'.");
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
 	}
 	;
 

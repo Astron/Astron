@@ -1,6 +1,7 @@
 // Filename: ArrayType.cpp
 #include "ArrayType.h"
 #include "HashGenerator.h"
+#include <inttypes.h> // UINT64_MAX
 namespace dclass   // open namespace
 {
 
@@ -17,6 +18,8 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
 	else
 	{
 		m_array_size = 0;
+		m_array_range.min.uinteger = 0;
+		m_array_range.max.uinteger = UINT64_MAX;
 	}
 
 	if(m_element_type->has_fixed_size() && m_array_size > 0)
