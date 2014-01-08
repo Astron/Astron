@@ -73,10 +73,10 @@ class Field : public KeywordList
 		friend class Struct;
 		friend class Class;
 
+		Struct* m_struct;
 		unsigned int m_id;
 		std::string m_name;
 		DistributedType* m_type;
-		Struct* m_struct;
 
 		bool m_has_default_value; // is true if an explicity default has been set
 		std::string m_default_value; // the binary data of the default value encoded in a string

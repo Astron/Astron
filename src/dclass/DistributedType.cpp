@@ -52,6 +52,10 @@ const Method* DistributedType::as_method() const
 void DistributedType::generate_hash(HashGenerator& hashgen) const
 {
 	hashgen.add_int(m_type);
+	if(has_alias())
+	{
+		hashgen.add_string(m_alias);
+	}
 }
 
 

@@ -409,7 +409,7 @@ class Datagram
 		}
 
 		// size returns the amount of data added to the datagram in bytes.
-		const dgsize_t size() const
+		dgsize_t size() const
 		{
 			return buf_offset;
 		}
@@ -417,7 +417,7 @@ class Datagram
 		// cap returns the currently allocated size of the datagram in memory (ie. capacity).
 		// Note: the datagram handles resizing automatically so this method is primarily available
 		//       for debugging, and possible performance considerations.
-		const dgsize_t cap() const
+		dgsize_t cap() const
 		{
 			return buf_cap;
 		}

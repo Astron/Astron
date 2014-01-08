@@ -12,7 +12,9 @@ namespace dclass   // open namespace dclass
 Parameter::Parameter(DistributedType* type, const std::string& name) :
 	m_name(name), m_type(type), m_method(NULL), m_has_default_value(false)
 {
-	m_default_value = create_default_value(type);
+	bool implicit_value;
+	m_default_value = create_default_value(type, implicit_value);
+	m_has_default_value = !implicit_value;
 }
 
 // set_name sets the name of this parameter.  Returns false if a parameter with
@@ -33,13 +35,13 @@ bool Parameter::set_name(const std::string& name)
 bool Parameter::set_type(DistributedType* type)
 {
 	// Parameters can't have method types for now
-	if(type->get_type() == METHOD)
+	if(type->get_type() == T_METHOD)
 	{
 		return false;
 	}
 
 	// Parameters can't have class types for now
-	if(type->get_type() == STRUCT && type->as_struct()->as_class())
+	if(type->get_type() == T_STRUCT && type->as_struct()->as_class())
 	{
 		return false;
 	}
@@ -47,6 +49,8 @@ bool Parameter::set_type(DistributedType* type)
 	m_type = type;
 	m_has_default_value = false;
 	m_default_value = create_default_value(type);
+
+	return true;
 }
 
 // set_default_value defines a default value for this parameter.
@@ -70,10 +74,6 @@ void Parameter::generate_hash(HashGenerator& hashgen) const
 {
 	hashgen.add_string(m_name);
 	hashgen.add_string(m_default_value);
-	if(has_type_alias())
-	{
-		hashgen.add_string(m_type_alias);
-	}
 	m_type->generate_hash(hashgen);
 }
 

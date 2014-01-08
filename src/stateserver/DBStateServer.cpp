@@ -70,8 +70,8 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	{
 		uint16_t dc_id = dgi.read_uint16();
 
-		// Check dclass is valid
-		if(dc_id >= g_dcf->get_num_classes())
+		// Check id is a valid type id
+		if(dc_id >= g_dcf->get_num_types())
 		{
 			m_log->error() << "Received activate_other with unknown dclass"
 			               << " - id:" << dc_id << std::endl;
@@ -81,8 +81,8 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 		const Class *dcc = g_dcf->get_class_by_id(dc_id);
 		if(!dcc)
 		{
-			m_log->error() << "Tried to actvate_other with distributed struct"
-			               << " '" << g_dcf->get_class_by_id(dc_id)->get_name() << "'\n";
+			m_log->error() << "Tried to activate_other with non-class distributed_type '"
+			               << g_dcf->get_class_by_id(dc_id)->get_name() << "'\n";
 		}
 		auto load_it = m_inactive_loads.find(do_id);
 		if(load_it == m_inactive_loads.end())
@@ -97,7 +97,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	}
 }
 
-void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_uint64();
 	uint16_t msgtype = dgi.read_uint16();

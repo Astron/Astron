@@ -105,7 +105,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			uint16_t dc_id = dgi.read_uint16();
-			if(dc_id >= g_dcf->get_num_classes())
+			const Class *r_dclass = g_dcf->get_class_by_id(dc_id);
+			if(!r_dclass)
 			{
 				m_log->error() << "Received object from database with unknown dclass"
 				               << " - id:" << dc_id << std::endl;
@@ -113,7 +114,6 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			const Class *r_dclass = g_dcf->get_class_by_id(dc_id);
 			if(m_dclass && r_dclass != m_dclass)
 			{
 				m_log->error() << "Requested object of class '" << m_dclass->get_id()

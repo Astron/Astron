@@ -256,9 +256,9 @@ class DatagramIterator
 			// For the unlucky types, we have to figure out their size manually
 			switch(dtype->get_type())
 			{
-				case VARSTRING:
-				case VARBLOB:
-				case VARARRAY:
+				case T_VARSTRING:
+				case T_VARBLOB:
+				case T_VARARRAY:
 				{
 					dgsize_t len = read_size();
 					buffer.insert(buffer.end(), (uint8_t*)&len, (uint8_t*)&len + sizeof(dgsize_t));
@@ -267,7 +267,7 @@ class DatagramIterator
 					buffer.insert(buffer.end(), blob.begin(), blob.end());
 					break;
 				}
-				case STRUCT:
+				case T_STRUCT:
 				{
 					const Struct* dstruct = dtype->as_struct();
 					size_t num_fields = dstruct->get_num_fields();
@@ -277,7 +277,7 @@ class DatagramIterator
 					}
 					break;
 				}
-				case METHOD:
+				case T_METHOD:
 				{
 					const Method* dmethod = dtype->as_method();
 					size_t num_params = dmethod->get_num_parameters();
@@ -285,6 +285,7 @@ class DatagramIterator
 					{
 						unpack_dtype(dmethod->get_parameter(i)->get_type(), buffer);
 					}
+					break;
 				}
 				default:
 				{
@@ -316,15 +317,16 @@ class DatagramIterator
 
 			switch(dtype->get_type())
 			{
-				case VARSTRING:
-				case VARBLOB:
-				case VARARRAY:
+				case T_VARSTRING:
+				case T_VARBLOB:
+				case T_VARARRAY:
 				{
 					dgsize_t length = read_size();
 					check_read_length(length);
 					m_offset += length;
+					break;
 				}
-				case STRUCT:
+				case T_STRUCT:
 				{
 					const Struct* dstruct = dtype->as_struct();
 					size_t num_fields = dstruct->get_num_fields();
@@ -332,8 +334,9 @@ class DatagramIterator
 					{
 						skip_dtype(dstruct->get_field(i)->get_type());
 					}
+					break;
 				}
-				case METHOD:
+				case T_METHOD:
 				{
 					const Method* dmethod = dtype->as_method();
 					size_t num_params = dmethod->get_num_parameters();
@@ -341,6 +344,7 @@ class DatagramIterator
 					{
 						skip_dtype(dmethod->get_parameter(i)->get_type());
 					}
+					break;
 				}
 				default:
 				{

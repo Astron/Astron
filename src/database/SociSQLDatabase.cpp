@@ -513,7 +513,7 @@ class SociSQLDatabase : public DatabaseBackend
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
 			      "storable BOOLEAN NOT NULL);";//, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
-			//<< g_dcf->get_num_classes()-1 << "));";
+			//<< g_dcf->get_num_types()-1 << "));";
 		}
 
 		void check_classes()
@@ -530,8 +530,9 @@ class SociSQLDatabase : public DatabaseBackend
 			                          use(dc_id), use(dc_hash), use(dc_name), use(storable));
 
 			// For each class, verify an entry exists and has the correct name and value
-			for(dc_id = 0; dc_id < g_dcf->get_num_classes(); ++dc_id)
+			for(unsigned int i = 0; i < g_dcf->get_num_classes(); ++i)
 			{
+				dc_id = g_dcf->get_class(i)->get_id();
 				get_row_by_id.execute(true);
 				if(m_sql.got_data())
 				{
@@ -539,7 +540,7 @@ class SociSQLDatabase : public DatabaseBackend
 				}
 				else
 				{
-					DCClass* dcc = g_dcf->get_class_by_id(dc_id);
+					Class* dcc = g_dcf->get_class(i);
 
 					// Create fields table for the class
 					storable = create_fields_table(dcc);

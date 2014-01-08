@@ -126,9 +126,13 @@
 	static stack<TypeAndDepth> type_stack;
 	static int current_depth;
 
+	// These two types are really common types the parser doesn't need to make new
+	//     duplicates of every time a string or blob is used.
+	static ArrayType* basic_string = (ArrayType*)NULL;
+	static ArrayType* basic_blob = (ArrayType*)NULL;
+
 	/* Helper functions */
 	static bool check_depth();
-	static bool check_depth(int depth);
 	static void depth_error(string what);
 	static void depth_error(int depth, string what);
 	static string number_value(Type type, double &number);
@@ -181,7 +185,7 @@
 	}
 
 /* Line 371 of yacc.c  */
-#line 185 "parser.cpp"
+#line 189 "parser.cpp"
 
 # ifndef YY_NULL
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -196,7 +200,7 @@
 # undef YYERROR_VERBOSE
 # define YYERROR_VERBOSE 1
 #else
-# define YYERROR_VERBOSE 0
+# define YYERROR_VERBOSE 1
 #endif
 
 /* In a future release of Bison, this section will be replaced
@@ -205,7 +209,7 @@
 # define YY_YY_PARSER_H_INCLUDED
 /* Enabling traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -276,7 +280,7 @@ int yyparse ();
 /* Copy the second part of user declarations.  */
 
 /* Line 390 of yacc.c  */
-#line 280 "parser.cpp"
+#line 284 "parser.cpp"
 
 #ifdef short
 # undef short
@@ -636,27 +640,27 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   223,   223,   224,   229,   230,   231,   232,   233,   234,
-     235,   239,   244,   249,   257,   262,   271,   272,   279,   280,
-     287,   291,   299,   300,   307,   349,   359,   374,   378,   379,
-     387,   386,   426,   427,   431,   438,   448,   479,   480,   481,
-     519,   542,   550,   549,   589,   590,   591,   625,   626,   630,
-     631,   632,   633,   637,   642,   641,   658,   665,   674,   673,
-     685,   684,   696,   695,   709,   716,   717,   721,   739,   743,
-     747,   751,   755,   762,   766,   791,   813,   824,   838,   839,
-     840,   841,   845,   849,   861,   870,   882,   889,   896,   906,
-     910,   917,   927,   940,   941,   942,   943,   948,   947,   962,
-     969,   978,   977,   989,   988,  1002,  1003,  1004,  1005,  1009,
-    1010,  1011,  1012,  1016,  1028,  1032,  1044,  1060,  1061,  1062,
-    1066,  1078,  1082,  1091,  1100,  1109,  1139,  1169,  1170,  1175,
-    1174,  1211,  1212,  1220,  1219,  1256,  1257,  1258,  1262,  1269,
-    1295,  1294,  1343,  1345,  1344,  1359,  1364,  1380,  1396,  1412,
-    1462,  1516,  1517,  1521,  1522,  1523,  1524,  1525,  1526,  1527,
-    1528,  1529,  1530,  1531,  1535,  1539,  1552
+       0,   228,   228,   229,   234,   235,   236,   237,   238,   239,
+     240,   244,   248,   253,   261,   266,   275,   276,   283,   284,
+     291,   295,   303,   304,   311,   356,   366,   381,   385,   386,
+     394,   393,   433,   434,   438,   445,   455,   486,   487,   488,
+     526,   550,   558,   557,   597,   598,   599,   633,   634,   638,
+     639,   640,   641,   645,   650,   649,   664,   671,   680,   679,
+     691,   690,   702,   701,   715,   722,   723,   727,   745,   749,
+     753,   757,   761,   768,   794,   826,   848,   876,   899,   900,
+     901,   902,   906,   910,   922,   931,   943,   950,   957,   967,
+     971,   978,   988,  1001,  1002,  1003,  1004,  1009,  1008,  1022,
+    1029,  1038,  1037,  1049,  1048,  1062,  1063,  1064,  1065,  1069,
+    1070,  1071,  1072,  1076,  1088,  1092,  1105,  1122,  1123,  1124,
+    1128,  1140,  1144,  1153,  1162,  1171,  1201,  1231,  1232,  1237,
+    1236,  1273,  1274,  1282,  1281,  1318,  1319,  1320,  1324,  1331,
+    1357,  1356,  1405,  1407,  1406,  1421,  1426,  1442,  1458,  1474,
+    1524,  1578,  1579,  1583,  1584,  1585,  1586,  1587,  1588,  1589,
+    1590,  1591,  1592,  1593,  1597,  1601,  1614
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || 0
+#if YYDEBUG || YYERROR_VERBOSE || 1
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
@@ -1727,16 +1731,15 @@ yyreduce:
     {
         case 11:
 /* Line 1787 of yacc.c  */
-#line 240 "parser.ypp"
+#line 245 "parser.ypp"
     {
 		parsed_value->clear();
-		if(!type_stack.empty()) depth_error(0);
 	}
     break;
 
   case 12:
 /* Line 1787 of yacc.c  */
-#line 245 "parser.ypp"
+#line 249 "parser.ypp"
     {
 		parsed_value->assign((yyvsp[(1) - (1)].str));
 		if(!type_stack.empty()) depth_error(0, "type");
@@ -1745,7 +1748,7 @@ yyreduce:
 
   case 13:
 /* Line 1787 of yacc.c  */
-#line 250 "parser.ypp"
+#line 254 "parser.ypp"
     {
 		parsed_value->assign((yyvsp[(1) - (1)].str));
 		if(!type_stack.empty()) depth_error(0, "method");
@@ -1754,7 +1757,7 @@ yyreduce:
 
   case 14:
 /* Line 1787 of yacc.c  */
-#line 258 "parser.ypp"
+#line 262 "parser.ypp"
     {
 		Import* import = new Import((yyvsp[(2) - (2)].str));
 		parsed_file->add_import(import);
@@ -1763,7 +1766,7 @@ yyreduce:
 
   case 15:
 /* Line 1787 of yacc.c  */
-#line 263 "parser.ypp"
+#line 267 "parser.ypp"
     {
 		Import* import = new Import((yyvsp[(2) - (4)].str));
 		import->symbols.assign((yyvsp[(4) - (4)].strings).begin(), (yyvsp[(4) - (4)].strings).end());
@@ -1773,13 +1776,13 @@ yyreduce:
 
   case 16:
 /* Line 1787 of yacc.c  */
-#line 271 "parser.ypp"
+#line 275 "parser.ypp"
     { (yyval.str) = (yyvsp[(1) - (1)].str); }
     break;
 
   case 17:
 /* Line 1787 of yacc.c  */
-#line 273 "parser.ypp"
+#line 277 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (3)].str) + string(".") + (yyvsp[(3) - (3)].str);
 	}
@@ -1787,13 +1790,13 @@ yyreduce:
 
   case 18:
 /* Line 1787 of yacc.c  */
-#line 279 "parser.ypp"
+#line 283 "parser.ypp"
     { (yyval.strings) = (yyvsp[(1) - (1)].strings); }
     break;
 
   case 19:
 /* Line 1787 of yacc.c  */
-#line 281 "parser.ypp"
+#line 285 "parser.ypp"
     {
 		(yyval.strings) = vector<string>();
 	}
@@ -1801,7 +1804,7 @@ yyreduce:
 
   case 20:
 /* Line 1787 of yacc.c  */
-#line 288 "parser.ypp"
+#line 292 "parser.ypp"
     {
 		(yyval.strings) = vector<string>(1, (yyvsp[(1) - (1)].str));
 	}
@@ -1809,7 +1812,7 @@ yyreduce:
 
   case 21:
 /* Line 1787 of yacc.c  */
-#line 292 "parser.ypp"
+#line 296 "parser.ypp"
     {
 		(yyvsp[(1) - (3)].strings).push_back((yyvsp[(3) - (3)].str));
 		(yyval.strings) = (yyvsp[(1) - (3)].strings);
@@ -1818,13 +1821,13 @@ yyreduce:
 
   case 22:
 /* Line 1787 of yacc.c  */
-#line 299 "parser.ypp"
+#line 303 "parser.ypp"
     { (yyval.str) = (yyvsp[(1) - (1)].str); }
     break;
 
   case 23:
 /* Line 1787 of yacc.c  */
-#line 301 "parser.ypp"
+#line 305 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (3)].str) + string("/") + (yyvsp[(3) - (3)].str);
 	}
@@ -1832,13 +1835,16 @@ yyreduce:
 
   case 24:
 /* Line 1787 of yacc.c  */
-#line 308 "parser.ypp"
+#line 312 "parser.ypp"
     {
 		if((yyvsp[(2) - (2)].nametype).type == (DistributedType*)NULL)
 		{
 			// TODO: Figure out if we need to do anything here
 			break;
 		}
+
+		// Set the type's typedef
+		(yyvsp[(2) - (2)].nametype).type->set_alias((yyvsp[(2) - (2)].nametype).name);
 
 		bool type_added	= parsed_file->add_typedef((yyvsp[(2) - (2)].nametype).name, (yyvsp[(2) - (2)].nametype).type);
 		if(!type_added)
@@ -1875,7 +1881,7 @@ yyreduce:
 
   case 25:
 /* Line 1787 of yacc.c  */
-#line 350 "parser.ypp"
+#line 357 "parser.ypp"
     {
 		TokenType::NameType nt;
 		nt.type = (yyvsp[(1) - (2)].u.dtype);
@@ -1886,7 +1892,7 @@ yyreduce:
 
   case 26:
 /* Line 1787 of yacc.c  */
-#line 360 "parser.ypp"
+#line 367 "parser.ypp"
     {
 		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[(1) - (1)].str));
 		if(dtype == (DistributedType*)NULL)
@@ -1902,7 +1908,7 @@ yyreduce:
 
   case 29:
 /* Line 1787 of yacc.c  */
-#line 380 "parser.ypp"
+#line 387 "parser.ypp"
     {
 		parsed_file->add_keyword((yyvsp[(2) - (2)].str));
 	}
@@ -1910,7 +1916,7 @@ yyreduce:
 
   case 30:
 /* Line 1787 of yacc.c  */
-#line 387 "parser.ypp"
+#line 394 "parser.ypp"
     {
 		current_class = new Class(parsed_file, (yyvsp[(2) - (2)].str));
 	}
@@ -1918,7 +1924,7 @@ yyreduce:
 
   case 31:
 /* Line 1787 of yacc.c  */
-#line 391 "parser.ypp"
+#line 398 "parser.ypp"
     {
 		bool class_added = parsed_file->add_class(current_class);
 		if(!class_added)
@@ -1955,7 +1961,7 @@ yyreduce:
 
   case 34:
 /* Line 1787 of yacc.c  */
-#line 432 "parser.ypp"
+#line 439 "parser.ypp"
     {
 		if((yyvsp[(1) - (1)].u.dclass) != (Class*)NULL)
 		{
@@ -1966,7 +1972,7 @@ yyreduce:
 
   case 35:
 /* Line 1787 of yacc.c  */
-#line 439 "parser.ypp"
+#line 446 "parser.ypp"
     {
 		if((yyvsp[(3) - (3)].u.dclass) != (Class*)NULL)
 		{
@@ -1977,7 +1983,7 @@ yyreduce:
 
   case 36:
 /* Line 1787 of yacc.c  */
-#line 449 "parser.ypp"
+#line 456 "parser.ypp"
     {
 		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[(1) - (1)].str));
 		if(dtype == (DistributedType*)NULL)
@@ -2009,7 +2015,7 @@ yyreduce:
 
   case 39:
 /* Line 1787 of yacc.c  */
-#line 482 "parser.ypp"
+#line 489 "parser.ypp"
     {
 		if((yyvsp[(2) - (3)].u.dfield) == (Field*)NULL)
 		{
@@ -2048,11 +2054,12 @@ yyreduce:
 
   case 40:
 /* Line 1787 of yacc.c  */
-#line 520 "parser.ypp"
+#line 527 "parser.ypp"
     {
 		if((yyvsp[(1) - (2)].u.dfield) == (Field*)NULL)
 		{
 			// Ignore this field, it should have already generated a parser error
+			(yyval.u.dfield) = NULL;
 			break;
 		}
 
@@ -2075,7 +2082,7 @@ yyreduce:
 
   case 41:
 /* Line 1787 of yacc.c  */
-#line 543 "parser.ypp"
+#line 551 "parser.ypp"
     {
 		(yyval.u.dfield) = (Field*)(yyvsp[(1) - (1)].u.dmolecule);
 	}
@@ -2083,7 +2090,7 @@ yyreduce:
 
   case 42:
 /* Line 1787 of yacc.c  */
-#line 550 "parser.ypp"
+#line 558 "parser.ypp"
     {
 		current_struct = new Struct(parsed_file, (yyvsp[(2) - (2)].str));
 	}
@@ -2091,7 +2098,7 @@ yyreduce:
 
   case 43:
 /* Line 1787 of yacc.c  */
-#line 554 "parser.ypp"
+#line 562 "parser.ypp"
     {
 		bool struct_added = parsed_file->add_struct(current_struct);
 		if(!struct_added)
@@ -2128,7 +2135,7 @@ yyreduce:
 
   case 46:
 /* Line 1787 of yacc.c  */
-#line 592 "parser.ypp"
+#line 600 "parser.ypp"
     {
 		if((yyvsp[(2) - (3)].u.dfield) == (Field*)NULL)
 		{
@@ -2163,7 +2170,7 @@ yyreduce:
 
   case 53:
 /* Line 1787 of yacc.c  */
-#line 638 "parser.ypp"
+#line 646 "parser.ypp"
     {
 		(yyval.u.dfield) = new Field((yyvsp[(1) - (1)].u.dtype));
 	}
@@ -2171,7 +2178,7 @@ yyreduce:
 
   case 54:
 /* Line 1787 of yacc.c  */
-#line 642 "parser.ypp"
+#line 650 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dtype), 0));
@@ -2180,20 +2187,18 @@ yyreduce:
 
   case 55:
 /* Line 1787 of yacc.c  */
-#line 647 "parser.ypp"
+#line 655 "parser.ypp"
     {
 		Field* field = new Field((yyvsp[(1) - (4)].u.dtype));
-		(yyval.u.dfield) = new Field((yyvsp[(1) - (4)].u.dtype));
-
-
 		if(!type_stack.empty()) depth_error(0, "unnamed field");
 		field->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dfield) = field;
 	}
     break;
 
   case 56:
 /* Line 1787 of yacc.c  */
-#line 659 "parser.ypp"
+#line 665 "parser.ypp"
     {
 		(yyval.u.dfield) = new Field((yyvsp[(1) - (1)].nametype).type, (yyvsp[(1) - (1)].nametype).name);
 	}
@@ -2201,7 +2206,7 @@ yyreduce:
 
   case 57:
 /* Line 1787 of yacc.c  */
-#line 666 "parser.ypp"
+#line 672 "parser.ypp"
     {
 		(yyvsp[(1) - (4)].u.dfield)->set_type(new ArrayType((yyvsp[(1) - (4)].u.dfield)->get_type(), (yyvsp[(3) - (4)].range)));
 		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
@@ -2210,7 +2215,7 @@ yyreduce:
 
   case 58:
 /* Line 1787 of yacc.c  */
-#line 674 "parser.ypp"
+#line 680 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dfield)->get_type(), 0));
@@ -2219,17 +2224,17 @@ yyreduce:
 
   case 59:
 /* Line 1787 of yacc.c  */
-#line 679 "parser.ypp"
+#line 685 "parser.ypp"
     {
-		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
 		if(!type_stack.empty()) depth_error(0, "field '" + (yyvsp[(1) - (4)].u.dfield)->get_name() + "'");
 		(yyvsp[(1) - (4)].u.dfield)->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
 	}
     break;
 
   case 60:
 /* Line 1787 of yacc.c  */
-#line 685 "parser.ypp"
+#line 691 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dfield)->get_type(), 0));
@@ -2238,17 +2243,17 @@ yyreduce:
 
   case 61:
 /* Line 1787 of yacc.c  */
-#line 690 "parser.ypp"
+#line 696 "parser.ypp"
     {
-		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
 		if(!type_stack.empty()) depth_error(0, "field '" + (yyvsp[(1) - (4)].u.dfield)->get_name() + "'");
 		(yyvsp[(1) - (4)].u.dfield)->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dfield) = (yyvsp[(1) - (4)].u.dfield);
 	}
     break;
 
   case 62:
 /* Line 1787 of yacc.c  */
-#line 696 "parser.ypp"
+#line 702 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (3)].u.dfield)->get_type(), 0));
@@ -2257,17 +2262,17 @@ yyreduce:
 
   case 63:
 /* Line 1787 of yacc.c  */
-#line 701 "parser.ypp"
+#line 707 "parser.ypp"
     {
-		(yyval.u.dfield) = (yyvsp[(1) - (5)].u.dfield);
 		if(!type_stack.empty()) depth_error(0, "method");
 		(yyvsp[(1) - (5)].u.dfield)->set_default_value((yyvsp[(3) - (5)].str));
+		(yyval.u.dfield) = (yyvsp[(1) - (5)].u.dfield);
 	}
     break;
 
   case 64:
 /* Line 1787 of yacc.c  */
-#line 710 "parser.ypp"
+#line 716 "parser.ypp"
     {
 		(yyval.u.dfield) = new Field((yyvsp[(2) - (2)].u.dmethod), (yyvsp[(1) - (2)].str));
 	}
@@ -2275,7 +2280,7 @@ yyreduce:
 
   case 67:
 /* Line 1787 of yacc.c  */
-#line 722 "parser.ypp"
+#line 728 "parser.ypp"
     {
 		if((yyvsp[(1) - (1)].u.dtype) == (DistributedType*)NULL)
 		{
@@ -2284,7 +2289,7 @@ yyreduce:
 			break;
 		}
 
-		if((yyvsp[(1) - (1)].u.dtype)->get_type() == METHOD)
+		if((yyvsp[(1) - (1)].u.dtype)->get_type() == T_METHOD)
 		{
 			parser_error("Cannot use a method type here.");
 			(yyval.u.dtype) = NULL;
@@ -2297,7 +2302,7 @@ yyreduce:
 
   case 68:
 /* Line 1787 of yacc.c  */
-#line 740 "parser.ypp"
+#line 746 "parser.ypp"
     {
 		(yyval.u.dtype) = (DistributedType*)(yyvsp[(1) - (1)].u.dnumeric);
 	}
@@ -2305,7 +2310,7 @@ yyreduce:
 
   case 70:
 /* Line 1787 of yacc.c  */
-#line 748 "parser.ypp"
+#line 754 "parser.ypp"
     {
 		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dnumeric), (yyvsp[(3) - (4)].range));
 	}
@@ -2313,7 +2318,7 @@ yyreduce:
 
   case 71:
 /* Line 1787 of yacc.c  */
-#line 752 "parser.ypp"
+#line 758 "parser.ypp"
     {
 		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dtype), (yyvsp[(3) - (4)].range));
 	}
@@ -2321,7 +2326,7 @@ yyreduce:
 
   case 72:
 /* Line 1787 of yacc.c  */
-#line 756 "parser.ypp"
+#line 762 "parser.ypp"
     {
 		(yyval.u.dtype) = new ArrayType((yyvsp[(1) - (4)].u.dtype), (yyvsp[(3) - (4)].range));
 	}
@@ -2329,21 +2334,43 @@ yyreduce:
 
   case 73:
 /* Line 1787 of yacc.c  */
-#line 763 "parser.ypp"
+#line 769 "parser.ypp"
     {
-		(yyval.u.dmolecule) = new MolecularField(current_class, (yyvsp[(1) - (3)].str));
+		MolecularField* mol = new MolecularField(current_class, (yyvsp[(1) - (3)].str));
+		if((yyvsp[(3) - (3)].u.dfield) == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.u.dmolecule) = mol;
+			break;
+		}
+
+		bool field_added = mol->add_field((yyvsp[(3) - (3)].u.dfield));
+		if(!field_added)
+		{
+			if((yyvsp[(3) - (3)].u.dfield)->as_molecular())
+			{
+				parser_error("Cannot add molecular '" + (yyvsp[(3) - (3)].u.dfield)->get_name() + "' to a molecular field.");
+			}
+			else
+			{
+				parser_error("Unkown error adding field " + (yyvsp[(3) - (3)].u.dfield)->get_name() + " to molecular '"
+				             + (yyvsp[(1) - (3)].str) + "'.");
+			}
+		}
+
+		(yyval.u.dmolecule) = mol;
 	}
     break;
 
   case 74:
 /* Line 1787 of yacc.c  */
-#line 767 "parser.ypp"
+#line 795 "parser.ypp"
     {
-		(yyval.u.dmolecule) = (yyvsp[(1) - (3)].u.dmolecule);
-
 		if((yyvsp[(3) - (3)].u.dfield) == (Field*)NULL)
 		{
 			// Ignore this field, it should have already generated an error
+			(yyval.u.dmolecule) = (yyvsp[(1) - (3)].u.dmolecule);
+			break;
 		}
 
 		bool field_added = (yyvsp[(1) - (3)].u.dmolecule)->add_field((yyvsp[(3) - (3)].u.dfield));
@@ -2358,13 +2385,20 @@ yyreduce:
 				parser_error("Mismatched keywords in molecular between " +
 					(yyvsp[(1) - (3)].u.dmolecule)->get_field(0)->get_name() + " and " + (yyvsp[(3) - (3)].u.dfield)->get_name() + ".");
 			}
+			else
+			{
+				parser_error("Unkown error adding field " + (yyvsp[(3) - (3)].u.dfield)->get_name() + " to molecular '"
+				             + (yyvsp[(1) - (3)].u.dmolecule)->get_name() + "'.");
+			}
 		}
+
+		(yyval.u.dmolecule) = (yyvsp[(1) - (3)].u.dmolecule);
 	}
     break;
 
   case 75:
 /* Line 1787 of yacc.c  */
-#line 792 "parser.ypp"
+#line 827 "parser.ypp"
     {
 		if(!current_class)
 		{
@@ -2387,43 +2421,69 @@ yyreduce:
 
   case 76:
 /* Line 1787 of yacc.c  */
-#line 814 "parser.ypp"
+#line 849 "parser.ypp"
     {
-		if((yyvsp[(1) - (1)].u.type) == STRING)
+		if((yyvsp[(1) - (1)].u.type) == T_STRING)
 		{
-			(yyval.u.dtype) = new ArrayType(new NumericType(CHAR));
+			if(basic_string == NULL)
+			{
+				basic_string = new ArrayType(new NumericType(T_CHAR));
+				basic_string->set_alias("string");
+			}
+
+			(yyval.u.dtype) = basic_string;
+		}
+		else if((yyvsp[(1) - (1)].u.type) == T_BLOB)
+		{
+			if(basic_blob == NULL)
+			{
+				basic_blob = new ArrayType(new NumericType(T_UINT8));
+				basic_blob->set_alias("blob");
+			}
+
+			(yyval.u.dtype) = basic_blob;
 		}
 		else
 		{
-			(yyval.u.dtype) = new ArrayType(new NumericType(UINT8));
+			parser_error("Found builtin ArrayType not handled by parser.");
+			(yyval.u.dtype) = NULL;
 		}
 	}
     break;
 
   case 77:
 /* Line 1787 of yacc.c  */
-#line 825 "parser.ypp"
+#line 877 "parser.ypp"
     {
-		if((yyvsp[(1) - (4)].u.type) == STRING)
+		if((yyvsp[(1) - (4)].u.type) == T_STRING)
 		{
-			(yyval.u.dtype) = new ArrayType(new NumericType(CHAR), (yyvsp[(3) - (4)].range));
+			ArrayType* arr = new ArrayType(new NumericType(T_CHAR), (yyvsp[(3) - (4)].range));
+			arr->set_alias("string");
+			(yyval.u.dtype) = arr;
+		}
+		else if((yyvsp[(1) - (4)].u.type) == T_BLOB)
+		{
+			ArrayType* arr = new ArrayType(new NumericType(T_UINT8), (yyvsp[(3) - (4)].range));
+			arr->set_alias("blob");
+			(yyval.u.dtype) = arr;
 		}
 		else
 		{
-			(yyval.u.dtype) = new ArrayType(new NumericType(UINT8), (yyvsp[(3) - (4)].range));
+			parser_error("Found builtin ArrayType not handled by parser.");
+			(yyval.u.dtype) = NULL;
 		}
 	}
     break;
 
   case 82:
 /* Line 1787 of yacc.c  */
-#line 845 "parser.ypp"
+#line 906 "parser.ypp"
     { (yyval.u.dnumeric) = new NumericType((yyvsp[(1) - (1)].u.type)); }
     break;
 
   case 83:
 /* Line 1787 of yacc.c  */
-#line 850 "parser.ypp"
+#line 911 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (4)].u.dnumeric)->set_range((yyvsp[(3) - (4)].range)))
 		{
@@ -2436,7 +2496,7 @@ yyreduce:
 
   case 84:
 /* Line 1787 of yacc.c  */
-#line 862 "parser.ypp"
+#line 923 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_modulus((yyvsp[(3) - (3)].u.real)))
 		{
@@ -2449,7 +2509,7 @@ yyreduce:
 
   case 85:
 /* Line 1787 of yacc.c  */
-#line 871 "parser.ypp"
+#line 932 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_modulus((yyvsp[(3) - (3)].u.real)))
 		{
@@ -2462,7 +2522,7 @@ yyreduce:
 
   case 86:
 /* Line 1787 of yacc.c  */
-#line 883 "parser.ypp"
+#line 944 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
 		{
@@ -2473,7 +2533,7 @@ yyreduce:
 
   case 87:
 /* Line 1787 of yacc.c  */
-#line 890 "parser.ypp"
+#line 951 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
 		{
@@ -2484,7 +2544,7 @@ yyreduce:
 
   case 88:
 /* Line 1787 of yacc.c  */
-#line 897 "parser.ypp"
+#line 958 "parser.ypp"
     {
 		if(!(yyvsp[(1) - (3)].u.dnumeric)->set_divisor((yyvsp[(3) - (3)].u.uint32)))
 		{
@@ -2495,7 +2555,7 @@ yyreduce:
 
   case 89:
 /* Line 1787 of yacc.c  */
-#line 907 "parser.ypp"
+#line 968 "parser.ypp"
     {
 		(yyval.u.dmethod) = new Method();
 	}
@@ -2503,7 +2563,7 @@ yyreduce:
 
   case 90:
 /* Line 1787 of yacc.c  */
-#line 911 "parser.ypp"
+#line 972 "parser.ypp"
     {
 		(yyval.u.dmethod) = (yyvsp[(1) - (2)].u.dmethod);
 	}
@@ -2511,7 +2571,7 @@ yyreduce:
 
   case 91:
 /* Line 1787 of yacc.c  */
-#line 918 "parser.ypp"
+#line 979 "parser.ypp"
     {
 		Method* fn = new Method();
 		bool param_added = fn->add_parameter((yyvsp[(2) - (2)].u.dparam));
@@ -2525,7 +2585,7 @@ yyreduce:
 
   case 92:
 /* Line 1787 of yacc.c  */
-#line 928 "parser.ypp"
+#line 989 "parser.ypp"
     {
 		bool param_added = (yyvsp[(1) - (3)].u.dmethod)->add_parameter((yyvsp[(3) - (3)].u.dparam));
 		if(!param_added)
@@ -2539,7 +2599,7 @@ yyreduce:
 
   case 96:
 /* Line 1787 of yacc.c  */
-#line 944 "parser.ypp"
+#line 1005 "parser.ypp"
     {
 		(yyval.u.dparam) = new Parameter((yyvsp[(1) - (1)].u.dtype));
 	}
@@ -2547,7 +2607,7 @@ yyreduce:
 
   case 97:
 /* Line 1787 of yacc.c  */
-#line 948 "parser.ypp"
+#line 1009 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dtype),0));
@@ -2556,19 +2616,18 @@ yyreduce:
 
   case 98:
 /* Line 1787 of yacc.c  */
-#line 953 "parser.ypp"
+#line 1014 "parser.ypp"
     {
 		Parameter* param = new Parameter((yyvsp[(1) - (4)].u.dtype));
-		(yyval.u.dparam) = param;
-
 		if(!type_stack.empty()) depth_error(0, "type");
 		param->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dparam) = param;
 	}
     break;
 
   case 99:
 /* Line 1787 of yacc.c  */
-#line 963 "parser.ypp"
+#line 1023 "parser.ypp"
     {
 		(yyval.u.dparam) = new Parameter((yyvsp[(1) - (2)].u.dtype), (yyvsp[(2) - (2)].str));
 	}
@@ -2576,7 +2635,7 @@ yyreduce:
 
   case 100:
 /* Line 1787 of yacc.c  */
-#line 970 "parser.ypp"
+#line 1030 "parser.ypp"
     {
 		(yyvsp[(1) - (4)].u.dparam)->set_type(new ArrayType((yyvsp[(1) - (4)].u.dparam)->get_type(), (yyvsp[(3) - (4)].range)));
 		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
@@ -2585,7 +2644,7 @@ yyreduce:
 
   case 101:
 /* Line 1787 of yacc.c  */
-#line 978 "parser.ypp"
+#line 1038 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dparam)->get_type(), 0));
@@ -2594,17 +2653,17 @@ yyreduce:
 
   case 102:
 /* Line 1787 of yacc.c  */
-#line 983 "parser.ypp"
+#line 1043 "parser.ypp"
     {
-		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
 		if(!type_stack.empty()) depth_error(0, "parameter '" + (yyvsp[(1) - (4)].u.dparam)->get_name() + "'");
 		(yyvsp[(1) - (4)].u.dparam)->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
 	}
     break;
 
   case 103:
 /* Line 1787 of yacc.c  */
-#line 989 "parser.ypp"
+#line 1049 "parser.ypp"
     {
 		current_depth = 0;
 		type_stack.push(TypeAndDepth((yyvsp[(1) - (2)].u.dparam)->get_type(), 0));
@@ -2613,65 +2672,65 @@ yyreduce:
 
   case 104:
 /* Line 1787 of yacc.c  */
-#line 994 "parser.ypp"
+#line 1054 "parser.ypp"
     {
-		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
 		if(!type_stack.empty()) depth_error(0, "parameter '" + (yyvsp[(1) - (4)].u.dparam)->get_name() + "'");
 		(yyvsp[(1) - (4)].u.dparam)->set_default_value((yyvsp[(4) - (4)].str));
+		(yyval.u.dparam) = (yyvsp[(1) - (4)].u.dparam);
 	}
     break;
 
   case 105:
 /* Line 1787 of yacc.c  */
-#line 1002 "parser.ypp"
+#line 1062 "parser.ypp"
     { (yyval.range) = NumericRange(); }
     break;
 
   case 106:
 /* Line 1787 of yacc.c  */
-#line 1003 "parser.ypp"
+#line 1063 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.real), (yyvsp[(1) - (1)].u.real)); }
     break;
 
   case 107:
 /* Line 1787 of yacc.c  */
-#line 1004 "parser.ypp"
+#line 1064 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.real), (yyvsp[(3) - (3)].u.real)); }
     break;
 
   case 108:
 /* Line 1787 of yacc.c  */
-#line 1005 "parser.ypp"
+#line 1065 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.real), (yyvsp[(2) - (2)].u.real)); }
     break;
 
   case 109:
 /* Line 1787 of yacc.c  */
-#line 1009 "parser.ypp"
+#line 1069 "parser.ypp"
     { (yyval.range) = NumericRange(); }
     break;
 
   case 110:
 /* Line 1787 of yacc.c  */
-#line 1010 "parser.ypp"
+#line 1070 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (1)].u.uint32), (yyvsp[(1) - (1)].u.uint32)); }
     break;
 
   case 111:
 /* Line 1787 of yacc.c  */
-#line 1011 "parser.ypp"
+#line 1071 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (3)].u.uint32), (yyvsp[(3) - (3)].u.uint32)); }
     break;
 
   case 112:
 /* Line 1787 of yacc.c  */
-#line 1012 "parser.ypp"
+#line 1072 "parser.ypp"
     { (yyval.range) = NumericRange((yyvsp[(1) - (2)].u.uint32), (yyvsp[(2) - (2)].u.uint32)); }
     break;
 
   case 113:
 /* Line 1787 of yacc.c  */
-#line 1017 "parser.ypp"
+#line 1077 "parser.ypp"
     {
 		if((yyvsp[(1) - (1)].str).length() != 1)
 		{
@@ -2687,49 +2746,51 @@ yyreduce:
 
   case 115:
 /* Line 1787 of yacc.c  */
-#line 1033 "parser.ypp"
+#line 1093 "parser.ypp"
     {
-		(yyval.u.uint32) = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
-		if((yyval.u.uint32) != (yyvsp[(1) - (1)].u.uint64))
+		unsigned int num = (unsigned int)(yyvsp[(1) - (1)].u.uint64);
+		if(num != (yyvsp[(1) - (1)].u.uint64))
 		{
 			parser_error("Number out of range.");
 			(yyval.u.uint32) = 1;
 		}
+		(yyval.u.uint32) = num;
 	}
     break;
 
   case 116:
 /* Line 1787 of yacc.c  */
-#line 1045 "parser.ypp"
+#line 1106 "parser.ypp"
     {
-		(yyval.u.uint32) = (unsigned int) - (yyvsp[(1) - (1)].u.int64);
+		int num = (unsigned int) -(yyvsp[(1) - (1)].u.int64);
 		if((yyvsp[(1) - (1)].u.int64) >= 0)
 		{
 			parser_error("Syntax error while parsing small_negative_integer.");
 		}
-		else if((yyval.u.uint32) != -(yyvsp[(1) - (1)].u.int64))
+		else if(num != -(yyvsp[(1) - (1)].u.int64))
 		{
 			parser_error("Number out of range.");
 			(yyval.u.uint32) = 1;
 		}
+		(yyval.u.uint32) = num;
 	}
     break;
 
   case 117:
 /* Line 1787 of yacc.c  */
-#line 1060 "parser.ypp"
+#line 1122 "parser.ypp"
     { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.uint64); }
     break;
 
   case 118:
 /* Line 1787 of yacc.c  */
-#line 1061 "parser.ypp"
+#line 1123 "parser.ypp"
     { (yyval.u.real) = (double)(yyvsp[(1) - (1)].u.int64); }
     break;
 
   case 120:
 /* Line 1787 of yacc.c  */
-#line 1067 "parser.ypp"
+#line 1129 "parser.ypp"
     {
 		if((yyvsp[(1) - (1)].str).length() != 1)
 		{
@@ -2745,7 +2806,7 @@ yyreduce:
 
   case 122:
 /* Line 1787 of yacc.c  */
-#line 1083 "parser.ypp"
+#line 1145 "parser.ypp"
     {
 		if(!check_depth()) depth_error("signed integer");
 
@@ -2758,7 +2819,7 @@ yyreduce:
 
   case 123:
 /* Line 1787 of yacc.c  */
-#line 1092 "parser.ypp"
+#line 1154 "parser.ypp"
     {
 		if(!check_depth()) depth_error("unsigned integer");
 
@@ -2771,7 +2832,7 @@ yyreduce:
 
   case 124:
 /* Line 1787 of yacc.c  */
-#line 1101 "parser.ypp"
+#line 1163 "parser.ypp"
     {
 		if(!check_depth()) depth_error("floating point");
 
@@ -2784,14 +2845,14 @@ yyreduce:
 
   case 125:
 /* Line 1787 of yacc.c  */
-#line 1110 "parser.ypp"
+#line 1172 "parser.ypp"
     {
 		if(!check_depth()) depth_error("string");
 
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove string type from stack
 
-		if(dtype->get_type() == STRING)
+		if(dtype->get_type() == T_STRING)
 		{
 			if((yyvsp[(1) - (1)].str).length() != dtype->get_size())
 			{
@@ -2800,7 +2861,7 @@ yyreduce:
 
 			(yyval.str) = (yyvsp[(1) - (1)].str);
 		}
-		else if(dtype->get_type() == VARSTRING)
+		else if(dtype->get_type() == T_VARSTRING)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -2818,14 +2879,14 @@ yyreduce:
 
   case 126:
 /* Line 1787 of yacc.c  */
-#line 1140 "parser.ypp"
+#line 1202 "parser.ypp"
     {
 		if(!check_depth()) depth_error("hex-string");
 
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove type from stack
 
-		if(dtype->get_type() == BLOB)
+		if(dtype->get_type() == T_BLOB)
 		{
 			if((yyvsp[(1) - (1)].str).length() != dtype->get_size())
 			{
@@ -2834,7 +2895,7 @@ yyreduce:
 
 			(yyval.str) = (yyvsp[(1) - (1)].str);
 		}
-		else if(dtype->get_type() == VARBLOB)
+		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -2852,7 +2913,7 @@ yyreduce:
 
   case 129:
 /* Line 1787 of yacc.c  */
-#line 1175 "parser.ypp"
+#line 1237 "parser.ypp"
     {
 		if(!check_depth()) depth_error("method");
 
@@ -2881,7 +2942,7 @@ yyreduce:
 
   case 130:
 /* Line 1787 of yacc.c  */
-#line 1200 "parser.ypp"
+#line 1262 "parser.ypp"
     {
 		if(type_stack.top().type->as_method())
 		{
@@ -2894,7 +2955,7 @@ yyreduce:
 
   case 132:
 /* Line 1787 of yacc.c  */
-#line 1213 "parser.ypp"
+#line 1275 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
 	}
@@ -2902,7 +2963,7 @@ yyreduce:
 
   case 133:
 /* Line 1787 of yacc.c  */
-#line 1220 "parser.ypp"
+#line 1282 "parser.ypp"
     {
 		if(!check_depth()) depth_error("struct");
 
@@ -2931,7 +2992,7 @@ yyreduce:
 
   case 134:
 /* Line 1787 of yacc.c  */
-#line 1245 "parser.ypp"
+#line 1307 "parser.ypp"
     {
 		if(type_stack.top().type->as_struct())
 		{
@@ -2944,7 +3005,7 @@ yyreduce:
 
   case 137:
 /* Line 1787 of yacc.c  */
-#line 1259 "parser.ypp"
+#line 1321 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
 	}
@@ -2952,7 +3013,7 @@ yyreduce:
 
   case 138:
 /* Line 1787 of yacc.c  */
-#line 1263 "parser.ypp"
+#line 1325 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (3)].str) + (yyvsp[(3) - (3)].str);
 	}
@@ -2960,7 +3021,7 @@ yyreduce:
 
   case 139:
 /* Line 1787 of yacc.c  */
-#line 1270 "parser.ypp"
+#line 1332 "parser.ypp"
     {
 		if(!check_depth()) depth_error("array");
 
@@ -2989,7 +3050,7 @@ yyreduce:
 
   case 140:
 /* Line 1787 of yacc.c  */
-#line 1295 "parser.ypp"
+#line 1357 "parser.ypp"
     {
 		if(!check_depth()) depth_error("array");
 
@@ -3015,7 +3076,7 @@ yyreduce:
 
   case 141:
 /* Line 1787 of yacc.c  */
-#line 1317 "parser.ypp"
+#line 1379 "parser.ypp"
     {
 		if(type_stack.top().type->as_array())
 		{
@@ -3043,7 +3104,7 @@ yyreduce:
 
   case 143:
 /* Line 1787 of yacc.c  */
-#line 1345 "parser.ypp"
+#line 1407 "parser.ypp"
     {
 		// We popped off the only element we added, so we're back to the array
 		// Don't increment the depth; the array_expansion will add to
@@ -3055,7 +3116,7 @@ yyreduce:
 
   case 144:
 /* Line 1787 of yacc.c  */
-#line 1353 "parser.ypp"
+#line 1415 "parser.ypp"
     {
 		(yyval.str) = (yyvsp[(1) - (4)].str) + (yyvsp[(4) - (4)].str);
 	}
@@ -3063,7 +3124,7 @@ yyreduce:
 
   case 145:
 /* Line 1787 of yacc.c  */
-#line 1360 "parser.ypp"
+#line 1422 "parser.ypp"
     {
 		current_depth++;
 		(yyval.str) = (yyvsp[(1) - (1)].str);
@@ -3072,7 +3133,7 @@ yyreduce:
 
   case 146:
 /* Line 1787 of yacc.c  */
-#line 1365 "parser.ypp"
+#line 1427 "parser.ypp"
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3092,7 +3153,7 @@ yyreduce:
 
   case 147:
 /* Line 1787 of yacc.c  */
-#line 1381 "parser.ypp"
+#line 1443 "parser.ypp"
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3112,7 +3173,7 @@ yyreduce:
 
   case 148:
 /* Line 1787 of yacc.c  */
-#line 1397 "parser.ypp"
+#line 1459 "parser.ypp"
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3132,13 +3193,13 @@ yyreduce:
 
   case 149:
 /* Line 1787 of yacc.c  */
-#line 1413 "parser.ypp"
+#line 1475 "parser.ypp"
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[(3) - (3)].u.uint32); // For arrays, we add 1 to the depth per element
 
-		if(dtype->get_type() == STRING)
+		if(dtype->get_type() == T_STRING)
 		{
 			if((yyvsp[(1) - (3)].str).length() != dtype->get_size())
 			{
@@ -3153,7 +3214,7 @@ yyreduce:
 			}
 			(yyval.str) = val;
 		}
-		else if(dtype->get_type() == VARSTRING)
+		else if(dtype->get_type() == T_VARSTRING)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -3186,13 +3247,13 @@ yyreduce:
 
   case 150:
 /* Line 1787 of yacc.c  */
-#line 1463 "parser.ypp"
+#line 1525 "parser.ypp"
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[(3) - (3)].u.uint32); // For arrays, we add 1 to the depth per element
 
-		if(dtype->get_type() == BLOB)
+		if(dtype->get_type() == T_BLOB)
 		{
 			if((yyvsp[(1) - (3)].str).length() != dtype->get_size())
 			{
@@ -3207,7 +3268,7 @@ yyreduce:
 			}
 			(yyval.str) = val;
 		}
-		else if(dtype->get_type() == VARBLOB)
+		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -3241,85 +3302,85 @@ yyreduce:
 
   case 151:
 /* Line 1787 of yacc.c  */
-#line 1516 "parser.ypp"
-    { (yyval.u.type) = STRING; }
+#line 1578 "parser.ypp"
+    { (yyval.u.type) = T_STRING; }
     break;
 
   case 152:
 /* Line 1787 of yacc.c  */
-#line 1517 "parser.ypp"
-    { (yyval.u.type) = BLOB; }
+#line 1579 "parser.ypp"
+    { (yyval.u.type) = T_BLOB; }
     break;
 
   case 153:
 /* Line 1787 of yacc.c  */
-#line 1521 "parser.ypp"
-    { (yyval.u.type) = CHAR; }
+#line 1583 "parser.ypp"
+    { (yyval.u.type) = T_CHAR; }
     break;
 
   case 154:
 /* Line 1787 of yacc.c  */
-#line 1522 "parser.ypp"
-    { (yyval.u.type) = INT8; }
+#line 1584 "parser.ypp"
+    { (yyval.u.type) = T_INT8; }
     break;
 
   case 155:
 /* Line 1787 of yacc.c  */
-#line 1523 "parser.ypp"
-    { (yyval.u.type) = INT16; }
+#line 1585 "parser.ypp"
+    { (yyval.u.type) = T_INT16; }
     break;
 
   case 156:
 /* Line 1787 of yacc.c  */
-#line 1524 "parser.ypp"
-    { (yyval.u.type) = INT32; }
+#line 1586 "parser.ypp"
+    { (yyval.u.type) = T_INT32; }
     break;
 
   case 157:
 /* Line 1787 of yacc.c  */
-#line 1525 "parser.ypp"
-    { (yyval.u.type) = INT64; }
+#line 1587 "parser.ypp"
+    { (yyval.u.type) = T_INT64; }
     break;
 
   case 158:
 /* Line 1787 of yacc.c  */
-#line 1526 "parser.ypp"
-    { (yyval.u.type) = UINT8; }
+#line 1588 "parser.ypp"
+    { (yyval.u.type) = T_UINT8; }
     break;
 
   case 159:
 /* Line 1787 of yacc.c  */
-#line 1527 "parser.ypp"
-    { (yyval.u.type) = UINT16; }
+#line 1589 "parser.ypp"
+    { (yyval.u.type) = T_UINT16; }
     break;
 
   case 160:
 /* Line 1787 of yacc.c  */
-#line 1528 "parser.ypp"
-    { (yyval.u.type) = UINT32; }
+#line 1590 "parser.ypp"
+    { (yyval.u.type) = T_UINT32; }
     break;
 
   case 161:
 /* Line 1787 of yacc.c  */
-#line 1529 "parser.ypp"
-    { (yyval.u.type) = UINT64; }
+#line 1591 "parser.ypp"
+    { (yyval.u.type) = T_UINT64; }
     break;
 
   case 162:
 /* Line 1787 of yacc.c  */
-#line 1530 "parser.ypp"
-    { (yyval.u.type) = FLOAT32; }
+#line 1592 "parser.ypp"
+    { (yyval.u.type) = T_FLOAT32; }
     break;
 
   case 163:
 /* Line 1787 of yacc.c  */
-#line 1531 "parser.ypp"
-    { (yyval.u.type) = FLOAT64; }
+#line 1593 "parser.ypp"
+    { (yyval.u.type) = T_FLOAT64; }
     break;
 
   case 164:
 /* Line 1787 of yacc.c  */
-#line 1536 "parser.ypp"
+#line 1598 "parser.ypp"
     {
 		(yyval.strings) = vector<string>();
 	}
@@ -3327,9 +3388,8 @@ yyreduce:
 
   case 165:
 /* Line 1787 of yacc.c  */
-#line 1540 "parser.ypp"
+#line 1602 "parser.ypp"
     {
-		(yyval.strings) = (yyvsp[(1) - (2)].strings);
 		if(!parsed_file->has_keyword((yyvsp[(2) - (2)].str)))
 		{
 			parser_error("Keyword '" + (yyvsp[(2) - (2)].str) + "' has not been declared.");
@@ -3337,12 +3397,13 @@ yyreduce:
 		}
 
 		(yyvsp[(1) - (2)].strings).push_back((yyvsp[(2) - (2)].str));
+		(yyval.strings) = (yyvsp[(1) - (2)].strings);
 	}
     break;
 
 
 /* Line 1787 of yacc.c  */
-#line 3346 "parser.cpp"
+#line 3407 "parser.cpp"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -3574,18 +3635,13 @@ yyreturn:
 
 
 /* Line 2050 of yacc.c  */
-#line 1556 "parser.ypp"
+#line 1618 "parser.ypp"
  /* Start helper function section */
 
 
 bool check_depth()
 {
 	return (!type_stack.empty() && current_depth == type_stack.top().depth);
-}
-
-bool check_depth(int depth)
-{
-	return (current_depth == depth && check_depth());
 }
 
 void depth_error(string what)
@@ -3616,7 +3672,7 @@ string number_value(Type type, double &number)
 {
 	switch(type)
 	{
-		case FLOAT32:
+		case T_FLOAT32:
 		{
 			float v = number;
 			if(v == INFINITY || v == -INFINITY)
@@ -3626,19 +3682,19 @@ string number_value(Type type, double &number)
 
 			return string((char*)&v, sizeof(float));
 		}
-		case FLOAT64:
+		case T_FLOAT64:
 		{
 			return string((char*)&number, sizeof(double));
 		}
-		case INT8:
-		case INT16:
-		case INT32:
-		case INT64:
-		case CHAR:
-		case UINT8:
-		case UINT16:
-		case UINT32:
-		case UINT64:
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
 		{
 			parser_error("Cannot use floating-point value for integer datatype.");
 			return string();
@@ -3655,7 +3711,7 @@ string number_value(Type type, int64_t &number)
 {
 	switch(type)
 	{
-		case INT8:
+		case T_INT8:
 		{
 			if(INT8_MIN > number || number > INT8_MAX)
 			{
@@ -3665,7 +3721,7 @@ string number_value(Type type, int64_t &number)
 			int8_t v = number;
 			return string((char*)&v, sizeof(int8_t));
 		}
-		case INT16:
+		case T_INT16:
 		{
 			if(INT16_MIN > number || number > INT16_MAX)
 			{
@@ -3675,7 +3731,7 @@ string number_value(Type type, int64_t &number)
 			uint16_t v = number;
 			return string((char*)&v, sizeof(int16_t));
 		}
-		case INT32:
+		case T_INT32:
 		{
 			if(INT32_MIN > number || number > INT32_MAX)
 			{
@@ -3685,15 +3741,15 @@ string number_value(Type type, int64_t &number)
 			int32_t v = number;
 			return string((char*)&v, sizeof(int32_t));
 		}
-		case INT64:
+		case T_INT64:
 		{
 			return string((char*)&number, sizeof(int64_t));
 		}
-		case CHAR:
-		case UINT8:
-		case UINT16:
-		case UINT32:
-		case UINT64:
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
 		{
 			if(number < 0)
 			{
@@ -3702,8 +3758,8 @@ string number_value(Type type, int64_t &number)
 			uint64_t v = number;
 			return number_value(type, v);
 		}
-		case FLOAT32:
-		case FLOAT64:
+		case T_FLOAT32:
+		case T_FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. -1 becomes -1.0)
 			double v = number;
@@ -3721,8 +3777,8 @@ string number_value(Type type, uint64_t &number)
 {
 	switch(type)
 	{
-		case CHAR:
-		case UINT8:
+		case T_CHAR:
+		case T_UINT8:
 		{
 			if(number > UINT8_MAX)
 			{
@@ -3732,7 +3788,7 @@ string number_value(Type type, uint64_t &number)
 			uint8_t v = number;
 			return string((char*)&v, sizeof(uint8_t));
 		}
-		case UINT16:
+		case T_UINT16:
 		{
 			if(number > UINT16_MAX)
 			{
@@ -3742,7 +3798,7 @@ string number_value(Type type, uint64_t &number)
 			uint16_t v = number;
 			return string((char*)&v, sizeof(uint16_t));
 		}
-		case UINT32:
+		case T_UINT32:
 		{
 			if(number > UINT32_MAX)
 			{
@@ -3752,14 +3808,14 @@ string number_value(Type type, uint64_t &number)
 			uint32_t v = number;
 			return string((char*)&v, sizeof(uint32_t));
 		}
-		case UINT64:
+		case T_UINT64:
 		{
 			return string((char*)&number, sizeof(uint64_t));
 		}
-		case INT8:
-		case INT16:
-		case INT32:
-		case INT64:
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
 		{
 			if(number > INT64_MAX)
 			{
@@ -3768,8 +3824,8 @@ string number_value(Type type, uint64_t &number)
 			int64_t v = number;
 			return number_value(type, v);
 		}
-		case FLOAT32:
-		case FLOAT64:
+		case T_FLOAT32:
+		case T_FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. 3 becomes 3.0)
 			double v = number;

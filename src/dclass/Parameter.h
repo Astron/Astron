@@ -31,11 +31,6 @@ class Parameter
 		//     If a default value hasn't been set, returns an implicit default.
 		inline const std::string& get_default_value() const;
 
-		// has_type_alias returns true if this parameter was defined with an alias of a type.
-		inline bool has_type_alias() const;
-		// get_type_alias returns the type name used to define the parameter, or the empty string.
-		inline const std::string& get_type_alias() const;
-
 		// set_name sets the name of this parameter.  Returns false if a parameter with
 		//     the same name already exists in the containing method.
 		bool set_name(const std::string& name);

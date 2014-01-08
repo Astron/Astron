@@ -24,37 +24,37 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
 
 	if(m_element_type->has_fixed_size() && m_array_size > 0)
 	{
-		m_type = ARRAY;
+		m_type = T_ARRAY;
 		m_size = m_array_size * m_element_type->get_size();
 	}
 	else
 	{
-		m_type = VARARRAY;
+		m_type = T_VARARRAY;
 		m_size = 0;
 	}
 
 
 
-	if(m_element_type->get_type() == CHAR)
+	if(m_element_type->get_type() == T_CHAR)
 	{
-		if(m_type == ARRAY)
+		if(m_type == T_ARRAY)
 		{
-			m_type = STRING;
+			m_type = T_STRING;
 		}
 		else
 		{
-			m_type = VARSTRING;
+			m_type = T_VARSTRING;
 		}
 	}
-	else if(m_element_type->get_type() == UINT8)
+	else if(m_element_type->get_type() == T_UINT8)
 	{
-		if(m_type == ARRAY)
+		if(m_type == T_ARRAY)
 		{
-			m_type = BLOB;
+			m_type = T_BLOB;
 		}
 		else
 		{
-			m_type = VARBLOB;
+			m_type = T_VARBLOB;
 		}
 	}
 }

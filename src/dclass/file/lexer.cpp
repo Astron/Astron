@@ -1585,11 +1585,11 @@ case 28:
 YY_RULE_SETUP
 #line 708 "lexer.lpp"
 {
- // Quoted string.
- accept();
- yylval.str = scan_quoted_string('"');
- return STRING;
- }
+	// Quoted string.
+	accept();
+	yylval.str = scan_quoted_string('"');
+	return STRING;
+}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP

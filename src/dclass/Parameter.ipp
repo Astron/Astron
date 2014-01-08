@@ -43,16 +43,4 @@ inline const std::string& Parameter::get_default_value() const
 }
 
 
-// has_type_alias returns true if this parameter was defined with an alias of a type.
-inline bool Parameter::has_type_alias() const
-{
-	return (m_type_alias.length() > 0);
-}
-// get_type_alias returns the type name used to define the parameter, or the empty string.
-inline const std::string& Parameter::get_type_alias() const
-{
-	return m_type_alias;
-}
-
-
 } // close namespace dclass

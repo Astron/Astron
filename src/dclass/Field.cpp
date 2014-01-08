@@ -11,7 +11,9 @@ namespace dclass   // open namespace
 Field::Field(DistributedType* type, const std::string &name) :
 	m_struct(NULL), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
 {
-	m_default_value = create_default_value(type);
+	bool implicit_value;
+	m_default_value = create_default_value(type, implicit_value);
+	m_has_default_value = !implicit_value;
 }
 
 // destructor

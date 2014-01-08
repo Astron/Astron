@@ -39,6 +39,13 @@ inline const Struct* File::get_struct(unsigned int n) const
 	return m_structs.at(n);
 }
 
+// get_num_types returns the number of types in the file.
+//     All type ids will be within the range 0 <= id < get_num_types().
+inline size_t File::get_num_types() const
+{
+	return m_types_by_id.size();
+}
+
 // get_type_by_id returns the requested type or NULL if there is no such type.
 inline DistributedType* File::get_type_by_id(unsigned int id)
 {

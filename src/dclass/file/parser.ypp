@@ -63,9 +63,13 @@
 	static stack<TypeAndDepth> type_stack;
 	static int current_depth;
 
+	// These two types are really common types the parser doesn't need to make new
+	//     duplicates of every time a string or blob is used.
+	static ArrayType* basic_string = (ArrayType*)NULL;
+	static ArrayType* basic_blob = (ArrayType*)NULL;
+
 	/* Helper functions */
 	static bool check_depth();
-	static bool check_depth(int depth);
 	static void depth_error(string what);
 	static void depth_error(int depth, string what);
 	static string number_value(Type type, double &number);
@@ -117,6 +121,10 @@
 		parser_error(msg);
 	}
 %}
+
+// Use verbose errors
+%error-verbose
+%debug
 
 /* Value tokens */
 %token <u.uint64> UNSIGNED_INTEGER
@@ -214,9 +222,6 @@
 %type <u.dparam> param_with_name_as_array
 %type <u.dparam> param_with_name_and_default
 
-//%type <str> array
-//%type <str> array_value
-
 %%
 
 grammar
@@ -239,7 +244,6 @@ value
 	: empty
 	{
 		parsed_value->clear();
-		if(!type_stack.empty()) depth_error(0);
 	}
 	| type_value
 	{
@@ -311,6 +315,9 @@ typedef
 			// TODO: Figure out if we need to do anything here
 			break;
 		}
+
+		// Set the type's typedef
+		$2.type->set_alias($2.name);
 
 		bool type_added	= parsed_file->add_typedef($2.name, $2.type);
 		if(!type_added)
@@ -521,6 +528,7 @@ class_field
 		if($1 == (Field*)NULL)
 		{
 			// Ignore this field, it should have already generated a parser error
+			$$ = NULL;
 			break;
 		}
 
@@ -646,11 +654,9 @@ unnamed_field
 	  type_value
 	{
 		Field* field = new Field($1);
-		$$ = new Field($1);
-
-
 		if(!type_stack.empty()) depth_error(0, "unnamed field");
 		field->set_default_value($4);
+		$$ = field;
 	}
 	;
 
@@ -677,9 +683,9 @@ field_with_name_and_default
 	}
 	  type_value
 	{
-		$$ = $1;
 		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
 		$1->set_default_value($4);
+		$$ = $1;
 	}
 	| field_with_name_as_array '='
 	{
@@ -688,9 +694,9 @@ field_with_name_and_default
 	}
 	  type_value
 	{
-		$$ = $1;
 		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
 		$1->set_default_value($4);
+		$$ = $1;
 	}
 	| method_as_field '=' method_value
 	{
@@ -699,9 +705,9 @@ field_with_name_and_default
 	}
 	  type_value
 	{
-		$$ = $1;
 		if(!type_stack.empty()) depth_error(0, "method");
 		$1->set_default_value($3);
+		$$ = $1;
 	}
 	;
 
@@ -727,7 +733,7 @@ nonmethod_type_no_array
 			break;
 		}
 
-		if($1->get_type() == METHOD)
+		if($1->get_type() == T_METHOD)
 		{
 			parser_error("Cannot use a method type here.");
 			$$ = NULL;
@@ -761,15 +767,37 @@ type_with_array
 molecular
 	: IDENTIFIER ':' defined_field
 	{
-		$$ = new MolecularField(current_class, $1);
-	}
-	| molecular ',' defined_field
-	{
-		$$ = $1;
-
+		MolecularField* mol = new MolecularField(current_class, $1);
 		if($3 == (Field*)NULL)
 		{
 			// Ignore this field, it should have already generated an error
+			$$ = mol;
+			break;
+		}
+
+		bool field_added = mol->add_field($3);
+		if(!field_added)
+		{
+			if($3->as_molecular())
+			{
+				parser_error("Cannot add molecular '" + $3->get_name() + "' to a molecular field.");
+			}
+			else
+			{
+				parser_error("Unkown error adding field " + $3->get_name() + " to molecular '"
+				             + $1 + "'.");
+			}
+		}
+
+		$$ = mol;
+	}
+	| molecular ',' defined_field
+	{
+		if($3 == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = $1;
+			break;
 		}
 
 		bool field_added = $1->add_field($3);
@@ -784,7 +812,14 @@ molecular
 				parser_error("Mismatched keywords in molecular between " +
 					$1->get_field(0)->get_name() + " and " + $3->get_name() + ".");
 			}
+			else
+			{
+				parser_error("Unkown error adding field " + $3->get_name() + " to molecular '"
+				             + $1->get_name() + "'.");
+			}
 		}
+
+		$$ = $1;
 	}
 
 defined_field
@@ -812,24 +847,50 @@ defined_field
 builtin_array_type
 	: array_type_token
 	{
-		if($1 == STRING)
+		if($1 == T_STRING)
 		{
-			$$ = new ArrayType(new NumericType(CHAR));
+			if(basic_string == NULL)
+			{
+				basic_string = new ArrayType(new NumericType(T_CHAR));
+				basic_string->set_alias("string");
+			}
+
+			$$ = basic_string;
+		}
+		else if($1 == T_BLOB)
+		{
+			if(basic_blob == NULL)
+			{
+				basic_blob = new ArrayType(new NumericType(T_UINT8));
+				basic_blob->set_alias("blob");
+			}
+
+			$$ = basic_blob;
 		}
 		else
 		{
-			$$ = new ArrayType(new NumericType(UINT8));
+			parser_error("Found builtin ArrayType not handled by parser.");
+			$$ = NULL;
 		}
 	}
 	| array_type_token '(' array_range ')'
 	{
-		if($1 == STRING)
+		if($1 == T_STRING)
 		{
-			$$ = new ArrayType(new NumericType(CHAR), $3);
+			ArrayType* arr = new ArrayType(new NumericType(T_CHAR), $3);
+			arr->set_alias("string");
+			$$ = arr;
+		}
+		else if($1 == T_BLOB)
+		{
+			ArrayType* arr = new ArrayType(new NumericType(T_UINT8), $3);
+			arr->set_alias("blob");
+			$$ = arr;
 		}
 		else
 		{
-			$$ = new ArrayType(new NumericType(UINT8), $3);
+			parser_error("Found builtin ArrayType not handled by parser.");
+			$$ = NULL;
 		}
 	}
 	;
@@ -952,10 +1013,9 @@ parameter
 	  type_value
 	{
 		Parameter* param = new Parameter($1);
-		$$ = param;
-
 		if(!type_stack.empty()) depth_error(0, "type");
 		param->set_default_value($4);
+		$$ = param;
 	}
 
 param_with_name
@@ -981,9 +1041,9 @@ param_with_name_and_default
 	}
 	  type_value
 	{
-		$$ = $1;
 		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
 		$1->set_default_value($4);
+		$$ = $1;
 	}
 	| param_with_name_as_array '='
 	{
@@ -992,9 +1052,9 @@ param_with_name_and_default
 	}
 	  type_value
 	{
-		$$ = $1;
 		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
 		$1->set_default_value($4);
+		$$ = $1;
 	}
 	;
 
@@ -1031,28 +1091,30 @@ char_or_uint
 small_unsigned_integer
 	: UNSIGNED_INTEGER
 	{
-		$$ = (unsigned int)$1;
-		if($$ != $1)
+		unsigned int num = (unsigned int)$1;
+		if(num != $1)
 		{
 			parser_error("Number out of range.");
 			$$ = 1;
 		}
+		$$ = num;
 	}
 	;
 
 small_negative_integer
 	: SIGNED_INTEGER
 	{
-		$$ = (unsigned int) - $1;
+		int num = (unsigned int) -$1;
 		if($1 >= 0)
 		{
 			parser_error("Syntax error while parsing small_negative_integer.");
 		}
-		else if($$ != -$1)
+		else if(num != -$1)
 		{
 			parser_error("Number out of range.");
 			$$ = 1;
 		}
+		$$ = num;
 	}
 	;
 
@@ -1113,7 +1175,7 @@ type_value
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove string type from stack
 
-		if(dtype->get_type() == STRING)
+		if(dtype->get_type() == T_STRING)
 		{
 			if($1.length() != dtype->get_size())
 			{
@@ -1122,7 +1184,7 @@ type_value
 
 			$$ = $1;
 		}
-		else if(dtype->get_type() == VARSTRING)
+		else if(dtype->get_type() == T_VARSTRING)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -1143,7 +1205,7 @@ type_value
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Remove type from stack
 
-		if(dtype->get_type() == BLOB)
+		if(dtype->get_type() == T_BLOB)
 		{
 			if($1.length() != dtype->get_size())
 			{
@@ -1152,7 +1214,7 @@ type_value
 
 			$$ = $1;
 		}
-		else if(dtype->get_type() == VARBLOB)
+		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -1415,7 +1477,7 @@ array_expansion
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
-		if(dtype->get_type() == STRING)
+		if(dtype->get_type() == T_STRING)
 		{
 			if($1.length() != dtype->get_size())
 			{
@@ -1430,7 +1492,7 @@ array_expansion
 			}
 			$$ = val;
 		}
-		else if(dtype->get_type() == VARSTRING)
+		else if(dtype->get_type() == T_VARSTRING)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -1465,7 +1527,7 @@ array_expansion
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
-		if(dtype->get_type() == BLOB)
+		if(dtype->get_type() == T_BLOB)
 		{
 			if($1.length() != dtype->get_size())
 			{
@@ -1480,7 +1542,7 @@ array_expansion
 			}
 			$$ = val;
 		}
-		else if(dtype->get_type() == VARBLOB)
+		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
 			// Prepend length tag
@@ -1513,22 +1575,22 @@ array_expansion
 	;
 
 array_type_token
-	: KW_STRING { $$ = STRING; }
-	| KW_BLOB { $$ = BLOB; }
+	: KW_STRING { $$ = T_STRING; }
+	| KW_BLOB { $$ = T_BLOB; }
 	;
 
 numeric_type_token
-	: KW_CHAR { $$ = CHAR; }
-	| KW_INT8 { $$ = INT8; }
-	| KW_INT16 { $$ = INT16; }
-	| KW_INT32 { $$ = INT32; }
-	| KW_INT64 { $$ = INT64; }
-	| KW_UINT8 { $$ = UINT8; }
-	| KW_UINT16 { $$ = UINT16; }
-	| KW_UINT32 { $$ = UINT32; }
-	| KW_UINT64 { $$ = UINT64; }
-	| KW_FLOAT32 { $$ = FLOAT32; }
-	| KW_FLOAT64 { $$ = FLOAT64; }
+	: KW_CHAR { $$ = T_CHAR; }
+	| KW_INT8 { $$ = T_INT8; }
+	| KW_INT16 { $$ = T_INT16; }
+	| KW_INT32 { $$ = T_INT32; }
+	| KW_INT64 { $$ = T_INT64; }
+	| KW_UINT8 { $$ = T_UINT8; }
+	| KW_UINT16 { $$ = T_UINT16; }
+	| KW_UINT32 { $$ = T_UINT32; }
+	| KW_UINT64 { $$ = T_UINT64; }
+	| KW_FLOAT32 { $$ = T_FLOAT32; }
+	| KW_FLOAT64 { $$ = T_FLOAT64; }
 	;
 
 keyword_list
@@ -1538,7 +1600,6 @@ keyword_list
 	}
 	| keyword_list IDENTIFIER
 	{
-		$$ = $1;
 		if(!parsed_file->has_keyword($2))
 		{
 			parser_error("Keyword '" + $2 + "' has not been declared.");
@@ -1546,6 +1607,7 @@ keyword_list
 		}
 
 		$1.push_back($2);
+		$$ = $1;
 	}
 	;
 
@@ -1559,11 +1621,6 @@ empty
 bool check_depth()
 {
 	return (!type_stack.empty() && current_depth == type_stack.top().depth);
-}
-
-bool check_depth(int depth)
-{
-	return (current_depth == depth && check_depth());
 }
 
 void depth_error(string what)
@@ -1594,7 +1651,7 @@ string number_value(Type type, double &number)
 {
 	switch(type)
 	{
-		case FLOAT32:
+		case T_FLOAT32:
 		{
 			float v = number;
 			if(v == INFINITY || v == -INFINITY)
@@ -1604,19 +1661,19 @@ string number_value(Type type, double &number)
 
 			return string((char*)&v, sizeof(float));
 		}
-		case FLOAT64:
+		case T_FLOAT64:
 		{
 			return string((char*)&number, sizeof(double));
 		}
-		case INT8:
-		case INT16:
-		case INT32:
-		case INT64:
-		case CHAR:
-		case UINT8:
-		case UINT16:
-		case UINT32:
-		case UINT64:
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
 		{
 			parser_error("Cannot use floating-point value for integer datatype.");
 			return string();
@@ -1633,7 +1690,7 @@ string number_value(Type type, int64_t &number)
 {
 	switch(type)
 	{
-		case INT8:
+		case T_INT8:
 		{
 			if(INT8_MIN > number || number > INT8_MAX)
 			{
@@ -1643,7 +1700,7 @@ string number_value(Type type, int64_t &number)
 			int8_t v = number;
 			return string((char*)&v, sizeof(int8_t));
 		}
-		case INT16:
+		case T_INT16:
 		{
 			if(INT16_MIN > number || number > INT16_MAX)
 			{
@@ -1653,7 +1710,7 @@ string number_value(Type type, int64_t &number)
 			uint16_t v = number;
 			return string((char*)&v, sizeof(int16_t));
 		}
-		case INT32:
+		case T_INT32:
 		{
 			if(INT32_MIN > number || number > INT32_MAX)
 			{
@@ -1663,15 +1720,15 @@ string number_value(Type type, int64_t &number)
 			int32_t v = number;
 			return string((char*)&v, sizeof(int32_t));
 		}
-		case INT64:
+		case T_INT64:
 		{
 			return string((char*)&number, sizeof(int64_t));
 		}
-		case CHAR:
-		case UINT8:
-		case UINT16:
-		case UINT32:
-		case UINT64:
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
 		{
 			if(number < 0)
 			{
@@ -1680,8 +1737,8 @@ string number_value(Type type, int64_t &number)
 			uint64_t v = number;
 			return number_value(type, v);
 		}
-		case FLOAT32:
-		case FLOAT64:
+		case T_FLOAT32:
+		case T_FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. -1 becomes -1.0)
 			double v = number;
@@ -1699,8 +1756,8 @@ string number_value(Type type, uint64_t &number)
 {
 	switch(type)
 	{
-		case CHAR:
-		case UINT8:
+		case T_CHAR:
+		case T_UINT8:
 		{
 			if(number > UINT8_MAX)
 			{
@@ -1710,7 +1767,7 @@ string number_value(Type type, uint64_t &number)
 			uint8_t v = number;
 			return string((char*)&v, sizeof(uint8_t));
 		}
-		case UINT16:
+		case T_UINT16:
 		{
 			if(number > UINT16_MAX)
 			{
@@ -1720,7 +1777,7 @@ string number_value(Type type, uint64_t &number)
 			uint16_t v = number;
 			return string((char*)&v, sizeof(uint16_t));
 		}
-		case UINT32:
+		case T_UINT32:
 		{
 			if(number > UINT32_MAX)
 			{
@@ -1730,14 +1787,14 @@ string number_value(Type type, uint64_t &number)
 			uint32_t v = number;
 			return string((char*)&v, sizeof(uint32_t));
 		}
-		case UINT64:
+		case T_UINT64:
 		{
 			return string((char*)&number, sizeof(uint64_t));
 		}
-		case INT8:
-		case INT16:
-		case INT32:
-		case INT64:
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
 		{
 			if(number > INT64_MAX)
 			{
@@ -1746,8 +1803,8 @@ string number_value(Type type, uint64_t &number)
 			int64_t v = number;
 			return number_value(type, v);
 		}
-		case FLOAT32:
-		case FLOAT64:
+		case T_FLOAT32:
+		case T_FLOAT64:
 		{
 			// Note: Expecting number to be converted to a double by value (ie. 3 becomes 3.0)
 			double v = number;

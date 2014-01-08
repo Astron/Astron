@@ -16,7 +16,6 @@ bool append(File* f, istream &in, const string &filename)
 	init_file_parser(in, filename, *f);
 	run_parser();
 	cleanup_parser();
-
 	return (parser_error_count() == 0);
 }
 bool append(File* f, const string &filename)

@@ -10,7 +10,7 @@ namespace dclass   // open namespace
 // constructor
 Method::Method()
 {
-	m_type = METHOD;
+	m_type = T_METHOD;
 }
 
 // destructor

@@ -37,13 +37,6 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	zone_t zone_id = dgi.read_zone();
 	uint16_t dc_id = dgi.read_uint16();
 
-	// Make sure the class exists in the file
-	if(dc_id >= g_dcf->get_num_classes())
-	{
-		m_log->error() << "Received create for unknown dclass ID=" << dc_id << std::endl;
-		return;
-	}
-
 	// Make sure the object id is unique
 	if(m_objs.find(do_id) != m_objs.end())
 	{
@@ -51,12 +44,12 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 		return;
 	}
 
-	// Make sure we are not trying to make an object out of a struct
+	// Make sure the class exists in the file
 	const Class *dc_class = g_dcf->get_class_by_id(dc_id);
 	if(!dc_class)
 	{
-		m_log->warning() << "Received create for object non-class type: "
-		                 << g_dcf->get_class_by_id(dc_id)->get_name() << std::endl;
+		m_log->error() << "Received create for unknown dclass with class id '" << dc_id << "'\n";
+		return;
 	}
 
 	// Create the object
@@ -74,7 +67,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	m_objs[do_id] = obj;
 }
 
-void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void StateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

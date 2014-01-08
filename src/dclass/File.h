@@ -58,6 +58,9 @@ class File
 		Class* get_class_by_name(const std::string &name);
 		const Class* get_class_by_name(const std::string &name) const;
 
+		// get_num_types returns the number of types in the file.
+		//     All type ids will be within the range 0 <= id < get_num_types().
+		inline size_t get_num_types() const;
 		// get_type_by_id returns the requested type or NULL if there is no such type.
 		inline DistributedType* get_type_by_id(unsigned int id);
 		inline const DistributedType* get_type_by_id(unsigned int id) const;

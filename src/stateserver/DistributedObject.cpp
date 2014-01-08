@@ -486,7 +486,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	return true;
 }
 
-void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

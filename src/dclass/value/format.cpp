@@ -38,7 +38,7 @@ struct Formatter
 
 	inline bool remaining(sizetag_t length)
 	{
-		return (offset + length) < end;
+		return (offset + length) <= end;
 	}
 
 	inline sizetag_t read_length()
@@ -53,12 +53,12 @@ struct Formatter
 		Type type = dtype->get_type();
 		switch(type)
 		{
-			case INVALID:
+			case T_INVALID:
 			{
 				out << "<invalid>";
 				break;
 			}
-			case INT8:
+			case T_INT8:
 			{
 				if(!remaining(sizeof(int8_t)))
 					return false;
@@ -67,7 +67,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case INT16:
+			case T_INT16:
 			{
 				if(!remaining(sizeof(int16_t)))
 					return false;
@@ -76,7 +76,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case INT32:
+			case T_INT32:
 			{
 				if(!remaining(sizeof(int32_t)))
 					return false;
@@ -85,7 +85,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case INT64:
+			case T_INT64:
 			{
 				if(!remaining(sizeof(int64_t)))
 					return false;
@@ -94,7 +94,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case UINT8:
+			case T_UINT8:
 			{
 				if(!remaining(sizeof(uint8_t)))
 					return false;
@@ -103,7 +103,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case UINT16:
+			case T_UINT16:
 			{
 				if(!remaining(sizeof(uint16_t)))
 					return false;
@@ -112,7 +112,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case UINT32:
+			case T_UINT32:
 			{
 				if(!remaining(sizeof(uint32_t)))
 					return false;
@@ -121,7 +121,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case UINT64:
+			case T_UINT64:
 			{
 				if(!remaining(sizeof(uint64_t)))
 					return false;
@@ -130,7 +130,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case FLOAT32:
+			case T_FLOAT32:
 			{
 				if(!remaining(sizeof(float)))
 					return false;
@@ -139,7 +139,7 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case FLOAT64:
+			case T_FLOAT64:
 			{
 				if(!remaining(sizeof(double)))
 					return false;
@@ -148,95 +148,212 @@ struct Formatter
 				out << v;
 				break;
 			}
-			case CHAR:
+			case T_CHAR:
 			{
 				if(!remaining(sizeof(char)))
 					return false;
 				char v = *(char*)(in+offset);
 				format_quoted('\'', string(1, v), out);
+				offset += sizeof(char);
 				break;
 			}
-			case STRING:
+			case T_STRING:
 			{
 				// Read string length
 				sizetag_t length = dtype->get_size();
 
-				// Read string
-				if(!remaining(length))
-					return false;
-				string str((const char*)in + offset, length);
-				offset += length;
 
-				// Enquoute and escape string then output
-				format_quoted('"', str, out);
+				// If we have a string alias format as a quoted string
+				if(dtype->has_alias() && dtype->get_alias() == "string")
+				{
+					// Read string
+					if(!remaining(length))
+						return false;
+					string str((const char*)in + offset, length);
+					offset += length;
+
+					// Enquoute and escape string then output
+					format_quoted('"', str, out);
+				}
+				else
+				{
+					// Otherwise format as an array of char
+					out << '[';
+					const ArrayType* arr = dtype->as_array();
+					bool ok = format(arr->get_element_type());
+					if(!ok) return false;
+					for(unsigned int i = 1; i < arr->get_array_size(); ++i)
+					{
+						out << ", ";
+						ok = format(arr->get_element_type());
+						if(!ok) return false;
+					}
+
+					out << ']';
+				}
 				break;
 			}
-			case VARSTRING:
+			case T_VARSTRING:
 			{
-				// Read string length
-				if(!remaining(sizeof(sizetag_t)))
-					return false;
-				sizetag_t length = read_length();
 
-				// Read string
-				if(!remaining(length))
-					return false;
-				string str((const char*)in + offset, length);
-				offset += length;
+				// If we have a string alias format as a quoted string
+				if(dtype->has_alias() && dtype->get_alias() == "string")
+				{
+					// Read string length
+					if(!remaining(sizeof(sizetag_t)))
+						return false;
+					sizetag_t length = read_length();
 
-				// Enquoute and escape string then output
-				format_quoted('"', str, out);
+					// Read string
+					if(!remaining(length))
+						return false;
+					string str((const char*)in + offset, length);
+					offset += length;
+
+					// Enquoute and escape string then output
+					format_quoted('"', str, out);
+				}
+				else
+				{
+					// Otherwise format as an array of char
+					out << '[';
+					// Read array byte length
+					if(!remaining(sizeof(sizetag_t)))
+						return false;
+					sizetag_t length = read_length();
+
+					// Read array
+					if(!remaining(length))
+						return false;
+					size_t array_end = offset + length;
+
+					const ArrayType* arr = dtype->as_array();
+					bool ok = format(arr->get_element_type());
+					if(!ok) return false;
+					while(offset < array_end)
+					{
+						out << ", ";
+						ok = format(arr->get_element_type());
+						if(!ok) return false;
+					}
+
+					// Check to make sure we didn't overshoot the array while reading
+					if(offset > array_end)
+					{
+						return false;
+					}
+
+					out << ']';
+				}
+
 				break;
 			}
-			case BLOB:
+			case T_BLOB:
 			{
 				// Read blob length
 				sizetag_t length = dtype->get_size();
 
-				// Read blob
-				if(!remaining(length))
-					return false;
-				string blob((const char*)in + offset, length);
-				offset += length;
+				// If we have a blob alias format as a hex constant
+				if(dtype->has_alias() && dtype->get_alias() == "blob")
+				{
+					// Read blob
+					if(!remaining(length))
+						return false;
+					string blob((const char*)in + offset, length);
+					offset += length;
 
-				// Format blob as a hex constant then output
-				format_hex(blob, out);
+					// Format blob as a hex constant then output
+					format_hex(blob, out);
+				}
+				else
+				{
+					// Otherwise format as an array of uint8
+					out << '[';
+					const ArrayType* arr = dtype->as_array();
+					bool ok = format(arr->get_element_type());
+					if(!ok) return false;
+					for(unsigned int i = 1; i < arr->get_array_size(); ++i)
+					{
+						out << ", ";
+						ok = format(arr->get_element_type());
+						if(!ok) return false;
+					}
+
+					out << ']';
+				}
+
 				break;
 			}
-			case VARBLOB:
+			case T_VARBLOB:
 			{
-				// Read blob length
-				if(!remaining(sizeof(sizetag_t)))
-					return false;
-				sizetag_t length = read_length();
+				// If we have a blob alias format as a hex constant
+				if(dtype->has_alias() && dtype->get_alias() == "blob")
+				{				// Read blob length
+					if(!remaining(sizeof(sizetag_t)))
+						return false;
+					sizetag_t length = read_length();
 
-				// Read blob
-				if(!remaining(length))
-					return false;
-				string blob((const char*)in + offset, length);
-				offset += length;
+					// Read blob
+					if(!remaining(length))
+						return false;
+					string blob((const char*)in + offset, length);
+					offset += length;
 
-				// Format blob as a hex constant then output
-				format_hex(blob, out);
+					// Format blob as a hex constant then output
+					format_hex(blob, out);
+				}
+				else
+				{
+					// Otherwise format as an array of uint8
+					out << '[';
+					// Read array byte length
+					if(!remaining(sizeof(sizetag_t)))
+						return false;
+					sizetag_t length = read_length();
+
+					// Read array
+					if(!remaining(length))
+						return false;
+					size_t array_end = offset + length;
+
+					const ArrayType* arr = dtype->as_array();
+					bool ok = format(arr->get_element_type());
+					if(!ok) return false;
+					while(offset < array_end)
+					{
+						out << ", ";
+						ok = format(arr->get_element_type());
+						if(!ok) return false;
+					}
+
+					// Check to make sure we didn't overshoot the array while reading
+					if(offset > array_end)
+					{
+						return false;
+					}
+
+					out << ']';
+				}
+
 				break;
 			}
-			case ARRAY:
+			case T_ARRAY:
 			{
 				out << '[';
 				const ArrayType* arr = dtype->as_array();
 				bool ok = format(arr->get_element_type());
 				if(!ok) return false;
-				for(int i = 1; i < arr->get_array_size(); ++i)
+				for(unsigned int i = 1; i < arr->get_array_size(); ++i)
 				{
+					out << ", ";
 					ok = format(arr->get_element_type());
 					if(!ok) return false;
-					out << ", ";
 				}
 
 				out << ']';
 				break;
 			}
-			case VARARRAY:
+			case T_VARARRAY:
 			{
 				out << '[';
 				// Read array byte length
@@ -254,9 +371,9 @@ struct Formatter
 				if(!ok) return false;
 				while(offset < array_end)
 				{
+					out << ", ";
 					ok = format(arr->get_element_type());
 					if(!ok) return false;
-					out << ", ";
 				}
 
 				// Check to make sure we didn't overshoot the array while reading
@@ -268,7 +385,7 @@ struct Formatter
 				out << ']';
 				break;
 			}
-			case STRUCT:
+			case T_STRUCT:
 			{
 				out << '{';
 				const Struct* strct = dtype->as_struct();
@@ -279,15 +396,15 @@ struct Formatter
 					if(!ok) return false;
 					for(unsigned int i = 1; i < num_fields; ++i)
 					{
+						out << ", ";
 						ok = format(strct->get_field(i)->get_type());
 						if(!ok) return false;
-						out << ", ";
 					}
 				}
 				out << '}';
 				break;
 			}
-			case METHOD:
+			case T_METHOD:
 			{
 				out << '(';
 				const Method* method = dtype->as_method();
@@ -298,9 +415,9 @@ struct Formatter
 					if(!ok) return false;
 					for(unsigned int i = 1; i < num_params; ++i)
 					{
+						out << ", ";
 						ok = format(method->get_parameter(i)->get_type());
 						if(!ok) return false;
-						out << ", ";
 					}
 				}
 					out << ')';

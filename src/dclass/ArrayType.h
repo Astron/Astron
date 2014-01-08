@@ -7,7 +7,6 @@ namespace dclass   // open namespace
 {
 
 
-
 // An ArrayType represents an array of some other kind of object, meaning
 //     this parameter type accepts an arbitrary (or possibly fixed) number of
 //     nested fields, all of which are of the same type.

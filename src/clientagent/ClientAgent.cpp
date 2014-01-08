@@ -50,8 +50,10 @@ void ClientAgent::start_accept()
 }
 
 // handle_accepts generates a new Client object from a connection, then calls start_accept.
-void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
+void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
 {
+	// TODO: We probably want to check the error code here
+
 	boost::asio::ip::tcp::endpoint remote;
 	try
 	{
@@ -74,8 +76,9 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 }
 
 // handle_datagram handles Datagrams received from the message director.
-void ClientAgent::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void ClientAgent::handle_datagram(Datagram&, DatagramIterator&)
 {
+	// At the moment, the client agent doesn't actually handle any datagrams
 }
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");

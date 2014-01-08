@@ -1,6 +1,7 @@
 // Filename: DistributedType.h
 #pragma once
 #include <stdint.h>
+#include <string> // std::string
 namespace dclass   // open namespace dclass
 {
 
@@ -23,26 +24,26 @@ class HashGenerator;
 enum Type
 {
     /* Numeric Types */
-    INT8, INT16, INT32, INT64,
-    UINT8, UINT16, UINT32, UINT64,
-    CHAR, // equivalent to uint8, except that it should be printed as a string
-    FLOAT32, FLOAT64,
+    T_INT8, T_INT16, T_INT32, T_INT64,
+    T_UINT8, T_UINT16, T_UINT32, T_UINT64,
+    T_CHAR, // equivalent to uint8, except that it should be printed as a string
+    T_FLOAT32, T_FLOAT64,
 
     /* Array Types */
-    STRING,      // a human-printable string with fixed length
-    VARSTRING,   // a human-printable string with variable length
-    BLOB,        // any binary data stored as a string, fixed length
-    VARBLOB,     // any binary data stored as a varstring, variable length
-    ARRAY,       // any array with fixed byte-length (fixed array-size and element-length)
-    VARARRAY,    // any array with variable array-size or variable length elements
+    T_STRING,      // a human-printable string with fixed length
+    T_VARSTRING,   // a human-printable string with variable length
+    T_BLOB,        // any binary data stored as a string, fixed length
+    T_VARBLOB,     // any binary data stored as a varstring, variable length
+    T_ARRAY,       // any array with fixed byte-length (fixed array-size and element-length)
+    T_VARARRAY,    // any array with variable array-size or variable length elements
 
     /* Complex Types */
-    STRUCT,
-    METHOD,
+    T_STRUCT,
+    T_METHOD,
 
     // New additions should be added at the end to prevent the file hash from changing.
 
-    INVALID
+    T_INVALID
 };
 
 // A DistributedType is a shared type with a defined layout of data.
@@ -61,6 +62,13 @@ class DistributedType
         inline bool has_fixed_size() const;
         // get_size returns the size of the DistributedType in bytes or 0 if it is variable.
         inline sizetag_t get_size() const;
+
+        // has_alias returns true if this type was defined the an aliased name.
+        inline bool has_alias() const;
+        // get_alias returns the name used to define the type, or the empty string.
+        inline const std::string& get_alias() const;
+        // set_alias gives this type the alternate name <alias>.
+        inline void set_alias(const std::string& alias);
 
         // as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
         virtual NumericType* as_numeric();
@@ -84,6 +92,7 @@ class DistributedType
     protected:
         Type m_type;
         sizetag_t m_size;
+        std::string m_alias;
 };
 
 

@@ -49,7 +49,7 @@ class DatabaseServer : public Role
 			subscribe_channel(m_control_channel);
 		}
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+		virtual void handle_datagram(Datagram& /*in_dg*/, DatagramIterator &dgi)
 		{
 			channel_t sender = dgi.read_channel();
 			uint16_t msg_type = dgi.read_uint16();
@@ -66,20 +66,11 @@ class DatabaseServer : public Role
 
 					// Get DistributedClass
 					uint16_t dc_id = dgi.read_uint16();
-					if(dc_id >= g_dcf->get_num_classes())
-					{
-						m_log->error() << "Received create_object with unknown dclass '"
-						               << dc_id << "'.\n";
-						resp.add_doid(INVALID_DO_ID);
-						route_datagram(resp);
-						return;
-					}
-
 					const Class *dcc = g_dcf->get_class_by_id(dc_id);
 					if(!dcc)
 					{
-						m_log->error() << "Received create_object for struct type '"
-						               << g_dcf->get_class_by_id(dc_id) << "'.\n";
+						m_log->error() << "Received create_object with unknown dclass '"
+						               << dc_id << "'.\n";
 						resp.add_doid(INVALID_DO_ID);
 						route_datagram(resp);
 						return;
@@ -121,7 +112,7 @@ class DatabaseServer : public Role
 
 					// Populate with defaults
 					m_log->trace() << "Checking all required fields exist..." << std::endl;
-					for(int i = 0; i < dcc->get_num_fields(); ++i)
+					for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
 					{
 						const Field *field = dcc->get_field(i);
 						if(field->has_keyword("db") && !field->as_molecular()

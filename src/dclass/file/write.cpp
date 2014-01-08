@@ -8,7 +8,7 @@ namespace dclass   // open namespace dclass
 
 ostream& indent(ostream& out, unsigned int indent_level)
 {
-	for(int i = 0; i < indent_level; i++)
+	for(unsigned int i = 0; i < indent_level; i++)
 	{
 		out << ' ';
 	}
@@ -19,45 +19,45 @@ string format_type(unsigned int type)
 {
 	switch(type)
 	{
-		case CHAR:
+		case T_CHAR:
 			return "char";
-		case INT8:
+		case T_INT8:
 			return "int8";
-		case INT16:
+		case T_INT16:
 			return "int16";
-		case INT32:
+		case T_INT32:
 			return "int32";
-		case INT64:
+		case T_INT64:
 			return "int64";
-		case UINT8:
+		case T_UINT8:
 			return "uint8";
-		case UINT16:
+		case T_UINT16:
 			return "uint16";
-		case UINT32:
+		case T_UINT32:
 			return "uint32";
-		case UINT64:
+		case T_UINT64:
 			return "uint64";
-		case FLOAT32:
+		case T_FLOAT32:
 			return "float32";
-		case FLOAT64:
+		case T_FLOAT64:
 			return "float64";
-		case STRING:
+		case T_STRING:
 			return "string";
-		case VARSTRING:
+		case T_VARSTRING:
 			return "varstring";
-		case BLOB:
+		case T_BLOB:
 			return "blob";
-		case VARBLOB:
+		case T_VARBLOB:
 			return "varblob";
-		case ARRAY:
+		case T_ARRAY:
 			return "array";
-		case VARARRAY:
+		case T_VARARRAY:
 			return "vararray";
-		case STRUCT:
+		case T_STRUCT:
 			return "struct";
-		case METHOD:
+		case T_METHOD:
 			return "method";
-		case INVALID:
+		case T_INVALID:
 			return "invalid";
 		default:
 			return "error";
@@ -236,7 +236,6 @@ void SimpleParameter::output_instance(ostream &out, bool brief, const string &pr
 		}
 
 		// TODO: Replace
-		/*
 		switch(m_datatype)
 		{
 			case DT_int8:
@@ -341,7 +340,6 @@ void ArrayParameter::output_instance(ostream &out, bool brief, const string &pre
 	}
 }
 
-/* TODO: Move and update appropriately
 // output formats a string representation of the class in .dc file syntax
 //     as "dclass IDENTIFIER" or "struct IDENTIFIER" with structs having optional IDENTIFIER,
 //     and outputs the formatted string to the stream.
@@ -389,7 +387,6 @@ void Struct::write(ostream &out, bool brief, int indent_level) const
 	}
 
 	// TODO: Move and update class write
-	/*
 	if(!m_parents.empty())
 	{
 		auto it = m_parents.begin();
@@ -411,7 +408,6 @@ void Struct::write(ostream &out, bool brief, int indent_level) const
 	out << "\n";
 
 	// TODO: Move and update class writing
-	/*
 	if(m_constructor != (Field*)NULL)
 	{
 		m_constructor->write(out, brief, indent_level + 2);
@@ -458,7 +454,6 @@ void Struct::output_instance(ostream &out, bool brief, const string &prename,
 		out << " " << m_name;
 	}
 
-	/*
 	if(!m_parents.empty())
 	{
 		auto it = m_parents.begin();
@@ -474,7 +469,6 @@ void Struct::output_instance(ostream &out, bool brief, const string &prename,
 
 	out << " {";
 
-	/*
 	if(m_constructor != (Field*)NULL)
 	{
 		m_constructor->output(out, brief);

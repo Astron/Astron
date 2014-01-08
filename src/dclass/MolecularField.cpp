@@ -77,9 +77,11 @@ bool MolecularField::add_field(Field* field)
 
 		m_default_value += field->get_default_value();
 	}
+
+	return true;
 }
 
-bool MolecularField::set_default_value(const std::string& default_value)
+bool MolecularField::set_default_value(const std::string&)
 {
 	// MolecularField default values are implict from their
 	// atomic components and cannot be defined manually.

@@ -5,7 +5,7 @@ namespace dclass   // open namespace dclass
 
 // null constructor
 inline DistributedType::DistributedType() :
-    m_type(INVALID), m_size(0)
+    m_type(T_INVALID), m_size(0)
 {
 }
 
@@ -26,5 +26,21 @@ inline sizetag_t DistributedType::get_size() const
     return m_size;
 }
 
+// has_alias returns true if this type was defined the an aliased name.
+inline bool DistributedType::has_alias() const
+{
+    return (m_alias.length() > 0);
+}
+// get_alias returns the name used to define the type, or the empty string.
+inline const std::string& DistributedType::get_alias() const
+{
+    return m_alias;
+}
+
+// set_alias gives this type the alternate name <alias>.
+inline void DistributedType::set_alias(const std::string& alias)
+{
+	m_alias = alias;
+}
 
 } // close namespace dclass

@@ -20,7 +20,7 @@ class EventLogger : public Role
 	public:
 		EventLogger(RoleConfig roleconfig);
 
-		void handle_datagram(Datagram &in_dg, DatagramIterator &dgi) { } // Doesn't take DGs.
+		void handle_datagram(Datagram&, DatagramIterator&) { } // Doesn't take DGs.
 
 	private:
 		LogCategory m_log;

@@ -46,7 +46,7 @@ void Class::add_parent(Class *parent)
 	// Add all of the parents fields
 	for(auto it = parent_fields.begin(); it != parent_fields.end(); ++it)
 	{
-		add_inherited_field(parent, (*it));
+		add_inherited_field(parent, *it);
 	}
 }
 
@@ -188,12 +188,20 @@ void Class::add_inherited_field(Class* parent, Field* field)
 	m_fields_by_name[field->get_name()] = field;
 
 	// Add the field to the list of fields, sorted by id
-	// Note: Iterate in reverse because fields added later are more likely to be at the end
-	for(auto it = m_fields.rbegin(); it != m_fields.rend(); ++it)
+	if(m_fields.size() == 0)
 	{
-		if((*it)->get_id() < field->get_id())
+		m_fields.push_back(field);
+	}
+	else
+	{
+		// Note: Iterate in reverse because fields added later are more likely to be at the end
+		for(auto it = m_fields.rbegin(); it != m_fields.rend(); ++it)
 		{
-			m_fields.insert(it.base(), field);
+			if((*it)->get_id() < field->get_id())
+			{
+				m_fields.insert(it.base(), field);
+				break;
+			}
 		}
 	}
 

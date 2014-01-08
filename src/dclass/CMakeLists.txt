@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(DistributedClasses)
 include_directories(.)
-include_directories(CMAKE_BINARY_DIR)
 
 find_package(BISON)
 if(BISON_FOUND)
