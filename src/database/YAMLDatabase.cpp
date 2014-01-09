@@ -3,8 +3,6 @@
 
 #include "core/global.h"
 #include "util/DatagramIterator.h"
-#include "dclass/Class.h"
-#include "dclass/Field.h"
 #include "dclass/value/format.h"
 #include "dclass/value/parse.h"
 

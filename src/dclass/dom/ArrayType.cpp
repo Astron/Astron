@@ -1,7 +1,8 @@
 // Filename: ArrayType.cpp
-#include "ArrayType.h"
-#include "HashGenerator.h"
 #include <inttypes.h> // UINT64_MAX
+#include "util/HashGenerator.h"
+
+#include "ArrayType.h"
 namespace dclass   // open namespace
 {
 

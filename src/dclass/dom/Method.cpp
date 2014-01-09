@@ -1,7 +1,8 @@
 // Filename: Method.cpp
+#include "util/HashGenerator.h"
+#include "dom/Parameter.h"
+
 #include "Method.h"
-#include "HashGenerator.h"
-#include "Parameter.h"
 using namespace std;
 namespace dclass   // open namespace
 {

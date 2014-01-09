@@ -1,6 +1,7 @@
 // Filename: DistributedType.ipp
+#include "util/HashGenerator.h"
+
 #include "DistributedType.h"
-#include "HashGenerator.h"
 namespace dclass   // open namespace dclass
 {
 

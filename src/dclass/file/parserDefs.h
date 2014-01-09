@@ -1,9 +1,9 @@
 // Filename: parserDefs.h
 #pragma once
-#include "DistributedType.h"
-#include "NumericRange.h"
 #include <string> // std::string
 #include <vector> // std::vector
+#include "dom/DistributedType.h"
+#include "dom/NumericRange.h"
 namespace dclass   // open namespace dclass
 {
 

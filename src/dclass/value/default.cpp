@@ -1,10 +1,12 @@
 // Filename: default.cpp
-#include "value/default.h"
-#include "Struct.h"
-#include "ArrayType.h"
-#include "Method.h"
-#include "Field.h"
-#include "Parameter.h"
+#include <stdint.h> // fixed-width integer types
+#include "dom/ArrayType.h"
+#include "dom/Struct.h"
+#include "dom/Field.h"
+#include "dom/Method.h"
+#include "dom/Parameter.h"
+
+#include "default.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

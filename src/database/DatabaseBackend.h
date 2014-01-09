@@ -1,10 +1,9 @@
 #pragma once
 #include "core/config.h"
 #include "core/types.h"
-#include "dclass/Class.h"
-#include "dclass/Field.h"
+#include "dclass/dom/Class.h"
+#include "dclass/dom/Field.h"
 #include <vector>
-
 
 struct ObjectData
 {

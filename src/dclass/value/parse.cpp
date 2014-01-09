@@ -1,11 +1,9 @@
 // Filename: parse.cpp
-#include "value/parse.h"
-#include "file/parserDefs.h"
-#include "DistributedType.h"
-#include "Struct.h"
-#include "Field.h"
-#include "Parameter.h"
 #include <sstream>  // std::istringstream
+#include "dom/DistributedType.h"
+#include "file/parserDefs.h"
+
+#include "parse.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

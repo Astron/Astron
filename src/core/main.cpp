@@ -8,7 +8,7 @@
 #include "global.h"
 #include "RoleFactory.h"
 #include "dclass/file/read.h"
-#include "dclass/Class.h"
+#include "dclass/dom/Class.h"
 using dclass::Class;
 
 static ConfigVariable<std::vector<std::string> > dc_files("general/dc_files", std::vector<std::string>());

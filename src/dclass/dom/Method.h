@@ -1,9 +1,10 @@
 // Filename: Method.h
 #pragma once
-#include "DistributedType.h"
-#include <string.h>      // size_t
+#include <stddef.h>      // size_t
 #include <vector>        // std::vector
 #include <unordered_map> // std::unordered_map
+
+#include "DistributedType.h"
 namespace dclass   // open namespace
 {
 

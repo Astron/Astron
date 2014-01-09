@@ -1,7 +1,8 @@
 // Filename: NumericType.cpp
+#include <inttypes.h> // fixed-width integer limits
+#include "util/HashGenerator.h"
+
 #include "NumericType.h"
-#include "HashGenerator.h"
-#include <inttypes.h>
 namespace dclass   // open namespace dclass
 {
 

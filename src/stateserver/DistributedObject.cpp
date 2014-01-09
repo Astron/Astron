@@ -1,8 +1,8 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include "dclass/Class.h"
-#include "dclass/Field.h"
-#include "dclass/MolecularField.h"
+#include "dclass/dom/Class.h"
+#include "dclass/dom/Field.h"
+#include "dclass/dom/MolecularField.h"
 
 #include "DistributedObject.h"
 

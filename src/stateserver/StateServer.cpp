@@ -1,6 +1,6 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include "dclass/Class.h"
+#include "dclass/dom/Class.h"
 #include <exception>
 #include <stdexcept>
 

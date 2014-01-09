@@ -1,7 +1,7 @@
 // Filename: NumericType.h
 #pragma once
-#include "DistributedType.h"
 #include "NumericRange.h"
+#include "DistributedType.h"
 namespace dclass   // open namespace dclass
 {
 

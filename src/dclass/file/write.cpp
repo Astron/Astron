@@ -1,6 +1,7 @@
 // Filename: write.cpp
+#include "dom/DistributedType.h"
+
 #include "write.h"
-#include "DistributedType.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

@@ -1,13 +1,14 @@
 // Filename: format.cpp
-#include "value/format.h"
-#include "DistributedType.h"
-#include "ArrayType.h"
-#include "Struct.h"
-#include "Method.h"
-#include "Field.h"
-#include "Parameter.h"
-#include <cctype>   // std::isprint()
-#include <sstream>  // std::ostringstream
+#include <cctype>  // std::isprint()
+#include <sstream> // std::ostringstream
+#include "dom/DistributedType.h"
+#include "dom/ArrayType.h"
+#include "dom/Struct.h"
+#include "dom/Field.h"
+#include "dom/Method.h"
+#include "dom/Parameter.h"
+
+#include "format.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

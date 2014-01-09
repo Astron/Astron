@@ -1,8 +1,9 @@
 // Filename: ArrayType.h
 #pragma once
+#include <stddef.h> // size_t
+#include "dom/NumericRange.h"
+
 #include "DistributedType.h"
-#include "NumericRange.h"
-#include <string.h> // size_t
 namespace dclass   // open namespace
 {
 

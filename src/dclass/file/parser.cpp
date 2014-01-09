@@ -70,17 +70,17 @@
 	#include "file/parser.h"
 	#include "file/write.h" // format_type(Type);
 
-	#include "File.h"
-	#include "DistributedType.h"
-	#include "NumericRange.h"
-	#include "NumericType.h"
-	#include "ArrayType.h"
-	#include "Struct.h"
-	#include "Class.h"
-	#include "Field.h"
-	#include "Method.h"
-	#include "Parameter.h"
-	#include "MolecularField.h"
+	#include "dom/File.h"
+	#include "dom/DistributedType.h"
+	#include "dom/NumericRange.h"
+	#include "dom/NumericType.h"
+	#include "dom/ArrayType.h"
+	#include "dom/Struct.h"
+	#include "dom/Class.h"
+	#include "dom/Field.h"
+	#include "dom/Method.h"
+	#include "dom/Parameter.h"
+	#include "dom/MolecularField.h"
 
 	#include <unistd.h>
 	#include <stdint.h> // Fixed width integer limits

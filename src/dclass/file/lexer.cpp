@@ -540,7 +540,7 @@ char *yytext;
 */
 #line 7 "lexer.lpp"
 
-	#include "File.h"
+	#include "dom/File.h"
 	#include "file/lexerDefs.h"
 	#include "file/parserDefs.h"
 	#include "file/parser.h"

@@ -1,8 +1,9 @@
 // Filename: read.cpp
-#include "file/read.h"
-#include "file/parserDefs.h"
-#include "File.h"
 #include <fstream> // std::ifstream
+#include "dom/File.h"
+#include "parserDefs.h"
+
+#include "read.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

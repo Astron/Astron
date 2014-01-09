@@ -1,19 +1,10 @@
 // Filename: File.cpp
-// Created by: drose (05 Oct, 2000)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
+#include "util/HashGenerator.h"
+#include "dom/DistributedType.h"
+#include "dom/Class.h"
+#include "dom/Field.h"
 
 #include "File.h"
-#include "Class.h"
-#include "Struct.h"
-#include "Field.h"
-#include "DistributedType.h"
-#include "HashGenerator.h"
 namespace dclass   // open namespace
 {
 

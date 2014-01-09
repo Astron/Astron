@@ -1,13 +1,4 @@
 // Filename: KeywordList.h
-// Created by: drose (25 Jul, 2005)
-//
-// Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
-//
-
 #pragma once
 #include <vector>        // std::vector
 #include <unordered_set> // std::unordered_set

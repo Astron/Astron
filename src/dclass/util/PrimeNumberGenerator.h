@@ -1,15 +1,11 @@
-// Filename: HashGenerator.h
+// Filename: PrimeNumberGenerator.h
 // Created by: drose (22 Mar, 2001)
 //
 // Copyright (c) Carnegie Mellon University.  All rights reserved.
-//
-// All use of this software is subject to the terms of the revised BSD
-// license.  You should have received a copy of this license along
-// with this source code in a file named "LICENSE."
+// All use of this software is subject to the terms of the revised BSD license.
 //
 
 #pragma once
-#include <string> // std::string
 #include <vector> // std::vector
 namespace dclass   // open namespace dclass
 {
@@ -20,7 +16,7 @@ namespace dclass   // open namespace dclass
 class PrimeNumberGenerator
 {
 	public:
-		PrimeNumberGenerator();
+		static PrimeNumberGenerator singleton; // why would we ever need more than one?
 
 		// the indexing operator returns the nth prime number.  this[0] returns 2, this[1] returns 3;
 		//     successively larger values of n return larger prime numbers, up to the largest prime
@@ -28,27 +24,8 @@ class PrimeNumberGenerator
 		unsigned int operator [](unsigned int n);
 
 	private:
+		PrimeNumberGenerator();
 		std::vector<unsigned int> m_primes;
-};
-
-// A HashGenerator generates an arbitrary hash number from a sequence of ints.
-class HashGenerator
-{
-	public:
-		HashGenerator();
-
-		// add_int adds another integer to the hash so far.
-		void add_int(int num);
-
-		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
-		void add_string(const std::string& str);
-
-		uint32_t get_hash() const;
-
-	private:
-		uint32_t m_hash;
-		unsigned int m_index;
-		PrimeNumberGenerator m_primes;
 };
 
 

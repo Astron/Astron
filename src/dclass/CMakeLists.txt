@@ -28,22 +28,25 @@ if(FLEX_FOUND)
 endif(FLEX_FOUND)
 
 add_library(dclass
-	HashGenerator.cpp
+	# Helper Classes
+	util/PrimeNumberGenerator.cpp
+	util/HashGenerator.cpp
 
-	DistributedType.cpp
-	NumericType.cpp
-	ArrayType.cpp
-	Struct.cpp
-	Method.cpp
+	# Distributed Object Model
+	dom/DistributedType.cpp
+	dom/NumericType.cpp
+	dom/ArrayType.cpp
+	dom/Struct.cpp
+	dom/Class.cpp
+	dom/Method.cpp
 
-	File.cpp
-	Class.cpp
+	dom/KeywordList.cpp
+	dom/File.cpp
+	dom/Field.cpp
+	dom/MolecularField.cpp
+	dom/Parameter.cpp
 
-	KeywordList.cpp
-	Parameter.cpp
-	Field.cpp
-	MolecularField.cpp
-
+	# File and Network I/O
 	file/parser.cpp
 	file/lexer.cpp
 	file/write.cpp

@@ -1,7 +1,9 @@
+// Filename: Struct.cpp
+#include "util/HashGenerator.h"
+#include "dom/File.h"
+#include "dom/Field.h"
+
 #include "Struct.h"
-#include "HashGenerator.h"
-#include "File.h"
-#include "Field.h"
 using namespace std;
 namespace dclass   // open namespace dclass
 {

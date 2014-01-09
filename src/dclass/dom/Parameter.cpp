@@ -1,9 +1,10 @@
 // Filename: Parameter.cpp
-#include "Parameter.h"
-#include "Method.h"
-#include "Struct.h"
-#include "HashGenerator.h"
+#include "util/HashGenerator.h"
 #include "value/default.h"
+#include "dom/Struct.h"
+#include "dom/Method.h"
+
+#include "Parameter.h"
 namespace dclass   // open namespace dclass
 {
 
