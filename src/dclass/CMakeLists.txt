@@ -33,18 +33,18 @@ add_library(dclass
 	util/HashGenerator.cpp
 
 	# Distributed Object Model
-	dom/DistributedType.cpp
-	dom/NumericType.cpp
-	dom/ArrayType.cpp
-	dom/Struct.cpp
-	dom/Class.cpp
-	dom/Method.cpp
+	dc/DistributedType.cpp
+	dc/NumericType.cpp
+	dc/ArrayType.cpp
+	dc/Struct.cpp
+	dc/Class.cpp
+	dc/Method.cpp
 
-	dom/KeywordList.cpp
-	dom/File.cpp
-	dom/Field.cpp
-	dom/MolecularField.cpp
-	dom/Parameter.cpp
+	dc/KeywordList.cpp
+	dc/File.cpp
+	dc/Field.cpp
+	dc/MolecularField.cpp
+	dc/Parameter.cpp
 
 	# File and Network I/O
 	file/parser.cpp

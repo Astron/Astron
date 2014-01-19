@@ -1,10 +1,10 @@
 // Filename: default.cpp
 #include <stdint.h> // fixed-width integer types
-#include "dom/ArrayType.h"
-#include "dom/Struct.h"
-#include "dom/Field.h"
-#include "dom/Method.h"
-#include "dom/Parameter.h"
+#include "dc/ArrayType.h"
+#include "dc/Struct.h"
+#include "dc/Field.h"
+#include "dc/Method.h"
+#include "dc/Parameter.h"
 
 #include "default.h"
 using namespace std;

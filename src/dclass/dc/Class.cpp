@@ -1,7 +1,7 @@
 // Filename: Class.cpp
 #include "util/HashGenerator.h"
-#include "dom/File.h"
-#include "dom/Field.h"
+#include "dc/File.h"
+#include "dc/Field.h"
 
 #include "Class.h"
 using namespace std;

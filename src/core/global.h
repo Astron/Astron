@@ -1,6 +1,6 @@
 #pragma once
 #include "messagedirector/MessageDirector.h"
-#include "dclass/dom/File.h"
+#include "dclass/dc/File.h"
 #include "util/EventSender.h"
 #include "Logger.h"
 #include "config.h"

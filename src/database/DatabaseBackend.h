@@ -1,8 +1,8 @@
 #pragma once
 #include "core/config.h"
 #include "core/types.h"
-#include "dclass/dom/Class.h"
-#include "dclass/dom/Field.h"
+#include "dclass/dc/Class.h"
+#include "dclass/dc/Field.h"
 #include <vector>
 
 struct ObjectData

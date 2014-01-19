@@ -5,7 +5,7 @@
 
 %{
 
-	#include "dom/File.h"
+	#include "dc/File.h"
 	#include "file/lexerDefs.h"
 	#include "file/parserDefs.h"
 	#include "file/parser.h"

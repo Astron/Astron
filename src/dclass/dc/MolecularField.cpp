@@ -1,6 +1,6 @@
 // Filename: MolecularField.cpp
 #include "util/HashGenerator.h"
-#include "dom/Class.h"
+#include "dc/Class.h"
 
 #include "MolecularField.h"
 namespace dclass   // open namespace dclass

@@ -1,6 +1,6 @@
 // Filename: parse.cpp
 #include <sstream>  // std::istringstream
-#include "dom/DistributedType.h"
+#include "dc/DistributedType.h"
 #include "file/parserDefs.h"
 
 #include "parse.h"

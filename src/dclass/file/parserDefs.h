@@ -2,8 +2,8 @@
 #pragma once
 #include <string> // std::string
 #include <vector> // std::vector
-#include "dom/DistributedType.h"
-#include "dom/NumericRange.h"
+#include "dc/DistributedType.h"
+#include "dc/NumericRange.h"
 namespace dclass   // open namespace dclass
 {
 

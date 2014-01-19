@@ -1,7 +1,7 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include "dclass/dom/Class.h"
-#include "dclass/dom/Field.h"
+#include "dclass/dc/Class.h"
+#include "dclass/dc/Field.h"
 
 #include "LoadingObject.h"
 

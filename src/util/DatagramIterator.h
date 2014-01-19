@@ -1,9 +1,9 @@
 #pragma once
 #include "Datagram.h"
-#include "dclass/dom/Struct.h"
-#include "dclass/dom/Method.h"
-#include "dclass/dom/Field.h"
-#include "dclass/dom/Parameter.h"
+#include "dclass/dc/Struct.h"
+#include "dclass/dc/Method.h"
+#include "dclass/dc/Field.h"
+#include "dclass/dc/Parameter.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif

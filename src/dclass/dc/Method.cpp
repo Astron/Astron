@@ -1,6 +1,6 @@
 // Filename: Method.cpp
 #include "util/HashGenerator.h"
-#include "dom/Parameter.h"
+#include "dc/Parameter.h"
 
 #include "Method.h"
 using namespace std;

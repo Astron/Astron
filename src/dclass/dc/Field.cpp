@@ -1,8 +1,8 @@
 // Filename: Field.cpp
 #include "util/HashGenerator.h"
 #include "value/default.h"
-#include "dom/File.h"
-#include "dom/Struct.h"
+#include "dc/File.h"
+#include "dc/Struct.h"
 
 #include "Field.h"
 namespace dclass   // open namespace

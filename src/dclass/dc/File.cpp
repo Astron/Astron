@@ -1,8 +1,8 @@
 // Filename: File.cpp
 #include "util/HashGenerator.h"
-#include "dom/DistributedType.h"
-#include "dom/Class.h"
-#include "dom/Field.h"
+#include "dc/DistributedType.h"
+#include "dc/Class.h"
+#include "dc/Field.h"
 
 #include "File.h"
 namespace dclass   // open namespace
