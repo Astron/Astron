@@ -40,9 +40,14 @@ class ClientAgent : public Role
 		// and delegates everything to the Client objects.
 		void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
 
-		const std::string& get_version()
+		const std::string& get_version() const
 		{
 			return m_server_version;
+		}
+
+		const uint32_t get_hash() const
+		{
+			return m_hash;
 		}
 
 	private:
@@ -51,4 +56,5 @@ class ClientAgent : public Role
 		std::string m_server_version;
 		ChannelTracker m_ct;
 		LogCategory *m_log;
+		uint32_t m_hash;
 };

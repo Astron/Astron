@@ -266,7 +266,7 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			const static uint32_t expected_hash = g_dcf->get_hash();
+			const static uint32_t expected_hash = m_client_agent->get_hash();
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;

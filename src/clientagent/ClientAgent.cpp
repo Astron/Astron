@@ -11,6 +11,7 @@ using boost::asio::ip::tcp;
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
 static ConfigVariable<std::string> client_type("client", "libastron");
 static ConfigVariable<std::string> server_version("version", "dev");
+static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0);
 static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
 static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
 
@@ -22,6 +23,17 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
+
+	// Get DC Hash
+	const uint32_t config_hash = override_hash.get_rval(roleconfig);
+	if(config_hash > 0x0)
+	{
+		m_hash = config_hash;
+	}
+	else
+	{
+		m_hash = g_dcf->get_hash();		
+	}
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);
