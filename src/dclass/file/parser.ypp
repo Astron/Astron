@@ -118,7 +118,7 @@
 	}
 	void parser_warning(const string &msg)
 	{
-		parser_error(msg);
+		lexer_warning(msg);
 	}
 %}
 
