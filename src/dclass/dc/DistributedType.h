@@ -53,6 +53,7 @@ class DistributedType
         inline DistributedType();
 
     public:
+        static DistributedType* invalid;
         virtual ~DistributedType();
 
         // get_type returns the type's fundamental type as an integer constant.

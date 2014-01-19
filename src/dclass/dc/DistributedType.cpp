@@ -5,6 +5,8 @@
 namespace dclass   // open namespace dclass
 {
 
+DistributedType* DistributedType::invalid = new DistributedType();
+
 DistributedType::~DistributedType()
 {
 }

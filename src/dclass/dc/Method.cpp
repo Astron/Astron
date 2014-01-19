@@ -37,6 +37,12 @@ const Method* Method::as_method() const
 // add_parameter adds a new parameter to the method.
 bool Method::add_parameter(Parameter *param)
 {
+	// Param should not be null
+	if(param == (Parameter*)NULL)
+	{
+		return false;
+	}
+
 	// Try to add the parameter
 	bool inserted = m_parameters_by_name.insert(
 		unordered_map<string, Parameter*>::value_type(param->get_name(), param)).second;

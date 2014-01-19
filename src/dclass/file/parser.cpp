@@ -1943,7 +1943,7 @@ yyreduce:
   case 46:
 #line 600 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[-1].u.dfield) == (Field*)NULL)
+		if((yyvsp[-1].u.dfield) == (Field*)NULL || (yyvsp[-1].u.dfield)->get_type() == (DistributedType*)NULL)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;

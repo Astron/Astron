@@ -16,6 +16,11 @@ Parameter::Parameter(DistributedType* type, const std::string& name) :
 	bool implicit_value;
 	m_default_value = create_default_value(type, implicit_value);
 	m_has_default_value = !implicit_value;
+
+	if(m_type == NULL)
+	{
+		m_type = DistributedType::invalid;
+	}
 }
 
 // set_name sets the name of this parameter.  Returns false if a parameter with
@@ -35,6 +40,11 @@ bool Parameter::set_name(const std::string& name)
 // set_type sets the distributed type of the parameter and clear's the default value.
 bool Parameter::set_type(DistributedType* type)
 {
+	if(type == (DistributedType*)NULL)
+	{
+		return false;
+	}
+
 	// Parameters can't have method types for now
 	if(type->get_type() == T_METHOD)
 	{

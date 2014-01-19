@@ -15,6 +15,11 @@ Field::Field(DistributedType* type, const std::string &name) :
 	bool implicit_value;
 	m_default_value = create_default_value(type, implicit_value);
 	m_has_default_value = !implicit_value;
+
+	if(m_type == NULL)
+	{
+		m_type = DistributedType::invalid;
+	}
 }
 
 // destructor

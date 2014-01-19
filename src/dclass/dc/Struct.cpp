@@ -52,6 +52,12 @@ const Class* Struct::as_class() const
 // add_field adds a new Field to the struct.
 bool Struct::add_field(Field* field)
 {
+	// Field must not be null
+	if(field == (Field*)NULL)
+	{
+		return false;
+	}
+
 	// Structs can't share a field
 	if(field->get_struct() != NULL && field->get_struct() != this)
 	{
@@ -63,7 +69,6 @@ bool Struct::add_field(Field* field)
 	{
 		return false;
 	}
-
 	// Structs can't have methods
 	if(field->get_type()->as_method())
 	{

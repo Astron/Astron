@@ -62,6 +62,12 @@ void Class::add_child(Class* child)
 //     Returns true if the field is successfully added, or false if the field cannot be added.
 bool Class::add_field(Field *field)
 {
+	// Field can't be null
+	if(field == (Field*)NULL)
+	{
+		return false;
+	}
+
 	// Classes can't share fields.
 	if(field->get_struct() != NULL && field->get_struct() != this)
 	{

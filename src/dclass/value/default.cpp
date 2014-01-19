@@ -24,6 +24,10 @@ string create_default_value(const DistributedType* dtype)
 //     or false otherwise (ie. at least one value was user-defined via set_default_value).
 string create_default_value(const DistributedType* dtype, bool& is_implicit)
 {
+	if(dtype == NULL) {
+		return "";
+	}
+
 	// Unless we found a non-implicit value, we are an implicit value
 	is_implicit = true;
 	switch(dtype->get_type())

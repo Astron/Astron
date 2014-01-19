@@ -598,7 +598,7 @@ struct_fields
 	| struct_fields ';'
 	| struct_fields struct_field ';'
 	{
-		if($2 == (Field*)NULL)
+		if($2 == (Field*)NULL || $2->get_type() == (DistributedType*)NULL)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;
