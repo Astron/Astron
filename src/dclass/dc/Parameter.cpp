@@ -73,7 +73,6 @@ void Parameter::set_method(Method* method)
 // generate_hash accumulates the properties of this type into the hash.
 void Parameter::generate_hash(HashGenerator& hashgen) const
 {
-	hashgen.add_string(m_name);
 	m_type->generate_hash(hashgen);
 }
 
