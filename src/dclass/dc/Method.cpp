@@ -43,13 +43,15 @@ bool Method::add_parameter(Parameter *param)
 		return false;
 	}
 
-	// Try to add the parameter
-	bool inserted = m_parameters_by_name.insert(
-		unordered_map<string, Parameter*>::value_type(param->get_name(), param)).second;
-	if(!inserted)
-	{
-		// But the parameter had a name conflict
-		return false;
+	if(!param->get_name().empty()) {
+		// Try to add the parameter
+		bool inserted = m_parameters_by_name.insert(
+			unordered_map<string, Parameter*>::value_type(param->get_name(), param)).second;
+		if(!inserted)
+		{
+			// But the parameter had a name conflict
+			return false;
+		}
 	}
 
 	// Add the parameter to the main list

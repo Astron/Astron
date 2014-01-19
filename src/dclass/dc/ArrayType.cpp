@@ -17,6 +17,11 @@ namespace dclass   // open namespace
 ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
 	m_element_type(element_type), m_array_range(size)
 {
+	if(m_element_type == (DistributedType*)NULL)
+	{
+		m_element_type = DistributedType::invalid;
+	}
+
 	// TODO: Handle non-uinteger NumericRanges
 	if(!m_array_range.is_empty() && m_array_range.min == m_array_range.max)
 	{
