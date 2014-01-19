@@ -74,7 +74,6 @@ void Parameter::set_method(Method* method)
 void Parameter::generate_hash(HashGenerator& hashgen) const
 {
 	hashgen.add_string(m_name);
-	hashgen.add_string(m_default_value);
 	m_type->generate_hash(hashgen);
 }
 
