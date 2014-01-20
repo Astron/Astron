@@ -15,10 +15,11 @@ struct uint128_t {
 	}
 
 	// Promotion assignment operator
-	inline uint128_t operator=(uint64_t rhs)
+	inline uint128_t& operator=(uint64_t rhs)
 	{
 		high = 0;
 		low = rhs;
+		return *this;
 	}
 
 	// Implicit boolean conversion
@@ -89,16 +90,19 @@ struct uint128_t {
 	{
 		this->low &= rhs.low;
 		this->high &= rhs.high;
+		return *this;
 	}
 	inline uint128_t& operator|=(const uint128_t& rhs)
 	{
 		this->low |= rhs.low;
 		this->high |= rhs.high;
+		return *this;
 	}
 	inline uint128_t& operator^=(const uint128_t& rhs)
 	{
 		this->low ^= rhs.low;
 		this->high ^= rhs.high;
+		return *this;
 	}
 	inline uint128_t& operator<<=(unsigned int shift)
 	{
@@ -106,6 +110,7 @@ struct uint128_t {
 		this->low <<= shift;
 		this->high <<= shift;
 		this->high |= high_low_bits;
+		return *this;
 	}
 	inline uint128_t& operator>>=(unsigned int shift)
 	{
@@ -113,6 +118,7 @@ struct uint128_t {
 		this->low >>= shift;
 		this->high >>= shift;
 		this->low |= low_high_bits;
+		return *this;
 	}
 };
 
@@ -200,8 +206,8 @@ namespace std
 	// C++ Stream operators
 	inline ostream& operator<<(ostream& lhs, const uint128_t& rhs)
 	{
-		char buffer[33];
-		sprintf(buffer, "%016lx%016lx", rhs.high, rhs.low);
+		char buffer[35];
+		sprintf(buffer, "0x%016lx%016lx", rhs.high, rhs.low);
 		lhs << buffer;
 		return lhs;
 	}
