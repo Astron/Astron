@@ -270,7 +270,7 @@ class Datagram(object):
     def add_channel(self, channel):
         if 'USE_128BIT_CHANNELS' in os.environ:
             max_int64 = 0xFFFFFFFFFFFFFFFF
-            self.add_raw(struct.pack('<QQ', (channel.int >> 64) & max_int64, channel.int & max_int64))
+            self.add_raw(struct.pack('<QQ', (channel >> 64) & max_int64, channel & max_int64))
         else:
             self.add_uint64(channel)
 
@@ -389,7 +389,11 @@ class DatagramIterator(object):
         if self._offset > len(self._data):
             raise EOFError('End of Datagram')
 
-        return struct.unpack(f, self._data[self._offset-offset:self._offset])[0]
+        unpacked = struct.unpack(f, self._data[self._offset-offset:self._offset])
+        if len(unpacked) is 1:
+            return unpacked[0]
+        else:
+            return unpacked
 
     def read_channel(self):
         if 'USE_128BIT_CHANNELS' in os.environ:
