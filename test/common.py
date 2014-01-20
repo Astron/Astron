@@ -31,7 +31,12 @@ class Daemon(object):
         os.write(cfg, self.config)
         os.close(cfg)
 
-        self.daemon = subprocess.Popen([self.DAEMON_PATH, self.config_file])
+        args = [self.DAEMON_PATH]
+        if 'USE_LOGLEVEL' in os.environ:
+            args += ["--loglevel", os.environ['USE_LOGLEVEL']]
+        args += [self.config_file]
+
+        self.daemon = subprocess.Popen(args)
 
         time.sleep(1.0) # Allow some time for daemon to initialize...
 
