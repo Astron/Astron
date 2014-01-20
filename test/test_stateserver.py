@@ -104,7 +104,7 @@ class TestStateServer(unittest.TestCase):
                 dgi = DatagramIterator(dg)
                 msgtype = dgi.read_uint16()
                 # The object should tell the parent its arriving...
-                if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
+                if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)[0]:
                     received = True
                     self.assertEquals(dgi.read_uint32(), 101000000) # Id
                     self.assertEquals(dgi.read_uint32(), 5000) # New parent
@@ -112,7 +112,7 @@ class TestStateServer(unittest.TestCase):
                     self.assertEquals(dgi.read_uint32(), INVALID_DO_ID) # Old parent
                     self.assertEquals(dgi.read_uint32(), INVALID_ZONE) # Old zone
                 # .. and ask it for its AI, which we're not testing here and can ignore
-                elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI):
+                elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI)[0]:
                     continue
                 else:
                     self.fail("Received header did not match expected for msgtype: " + str(msgtype))
@@ -315,10 +315,10 @@ class TestStateServer(unittest.TestCase):
             self.assertTrue(dg is not None, "Parent did not receive ChangingLocation and/or GetAI")
             dgi = DatagramIterator(dg)
             # ... the second object should ask its parent for the AI channel...
-            if dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI):
+            if dgi.matches_header([doid1], doid2, STATESERVER_OBJECT_GET_AI)[0]:
                 context = dgi.read_uint32()
             # ... the second object notifies the parent it has changed location, which we ignore...
-            elif dgi.matches_header([doid1], 5, STATESERVER_OBJECT_CHANGING_LOCATION):
+            elif dgi.matches_header([doid1], 5, STATESERVER_OBJECT_CHANGING_LOCATION)[0]:
                 continue
             else:
                 self.fail("Received unexpected or non-matching header.")
@@ -1160,7 +1160,7 @@ class TestStateServer(unittest.TestCase):
         dg = conn.recv_maybe()
         self.assertTrue(dg is not None, "Did not receive a GetFieldsResp")
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(*dgi.matches_header([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP))
         self.assertEquals(dgi.read_uint32(), 0x600D533D) # Context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), 2) # Field count
@@ -1433,7 +1433,7 @@ class TestStateServer(unittest.TestCase):
         dg = owner1.recv_maybe()
         self.assertTrue(dg is not None, "Did not receive a datagram when expecting EnterOwner")
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([owner1chan], doid2,
+        self.assertTrue(*dgi.matches_header([owner1chan], doid2,
                 STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER))
         self.assertEquals(dgi.read_uint32(), doid2) # Id
         self.assertEquals(dgi.read_uint64(), 0) # Location (parent<<32|zone)
@@ -1555,7 +1555,7 @@ class TestStateServer(unittest.TestCase):
         dg = conn.recv_maybe()
         self.assertTrue(dg is not None, "Did not receive datagram when expecting GetAllResp")
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Context
         self.assertEquals(dgi.read_uint32(), 73317331) # Id
         self.assertEquals(dgi.read_uint32(), 88) # Parent
@@ -1598,7 +1598,7 @@ class TestStateServer(unittest.TestCase):
         dg = conn.recv_maybe()
         self.assertTrue(dg is not None,  "Did not receive datagram when expecting GetAllResp")
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP))
         self.assertEquals(dgi.read_uint32(), 0xBAB55EED) # Context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), 5) # Field count: 5

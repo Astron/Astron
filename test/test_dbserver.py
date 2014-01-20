@@ -44,7 +44,7 @@ class DatabaseBaseTests(object):
         # The Database should return the context and do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
+        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
         doids.append(dgi.read_uint32())
         self.assertGreaterEqual(doids[0], 1000000) # do_id in valid range
@@ -78,7 +78,7 @@ class DatabaseBaseTests(object):
         # The Database should return a new do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
+        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
         doids.append(dgi.read_uint32())
         self.assertGreaterEqual(doids[1], 1000000) # do_id in valid range
@@ -95,7 +95,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv_maybe()
         self.assertTrue(dg is not None, "Did not receive GetAllResp from server.")
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([20], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 5) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -238,7 +238,7 @@ class DatabaseBaseTests(object):
         # The Database should return a new do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
+        self.assertTrue(*dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
         doid = dgi.read_uint32()
 
@@ -252,7 +252,7 @@ class DatabaseBaseTests(object):
             # Get values back from server
             dg = self.conn.recv()
             dgi = DatagramIterator(dg)
-            self.assertTrue(dgi.matches_header([50], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+            self.assertTrue(*dgi.matches_header([50], 777, DBSERVER_OBJECT_GET_ALL_RESP))
             self.assertEquals(dgi.read_uint32(), context) # Check context
             self.assertEquals(dgi.read_uint8(), SUCCESS)
             self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -394,7 +394,7 @@ class DatabaseBaseTests(object):
         # The values should be updated
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 3) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -430,7 +430,7 @@ class DatabaseBaseTests(object):
         # The values should be updated
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -652,7 +652,7 @@ class DatabaseBaseTests(object):
         # Recieve updated value
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 10) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -695,7 +695,7 @@ class DatabaseBaseTests(object):
         # Recieve updated value
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
+        self.assertTrue(*dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 10) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
@@ -760,7 +760,7 @@ class DatabaseBaseTests(object):
         # Get values in reply
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP))
+        self.assertTrue(*dgi.matches_header([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP))
         self.assertEquals(dgi.read_uint32(), 3) # Check context
         self.assertEquals(dgi.read_uint8(), SUCCESS)
         self.assertEquals(dgi.read_uint16(), 2) # Check field count
