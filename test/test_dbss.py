@@ -25,11 +25,11 @@ CONTEXT_OFFSET = 1 + 8 + 8 + 2
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:
-        datagram.add_uint32(doid)
+        datagram.add_doid(doid)
     if parent is not None:
-        datagram.add_uint32(parent)
+        datagram.add_doid(parent)
     if zone is not None:
-        datagram.add_uint32(zone)
+        datagram.add_zone(zone)
     if dclass is not None:
         datagram.add_uint16(dclass)
 
@@ -116,7 +116,7 @@ class TestStateServer(unittest.TestCase):
 
         # Remove object from ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         self.shard.send(dg)
         self.shard.flush()
 
@@ -160,7 +160,7 @@ class TestStateServer(unittest.TestCase):
         # Query all from an object which hasn't been loaded into ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(1) # Context
-        dg.add_uint32(doid1) # Id
+        dg.add_doid(doid1) # Id
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
@@ -199,7 +199,7 @@ class TestStateServer(unittest.TestCase):
         # Query all from an object which hasn't been loaded into ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid1) # Id
+        dg.add_doid(doid1) # Id
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
@@ -226,7 +226,7 @@ class TestStateServer(unittest.TestCase):
         # Get all from an object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid1) # Id
+        dg.add_doid(doid1) # Id
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
@@ -294,7 +294,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for DelDisk ###
         # Destroy our object...
         dg = Datagram.create([doid1], 5, DBSS_OBJECT_DELETE_DISK)
-        dg.add_uint32(doid1) # Object Id
+        dg.add_doid(doid1) # Object Id
         self.shard.send(dg)
 
         # Object doesn't have a location and so shouldn't announce its disappearance...
@@ -302,7 +302,7 @@ class TestStateServer(unittest.TestCase):
 
         # Database should expect a delete message
         dg = Datagram.create([200], doid1, DBSERVER_OBJECT_DELETE)
-        dg.add_uint32(doid1) # Object Id
+        dg.add_doid(doid1) # Object Id
         self.assertTrue(*self.database.expect(dg))
 
 
@@ -334,12 +334,12 @@ class TestStateServer(unittest.TestCase):
 
         # Destroy our object in ram...
         dg = Datagram.create([doid2], 13, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid2) # Object Id
+        dg.add_doid(doid2) # Object Id
         self.shard.send(dg)
 
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<32|200], 13, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid2)
+        dg.add_doid(doid2)
         self.assertTrue(*self.shard.expect(dg))
 
 
@@ -347,7 +347,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for (Activate->DelRam)->DelDisk ### (continues from last)
         # Destroy our object on disk...
         dg = Datagram.create([doid2], 5, DBSS_OBJECT_DELETE_DISK)
-        dg.add_uint32(doid2)
+        dg.add_doid(doid2)
         self.shard.send(dg)
 
         # Object no longer has a location and so shouldn't announce its disappearance...
@@ -355,7 +355,7 @@ class TestStateServer(unittest.TestCase):
 
         # Database should expect a delete message
         dg = Datagram.create([200], doid2, DBSERVER_OBJECT_DELETE)
-        dg.add_uint32(doid2) # Object Id
+        dg.add_doid(doid2) # Object Id
         self.assertTrue(*self.database.expect(dg))
 
 
@@ -391,17 +391,17 @@ class TestStateServer(unittest.TestCase):
 
         # Destroy our object on disk...
         dg = Datagram.create([doid3], 13, DBSS_OBJECT_DELETE_DISK)
-        dg.add_uint32(doid3)
+        dg.add_doid(doid3)
         self.shard.send(dg)
 
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<32|200], 13, DBSS_OBJECT_DELETE_DISK)
-        dg.add_uint32(doid3)
+        dg.add_doid(doid3)
         self.assertTrue(*self.shard.expect(dg))
 
         # Database should expect a delete message
         dg = Datagram.create([200], doid3, DBSERVER_OBJECT_DELETE)
-        dg.add_uint32(doid3) # Object Id
+        dg.add_doid(doid3) # Object Id
         self.assertTrue(*self.database.expect(dg))
 
         # Check that Ram/Requried fields still exist in ram still
@@ -456,12 +456,12 @@ class TestStateServer(unittest.TestCase):
         ### Test for (Activate->DelDisk)->DelRam ### (continues from last)
         # Destroy our object on ram...
         dg = Datagram.create([doid3], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid3)
+        dg.add_doid(doid3)
         self.shard.send(dg)
 
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<32|200], doid3, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid3)
+        dg.add_doid(doid3)
         self.assertTrue(*self.shard.expect(dg))
 
         # Check that object no longer exists
@@ -500,7 +500,7 @@ class TestStateServer(unittest.TestCase):
             # Try a query all on the id
             dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_ALL)
             dg.add_uint32(self.probe_context) # Context
-            dg.add_uint32(doid)
+            dg.add_doid(doid)
             self.shard.send(dg)
 
             # Check if received database query
@@ -551,14 +551,14 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetField with db field on unloaded object###
         # Update field on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(4096)
         self.shard.send(dg)
 
         # Expect database field to be sent to database
         dg = Datagram.create([200], 9030, DBSERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(4096)
         self.assertTrue(*self.database.expect(dg))
@@ -568,7 +568,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetFields with all db fields on unloaded object ###
         # Update field multiple on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(2) # field count
         dg.add_uint16(setFoo)
         dg.add_uint16(4096)
@@ -598,7 +598,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetField with non-db field on unloaded object ###
         # Update field on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(setRequired1)
         dg.add_uint16(512)
         self.shard.send(dg)
@@ -609,7 +609,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetFields with all non-db fields on unloaded object ###
         # Update fields on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(setRequired1)
         dg.add_uint32(313131)
         dg.add_uint16(setBR1)
@@ -624,9 +624,9 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetField with db field on loaded object ###
         # Activate object with defaults
         dg = Datagram.create([9031], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
-        dg.add_uint32(9031) # Id
-        dg.add_uint32(70000) # Parent
-        dg.add_uint32(300) # Zone
+        dg.add_doid(9031) # Id
+        dg.add_doid(70000) # Parent
+        dg.add_zone(300) # Zone
         self.shard.send(dg)
 
         # Expect values to be retrieved from database
@@ -654,14 +654,14 @@ class TestStateServer(unittest.TestCase):
 
         # Send UpdateField with db field
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9031) # id
+        dg.add_doid(9031) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(6604)
         self.shard.send(dg)
 
         # Expect database field to be sent to database
         dg = Datagram.create([200], 9031, DBSERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9031) # id
+        dg.add_doid(9031) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(6604)
         self.assertTrue(*self.database.expect(dg))
@@ -672,7 +672,7 @@ class TestStateServer(unittest.TestCase):
         ### (continues from previous)
         # Update field multiple on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9031) # id
+        dg.add_doid(9031) # id
         dg.add_uint16(2) # field count
         dg.add_uint16(setFoo)
         dg.add_uint16(7722)
@@ -704,7 +704,7 @@ class TestStateServer(unittest.TestCase):
         ### (continues from previous)
         # Update field on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(9031) # id
+        dg.add_doid(9031) # id
         dg.add_uint16(setRequired1)
         dg.add_uint32(512)
         self.shard.send(dg)
@@ -718,7 +718,7 @@ class TestStateServer(unittest.TestCase):
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(1) # Context
-        dg.add_uint32(9031) # Id
+        dg.add_doid(9031) # Id
         self.shard.send(dg)
 
         # Expect none at database
@@ -740,7 +740,7 @@ class TestStateServer(unittest.TestCase):
         ### (continues from previous)
         # Update fields on stateserver object
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9031) # id
+        dg.add_doid(9031) # id
         dg.add_uint16(2) # Field count: 2
         dg.add_uint16(setRequired1)
         dg.add_uint32(393939)
@@ -757,7 +757,7 @@ class TestStateServer(unittest.TestCase):
         # Get the values back to check if they're updated
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
-        dg.add_uint32(9031)
+        dg.add_doid(9031)
         self.shard.send(dg)
 
         # DBSS should expect none
@@ -782,7 +782,7 @@ class TestStateServer(unittest.TestCase):
 
         # Remove object from ram after tests
         dg = Datagram.create([9031], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(9031) # ID
+        dg.add_doid(9031) # ID
         self.shard.send(dg)
 
         # Ignore propagated delete_ram messages
@@ -801,7 +801,7 @@ class TestStateServer(unittest.TestCase):
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(1) # Context
-        dg.add_uint32(doid1) # ID
+        dg.add_doid(doid1) # ID
         dg.add_uint16(setDb3)
         self.shard.send(dg)
 
@@ -836,7 +836,7 @@ class TestStateServer(unittest.TestCase):
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid1) # ID
+        dg.add_doid(doid1) # ID
         dg.add_uint16(setFoo)
         self.shard.send(dg)
 
@@ -855,7 +855,7 @@ class TestStateServer(unittest.TestCase):
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid1) # ID
+        dg.add_doid(doid1) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -900,7 +900,7 @@ class TestStateServer(unittest.TestCase):
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid1) # ID
+        dg.add_doid(doid1) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setFoo)
         dg.add_uint16(setRDB3)
