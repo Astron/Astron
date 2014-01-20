@@ -224,6 +224,25 @@ else:
     CONSTANTS['DGSIZE_MAX'] = (1 << 16) - 1
     CONSTANTS['DGSIZE_SIZE_BYTES'] = 2
 
+if 'USE_128BIT_CHANNELS' in os.environ:
+    CONSTANTS['CHANNEL_MAX'] = (1 << 128) - 1
+    CONSTANTS['CHANNEL_SIZE_BYTES'] = 16
+    DATATYPES['doid'] = '<Q'
+    CONSTANTS['DOID_MAX'] = (1 << 64) - 1
+    CONSTANTS['DOID_SIZE_BYTES'] = 8
+    DATATYPES['zone'] = '<Q'
+    CONSTANTS['ZONE_MAX'] = (1 << 64) - 1
+    CONSTANTS['ZONE_SIZE_BYTES'] = 8
+else:
+    CONSTANTS['CHANNEL_MAX'] = (1 << 64) - 1
+    CONSTANTS['CHANNEL_SIZE_BYTES'] = 8
+    DATATYPES['doid'] = '<I'
+    CONSTANTS['DOID_MAX'] = (1 << 32) - 1
+    CONSTANTS['DOID_SIZE_BYTES'] = 4
+    DATATYPES['zone'] = '<I'
+    CONSTANTS['ZONE_MAX'] = (1 << 32) - 1
+    CONSTANTS['ZONE_SIZE_BYTES'] = 4
+
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
 
@@ -247,15 +266,25 @@ class Datagram(object):
         self.add_size(len(string))
         self.add_raw(string)
 
+    def add_channel(self, channel):
+        if 'USE_128BIT_CHANNELS' in os.environ:
+            max_int64 = 0xFFFFFFFFFFFFFFFF
+            self.add_raw(struct.pack('<QQ', (channel.int >> 64) & max_int64, channel.int & max_int64))
+        else:
+            self.add_uint64(channel)
+
     def get_data(self):
         return self._data
 
     def get_payload(self):
-        return self._data[8*ord(self._data[0])+1:]
+        return self._data[CHANNEL_SIZE_BYTES*ord(self._data[0])+1:]
 
     def get_channels(self):
-        return set(struct.unpack('<x' + 'Q'*ord(self._data[0]),
-                                 self._data[:8*ord(self._data[0])+1]))
+        channels = []
+        iterator = DatagramIterator(self, 1)
+        for x in xrange(ord(self._data[0])):
+            channels.append(iterator.read_channel())
+        return set(channels)
 
     def is_subset_of(self, other):
         return self.get_payload() == other.get_payload() and \
@@ -269,8 +298,8 @@ class Datagram(object):
     def create(cls, recipients, sender, msgtype):
         dg = cls()
         dg.add_uint8(len(recipients))
-        for recipient in recipients: dg.add_uint64(recipient)
-        dg.add_uint64(sender)
+        for recipient in recipients: dg.add_channel(recipient)
+        dg.add_channel(sender)
         dg.add_uint16(msgtype)
         return dg
 
@@ -278,37 +307,37 @@ class Datagram(object):
     def create_control(cls):
         dg = cls()
         dg.add_uint8(1)
-        dg.add_uint64(CONTROL_CHANNEL)
+        dg.add_channel(CONTROL_CHANNEL)
         return dg
 
     @classmethod
     def create_add_channel(cls, channel):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_ADD_CHANNEL)
-        dg.add_uint64(channel)
+        dg.add_channel(channel)
         return dg
 
     @classmethod
     def create_remove_channel(cls, channel):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_REMOVE_CHANNEL)
-        dg.add_uint64(channel)
+        dg.add_channel(channel)
         return dg
 
     @classmethod
     def create_add_range(cls, upper, lower):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_ADD_RANGE)
-        dg.add_uint64(upper)
-        dg.add_uint64(lower)
+        dg.add_channel(upper)
+        dg.add_channel(lower)
         return dg
 
     @classmethod
     def create_remove_range(cls, upper, lower):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_REMOVE_RANGE)
-        dg.add_uint64(upper)
-        dg.add_uint64(lower)
+        dg.add_channel(upper)
+        dg.add_channel(lower)
         return dg
 
     @classmethod
@@ -361,17 +390,24 @@ class DatagramIterator(object):
 
         return struct.unpack(f, self._data[self._offset-offset:self._offset])[0]
 
+    def read_channel(self):
+        if 'USE_128BIT_CHANNELS' in os.environ:
+            a, b = self.read_format('<QQ')
+            return (a << 64) | b
+        else:
+            return self.read_uint64()
+
     def matches_header(self, recipients, sender, msgtype, remaining=-1):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
         if len(channels) != len(recipients):
             return False
 
-        self.seek(8*ord(self._data[0])+1)
-        if sender != self.read_uint64():
+        self.seek(CHANNEL_SIZE_BYTES*ord(self._data[0])+1)
+        if sender != self.read_channel():
             return False
 
-        if msgtype != self.read_uint16():
+        if msgtype != self.read_channel():
             return False
 
         if remaining != -1 and remaining != len(self._data) - self._offset:
@@ -417,19 +453,14 @@ class MDConnection(object):
 
     def _read(self):
         try:
-            length = 2
-            if 'USE_32BIT_DATAGRAMS' in os.environ:
-                length = 4
+            length = DGSIZE_SIZE_BYTES
             result = ''
             while len(result) < length:
                 data = self.s.recv(length - len(result))
                 if data == '':
                     raise EOFError('Remote socket closed connection')
                 result += data
-            if 'USE_32BIT_DATAGRAMS' in os.environ:
-                length = struct.unpack('<I', result)[0]
-            else:
-                length = struct.unpack('<H', result)[0]
+            length = struct.unpack(DATATYPES['size'], result)[0]
         except socket.error:
             return None
 
