@@ -23,11 +23,11 @@ def connect(channel):
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:
-        datagram.add_uint32(doid)
+        datagram.add_doid(doid)
     if parent is not None:
-        datagram.add_uint32(parent)
+        datagram.add_doid(parent)
     if zone is not None:
-        datagram.add_uint32(zone)
+        datagram.add_zone(zone)
     if dclass is not None:
         datagram.add_uint16(dclass)
 
@@ -39,7 +39,7 @@ def createEmptyDTO1(conn, sender, doid, parent=0, zone=0, required1=0):
 
 def deleteObject(conn, sender, doid):
     dg = Datagram.create([doid], sender, STATESERVER_OBJECT_DELETE_RAM)
-    dg.add_uint32(doid)
+    dg.add_doid(doid)
     conn.send(dg)
 
 CONN_POOL_SIZE = 8
@@ -106,10 +106,10 @@ class TestStateServer(unittest.TestCase):
                 # The object should tell the parent its arriving...
                 if dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)[0]:
                     received = True
-                    self.assertEquals(dgi.read_uint32(), 101000000) # Id
-                    self.assertEquals(dgi.read_uint32(), 5000) # New parent
+                    self.assertEquals(dgi.read_doid(), 101000000) # Id
+                    self.assertEquals(dgi.read_doid(), 5000) # New parent
                     self.assertEquals(dgi.read_uint32(), 1500) # New zone
-                    self.assertEquals(dgi.read_uint32(), INVALID_DO_ID) # Old parent
+                    self.assertEquals(dgi.read_doid(), INVALID_DO_ID) # Old parent
                     self.assertEquals(dgi.read_uint32(), INVALID_ZONE) # Old zone
                 # .. and ask it for its AI, which we're not testing here and can ignore
                 elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI)[0]:
@@ -136,14 +136,14 @@ class TestStateServer(unittest.TestCase):
 
             # Object should tell its parent it is going away...
             dg = Datagram.create([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-            dg.add_uint32(101000000)
+            dg.add_doid(101000000)
             appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
             appendMeta(dg, parent=5000, zone=1500) # Old location
             self.assertTrue(*parent.expect(dg))
 
             # Object should announce its disappearance...
             dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_DELETE_RAM)
-            dg.add_uint32(101000000)
+            dg.add_doid(101000000)
             self.assertTrue(*ai.expect(dg))
 
         # We're done here...
@@ -167,7 +167,7 @@ class TestStateServer(unittest.TestCase):
 
         # Hit it with an update on setB2.
         dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(101000005)
+        dg.add_doid(101000005)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
         ai.send(dg)
@@ -176,7 +176,7 @@ class TestStateServer(unittest.TestCase):
         # Note: Sender should be original sender (in this case 5). This is so AIs
         #       can see who the update ultimately comes from for e.g. an airecv/clsend.
         dg = Datagram.create([5000<<32|1500], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(101000005)
+        dg.add_doid(101000005)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
         self.assertTrue(*ai.expect(dg))
@@ -200,14 +200,14 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         dg = Datagram.create([100010], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(1300)
+        dg.add_channel(1300)
         conn.send(dg)
 
         # Ignore EnterAI message, not testing that here
         conn.flush()
 
         dg = Datagram.create([100010], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(100010)
+        dg.add_doid(100010)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
         conn.send(dg)
@@ -216,7 +216,7 @@ class TestStateServer(unittest.TestCase):
         # Note: The ai should be a separate recipient of the same message sent
         #       to the objects location channel.
         dg = Datagram.create([1300, (5000<<32|1500)], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(100010)
+        dg.add_doid(100010)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
         self.assertTrue(*conn.expect(dg))
@@ -228,7 +228,7 @@ class TestStateServer(unittest.TestCase):
 
         # See if the AI receives the delete.
         dg = Datagram.create([1300, (5000<<32|1500)], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(100010)
+        dg.add_doid(100010)
         self.assertTrue(*conn.expect(dg))
 
         ### Cleanup ###
@@ -267,7 +267,7 @@ class TestStateServer(unittest.TestCase):
 
         # First object belongs to AI1...
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(ai1chan) # AI channel
+        dg.add_channel(ai1chan) # AI channel
         conn.send(dg)
         obj1.flush()
 
@@ -285,15 +285,15 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetAI on an object with an existing AI ### (continues from previous)
         # Set AI to new AI channel
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(ai2chan) # AI channel
+        dg.add_channel(ai2chan) # AI channel
         conn.send(dg)
         obj1.flush()
 
         # Obj1 should tell its old AI channel that it is changing AI...
         dg = Datagram.create([ai1chan], 5, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(doid1) # Id
-        dg.add_uint64(ai2chan) # New AI
-        dg.add_uint64(ai1chan) # Old AI
+        dg.add_doid(doid1) # Id
+        dg.add_channel(ai2chan) # New AI
+        dg.add_channel(ai1chan) # Old AI
         self.assertTrue(*ai1.expect(dg))
 
         # ... and its new AI channel that it is entering.
@@ -326,8 +326,8 @@ class TestStateServer(unittest.TestCase):
         # ... and the parent should reply with its AI server.
         dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_GET_AI_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(doid1)
-        dg.add_uint64(ai2chan)
+        dg.add_doid(doid1)
+        dg.add_channel(ai2chan)
         self.assertTrue(*obj2.expect(dg)) # Receiving GET_AI_RESP from parent
 
         # Check to make sure we're receiving a wake children GetLocation message, and not something else
@@ -398,7 +398,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetAI on an object with children ### (continues from previous)
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(ai1chan) # AI channel
+        dg.add_channel(ai1chan) # AI channel
         conn.send(dg)
         obj1.flush()
 
@@ -406,9 +406,9 @@ class TestStateServer(unittest.TestCase):
         ai2expected = []
         # Obj1 should tell its old AI channel and its children that it is changing AI...
         dg = Datagram.create([ai2chan, PARENT_PREFIX|doid1], 5, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(doid1) # Id
-        dg.add_uint64(ai1chan) # New AI
-        dg.add_uint64(ai2chan) # Old AI
+        dg.add_doid(doid1) # Id
+        dg.add_channel(ai1chan) # New AI
+        dg.add_channel(ai2chan) # Old AI
         self.assertTrue(*children1.expect(dg))
         ai2expected.append(dg)
         # ... and its new AI channel that it is entering.
@@ -419,9 +419,9 @@ class TestStateServer(unittest.TestCase):
 
         # Obj2 will also tell the old AI channel that it is changing AI...
         dg = Datagram.create([ai2chan], 5, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(doid2) # Id
-        dg.add_uint64(ai1chan) # New AI
-        dg.add_uint64(ai2chan) # Old AI
+        dg.add_doid(doid2) # Id
+        dg.add_channel(ai1chan) # New AI
+        dg.add_channel(ai2chan) # Old AI
         self.assertTrue(children2.expect_none()) # It has no children
         ai2expected.append(dg)
         # ... and the new AI channel that it is entering.
@@ -440,9 +440,9 @@ class TestStateServer(unittest.TestCase):
 
         # A notification with an incorrect parent should do nothing:
         dg = Datagram.create([doid2], 0xABABABAB, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(0xABABABAB)
-        dg.add_uint64(0x17FEEF71) # New AI
-        dg.add_uint64(ai1chan) # Old AI
+        dg.add_doid(0xABABABAB)
+        dg.add_channel(0x17FEEF71) # New AI
+        dg.add_channel(ai1chan) # Old AI
         conn.send(dg)
         self.assertTrue(*obj2.expect(dg)) # Ignore received dg
         self.assertTrue(obj2.expect_none())
@@ -452,9 +452,9 @@ class TestStateServer(unittest.TestCase):
 
         # A notification with the same AI channel should also do nothing:
         dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_CHANGING_AI)
-        dg.add_uint32(doid1)
-        dg.add_uint64(ai1chan)
-        dg.add_uint64(ai1chan)
+        dg.add_doid(doid1)
+        dg.add_channel(ai1chan)
+        dg.add_channel(ai1chan)
         obj1.send(dg)
         self.assertTrue(*obj2.expect(dg)) # Ignore received dg
         self.assertTrue(obj2.expect_none())
@@ -482,7 +482,7 @@ class TestStateServer(unittest.TestCase):
 
         # Set the AI of the object
         dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(ai1chan)
+        dg.add_channel(ai1chan)
         conn.send(dg)
         obj2.flush()
 
@@ -525,7 +525,7 @@ class TestStateServer(unittest.TestCase):
 
         # Hit it with a RAM update.
         dg = Datagram.create([102000000], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(102000000)
+        dg.add_doid(102000000)
         dg.add_uint16(setBR1)
         dg.add_string("Boots of Coolness (+20%)")
         ai.send(dg)
@@ -609,7 +609,7 @@ class TestStateServer(unittest.TestCase):
 
         # See if it announces its departure from 14000<<32|9800...
         dg = Datagram.create([doid0<<32|9800, doid0, doid2], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(doid1) # ID
+        dg.add_doid(doid1) # ID
         appendMeta(dg, parent=doid2, zone=9900) # New location
         appendMeta(dg, parent=doid0, zone=9800) # Old location
         self.assertTrue(*location0.expect(dg))
@@ -653,7 +653,7 @@ class TestStateServer(unittest.TestCase):
         # Give the first object an AI channel...
         conn.add_channel(225)
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(225)
+        dg.add_channel(225)
         conn.send(dg)
         obj1.flush()
 
@@ -668,7 +668,7 @@ class TestStateServer(unittest.TestCase):
 
         # Expect a ChangingLocation on the AI channel
         dg = Datagram.create([225, doid2, doid2<<32|9900], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New parent
         appendMeta(dg, parent=doid2, zone=9900) # Old parent
         self.assertTrue(*conn.expect(dg))
@@ -680,7 +680,7 @@ class TestStateServer(unittest.TestCase):
 
         # Remove AI
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(0)
+        dg.add_channel(0)
         conn.send(dg)
         conn.flush()
         obj1.flush()
@@ -692,7 +692,7 @@ class TestStateServer(unittest.TestCase):
         # Give the first object an owner...
         conn.add_channel(230)
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(230)
+        dg.add_channel(230)
         conn.send(dg)
         obj1.flush()
 
@@ -707,7 +707,7 @@ class TestStateServer(unittest.TestCase):
 
         # Expect a ChangingLocation on the Owner channel
         dg = Datagram.create([230, doid0], 5, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         appendMeta(dg, parent=doid0, zone=9800) # New parent
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # Old parent
         self.assertTrue(*conn.expect(dg))
@@ -719,7 +719,7 @@ class TestStateServer(unittest.TestCase):
 
         # Remove Owner
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(0)
+        dg.add_channel(0)
         conn.send(dg)
         conn.flush()
         obj1.flush()
@@ -728,7 +728,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetLocation with a ram-broadcast field ### (continues from previous)
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         dg.add_uint16(setBR1)
         dg.add_string("The Cutest Thing Ever!")
         conn.send(dg)
@@ -827,12 +827,12 @@ class TestStateServer(unittest.TestCase):
         # Cool, now let's test the broadcast messages:
         for field in [setRDB3, setRequired1]:
             dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_SET_FIELD)
-            dg.add_uint32(110000000)
+            dg.add_doid(110000000)
             dg.add_uint16(field)
             dg.add_uint32(0x31415927)
             conn.send(dg)
             dg = Datagram.create([67000<<32|2000], 5, STATESERVER_OBJECT_SET_FIELD)
-            dg.add_uint32(110000000)
+            dg.add_doid(110000000)
             dg.add_uint16(field)
             dg.add_uint32(0x31415927)
             self.assertTrue(*conn.expect(dg))
@@ -840,7 +840,7 @@ class TestStateServer(unittest.TestCase):
         # This message is NOT part of DTO1/3 and should fail.
         # Bonus points for logging an ERROR log.
         dg = Datagram.create([110000000], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(110000000)
+        dg.add_doid(110000000)
         dg.add_uint16(setB2)
         dg.add_uint32(0x11225533)
         conn.send(dg)
@@ -869,7 +869,7 @@ class TestStateServer(unittest.TestCase):
 
         # Send it an update on a bad field...
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(234000000)
+        dg.add_doid(234000000)
         dg.add_uint16(0x1337)
         dg.add_uint32(0)
         conn.send(dg)
@@ -881,7 +881,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for updating with a truncated field ### (continues from previous)
         # How about a truncated update on a valid field?
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(234000000)
+        dg.add_doid(234000000)
         dg.add_uint16(setRequired1)
         dg.add_uint16(0) # Whoops, 16-bit instead of 32-bit!
         conn.send(dg)
@@ -925,7 +925,7 @@ class TestStateServer(unittest.TestCase):
         # Additionally, no object should be received on a get all
         dg = Datagram.create([235000000], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0xF448) # Context
-        dg.add_uint32(235000000) # Id
+        dg.add_doid(235000000) # Id
         conn.send(dg)
 
         # Values should be unchanged
@@ -944,7 +944,7 @@ class TestStateServer(unittest.TestCase):
         # Additionally, no object should be received on a get all
         dg = Datagram.create([236000000], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0xF559) # Context
-        dg.add_uint32(236000000) # Id
+        dg.add_doid(236000000) # Id
         conn.send(dg)
 
         # Values should be unchanged
@@ -1041,7 +1041,7 @@ class TestStateServer(unittest.TestCase):
 
         # ... with an AI channel...
         dg = Datagram.create([201], 5, STATESERVER_OBJECT_SET_AI)
-        dg.add_uint64(31337)
+        dg.add_channel(31337)
         conn.send(dg)
 
         # Ignore any noise...
@@ -1049,7 +1049,7 @@ class TestStateServer(unittest.TestCase):
 
         # Now let's try hitting the SS with a reset for the wrong AI:
         dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
-        dg.add_uint64(41337)
+        dg.add_channel(41337)
         conn.send(dg)
 
         # Nothing should happen:
@@ -1057,12 +1057,12 @@ class TestStateServer(unittest.TestCase):
 
         # Now the correct AI:
         dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
-        dg.add_uint64(31337)
+        dg.add_channel(31337)
         conn.send(dg)
 
         # Then object should die:
         dg = Datagram.create([62222<<32|125], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(201)
+        dg.add_doid(201)
         self.assertTrue(*conn.expect(dg))
 
         ### Cleanup ###
@@ -1080,12 +1080,12 @@ class TestStateServer(unittest.TestCase):
 
         # Get all from the object
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_ALL)
-        dg.add_uint32(0x600DF00D)
+        dg.add_doid(0x600DF00D)
         conn.send(dg)
 
         # Expect all data in response
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_uint32(0x600DF00D)
+        dg.add_doid(0x600DF00D)
         appendMeta(dg, 15000, 4, 2, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         dg.add_uint16(0) # Optional fields: 0
@@ -1097,7 +1097,7 @@ class TestStateServer(unittest.TestCase):
         # Now get just a single field
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(0xBAB55EED) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(setRequired1)
         conn.send(dg)
 
@@ -1113,7 +1113,7 @@ class TestStateServer(unittest.TestCase):
         # Get a field not present on the object...
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(0xBAD5EED) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(setBR1)
         conn.send(dg)
 
@@ -1128,7 +1128,7 @@ class TestStateServer(unittest.TestCase):
         # Get a field that is invalid for the object...
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(0x5EE5BAD) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(0x1337) # Field id
         conn.send(dg)
 
@@ -1142,7 +1142,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for GetFields on fields with set values ### (continues from previous)
         # First lets set a second field
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(setBR1)
         dg.add_string("MY HAT IS AWESOME!!!")
         conn.send(dg)
@@ -1150,7 +1150,7 @@ class TestStateServer(unittest.TestCase):
         # Now let's try getting multiple fields
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0x600D533D)
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRequired1)
         dg.add_uint16(setBR1)
@@ -1183,7 +1183,7 @@ class TestStateServer(unittest.TestCase):
         # Send GetFields with mixed set and unset fields
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0x711E644E) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setBR1)
         dg.add_uint16(setBRA1)
@@ -1203,7 +1203,7 @@ class TestStateServer(unittest.TestCase):
         # Send GetFields with unset fields
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0x822F755F) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setBRA1)
         dg.add_uint16(setBRO1)
@@ -1221,7 +1221,7 @@ class TestStateServer(unittest.TestCase):
         # Send GetFields with unset fields
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0x5FFC422C) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint16(setDb3)
@@ -1238,7 +1238,7 @@ class TestStateServer(unittest.TestCase):
         # Send GetFields with unset fields
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0x4EEB311B) # Context
-        dg.add_uint32(15000) # ID
+        dg.add_doid(15000) # ID
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint16(setRequired1)
@@ -1273,7 +1273,7 @@ class TestStateServer(unittest.TestCase):
 
         # Send a multi-field update with two broadcast fields and one ram.
         dg = Datagram.create([55555], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(55555) # ID
+        dg.add_doid(55555) # ID
         dg.add_uint16(3) # 3 fields:
         dg.add_uint16(setDb3)
         dg.add_string('Time is candy')
@@ -1285,7 +1285,7 @@ class TestStateServer(unittest.TestCase):
 
         # Verify that the broadcasts go out, in order... (these must be in the correct order)
         dg = Datagram.create([12512<<32|66161], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(55555) # ID
+        dg.add_doid(55555) # ID
         dg.add_uint16(2) # 2 fields:
         dg.add_uint16(setRequired1)
         dg.add_uint32(0xD00D)
@@ -1298,7 +1298,7 @@ class TestStateServer(unittest.TestCase):
         # Get the ram fields to make sure they're set
         dg = Datagram.create([55555], 5985858, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0x5111) # Context
-        dg.add_uint32(55555) #ID
+        dg.add_doid(55555) #ID
         conn.send(dg)
 
         # See if those updates have properly gone through...
@@ -1328,7 +1328,7 @@ class TestStateServer(unittest.TestCase):
 
         # Set the object's owner
         dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(14253648)
+        dg.add_channel(14253648)
         conn.send(dg)
 
         # Ignore EnterOwner message, not testing that here
@@ -1336,14 +1336,14 @@ class TestStateServer(unittest.TestCase):
 
         # Set field on an ownrecv message...
         dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(77878788)
+        dg.add_doid(77878788)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
         conn.send(dg)
 
         # See if our owner channel gets it.
         dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(77878788)
+        dg.add_doid(77878788)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
         self.assertTrue(*conn.expect(dg))
@@ -1353,7 +1353,7 @@ class TestStateServer(unittest.TestCase):
 
         # And expect to be notified
         dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(77878788)
+        dg.add_doid(77878788)
         self.assertTrue(*conn.expect(dg))
 
         ### Cleanup ###
@@ -1378,7 +1378,7 @@ class TestStateServer(unittest.TestCase):
 
         # Set the object's owner...
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(owner1chan)
+        dg.add_channel(owner1chan)
         conn.send(dg)
 
         # ... and see if it enters the owner.
@@ -1392,14 +1392,14 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetOwner on an object with an existing owner ### (continues from previous)
         # Change owner to someone else...
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(owner2chan)
+        dg.add_channel(owner2chan)
         conn.send(dg)
 
         # ... expecting a changing owner ...
         dg = Datagram.create([owner1chan], 5, STATESERVER_OBJECT_CHANGING_OWNER)
-        dg.add_uint32(doid1)
-        dg.add_uint64(owner2chan) # New owner
-        dg.add_uint64(owner1chan) # Old owner
+        dg.add_doid(doid1)
+        dg.add_channel(owner2chan) # New owner
+        dg.add_channel(owner1chan) # Old owner
         self.assertTrue(*owner1.expect(dg))
         # ... and see if it enters the new owner.
         dg = Datagram.create([owner2chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
@@ -1426,7 +1426,7 @@ class TestStateServer(unittest.TestCase):
 
         # Set the object's owner...
         dg = Datagram.create([doid2], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_uint64(owner1chan)
+        dg.add_channel(owner1chan)
         conn.send(dg)
 
         # ... and see if it enters the owner with only broadcast and/or ownrecv fields.
@@ -1435,8 +1435,8 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([owner1chan], doid2,
                 STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER))
-        self.assertEquals(dgi.read_uint32(), doid2) # Id
-        self.assertEquals(dgi.read_uint64(), 0) # Location (parent<<32|zone)
+        self.assertEquals(dgi.read_doid(), doid2) # Id
+        self.assertEquals(dgi.read_channel(), 0) # Location (parent<<32|zone)
         self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
         self.assertEquals(dgi.read_uint32(), 0) # setRequired1
         self.assertEquals(dgi.read_uint32(), 0) # setRDB3
@@ -1488,7 +1488,7 @@ class TestStateServer(unittest.TestCase):
 
         # Send a molecular update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(73317331)
+        dg.add_doid(73317331)
         dg.add_uint16(setXyz)
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
@@ -1497,7 +1497,7 @@ class TestStateServer(unittest.TestCase):
 
         # See if the MOLECULAR (not the individual fields) is broadcast.
         dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(73317331)
+        dg.add_doid(73317331)
         dg.add_uint16(setXyz)
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
@@ -1511,7 +1511,7 @@ class TestStateServer(unittest.TestCase):
         # Look at the object and see if the requireds are updated...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0) # Context
-        dg.add_uint32(73317331)
+        dg.add_doid(73317331)
         conn.send(dg)
 
         dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
@@ -1530,7 +1530,7 @@ class TestStateServer(unittest.TestCase):
         ### (continues from previous)
         # Now try a RAM update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(73317331)
+        dg.add_doid(73317331)
         dg.add_uint16(set123)
         dg.add_uint8(1) # setOne
         dg.add_uint8(2) # setTwo
@@ -1539,7 +1539,7 @@ class TestStateServer(unittest.TestCase):
 
         # See if the MOLECULAR (not the individual fields) is broadcast.
         dg = Datagram.create([88<<32|99], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(73317331)
+        dg.add_doid(73317331)
         dg.add_uint16(set123)
         dg.add_uint8(1) # setOne
         dg.add_uint8(2) # setTwo
@@ -1549,7 +1549,7 @@ class TestStateServer(unittest.TestCase):
         # A query should have all of the individual fields, not the molecular.
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(1) # Context
-        dg.add_uint32(73317331) # ID
+        dg.add_doid(73317331) # ID
         conn.send(dg)
 
         dg = conn.recv_maybe()
@@ -1557,7 +1557,7 @@ class TestStateServer(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Context
-        self.assertEquals(dgi.read_uint32(), 73317331) # Id
+        self.assertEquals(dgi.read_doid(), 73317331) # Id
         self.assertEquals(dgi.read_uint32(), 88) # Parent
         self.assertEquals(dgi.read_uint32(), 99) # Zone
         self.assertEquals(dgi.read_uint16(), DistributedTestObject4)
@@ -1586,7 +1586,7 @@ class TestStateServer(unittest.TestCase):
         # Now let's test querying individual fields...
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(0xBAB55EED) # Context
-        dg.add_uint32(73317331) # ID
+        dg.add_doid(73317331) # ID
         dg.add_uint16(5) # Field count: 5
         dg.add_uint16(setXyz)
         dg.add_uint16(setOne)
@@ -1653,10 +1653,10 @@ class TestStateServer(unittest.TestCase):
         # Ask for objects from some of the zones...
         dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
         dg.add_uint32(0xF337) # Context
-        dg.add_uint32(doid0) # Parent Id
+        dg.add_doid(doid0) # Parent Id
         dg.add_uint16(2) # Zone count
-        dg.add_uint32(912)
-        dg.add_uint32(930)
+        dg.add_zone(912)
+        dg.add_zone(930)
         conn.send(dg)
 
         expected = []
@@ -1718,19 +1718,19 @@ class TestStateServer(unittest.TestCase):
 
         # Send delete children
         dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
-        dg.add_uint32(doid0)
+        dg.add_doid(doid0)
         conn.send(dg)
 
         # Expect children to receive delete children...
         dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
-        dg.add_uint32(doid0)
+        dg.add_doid(doid0)
         self.assertTrue(*children0.expect(dg))
         # ... and then broadcast their own deletion
         dg = Datagram.create([doid0<<32|710], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         self.assertTrue(*location1.expect(dg))
         dg = Datagram.create([doid0<<32|720], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid2)
+        dg.add_doid(doid2)
         self.assertTrue(*location20.expect(dg))
 
 
@@ -1746,20 +1746,20 @@ class TestStateServer(unittest.TestCase):
 
         # Delete the root object
         dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid0)
+        dg.add_doid(doid0)
         conn.send(dg)
 
         # Expect the first object to receive delete children from object zero...
         dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
-        dg.add_uint32(doid0)
+        dg.add_doid(doid0)
         self.assertTrue(*children0.expect(dg))
         # ... and delete itself...
         dg = Datagram.create([doid0<<32|710], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid1)
+        dg.add_doid(doid1)
         self.assertTrue(*location1.expect(dg))
         # ... and propogate the deletion to its child...
         dg = Datagram.create([doid1<<32|720], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(doid2)
+        dg.add_doid(doid2)
         self.assertTrue(*location21.expect(dg))
 
 
@@ -1806,7 +1806,7 @@ class TestStateServer(unittest.TestCase):
 
         # Update the object with some new values
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(doid1) # Id
+        dg.add_doid(doid1) # Id
         dg.add_uint16(3) # Num fields: 3
         dg.add_uint16(blockList)
         dg.add_size(24) # blockList size in bytes (contains 2 elements)
@@ -1828,7 +1828,7 @@ class TestStateServer(unittest.TestCase):
 
         # Expect only the broadcast field to be sent to the location
         dg = Datagram.create([0xBAD << 32 | 0xF001], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(doid1) # Id
+        dg.add_doid(doid1) # Id
         dg.add_uint16(newBlock)
         dg.add_uint32(171) # lastBlock.x
         dg.add_uint32(282) # lastBlock.y
