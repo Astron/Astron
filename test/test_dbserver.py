@@ -45,7 +45,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv_maybe()
         self.assertTrue(dg is not None, "Did not receive CreateObjectResp from dbserver.")
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
+        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining = 4 + DOID_SIZE_BYTES))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
         doids.append(dgi.read_doid())
         self.assertGreaterEqual(doids[0], 1000000) # do_id in valid range
@@ -79,7 +79,7 @@ class DatabaseBaseTests(object):
         # The Database should return a new do_id...
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
+        self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining = 4 + DOID_SIZE_BYTES))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
         doids.append(dgi.read_doid())
         self.assertGreaterEqual(doids[1], 1000000) # do_id in valid range
