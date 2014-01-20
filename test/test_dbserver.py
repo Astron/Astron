@@ -25,7 +25,7 @@ class DatabaseBaseTests(object):
 
     def deleteObject(self, sender, doid):
         dg = Datagram.create([777], sender, DBSERVER_OBJECT_DELETE)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
     def test_create_getall(self):
@@ -53,7 +53,7 @@ class DatabaseBaseTests(object):
         # Select all fields from the stored object
         dg = Datagram.create([777], 20, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doids[0])
+        dg.add_doid(doids[0])
         self.conn.send(dg)
 
         # Retrieve object from the database, we stored no DB values, so get none back
@@ -88,7 +88,7 @@ class DatabaseBaseTests(object):
         # Retrieve object from the database...
         dg = Datagram.create([777], 20, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doids[1])
+        dg.add_doid(doids[1])
         self.conn.send(dg)
 
         # Get values back from server
@@ -112,7 +112,7 @@ class DatabaseBaseTests(object):
         # Try selecting an ID that doesn't exist
         dg = Datagram.create([777], 20, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(6) # Context
-        dg.add_uint32(78787) # Non-existant ID
+        dg.add_doid(78787) # Non-existant ID
         self.conn.send(dg)
 
         # Get failure from server
@@ -139,7 +139,7 @@ class DatabaseBaseTests(object):
         # Check to make sure the object is deleted
         dg = Datagram.create([777], 30, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Get failure from database
@@ -158,7 +158,7 @@ class DatabaseBaseTests(object):
         # Check to make sure object "B" isn't affected
         dg = Datagram.create([777], 30, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doidB)
+        dg.add_doid(doidB)
         self.conn.send(dg)
 
         # Reponse for object "B"
@@ -246,7 +246,7 @@ class DatabaseBaseTests(object):
             # Retrieve object from the database...
             dg = Datagram.create([777], 50, DBSERVER_OBJECT_GET_ALL)
             dg.add_uint32(context) # Context
-            dg.add_uint32(doid)
+            dg.add_doid(doid)
             self.conn.send(dg)
 
             # Get values back from server
@@ -271,7 +271,7 @@ class DatabaseBaseTests(object):
 
         # Update object with single ram field
         dg = Datagram.create([777], 50, DBSERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setBR1)
         dg.add_string("(deep breath...) 'Yay...'")
         self.conn.send(dg)
@@ -281,7 +281,7 @@ class DatabaseBaseTests(object):
 
         # Update object with multiple ram fields
         dg = Datagram.create([777], 50, DBSERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2)
         dg.add_uint16(setBR1)
         dg.add_string("(deep breath...) 'Yay...'")
@@ -295,7 +295,7 @@ class DatabaseBaseTests(object):
         # Update if equals with a ram field
         dg = Datagram.create([777], 50, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(91849) # Old value
@@ -317,7 +317,7 @@ class DatabaseBaseTests(object):
         # Update if equals with ram fields
         dg = Datagram.create([777], 50, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
         dg.add_uint32(7) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setB1)
         dg.add_uint8(100)
@@ -379,7 +379,7 @@ class DatabaseBaseTests(object):
 
         # Update single value
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Oh my gosh! Oh my gosh!! OMG! OMG!!!")
         self.conn.send(dg)
@@ -387,7 +387,7 @@ class DatabaseBaseTests(object):
         # Select all fields from the stored object
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Retrieve object from the database
@@ -410,7 +410,7 @@ class DatabaseBaseTests(object):
 
         # Update multiple values
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(3) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(9999)
@@ -423,7 +423,7 @@ class DatabaseBaseTests(object):
         # Select all fields from the stored object
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(4) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Retrieve object from the database
@@ -471,7 +471,7 @@ class DatabaseBaseTests(object):
         # Update field with empty value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!") # Field value
         self.conn.send(dg)
@@ -485,7 +485,7 @@ class DatabaseBaseTests(object):
         # Select object with new value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -500,7 +500,7 @@ class DatabaseBaseTests(object):
         # Update field with existing value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
         dg.add_uint32(4) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         dg.add_string("It's raining chocolate!") # New value
         self.conn.send(dg)
@@ -516,7 +516,7 @@ class DatabaseBaseTests(object):
         # Select object
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -553,7 +553,7 @@ class DatabaseBaseTests(object):
         # Update field with correct old value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setRDB3)
         dg.add_uint32(767676) # Old value
         dg.add_uint32(787878) # New value
@@ -568,7 +568,7 @@ class DatabaseBaseTests(object):
         # Select object with new value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Recieve updated value
@@ -584,7 +584,7 @@ class DatabaseBaseTests(object):
         # Update field with incorrect old value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
         dg.add_uint32(4) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setRDB3)
         dg.add_uint32(767676) # Old value (incorrect)
         dg.add_uint32(383838) # New value
@@ -602,7 +602,7 @@ class DatabaseBaseTests(object):
         # Comparison existing value to non existing value in update
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         dg.add_string("That was a TERRIBLE surprise!") # Old value
         dg.add_string("Wish upon a twinkle...") # New value
@@ -617,7 +617,7 @@ class DatabaseBaseTests(object):
         # Update object with partially empty values
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
         dg.add_uint32(8) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878) # Old value
@@ -638,7 +638,7 @@ class DatabaseBaseTests(object):
 
         # Set the empty value to an actual value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
         self.conn.send(dg)
@@ -646,7 +646,7 @@ class DatabaseBaseTests(object):
         # Sanity check on set field
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(10) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Recieve updated value
@@ -670,7 +670,7 @@ class DatabaseBaseTests(object):
         # Update multiple with correct old values
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
         dg.add_uint32(9) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878) # Old value
@@ -689,7 +689,7 @@ class DatabaseBaseTests(object):
         # Select object with new value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(10) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Recieve updated value
@@ -736,7 +736,7 @@ class DatabaseBaseTests(object):
         # Select the field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -751,7 +751,7 @@ class DatabaseBaseTests(object):
         # Select multiple fields
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -776,7 +776,7 @@ class DatabaseBaseTests(object):
         # Select invalid object
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(4) # Context
-        dg.add_uint32(doid+1)
+        dg.add_doid(doid+1)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -789,7 +789,7 @@ class DatabaseBaseTests(object):
         # Select invalid object, multiple fields
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doid+1)
+        dg.add_doid(doid+1)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -803,14 +803,14 @@ class DatabaseBaseTests(object):
 
         # Clear one field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
         # Select the cleared field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(6) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -823,7 +823,7 @@ class DatabaseBaseTests(object):
         # Select the cleared field, with multiple message
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(7) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setDb3)
         self.conn.send(dg)
@@ -838,7 +838,7 @@ class DatabaseBaseTests(object):
         # Select a cleared and non-cleared field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELDS)
         dg.add_uint32(8) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint16(setDb3)
@@ -886,7 +886,7 @@ class DatabaseBaseTests(object):
 
         # Clear a single field
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doidA)
+        dg.add_doid(doidA)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -895,7 +895,7 @@ class DatabaseBaseTests(object):
         # Get cleared field
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doidA)
+        dg.add_doid(doidA)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
@@ -907,14 +907,14 @@ class DatabaseBaseTests(object):
 
         # Clear a required field with a default
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doidA)
+        dg.add_doid(doidA)
         dg.add_uint16(setRDbD5)
         self.conn.send(dg)
 
         # Get cleared fields
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_FIELD)
         dg.add_uint32(3) # Context
-        dg.add_uint32(doidA)
+        dg.add_doid(doidA)
         dg.add_uint16(setRDbD5)
         self.conn.send(dg)
 
@@ -929,7 +929,7 @@ class DatabaseBaseTests(object):
         # Clearing multiple fields should behave as expected per field
         doidB = generic_db_obj()
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELDS)
-        dg.add_uint32(doidB)
+        dg.add_doid(doidB)
         dg.add_uint16(4) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -940,7 +940,7 @@ class DatabaseBaseTests(object):
         # Get all object fields
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(5) # Context
-        dg.add_uint32(doidB)
+        dg.add_doid(doidB)
         self.conn.send(dg)
 
         # Fields should be cleared
@@ -956,12 +956,12 @@ class DatabaseBaseTests(object):
         # Clear one field then attempt to clear multiple fields, some of which are already cleared
         doidC = generic_db_obj()
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doidC)
+        dg.add_doid(doidC)
         dg.add_uint16(setDb3)
         self.conn.send(dg)
 
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_DELETE_FIELDS)
-        dg.add_uint32(doidC)
+        dg.add_doid(doidC)
         dg.add_uint16(4) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -972,7 +972,7 @@ class DatabaseBaseTests(object):
         # Get all object fields
         dg = Datagram.create([777], 90, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(6) # Context
-        dg.add_uint32(doidC)
+        dg.add_doid(doidC)
         self.conn.send(dg)
 
         # Fields should be cleared
