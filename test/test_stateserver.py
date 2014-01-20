@@ -108,9 +108,9 @@ class TestStateServer(unittest.TestCase):
                     received = True
                     self.assertEquals(dgi.read_doid(), 101000000) # Id
                     self.assertEquals(dgi.read_doid(), 5000) # New parent
-                    self.assertEquals(dgi.read_uint32(), 1500) # New zone
+                    self.assertEquals(dgi.read_zone(), 1500) # New zone
                     self.assertEquals(dgi.read_doid(), INVALID_DO_ID) # Old parent
-                    self.assertEquals(dgi.read_uint32(), INVALID_ZONE) # Old zone
+                    self.assertEquals(dgi.read_zone(), INVALID_ZONE) # Old zone
                 # .. and ask it for its AI, which we're not testing here and can ignore
                 elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI)[0]:
                     continue
@@ -1558,8 +1558,8 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Context
         self.assertEquals(dgi.read_doid(), 73317331) # Id
-        self.assertEquals(dgi.read_uint32(), 88) # Parent
-        self.assertEquals(dgi.read_uint32(), 99) # Zone
+        self.assertEquals(dgi.read_doid(), 88) # Parent
+        self.assertEquals(dgi.read_zone(), 99) # Zone
         self.assertEquals(dgi.read_uint16(), DistributedTestObject4)
         self.assertEquals(dgi.read_uint32(), 55) # SetX
         self.assertEquals(dgi.read_uint32(), 66) # SetY

@@ -18,7 +18,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
-        return dgi.read_uint32()
+        return dgi.read_doid()
 
     def createGenericGetId(self, sender, context):
         return self.createTypeGetId(sender, context, DistributedTestObject1)
@@ -46,7 +46,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
-        doids.append(dgi.read_uint32())
+        doids.append(dgi.read_doid())
         self.assertGreaterEqual(doids[0], 1000000) # do_id in valid range
         self.assertLessEqual(doids[0], 1000010) # do_id in valid range
 
@@ -80,7 +80,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
-        doids.append(dgi.read_uint32())
+        doids.append(dgi.read_doid())
         self.assertGreaterEqual(doids[1], 1000000) # do_id in valid range
         self.assertLessEqual(doids[1], 1000010) # do_id in valid range
         self.assertTrue(doids[0] != doids[1]) # do_ids should be different
@@ -240,7 +240,7 @@ class DatabaseBaseTests(object):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
-        doid = dgi.read_uint32()
+        doid = dgi.read_doid()
 
         def assert_no_change(context):
             # Retrieve object from the database...
@@ -358,7 +358,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
-        doid = dgi.read_uint32()
+        doid = dgi.read_doid()
 
         # Select all fields from the stored object
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_GET_ALL)
@@ -466,7 +466,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
-        doid = dgi.read_uint32()
+        doid = dgi.read_doid()
 
         # Update field with empty value
         dg = Datagram.create([777], 100, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
@@ -548,7 +548,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
-        doid = dgi.read_uint32()
+        doid = dgi.read_doid()
 
         # Update field with correct old value
         dg = Datagram.create([777], 70, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
@@ -731,7 +731,7 @@ class DatabaseBaseTests(object):
         dg = self.conn.recv()
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
-        doid = dgi.read_uint32()
+        doid = dgi.read_doid()
 
         # Select the field
         dg = Datagram.create([777], 80, DBSERVER_OBJECT_GET_FIELD)
@@ -880,7 +880,7 @@ class DatabaseBaseTests(object):
             dg = self.conn.recv()
             dgi = DatagramIterator(dg)
             dgi.seek(CREATE_DOID_OFFSET)
-            return dgi.read_uint32()
+            return dgi.read_doid()
 
         doidA = generic_db_obj()
 
