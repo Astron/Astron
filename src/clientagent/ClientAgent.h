@@ -45,7 +45,7 @@ class ClientAgent : public Role
 			return m_server_version;
 		}
 
-		const uint32_t get_hash() const
+		uint32_t get_hash() const
 		{
 			return m_hash;
 		}

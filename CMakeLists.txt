@@ -118,8 +118,13 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-set(BUILD_TESTS OFF CACHE BOOL "If set to true, test files will be compiled in")
+set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
+if(USE_32BIT_DATAGRAMS)
+	add_definitions(-DASTRON_32BIT_DATAGRAMS)
+	add_definitions(-DDCLASS_32BIT_SIZETAG)
+endif()
 
+set(BUILD_TESTS OFF CACHE BOOL "If set to true, test files will be compiled in")
 if(BUILD_TESTS)
 	set(TEST_FILES
 		src/tests/MDParticipantTest.cpp
@@ -143,6 +148,7 @@ if(BUILD_DBSERVER)
 			src/database/YAMLDatabase.cpp
 		)
 		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -200,6 +206,7 @@ if(BUILD_DBSERVER)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
 				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_posgres.py)
+				set(PYTHON_TESTS ${PYTHON_TESTS} db_pgsql)
 
 			endif()
 		endif()
@@ -227,6 +234,7 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.h
 	)
 	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
@@ -238,6 +246,7 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.cpp
 		)
 		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} dbss)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
@@ -264,14 +273,8 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/AstronClient.cpp
 	)
 	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent)
 endif()
-
-set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
-if(USE_32BIT_DATAGRAMS)
-	add_definitions(-DASTRON_32BIT_DATAGRAMS)
-	add_definitions(-DDCPARSER_32BIT_LENGTH_TAG)
-endif()
-
 
 ### Define core components ###
 set(CORE_FILES
@@ -307,6 +310,7 @@ set(UTIL_FILES
 
 include_directories(src)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
+set(PYTHON_TESTS ${PYTHON_TESTS} messagedirector)
 add_executable(astrond
 	${CORE_FILES}
 	${MESSAGEDIRECTOR_FILES}
@@ -350,3 +354,9 @@ add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
 target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+
+### Handle some final testing configuration ###
+set_tests_properties(
+	${PYTHON_TESTS}
+	PROPERTIES ENVIRONMENT "USE_32BIT_DATAGRAMS=true"
+)
