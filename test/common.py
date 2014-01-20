@@ -243,6 +243,7 @@ else:
     CONSTANTS['ZONE_MAX'] = (1 << 32) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 4
 
+
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
 
@@ -407,14 +408,14 @@ class DatagramIterator(object):
         if sender != self.read_channel():
             return (False, "Sender doesn't match")
 
-        if msgtype != self.read_channel():
+        if msgtype != self.read_uint16():
             return (False, "Message type doesn't match")
 
         data_left = len(self._data) - self._offset
         if remaining != -1 and remaining != data_left:
             return (False, "Datagram size is %d; expecting %d" % (data_left, remaining))
 
-        return True
+        return (True, "")
 
     def read_string(self):
         length = self.read_size()
