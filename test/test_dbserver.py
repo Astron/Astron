@@ -42,7 +42,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # The Database should return the context and do_id...
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp from dbserver.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining=4+4))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
