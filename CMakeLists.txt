@@ -96,6 +96,10 @@ else()
 	message(FATAL_ERROR "You need yamlcpp to build this, build yamlcpp in the 'dependencies/' directory, or install it as a system package")
 endif()
 
+set(BUILD_YAML ON) # ON CACHE BOOL "Stuff"
+if(BUILD_YAML)
+	add_definitions(-DASTRON_WITH_YAML)
+endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
@@ -267,6 +271,11 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/AstronClient.cpp
 	)
 	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+endif()
+
+set(USE_128BIT_CHANNELS OFF CACHE BOOL "If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).")
+if(USE_128BIT_CHANNELS)
+	add_definitions(-DASTRON_128BIT_CHANNELS)
 endif()
 
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")

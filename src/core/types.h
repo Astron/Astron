@@ -1,9 +1,15 @@
 #pragma once
 #include <stdint.h>
-
+#ifdef ASTRON_128BIT_CHANNELS
+#include "util/uint128.h"
+typedef uint128_t channel_t;
+typedef uint64_t doid_t;
+typedef uint64_t zone_t;
+#else
 typedef uint64_t channel_t;
 typedef uint32_t doid_t;
 typedef uint32_t zone_t;
+#endif
 
 #define CHANNEL_MAX ((channel_t)(-1))
 #define DOID_MAX ((doid_t)(-1))
