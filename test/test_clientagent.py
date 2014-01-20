@@ -93,8 +93,8 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(dg is not None, "No datagram received when attempting identify()")
         dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
-        self.assertEqual(dgi.read_uint64(), 1234)
-        sender_id = dgi.read_uint64()
+        self.assertEqual(dgi.read_channel(), 1234)
+        sender_id = dgi.read_channel()
 
         #self.assertLessEqual(sender_id, 999)
         #self.assertGreaterEqual(sender_id, 100)
@@ -153,7 +153,7 @@ class TestClientAgent(unittest.TestCase):
         # Now, we should be able to send an update to the anonymous UD...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(request)
         dg.add_string('[month of winter coolness]*3')
         client.send(dg)
@@ -166,8 +166,8 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(dg is not None, "No datagram received while expecting SSObjectSetField")
         dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
-        self.assertEqual(dgi.read_uint64(), 1234)
-        dgi.read_uint64() # Sender ID; we don't know this.
+        self.assertEqual(dgi.read_channel(), 1234)
+        dgi.read_channel() # Sender ID; we don't know this.
         self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
         self.assertEqual(dgi.read_uint32(), 1234)
         self.assertEqual(dgi.read_uint16(), request)
@@ -176,7 +176,7 @@ class TestClientAgent(unittest.TestCase):
         # However, if we send an update to the non-anonymous UD...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(foo)
         dg.add_uint8(1)
         dg.add_uint8(5)
@@ -229,7 +229,7 @@ class TestClientAgent(unittest.TestCase):
         # error.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(request)
         dg.add_string('I wish to be an Oompa Loompa. Take me to them so the deed may be done.')
         client.send(dg)
@@ -245,7 +245,7 @@ class TestClientAgent(unittest.TestCase):
         # Try to send an update to UberDog2.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(foo)
         dg.add_uint8(0xBE)
         dg.add_uint8(0xAD)
@@ -257,8 +257,8 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(dg is not None, "No datagram received while expecting SSObjectSetField")
         dgi = DatagramIterator(dg)
         self.assertEqual(dgi.read_uint8(), 1)
-        self.assertEqual(dgi.read_uint64(), 1235)
-        dgi.read_uint64() # Sender ID; we don't know this.
+        self.assertEqual(dgi.read_channel(), 1235)
+        dgi.read_channel() # Sender ID; we don't know this.
         self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
         self.assertEqual(dgi.read_uint32(), 1235)
         self.assertEqual(dgi.read_uint16(), foo)
@@ -272,7 +272,7 @@ class TestClientAgent(unittest.TestCase):
         # Try again:
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(foo)
         dg.add_uint8(0xBE)
         dg.add_uint8(0xAD)
@@ -290,14 +290,14 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(response)
         dg.add_string('It... is... ON!')
         self.server.send(dg)
 
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(response)
         dg.add_string('It... is... ON!')
         self.assertTrue(*client.expect(dg))
@@ -309,7 +309,7 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_SET_CLIENT_ID)
-        dg.add_uint64(555566667777)
+        dg.add_channel(555566667777)
         self.server.send(dg)
 
         # Reidentify the client, make sure the sender has changed.
@@ -317,14 +317,14 @@ class TestClientAgent(unittest.TestCase):
 
         # The client should have a subscription on the new sender channel automatically:
         dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0xF00D)
         self.server.send(dg)
 
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0xF00D)
         self.assertTrue(*client.expect(dg))
@@ -332,12 +332,12 @@ class TestClientAgent(unittest.TestCase):
         # Change the sender ID again... This is still being sent to the session
         # channel, which the client should always have a subscription on.
         dg = Datagram.create([id], 1, CLIENTAGENT_SET_CLIENT_ID)
-        dg.add_uint64(777766665555)
+        dg.add_channel(777766665555)
         self.server.send(dg)
 
         # Ensure that 555566667777 has been dropped...
         dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(1235)
+        dg.add_doid(1235)
         dg.add_uint16(bar)
         dg.add_uint16(0x7AB)
         self.server.send(dg)
@@ -361,7 +361,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         dg = Datagram()
         dg.add_uint16(0x1337)
-        dg.add_uint64(0x3141592653589793) # Why the heck not add something to it?
+        dg.add_channel(0x3141592653589793) # Why the heck not add something to it?
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_INVALID_MSGTYPE)
 
@@ -380,7 +380,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(foo)
         dg.add_uint8(5)
         dg.add_uint8(4)
@@ -392,7 +392,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(response)
         dg.add_string('Bizaam!')
         client.send(dg)
@@ -402,10 +402,10 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(request)
         dg.add_uint16(16) # Faking the string length...
-        dg.add_uint64(0) # Whoops, only 8 bytes!
+        dg.add_channel(0) # Whoops, only 8 bytes!
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
 
@@ -419,7 +419,7 @@ class TestClientAgent(unittest.TestCase):
         client = self.connect()
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(request)
         # This will fit inside the client dg, but be too big for the server.
         dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-DGSIZE_SIZE_BYTES))
@@ -435,9 +435,9 @@ class TestClientAgent(unittest.TestCase):
 
         # Give it an object that it owns.
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
-        dg.add_uint32(55446655)
-        dg.add_uint32(1234) # Parent
-        dg.add_uint32(5678) # Zone
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
@@ -449,9 +449,9 @@ class TestClientAgent(unittest.TestCase):
         # The client should receive the new object.
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
-        dg.add_uint32(55446655)
-        dg.add_uint32(1234) # Parent
-        dg.add_uint32(5678) # Zone
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Big crown thingy')
         dg.add_uint8(11)
@@ -463,7 +463,7 @@ class TestClientAgent(unittest.TestCase):
         # ownsend should be okay...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(55446655)
+        dg.add_doid(55446655)
         dg.add_uint16(setColor)
         dg.add_uint8(44)
         dg.add_uint8(55)
@@ -474,7 +474,7 @@ class TestClientAgent(unittest.TestCase):
         # clsend as well...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(55446655)
+        dg.add_doid(55446655)
         dg.add_uint16(requestKill)
         client.send(dg)
         self.assertTrue(client.expect_none())
@@ -482,16 +482,16 @@ class TestClientAgent(unittest.TestCase):
         # And we can relocate it...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LOCATION)
-        dg.add_uint32(55446655)
-        dg.add_uint32(1234)
-        dg.add_uint32(4321)
+        dg.add_doid(55446655) # Doid
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
         client.send(dg)
         self.assertTrue(client.expect_none())
 
         # But anything else is a no-no.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(55446655)
+        dg.add_doid(55446655)
         dg.add_uint16(setName)
         dg.add_string('Alicorn Amulet')
         client.send(dg)
@@ -539,7 +539,7 @@ class TestClientAgent(unittest.TestCase):
 
         raw_dg = Datagram()
         raw_dg.add_uint16(5555)
-        raw_dg.add_uint64(152379565)
+        raw_dg.add_channel(152379565)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
         dg.add_string(raw_dg.get_data())
@@ -553,12 +553,12 @@ class TestClientAgent(unittest.TestCase):
         id = self.identify(client)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_OPEN_CHANNEL)
-        dg.add_uint64(66778899)
+        dg.add_channel(66778899)
         self.server.send(dg)
 
         # In practice, it's dumb to do this, but this is a unit test, so:
         dg = Datagram.create([id], 1, CLIENTAGENT_CLOSE_CHANNEL)
-        dg.add_uint64(id)
+        dg.add_channel(id)
         self.server.send(dg)
 
         # Sending things to the ID channel should no longer work...
@@ -588,12 +588,12 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1234:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
-        dg.add_uint32(2)
-        dg.add_uint16(1)
-        dg.add_uint32(1234)
-        dg.add_uint16(2)
-        dg.add_uint32(5555) # Zone 1
-        dg.add_uint32(4444) # Zone 2
+        dg.add_uint32(2) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
         client.send(dg)
 
         # Server should ask for the objects:
@@ -614,9 +614,9 @@ class TestClientAgent(unittest.TestCase):
 
         # We'll throw a couple objects its way:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(8888) # do_id
-        dg.add_uint32(1234) # parent_id
-        dg.add_uint32(5555) # zone_id
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(5555) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
@@ -624,18 +624,18 @@ class TestClientAgent(unittest.TestCase):
         # Does the client see it?
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
-        dg.add_uint32(8888) # do_id
-        dg.add_uint32(1234) # parent_id
-        dg.add_uint32(5555) # zone_id
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(5555) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(*client.expect(dg))
 
         # Now the CA discovers the second object...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
-        dg.add_uint32(7777) # do_id
-        dg.add_uint32(1234) # parent_id
-        dg.add_uint32(4444) # zone_id
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
@@ -646,9 +646,9 @@ class TestClientAgent(unittest.TestCase):
         # Does the client see it?
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
-        dg.add_uint32(7777) # do_id
-        dg.add_uint32(1234) # parent_id
-        dg.add_uint32(4444) # zone_id
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
@@ -661,13 +661,13 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(2)
-        dg.add_uint16(1)
+        dg.add_uint32(2) # Context
+        dg.add_uint16(1) # Interest Id
         self.assertTrue(*client.expect(dg))
 
         # One of the objects broadcasts!
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_uint32(7777) # do_id
+        dg.add_doid(7777) # do_id
         dg.add_uint16(setBR1)
         dg.add_string("I've built my life on judgement and causing pain...")
         self.server.send(dg)
@@ -675,33 +675,33 @@ class TestClientAgent(unittest.TestCase):
         # And the client is informed.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(7777)
+        dg.add_doid(7777) # do_id
         dg.add_uint16(setBR1)
         dg.add_string("I've built my life on judgement and causing pain...")
         self.assertTrue(*client.expect(dg))
 
         # Now, let's move the objects around...
         dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(8888) # do_id
-        dg.add_uint32(1234) # new_parent
-        dg.add_uint32(4444) # new_zone
-        dg.add_uint32(1234) # old_parent
-        dg.add_uint32(5555) # old_zone
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # new_parent
+        dg.add_zone(4444) # new_zone
+        dg.add_doid(1234) # old_parent
+        dg.add_zone(5555) # old_zone
         self.server.send(dg)
 
         # The client should get a zone change notification.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LOCATION)
-        dg.add_uint32(8888)
-        dg.add_uint32(1234)
-        dg.add_uint32(4444)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
         self.assertTrue(*client.expect(dg))
 
         # Realistically, object 8888 would send an enterzone on the new location:
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(8888) # do_id
-        dg.add_uint32(1234) # parent_id
-        dg.add_uint32(4444) # zone_id
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
@@ -711,37 +711,37 @@ class TestClientAgent(unittest.TestCase):
 
         # How about moving the other object outside of interest?
         dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
-        dg.add_uint32(7777) # do_id
-        dg.add_uint32(1234) # new_parent
-        dg.add_uint32(1111) # new_zone
-        dg.add_uint32(1234) # old_parent
-        dg.add_uint32(4444) # old_zone
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # new_parent
+        dg.add_zone(1111) # new_zone
+        dg.add_doid(1234) # old_parent
+        dg.add_zone(4444) # old_zone
         self.server.send(dg)
 
         # This time the client should have the object disabled.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(7777)
+        dg.add_doid(7777)
         self.assertTrue(*client.expect(dg))
 
         # Now, kill the interest!
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint32(55)
-        dg.add_uint16(1)
+        dg.add_uint32(55) # Context
+        dg.add_uint16(1) # Interest id
         client.send(dg)
 
         # The remaining seen object should die...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(8888)
+        dg.add_doid(8888)
         self.assertTrue(*client.expect(dg))
 
         # The server should say it's done being interesting...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(55)
-        dg.add_uint16(1)
+        dg.add_uint32(55) # Context
+        dg.add_uint16(1) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # And NOTHING ELSE:
@@ -753,7 +753,7 @@ class TestClientAgent(unittest.TestCase):
         # Additionally, if we try to twiddle with a previously visible object...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(8888)
+        dg.add_doid(8888)
         dg.add_uint16(setRequired1)
         dg.add_uint32(232323)
         client.send(dg)
@@ -774,10 +774,10 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on a zone:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
-        dg.add_uint32(1235)
-        dg.add_uint32(111111) # Zone 1
+        dg.add_uint32(6) # Context
+        dg.add_uint16(5) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(111111) # Zone 1
         client.send(dg)
 
         # CA, of course, asks for objects:
@@ -786,9 +786,9 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1235)
-        self.assertEquals(dgi.read_uint16(), 1)
-        self.assertEquals(dgi.read_uint32(), 111111)
+        self.assertEquals(dgi.read_doid(), 1235) # Parent
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 111111) # Zone #1
 
         # The SS replies immediately with the count:
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
@@ -798,9 +798,9 @@ class TestClientAgent(unittest.TestCase):
 
         # We'll give them the object:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
-        dg.add_uint32(777711) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(111111) # zone_id
+        dg.add_doid(777711) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(111111) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
@@ -811,9 +811,9 @@ class TestClientAgent(unittest.TestCase):
         # Does the client see it?
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
-        dg.add_uint32(777711) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(111111) # zone_id
+        dg.add_doid(777711) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(111111) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(88888) # setRequired1
         dg.add_uint16(1)
@@ -824,26 +824,26 @@ class TestClientAgent(unittest.TestCase):
         # And the client's interest op is done:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
+        dg.add_uint32(6) # Context
+        dg.add_uint16(5) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Now let's nuke it from orbit!
         dg = Datagram.create([id], 777711, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(777711)
+        dg.add_doid(777711)
         self.server.send(dg)
 
         # Now the client should receive the deletion:
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(777711)
+        dg.add_doid(777711)
         self.assertTrue(*client.expect(dg))
 
         # Next, we throw an owner object their way:
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
-        dg.add_uint32(55446651)
-        dg.add_uint32(1235) # Parent
-        dg.add_uint32(6161) # Zone
+        dg.add_doid(55446651) # Object Id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(6161) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Alicorn Amulet')
         dg.add_uint8(11)
@@ -855,9 +855,9 @@ class TestClientAgent(unittest.TestCase):
         # The client should receive the new object.
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
-        dg.add_uint32(55446651)
-        dg.add_uint32(1235) # Parent
-        dg.add_uint32(6161) # Zone
+        dg.add_doid(55446651) # Object Id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(6161) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Alicorn Amulet')
         dg.add_uint8(11)
@@ -868,13 +868,13 @@ class TestClientAgent(unittest.TestCase):
 
         # Bye, owned object!
         dg = Datagram.create([id], 55446651, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_uint32(55446651)
+        dg.add_doid(55446651)
         self.server.send(dg)
 
         # Now the client should record an owner delete:
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
-        dg.add_uint32(55446651)
+        dg.add_doid(55446651)
         self.assertTrue(*client.expect(dg))
 
         # That's all folks!
@@ -890,12 +890,12 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1235:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
-        dg.add_uint32(1235)
+        dg.add_uint32(6) # Context
+        dg.add_uint16(5) # Interest Id
+        dg.add_doid(1235) # Parent
         dg.add_uint16(2) # Zone count...
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
+        dg.add_zone(1111) # Zone 1
+        dg.add_zone(2222) # Zone 2
         client.send(dg)
 
         # CA asks for objects...
@@ -917,9 +917,9 @@ class TestClientAgent(unittest.TestCase):
 
         # Let's give 'em one...
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(54321) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(2222) # zone_id
+        dg.add_doid(54321) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
@@ -927,9 +927,9 @@ class TestClientAgent(unittest.TestCase):
         # Does the client see it?
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
-        dg.add_uint32(54321) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(2222) # zone_id
+        dg.add_doid(54321) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(*client.expect(dg))
@@ -937,17 +937,17 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
+        dg.add_uint32(6) # context
+        dg.add_uint16(5) # interest id
         self.assertTrue(*client.expect(dg))
 
         # Now, open a second, overlapping interest:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint32(8)
-        dg.add_uint16(7)
-        dg.add_uint32(1235)
-        dg.add_uint32(2222) # Zone 2 from interest above.
+        dg.add_uint32(8) # context 
+        dg.add_uint16(7) # interest id
+        dg.add_doid(1235) # parent
+        dg.add_zone(2222) # Zone 2 from interest above.
         client.send(dg)
 
         # CA doesn't have to ask, this interest is already there.
@@ -956,22 +956,22 @@ class TestClientAgent(unittest.TestCase):
         # And it tells the client that the interest is open:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(8)
-        dg.add_uint16(7)
+        dg.add_uint32(8) # Context
+        dg.add_uint16(7) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Now, the client asks to kill the first interest...
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint32(88)
-        dg.add_uint16(5)
+        dg.add_uint32(88) # Context
+        dg.add_uint16(5) # Interest id
         client.send(dg)
 
         # And only the interest dies...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(88)
-        dg.add_uint16(5)
+        dg.add_uint32(88) # Context
+        dg.add_uint16(5) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # ...with no activity happening on the server.
@@ -980,21 +980,21 @@ class TestClientAgent(unittest.TestCase):
         # But if we kill the SECOND interest...
         dg = Datagram()
         dg.add_uint16(CLIENT_REMOVE_INTEREST)
-        dg.add_uint32(99)
-        dg.add_uint16(7)
+        dg.add_uint32(99) # Context
+        dg.add_uint16(7) # Interest id
         client.send(dg)
 
         # ...the object dies...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(54321)
+        dg.add_doid(54321)
         self.assertTrue(*client.expect(dg))
 
         # ...the operation completes...
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(99)
-        dg.add_uint16(7)
+        dg.add_uint32(99) # Context
+        dg.add_uint16(7) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # ...but still nothing on the server:
@@ -1014,12 +1014,12 @@ class TestClientAgent(unittest.TestCase):
         # Open interest on two zones in 1235:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
-        dg.add_uint32(1235)
+        dg.add_uint32(6) # Context
+        dg.add_uint16(5) # Interest id
+        dg.add_doid(1235) # Parent
         dg.add_uint16(2)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
+        dg.add_zone(1111) # Zone 1
+        dg.add_zone(2222) # Zone 2
         client.send(dg)
 
         # CA asks for objects...
@@ -1028,9 +1028,9 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1235)
+        self.assertEquals(dgi.read_doid(), 1235)
         self.assertEquals(dgi.read_uint16(), 2)
-        self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([1111, 2222]))
 
         # There is one object:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
@@ -1040,9 +1040,9 @@ class TestClientAgent(unittest.TestCase):
 
         # Let's give 'em one...
         dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(54321) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(2222) # zone_id
+        dg.add_doid(54321) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
@@ -1050,9 +1050,9 @@ class TestClientAgent(unittest.TestCase):
         # Does the client see it?
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
-        dg.add_uint32(54321) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(2222) # zone_id
+        dg.add_doid(54321) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(2222) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(999999) # setRequired1
         self.assertTrue(*client.expect(dg))
@@ -1060,20 +1060,20 @@ class TestClientAgent(unittest.TestCase):
         # So the CA should tell the client the handle/context operation is done.
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(6)
-        dg.add_uint16(5)
+        dg.add_uint32(6) # Context
+        dg.add_uint16(5) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Now the client alters the interest to add a third zone:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
-        dg.add_uint32(9)
-        dg.add_uint16(5)
-        dg.add_uint32(1235)
-        dg.add_uint16(3)
-        dg.add_uint32(1111) # Zone 1
-        dg.add_uint32(2222) # Zone 2
-        dg.add_uint32(5555) # Zone 5--er, 3...
+        dg.add_uint32(9) # Context
+        dg.add_uint16(5) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_uint16(3) # Zone count
+        dg.add_zone(1111) # Zone 1
+        dg.add_zone(2222) # Zone 2
+        dg.add_zone(5555) # Zone 5--er, 3...
         client.send(dg)
 
         # The CA should ask for JUST the difference...
@@ -1082,9 +1082,9 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1235)
-        self.assertEquals(dgi.read_uint16(), 1)
-        self.assertEquals(dgi.read_uint32(), 5555)
+        self.assertEquals(dgi.read_doid(), 1235) # parent
+        self.assertEquals(dgi.read_uint16(), 1) # zone count
+        self.assertEquals(dgi.read_zone(), 5555) # zone #1
 
         # We'll pretend 1235,5555 is empty, so:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
@@ -1095,20 +1095,20 @@ class TestClientAgent(unittest.TestCase):
         # And the CA should tell the client the handle/context operation is done:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(9)
-        dg.add_uint16(5)
+        dg.add_uint32(9) # Context
+        dg.add_uint16(5) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Now let's alter to add another zone, but remove 2222:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
-        dg.add_uint32(10)
-        dg.add_uint16(5)
-        dg.add_uint32(1235)
-        dg.add_uint16(3)
-        dg.add_uint32(5555) # zones requested out of their original order,
-        dg.add_uint32(1111) # because ordering is for suckers
-        dg.add_uint32(8888)
+        dg.add_uint32(10) # Context
+        dg.add_uint16(5) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_uint16(3) # Zone count
+        dg.add_zone(5555) # zones requested out of their original order,
+        dg.add_zone(1111) # because ordering is for suckers
+        dg.add_zone(8888)
         client.send(dg)
 
         # The CA should ask for stuff in 8888...
@@ -1117,9 +1117,9 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1235)
-        self.assertEquals(dgi.read_uint16(), 1)
-        self.assertEquals(dgi.read_uint32(), 8888)
+        self.assertEquals(dgi.read_doid(), 1235) # Parent
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 8888) # Zone #1
 
         # We'll pretend there's something in there this time:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
@@ -1128,9 +1128,9 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        dg.add_uint32(23239) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(8888) # zone_id
+        dg.add_doid(23239) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(31416) # setRequired1
         self.server.send(dg)
@@ -1140,14 +1140,14 @@ class TestClientAgent(unittest.TestCase):
         # 1. Object 54321 is dead:
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(54321)
+        dg.add_doid(54321)
         expected.append(dg)
         # 2. Object 23239 is alive:
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
-        dg.add_uint32(23239) # do_id
-        dg.add_uint32(1235) # parent_id
-        dg.add_uint32(8888) # zone_id
+        dg.add_doid(23239) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(8888) # zone_id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(31416) # setRequired1
         expected.append(dg)
@@ -1157,17 +1157,17 @@ class TestClientAgent(unittest.TestCase):
         # And the CA should tell the client the handle/context operation is finished:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(10)
-        dg.add_uint16(5)
+        dg.add_uint32(10) # Context
+        dg.add_uint16(5) # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Now let's alter the interest to a different parent entirely:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint32(119)
-        dg.add_uint16(5)
-        dg.add_uint32(1234)
-        dg.add_uint32(1111)
+        dg.add_uint32(119) # Context
+        dg.add_uint16(5) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(1111) # Zone
         client.send(dg)
 
         # The query goes out to the SS...
@@ -1176,9 +1176,9 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1234)
-        self.assertEquals(dgi.read_uint16(), 1)
-        self.assertEquals(dgi.read_uint32(), 1111)
+        self.assertEquals(dgi.read_doid(), 1234) # Parent
+        self.assertEquals(dgi.read_uint16(), 1)  # Zone count
+        self.assertEquals(dgi.read_zone(), 1111) # Zone
 
         # We'll pretend 1234,1111 is empty, so:
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
@@ -1189,14 +1189,14 @@ class TestClientAgent(unittest.TestCase):
         # Now the CA destroys object 23239...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LEAVING)
-        dg.add_uint32(23239)
+        dg.add_doid(23239)
         self.assertTrue(*client.expect(dg))
 
         # Interest operation finished:
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
-        dg.add_uint32(119)
-        dg.add_uint16(5)
+        dg.add_uint32(119) # Context
+        dg.add_uint16(5)   # Interest id
         self.assertTrue(*client.expect(dg))
 
         # Cave Johnson, we're done here.
