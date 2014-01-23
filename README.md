@@ -154,9 +154,8 @@ See the build instructions at https://github.com/Astron/Astron/blob/master/doc/b
 
 ### The Team ###
 * **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
+* **Kestred** is our vice-architect. He does a lot of Astron development, and also writes a lot of documentation. Responsibilities include Astron maintenance, design revisions, and new feature planning & implementation.
 * **MMavipc** is our incredibly awesome codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
-* **Kestred** is our secondary architect. He writes a lot of documentation and does some development. Responsibilities include reviewing and adding system architecture, with a focus on maintaining code flexibility.
-* **jjkoletar** manages our Jenkins build system.
 
 ### License ###
 The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
