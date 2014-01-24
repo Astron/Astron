@@ -356,7 +356,9 @@ add_dependencies(astrond dclass)
 target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
 
 ### Handle some final testing configuration ###
-set_tests_properties(
-	${PYTHON_TESTS}
-	PROPERTIES ENVIRONMENT "USE_32BIT_DATAGRAMS=true"
-)
+if(USE_32BIT_DATAGRAMS)
+	set_tests_properties(
+		${PYTHON_TESTS}
+		PROPERTIES ENVIRONMENT "USE_32BIT_DATAGRAMS=true"
+	)
+endif()
