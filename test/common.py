@@ -411,14 +411,18 @@ class DatagramIterator(object):
         self.seek(0)
         channels = [i for i, j in zip(self._datagram.get_channels(), recipients) if i == j]
         if len(channels) != len(recipients):
-            return (False, "Recipients don't match")
+            return (False, "Recipients length doesn't match")
 
         self.seek(CHANNEL_SIZE_BYTES*ord(self._data[0])+1)
-        if sender != self.read_channel():
-            return (False, "Sender doesn't match")
+        readSender = self.read_channel()
+        if sender != readSender:
+            return (False, "Sender doesn't match, %d != %d (expected, actual)"
+                    % (sender, readSender))
 
-        if msgtype != self.read_uint16():
-            return (False, "Message type doesn't match")
+        readMsgtype = self.read_uint16()
+        if msgtype != readMsgtype:
+            return (False, "Message type doesn't match, %d != %d (expected, actual)"
+                    % (msgtype, readMsgtype))
 
         data_left = len(self._data) - self._offset
         if remaining != -1 and remaining != data_left:

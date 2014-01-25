@@ -115,7 +115,10 @@ class TestStateServer(unittest.TestCase):
                 elif dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI)[0]:
                     continue
                 else:
-                    self.fail("Received header did not match expected for msgtype: " + str(msgtype))
+                    failA = dgi.matches_header([5000], 5, STATESERVER_OBJECT_CHANGING_LOCATION)[1]
+                    failB = dgi.matches_header([5000], 101000000, STATESERVER_OBJECT_GET_AI)[1]
+                    self.fail("Received message-type(%d), expected:"
+                              "\n\tObjectChangingLocation -- %s\n\tObjectGetAI -- %s" % (msgtype, failA, failB))
             self.assertTrue(received) # Parent received ChangingLocation
 
             # The object should announce its entry to the zone-channel...
