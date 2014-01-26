@@ -699,8 +699,13 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_GET_ALL:
 		{
+			uint32_t context = dgi.read_uint32();
+			if(dgi.read_doid() != m_do_id)
+			{
+				return;    // Not meant for this object!
+			}
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
-			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
+			dg.add_uint32(context);
 			append_required_data(dg);
 			append_other_data(dg);
 			route_datagram(dg);

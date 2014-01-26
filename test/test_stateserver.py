@@ -1084,12 +1084,13 @@ class TestStateServer(unittest.TestCase):
 
         # Get all from the object
         dg = Datagram.create([15000], 890, STATESERVER_OBJECT_GET_ALL)
-        dg.add_doid(0x600DF00D)
+        dg.add_uint32(0x600DF00D) # Context
+        dg.add_doid(15000) # Doid
         conn.send(dg)
 
         # Expect all data in response
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_ALL_RESP)
-        dg.add_doid(0x600DF00D)
+        dg.add_uint32(0x600DF00D)
         appendMeta(dg, 15000, 4, 2, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         dg.add_uint16(0) # Optional fields: 0
