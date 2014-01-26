@@ -36,9 +36,9 @@ DBStateServer::~DBStateServer()
 
 void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 {
-	doid_t do_id = dgi.read_uint32();
-	doid_t parent_id = dgi.read_uint32();
-	zone_t zone_id = dgi.read_uint32();
+	doid_t do_id = dgi.read_doid();
+	doid_t parent_id = dgi.read_doid();
+	zone_t zone_id = dgi.read_zone();
 
 	// Check object is not already active
 	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())

@@ -369,7 +369,7 @@ class DatabaseBaseTests(object):
         # Select all fields from the stored object
         dg = Datagram.create([777], 60, DBSERVER_OBJECT_GET_ALL)
         dg.add_uint32(2) # Context
-        dg.add_uint32(doid)
+        dg.add_doid(doid)
         self.conn.send(dg)
 
         # Retrieve object from the database

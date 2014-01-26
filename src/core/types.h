@@ -17,6 +17,6 @@ typedef uint32_t zone_t;
 #define ZONE_BITS (sizeof(zone_t)*8)
 
 // Type constants
-#define INVALID_CHANNEL 0
-#define INVALID_DO_ID 0
+#define INVALID_CHANNEL channel_t(0)
+#define INVALID_DO_ID doid_t(0)
 #define CONTROL_MESSAGE 1

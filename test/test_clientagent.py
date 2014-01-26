@@ -169,7 +169,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_channel(), 1234)
         dgi.read_channel() # Sender ID; we don't know this.
         self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
-        self.assertEqual(dgi.read_uint32(), 1234)
+        self.assertEqual(dgi.read_doid(), 1234)
         self.assertEqual(dgi.read_uint16(), request)
         self.assertEqual(dgi.read_string(), '[month of winter coolness]*3')
 
@@ -260,7 +260,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_channel(), 1235)
         dgi.read_channel() # Sender ID; we don't know this.
         self.assertEqual(dgi.read_uint16(), STATESERVER_OBJECT_SET_FIELD)
-        self.assertEqual(dgi.read_uint32(), 1235)
+        self.assertEqual(dgi.read_doid(), 1235)
         self.assertEqual(dgi.read_uint16(), foo)
         self.assertEqual(dgi.read_uint8(), 0xBE)
         self.assertEqual(dgi.read_uint8(), 0xAD)
@@ -602,14 +602,14 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1234)
+        self.assertEquals(dgi.read_doid(), 1234)
         self.assertEquals(dgi.read_uint16(), 2)
-        self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([5555, 4444]))
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([5555, 4444]))
 
         # The SS replies immediately with the count:
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(2)
+        dg.add_doid(2) # Object count, uses an integer with same width as doids
         self.server.send(dg)
 
         # We'll throw a couple objects its way:
@@ -793,7 +793,7 @@ class TestClientAgent(unittest.TestCase):
         # The SS replies immediately with the count:
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(1)
+        dg.add_doid(1) #  Object count, uses integer with same width as doid
         self.server.send(dg)
 
         # We'll give them the object:
@@ -904,15 +904,15 @@ class TestClientAgent(unittest.TestCase):
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
         context = dgi.read_uint32()
-        self.assertEquals(dgi.read_uint32(), 1235)
-        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(dgi.read_doid(), 1235) # Object doid
+        self.assertEquals(dgi.read_uint16(), 2) # Nume zones requested
         dg.add_uint16(2)
-        self.assertEquals(set([dgi.read_uint32(), dgi.read_uint32()]), set([1111, 2222]))
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([1111, 2222]))
 
         # There is one object:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(1)
+        dg.add_doid(1) # Object count, use integer with same width as doid
         self.server.send(dg)
 
         # Let's give 'em one...
@@ -1035,7 +1035,7 @@ class TestClientAgent(unittest.TestCase):
         # There is one object:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(1)
+        dg.add_doid(1) # Object count, uses an integer with same width as doid
         self.server.send(dg)
 
         # Let's give 'em one...
@@ -1089,7 +1089,7 @@ class TestClientAgent(unittest.TestCase):
         # We'll pretend 1235,5555 is empty, so:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(0)
+        dg.add_doid(0) # Object count, uses an integer with same width as doid
         self.server.send(dg)
 
         # And the CA should tell the client the handle/context operation is done:
@@ -1124,7 +1124,7 @@ class TestClientAgent(unittest.TestCase):
         # We'll pretend there's something in there this time:
         dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(1)
+        dg.add_doid(1) # Object count, uses an integer with same width as doid
         self.server.send(dg)
 
         dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
@@ -1183,7 +1183,7 @@ class TestClientAgent(unittest.TestCase):
         # We'll pretend 1234,1111 is empty, so:
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(context)
-        dg.add_uint32(0)
+        dg.add_doid(0) # Object count, uses an integer with same width as doid
         self.server.send(dg)
 
         # Now the CA destroys object 23239...

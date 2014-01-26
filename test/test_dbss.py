@@ -79,7 +79,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid1) # object Id
 
@@ -88,7 +88,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
         dg.add_uint16(DistributedTestObject5)
-        dg.add_uint16(2)
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(3117)
         dg.add_uint16(setRDbD5)
@@ -132,7 +132,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid2) # object Id
 
@@ -167,7 +167,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid1) # object Id
 
@@ -206,7 +206,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid1) # object Id
 
@@ -233,7 +233,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid1, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid1) # object Id
 
@@ -317,7 +317,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid2, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid2) # Id
 
@@ -370,7 +370,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid3) # object Id
         dg = Datagram.create([doid3], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -473,7 +473,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], doid3, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), doid3) # object Id
         dg = Datagram.create([doid3], 200, DBSERVER_OBJECT_GET_ALL_RESP)
@@ -633,7 +633,7 @@ class TestStateServer(unittest.TestCase):
         dg = self.database.recv_maybe()
         self.assertTrue(dg is not None)
         dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_ALL, 4+4))
+        self.assertTrue(*dgi.matches_header([200], 9031, DBSERVER_OBJECT_GET_ALL, 4 + DOID_SIZE_BYTES))
         context = dgi.read_uint32() # Get context
         self.assertEquals(dgi.read_doid(), 9031) # object Id
 
