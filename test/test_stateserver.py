@@ -903,7 +903,7 @@ class TestStateServer(unittest.TestCase):
         # Sanity check, make sure neither of the last three tests have changed any values
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(0xF337) # Context
-        dg.add_uint32(234000000) # Id
+        dg.add_doid(234000000) # Id
         conn.send(dg)
 
         # Values should be unchanged
@@ -1767,7 +1767,8 @@ class TestStateServer(unittest.TestCase):
         # ... expecting the count of objects in the zone...
         dg = Datagram.create([5], doid0, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(0xF337) # Context
-        dg.add_uint32(3) # Count of objects [(912, [obj1, obj2]), (930, [obj3])]
+        dg.add_doid(3) # Count of objects [(912, [obj1, obj2]), (930, [obj3])]
+                       # Note: Using doid because range of object-count matches total doid size
         expected.append(dg)
         # ... and object1's enter zone message...
         dg = Datagram.create([5], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
