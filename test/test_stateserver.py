@@ -961,24 +961,25 @@ class TestStateServer(unittest.TestCase):
         conn = self.connect(5)
         doid = 0x99887766
         context = 0x1111
-        createEmptyDTO1(5, doid, required1=0x828)
+        createEmptyDTO1(conn, 5, doid, required1=0x828)
 
         ### Test GetField won't respond when given incorrect doid ###
         # Send a GetField request with a bad do_id
         dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELD)
-        dg.add_uint32(context++)
+        dg.add_uint32(context)
         dg.add_doid(0xF00)
         dg.add_uint16(setRequired1)
         conn.send(dg)
 
         # Expect no response
-        self.assert_true(conn.expect_none()) # should not recieve GetFieldResp
+        self.assertTrue(conn.expect_none()) # should not recieve GetFieldResp
+        context += 1
 
 
         ### Test GetFields won't respond when given incorrect doid ###
         # Send a GetFields request with a bad do_id
         dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(context++)
+        dg.add_uint32(context)
         dg.add_doid(0xF00)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setRequired1)
@@ -986,18 +987,20 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Expect no response
-        self.assert_true(conn.expect_none()) # should not recieve GetFieldsResp
+        self.assertTrue(conn.expect_none()) # should not recieve GetFieldsResp
+        context += 1
 
 
         ### Test GetAll won't respond when given incorrect doid ###
         # Send a GetAll request with a bad do_id
         dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELDS)
-        dg.add_uint32(context++)
+        dg.add_uint32(context)
         dg.add_doid(0xF00)
         conn.send(dg)
+        context += 1
 
         # Expect no response
-        self.assert_true(conn.expect_none()) # should not recieve GetAllResp
+        self.assertTrue(conn.expect_none()) # should not recieve GetAllResp
 
 
         ### Test SetField won't update when given incorrect doid ###
@@ -1020,7 +1023,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0xB1112) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRequired1)
-        dg.add_uint32(0x8280)
+        dg.add_uint32(0x828)
         self.assertTrue(*conn.expect(dg))
 
 
@@ -1048,7 +1051,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0xB1113) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRequired1)
-        dg.add_uint32(0x8280)
+        dg.add_uint32(0x828)
         self.assertTrue(*conn.expect(dg))
 
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
