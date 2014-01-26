@@ -230,6 +230,7 @@ else:
     CONSTANTS['DGSIZE_SIZE_BYTES'] = 2
 
 if 'USE_128BIT_CHANNELS' in os.environ:
+    CONSTANTS['PARENT_PREFIX'] = 1 << 64;
     CONSTANTS['CHANNEL_MAX'] = (1 << 128) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 16
     DATATYPES['doid'] = '<Q'
@@ -238,6 +239,7 @@ if 'USE_128BIT_CHANNELS' in os.environ:
     DATATYPES['zone'] = '<Q'
     CONSTANTS['ZONE_MAX'] = (1 << 64) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 8
+    CONSTANTS['ZONE_SIZE_BITS'] = 64
 else:
     CONSTANTS['CHANNEL_MAX'] = (1 << 64) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 8
@@ -247,6 +249,7 @@ else:
     DATATYPES['zone'] = '<I'
     CONSTANTS['ZONE_MAX'] = (1 << 32) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 4
+    CONSTANTS['ZONE_SIZE_BITS'] = 32
 
 
 locals().update(CONSTANTS)

@@ -63,8 +63,8 @@ class TestStateServer(unittest.TestCase):
     def test_activate(self):
         self.database.flush()
         self.shard.flush()
-        self.shard.send(Datagram.create_add_channel(80000<<32|100))
-        self.shard.send(Datagram.create_add_channel(80000<<32|101))
+        self.shard.send(Datagram.create_add_channel(80000<<ZONE_SIZE_BITS|100))
+        self.shard.send(Datagram.create_add_channel(80000<<ZONE_SIZE_BITS|101))
 
         doid1 = 9001
         doid2 = 9002
@@ -96,7 +96,7 @@ class TestStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # See if it announces its entry into 100.
-        dg = Datagram.create([80000<<32|100], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([80000<<ZONE_SIZE_BITS|100], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid1, 80000, 100, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(3117) # setRDB3
@@ -146,8 +146,8 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(self.shard.expect_none())
 
         ### Clean up ###
-        self.shard.send(Datagram.create_remove_channel(80000<<32|100))
-        self.shard.send(Datagram.create_remove_channel(80000<<32|101))
+        self.shard.send(Datagram.create_remove_channel(80000<<ZONE_SIZE_BITS|100))
+        self.shard.send(Datagram.create_remove_channel(80000<<ZONE_SIZE_BITS|101))
 
     # Tests the messages OBJECT_GET_ALL
     def test_get_all(self):
@@ -222,7 +222,7 @@ class TestStateServer(unittest.TestCase):
 
 
         ### Test for caching of GetAll for Activate messages ###
-        self.shard.send(Datagram.create_add_channel(33000<<32|33))
+        self.shard.send(Datagram.create_add_channel(33000<<ZONE_SIZE_BITS|33))
         # Get all from an object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_ALL)
         dg.add_uint32(3) # Context
@@ -268,7 +268,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(0) # Optional field count
         expected.append(dg)
         # As well as the object's entry into the location
-        dg = Datagram.create([33000<<32|33], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([33000<<ZONE_SIZE_BITS|33], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid1, 33000, 33, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(32144123) # setRDB3
@@ -278,14 +278,14 @@ class TestStateServer(unittest.TestCase):
 
 
         ### Cleanup ###
-        self.shard.send(Datagram.create_remove_channel(33000<<32|33))
+        self.shard.send(Datagram.create_remove_channel(33000<<ZONE_SIZE_BITS|33))
 
     # Tests the messages OBJECT_DELETE_DISK, OBJECT_DELETE_RAM
     def test_delete(self):
         return
         self.database.flush()
         self.shard.flush()
-        self.shard.send(Datagram.create_add_channel(90000<<32|200))
+        self.shard.send(Datagram.create_add_channel(90000<<ZONE_SIZE_BITS|200))
 
         doid1 = 9021
         doid2 = 9022
@@ -338,7 +338,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object should announce its disappearance...
-        dg = Datagram.create([90000<<32|200], 13, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], 13, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid2)
         self.assertTrue(*self.shard.expect(dg))
 
@@ -395,7 +395,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object should announce its disappearance...
-        dg = Datagram.create([90000<<32|200], 13, DBSS_OBJECT_DELETE_DISK)
+        dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], 13, DBSS_OBJECT_DELETE_DISK)
         dg.add_doid(doid3)
         self.assertTrue(*self.shard.expect(dg))
 
@@ -460,7 +460,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object should announce its disappearance...
-        dg = Datagram.create([90000<<32|200], doid3, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], doid3, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid3)
         self.assertTrue(*self.shard.expect(dg))
 
@@ -486,7 +486,7 @@ class TestStateServer(unittest.TestCase):
 
 
         ### Clean Up ###
-        self.shard.send(Datagram.create_remove_channel(90000<<32|200))
+        self.shard.send(Datagram.create_remove_channel(90000<<ZONE_SIZE_BITS|200))
 
     # Tests that the DBSS is listening to the entire range it was configured with
     def test_subscribe(self):
@@ -546,7 +546,7 @@ class TestStateServer(unittest.TestCase):
     def test_set(self):
         self.shard.flush()
         self.database.flush()
-        self.shard.send(Datagram.create_add_channel(70000<<32|300))
+        self.shard.send(Datagram.create_add_channel(70000<<ZONE_SIZE_BITS|300))
 
         ### Test for SetField with db field on unloaded object###
         # Update field on stateserver object
@@ -789,7 +789,7 @@ class TestStateServer(unittest.TestCase):
         self.shard.flush()
 
         ### Cleanup ###.
-        self.shard.send(Datagram.create_remove_channel(70000<<32|300))
+        self.shard.send(Datagram.create_remove_channel(70000<<ZONE_SIZE_BITS|300))
 
     def test_get_fields(self):
         self.shard.flush()

@@ -666,7 +666,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(*client.expect(dg))
 
         # One of the objects broadcasts!
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_SET_FIELD)
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_SET_FIELD)
         dg.add_doid(7777) # do_id
         dg.add_uint16(setBR1)
         dg.add_string("I've built my life on judgement and causing pain...")
@@ -681,7 +681,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(*client.expect(dg))
 
         # Now, let's move the objects around...
-        dg = Datagram.create([(1234<<32)|5555], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|5555], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_doid(8888) # do_id
         dg.add_doid(1234) # new_parent
         dg.add_zone(4444) # new_zone
@@ -698,7 +698,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(*client.expect(dg))
 
         # Realistically, object 8888 would send an enterzone on the new location:
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         dg.add_doid(8888) # do_id
         dg.add_doid(1234) # parent_id
         dg.add_zone(4444) # zone_id
@@ -710,7 +710,7 @@ class TestClientAgent(unittest.TestCase):
         self.assertTrue(client.expect_none())
 
         # How about moving the other object outside of interest?
-        dg = Datagram.create([(1234<<32)|4444], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
         dg.add_doid(7777) # do_id
         dg.add_doid(1234) # new_parent
         dg.add_zone(1111) # new_zone
