@@ -18,9 +18,6 @@ roles:
       control: 100
 """ % test_dc
 
-def connect(channel):
-    return ChannelConnection('127.0.0.1', 57123, channel)
-
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:
         datagram.add_doid(doid)
@@ -52,9 +49,7 @@ class TestStateServer(unittest.TestCase):
         cls.conn_pool = []
         cls.conn_used = []
         for x in xrange(CONN_POOL_SIZE):
-            conn = connect(0)
-            conn.remove_channel(0)
-            cls.conn_pool.append(conn)
+            cls.conn_pool.append(ChannelConnection('127.0.0.1', 57123))
 
     @classmethod
     def tearDownClass(cls):

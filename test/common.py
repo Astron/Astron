@@ -533,13 +533,16 @@ class MDConnection(object):
         return self._read() == None
 
 class ChannelConnection(MDConnection):
-    def __init__(self, connAddr, connPort, MDChannel):
+    def __init__(self, connAddr, connPort, MDChannel=None):
         c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         c.connect((connAddr, connPort))
         MDConnection.__init__(self, c)
 
-        self.channels = [MDChannel]
-        self.send(Datagram.create_add_channel(MDChannel))
+        if MDChannel is not None:
+            self.channels = [MDChannel]
+            self.send(Datagram.create_add_channel(MDChannel))
+        else:
+            self.channels = []
 
     def add_channel(self, channel):
         if channel not in self.channels:
