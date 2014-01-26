@@ -15,7 +15,8 @@ class DatabaseBaseTests(object):
         dg.add_uint16(0) # Field count
         self.conn.send(dg)
 
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         return dgi.read_doid()
@@ -43,7 +44,7 @@ class DatabaseBaseTests(object):
 
         # The Database should return the context and do_id...
         dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive CreateObjectResp from dbserver.")
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining = 4 + DOID_SIZE_BYTES))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
@@ -77,7 +78,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # The Database should return a new do_id...
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([20], 777, DBSERVER_CREATE_OBJECT_RESP, remaining = 4 + DOID_SIZE_BYTES))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
@@ -237,7 +239,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # The Database should return a new do_id...
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([50], 777, DBSERVER_CREATE_OBJECT_RESP))
         self.assertEquals(dgi.read_uint32(), 1) # Check context
@@ -251,7 +254,8 @@ class DatabaseBaseTests(object):
             self.conn.send(dg)
 
             # Get values back from server
-            dg = self.conn.recv()
+            dg = self.conn.recv_maybe()
+            self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
             dgi = DatagramIterator(dg)
             self.assertTrue(*dgi.matches_header([50], 777, DBSERVER_OBJECT_GET_ALL_RESP))
             self.assertEquals(dgi.read_uint32(), context) # Check context
@@ -356,7 +360,8 @@ class DatabaseBaseTests(object):
         dg.add_uint32(54231)
         self.conn.send(dg)
 
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         doid = dgi.read_doid()
@@ -393,7 +398,8 @@ class DatabaseBaseTests(object):
 
         # Retrieve object from the database
         # The values should be updated
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 3) # Check context
@@ -429,7 +435,8 @@ class DatabaseBaseTests(object):
 
         # Retrieve object from the database
         # The values should be updated
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([60], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 4) # Check context
@@ -464,7 +471,8 @@ class DatabaseBaseTests(object):
         dg.add_uint32(55)
         self.conn.send(dg)
 
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         doid = dgi.read_doid()
@@ -546,7 +554,8 @@ class DatabaseBaseTests(object):
         dg.add_uint32(767676)
         self.conn.send(dg)
 
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         doid = dgi.read_doid()
@@ -651,7 +660,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 10) # Check context
@@ -694,7 +704,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([70], 777, DBSERVER_OBJECT_GET_ALL_RESP))
         self.assertEquals(dgi.read_uint32(), 10) # Check context
@@ -729,7 +740,8 @@ class DatabaseBaseTests(object):
         dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
         self.conn.send(dg)
 
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
         dgi = DatagramIterator(dg)
         dgi.seek(CREATE_DOID_OFFSET)
         doid = dgi.read_doid()
@@ -759,7 +771,8 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Get values in reply
-        dg = self.conn.recv()
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive ObjectGetFieldsResp.")
         dgi = DatagramIterator(dg)
         self.assertTrue(*dgi.matches_header([80], 777, DBSERVER_OBJECT_GET_FIELDS_RESP))
         self.assertEquals(dgi.read_uint32(), 3) # Check context
@@ -878,7 +891,8 @@ class DatabaseBaseTests(object):
             dg.add_uint16(123)
             self.conn.send(dg)
 
-            dg = self.conn.recv()
+            dg = self.conn.recv_maybe()
+            self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
             dgi = DatagramIterator(dg)
             dgi.seek(CREATE_DOID_OFFSET)
             return dgi.read_doid()
