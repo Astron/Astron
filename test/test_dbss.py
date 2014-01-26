@@ -21,7 +21,7 @@ roles:
             max: 9999
 """ % test_dc
 
-CONTEXT_OFFSET = 1 + 8 + 8 + 2
+CONTEXT_OFFSET = 1 + (CHANNEL_SIZE_BYTES*2) + 2
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:

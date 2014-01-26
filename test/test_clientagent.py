@@ -84,7 +84,7 @@ class TestClientAgent(unittest.TestCase):
 
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(1234)
+        dg.add_doid(1234)
         dg.add_uint16(request)
         dg.add_string('What... am I?')
         client.send(dg)
@@ -404,8 +404,8 @@ class TestClientAgent(unittest.TestCase):
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_doid(1234)
         dg.add_uint16(request)
-        dg.add_uint16(16) # Faking the string length...
-        dg.add_channel(0) # Whoops, only 8 bytes!
+        dg.add_uint16(CHANNEL_SIZE_BYTES*2) # Faking the string length...
+        dg.add_channel(0) # Whoops, only 8/16 bytes!
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
 

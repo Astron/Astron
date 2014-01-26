@@ -52,7 +52,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 	m_log->debug() << "Object created..." << std::endl;
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
-	handle_location_change(parent_id, zone_id, dgi.read_uint64());
+	handle_location_change(parent_id, zone_id, dgi.read_channel());
 	wake_children();
 }
 
@@ -599,7 +599,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			channel_t new_ai = dgi.read_uint64();
+			channel_t new_ai = dgi.read_channel();
 			if(m_ai_explicitly_set)
 			{
 				break;
