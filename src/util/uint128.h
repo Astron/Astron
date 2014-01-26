@@ -106,18 +106,35 @@ struct uint128_t {
 	}
 	inline uint128_t& operator<<=(unsigned int shift)
 	{
-		uint64_t high_low_bits = this->low >> (64 - shift);
-		this->low <<= shift;
-		this->high <<= shift;
-		this->high |= high_low_bits;
+		// Left-shifting a uint64_t by 64+ is undefined behavior
+		if(shift < 64)
+		{
+			uint64_t high_low_bits = this->low >> (64 - shift);
+			this->low <<= shift;
+			this->high <<= shift;
+			this->high |= high_low_bits;
+		}
+		else
+		{
+			this->high = this->low << (shift-64);
+			this->low = 0;
+		}
 		return *this;
 	}
 	inline uint128_t& operator>>=(unsigned int shift)
 	{
-		uint64_t low_high_bits = this->high << (64 - shift);
-		this->low >>= shift;
-		this->high >>= shift;
-		this->low |= low_high_bits;
+		if(shift < 64)
+		{
+			uint64_t low_high_bits = this->high << (64 - shift);
+			this->low >>= shift;
+			this->high >>= shift;
+			this->low |= low_high_bits;
+		}
+		else
+		{
+			this->low = this->high << (shift-64);
+			this->high = 0;
+		}
 		return *this;
 	}
 };
