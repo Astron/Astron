@@ -91,7 +91,7 @@ to one object at a time.
 **STATESERVER_OBJECT_SET_FIELD(2020)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
 **STATESERVER_OBJECT_SET_FIELDS(2021)**  
-    `args(uint32 do_id, uint16 field_count, [uint16 field_id]*field_count)`  
+    `args(uint32 do_id, uint16 field_count, [uint16 field_id, <VALUE>]*field_count)`  
 > Set one or more field(s) of a single object.
 >
 > The message is also used to inform others of the change by the following:
