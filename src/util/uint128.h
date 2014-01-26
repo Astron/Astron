@@ -30,7 +30,7 @@ struct uint128_t {
 	// Implicit boolean conversion
 	inline explicit operator bool() const
 	{
-		return high && low;
+		return high || low;
 	}
 
 	// Increment operators
