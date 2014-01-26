@@ -956,6 +956,101 @@ class TestStateServer(unittest.TestCase):
         deleteObject(conn, 5, 234000000)
         self.disconnect(conn)
 
+    def test_single_object_accessors(self):
+        self.flush_failed()
+        conn = self.connect(5)
+        doid = 0x99887766
+        context = 0x1111
+        createEmptyDTO1(5, doid, required1=0x828)
+
+        ### Test GetField won't respond when given incorrect doid ###
+        # Send a GetField request with a bad do_id
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(context++)
+        dg.add_doid(0xF00)
+        dg.add_uint16(setRequired1)
+        conn.send(dg)
+
+        # Expect no response
+        self.assert_true(conn.expect_none()) # should not recieve GetFieldResp
+
+
+        ### Test GetFields won't respond when given incorrect doid ###
+        # Send a GetFields request with a bad do_id
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(context++)
+        dg.add_doid(0xF00)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setBR1)
+        conn.send(dg)
+
+        # Expect no response
+        self.assert_true(conn.expect_none()) # should not recieve GetFieldsResp
+
+
+        ### Test GetAll won't respond when given incorrect doid ###
+        # Send a GetAll request with a bad do_id
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(context++)
+        dg.add_doid(0xF00)
+        conn.send(dg)
+
+        # Expect no response
+        self.assert_true(conn.expect_none()) # should not recieve GetAllResp
+
+
+        ### Test SetField won't update when given incorrect doid ###
+        # Send a SetField request with a bad do_id
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(0xF00)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xF00BA5)
+        conn.send(dg)
+
+        # Ask for the value back
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(0xB1112) # Context
+        dg.add_doid(doid)
+        dg.add_uint16(setRequired1)
+        conn.send(dg)
+
+        # Expect the value is unchanged
+        dg = Datagram.create([5], doid, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(0xB1112) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0x8280)
+        self.assertTrue(*conn.expect(dg))
+
+
+
+        ### Test SetFields won't update when given incorrect doid ###
+        # Send a SetFields request with a bad do_id
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(0xF00)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xF00BA5)
+        dg.add_uint16(setBR1)
+        dg.add_string("Emancipation!")
+        conn.send(dg)
+
+        # Ask for the value back
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(0xB1113) # Context
+        dg.add_doid(doid)
+        dg.add_uint16(setRequired1)
+        conn.send(dg)
+
+        # Expect the value is unchanged
+        dg = Datagram.create([5], doid, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(0xB1113) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0x8280)
+        self.assertTrue(*conn.expect(dg))
+
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
     def test_create_with_other(self):
         self.flush_failed()
