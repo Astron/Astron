@@ -275,7 +275,7 @@ class Datagram(object):
     def add_channel(self, channel):
         if 'USE_128BIT_CHANNELS' in os.environ:
             max_int64 = 0xFFFFFFFFFFFFFFFF
-            self.add_raw(struct.pack('<QQ', (channel >> 64) & max_int64, channel & max_int64))
+            self.add_raw(struct.pack('<QQ', channel & max_int64, (channel >> 64) & max_int64))
         else:
             self.add_uint64(channel)
 
@@ -403,7 +403,7 @@ class DatagramIterator(object):
     def read_channel(self):
         if 'USE_128BIT_CHANNELS' in os.environ:
             a, b = self.read_format('<QQ')
-            return (a << 64) | b
+            return (b << 64) | a
         else:
             return self.read_uint64()
 
