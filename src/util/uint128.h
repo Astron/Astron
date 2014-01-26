@@ -2,8 +2,13 @@
 #include <iostream>
 
 struct uint128_t {
-	uint64_t high;
-	uint64_t low;
+	#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+		uint64_t high;
+		uint64_t low;
+	#else
+		uint64_t low;
+		uint64_t high;
+	#endif
 
 	// Empty constructor
 	inline uint128_t() = default;
