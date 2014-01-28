@@ -51,6 +51,7 @@ add_library(dclass
 	file/lexer.cpp
 	file/write.cpp
 	file/read.cpp
+	file/hash_legacy.cpp
 	value/format.cpp
 	value/parse.cpp
 	value/default.cpp
