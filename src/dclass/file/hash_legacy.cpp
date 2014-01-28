@@ -52,9 +52,9 @@ enum LegacyType
 	L_STRING,
 	L_BLOB,
 
-	L_CHAR,
+	L_CHAR = 19,
 
-	L_INVALID
+	L_INVALID = 20
 };
 
 void hash_file(HashGenerator& hashgen, const File* file)

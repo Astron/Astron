@@ -5,6 +5,7 @@
 
 #include "core/global.h"
 #include "core/RoleFactory.h"
+#include "dclass/file/hash.h"
 
 using boost::asio::ip::tcp;
 
@@ -32,7 +33,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 	}
 	else
 	{
-		m_hash = g_dcf->get_hash();		
+		m_hash = dclass::legacy_hash(g_dcf);
 	}
 
 	//Initialize the network
