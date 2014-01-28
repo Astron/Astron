@@ -1,9 +1,8 @@
 #include "config.h"
-#include <exception>
-#include <stdexcept>
-#include <sstream>
+#include <sstream> // std::istream
+using namespace std;
 
-bool ConfigFile::load(std::istream &is)
+bool ConfigFile::load(istream &is)
 {
 	m_node = YAML::Load(is);
 	if(m_node.IsNull())
