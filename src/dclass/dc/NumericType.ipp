@@ -12,7 +12,7 @@ inline unsigned int NumericType::get_divisor() const
 // has_modulus returns true if the numeric is constrained by a modulus.
 inline bool NumericType::has_modulus() const
 {
-	return m_orig_modulus == 0.0;
+	return m_orig_modulus != 0.0;
 }
 
 // get_modulus returns a double representation of the modulus value.
