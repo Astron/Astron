@@ -443,10 +443,9 @@
 
 %option nounput
 
-UNSIGNED_INTEGERNUM  ([0-9]+)
-SIGNED_INTEGERNUM    ([+-]([0-9]+))
-UNSIGNED_HEXNUM      (0x[0-9a-fA-F]*)
-REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
+INTEGERNUM  ([0-9]+)
+HEXNUM      (0x[0-9a-fA-F]*)
+REALNUM     ((([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 
 %%
 
@@ -585,7 +584,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	return KW_CHAR;
 }
 
-{UNSIGNED_INTEGERNUM} {
+{INTEGERNUM} {
 	// An unsigned integer number.
 	accept();
 
@@ -610,62 +609,7 @@ REALNUM              ([+-]?(([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
 	return UNSIGNED_INTEGER;
 }
 
-{SIGNED_INTEGERNUM} {
-	// A signed integer number.
-	accept();
-
-	// atoll isn't fully portable, so we'll decode the integer by hand.
-	yylval.str = yytext;
-
-	bool neg = false;
-	const char *p = yytext;
-	if(*p == '-')
-	{
-		neg = true;
-		++p;
-	}
-	else if(*p == '+')
-	{
-		++p;
-	}
-
-	uint64_t value = 0;
-	while(*p != '\0')
-	{
-		uint64_t next_value = value * 10;
-		if(next_value < value)
-		{
-			lexer_error("Number out of range.");
-			yylval.u.int64 = 1;
-			return SIGNED_INTEGER;
-		}
-
-		value = next_value + (*p - '0');
-		++p;
-	}
-
-	if(neg)
-	{
-		yylval.u.int64 = -(int64_t)value;
-		if(yylval.u.int64 > 0)
-		{
-			lexer_error("Number out of range.");
-			yylval.u.int64 = 1;
-		}
-	}
-	else {
-		yylval.u.int64 = (int64_t)value;
-		if(yylval.u.int64 < 0)
-		{
-			lexer_error("Number out of range.");
-			yylval.u.int64 = 1;
-		}
-	}
-
-	return SIGNED_INTEGER;
-}
-
-{UNSIGNED_HEXNUM} {
+{HEXNUM} {
 	// A hexadecimal integer number.
 	accept();
 
