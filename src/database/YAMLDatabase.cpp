@@ -13,7 +13,6 @@
 #include <list>
 
 static ConfigVariable<std::string> foldername("foldername", "yaml_db");
-LogCategory yamldb_log("yamldb", "YAML Database Engine");
 
 class YAMLDatabase : public DatabaseBackend
 {
@@ -21,6 +20,7 @@ class YAMLDatabase : public DatabaseBackend
 		doid_t m_next_id;
 		std::list<doid_t> m_free_ids;
 		std::string m_foldername;
+		LogCategory *m_log;
 
 		inline std::string filename(doid_t do_id)
 		{
@@ -181,6 +181,10 @@ class YAMLDatabase : public DatabaseBackend
 			m_free_ids(),
 			m_foldername(foldername.get_rval(m_config))
 		{
+			stringstream log_name;
+			log_name << "Database-YAML" << "(Range: [" << min_id << ", " << max_id << "])";
+			m_log = new LogCategory(m_backend, log_name.str());
+
 			// Open database info file
 			std::ifstream infostream(m_foldername + "/info.yaml");
 			YAML::Node document = YAML::Load(infostream);
