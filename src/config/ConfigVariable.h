@@ -59,14 +59,19 @@ class ConfigVariable
 
 	public:
 		ConfigVariable(const std::string& name, const T& def_val,
-		               ConfigGroup& grp = ConfigGroup::root) :
-			m_name(name), m_def_val(def_val), m_group(&grp)
+		               ConfigGroup* grp = &ConfigGroup::root) :
+			m_name(name), m_def_val(def_val), m_group(grp)
 		{
-			bool inserted = grp.m_variables.insert(name).second;
+			bool inserted = grp->m_variables.insert(name).second;
 			if(!inserted)
 			{
 				// TODO: Produce a warning for the developer or something...
 			}
+		}
+
+		ConfigVariable(const std::string& name, const T& def_val,
+		               ConfigGroup& grp) : ConfigVariable(name, def_val, &grp)
+		{
 		}
 
 		// Get rval gets the value of the config variable relative to the variable's ConfigGroup.

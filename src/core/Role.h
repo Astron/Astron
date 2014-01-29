@@ -7,6 +7,9 @@ class RoleConfigGroup : public ConfigGroup
 {
 	public:
 		RoleConfigGroup(const std::string& type);
+
+	private:
+		ConfigVariable<std::string> m_type;
 };
 
 // A Role is a major component of Astron which is configured in the daemon's config file.
