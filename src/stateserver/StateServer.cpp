@@ -1,5 +1,6 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/constraints.h"
 #include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
@@ -9,6 +10,8 @@
 
 static RoleConfigGroup stateserver_config("stateserver");
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, stateserver_config);
+static InvalidChannelConstraint control_not_invalid(control_channel);
+static ReservedChannelConstraint control_not_reserved(control_channel);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
