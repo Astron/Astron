@@ -269,6 +269,7 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/AstronClient.cpp
 	)
 	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+	add_test(validate_config_clientagent ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
 endif()
 
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
