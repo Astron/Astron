@@ -30,7 +30,7 @@ class ConfigTest(object):
             thread.join()
         return self.process.returncode
 
-class TestConfigCore(unittest.TestCase):
+class TestConfigDBSS(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cfg, cls.config_file = tempfile.mkstemp()
