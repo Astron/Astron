@@ -27,8 +27,8 @@ roles:
       bind: 127.0.0.1:57128
       version: "Sword Art Online v5.1"
       channels:
-          min: 100
-          max: 999
+          min: 3100
+          max: 3999
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
@@ -80,7 +80,7 @@ class TestClientAgent(unittest.TestCase):
 
         return client
 
-    def identify(self, client):
+    def identify(self, client, custom_id=False):
         # Figure out the sender ID for a given client connection.
 
         dg = Datagram()
@@ -97,8 +97,9 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint64(), 1234)
         sender_id = dgi.read_uint64()
 
-        #self.assertLessEqual(sender_id, 999)
-        #self.assertGreaterEqual(sender_id, 100)
+        if not custom_id:
+            self.assertLessEqual(sender_id, 3999)
+            self.assertGreaterEqual(sender_id, 3100)
 
         return sender_id
 
@@ -196,14 +197,14 @@ class TestClientAgent(unittest.TestCase):
 
         # Send a CLIENTAGENT_DISCONNECT to the session...
         dg = Datagram.create([id], 1, CLIENTAGENT_EJECT)
-        dg.add_uint16(999)
+        dg.add_uint16(3999)
         dg.add_string('ERROR: The night... will last... forever!')
         self.server.send(dg)
 
         # See if the client dies with that exact error...
         dg = Datagram()
         dg.add_uint16(CLIENT_EJECT)
-        dg.add_uint16(999)
+        dg.add_uint16(3999)
         dg.add_string('ERROR: The night... will last... forever!')
         self.assertTrue(*client.expect(dg))
         client.close()
@@ -314,7 +315,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         # Reidentify the client, make sure the sender has changed.
-        self.assertEquals(self.identify(client), 555566667777)
+        self.assertEquals(self.identify(client, custom_id=True), 555566667777)
 
         # The client should have a subscription on the new sender channel automatically:
         dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
