@@ -146,6 +146,7 @@ if(BUILD_DBSERVER)
 			src/database/YAMLDatabase.cpp
 		)
 		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
+		add_test(validate_config_dbyaml ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
