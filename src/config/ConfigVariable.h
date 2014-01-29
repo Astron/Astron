@@ -1,14 +1,6 @@
 #pragma once
-#include "configGroups.h"
+#include "ConfigGroup.h"
 #include <istream> // std::istream
-#include <yaml-cpp/yaml.h> // YAML::Node
-
-
-typedef YAML::Node ConfigNode;
-
-// todo: get rid of
-typedef ConfigNode RangesConfig;
-typedef ConfigNode DBBackendConfig;
 
 class ConfigFile
 {

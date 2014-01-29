@@ -1,7 +1,7 @@
 #pragma once
 #include "DatabaseBackend.h"
 #include "core/types.h"
-#include "config/configVariables.h"
+#include "config/ConfigVariable.h"
 #include <string>
 #include <cstdint>
 

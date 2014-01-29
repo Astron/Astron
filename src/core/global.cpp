@@ -1,6 +1,6 @@
 #include "core/global.h"
 #include "core/RoleFactory.h"
-#include "config/configGroups.h"
+#include "config/ConfigGroup.h"
 
 Logger *g_logger = new Logger;
 ConfigFile *g_config = new ConfigFile;

@@ -1,6 +1,6 @@
 #pragma once
 #include "Logger.h"
-#include "config/configVariables.h"
+#include "config/ConfigVariable.h"
 #include "dcparser/dcFile.h"
 #include "util/EventSender.h"
 #include <boost/asio.hpp>

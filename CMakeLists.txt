@@ -292,10 +292,10 @@ set(CORE_FILES
 )
 
 set(CONFIG_FILES
-	src/config/configGroups.h
-	src/config/configGroups.cpp
-	src/config/configVariables.h
-	src/config/configVariables.cpp
+	src/config/ConfigGroup.h
+	src/config/ConfigGroup.cpp
+	src/config/ConfigVariable.h
+	src/config/ConfigVariable.cpp
 )
 
 set(MESSAGEDIRECTOR_FILES

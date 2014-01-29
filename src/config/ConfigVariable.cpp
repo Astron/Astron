@@ -1,4 +1,4 @@
-#include "configVariables.h"
+#include "ConfigVariable.h"
 #include <sstream> // std::istream
 using namespace std;
 
@@ -12,7 +12,7 @@ bool ConfigFile::load(istream &is)
 	return true;
 }
 
-YAML::Node ConfigFile::copy_node()
+ConfigNode ConfigFile::copy_node()
 {
 	return YAML::Clone(m_node);
 }

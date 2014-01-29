@@ -110,16 +110,22 @@ int main(int argc, char *argv[])
 	ifstream file(cfg_file.c_str());
 	if(!file.is_open())
 	{
-		mainlog.fatal() << "Failed to open configuration file." << endl;
+		mainlog.fatal() << "Failed to open configuration file.\n";
 		return 1;
 	}
 
 	if(!g_config->load(file))
 	{
-		mainlog.fatal() << "Could not parse configuration file!" << endl;
+		mainlog.fatal() << "Could not parse configuration file!\n";
 		return 1;
 	}
 	file.close();
+
+	if(!ConfigGroup::root.validate(g_config->copy_node()))
+	{
+		mainlog.fatal() << "Configuration file contains errors.\n";
+		return 1;
+	}
 
 	vector<string> dc_file_names = dc_files.get_val();
 	for(auto it = dc_file_names.begin(); it != dc_file_names.end(); ++it)

@@ -1,7 +1,7 @@
 #include "Role.h"
 using namespace std;
 
-static ConfigList roles_config("roles");
+static ConfigList roles_config("roles", "type");
 
 RoleConfigGroup::RoleConfigGroup(const string& type) : ConfigGroup(type, roles_config)
 {

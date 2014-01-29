@@ -1,5 +1,5 @@
 #pragma once
-#include "config/configVariables.h"
+#include "config/ConfigVariable.h"
 #include "messagedirector/MessageDirector.h"
 
 typedef ConfigNode RoleConfig;
