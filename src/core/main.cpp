@@ -104,8 +104,16 @@ int main(int argc, char *argv[])
 			string dir_str = dir.string();
 
 			// change directory
-			boost::filesystem::current_path(dir_str);
-			
+			try
+			{
+				boost::filesystem::current_path(dir_str);
+			}
+			catch(const exception &e)
+			{
+				mainlog.fatal() << "Could not change working directory to config directory.\n";
+				exit(1);
+			}
+
 			cfg_file = filename; 	
 		}
 	}
