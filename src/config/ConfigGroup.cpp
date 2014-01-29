@@ -4,6 +4,11 @@ using namespace std;
 
 LogCategory config_log("config", "Config");
 
+void config_error(const std::string& msg)
+{
+	config_log.error() << msg << "\n";
+}
+
 // root constructor
 ConfigGroup::ConfigGroup() : m_name(""), m_path("")
 {
@@ -22,9 +27,9 @@ ConfigGroup::~ConfigGroup()
 {
 }
 
-void ConfigGroup::add_variable(const string& varname)
+void ConfigGroup::add_variable(const string& varname, rtest r)
 {
-	bool inserted = m_variables.insert(varname).second;
+	bool inserted = m_variables.insert(pair<string,rtest>(varname, r)).second;
 	if(!inserted)
 	{
 		config_log.fatal() << "Duplicate ConfigVariable name (" << varname << ") in ConfigGroup '"
@@ -55,32 +60,40 @@ bool ConfigGroup::validate(ConfigNode node)
 	for(auto it = node.begin(); it != node.end(); ++it)
 	{
 		string key = it->first.as<std::string>();
+
 		auto found_var = m_variables.find(key);
-		auto found_grp = m_children.find(key);
 		if(found_var != m_variables.end())
 		{
-			// TODO: Test var contraints
+			rtest r = found_var->second;
+			if(!r(node))
+			{
+				config_log.info() << "Config variable did not match constraint"
+				                  << " (see previous error).\n";
+				ok = false;
+			}
+			continue;
 		}
-		else if(found_grp != m_children.end())
+
+		auto found_grp = m_children.find(key);
+		if(found_grp != m_children.end())
 		{
 			if(!found_grp->second->validate(node[key]))
 			{
 				ok = false;
 			}
+			continue;
+		}
+
+		if(m_name.length() > 0)
+		{
+			config_log.error() << "Section '" << m_path
+			                    << "' has no attribute named '" << key << "'.\n";
 		}
 		else
 		{
-			if(m_name.length() > 0)
-			{
-				config_log.error() << "Section '" << m_path
-				                    << "' has no attribute named '" << key << "'.\n";
-			}
-			else
-			{
-				config_log.error() << "Section '" << key << "' is not a valid config category.\n";
-			}
-			ok = false;
+			config_log.error() << "Section '" << key << "' is not a valid config category.\n";
 		}
+		ok = false;
 	}
 	return ok;
 }

@@ -2,9 +2,14 @@
 #include <string>          // std::string
 #include <unordered_map>   // std::unordered_map
 #include <unordered_set>   // std::unordered_set
+#include <functional>      // std::function
 #include <yaml-cpp/yaml.h> // YAML::Node
 
 typedef YAML::Node ConfigNode;
+typedef std::function<bool(ConfigNode)> rtest;
+typedef std::function<bool()> test;
+
+void config_error(const std::string& msg);
 
 class ConfigGroup
 {
@@ -47,11 +52,12 @@ class ConfigGroup
 	protected:
 		ConfigGroup* m_parent;
 		std::string m_name, m_path;
-		std::unordered_set<std::string> m_variables;
+
+		std::unordered_map<std::string, rtest> m_variables;
 		std::unordered_map<std::string, ConfigGroup*> m_children;
 
 	private:
-		void add_variable(const std::string&);
+		void add_variable(const std::string&, rtest);
 };
 
 class ConfigList : public ConfigGroup

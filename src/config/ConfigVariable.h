@@ -1,7 +1,9 @@
 #pragma once
 #include "ConfigGroup.h"
-#include <istream> // std::istream
+#include <istream>    // std::istream
+#include <list>       // std::list
 
+// TODO: Doc
 class ConfigFile
 {
 	template<typename T>
@@ -15,8 +17,15 @@ class ConfigFile
 	private:
 		ConfigNode m_node;
 };
-extern ConfigFile *g_config;
 
+
+// Foward declarations
+extern ConfigFile *g_config;
+template<typename T>
+class ConfigConstraint;
+
+
+// TODO: Doc
 template<typename T>
 class ConfigVariable
 {
@@ -24,6 +33,8 @@ class ConfigVariable
 		ConfigGroup* m_group;
 		std::string m_name;
 		T m_def_val;
+
+		std::list<ConfigConstraint<T>*> m_constraints;
 
 		// get_val_by_path gets the value at the given config path
 		T get_val_by_path(ConfigNode node, std::string path)
@@ -57,12 +68,53 @@ class ConfigVariable
 			return cnode.as<T>();
 		}
 
+		bool rtest_constraints(ConfigNode node)
+		{
+			T val = get_rval(node);
+			for(auto it = m_constraints.begin(); it != m_constraints.end(); ++it)
+			{
+				if(!(*it)->test(val))
+				{
+					config_error((*it)->error());
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		bool test_constraints()
+		{
+			T val = get_val();
+			for(auto it = m_constraints.begin(); it != m_constraints.end(); ++it)
+			{
+				if(!(*it)->test(val))
+				{
+					config_error((*it)->error());
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		rtest get_rtest()
+		{
+			using namespace std::placeholders;
+			return std::bind(&ConfigVariable::rtest_constraints, this, _1);
+		}
+
+		test get_test()
+		{
+			return std::bind(&ConfigVariable::test_constraints, this);
+		}
+
 	public:
 		ConfigVariable(const std::string& name, const T& def_val,
 		               ConfigGroup* grp = &ConfigGroup::root) :
 			m_name(name), m_def_val(def_val), m_group(grp)
 		{
-			grp->add_variable(name);
+			grp->add_variable(name, get_rtest());
 		}
 
 		ConfigVariable(const std::string& name, const T& def_val,
@@ -82,4 +134,37 @@ class ConfigVariable
 			return get_val_by_path(g_config->m_node, m_group->get_path() + m_name);
 		}
 
+		void add_constraint(ConfigConstraint<T>* constraint)
+		{
+			m_constraints.push_back(constraint);
+		}
+};
+
+// TODO: Doc
+template<typename T>
+class ConfigConstraint
+{
+	public:
+		typedef bool (*function)(const T&);
+
+	private:
+		function m_test;
+		std::string m_error;
+
+	public:
+		ConfigConstraint(function test, ConfigVariable<T>& var, const std::string& error) :
+			m_test(test), m_error(error)
+		{
+			var.add_constraint(this);
+		}
+
+		bool test(const T& v)
+		{
+			return m_test(v);
+		}
+
+		std::string error()
+		{
+			return m_error;
+		}
 };
