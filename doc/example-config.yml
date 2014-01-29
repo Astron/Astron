@@ -3,18 +3,25 @@ daemon:
     url: http://123.45.67.89/coremd/ # URL where the web interface may be located. Defaults to:
                                      # http://<web/bind>/
 
-globals:
-    eventlogger: 127.0.0.1:9090 # The IP:port of the Event Logger to be used when logging global events.
-    dc_files: # A list of DC files to be loaded. ORDER IS SENSITIVE!
+# The General category contains config settings that are shared among daemons in the cluster.
+general:
+    # An "IP:port" for the Event Logger to be used when logging global events.
+    eventlogger: 127.0.0.1:9090
+    # A list of DC files to be loaded.
+    #     NOTE: Order is sensitive, DC files loaded in a different order will not match.
+    dc_files:
         - core.dc
         - game.dc
         - minigames.dc
-    # This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
-    # anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
-    uberdogs:
-      - id: 1234
-        class: LoginManager
-        anonymous: true #Default: false
+
+# The Uberdog category describes the existence of UberDOGs, which are objects
+#     that are assumed to exist statically.
+uberdogs:
+  - id: 1234
+    class: LoginManager
+    # Anonymous specifies whether an uberdog can be accessed through
+    #     the ClientAgent from an unauthenticated client.
+    anonymous: true # Default: false
 
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
@@ -27,15 +34,8 @@ messagedirector:
     bind: 0.0.0.0:6660
     #connect: 127.0.0.1:5555
 
-# This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
-# anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
-uberdogs:
-    - id: 1234
-      class: LoginManager
-      anonymous: true #Default: false
-
+# The Roles category allows specifying roles that we would like this daemon to perform.
 roles:
-    # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
