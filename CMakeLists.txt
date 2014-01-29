@@ -255,6 +255,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
+	add_test(validate_config_eventlogger ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
