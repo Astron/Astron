@@ -5,17 +5,19 @@
 #include "DBStateServer.h"
 #include "LoadingObject.h"
 
-// RoleConfig
-static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL);
+static RoleFactoryItem<DBStateServer> dbss_fact("dbss");
 
-// RangesConfig
-static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID);
-static ConfigVariable<doid_t> range_max("max", DOID_MAX);
+static RoleConfigGroup dbss_config("dbss");
+static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL, dbss_config);
+
+static ConfigList ranges_config("ranges", dbss_config);
+static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID, ranges_config);
+static ConfigVariable<doid_t> range_max("max", DOID_MAX, ranges_config);
 
 DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 	m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
 {
-	RangesConfig ranges = roleconfig["ranges"];
+	ConfigNode ranges = dbss_config.get_child_node(ranges_config, roleconfig);
 	for(auto it = ranges.begin(); it != ranges.end(); ++it)
 	{
 		channel_t min = range_min.get_rval(*it);
@@ -644,5 +646,3 @@ bool unpack_db_fields(DatagramIterator &dgi, DCClass* dclass,
 
 	return true;
 }
-
-RoleFactoryItem<DBStateServer> dbss_fact("dbss");
