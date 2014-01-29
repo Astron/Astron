@@ -54,81 +54,114 @@ class TestConfigCore(unittest.TestCase):
         cls.write_config(config)
         return cls.test_command.run(timeout)
 
-    def test_core_good(self):
+    def test_dbss_good(self):
         config = """\
-            daemon:
-                name: Core Message Director
-                url: http://123.45.67.89/coremd/
+            messagedirector:
+                bind: 127.0.0.1:57123
 
             general:
-                eventlogger: 127.0.0.1:9090
                 dc_files:
                     - %r
 
-            uberdogs:
-                - id: 1234
-                  class: UberDog1
-                  anonymous: true
-
-                - id: 1235
-                  class: UberDog2
-                  anonymous: false
-
-            messagedirector:
-                bind: 127.0.0.1:57123
+            roles:
+                - type: dbss
+                  database: 1200
+                  ranges:
+                      - min: 9000
+                        max: 9999
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
-    def test_roles_missing_type(self):
+    def test_dbss_invalid_attr(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
-            roles:
-                - qux: bar
-                - bleem: baz"""
-        self.assertEquals(self.run_test(config), EXITED)
 
-    def test_roles_invalid_type(self):
-        config = """\
-            messagedirector:
-                bind: 127.0.0.1:57123
             roles:
-                - type: foo
+                - type: dbss
+                  pewpew: "q.q"
             """
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_root_is_not_map(self):
+    def test_dbss_invalid_database(self):
         config = """\
-            - messagedirector:
-                  bind: 127.0.0.1:57123
-            - roles:
-                  - type: foo
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: dbss
+                  database: 0
+                  ranges:
+                      - min: 9000
+                        max: 9999
             """
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_general_is_not_map(self):
+    def test_dbss_reserved_database(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
-            general:
-                - eventlogger: 127.0.0.1:9090
-                - dc_files:
-                      - %r
-            """ % test_dc
+
+            roles:
+                - type: dbss
+                  database: 200
+                  ranges:
+                      - min: 9000
+                        max: 9999
+            """
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_uberdogs_is_not_list(self):
+    def test_dbss_invalid_range(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
-            uberdogs:
-                id: 1234
-                class: UberDog1
-                anonymous: true
 
-                id: 1235
-                class: UberDog2
-                anonymous: false
+            roles:
+                - type: dbss
+                  database: 1200
+                  ranges:
+                      - min: 0
+                        max: 9999
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: dbss
+                  database: 1200
+                  ranges:
+                      - min: 9000
+                        max: 0
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+    def test_dbss_reserved_range(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: dbss
+                  database: 1200
+                  ranges:
+                      - min: 201
+                        max: 9999
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: dbss
+                  database: 1200
+                  ranges:
+                      - min: 9000
+                        max: 206
             """
         self.assertEquals(self.run_test(config), EXITED)
 
