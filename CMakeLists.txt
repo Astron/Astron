@@ -241,6 +241,7 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.cpp
 		)
 		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
+		add_test(validate_config_dbss ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
