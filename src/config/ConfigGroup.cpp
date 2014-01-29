@@ -67,8 +67,8 @@ bool ConfigGroup::validate(ConfigNode node)
 			rtest r = found_var->second;
 			if(!r(node))
 			{
-				config_log.info() << "Config variable did not match constraint"
-				                  << " (see previous error).\n";
+				config_log.info() << "In Section '" << m_path << "', attribute '"
+				                  << key << "' did not match constraint (see error).\n";
 				ok = false;
 			}
 			continue;
