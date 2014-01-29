@@ -6,9 +6,14 @@
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
+
 static ConfigGroup md_config("messagedirector");
 static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
+
+static ConfigGroup daemon_config("daemon");
+static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
+static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 
 // Define convenience type
 typedef boost::icl::discrete_interval<channel_t> interval_t;
