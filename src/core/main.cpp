@@ -106,7 +106,10 @@ int main(int argc, char *argv[])
 			// change directory
 			try
 			{
-				boost::filesystem::current_path(dir_str);
+				if(!dir_str.empty())
+				{
+					boost::filesystem::current_path(dir_str);
+				}
 			}
 			catch(const exception &e)
 			{
