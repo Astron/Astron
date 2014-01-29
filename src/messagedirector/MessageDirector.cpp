@@ -1,13 +1,14 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
-#include "core/config.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/configVariables.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
-static ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
-static ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
+static ConfigGroup md_config("messagedirector");
+static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
+static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
 
 // Define convenience type
 typedef boost::icl::discrete_interval<channel_t> interval_t;

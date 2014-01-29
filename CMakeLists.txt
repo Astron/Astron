@@ -278,18 +278,24 @@ endif()
 
 ### Define core components ###
 set(CORE_FILES
-	src/core/main.cpp
 	src/core/global.h
 	src/core/global.cpp
-	src/core/config.cpp
-	src/core/config.h
+	src/core/main.cpp
 	src/core/Logger.h
 	src/core/Logger.cpp
 	src/core/Role.h
-	src/core/RoleFactory.cpp
+	src/core/Role.cpp
 	src/core/RoleFactory.h
+	src/core/RoleFactory.cpp
 	src/core/types.h
 	src/core/msgtypes.h
+)
+
+set(CONFIG_FILES
+	src/config/configGroups.h
+	src/config/configGroups.cpp
+	src/config/configVariables.h
+	src/config/configVariables.cpp
 )
 
 set(MESSAGEDIRECTOR_FILES
@@ -312,6 +318,7 @@ include_directories(src)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 add_executable(astrond
 	${CORE_FILES}
+	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
 	${STATESERVER_FILES}
@@ -323,6 +330,7 @@ add_executable(astrond
 
 ### Setup source groups ###
 source_group("Core" FILES ${CORE_FILES})
+source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
 if(STATESERVER_FILES)

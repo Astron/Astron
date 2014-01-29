@@ -1,7 +1,5 @@
 #include "RoleFactory.h"
 
-RoleFactory RoleFactory::singleton;
-
 BaseRoleFactoryItem::BaseRoleFactoryItem(const std::string &name)
 {
 	RoleFactory::singleton.add_role(name, this);

@@ -1,6 +1,6 @@
 #pragma once
 #include "core/Role.h"
-#include <unordered_map>
+#include <unordered_map> // std::unordered_map
 
 // A BaseRoleFactoryItem is a common ancestor that all role factory templates inherit from.
 class BaseRoleFactoryItem

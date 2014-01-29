@@ -1,6 +1,6 @@
 #pragma once
-#include "core/config.h"
 #include "core/types.h"
+#include "config/configVariables.h"
 #include "dcparser/dcField.h"
 #include <vector>
 

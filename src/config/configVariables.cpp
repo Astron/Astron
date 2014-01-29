@@ -1,4 +1,4 @@
-#include "config.h"
+#include "configVariables.h"
 #include <sstream> // std::istream
 using namespace std;
 
