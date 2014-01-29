@@ -162,17 +162,3 @@ bool KeyedConfigList::validate(ConfigNode node)
 
 	return ok;
 }
-
-KeyedConfigGroup::KeyedConfigGroup(const string& key, KeyedConfigList& list) :
-	ConfigGroup(key, list)
-{
-}
-
-KeyedConfigGroup::~KeyedConfigGroup()
-{
-}
-
-bool KeyedConfigGroup::validate(ConfigNode node)
-{
-	return true;
-}

@@ -3,7 +3,7 @@
 #include "messagedirector/MessageDirector.h"
 
 typedef ConfigNode RoleConfig;
-class RoleConfigGroup : public KeyedConfigGroup
+class RoleConfigGroup : public ConfigGroup
 {
 	public:
 		RoleConfigGroup(const std::string& type);

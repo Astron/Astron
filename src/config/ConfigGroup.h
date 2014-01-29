@@ -65,12 +65,3 @@ class KeyedConfigList : public ConfigGroup
 	private:
 		std::string m_key;
 };
-
-class KeyedConfigGroup : public ConfigGroup
-{
-	public:
-		KeyedConfigGroup(const std::string& key, KeyedConfigList& keyed_list);
-		virtual ~KeyedConfigGroup();
-
-		virtual bool validate(ConfigNode node);
-};
