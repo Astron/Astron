@@ -2,16 +2,23 @@
 
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/constraints.h"
 #include "DBBackendFactory.h"
 
 static RoleFactoryItem<DatabaseServer> dbserver_fact("database");
 
 static RoleConfigGroup db_config("database");
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, db_config);
+static InvalidChannelConstraint control_not_invalid(control_channel);
+static ReservedChannelConstraint control_not_reserved(control_channel);
 
 static ConfigGroup generate_config("generate", db_config);
 static ConfigVariable<doid_t> min_id("min", INVALID_DO_ID, generate_config);
 static ConfigVariable<doid_t> max_id("max", UINT_MAX, generate_config);
+static InvalidDoidConstraint min_not_invalid(min_id);
+static InvalidDoidConstraint max_not_invalid(max_id);
+static ReservedDoidConstraint min_not_reserved(min_id);
+static ReservedDoidConstraint max_not_reserved(max_id);
 
 ConfigGroup db_backend_config("backend", db_config);
 ConfigVariable<std::string> db_backend_type("type", "yaml", db_backend_config);
