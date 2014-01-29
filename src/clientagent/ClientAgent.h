@@ -10,7 +10,7 @@
 class ChannelTracker
 {
 	public:
-		ChannelTracker(channel_t min, channel_t max);
+		ChannelTracker(channel_t min = INVALID_CHANNEL, channel_t max = INVALID_CHANNEL);
 
 		channel_t alloc_channel();
 		void free_channel(channel_t channel);

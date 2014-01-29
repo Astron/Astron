@@ -8,20 +8,25 @@
 
 using boost::asio::ip::tcp;
 
-static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
-static ConfigVariable<std::string> client_type("client", "libastron");
-static ConfigVariable<std::string> server_version("version", "dev");
-static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
-static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
+static RoleConfigGroup clientagent_config("clientagent");
+static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
+static ConfigVariable<std::string> client_type("client", "libastron", clientagent_config);
+static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
+
+static ConfigGroup channels_config("channels", clientagent_config);
+static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
+static ConfigVariable<channel_t> max_channel("max", INVALID_CHANNEL, channels_config);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
 	m_client_type(client_type.get_rval(roleconfig)),
-	m_server_version(server_version.get_rval(roleconfig)),
-	m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig))
+	m_server_version(server_version.get_rval(roleconfig))
 {
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
+
+	ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
+	m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);

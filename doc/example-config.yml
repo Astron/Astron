@@ -41,6 +41,11 @@ roles:
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
+      version: "FooGame v7.0"
+      # Channels defines the range of channels this clientagent can assign to Clients
+      channels:
+          min: 100
+          max: 999
       # Client defines which client this client agent should generate when it receives a new
       # connection.  By default, it is a "libastron" client which accepts connections from a client
       # using the libastron ClientRepository library.

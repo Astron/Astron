@@ -30,6 +30,10 @@ class ConfigGroup
 		{
 			return m_path;
 		}
+		inline ConfigNode get_child_node(ConfigGroup grp, ConfigNode node)
+		{
+			return node[grp.m_name];
+		}
 
 		virtual bool validate(ConfigNode node);
 
