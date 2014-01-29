@@ -296,6 +296,7 @@ set(CONFIG_FILES
 	src/config/ConfigGroup.cpp
 	src/config/ConfigVariable.h
 	src/config/ConfigVariable.cpp
+	src/config/constraints.cpp
 )
 
 set(MESSAGEDIRECTOR_FILES

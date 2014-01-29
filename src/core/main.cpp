@@ -1,5 +1,6 @@
 #include "global.h"
 #include "RoleFactory.h"
+#include "config/constraints.h"
 
 #include <boost/filesystem.hpp>
 
@@ -16,9 +17,11 @@ static ConfigVariable<vector<string> > dc_files("dc_files", vector<string>(), ge
 static ConfigVariable<string> eventlogger_addr("eventlogger", "", general_config);
 
 static ConfigList uberdogs_config("uberdogs");
-static ConfigVariable<doid_t> uberdog_id("id", 0, uberdogs_config);
+static ConfigVariable<doid_t> uberdog_id("id", INVALID_DO_ID, uberdogs_config);
 static ConfigVariable<string> uberdog_class("class", "", uberdogs_config);
 static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
+static InvalidDoidConstraint id_not_invalid(uberdog_id);
+static ReservedDoidConstraint id_not_reserved(uberdog_id);
 
 static void printHelp(ostream &s);
 
