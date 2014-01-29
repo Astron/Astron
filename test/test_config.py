@@ -78,7 +78,16 @@ class TestConfigCore(unittest.TestCase):
                 bind: 127.0.0.1:57123""" % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
-    def test_invalid_role_type(self):
+    def test_roles_missing_type(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+            roles:
+                - qux: bar
+                - bleem: baz"""
+        self.assertEquals(self.run_test(config), EXITED)
+
+    def test_roles_invalid_type(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
