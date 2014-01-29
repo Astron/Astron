@@ -7,8 +7,8 @@
 #include "DistributedObject.h"
 #include "StateServer.h"
 
-
-static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
+static RoleConfigGroup stateserver_config("stateserver");
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, stateserver_config);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
