@@ -22,6 +22,19 @@ ConfigGroup::~ConfigGroup()
 {
 }
 
+void ConfigGroup::add_variable(const string& varname)
+{
+	bool inserted = m_variables.insert(varname).second;
+	if(!inserted)
+	{
+		config_log.fatal() << "Duplicate ConfigVariable name (" << varname << ") in ConfigGroup '"
+		                   << m_name << ".'\n\tPlease submit a bug/issue to Astron with your"
+		                   << " CMakeCache and this ouput.\n";
+		exit(1);
+		// TODO: Produce a warning for the developer or something...
+	}
+}
+
 bool ConfigGroup::validate(ConfigNode node)
 {
 	if(!node.IsMap())

@@ -52,6 +52,9 @@ class ConfigGroup
 		std::string m_name, m_path;
 		std::unordered_set<std::string> m_variables;
 		std::unordered_map<std::string, ConfigGroup*> m_children;
+
+	private:
+		void add_variable(const std::string&);
 };
 
 class ConfigList : public ConfigGroup

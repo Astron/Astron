@@ -9,7 +9,6 @@
 using boost::asio::ip::tcp;
 
 static RoleConfigGroup clientagent_config("clientagent");
-static ConfigVariable<std::string> ca_type("type", "clientagent", clientagent_config);
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
 static ConfigVariable<std::string> client_type("client", "libastron", clientagent_config);
 static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);

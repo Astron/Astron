@@ -62,11 +62,7 @@ class ConfigVariable
 		               ConfigGroup* grp = &ConfigGroup::root) :
 			m_name(name), m_def_val(def_val), m_group(grp)
 		{
-			bool inserted = grp->m_variables.insert(name).second;
-			if(!inserted)
-			{
-				// TODO: Produce a warning for the developer or something...
-			}
+			grp->add_variable(name);
 		}
 
 		ConfigVariable(const std::string& name, const T& def_val,
