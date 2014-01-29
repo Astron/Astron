@@ -230,6 +230,7 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.h
 	)
 	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
+	add_test(validate_config_stateserver ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
