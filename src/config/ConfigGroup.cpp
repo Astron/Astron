@@ -97,7 +97,7 @@ bool ConfigList::validate(ConfigNode node)
 {
 	if(!node.IsSequence())
 	{
-		config_log.error() << "Sec '" << m_path
+		config_log.error() << "Section '" << m_path
 		                   << "' expects a list of values.\n";
 		return false;
 	}

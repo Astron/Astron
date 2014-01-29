@@ -315,6 +315,7 @@ set(UTIL_FILES
 )
 
 include_directories(src)
+add_test(validate_config_core ${CMAKE_SOURCE_DIR}/test/test_config.py)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 add_executable(astrond
 	${CORE_FILES}
