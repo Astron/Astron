@@ -5,6 +5,7 @@
 
 #include "core/global.h"
 #include "core/RoleFactory.h"
+#include "config/constraints.h"
 
 using boost::asio::ip::tcp;
 
@@ -16,6 +17,10 @@ static ConfigVariable<std::string> server_version("version", "dev", clientagent_
 static ConfigGroup channels_config("channels", clientagent_config);
 static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
 static ConfigVariable<channel_t> max_channel("max", INVALID_CHANNEL, channels_config);
+static InvalidChannelConstraint min_not_invalid(min_channel);
+static InvalidChannelConstraint max_not_invalid(max_channel);
+static ReservedChannelConstraint min_not_reserved(min_channel);
+static ReservedChannelConstraint max_not_reserved(max_channel);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
 	m_client_type(client_type.get_rval(roleconfig)),
