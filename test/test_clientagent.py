@@ -12,6 +12,7 @@ messagedirector:
 general:
     dc_files:
         - %r
+
 uberdogs:
     - id: 1234
       class: UberDog1

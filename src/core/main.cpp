@@ -14,6 +14,11 @@ static LogCategory mainlog("main", "Main");
 static ConfigGroup general_config("general");
 static ConfigVariable<vector<string> > dc_files("dc_files", vector<string>(), general_config);
 
+static ConfigList uberdogs_config("uberdogs");
+static ConfigVariable<doid_t> uberdog_id("id", 0, uberdogs_config);
+static ConfigVariable<string> uberdog_class("class", "", uberdogs_config);
+static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
+
 static void printHelp(ostream &s);
 
 

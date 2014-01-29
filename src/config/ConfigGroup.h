@@ -38,21 +38,35 @@ class ConfigGroup
 		std::string m_name, m_path;
 		std::unordered_set<std::string> m_variables;
 		std::unordered_map<std::string, ConfigGroup*> m_children;
-
-	private:
 };
 
 class ConfigList : public ConfigGroup
 {
 	public:
-		ConfigList(const std::string& name, const std::string &list_key,
-		           ConfigGroup& parent = ConfigGroup::root);
+		ConfigList(const std::string& name, ConfigGroup& parent = ConfigGroup::root);
 		virtual ~ConfigList();
 
-		void add_element_group(ConfigGroup* element);
+		virtual bool validate(ConfigNode node);
+};
+
+class KeyedConfigList : public ConfigGroup
+{
+	public:
+		KeyedConfigList(const std::string& name, const std::string &list_key,
+		                ConfigGroup& parent = ConfigGroup::root);
+		virtual ~KeyedConfigList();
+
 		virtual bool validate(ConfigNode node);
 
 	private:
 		std::string m_key;
-		std::unordered_map<std::string, ConfigGroup*> m_element_groups;
+};
+
+class KeyedConfigGroup : public ConfigGroup
+{
+	public:
+		KeyedConfigGroup(const std::string& key, KeyedConfigList& keyed_list);
+		virtual ~KeyedConfigGroup();
+
+		virtual bool validate(ConfigNode node);
 };

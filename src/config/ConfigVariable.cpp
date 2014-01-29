@@ -5,7 +5,7 @@ using namespace std;
 bool ConfigFile::load(istream &is)
 {
 	m_node = YAML::Load(is);
-	if(m_node.IsNull())
+	if(!m_node.IsDefined() || m_node.IsNull())
 	{
 		return false;
 	}
