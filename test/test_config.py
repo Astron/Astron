@@ -132,5 +132,27 @@ class TestConfigCore(unittest.TestCase):
             """
         self.assertEquals(self.run_test(config), EXITED)
 
+    def test_uberdogs_invalid_id(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            uberdogs:
+                - id: 0
+                  class: UberDog1
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+    def test_uberdogs_reserved_id(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            uberdogs:
+                - id: 165
+                  class: UberDog2
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
 if __name__ == '__main__':
     unittest.main()
