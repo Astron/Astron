@@ -13,6 +13,7 @@ static LogCategory mainlog("main", "Main");
 
 static ConfigGroup general_config("general");
 static ConfigVariable<vector<string> > dc_files("dc_files", vector<string>(), general_config);
+static ConfigVariable<string> eventlogger_addr("eventlogger", "", general_config);
 
 static ConfigList uberdogs_config("uberdogs");
 static ConfigVariable<doid_t> uberdog_id("id", 0, uberdogs_config);
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
 
 	// Initialize configured MessageDirector
 	MessageDirector::singleton.init_network();
-	g_eventsender.init();
+	g_eventsender.init(eventlogger_addr.get_val());
 
 	// Load uberdog metadata from configuration
 	ConfigNode udnodes = g_config->copy_node()["uberdogs"];
