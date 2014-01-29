@@ -1,5 +1,6 @@
 #include "DatabaseBackend.h"
 #include "DBBackendFactory.h"
+#include "DatabaseServer.h"
 
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
@@ -12,7 +13,7 @@
 #include <fstream>
 #include <list>
 
-static ConfigVariable<std::string> foldername("foldername", "yaml_db");
+static ConfigVariable<std::string> foldername("foldername", "yaml_db", db_backend_config);
 
 class YAMLDatabase : public DatabaseBackend
 {
@@ -175,7 +176,7 @@ class YAMLDatabase : public DatabaseBackend
 			return false;
 		}
 	public:
-		YAMLDatabase(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
+		YAMLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
 			DatabaseBackend(dbeconfig, min_id, max_id),
 			m_next_id(min_id),
 			m_free_ids(),

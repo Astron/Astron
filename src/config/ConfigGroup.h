@@ -8,7 +8,6 @@ typedef YAML::Node ConfigNode;
 
 // todo: get rid of
 typedef ConfigNode RangesConfig;
-typedef ConfigNode DBBackendConfig;
 
 class ConfigGroup
 {

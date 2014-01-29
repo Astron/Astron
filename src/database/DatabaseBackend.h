@@ -21,7 +21,7 @@ struct ObjectData
 class DatabaseBackend
 {
 	public:
-		DatabaseBackend(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
+		DatabaseBackend(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
 			m_config(dbeconfig), m_min_id(min_id), m_max_id(max_id) {}
 
 		virtual doid_t create_object(const ObjectData &dbo) = 0;
@@ -49,7 +49,7 @@ class DatabaseBackend
 #undef map_t
 #undef val_t
 	protected:
-		DBBackendConfig m_config;
+		ConfigNode m_config;
 		doid_t m_min_id;
 		doid_t m_max_id;
 };

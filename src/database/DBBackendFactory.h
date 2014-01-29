@@ -10,7 +10,7 @@
 class BaseDBBackendFactoryItem
 {
 	public:
-		virtual DatabaseBackend* instantiate(DBBackendConfig config, doid_t min_id, doid_t max_id) = 0;
+		virtual DatabaseBackend* instantiate(ConfigNode config, doid_t min_id, doid_t max_id) = 0;
 	protected:
 		BaseDBBackendFactoryItem(const std::string &name);
 };
@@ -25,7 +25,7 @@ class DBBackendFactoryItem : public BaseDBBackendFactoryItem
 		{
 		}
 
-		virtual DatabaseBackend* instantiate(DBBackendConfig config, doid_t min_id, doid_t max_id)
+		virtual DatabaseBackend* instantiate(ConfigNode config, doid_t min_id, doid_t max_id)
 		{
 			return new T(config, min_id, max_id);
 		}
@@ -38,7 +38,7 @@ class DBBackendFactory
 		static DBBackendFactory singleton;
 
 		// instantiate_backend creates a new DatabaseBackend object of type 'backend_name'.
-		DatabaseBackend* instantiate_backend(const std::string &backend_name, DBBackendConfig config,
+		DatabaseBackend* instantiate_backend(const std::string &backend_name, ConfigNode config,
 		                                     doid_t min_id, doid_t max_id);
 
 
