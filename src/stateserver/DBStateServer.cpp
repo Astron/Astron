@@ -1,5 +1,6 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/constraints.h"
 #include <unordered_set>
 
 #include "DBStateServer.h"
@@ -9,10 +10,16 @@ static RoleFactoryItem<DBStateServer> dbss_fact("dbss");
 
 static RoleConfigGroup dbss_config("dbss");
 static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL, dbss_config);
+static InvalidChannelConstraint db_channel_not_invalid(database_channel);
+static ReservedChannelConstraint db_channel_not_reserved(database_channel);
 
 static ConfigList ranges_config("ranges", dbss_config);
 static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID, ranges_config);
 static ConfigVariable<doid_t> range_max("max", DOID_MAX, ranges_config);
+static InvalidDoidConstraint min_not_invalid(range_min);
+static InvalidDoidConstraint max_not_invalid(range_max);
+static ReservedDoidConstraint min_not_reserved(range_min);
+static ReservedDoidConstraint max_not_reserved(range_max);
 
 DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 	m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
