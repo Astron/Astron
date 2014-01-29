@@ -1,9 +1,10 @@
+# The Daemon section describes identification information which can be queried from the MD.
 daemon:
     name: Core Message Director # To be used in page titles and intra-MD links.
-    url: http://123.45.67.89/coremd/ # URL where the web interface may be located. Defaults to:
-                                     # http://<web/bind>/
+    url: http://123.45.67.89/coremd/ # URL where the web interface may be located.
+    #id: 3  #default: automatically assigned
 
-# The General category contains config settings that are shared among daemons in the cluster.
+# The General section contains config settings that are shared among daemons in the cluster.
 general:
     # An "IP:port" for the Event Logger to be used when logging global events.
     eventlogger: 127.0.0.1:9090
@@ -14,7 +15,7 @@ general:
         - game.dc
         - minigames.dc
 
-# The Uberdog category describes the existence of UberDOGs, which are objects
+# The Uberdog section describes the existence of UberDOGs, which are objects
 #     that are assumed to exist statically.
 uberdogs:
   - id: 1234
@@ -23,6 +24,7 @@ uberdogs:
     #     the ClientAgent from an unauthenticated client.
     anonymous: true # Default: false
 
+# The Web section enables a status and debugging webpage on this daemon.
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
     # Authentication enables a BASIC authentication mechanism for the website
@@ -34,7 +36,7 @@ messagedirector:
     bind: 0.0.0.0:6660
     #connect: 127.0.0.1:5555
 
-# The Roles category allows specifying roles that we would like this daemon to perform.
+# The Roles section allows specifying roles that we would like this daemon to perform.
 roles:
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
