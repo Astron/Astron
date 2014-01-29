@@ -22,13 +22,24 @@ class ConfigGroup
 		ConfigGroup(const std::string& name, ConfigGroup& parent = root);
 		virtual ~ConfigGroup();
 
+		// get_name returns the name of the ConfigGroup.
 		inline std::string get_name() const
 		{
 			return m_name;
 		}
+
+		// get_path returns the name of this group and each parent on the way
+		//     to the root separated by slashes, with the oldest ancestor at the beginning.
 		inline std::string get_path() const
 		{
 			return m_path;
+		}
+
+		// get_child_node returns the sub node of a given ConfigNode that
+		//     corresponds with a given child group of this Group.
+		inline ConfigNode get_child_node(std::string grp_name, ConfigNode node)
+		{
+			return node[grp_name];
 		}
 		inline ConfigNode get_child_node(ConfigGroup grp, ConfigNode node)
 		{
@@ -64,4 +75,8 @@ class KeyedConfigList : public ConfigGroup
 
 	private:
 		std::string m_key;
+
+		// print_keys outputs all valid keys for the list into
+		//     the Config log with Info severity.
+		void print_keys();
 };

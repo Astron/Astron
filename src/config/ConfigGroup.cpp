@@ -150,6 +150,7 @@ bool KeyedConfigList::validate(ConfigNode node)
 		{
 			config_log.error() << "The value '" << key << "' is not valid for attribute '"
 			                   << m_key << "' of section '" << m_path << "'.\n";
+			print_keys();
 			ok = false;
 			continue;
 		}
@@ -161,4 +162,16 @@ bool KeyedConfigList::validate(ConfigNode node)
 	}
 
 	return ok;
+}
+
+void KeyedConfigList::print_keys()
+{
+	ostream& out = config_log.info();
+	out << "Expected value in '" << m_name << "',\n"
+	    << "    Candidates for attribute '" << m_key << "' are:\n";
+	for(auto it = m_children.begin(); it != m_children.end(); ++it)
+	{
+		out << "        " << it->second->get_name() << "\n";
+	}
+	out << "\n";
 }
