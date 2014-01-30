@@ -508,9 +508,9 @@ class TestClientAgent(unittest.TestCase):
         self.set_state(client2, CLIENT_STATE_ESTABLISHED)
         ## Give it an object that it owns.
         dg = Datagram.create([id2], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
-        dg.add_uint32(88112288) # Doid
-        dg.add_uint32(0) # Parent
-        dg.add_uint32(0) # Zone
+        dg.add_doid(88112288) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Bigger crown thingy from hell')
         dg.add_uint8(1)
@@ -520,9 +520,9 @@ class TestClientAgent(unittest.TestCase):
         ## The client should receive the new object.
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OWNER)
-        dg.add_uint32(88112288) # Doid
-        dg.add_uint32(0) # Parent
-        dg.add_uint32(0) # Zone
+        dg.add_doid(88112288) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
         dg.add_uint16(DistributedClientTestObject)
         dg.add_string('Bigger crown thingy from hell')
         dg.add_uint8(1)
@@ -532,9 +532,9 @@ class TestClientAgent(unittest.TestCase):
         ## Lets try to relocate it...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LOCATION)
-        dg.add_uint32(55446655)
-        dg.add_uint32(1234)
-        dg.add_uint32(4321)
+        dg.add_doid(88112288) # Doid
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
         client2.send(dg)
         ## Which should cause an error
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_RELOCATE)
