@@ -12,11 +12,12 @@ if(WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
-
 ### Set build type to Release with Debug Info by default ###
-if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE RelWithDebInfo)
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type.")
 endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+	RelWithDebInfo Release Debug)
 
 ### Define astron’s git aha for use in program ###
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
@@ -34,15 +35,23 @@ endif()
 ### Add per-compiler flags ###
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -Wall")
 
-	### Release with Debugging Info
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
-
-	### Release Flags -- warnings are errors, release code should not have warnings ###
+	# warnings are errors, release code should not have warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
-	
-	### Debug flags, Wall
+
+	# debug flags, Wall
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+endif()
+
+if(CMAKE_GENERATOR STREQUAL Xcode)
+	set(CMAKE_CXX_FLAGS_RELEASE
+		"${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x -stdlib=libc++")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -std=c++0x -stdlib=libc++")
+	set(CMAKE_CXX_FLAGS_DEBUG
+		"${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -stdlib=libc++")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
