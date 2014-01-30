@@ -15,12 +15,12 @@ void ClientFactory::add_client_type(const std::string &name, BaseClientType *fac
 }
 
 // instantiate_client creates a new Client object of type 'client_type'.
-Client* ClientFactory::instantiate_client(const std::string &client_type, ClientAgent* client_agent,
-        boost::asio::ip::tcp::socket *socket)
+Client* ClientFactory::instantiate_client(const std::string &client_type, ClientConfig config,
+		ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket)
 {
 	if(m_factories.find(client_type) != m_factories.end())
 	{
-		return m_factories[client_type]->instantiate(client_agent, socket);
+		return m_factories[client_type]->instantiate(config, client_agent, socket);
 	}
 	return NULL;
 }
