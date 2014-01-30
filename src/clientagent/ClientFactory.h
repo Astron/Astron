@@ -1,5 +1,6 @@
 #pragma once
 #include "Client.h"
+#include "core/config.h"
 #include <boost/asio.hpp>
 #include <unordered_map>
 
@@ -7,7 +8,8 @@
 class BaseClientType
 {
 	public:
-		virtual Client* instantiate(ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket) = 0;
+		virtual Client* instantiate(ClientConfig config, ClientAgent* client_agent,
+		                            boost::asio::ip::tcp::socket *socket) = 0;
 	protected:
 		BaseClientType(const std::string &name);
 };
@@ -22,9 +24,10 @@ class ClientType : public BaseClientType
 		{
 		}
 
-		virtual Client* instantiate(ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket)
+		virtual Client* instantiate(ClientConfig config, ClientAgent* client_agent,
+		                            boost::asio::ip::tcp::socket *socket)
 		{
-			return new T(client_agent, socket);
+			return new T(config, client_agent, socket);
 		}
 };
 
@@ -35,8 +38,8 @@ class ClientFactory
 		static ClientFactory singleton;
 
 		// instantiate_client creates a new Client object of type 'client_type'.
-		Client* instantiate_client(const std::string &client_type, ClientAgent* client_agent,
-		                           boost::asio::ip::tcp::socket *socket);
+		Client* instantiate_client(const std::string &client_type, ClientConfig config,
+		                           ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket);
 
 		// add_client_type adds a factory for client of type 'name'
 		// It is called automatically when instantiating a new ClientType.

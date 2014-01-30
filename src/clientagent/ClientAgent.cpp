@@ -9,7 +9,7 @@
 using boost::asio::ip::tcp;
 
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
-static ConfigVariable<std::string> client_type("client", "libastron");
+static ConfigVariable<std::string> client_type("client/type", "libastron");
 static ConfigVariable<std::string> server_version("version", "dev");
 static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
 static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
@@ -22,6 +22,8 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
+
+	m_clientconfig = roleconfig["client"];
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);
@@ -69,7 +71,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	}
 	m_log->debug() << "Got an incoming connection from "
 	               << remote.address() << ":" << remote.port() << std::endl;
-	ClientFactory::singleton.instantiate_client(m_client_type, this, socket);
+	ClientFactory::singleton.instantiate_client(m_client_type, m_clientconfig, this, socket);
 	start_accept();
 }
 

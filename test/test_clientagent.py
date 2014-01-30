@@ -28,6 +28,15 @@ roles:
       channels:
           min: 100
           max: 999
+      client:
+          relocate: true
+
+    - type: clientagent
+      bind: 127.0.0.1:57135
+      version: "Sword Art Online v5.1"
+      channels:
+          min: 110600
+          max: 110699
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
@@ -62,9 +71,9 @@ class TestClientAgent(unittest.TestCase):
                 s.close()
                 return
 
-    def connect(self, do_hello=True):
+    def connect(self, do_hello=True, port=57128):
         s = socket(AF_INET, SOCK_STREAM)
-        s.connect(('127.0.0.1', 57128))
+        s.connect(('127.0.0.1', port))
         client = ClientConnection(s)
 
         if do_hello:
@@ -409,22 +418,17 @@ class TestClientAgent(unittest.TestCase):
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
 
-        # TODO: Change protocol to address max field sizes
-        # Write now with 32 bit mode, an oversized field size cannot occur, but we probably want to
-        # support 32-bit field sizes as well.
-        if 'USE_32BIT_DATAGRAMS' in os.environ:
-            return
-
-        # Send an oversized field update:
-        client = self.connect()
-        dg = Datagram()
-        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_doid(1234)
-        dg.add_uint16(request)
-        # This will fit inside the client dg, but be too big for the server.
-        dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-DGSIZE_SIZE_BYTES))
-        client.send(dg)
-        self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
+        if not 'USE_32BIT_DATAGRAMS' in os.environ:
+            # Send an oversized field update:
+            client = self.connect()
+            dg = Datagram()
+            dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+            dg.add_uint32(1234)
+            dg.add_uint16(request)
+            # This will fit inside the client dg, but be too big for the server.
+            dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-DGSIZE_SIZE_BYTES))
+            client.send(dg)
+            self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
 
     def test_ownership(self):
         client = self.connect()
@@ -496,6 +500,44 @@ class TestClientAgent(unittest.TestCase):
         dg.add_string('Alicorn Amulet')
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+
+
+        # Send a relocate on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        ## Give it an object that it owns.
+        dg = Datagram.create([id2], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_uint32(88112288) # Doid
+        dg.add_uint32(0) # Parent
+        dg.add_uint32(0) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Bigger crown thingy from hell')
+        dg.add_uint8(1)
+        dg.add_uint8(2)
+        dg.add_uint8(3)
+        self.server.send(dg)
+        ## The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OWNER)
+        dg.add_uint32(88112288) # Doid
+        dg.add_uint32(0) # Parent
+        dg.add_uint32(0) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Bigger crown thingy from hell')
+        dg.add_uint8(1)
+        dg.add_uint8(2)
+        dg.add_uint8(3)
+        self.assertTrue(*client2.expect(dg))
+        ## Lets try to relocate it...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_uint32(55446655)
+        dg.add_uint32(1234)
+        dg.add_uint32(4321)
+        client2.send(dg)
+        ## Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_RELOCATE)
 
     def test_postremove(self):
         client = self.connect()

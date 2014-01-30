@@ -342,7 +342,8 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 				m_visible_objects[do_id] = obj;
 			}
 
-			handle_add_ownership(do_id, parent, zone, dc_id, dgi, true);
+			handle_add_ownership(do_id, parent, zone, dc_id, dgi,
+		                         msgtype == STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
 		}
 		break;
 		case CLIENTAGENT_SET_CLIENT_ID:

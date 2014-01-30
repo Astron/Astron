@@ -619,7 +619,36 @@ class TestStateServer(unittest.TestCase):
         # Expect none at database
         self.assertTrue(self.database.expect_none())
 
+        ### Test for SetFields with mixed db and non-db fields on unloaded object ###
+        # Update field multiple on stateserver object
+        dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
+        dg.add_uint32(9030) # id
+        dg.add_uint16(3) # field count
+        dg.add_uint16(setFoo)
+        dg.add_uint16(1337)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBADCAFE0)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(4080)
+        self.shard.send(dg)
 
+        # Expect database fields to be sent to database
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None) # Expecting DBSetFields
+        dgi = DatagramIterator(dg)
+        self.assertTrue(dgi.matches_header([200], 9030, DBSERVER_OBJECT_SET_FIELDS))
+        self.assertEquals(dgi.read_uint32(), 9030) # Id
+        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
+        hasFoo, hasRDB3 = False, False
+        for x in xrange(2):
+            field = dgi.read_uint16()
+            if field is setFoo:
+                hasFoo = True
+                self.assertEquals(dgi.read_uint16(), 1337)
+            elif field is setRDB3:
+                hasRDB3 = True
+                self.assertEquals(dgi.read_uint32(), 4080)
+        self.assertTrue(hasFoo and hasRDB3)
 
         ### Test for SetField with db field on loaded object ###
         # Activate object with defaults
