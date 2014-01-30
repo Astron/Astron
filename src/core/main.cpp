@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 	}
 	file.close();
 
-	if(!ConfigGroup::root.validate(g_config->copy_node()))
+	if(!ConfigGroup::root().validate(g_config->copy_node()))
 	{
 		mainlog.fatal() << "Configuration file contains errors.\n";
 		return 1;

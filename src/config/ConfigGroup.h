@@ -17,10 +17,9 @@ class ConfigGroup
 	friend class ConfigVariable;
 
 	public:
-		static ConfigGroup root;
+		static ConfigGroup& root();
 
-		ConfigGroup(); // root constructor
-		ConfigGroup(const std::string& name, ConfigGroup& parent = root);
+		ConfigGroup(const std::string& name, ConfigGroup& parent = root());
 		virtual ~ConfigGroup();
 
 		// get_name returns the name of the ConfigGroup.
@@ -57,13 +56,14 @@ class ConfigGroup
 		std::unordered_map<std::string, ConfigGroup*> m_children;
 
 	private:
+		ConfigGroup(); // root constructor
 		void add_variable(const std::string&, rtest);
 };
 
 class ConfigList : public ConfigGroup
 {
 	public:
-		ConfigList(const std::string& name, ConfigGroup& parent = ConfigGroup::root);
+		ConfigList(const std::string& name, ConfigGroup& parent = ConfigGroup::root());
 		virtual ~ConfigList();
 
 		virtual bool validate(ConfigNode node);
@@ -73,7 +73,7 @@ class KeyedConfigList : public ConfigGroup
 {
 	public:
 		KeyedConfigList(const std::string& name, const std::string &list_key,
-		                ConfigGroup& parent = ConfigGroup::root);
+		                ConfigGroup& parent = ConfigGroup::root());
 		virtual ~KeyedConfigList();
 
 		virtual bool validate(ConfigNode node);

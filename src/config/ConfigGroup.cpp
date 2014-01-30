@@ -9,6 +9,12 @@ void config_error(const std::string& msg)
 	config_log.error() << msg << "\n";
 }
 
+ConfigGroup& ConfigGroup::root()
+{
+	static ConfigGroup* root = new ConfigGroup();
+	return *root;
+}
+
 // root constructor
 ConfigGroup::ConfigGroup() : m_name(""), m_path("")
 {
