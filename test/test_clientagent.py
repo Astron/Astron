@@ -423,7 +423,7 @@ class TestClientAgent(unittest.TestCase):
             client = self.connect()
             dg = Datagram()
             dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-            dg.add_uint32(1234)
+            dg.add_doid(1234) # Doid
             dg.add_uint16(request)
             # This will fit inside the client dg, but be too big for the server.
             dg.add_string('F'*(DGSIZE_MAX-len(dg._data)-DGSIZE_SIZE_BYTES))
