@@ -79,6 +79,15 @@ class TestConfigClientAgent(unittest.TestCase):
                   channels:
                       min: 3100
                       max: 3999
+                  client:
+                      relocate: true
+
+                - type: clientagent
+                  bind: 127.0.0.1:57135
+                  version: "Sword Art Online v5.1"
+                  channels:
+                      min: 110600
+                      max: 110699
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
