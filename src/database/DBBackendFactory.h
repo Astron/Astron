@@ -35,7 +35,7 @@ class DBBackendFactoryItem : public BaseDBBackendFactoryItem
 class DBBackendFactory
 {
 	public:
-		static DBBackendFactory singleton;
+		static DBBackendFactory& singleton();
 
 		// instantiate_backend creates a new DatabaseBackend object of type 'backend_name'.
 		DatabaseBackend* instantiate_backend(const std::string &backend_name, DBBackendConfig config,
