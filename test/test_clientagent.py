@@ -89,7 +89,7 @@ class TestClientAgent(unittest.TestCase):
 
         return client
 
-    def identify(self, client, custom_id=False):
+    def identify(self, client, ignore_id = False, min=3100, max=3999):
         # Figure out the sender ID for a given client connection.
 
         dg = Datagram()
@@ -106,14 +106,14 @@ class TestClientAgent(unittest.TestCase):
         self.assertEqual(dgi.read_uint64(), 1234)
         sender_id = dgi.read_uint64()
 
-        if not custom_id:
-            self.assertLessEqual(sender_id, 3999)
-            self.assertGreaterEqual(sender_id, 3100)
+        if not ignore_id:
+            self.assertLessEqual(sender_id, max)
+            self.assertGreaterEqual(sender_id, min)
 
         return sender_id
 
     def set_state(self, client, state):
-        dg = Datagram.create([self.identify(client)], 1, CLIENTAGENT_SET_STATE)
+        dg = Datagram.create([self.identify(client, ignore_id = True)], 1, CLIENTAGENT_SET_STATE)
         dg.add_uint16(state)
         self.server.send(dg)
         time.sleep(0.1) # Mitigate race condition with set_state
@@ -324,7 +324,7 @@ class TestClientAgent(unittest.TestCase):
         self.server.send(dg)
 
         # Reidentify the client, make sure the sender has changed.
-        self.assertEquals(self.identify(client, custom_id=True), 555566667777)
+        self.assertEquals(self.identify(client, ignore_id = True), 555566667777)
 
         # The client should have a subscription on the new sender channel automatically:
         dg = Datagram.create([555566667777], 1, STATESERVER_OBJECT_SET_FIELD)
@@ -506,7 +506,7 @@ class TestClientAgent(unittest.TestCase):
 
         # Send a relocate on a client agent that has it disabled
         client2 = self.connect(port = 57135)
-        id2 = self.identify(client2)
+        id2 = self.identify(client2, min = 110600, max = 110699)
         self.set_state(client2, CLIENT_STATE_ESTABLISHED)
         ## Give it an object that it owns.
         dg = Datagram.create([id2], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
