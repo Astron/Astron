@@ -496,7 +496,7 @@ class SociSQLDatabase : public DatabaseBackend
 				           << "user=" << m_sess_user << " "
 				           << "pass='" << m_sess_passwd << "'";
 			}
-			else if(m_backend == "sqlite")
+			else if(m_backend == "sqlite3")
 			{
 				connstring << m_db_name;
 			}
@@ -761,4 +761,4 @@ class SociSQLDatabase : public DatabaseBackend
 
 DBBackendFactoryItem<SociSQLDatabase> mysql_factory("mysql");
 DBBackendFactoryItem<SociSQLDatabase> postgresql_factory("postgresql");
-DBBackendFactoryItem<SociSQLDatabase> sqlite_factory("sqlite");
+DBBackendFactoryItem<SociSQLDatabase> sqlite_factory("sqlite3");

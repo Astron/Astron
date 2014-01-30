@@ -11,14 +11,19 @@
 using dclass::Class;
 using dclass::Field;
 
+static ConfigVariable<bool> relocate_owned("relocate", false);
+
 class AstronClient : public Client, public NetworkClient
 {
 	private:
 		bool m_clean_disconnect;
+		bool m_relocate_owned;
 
 	public:
-		AstronClient(ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket) :
-			Client(client_agent), NetworkClient(socket), m_clean_disconnect(false)
+		AstronClient(ClientConfig config, ClientAgent* client_agent,
+			         boost::asio::ip::tcp::socket *socket) :
+			Client(client_agent), NetworkClient(socket),
+			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config))
 		{
 			std::stringstream ss;
 			boost::asio::ip::tcp::endpoint remote;
@@ -436,6 +441,13 @@ class AstronClient : public Client, public NetworkClient
 		// When sent by the client, this represents a request to change the object's location.
 		void handle_client_object_location(DatagramIterator &dgi)
 		{
+			// Check the client is configured to allow client-relocates
+			if(!m_relocate_owned)
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE,
+				                "Owned object relocation is disabled by server.", true);
+				return;
+			}
 			// Check that the object the client is trying manipulate actually exists
 			doid_t do_id = dgi.read_doid();
 			if(m_visible_objects.find(do_id) == m_visible_objects.end())
@@ -459,7 +471,6 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Check that the client is actually allowed to change the object's location
-			// TODO: Allow configuration to disable client-owned location changes.
 			bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
 			if(!is_owned)
 			{

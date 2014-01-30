@@ -55,6 +55,7 @@ class ClientAgent : public Role
 		std::string m_client_type;
 		std::string m_server_version;
 		ChannelTracker m_ct;
+		ClientConfig m_clientconfig;
 		LogCategory *m_log;
 		uint32_t m_hash;
 };

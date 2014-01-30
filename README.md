@@ -9,6 +9,8 @@ Group, and used in-house from 2001 until 2013.
 The suite consists of many components, which handle separate tasks in order to distribute
 the workload of managing a multi-sharded game/application environment with many objects and clients.
 
+[![build status](https://build.riotcave.com/projects/1/status.png?ref=master)](https://build.riotcave.com/projects/1?ref=master)
+
 ## Overview ##
 
 ### Objects ###
@@ -146,7 +148,7 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 ## Building ##
-See the build instructions at https://github.com/Astron/Astron/tree/build-instructions/doc/building.
+See the build instructions at https://github.com/Astron/Astron/blob/master/doc/building/.
 
 
 
@@ -154,9 +156,9 @@ See the build instructions at https://github.com/Astron/Astron/tree/build-instru
 
 ### The Team ###
 * **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
-* **MMavipc** is our incredibly awesome codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
-* **Kestred** is our secondary architect. He writes a lot of documentation and does some development. Responsibilities include reviewing and adding system architecture, with a focus on maintaining code flexibility.
-* **jjkoletar** manages our Jenkins build system.
+* **Kestred** is our vice-architect. He does a lot of Astron development, and also writes a lot of documentation. Responsibilities include Astron maintenance, design revisions, and new feature planning & implementation.
+* **AlJaMa** is our Mac-compatibility focused developer, and continously attempts to build things with Astron to figure out where Astron does crazy things, and where Astron could use features that would be commonly requested.
+* **MMavipc** is our incredibly awesome Windows codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
 
 ### License ###
 The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.

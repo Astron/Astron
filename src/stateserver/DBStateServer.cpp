@@ -194,6 +194,10 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 				{
 					dgi.unpack_field(field, db_fields[field]);
 				}
+				else
+				{
+					dgi.skip_field(field);
+				}
 			}
 
 			if(db_fields.size() > 0)
@@ -202,7 +206,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
 				dg.add_doid(do_id);
-				dg.add_uint16(field_count);
+				dg.add_uint16(db_fields.size());
 				for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
 				{
 					dg.add_uint16(it->first->get_id());
