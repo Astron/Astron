@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 	node = node["roles"];
 	for(auto it = node.begin(); it != node.end(); ++it)
 	{
-		RoleFactory::singleton.instantiate_role((*it)["type"].as<std::string>(), *it);
+		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
 
 	try
