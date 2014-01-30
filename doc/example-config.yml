@@ -47,7 +47,7 @@ roles:
         # Relocate allows a client to send a ClientObjectLocation message to the server to
         # indicate it would like to change the location of an object owned by that client.
         # This is a feature specific to the Astron client, a custom client class
-        # could define its own set of configuration vales.
+        # could define its own set of configuration values.
         relocate: true # Default: false
 
     # Next we'll have a state server, whose control channel is 402000.
