@@ -2,7 +2,13 @@
 
 BaseRoleFactoryItem::BaseRoleFactoryItem(const std::string &name)
 {
-	RoleFactory::singleton.add_role(name, this);
+	RoleFactory::singleton().add_role(name, this);
+}
+
+RoleFactory& RoleFactory::singleton()
+{
+	static RoleFactory* fact = new RoleFactory();
+	return *fact;
 }
 
 // add_role adds a factory for role of type 'name'

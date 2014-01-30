@@ -31,7 +31,7 @@ class RoleFactoryItem : public BaseRoleFactoryItem
 class RoleFactory
 {
 	public:
-		static RoleFactory singleton;
+		static RoleFactory& singleton();
 
 		// instantiate_role creates a new Role object of type 'role_name'.
 		Role* instantiate_role(const std::string &role_name, RoleConfig roleconfig);

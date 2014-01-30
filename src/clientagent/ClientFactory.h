@@ -32,7 +32,7 @@ class ClientType : public BaseClientType
 class ClientFactory
 {
 	public:
-		static ClientFactory singleton;
+		static ClientFactory& singleton();
 
 		// instantiate_client creates a new Client object of type 'client_type'.
 		Client* instantiate_client(const std::string &client_type, ClientAgent* client_agent,

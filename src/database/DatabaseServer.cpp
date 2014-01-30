@@ -30,7 +30,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 {
 	ConfigNode generate = db_config.get_child_node(generate_config, roleconfig);
 	ConfigNode backend = db_config.get_child_node(db_backend_config, roleconfig);
-	m_db_backend = DBBackendFactory::singleton.instantiate_backend(
+	m_db_backend = DBBackendFactory::singleton().instantiate_backend(
 		db_backend_type.get_rval(backend), backend,
 		min_id.get_rval(generate), max_id.get_rval(generate));
 
