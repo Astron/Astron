@@ -188,6 +188,7 @@ CONSTANTS = {
     'CLIENT_OBJECT_LEAVING_OWNER':                   161,
     'CLIENT_ENTER_OBJECT_REQUIRED':                  142,
     'CLIENT_ENTER_OBJECT_REQUIRED_OTHER':            143,
+    'CLIENT_ENTER_OBJECT_REQUIRED_OWNER':            172,
     'CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER':      173,
     'CLIENT_DONE_INTEREST_RESP':                     204,
     'CLIENT_ADD_INTEREST':                           200,
