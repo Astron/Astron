@@ -32,17 +32,23 @@ messagedirector:
 uberdogs:
     - id: 1234
       class: LoginManager
-      anonymous: true #Default: false
+      anonymous: true # Default: false
 
 roles:
     # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
-      # Client defines which client this client agent should generate when it receives a new
-      # connection.  By default, it is a "libastron" client which accepts connections from a client
-      # using the libastron ClientRepository library.
-      #client: fooclient
+      client:
+        # Type declares which client this client agent should generate when it receives a new
+        # connection.  By default, it is a "libastron" client which accepts connections from a
+        # client using the libastron ClientRepository library.
+        type: fooclient
+        # Relocate allows a client to send a ClientObjectLocation message to the server to
+        # indicate it would like to change the location of an object owned by that client.
+        # This is a feature specific to the Astron client, a custom client class
+        # could define its own set of configuration values.
+        relocate: true # Default: false
 
     # Next we'll have a state server, whose control channel is 402000.
     - type: stateserver
