@@ -71,7 +71,9 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	}
 	m_log->debug() << "Got an incoming connection from "
 	               << remote.address() << ":" << remote.port() << std::endl;
-	ClientFactory::singleton.instantiate_client(m_client_type, m_clientconfig, this, socket);
+
+	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
+
 	start_accept();
 }
 

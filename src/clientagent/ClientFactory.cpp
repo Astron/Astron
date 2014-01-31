@@ -1,10 +1,15 @@
 #include "ClientFactory.h"
 
-ClientFactory ClientFactory::singleton;
-
 BaseClientType::BaseClientType(const std::string &name)
 {
-	ClientFactory::singleton.add_client_type(name, this);
+	ClientFactory::singleton().add_client_type(name, this);
+}
+
+
+ClientFactory& ClientFactory::singleton()
+{
+	static ClientFactory* fact = new ClientFactory();
+	return *fact;
 }
 
 // add_client_type adds a factory for client of type 'name'
