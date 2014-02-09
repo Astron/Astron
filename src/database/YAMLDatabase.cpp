@@ -123,9 +123,9 @@ class YAMLDatabase : public DatabaseBackend
 			string packed_data = dclass::parse_value(field->get_type(), node.as<string>(), error);
 			if(error)
 			{
-				yamldb_log.error() << "Value for field '" << field->get_name()
-				                   << "' read from database was formatted incorrectly, e.what(): "
-				                   << packed_data << endl;
+				m_log->error() << "Value for field '" << field->get_name()
+				               << "' read from database was formatted incorrectly, e.what(): "
+				               << packed_data << endl;
 				return vector<uint8_t>();
 			}
 

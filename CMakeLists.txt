@@ -394,9 +394,11 @@ target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOC
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
-	set(PYTHON_TEST_ENV "USE_32BIT_DATAGRAMS=true ${PYTHON_TEST_ENV}")
+	set(PYTHON_TEST_ENV ${PYTHON_TEST_ENV} "USE_32BIT_DATAGRAMS=true")
 endif()
 if(USE_128BIT_CHANNELS)
-	set(PYTHON_TEST_ENV "USE_128BIT_CHANNELS=true ${PYTHON_TEST_ENV}")
-enidf()
-set_tests_properties(${PYTHON_TESTS} PROPERTIES ENVIRONMENT ${PYTHON_TEST_ENV})
+	set(PYTHON_TEST_ENV ${PYTHON_TEST_ENV} "USE_128BIT_CHANNELS=true")
+endif()
+if(PYTHON_TEST_ENV)
+	set_tests_properties(${PYTHON_TESTS} PROPERTIES ENVIRONMENT "${PYTHON_TEST_ENV}")
+endif()
