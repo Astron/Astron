@@ -122,7 +122,7 @@ class Datagram
 
 		// server-header-constructor(multi-target):
 		//     creates a new datagram initialized with a server header (accepts a set of receivers)
-		Datagram(const std::set<uint64_t> &to_channels, channel_t from_channel,
+		Datagram(const std::set<channel_t> &to_channels, channel_t from_channel,
 		         uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
 		{
 			add_server_header(to_channels, from_channel, message_type);

@@ -36,9 +36,9 @@ DBStateServer::~DBStateServer()
 
 void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 {
-	doid_t do_id = dgi.read_uint32();
-	doid_t parent_id = dgi.read_uint32();
-	zone_t zone_id = dgi.read_uint32();
+	doid_t do_id = dgi.read_doid();
+	doid_t parent_id = dgi.read_doid();
+	zone_t zone_id = dgi.read_zone();
 
 	// Check object is not already active
 	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())
@@ -89,7 +89,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
 void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_uint64();
+	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
@@ -467,7 +467,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			m_context_datagrams[db_context].add_uint32(r_context);
 			m_context_datagrams[db_context].add_doid(r_do_id);
-			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
+			m_context_datagrams[db_context].add_channel(INVALID_CHANNEL); // Location
 
 			// Cache the do_id --> context in case we get a dbss_activate
 			m_inactive_loads[r_do_id].insert(r_context);
@@ -515,7 +515,7 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get do_id from datagram
 			check_dgi.seek_payload();
-			check_dgi.skip(8 + 4); // skip over sender and context to do_id;
+			check_dgi.skip(sizeof(channel_t) + sizeof(doid_t)); // skip over sender and context to do_id;
 			doid_t do_id = check_dgi.read_doid();
 
 			// Remove cached loading operation

@@ -52,7 +52,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 	m_log->debug() << "Object created..." << std::endl;
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
-	handle_location_change(parent_id, zone_id, dgi.read_uint64());
+	handle_location_change(parent_id, zone_id, dgi.read_channel());
 	wake_children();
 }
 
@@ -86,8 +86,8 @@ void DistributedObject::append_required_data(Datagram &dg, bool client_only, boo
 	dg.add_doid(m_do_id);
 	dg.add_location(m_parent_id, m_zone_id);
 	dg.add_uint16(m_dclass->get_number());
-	uint32_t field_count = m_dclass->get_num_inherited_fields();
-	for(uint32_t i = 0; i < field_count; ++i)
+	size_t field_count = m_dclass->get_num_inherited_fields();
+	for(size_t i = 0; i < field_count; ++i)
 	{
 		DCField *field = m_dclass->get_inherited_field(i);
 		if(field->is_required() && !field->as_molecular_field() && (!client_only
@@ -599,7 +599,7 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			channel_t new_ai = dgi.read_uint64();
+			channel_t new_ai = dgi.read_channel();
 			if(m_ai_explicitly_set)
 			{
 				break;
@@ -699,8 +699,13 @@ void DistributedObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_OBJECT_GET_ALL:
 		{
+			uint32_t context = dgi.read_uint32();
+			if(dgi.read_doid() != m_do_id)
+			{
+				return;    // Not meant for this object!
+			}
 			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
-			dg.add_uint32(dgi.read_uint32()); // Copy context to response.
+			dg.add_uint32(context);
 			append_required_data(dg);
 			append_other_data(dg);
 			route_datagram(dg);
