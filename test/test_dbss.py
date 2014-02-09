@@ -630,7 +630,7 @@ class TestStateServer(unittest.TestCase):
         ### Test for SetFields with mixed db and non-db fields on unloaded object ###
         # Update field multiple on stateserver object
         dg = Datagram.create([9030], 5, STATESERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(9030) # id
+        dg.add_doid(9030) # id
         dg.add_uint16(3) # field count
         dg.add_uint16(setFoo)
         dg.add_uint16(1337)
@@ -645,7 +645,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(dg is not None) # Expecting DBSetFields
         dgi = DatagramIterator(dg)
         self.assertTrue(dgi.matches_header([1200], 9030, DBSERVER_OBJECT_SET_FIELDS))
-        self.assertEquals(dgi.read_uint32(), 9030) # Id
+        self.assertEquals(dgi.read_doid(), 9030) # Id
         self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
         hasFoo, hasRDB3 = False, False
         for x in xrange(2):
