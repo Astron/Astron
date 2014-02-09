@@ -125,9 +125,17 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 	}
 	catch(DatagramIteratorEOF &e)
 	{
-		// Log error with receivers output
-		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." <<
-		              std::endl;
+		if(p)
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from '"
+			              << p->m_name << "'.\n";
+		}
+		else
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from unknown participant.\n";
+		}
 		return;
 	}
 
