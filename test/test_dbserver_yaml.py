@@ -16,7 +16,7 @@ general:
 
 roles:
     - type: database
-      control: 777
+      control: 75757
       generate:
         min: 1000000
         max: 1000010
@@ -28,7 +28,7 @@ roles:
 class TestDatabaseServerYAML(unittest.TestCase, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
-	tmppath = tempfile.gettempdir() + '/astron';
+        tmppath = tempfile.gettempdir() + '/astron';
         if not os.path.exists(tmppath):
             os.makedirs(tmppath);
         dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)

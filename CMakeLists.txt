@@ -159,6 +159,7 @@ if(BUILD_DBSERVER)
 			src/database/YAMLDatabase.cpp
 		)
 		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
+		add_test(validate_config_dbyaml ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -243,6 +244,7 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.h
 	)
 	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
+	add_test(validate_config_stateserver ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
@@ -254,6 +256,7 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.cpp
 		)
 		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
+		add_test(validate_config_dbss ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
@@ -265,6 +268,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
+	add_test(validate_config_eventlogger ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
@@ -280,6 +284,7 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/AstronClient.cpp
 	)
 	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+	add_test(validate_config_clientagent ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
 endif()
 
 set(USE_128BIT_CHANNELS OFF CACHE BOOL "If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).")
@@ -296,18 +301,25 @@ endif()
 
 ### Define core components ###
 set(CORE_FILES
-	src/core/main.cpp
 	src/core/global.h
 	src/core/global.cpp
-	src/core/config.cpp
-	src/core/config.h
+	src/core/main.cpp
 	src/core/Logger.h
 	src/core/Logger.cpp
 	src/core/Role.h
-	src/core/RoleFactory.cpp
+	src/core/Role.cpp
 	src/core/RoleFactory.h
+	src/core/RoleFactory.cpp
 	src/core/types.h
 	src/core/msgtypes.h
+)
+
+set(CONFIG_FILES
+	src/config/ConfigGroup.h
+	src/config/ConfigGroup.cpp
+	src/config/ConfigVariable.h
+	src/config/ConfigVariable.cpp
+	src/config/constraints.cpp
 )
 
 set(MESSAGEDIRECTOR_FILES
@@ -327,9 +339,11 @@ set(UTIL_FILES
 )
 
 include_directories(src)
+add_test(validate_config_core ${CMAKE_SOURCE_DIR}/test/test_config.py)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 add_executable(astrond
 	${CORE_FILES}
+	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
 	${STATESERVER_FILES}
@@ -341,6 +355,7 @@ add_executable(astrond
 
 ### Setup source groups ###
 source_group("Core" FILES ${CORE_FILES})
+source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
 if(STATESERVER_FILES)

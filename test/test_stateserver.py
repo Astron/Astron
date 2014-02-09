@@ -15,7 +15,7 @@ general:
 
 roles:
     - type: stateserver
-      control: 100
+      control: 100100
 """ % test_dc
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
@@ -29,7 +29,7 @@ def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
         datagram.add_uint16(dclass)
 
 def createEmptyDTO1(conn, sender, doid, parent=0, zone=0, required1=0):
-    dg = Datagram.create([100], sender, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+    dg = Datagram.create([100100], sender, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
     appendMeta(dg, doid, parent, zone, DistributedTestObject1)
     dg.add_uint32(required1)
     conn.send(dg)
@@ -158,7 +158,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 101000005, 5000, 1500, DistributedTestObject2)
         ai.send(dg)
 
@@ -194,7 +194,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for the airecv keyword ###
         # Create an object...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 100010, 5000, 1500, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
         conn.send(dg)
@@ -472,7 +472,7 @@ class TestStateServer(unittest.TestCase):
         ai1.flush() # Ignore AI notification
 
         # Recreate the second object with an optional field
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid2, 0, 0, DistributedTestObject1)
         dg.add_uint32(5773) # setRequired1
         dg.add_uint16(1) # Optional fields: 1
@@ -770,7 +770,7 @@ class TestStateServer(unittest.TestCase):
         location2.flush() # Ignore location notification
 
         # Recreate the first object with a ram, non-broadcast field.
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject3)
         dg.add_uint32(44004400) # setRequired1
         dg.add_uint32(88008800) # setRDB3
@@ -812,7 +812,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for CreateObject on a subclass ###
         # Create a DTO3, which inherits from DTO1.
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
@@ -917,7 +917,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for creating an object without one if its required fields ###
         # Let's try making another one, but we'll forget the setRequired1.
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 235000000, 80000, 1234, DistributedTestObject1)
         conn.send(dg)
 
@@ -936,7 +936,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for creating an object with an unrecognized DistributedClass ###
         # Let's try making a bad object.
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 236000000, 80000, 1234, 0x1337)
         conn.send(dg)
 
@@ -1059,7 +1059,7 @@ class TestStateServer(unittest.TestCase):
         self.flush_failed()
         conn = self.connect(90000<<ZONE_SIZE_BITS|4321)
 
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, 545630000, 90000, 4321, DistributedTestObject1)
         dg.add_uint32(2099) # setRequired1
         dg.add_uint16(1) # Extra fields: 1
@@ -1078,7 +1078,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(*conn.expect(dg))
 
         # If we try to include a non-ram as OTHER...
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, 545640000, 90000, 4321, DistributedTestObject1)
         dg.add_uint32(2099) # setRequired1
         dg.add_uint16(1) # Extra fields: 1
@@ -1150,7 +1150,7 @@ class TestStateServer(unittest.TestCase):
         conn.flush()
 
         # Now let's try hitting the SS with a reset for the wrong AI:
-        dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
+        dg = Datagram.create([100100], 5, STATESERVER_DELETE_AI_OBJECTS)
         dg.add_channel(41337)
         conn.send(dg)
 
@@ -1158,7 +1158,7 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(conn.expect_none())
 
         # Now the correct AI:
-        dg = Datagram.create([100], 5, STATESERVER_DELETE_AI_OBJECTS)
+        dg = Datagram.create([100100], 5, STATESERVER_DELETE_AI_OBJECTS)
         dg.add_channel(31337)
         conn.send(dg)
 
@@ -1365,7 +1365,7 @@ class TestStateServer(unittest.TestCase):
         location = self.connect(12512<<ZONE_SIZE_BITS|66161)
 
         ### Test for SetFields with broadcast and ram filds ###
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 55555, 12512, 66161, DistributedTestObject3)
         dg.add_uint32(0) # setRequired1
         dg.add_uint32(0) # setRDB3
@@ -1514,7 +1514,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for SetOwner on an object with owner fields and non-owner, non-broadcast fields ###
         # Create an object with a bunch of types of fields
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid2, 0, 0, DistributedTestObject3)
         dg.add_uint32(0) # setRequired1
         dg.add_uint32(0) # setRDB3
@@ -1572,7 +1572,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for broadcast of a molecular SetField is molecular ###
         # Create an object
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         appendMeta(dg, 73317331, 88, 99, DistributedTestObject4)
         dg.add_uint32(13) # setX
         dg.add_uint32(37) # setY
@@ -1881,7 +1881,7 @@ class TestStateServer(unittest.TestCase):
 
         ### Test for clrecv keyword ###
         # Created a distributed chunk
-        dg = Datagram.create([100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
         appendMeta(dg, doid1, 0xBAD, 0xF001, DistributedChunk)
         dg.add_size(12) # blockList size in bytes (contains 1 element)
         dg.add_uint32(43) # blockList[0].x

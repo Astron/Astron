@@ -5,25 +5,39 @@
 
 #include "core/global.h"
 #include "core/RoleFactory.h"
+#include "config/constraints.h"
 
 using boost::asio::ip::tcp;
 
-static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
-static ConfigVariable<std::string> client_type("client/type", "libastron");
-static ConfigVariable<std::string> server_version("version", "dev");
-static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
-static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
+static RoleConfigGroup clientagent_config("clientagent");
+static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
+static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
+
+static ConfigGroup channels_config("channels", clientagent_config);
+static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
+static ConfigVariable<channel_t> max_channel("max", INVALID_CHANNEL, channels_config);
+static InvalidChannelConstraint min_not_invalid(min_channel);
+static InvalidChannelConstraint max_not_invalid(max_channel);
+static ReservedChannelConstraint min_not_reserved(min_channel);
+static ReservedChannelConstraint max_not_reserved(max_channel);
+
+ConfigGroup ca_client_config("client", clientagent_config);
+ConfigVariable<std::string> ca_client_type("type", "libastron", ca_client_config);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
-	m_client_type(client_type.get_rval(roleconfig)),
-	m_server_version(server_version.get_rval(roleconfig)),
-	m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig))
+	m_server_version(server_version.get_rval(roleconfig))
 {
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
 
-	m_clientconfig = roleconfig["client"];
+	ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
+	m_client_type = ca_client_type.get_rval(client);
+
+	ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
+	m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
+
+	m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);

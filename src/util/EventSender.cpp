@@ -2,18 +2,15 @@
 
 #include "EventSender.h"
 
-static ConfigVariable<std::string> target_addr("general/eventlogger", "");
-
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
 	m_socket(io_service, udp::v4()), m_enabled(false)
 {
 
 }
 
-void EventSender::init()
+void EventSender::init(const std::string& target)
 {
-	std::string str_ip = target_addr.get_val();
-
+	std::string str_ip = target;
 	if(str_ip == "")
 	{
 		m_enabled = false;
