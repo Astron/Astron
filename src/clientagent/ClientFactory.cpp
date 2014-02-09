@@ -1,10 +1,15 @@
 #include "ClientFactory.h"
 
-ClientFactory ClientFactory::singleton;
-
 BaseClientType::BaseClientType(const std::string &name)
 {
-	ClientFactory::singleton.add_client_type(name, this);
+	ClientFactory::singleton().add_client_type(name, this);
+}
+
+
+ClientFactory& ClientFactory::singleton()
+{
+	static ClientFactory* fact = new ClientFactory();
+	return *fact;
 }
 
 // add_client_type adds a factory for client of type 'name'
@@ -15,7 +20,7 @@ void ClientFactory::add_client_type(const std::string &name, BaseClientType *fac
 }
 
 // instantiate_client creates a new Client object of type 'client_type'.
-Client* ClientFactory::instantiate_client(const std::string &client_type, ClientConfig config,
+Client* ClientFactory::instantiate_client(const std::string &client_type, ConfigNode config,
 		ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket)
 {
 	if(m_factories.find(client_type) != m_factories.end())

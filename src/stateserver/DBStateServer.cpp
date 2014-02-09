@@ -1,5 +1,6 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 #include <unordered_set>
@@ -10,17 +11,25 @@
 using dclass::Class;
 using dclass::Field;
 
-// RoleConfig
-static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL);
+static RoleFactoryItem<DBStateServer> dbss_fact("dbss");
 
-// RangesConfig
-static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID);
-static ConfigVariable<doid_t> range_max("max", DOID_MAX);
+static RoleConfigGroup dbss_config("dbss");
+static ConfigVariable<channel_t> database_channel("database", INVALID_CHANNEL, dbss_config);
+static InvalidChannelConstraint db_channel_not_invalid(database_channel);
+static ReservedChannelConstraint db_channel_not_reserved(database_channel);
+
+static ConfigList ranges_config("ranges", dbss_config);
+static ConfigVariable<doid_t> range_min("min", INVALID_DO_ID, ranges_config);
+static ConfigVariable<doid_t> range_max("max", DOID_MAX, ranges_config);
+static InvalidDoidConstraint min_not_invalid(range_min);
+static InvalidDoidConstraint max_not_invalid(range_max);
+static ReservedDoidConstraint min_not_reserved(range_min);
+static ReservedDoidConstraint max_not_reserved(range_max);
 
 DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 	m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
 {
-	RangesConfig ranges = roleconfig["ranges"];
+	ConfigNode ranges = dbss_config.get_child_node(ranges_config, roleconfig);
 	for(auto it = ranges.begin(); it != ranges.end(); ++it)
 	{
 		channel_t min = range_min.get_rval(*it);
@@ -41,9 +50,9 @@ DBStateServer::~DBStateServer()
 
 void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 {
-	doid_t do_id = dgi.read_uint32();
-	doid_t parent_id = dgi.read_uint32();
-	zone_t zone_id = dgi.read_uint32();
+	doid_t do_id = dgi.read_doid();
+	doid_t parent_id = dgi.read_doid();
+	zone_t zone_id = dgi.read_zone();
 
 	// Check object is not already active
 	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())
@@ -99,7 +108,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
 void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_uint64();
+	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
@@ -477,7 +486,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 			m_context_datagrams[db_context].add_uint32(r_context);
 			m_context_datagrams[db_context].add_doid(r_do_id);
-			m_context_datagrams[db_context].add_uint64(INVALID_CHANNEL); // Location
+			m_context_datagrams[db_context].add_channel(INVALID_CHANNEL); // Location
 
 			// Cache the do_id --> context in case we get a dbss_activate
 			m_inactive_loads[r_do_id].insert(r_context);
@@ -525,7 +534,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 			// Get do_id from datagram
 			check_dgi.seek_payload();
-			check_dgi.skip(8 + 4); // skip over sender and context to do_id;
+			check_dgi.skip(sizeof(channel_t) + sizeof(doid_t)); // skip over sender and context to do_id;
 			doid_t do_id = check_dgi.read_doid();
 
 			// Remove cached loading operation
@@ -654,5 +663,3 @@ bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
 
 	return true;
 }
-
-RoleFactoryItem<DBStateServer> dbss_fact("dbss");

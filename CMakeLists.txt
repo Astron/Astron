@@ -12,11 +12,12 @@ if(WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
 endif()
 
-
 ### Set build type to Release with Debug Info by default ###
-if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE RelWithDebInfo)
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type.")
 endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+	RelWithDebInfo Release Debug)
 
 ### Define astron’s git aha for use in program ###
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
@@ -37,15 +38,23 @@ endif()
 ### Add per-compiler flags ###
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -Wall")
 
-	### Release with Debugging Info
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g")
-
-	### Release Flags -- warnings are errors, release code should not have warnings ###
+	# warnings are errors, release code should not have warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
-	
-	### Debug flags, Wall
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra")
+
+	# debug flags, wall, wextra
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Wall -Wextra")
+endif()
+
+if(CMAKE_GENERATOR STREQUAL Xcode)
+	set(CMAKE_CXX_FLAGS_RELEASE
+		"${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x -stdlib=libc++")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -std=c++0x -stdlib=libc++")
+	set(CMAKE_CXX_FLAGS_DEBUG
+		"${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -stdlib=libc++")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -96,6 +105,10 @@ else()
 	message(FATAL_ERROR "You need yamlcpp to build this, build yamlcpp in the 'dependencies/' directory, or install it as a system package")
 endif()
 
+set(BUILD_YAML ON) # ON CACHE BOOL "Stuff"
+if(BUILD_YAML)
+	add_definitions(-DASTRON_WITH_YAML)
+endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
@@ -121,10 +134,16 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
+set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
+	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
 	add_definitions(-DASTRON_32BIT_DATAGRAMS)
 	add_definitions(-DDCLASS_32BIT_SIZETAG)
+endif()
+set(USE_128BIT_CHANNELS OFF CACHE BOOL
+	"If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).")
+if(USE_128BIT_CHANNELS)
+	add_definitions(-DASTRON_128BIT_CHANNELS)
 endif()
 
 set(BUILD_TESTS OFF CACHE BOOL "If set to true, test files will be compiled in")
@@ -151,7 +170,8 @@ if(BUILD_DBSERVER)
 			src/database/YAMLDatabase.cpp
 		)
 		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
-		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml)
+		add_test(validate_config_dbyaml ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -237,7 +257,8 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.h
 	)
 	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
-	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver)
+	add_test(validate_config_stateserver ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver validate_config_stateserver)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
@@ -249,7 +270,8 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.cpp
 		)
 		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
-		set(PYTHON_TESTS ${PYTHON_TESTS} dbss)
+		add_test(validate_config_dbss ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} dbss validate_config_dbss)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
@@ -261,6 +283,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
+	add_test(validate_config_eventlogger ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
@@ -276,23 +299,31 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/AstronClient.cpp
 	)
 	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
-	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent)
+	add_test(validate_config_clientagent ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent validate_config_clientagent)
 endif()
 
 ### Define core components ###
 set(CORE_FILES
-	src/core/main.cpp
 	src/core/global.h
 	src/core/global.cpp
-	src/core/config.cpp
-	src/core/config.h
+	src/core/main.cpp
 	src/core/Logger.h
 	src/core/Logger.cpp
 	src/core/Role.h
-	src/core/RoleFactory.cpp
+	src/core/Role.cpp
 	src/core/RoleFactory.h
+	src/core/RoleFactory.cpp
 	src/core/types.h
 	src/core/msgtypes.h
+)
+
+set(CONFIG_FILES
+	src/config/ConfigGroup.h
+	src/config/ConfigGroup.cpp
+	src/config/ConfigVariable.h
+	src/config/ConfigVariable.cpp
+	src/config/constraints.cpp
 )
 
 set(MESSAGEDIRECTOR_FILES
@@ -312,10 +343,12 @@ set(UTIL_FILES
 )
 
 include_directories(src)
+add_test(validate_config_core ${CMAKE_SOURCE_DIR}/test/test_config.py)
 add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 set(PYTHON_TESTS ${PYTHON_TESTS} messagedirector)
 add_executable(astrond
 	${CORE_FILES}
+	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
 	${STATESERVER_FILES}
@@ -327,6 +360,7 @@ add_executable(astrond
 
 ### Setup source groups ###
 source_group("Core" FILES ${CORE_FILES})
+source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
 if(STATESERVER_FILES)
@@ -360,8 +394,9 @@ target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOC
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
-	set_tests_properties(
-		${PYTHON_TESTS}
-		PROPERTIES ENVIRONMENT "USE_32BIT_DATAGRAMS=true"
-	)
+	set(PYTHON_TEST_ENV "USE_32BIT_DATAGRAMS=true ${PYTHON_TEST_ENV}")
 endif()
+if(USE_128BIT_CHANNELS)
+	set(PYTHON_TEST_ENV "USE_128BIT_CHANNELS=true ${PYTHON_TEST_ENV}")
+enidf()
+set_tests_properties(${PYTHON_TESTS} PROPERTIES ENVIRONMENT ${PYTHON_TEST_ENV})

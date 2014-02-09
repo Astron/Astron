@@ -390,7 +390,7 @@ class DatagramIterator
 		{
 			dgsize_t offset = m_offset; // save offset
 
-			m_offset = 9 + get_recipient_count() * sizeof(channel_t); // seek message type
+			m_offset = 1 + get_recipient_count() * sizeof(channel_t) + sizeof(channel_t); // seek message type
 			uint16_t msg_type = read_uint16(); // read message type
 
 			m_offset = offset; // restore offset

@@ -11,7 +11,7 @@
 using dclass::Class;
 using dclass::Field;
 
-static ConfigVariable<bool> relocate_owned("relocate", false);
+static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 
 class AstronClient : public Client, public NetworkClient
 {
@@ -20,7 +20,7 @@ class AstronClient : public Client, public NetworkClient
 		bool m_relocate_owned;
 
 	public:
-		AstronClient(ClientConfig config, ClientAgent* client_agent,
+		AstronClient(ConfigNode config, ClientAgent* client_agent,
 			         boost::asio::ip::tcp::socket *socket) :
 			Client(client_agent), NetworkClient(socket),
 			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config))

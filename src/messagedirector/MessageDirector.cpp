@@ -1,13 +1,19 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
-#include "core/config.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/ConfigVariable.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
-static ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
-static ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
+
+static ConfigGroup md_config("messagedirector");
+static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
+static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
+
+static ConfigGroup daemon_config("daemon");
+static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
+static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 
 // Define convenience type
 typedef boost::icl::discrete_interval<channel_t> interval_t;
@@ -119,9 +125,17 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 	}
 	catch(DatagramIteratorEOF &e)
 	{
-		// Log error with receivers output
-		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." <<
-		              std::endl;
+		if(p)
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from '"
+			              << p->m_name << "'.\n";
+		}
+		else
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from unknown participant.\n";
+		}
 		return;
 	}
 

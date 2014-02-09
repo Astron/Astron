@@ -1,31 +1,47 @@
 #include "ClientAgent.h"
 #include "ClientFactory.h"
 
-#include <boost/bind.hpp>
-
 #include "core/global.h"
 #include "core/RoleFactory.h"
+#include "config/constraints.h"
 #include "dclass/file/hash.h"
-
+#include <boost/bind.hpp>
 using boost::asio::ip::tcp;
 
-static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198");
-static ConfigVariable<std::string> client_type("client/type", "libastron");
-static ConfigVariable<std::string> server_version("version", "dev");
-static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0);
-static ConfigVariable<channel_t> min_channel("channels/min", INVALID_CHANNEL);
-static ConfigVariable<channel_t> max_channel("channels/max", INVALID_CHANNEL);
+static RoleConfigGroup clientagent_config("clientagent");
+static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
+static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
+
+static ConfigGroup channels_config("channels", clientagent_config);
+static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
+static ConfigVariable<channel_t> max_channel("max", INVALID_CHANNEL, channels_config);
+static InvalidChannelConstraint min_not_invalid(min_channel);
+static InvalidChannelConstraint max_not_invalid(max_channel);
+static ReservedChannelConstraint min_not_reserved(min_channel);
+static ReservedChannelConstraint max_not_reserved(max_channel);
+
+ConfigGroup ca_client_config("client", clientagent_config);
+ConfigVariable<std::string> ca_client_type("type", "libastron", ca_client_config);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
-	m_client_type(client_type.get_rval(roleconfig)),
-	m_server_version(server_version.get_rval(roleconfig)),
-	m_ct(min_channel.get_rval(roleconfig), max_channel.get_rval(roleconfig))
+	m_server_version(server_version.get_rval(roleconfig))
 {
 	std::stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
 
-	// Get DC Hash
+	// We need to get the client type...
+	ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
+	m_client_type = ca_client_type.get_rval(client);
+
+	// ... and also the channel range ...
+	ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
+	m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
+
+	// ... then store a copy of the client config.
+	m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
+
+	// Calculate the DC hash
 	const uint32_t config_hash = override_hash.get_rval(roleconfig);
 	if(config_hash > 0x0)
 	{
@@ -35,9 +51,6 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 	{
 		m_hash = dclass::legacy_hash(g_dcf);
 	}
-
-	// Set Client config
-	m_clientconfig = roleconfig["client"];
 
 	//Initialize the network
 	std::string str_ip = bind_addr.get_rval(m_roleconfig);
@@ -87,7 +100,9 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	}
 	m_log->debug() << "Got an incoming connection from "
 	               << remote.address() << ":" << remote.port() << std::endl;
-	ClientFactory::singleton.instantiate_client(m_client_type, m_clientconfig, this, socket);
+
+	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
+
 	start_accept();
 }
 

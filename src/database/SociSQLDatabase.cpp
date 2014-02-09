@@ -16,15 +16,15 @@ using namespace soci;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
-static ConfigVariable<string> database_type("type", "null");
-static ConfigVariable<string> database_name("database", "null");
-static ConfigVariable<string> session_user("username", "null");
-static ConfigVariable<string> session_passwd("password", "null");
+static ConfigVariable<string> database_type("type", "null", db_backend_config);
+static ConfigVariable<string> database_name("database", "null", db_backend_config);
+static ConfigVariable<string> session_user("username", "null", db_backend_config);
+static ConfigVariable<string> session_passwd("password", "null", db_backend_config);
 
 class SociSQLDatabase : public DatabaseBackend
 {
 	public:
-		SociSQLDatabase(DBBackendConfig dbeconfig, doid_t min_id, doid_t max_id) :
+		SociSQLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
 			DatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
 			m_backend(database_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),

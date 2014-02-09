@@ -1,15 +1,19 @@
 #include "DBBackendFactory.h"
 
-DBBackendFactory DBBackendFactory::singleton;
-
 BaseDBBackendFactoryItem::BaseDBBackendFactoryItem(const std::string &name)
 {
-	DBBackendFactory::singleton.add_backend(name, this);
+	DBBackendFactory::singleton().add_backend(name, this);
+}
+
+DBBackendFactory& DBBackendFactory::singleton()
+{
+	static DBBackendFactory* fact = new DBBackendFactory();
+	return *fact;
 }
 
 // instantiate_backend creates a new DatabaseBackend object of type 'backend_name'.
 DatabaseBackend* DBBackendFactory::instantiate_backend(const std::string &backend_name,
-	DBBackendConfig config, doid_t min_id, doid_t max_id)
+	ConfigNode config, doid_t min_id, doid_t max_id)
 {
 	if(m_factories[backend_name])
 	{

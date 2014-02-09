@@ -18,7 +18,7 @@ general:
 
 roles:
     - type: database
-      control: 777
+      control: 75757
       generate:
         min: 1000000
         max: 1000010

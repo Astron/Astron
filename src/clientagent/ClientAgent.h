@@ -4,13 +4,16 @@
 
 #include <boost/asio.hpp>
 
+extern ConfigGroup ca_client_config;
+extern ConfigVariable<std::string> ca_client_type;
+
 // A ChannelTracker is used to keep track of available and allocated channels that
 // the ClientAgent can use to assign to new Clients.
 // TODO: Consider moving to util/ this class might be reusable in other roles that utilize ranges.
 class ChannelTracker
 {
 	public:
-		ChannelTracker(channel_t min, channel_t max);
+		ChannelTracker(channel_t min = INVALID_CHANNEL, channel_t max = INVALID_CHANNEL);
 
 		channel_t alloc_channel();
 		void free_channel(channel_t channel);
@@ -55,7 +58,7 @@ class ClientAgent : public Role
 		std::string m_client_type;
 		std::string m_server_version;
 		ChannelTracker m_ct;
-		ClientConfig m_clientconfig;
+		ConfigNode m_clientconfig;
 		LogCategory *m_log;
 		uint32_t m_hash;
 };
