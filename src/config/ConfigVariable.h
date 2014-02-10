@@ -111,7 +111,7 @@ class ConfigVariable
 
 	public:
 		ConfigVariable(const std::string& name, const T& def_val,
-		               ConfigGroup* grp = &ConfigGroup::root) :
+		               ConfigGroup* grp = &ConfigGroup::root()) :
 			m_name(name), m_def_val(def_val), m_group(grp)
 		{
 			grp->add_variable(name, get_rtest());
