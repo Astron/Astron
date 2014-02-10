@@ -117,9 +117,10 @@ class ConfigVariable
 			grp->add_variable(name, get_rtest());
 		}
 
-		ConfigVariable(const std::string& name, const T& def_val,
-		               ConfigGroup& grp) : ConfigVariable(name, def_val, &grp)
+		ConfigVariable(const std::string& name, const T& def_val, ConfigGroup& grp) : 
+			m_name(name), m_def_val(def_val), m_group(&grp)
 		{
+			grp.add_variable(name, get_rtest());
 		}
 
 		// Get rval gets the value of the config variable relative to the variable's ConfigGroup.
