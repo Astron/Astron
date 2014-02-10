@@ -284,7 +284,11 @@ void hash_legacy_type(HashGenerator& hashgen, const DistributedType* type)
 		case T_BLOB:
 		case T_VARBLOB:
 		{
-			hashgen.add_int(L_BLOB); // _type
+			if(type->get_alias() == "blob") {
+				hashgen.add_int(L_BLOB); // _type
+			} else {
+				hashgen.add_int(L_UINT8); // _type
+			}
 			hashgen.add_int(1); // _divisor
 
 			const ArrayType* blob = type->as_array();
@@ -302,7 +306,11 @@ void hash_legacy_type(HashGenerator& hashgen, const DistributedType* type)
 		case T_VARSTRING:
 		case T_STRING:
 		{
-			hashgen.add_int(L_STRING); // _type
+			if(type->get_alias() == "string") {
+				hashgen.add_int(L_STRING); // _type
+			} else {
+				hashgen.add_int(L_CHAR); // _type
+			}
 			hashgen.add_int(1); // _divisor
 
 			const ArrayType* str = type->as_array();
