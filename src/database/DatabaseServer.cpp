@@ -63,9 +63,9 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response with generic header
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_CREATE_OBJECT_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_CREATE_OBJECT_RESP);
+			resp->add_uint32(context);
 
 			// Get DistributedClass
 			uint16_t dc_id = dgi.read_uint16();
@@ -73,7 +73,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(!dcc)
 			{
 				m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
-				resp.add_doid(INVALID_DO_ID);
+				resp->add_doid(INVALID_DO_ID);
 				route_datagram(resp);
 				return;
 			}
@@ -107,7 +107,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 				               << e.what() << std::endl;
 
-				resp.add_doid(INVALID_DO_ID);
+				resp->add_doid(INVALID_DO_ID);
 				route_datagram(resp);
 				return;
 			}
@@ -131,14 +131,14 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(do_id == INVALID_DO_ID || do_id < m_min_id || do_id > m_max_id)
 			{
 				m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
-				resp.add_doid(INVALID_DO_ID);
+				resp->add_doid(INVALID_DO_ID);
 				route_datagram(resp);
 				return;
 			}
 
 			// Send the newly allocated doid back to caller
 			m_log->trace() << "... created with ID: " << do_id << std::endl;
-			resp.add_doid(do_id);
+			resp->add_doid(do_id);
 			route_datagram(resp);
 		}
 		break;
@@ -147,9 +147,9 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start the reply datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
+			resp->add_uint32(context);
 
 			doid_t do_id = dgi.read_doid();
 
@@ -161,13 +161,13 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				// Object found, serialize fields and send all data back
 				m_log->trace() << "... object found!" << std::endl;
-				resp.add_uint8(SUCCESS);
-				resp.add_uint16(dbo.dc_id);
-				resp.add_uint16(dbo.fields.size());
+				resp->add_uint8(SUCCESS);
+				resp->add_uint16(dbo.dc_id);
+				resp->add_uint16(dbo.fields.size());
 				for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 				{
-					resp.add_uint16(it->first->get_number());
-					resp.add_data(it->second);
+					resp->add_uint16(it->first->get_number());
+					resp->add_data(it->second);
 					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
 					                  it->second.begin(), it->second.end()) << std::endl;
 				}
@@ -176,7 +176,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				// Object not found, send failure.
 				m_log->trace() << "... object not found." << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 			}
 
 			// Send reply datagram
@@ -263,16 +263,16 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
+			resp->add_uint32(context);
 
 			// Get class so we can filter the field
 			doid_t do_id = dgi.read_doid();
 			DCClass *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -282,7 +282,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			DCField *field = dcc->get_field_by_index(field_id);
 			if(!field->is_db())
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -293,17 +293,17 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(m_db_backend->set_field_if_empty(do_id, field, value))
 			{
 				// Update was successful, send reply
-				resp.add_uint8(SUCCESS);
+				resp->add_uint8(SUCCESS);
 				route_datagram(resp);
 				return;
 			}
 
 			// Update failed, send back current object values
-			resp.add_uint8(FAILURE);
+			resp->add_uint8(FAILURE);
 			if(value.size() > 0)
 			{
-				resp.add_uint16(field_id);
-				resp.add_data(value);
+				resp->add_uint16(field_id);
+				resp->add_data(value);
 			}
 			route_datagram(resp);
 		}
@@ -313,16 +313,16 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+			resp->add_uint32(context);
 
 			// Get class so we can filter the field
 			doid_t do_id = dgi.read_doid();
 			DCClass *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -332,7 +332,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			DCField *field = dcc->get_field_by_index(field_id);
 			if(!field->is_db())
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -346,17 +346,17 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(m_db_backend->set_field_if_equals(do_id, field, equal, value))
 			{
 				// Update was successful, send reply
-				resp.add_uint8(SUCCESS);
+				resp->add_uint8(SUCCESS);
 				route_datagram(resp);
 				return;
 			}
 
 			// Update failed, send back current object values
-			resp.add_uint8(FAILURE);
+			resp->add_uint8(FAILURE);
 			if(value.size() > 0)
 			{
-				resp.add_uint16(field_id);
-				resp.add_data(value);
+				resp->add_uint16(field_id);
+				resp->add_data(value);
 			}
 			route_datagram(resp);
 		}
@@ -366,16 +366,16 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
+			resp->add_uint32(context);
 
 			// Get class so we can filter the fields
 			doid_t do_id = dgi.read_doid();
 			DCClass *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -399,7 +399,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 						}
 						else
 						{
-							resp.add_uint8(FAILURE);
+							resp->add_uint8(FAILURE);
 							route_datagram(resp);
 							return;
 						}
@@ -410,7 +410,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated."
 				               << " e.what(): " << e.what() << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -419,20 +419,20 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(m_db_backend->set_fields_if_equals(do_id, equals, values))
 			{
 				// Update was successful, send reply
-				resp.add_uint8(SUCCESS);
+				resp->add_uint8(SUCCESS);
 				route_datagram(resp);
 				return;
 			}
 
 			// Update failed, send back current object values
-			resp.add_uint8(FAILURE);
+			resp->add_uint8(FAILURE);
 			if(values.size() > 0)
 			{
-				resp.add_uint16(values.size());
+				resp->add_uint16(values.size());
 				for(auto it = values.begin(); it != values.end(); ++it)
 				{
-					resp.add_uint16(it->first->get_number());
-					resp.add_data(it->second);
+					resp->add_uint16(it->first->get_number());
+					resp->add_data(it->second);
 				}
 			}
 			route_datagram(resp);
@@ -443,9 +443,9 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELD_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELD_RESP);
+			resp->add_uint32(context);
 
 			// Get object id from datagram
 			doid_t do_id = dgi.read_doid();
@@ -456,7 +456,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(!dcc)
 			{
 				m_log->trace() << "... object not found in database." << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -468,7 +468,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_log->error() << "Asked for invalid field,"
 				               << " reading from obj-" << do_id << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -478,15 +478,15 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(!m_db_backend->get_field(do_id, field, value))
 			{
 				m_log->trace() << "... field not set." << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
 
 			// Send value in response
-			resp.add_uint8(SUCCESS);
-			resp.add_uint16(field_id);
-			resp.add_data(value);
+			resp->add_uint8(SUCCESS);
+			resp->add_uint16(field_id);
+			resp->add_data(value);
 			route_datagram(resp);
 			m_log->trace() << "... success." << std::endl;
 		}
@@ -496,9 +496,9 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELDS_RESP);
-			resp.add_uint32(context);
+			Datagram_ptr resp = Datagram::create();
+			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELDS_RESP);
+			resp->add_uint32(context);
 
 			// Get object id from datagram
 			doid_t do_id = dgi.read_doid();
@@ -508,7 +508,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			DCClass *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
@@ -524,7 +524,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					m_log->error() << "Asked for invalid field(s),"
 					               << " reading from object #" << do_id << std::endl;
-					resp.add_uint8(FAILURE);
+					resp->add_uint8(FAILURE);
 					route_datagram(resp);
 					return;
 				}
@@ -536,18 +536,18 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(!m_db_backend->get_fields(do_id, fields, values))
 			{
 				m_log->trace() << "... failure." << std::endl;
-				resp.add_uint8(FAILURE);
+				resp->add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
 
 			// Send values in response
-			resp.add_uint8(SUCCESS);
-			resp.add_uint16(values.size());
+			resp->add_uint8(SUCCESS);
+			resp->add_uint16(values.size());
 			for(auto it = values.begin(); it != values.end(); ++it)
 			{
-				resp.add_uint16(it->first->get_number());
-				resp.add_data(it->second);
+				resp->add_uint16(it->first->get_number());
+				resp->add_data(it->second);
 			}
 			route_datagram(resp);
 			m_log->trace() << "... success." << std::endl;
