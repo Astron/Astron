@@ -31,7 +31,8 @@ class DatabaseBaseTests(object):
 
         if check:
             dg = Datagram.create([doid], sender, DBSERVER_OBJECT_DELETE)
-            self.objects.expect(dg)
+            dg.add_uint32(doid)
+            self.assertTrue(*self.objects.expect(dg))
         else:
             self.objects.flush()
 
@@ -1043,21 +1044,20 @@ class DatabaseBaseTests(object):
         expected = []
         dg = Datagram.create([doidB], 90, DBSERVER_OBJECT_DELETE_FIELDS)
         dg.add_uint32(doidB)
-        dg.add_uint16(2) # Field count
+        dg.add_uint16(3) # Field count
         dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
         dg = Datagram.create([doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doidB)
-        dg.add_uint16(2) # Field count
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(setRDB3DefaultValue)
+        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
 
-        self.objects.expect_multi(expected)
+        self.assertTrue(self.objects.expect_multi(expected))
 
         # Get all object fields
         dg = Datagram.create([75757], 90, DBSERVER_OBJECT_GET_ALL)
@@ -1096,20 +1096,19 @@ class DatabaseBaseTests(object):
         expected = []
         dg = Datagram.create([doidC], 90, DBSERVER_OBJECT_DELETE_FIELDS)
         dg.add_uint32(doidC)
-        dg.add_uint16(1) # Field count
+        dg.add_uint16(2) # Field count
         dg.add_uint16(setDb3)
+        dg.add_uint16(setRDB3)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
         dg = Datagram.create([doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doidC)
-        dg.add_uint16(2) # Field count
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(setRDB3DefaultValue)
+        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
 
-        self.objects.expect_multi(expected)
+        self.assertTrue(self.objects.expect_multi(expected))
 
 
         # Get all object fields

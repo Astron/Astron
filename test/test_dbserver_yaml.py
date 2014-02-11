@@ -17,6 +17,7 @@ general:
 roles:
     - type: database
       control: 75757
+      broadcast: true
       generate:
         min: 1000000
         max: 1000010

@@ -1,12 +1,10 @@
 #!/usr/bin/env python2
-import unittest
-import os, time
+import unittest, os, time
 from socket import *
 
 from testdc import test_dc
-from common import Daemon, MDConnection
+from common import Daemon, MDConnection, Datagram
 from test_dbserver import DatabaseBaseTests
-
 
 CONFIG = """\
 messagedirector:
@@ -19,6 +17,7 @@ general:
 roles:
     - type: database
       control: 75757
+      broadcast: true
       generate:
         min: 1000000
         max: 1000010
@@ -37,9 +36,16 @@ class TestDatabaseServerPostgres(unittest.TestCase, DatabaseBaseTests):
         sock.connect(('127.0.0.1', 57123))
         cls.conn = MDConnection(sock)
 
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.connect(('127.0.0.1', 57123))
+        cls.objects = MDConnection(sock)
+        cls.objects.send(Datagram.create_add_range(1000000, 1000010))
+
     @classmethod
     def tearDownClass(cls):
         time.sleep(0.25) # Wait for database to finish any operations
+        cls.objects.send(Datagram.create_remove_range(1000000, 1000010))
+        cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
 

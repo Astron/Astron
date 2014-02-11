@@ -216,8 +216,9 @@ if(BUILD_DBSERVER)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
-				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_posgres.py)
-
+				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
+				add_test(validate_config_dbpostgres
+					${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py)
 			endif()
 		endif()
 	else()
