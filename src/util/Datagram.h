@@ -5,13 +5,14 @@
 #include <sstream>
 #include <exception>
 #include <stdexcept>
+#include <memory>
 #include <string.h> // memcpy
 #include "core/types.h"
 
 #ifdef ASTRON_32BIT_DATAGRAMS
-	typedef uint32_t dgsize_t;
+typedef uint32_t dgsize_t;
 #else
-	typedef uint16_t dgsize_t;
+typedef uint16_t dgsize_t;
 #endif
 
 #define DGSIZE_MAX ((dgsize_t)(-1))
@@ -40,7 +41,7 @@ class Datagram
 			{
 				std::stringstream err_str;
 				err_str << "dg tried to add data past max datagram size, buf_offset+len("
-				    << buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
+				        << buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
 				throw DatagramOverflow(err_str.str());
 			}
 
@@ -53,7 +54,6 @@ class Datagram
 				buf_cap = buf_cap + len + 64;
 			}
 		}
-	public:
 		// default-constructor:
 		//     creates a new datagram with some pre-allocated space
 		Datagram() : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
@@ -61,16 +61,16 @@ class Datagram
 		}
 
 		/*
-		// TODO: Deal with overload collision with Datagram(uint16_t message_type)
+		 // TODO: Deal with overload collision with Datagram(uint16_t message_type)
 
-		// sized-constructor:
-		//     allows you to specify the capacity of the datagram ahead of time,
-		//     this should be used when the exact size is known ahead of time for performance
-		Datagram(dgsize_t capacity) : buf(new uint8_t[capacity]), buf_cap(capacity),
-			buf_offset(0)
-		{
-		}
-		*/
+		 // sized-constructor:
+		 //     allows you to specify the capacity of the datagram ahead of time,
+		 //     this should be used when the exact size is known ahead of time for performance
+		 Datagram(dgsize_t capacity) : buf(new uint8_t[capacity]), buf_cap(capacity),
+		 buf_offset(0)
+		 {
+		 }
+		 */
 
 		// copy-constructor:
 		//     creates a new datagram which is a deep-copy of another datagram;
@@ -141,12 +141,75 @@ class Datagram
 			delete [] buf;
 		}
 
+	public:
+		static std::shared_ptr<Datagram> create()
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram);
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(const Datagram &dg)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(dg));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(uint8_t *data, dgsize_t length, dgsize_t capacity)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length, capacity));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(const uint8_t *data, dgsize_t length)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(const std::vector<uint8_t> &data)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(const std::string &data)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(channel_t to_channel, channel_t from_channel,
+		                                        uint16_t message_type)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channel, from_channel, message_type));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(const std::set<channel_t> &to_channels,
+		                                        channel_t from_channel,
+		                                        uint16_t message_type)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channels, from_channel, message_type));
+			return dg_ptr;
+		}
+
+		static std::shared_ptr<Datagram> create(uint16_t message_type)
+		{
+			std::shared_ptr<Datagram> dg_ptr(new Datagram(message_type));
+			return dg_ptr;
+		}
+
+
 		// add_bool adds an 8-bit integer to the datagram that is guaranteed
 		// to be one of the values 0x00 (false) or 0x01 (true).
 		void add_bool(const bool &v)
 		{
-			if(v) add_uint8(1);
-			else add_uint8(0);
+			if(v) {
+				add_uint8(1);
+			}
+			else {
+				add_uint8(0);
+			}
 		}
 
 		// add_int8 adds a signed 8-bit integer value to the datagram.
@@ -428,3 +491,6 @@ class Datagram
 			return buf;
 		}
 };
+
+//TODO: this should really be moved somewhere nicer.
+typedef std::shared_ptr<Datagram> Datagram_ptr;
