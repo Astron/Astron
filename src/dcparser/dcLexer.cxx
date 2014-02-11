@@ -1037,7 +1037,7 @@ extern int dcyywrap (void );
 #endif
 #endif
 
-    static void yyunput (int c,char *buf_ptr  );
+//static void yyunput (int c,char *buf_ptr  );
 
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char *,yyconst char *,int );
@@ -1549,7 +1549,7 @@ YY_RULE_SETUP
   dcyylval.u.uint64 = 0;
   const char *p = dcyytext;
   while (*p != '\0') {
-    PN_uint64 next_value = dcyylval.u.uint64 * 10;
+    uint64_t next_value = dcyylval.u.uint64 * 10;
     if (next_value < dcyylval.u.uint64) {
       dcyyerror("Number out of range.");
       dcyylval.u.uint64 = 1;
@@ -1582,9 +1582,9 @@ YY_RULE_SETUP
     ++p;
   }
 
-  PN_uint64 value = 0;
+  uint64_t value = 0;
   while (*p != '\0') {
-    PN_uint64 next_value = value * 10;
+    uint64_t next_value = value * 10;
     if (next_value < value) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
@@ -1596,13 +1596,13 @@ YY_RULE_SETUP
   }
 
   if (neg) {
-    dcyylval.u.int64 = -(PN_int64)value;
+    dcyylval.u.int64 = -(int64_t)value;
     if (dcyylval.u.int64 > 0) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
     }
   } else {
-    dcyylval.u.int64 = (PN_int64)value;
+    dcyylval.u.int64 = (int64_t)value;
     if (dcyylval.u.int64 < 0) {
       dcyyerror("Number out of range.");
       dcyylval.u.int64 = 1;
@@ -1624,7 +1624,7 @@ YY_RULE_SETUP
   dcyylval.u.uint64 = 0;
   const char *p = dcyytext + 2;
   while (*p != '\0') {
-    PN_uint64 next_value = dcyylval.u.uint64 * 16;
+    uint64_t next_value = dcyylval.u.uint64 * 16;
     if (next_value < dcyylval.u.uint64) {
       dcyyerror("Number out of range.");
       dcyylval.u.uint64 = 1;
@@ -2044,18 +2044,18 @@ static int yy_get_next_buffer (void)
 	return yy_is_jam ? 0 : yy_current_state;
 }
 
-    static void yyunput (int c, register char * yy_bp )
+/*static void yyunput (int c, register char * yy_bp )
 {
 	register char *yy_cp;
 
     yy_cp = (yy_c_buf_p);
 
-	/* undo effects of setting up dcyytext */
+	// undo effects of setting up dcyytext
 	*yy_cp = (yy_hold_char);
 
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-		{ /* need to shift things up to make room */
-		/* +2 for EOB chars. */
+		{ // need to shift things up to make room
+		// +2 for EOB chars.
 		register int number_to_move = (yy_n_chars) + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
@@ -2079,7 +2079,7 @@ static int yy_get_next_buffer (void)
 	(yytext_ptr) = yy_bp;
 	(yy_hold_char) = *yy_cp;
 	(yy_c_buf_p) = yy_cp;
-}
+}*/
 
 #ifndef YY_NO_INPUT
 #ifdef __cplusplus

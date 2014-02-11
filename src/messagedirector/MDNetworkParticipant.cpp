@@ -1,6 +1,6 @@
 #include "MDNetworkParticipant.h"
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
 #include <boost/bind.hpp>
 
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
@@ -11,10 +11,10 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 
 void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 {
-	logger().spam() << "MDNetworkParticipant sending to downstream MD" << std::endl;
+	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	try
 	{
-		network_send(dg);
+		send_datagram(dg);
 	}
 	catch(boost::system::system_error &e)
 	{
@@ -24,42 +24,42 @@ void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 	}
 }
 
-void MDNetworkParticipant::network_datagram(Datagram &dg)
+void MDNetworkParticipant::receive_datagram(Datagram &dg)
 {
 	DatagramIterator dgi(dg);
 	uint16_t channels = dgi.read_uint8();
-	if(channels == 1 && dgi.read_uint64() == CONTROL_MESSAGE)
+	if(channels == 1 && dgi.read_channel() == CONTROL_MESSAGE)
 	{
 		uint16_t msg_type = dgi.read_uint16();
 		switch(msg_type)
 		{
 			case CONTROL_ADD_CHANNEL:
 			{
-				subscribe_channel(dgi.read_uint64());
+				subscribe_channel(dgi.read_channel());
 				break;
 			}
 			case CONTROL_REMOVE_CHANNEL:
 			{
-				unsubscribe_channel(dgi.read_uint64());
+				unsubscribe_channel(dgi.read_channel());
 				break;
 			}
 			case CONTROL_ADD_RANGE:
 			{
-				channel_t lo = dgi.read_uint64();
-				channel_t hi = dgi.read_uint64();
+				channel_t lo = dgi.read_channel();
+				channel_t hi = dgi.read_channel();
 				subscribe_range(lo, hi);
 				break;
 			}
 			case CONTROL_REMOVE_RANGE:
 			{
-				channel_t lo = dgi.read_uint64();
-				channel_t hi = dgi.read_uint64();
+				channel_t lo = dgi.read_channel();
+				channel_t hi = dgi.read_channel();
 				unsubscribe_range(lo, hi);
 				break;
 			}
 			case CONTROL_ADD_POST_REMOVE:
 			{
-				add_post_remove(dgi.read_string());
+				add_post_remove(dgi.read_datagram());
 				break;
 			}
 			case CONTROL_CLEAR_POST_REMOVE:
@@ -83,10 +83,10 @@ void MDNetworkParticipant::network_datagram(Datagram &dg)
 		}
 		return;
 	}
-	send(dg);
+	route_datagram(dg);
 }
 
-void MDNetworkParticipant::network_disconnect()
+void MDNetworkParticipant::receive_disconnect()
 {
 	delete this;
 }

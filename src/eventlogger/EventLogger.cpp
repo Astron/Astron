@@ -4,8 +4,10 @@
 #include "core/RoleFactory.h"
 #include "EventLogger.h"
 
-static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197");
-static ConfigVariable<std::string> output_format("output", "events-%Y%m%d-%H%M%S.csv");
+static RoleConfigGroup el_config("eventlogger");
+static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197", el_config);
+static ConfigVariable<std::string> output_format("output", "events-%Y%m%d-%H%M%S.csv", el_config);
+static ConfigVariable<std::string> rotate_interval("rotate_interval", "0", el_config);
 
 EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 	m_log("eventlogger", "Event Logger"), m_file(0)
@@ -162,8 +164,8 @@ void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_
 		return;
 	}
 
-	m_log.spam() << "Got packet from "
-	             << m_remote.address() << ":" << m_remote.port() << std::endl;
+	m_log.trace() << "Got packet from "
+	              << m_remote.address() << ":" << m_remote.port() << std::endl;
 
 	Datagram dg(m_buffer, bytes);
 	process_packet(dg);

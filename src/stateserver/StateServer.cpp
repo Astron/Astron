@@ -1,5 +1,6 @@
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
+#include "config/constraints.h"
 #include "dcparser/dcClass.h"
 #include <exception>
 #include <stdexcept>
@@ -7,8 +8,10 @@
 #include "DistributedObject.h"
 #include "StateServer.h"
 
-
-static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL);
+static RoleConfigGroup stateserver_config("stateserver");
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, stateserver_config);
+static InvalidChannelConstraint control_not_invalid(control_channel);
+static ReservedChannelConstraint control_not_reserved(control_channel);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
@@ -31,9 +34,9 @@ StateServer::~StateServer()
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 {
-	uint32_t do_id = dgi.read_uint32();
-	uint32_t parent_id = dgi.read_uint32();
-	uint32_t zone_id = dgi.read_uint32();
+	doid_t do_id = dgi.read_doid();
+	doid_t parent_id = dgi.read_doid();
+	zone_t zone_id = dgi.read_zone();
 	uint16_t dc_id = dgi.read_uint16();
 
 	if(dc_id >= g_dcf->get_num_classes())
@@ -65,7 +68,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 
 void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_uint64();
+	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
@@ -81,7 +84,7 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		case STATESERVER_DELETE_AI_OBJECTS:
 		{
-			channel_t ai_channel = dgi.read_uint64();
+			channel_t ai_channel = dgi.read_channel();
 			std::set <channel_t> targets;
 			for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
 				if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
@@ -92,8 +95,8 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(targets.size())
 			{
 				Datagram dg(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
-				dg.add_uint64(ai_channel);
-				send(dg);
+				dg.add_channel(ai_channel);
+				route_datagram(dg);
 			}
 			break;
 		}

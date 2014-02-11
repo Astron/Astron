@@ -1,11 +1,14 @@
 #include "core/global.h"
+#include "core/msgtypes.h"
 
 #include "LoadingObject.h"
 
-LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
-                             uint32_t parent_id, uint32_t zone_id) :
+LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
+                             doid_t parent_id, zone_t zone_id,
+                             const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-	m_context(stateserver->m_next_context++), m_dclass(NULL)
+	m_context(stateserver->m_next_context++), m_dclass(NULL), m_valid_contexts(contexts),
+	m_is_loaded(false)
 {
 	std::stringstream name;
 	name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
@@ -15,9 +18,11 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id,
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 }
 
-LoadingObject::LoadingObject(DBStateServer *stateserver, uint32_t do_id, uint32_t parent_id,
-                             uint32_t zone_id, DCClass *dclass, DatagramIterator &dgi) :
-	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id), m_dclass(dclass)
+LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id,
+                             zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
+                             const std::unordered_set<uint32_t> &contexts) :
+	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
+	m_dclass(dclass), m_valid_contexts(contexts)
 {
 	// TODO: Implement
 }
@@ -29,20 +34,23 @@ LoadingObject::~LoadingObject()
 
 void LoadingObject::begin()
 {
-	send_get_object(m_do_id);
+	if(!m_valid_contexts.size())
+	{
+		send_get_object(m_do_id);
+	}
 }
 
-void LoadingObject::send_get_object(uint32_t do_id)
+void LoadingObject::send_get_object(doid_t do_id)
 {
 	Datagram dg(m_dbss->m_db_channel, do_id, DBSERVER_OBJECT_GET_ALL);
 	dg.add_uint32(m_context); // Context
-	dg.add_uint32(do_id);
-	send(dg);
+	dg.add_doid(do_id);
+	route_datagram(dg);
 }
 
 void LoadingObject::replay_datagrams(DistributedObject* obj)
 {
-	m_log->spam() << "Replaying datagrams received while loading..." << std::endl;
+	m_log->trace() << "Replaying datagrams received while loading..." << std::endl;
 	for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it)
 	{
 		try
@@ -50,9 +58,6 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 			DatagramIterator dgi(*it);
 			dgi.seek_payload();
 			obj->handle_datagram(*it, dgi);
-
-			dgi.seek_payload();
-			m_dbss->handle_datagram(*it, dgi);
 		}
 		catch(DatagramIteratorEOF &e)
 		{
@@ -60,26 +65,34 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 			               " datagrams to object and dbss. Skipped." << std::endl;
 		}
 	}
-	m_log->spam() << "... replay finished." << std::endl;
+	m_log->trace() << "... replay finished." << std::endl;
 }
 
 void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 {
-	/*channel_t sender =*/ dgi.read_uint64(); // sender not used
+	/*channel_t sender =*/ dgi.read_channel(); // sender not used
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
 	{
 		case DBSERVER_OBJECT_GET_ALL_RESP:
 		{
-			if(dgi.read_uint32() != m_context)
+			if(m_is_loaded)
+			{
+				break; // Don't care about these message any more if loaded
+			}
+
+			uint32_t db_context = dgi.read_uint32();
+			if(db_context != m_context &&
+			   m_valid_contexts.find(db_context) != m_valid_contexts.end())
 			{
 				m_log->warning() << "Received get_all_resp with incorrect context" << std::endl;
 				break;
 			}
 
-			m_log->spam() << "Received GetAllResp from database." << std::endl;
+			m_log->trace() << "Received GetAllResp from database." << std::endl;
+			m_is_loaded = true;
 
-			if(dgi.read_uint8() != true)
+			if(dgi.read_bool() != true)
 			{
 				m_log->debug() << "Object not found in database." << std::endl;
 				m_dbss->discard_loader(m_do_id);
@@ -142,8 +155,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Create object on stateserver
 			DistributedObject* obj = new DistributedObject(m_dbss, m_dbss->m_db_channel, m_do_id,
-			                                               m_parent_id, m_zone_id, r_dclass,
-				                                           m_required_fields, m_ram_fields);
+			        m_parent_id, m_zone_id, r_dclass,
+			        m_required_fields, m_ram_fields);
 
 			// Tell DBSS about object and handle datagram queue
 			m_dbss->receive_object(obj);

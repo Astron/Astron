@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
-import unittest
-import os, time
+import unittest, os, time, tempfile, shutil
 from socket import *
 
 from testdc import test_dc
@@ -17,22 +16,24 @@ general:
 
 roles:
     - type: database
-      control: 777
+      control: 75757
       generate:
         min: 1000000
         max: 1000010
-      engine:
+      backend:
         type: yaml
-        foldername: unittest_db
-""" % test_dc
+        foldername: %r
+"""
 
 class TestDatabaseServerYAML(unittest.TestCase, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
-        if not os.path.exists('unittest_db'):
-            os.makedirs('unittest_db')
+        tmppath = tempfile.gettempdir() + '/astron';
+        if not os.path.exists(tmppath):
+            os.makedirs(tmppath);
+        dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)
 
-        cls.daemon = Daemon(CONFIG)
+        cls.daemon = Daemon(CONFIG % (test_dc, dbpath))
         cls.daemon.start()
 
         sock = socket(AF_INET, SOCK_STREAM)

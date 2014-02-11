@@ -15,6 +15,7 @@ dclass DistributedTestObject2 {
 dclass DistributedTestObject3 : DistributedTestObject1 {
 	setDb3(string data) ram db;
 	setRDB3(uint32 rdb) required broadcast db;
+	setADb3(string data) ram db airecv;
 };
 
 dclass DistributedTestObject4 {
@@ -52,4 +53,16 @@ dclass DistributedClientTestObject {
 	setColor(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) required broadcast ownsend;
 	requestKill() clsend airecv;
 	sendMessage(string msg) clsend ownrecv;
+};
+
+struct Block {
+	uint32 blockX;
+	uint32 blockY;
+	uint32 blockZ;
+};
+
+dclass DistributedChunk {
+	blockList(Block blocks[]) required clrecv;
+	lastBlock(Block block) ram clrecv airecv;
+	newBlock(Block block) broadcast;
 };

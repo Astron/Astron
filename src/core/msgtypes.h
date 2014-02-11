@@ -1,20 +1,15 @@
 #pragma once
-#include <stdint.h>
-
-// Defined types
-typedef uint64_t channel_t;
+#include "types.h"
 
 // Channel constants
-#define INVALID_CHANNEL 0
-#define CONTROL_MESSAGE 1
 #define BCHAN_CLIENTS 10
 #define BCHAN_STATESERVERS 12
 #define BCHAN_DBSERVERS 13
-#define PARENT_PREFIX ((channel_t)(1) << 32)
+#define PARENT_PREFIX ((channel_t)(1) << ZONE_BITS)
 
-// DO ID Constants
-#define INVALID_DO_ID 0
-#define INVALID_ZONE 0
+// Location macros
+#define LOCATION2CHANNEL(p, z) ((channel_t)(p) << ZONE_BITS|(channel_t)(z))
+#define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
 
 // Message Booleans
 #define SUCCESS 1
@@ -115,9 +110,8 @@ typedef uint64_t channel_t;
 #define DBSS_OBJECT_DELETE_FIELD_RAM             2230
 #define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
 #define DBSS_OBJECT_DELETE_DISK                  2232
-// Stateserver macros
-#define LOCATION2CHANNEL(p, z) ((channel_t)(p)<<32|(channel_t)(z))
-#define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
+// Stateserver context values
+#define STATESERVER_CONTEXT_WAKE_CHILDREN 1001
 
 // Database Server range
 #define DBSERVER_MSGTYPE_MIN 3000

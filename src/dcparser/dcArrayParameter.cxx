@@ -45,7 +45,7 @@ DCArrayParameter(DCParameter *element_type, const DCUnsignedIntRange &size) :
   } else {
     // We only need to store the length bytes if the array has a
     // variable size.
-    _num_length_bytes = 2;
+    _num_length_bytes = sizeof(length_tag_t);
   }
 
   if (_element_type->has_range_limits()) {
@@ -294,8 +294,8 @@ pack_string(DCPackData &pack_data, const string &value,
   case ST_int8:
     _array_size_range.validate(string_length, range_error);
     if (_num_length_bytes != 0) {
-      nassertv(_num_length_bytes == 2);
-      do_pack_uint16(pack_data.get_write_pointer(2), string_length);
+      nassertv(_num_length_bytes == sizeof(length_tag_t));
+      do_pack_uint16(pack_data.get_write_pointer(sizeof(length_tag_t)), string_length);
     }
     pack_data.append_data(value.data(), string_length);
     break;
@@ -371,8 +371,8 @@ unpack_string(const char *data, size_t length, size_t &p, string &value,
   case ST_uint8:
   case ST_int8:
     if (_num_length_bytes != 0) {
-      string_length = do_unpack_uint16(data + p);
-      p += 2;
+      string_length = do_unpack_length_tag(data + p);
+      p += sizeof(length_tag_t);
     } else {
       nassertv(_array_size >= 0);
       string_length = _array_size;

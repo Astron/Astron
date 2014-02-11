@@ -5,54 +5,88 @@ import os.path
 
 test_dc = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test.dc'))
 
-DistributedTestObject1 = 0
-DistributedTestObject2 = 1
-DistributedTestObject3 = 2
-DistributedTestObject4 = 3
-DistributedTestObject5 = 4
-UberDog1 = 5
-UberDog2 = 6
-DistributedClientTestObject = 7
+### Class and struct ids ###
+CLASSES = [
+    'DistributedTestObject1',
+    'DistributedTestObject2',
+    'DistributedTestObject3',
+    'DistributedTestObject4',
+    'DistributedTestObject5',
+    'UberDog1',
+    'UberDog2',
+    'DistributedClientTestObject',
+    'Block',
+    'DistributedChunk',
+]
+for i,n in enumerate(CLASSES):
+    locals()[n] = i
 
-setRequired1 = 0
-setB1 = 1
-setBA1 = 2
-setBR1 = 3
-setBRA1 = 4
-setBRO1 = 5
+FIELDS = [
+    ### Fields for DistributedTestObject1 ###
+    'setRequired1',
+    'setB1',
+    'setBA1',
+    'setBR1',
+    'setBRA1',
+    'setBRO1',
 
-setB2 = 6
-setBRam2 = 7
+    ### Fields for DistributedTestObject2 ###
+    'setB2',
+    'setBRam2',
 
-setDb3 = 8
-setRDB3 = 9
-setX = 10
-setY = 11
-setUnrelated = 12
-setZ = 13
-setXyz = 14
-setOne = 15
-setTwo = 16
-setThree = 17
-set123 = 18
-setRDbD5 = 19
-setFoo = 20
+    ### Fields for DistributedTestObject3 ###
+    'setDb3',
+    'setRDB3',
+    'setADb3',
 
-request = 21
-response = 22
+    ### Fields for DistributedTestObject4 ###
+    'setX',
+    'setY',
+    'setUnrelated',
+    'setZ',
+    'setXyz',
+    'setOne',
+    'setTwo',
+    'setThree',
+    'set123',
 
-foo = 23
-bar = 24
+    ### Fields for DistributedTestObject5 ###
+    'setRDbD5',
+    'setFoo',
 
-setName = 25
-setColor = 26
-requestKill = 27
-sendMessage = 28
+    ### Fields for UberDog1 ###
+    'request',
+    'response',
 
+    ### Fields for UberDog2 ###
+    'foo',
+    'bar',
+
+    ### Fields for DistributedClientTestObject ###
+    'setName',
+    'setColor',
+    'requestKill',
+    'sendMessage',
+
+    ### Fields for Block ###
+    'blockX',
+    'blockY',
+    'blockZ',
+
+    ### Fields for DistributedChunk ###
+    'blockList',
+    'lastBlock',
+    'newBlock'
+]
+for i,n in enumerate(FIELDS):
+    locals()[n] = i
+
+### Default field values ###
 setRequired1DefaultValue = 78
+setRDbD5DefaultValue = 20
 
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
-DC_HASH = 0x53c5b3b
+DC_HASH = 0x7a9b0e3
 
 setRDbD5DefaultValue = 20

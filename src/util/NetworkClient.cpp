@@ -5,13 +5,12 @@
 
 using boost::asio::ip::tcp;
 
-NetworkClient::NetworkClient() : m_socket(NULL), m_buffer(new uint8_t[2]),
-	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0), m_is_data(false)
 {
 }
 
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_buffer(new uint8_t[2]),
-	m_bytes_to_go(2), m_bufsize(2), m_is_data(false)
+NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
+	m_data_size(0), m_is_data(false)
 {
 	start_receive();
 }
@@ -23,7 +22,7 @@ NetworkClient::~NetworkClient()
 		m_socket->close();
 	}
 	delete m_socket;
-	delete m_buffer;
+	delete [] m_data_buf;
 }
 
 void NetworkClient::set_socket(tcp::socket *socket)
@@ -33,68 +32,107 @@ void NetworkClient::set_socket(tcp::socket *socket)
 		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
 	}
 	m_socket = socket;
+
+	boost::asio::socket_base::keep_alive keepalive(true);
+	m_socket->set_option(keepalive);
+
+	boost::asio::ip::tcp::no_delay nodelay(true);
+	m_socket->set_option(nodelay);
+
 	start_receive();
 }
 
 void NetworkClient::start_receive()
 {
-	uint16_t offset = m_bufsize - m_bytes_to_go;
-	m_socket->async_receive(boost::asio::buffer(m_buffer + offset, m_bufsize - offset),
-	                        boost::bind(&NetworkClient::read_handler, this,
-	                                    boost::asio::placeholders::error,
-	                                    boost::asio::placeholders::bytes_transferred));
+	async_receive();
 }
 
-void NetworkClient::network_send(Datagram &dg)
+void NetworkClient::async_receive()
 {
-	//TODO: make this asynch if necessary
-	uint16_t len = dg.size();
-	try {
-		m_socket->send(boost::asio::buffer((uint8_t*)&len, 2));
-		m_socket->send(boost::asio::buffer(dg.get_data(), dg.size()));
-	} catch (std::exception &e) {
-		// Do nothing: We assume that the message just got dropped if the remote
-		// end died before we could send it.
+	try
+	{
+		if(m_is_data) // Read data
+		{
+			async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
+			           boost::bind(&NetworkClient::receive_data, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
+		else // Read length
+		{
+			async_read(*m_socket, boost::asio::buffer(m_size_buf, sizeof(dgsize_t)),
+			           boost::bind(&NetworkClient::receive_size, this,
+			           boost::asio::placeholders::error,
+			           boost::asio::placeholders::bytes_transferred));
+		}
+	}
+	catch(std::exception &e)
+	{
+		// An exception happening when trying to initiate a read is a clear
+		// indicator that something happened to the connection. Therefore:
+		send_disconnect();
 	}
 }
 
-void NetworkClient::do_disconnect()
+void NetworkClient::send_datagram(Datagram &dg)
+{
+	//TODO: make this asynch if necessary
+	dgsize_t len = dg.size();
+	try
+	{
+		m_socket->non_blocking(true);
+		m_socket->native_non_blocking(true);
+		std::list<boost::asio::const_buffer> gather;
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
+		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
+		m_socket->send(gather);
+	}
+	catch(std::exception &e)
+	{
+		// We assume that the message just got dropped if the remote end died
+		// before we could send it.
+		send_disconnect();
+	}
+}
+
+void NetworkClient::send_disconnect()
 {
 	m_socket->close();
 }
 
-void NetworkClient::read_handler(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
 	if(ec.value() != 0)
 	{
-		network_disconnect();
+		receive_disconnect();
+		return;
 	}
-	else
+
+	dgsize_t old_size = m_data_size;
+	// required to disable strict-aliasing optimizations, which can break the code
+	dgsize_t* new_size_p = (dgsize_t*)m_size_buf;
+	m_data_size = *new_size_p;
+	if(m_data_size > old_size)
 	{
-		m_bytes_to_go -= bytes_transferred;
-		if(m_bytes_to_go == 0)
-		{
-			if(!m_is_data)
-			{
-				m_bufsize = *(uint16_t*)m_buffer;
-				delete [] m_buffer;
-				m_buffer = new uint8_t[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = true;
-			}
-			else
-			{
-				Datagram dg(m_buffer, m_bufsize);
-				delete [] m_buffer;//dg makes a copy
-				m_bufsize = 2;
-				m_buffer = new uint8_t[m_bufsize];
-				m_bytes_to_go = m_bufsize;
-				m_is_data = false;
-				network_datagram(dg);
-			}
-		}
-		start_receive();
+		delete [] m_data_buf;
+		m_data_buf = new uint8_t[m_data_size];
 	}
+	m_is_data = true;
+	async_receive();
+}
+
+void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
+{
+	if(ec.value() != 0)
+	{
+		receive_disconnect();
+		return;
+	}
+
+	Datagram dg(m_data_buf, m_data_size); // Datagram makes a copy
+	m_is_data = false;
+	receive_datagram(dg);
+	async_receive();
 }
 
 bool NetworkClient::is_connected()

@@ -9,6 +9,8 @@ Group, and used in-house from 2001 until 2013.
 The suite consists of many components, which handle separate tasks in order to distribute
 the workload of managing a multi-sharded game/application environment with many objects and clients.
 
+[![build status](https://build.riotcave.com/projects/1/status.png?ref=master)](https://build.riotcave.com/projects/1?ref=master)
+
 ## Overview ##
 
 ### Objects ###
@@ -36,21 +38,46 @@ In addition, every field in a DC file may contain one or more **keywords**. Thes
 routing/behavior of a field update as it passes through the Astron cluster.  
 Some keywords are listed below:
 
-* broadcast: Any updates on this field should be sent to all clients that can see the object.
-* airecv: Any updates on this field should be sent to any AI servers that know about this object.
-* ownrecv: Certain objects may be "owned" by a client. This client has special privileges for the
-object,and may change the object's zone at will. This keyword means that the owning client should
-receive any updates for this field.
-* ownsend: A client is allowed to update this field if it owns the object.
-* clsend: All clients that can see the object are allowed to update this field.
-* db: The field contains some information that should persist long-term. If the object exists in a
-database, the database will automatically remember this update and reapply it when the object is loaded next.
-* ram: The field contains some information that should persis short term. If the object is disabled,
-the information will be lost. When this object enters a client's interest, it will automatically
-receive the last update sent for this field.
-* required: This field must be present at all times. The server will interpret this to mean that the
-field's value is fundamental to the existence of the object. It is therefore incorporated into all
-most(it needs broadcast for some) object snapshots, sent when the object is created or visible.
+> ### Persistence ###
+>
+> **ram**  
+> The field contains some information that should persist short term.
+> If the object is disabled, the information will be lost.
+>
+> **required** _implies **ram**_  
+> This field must be present at all times. The server will interpret this to mean that the
+> field's value is fundamental to the existence of the object.  Therefore, an object must be given
+> required values on creation, and required values will reset to defaults when indvidually cleared.
+> The field is included in all object snapshots to the AI, and all snapshots to the client if it is
+> also visible to the client through ownrecv or clrecv.
+>
+> **db**  
+> The field contains some information that should persist long-term. If the object exists in a
+> database, the database will remember updates to this field and restore them on object activation.
+>
+> ### Publication | Subscription ###
+>
+> **airecv**  
+> Any updates on this field should be sent to the object's managing AI.
+>
+> **ownrecv**  
+> Objects may be "owned" by a client.
+> This owner may change the object's parent and zone at will (unless disabled by the ClientAgent).
+> The owner should receive this field when it gains ownership of the object.
+> Additionally, any updates on this field should be sent to the object's owner.
+>
+> **clrecv**  
+> The client should receive this field when the object becomes visible to the client.
+>
+> **broadcast** _implies **clrecv**_  
+> Any updates on this field should be sent to all clients that can see the object.
+>
+> **ownsend**  
+> Objects may be "owned" by a client.
+> A client is allowed to update this field if it owns the object.
+>
+> **clsend**  
+> All clients that can see the object are allowed to update this field.
 
 
 
@@ -120,13 +147,18 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 
+## Building ##
+See the build instructions at https://github.com/Astron/Astron/blob/master/doc/building/.
+
+
+
 ## Development ##
 
 ### The Team ###
 * **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
-* **MMavipc** is our incredibly awesome codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
-* **Kestred** is our secondary architect. He writes a lot of documentation and does some development. Responsibilities include reviewing and adding system architecture, with a focus on maintaining code flexibility.
-* **jjkoletar** manages our Jenkins build system.
+* **Kestred** is our vice-architect. He does a lot of Astron development, and also writes a lot of documentation. Responsibilities include Astron maintenance, design revisions, and new feature planning & implementation.
+* **AlJaMa** is our Mac-compatibility focused developer, and continously attempts to build things with Astron to figure out where Astron does crazy things, and where Astron could use features that would be commonly requested.
+* **MMavipc** is our incredibly awesome Windows codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
 
 ### License ###
 The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
@@ -136,25 +168,6 @@ We welcome any potential contributers! Don't just start coding though; we all ta
 Please come in and tell us what you'd like to do, or ask what we could use help on.
 
 #### Join us at: [#Astron on irc.freenode.net](irc://irc.freenode.net/Astron)
-
-
-#### Building in Development ####
-Astron has a number of dependencies including libyaml-cpp and boost.
-
-Get the boost library from http://www.boost.org/users/download/, or install from a package on linux.  Very old versions of the boost library may not work as there are dependencies on some features of boost::asio and boost::icl.
-In some environments, you may have to set the BOOST_ROOT or BOOSTROOT environment variable to the root of your compiled boost libraries.
-
-You can download the libyaml-cpp dependency directly from https://yaml-cpp.googlecode.com/files/yaml-cpp-0.5.1.tar.gz.  This dependency should typically be compiled and placed directly underneath the Astron/dependencies folder.
-
-Now that you have the depencies you can build!
-We use CMAKE to handle cross-platform compiling.
-
-On a linux system, build for development with:  
-
-    cmake -DCMAKE_BUILD_TYPE=Debug . && make
-
-On other systems, make sure DCMAKE_BUILD_TYPE is included with your CMAKE flags.  
-This compiles in debug logging and adds debug flags to your compiler.
 
 
 #### OTP Architecture resources ####

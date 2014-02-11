@@ -2,18 +2,15 @@
 
 #include "EventSender.h"
 
-static ConfigVariable<std::string> target_addr("general/eventlogger", "");
-
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
 	m_socket(io_service, udp::v4()), m_enabled(false)
 {
 
 }
 
-void EventSender::init()
+void EventSender::init(const std::string& target)
 {
-	std::string str_ip = target_addr.get_val();
-
+	std::string str_ip = target;
 	if(str_ip == "")
 	{
 		m_enabled = false;
@@ -37,11 +34,11 @@ void EventSender::send(const Datagram &dg)
 {
 	if(!m_enabled)
 	{
-		m_log.spam() << "Disabled; discarding event..." << std::endl;
+		m_log.trace() << "Disabled; discarding event..." << std::endl;
 		return;
 	}
 
-	m_log.spam() << "Sending event..." << std::endl;
+	m_log.trace() << "Sending event..." << std::endl;
 	m_socket.send_to(boost::asio::buffer(dg.get_data(), dg.size()),
 	                 m_target);
 }

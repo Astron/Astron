@@ -34,7 +34,7 @@
 #include "pmap.h"
 #include "pset.h"
 
-#else  // WITHIN_PANDA
+#else  // NOT WITHIN_PANDA
 
 #ifdef WIN32
 /* C4786: 255 char debug symbols */
@@ -80,6 +80,8 @@ using namespace std;
 #define nassertr_always(condition, return_value) assert(condition)
 #define nassertv(condition) assert(condition)
 #define nassertv_always(condition) assert(condition)
+// Define a macro for assert variables when building for "Production"
+#define _used_in_assert(x) ((void)x)
 
 // Panda defines these export symbols for building DLL's.  Outside of
 // Panda, we assume we're not putting this code in a DLL, so we define
@@ -102,28 +104,29 @@ typedef string Filename;
 #define pvector vector
 #define pmap map
 #define pset set
-
-#ifdef WIN32
-typedef __int64 PN_int64;
-typedef unsigned __int64 PN_uint64;
-#else
-typedef long long PN_int64;
-typedef unsigned long long PN_uint64;
-#endif
-
-typedef unsigned char PN_uint8;
-typedef unsigned short PN_uint16;
-typedef unsigned int PN_uint32;
-
 typedef ifstream pifstream;
 typedef ofstream pofstream;
 typedef fstream pfstream;
 
-#endif  // WITHIN_PANDA
 
+#endif  // ENDIF WITHIN_PANDA
+
+
+#include <stdint.h>
+
+#ifdef DCPARSER_32BIT_LENGTH_TAG
+typedef uint32_t length_tag_t;
+#else
+typedef uint16_t length_tag_t;
+#endif
+
+// TODO: Channels, doids, and zones should not exist in the dcparser! The code that uses these
+// belongs in another module (for example, within the CMU code, etc....)
 //typedef       unsigned long   CHANNEL_TYPE;
-typedef       PN_uint64   CHANNEL_TYPE;
-typedef       PN_uint32   DOID_TYPE;
-typedef       PN_uint32   ZONEID_TYPE;
+typedef uint64_t CHANNEL_TYPE;
+typedef uint32_t DOID_TYPE;
+typedef uint32_t ZONEID_TYPE;
+
+
 
 #endif  // DCBASE_H

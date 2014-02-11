@@ -312,7 +312,7 @@ class TestMessageDirector(unittest.TestCase):
         self.c1.send(dg)
         # Verify that l1 asks for the range difference only...
         #self.assertTrue(self.l1.expect(Datagram.create_add_range(2000, 2100)))
-        # NOTE: We actually want to recieve the entire range upstream
+        # NOTE: We actually want to receive the entire range upstream
         self.assertTrue(self.l1.expect(dg))
 
         # Now the subscriptions should be updated:

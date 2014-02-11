@@ -1,7 +1,7 @@
 #pragma once
 #include <unordered_map>
 
-#include "util/Role.h"
+#include "core/Role.h"
 #include "core/RoleFactory.h"
 
 class DistributedObject;
@@ -18,7 +18,7 @@ class StateServer : public Role
 
 	protected:
 		LogCategory *m_log;
-		std::unordered_map<uint32_t, DistributedObject*> m_objs;
+		std::unordered_map<doid_t, DistributedObject*> m_objs;
 
 	private:
 		void handle_generate(DatagramIterator &dgi, bool has_other);

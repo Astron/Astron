@@ -1,21 +1,33 @@
+# The Daemon section describes identification information which can be queried from the MD.
 daemon:
     name: Core Message Director # To be used in page titles and intra-MD links.
-    url: http://123.45.67.89/coremd/ # URL where the web interface may be located. Defaults to:
-                                     # http://<web/bind>/
+    url: http://123.45.67.89/coremd/ # URL where the web interface may be located.
+    #id: 3  #default: automatically assigned
 
-globals:
-    eventlogger: 127.0.0.1:9090 # The IP:port of the Event Logger to be used when logging global events.
-    dc_files: # A list of DC files to be loaded. ORDER IS SENSITIVE!
+
+# The General section contains config settings that are shared among daemons in the cluster.
+general:
+    # An "IP:port" for the Event Logger to be used when logging global events.
+    eventlogger: 127.0.0.1:9090
+    # A list of DC files to be loaded.
+    #     NOTE: Order is sensitive, DC files loaded in a different order will not match.
+    dc_files:
         - core.dc
         - game.dc
         - minigames.dc
-    # This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
-    # anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
-    uberdogs:
-      - id: 1234
-        class: LoginManager
-        anonymous: true #Default: false
 
+
+# The Uberdog section describes the existence of UberDOGs, which are objects
+#     that are assumed to exist statically.
+uberdogs:
+  - id: 1234
+    class: LoginManager
+    # Anonymous specifies whether an uberdog can be accessed through
+    #     the ClientAgent from an unauthenticated client.
+    anonymous: true # Default: false
+
+
+# The Web section enables a status and debugging webpage on this daemon.
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
     # Authentication enables a BASIC authentication mechanism for the website
@@ -23,26 +35,32 @@ web:
     #    username: foo
     #    password: bar
 
+
 messagedirector:
     bind: 0.0.0.0:6660
     #connect: 127.0.0.1:5555
 
-# This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
-# anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
-uberdogs:
-    - id: 1234
-      class: LoginManager
-      anonymous: true #Default: false
 
+# The Roles section allows specifying roles that we would like this daemon to perform.
 roles:
-    # This section allows specifying roles that we would like this daemon to perform.
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
-      # Client defines which client this client agent should generate when it receives a new
-      # connection.  By default, it is a "libastron" client which accepts connections from a client
-      # using the libastron ClientRepository library.
-      #client: fooclient
+      version: "FooGame v7.0"
+      client:
+        # Type declares which client this client agent should generate when it receives a new
+        # connection.  By default, it is a "libastron" client which accepts connections from a
+        # client using the libastron ClientRepository library.
+        type: fooclient
+        # Relocate allows a client to send a ClientObjectLocation message to the server to
+        # indicate it would like to change the location of an object owned by that client.
+        # This is a feature specific to the Astron client, a custom client class
+        # could define its own set of configuration values.
+        relocate: true # Default: false
+      # Channels defines the range of channels this clientagent can assign to Clients
+      channels:
+          min: 100100
+          max: 100999
 
     # Next we'll have a state server, whose control channel is 402000.
     - type: stateserver
@@ -54,11 +72,11 @@ roles:
       control: 402001
       #broadcast: off # Controls whether object-updates are broadcast, default: on.
       generate:
-          # Generate defines the range of DistributedObject ids that the database can create new objects with,
-          # and is generally responsible for. Max is an optional fields.
+      # Generate defines the range of DistributedObject ids that the database can create new objects with,
+      # and is generally responsible for. Min and max are both optional fields.
           min: 100000000 # Required (no default)
           #max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
-      engine:
+      backend:
           type: bdb
           filename: main_database.db
 

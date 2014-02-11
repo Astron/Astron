@@ -77,8 +77,8 @@ class EXPCL_DIRECT DCPacker
 		INLINE void pack_double(double value);
 		INLINE void pack_int(int value);
 		INLINE void pack_uint(unsigned int value);
-		INLINE void pack_int64(PN_int64 value);
-		INLINE void pack_uint64(PN_uint64 value);
+		INLINE void pack_int64(int64_t value);
+		INLINE void pack_uint64(uint64_t value);
 		INLINE void pack_string(const string &value);
 		INLINE void pack_literal_value(const string &value);
 		void pack_default_value();
@@ -86,8 +86,8 @@ class EXPCL_DIRECT DCPacker
 		INLINE double unpack_double();
 		INLINE int unpack_int();
 		INLINE unsigned int unpack_uint();
-		INLINE PN_int64 unpack_int64();
-		INLINE PN_uint64 unpack_uint64();
+		INLINE int64_t unpack_int64();
+		INLINE uint64_t unpack_uint64();
 		INLINE string unpack_string();
 		INLINE string unpack_literal_value();
 		void unpack_validate();
@@ -99,8 +99,8 @@ class EXPCL_DIRECT DCPacker
 		INLINE void unpack_double(double &value);
 		INLINE void unpack_int(int &value);
 		INLINE void unpack_uint(unsigned int &value);
-		INLINE void unpack_int64(PN_int64 &value);
-		INLINE void unpack_uint64(PN_uint64 &value);
+		INLINE void unpack_int64(int64_t &value);
+		INLINE void unpack_uint64(uint64_t &value);
 		INLINE void unpack_string(string &value);
 		INLINE void unpack_literal_value(string &value);
 
@@ -143,15 +143,16 @@ class EXPCL_DIRECT DCPacker
 		// raw data into the buffer between packing sessions (e.g. between
 		// calls to end_pack() and the next begin_pack()).
 
-		INLINE void raw_pack_int8(int value);
-		INLINE void raw_pack_int16(int value);
-		INLINE void raw_pack_int32(int value);
-		INLINE void raw_pack_int64(PN_int64 value);
-		INLINE void raw_pack_uint8(unsigned int value);
-		INLINE void raw_pack_uint16(unsigned int value);
-		INLINE void raw_pack_uint32(unsigned int value);
-		INLINE void raw_pack_uint64(PN_uint64 value);
+		INLINE void raw_pack_int8(int8_t value);
+		INLINE void raw_pack_int16(int16_t value);
+		INLINE void raw_pack_int32(int32_t value);
+		INLINE void raw_pack_int64(int64_t value);
+		INLINE void raw_pack_uint8(uint8_t value);
+		INLINE void raw_pack_uint16(uint16_t value);
+		INLINE void raw_pack_uint32(uint32_t value);
+		INLINE void raw_pack_uint64(uint64_t value);
 		INLINE void raw_pack_float64(double value);
+		INLINE void raw_pack_length_tag(length_tag_t value);
 		INLINE void raw_pack_string(const string &value);
 
 // this is a hack to allw me to get in and out of 32bit Mode Faster
@@ -160,27 +161,29 @@ class EXPCL_DIRECT DCPacker
 #define RAW_UNPACK_CHANNEL()  raw_unpack_uint64()
 
 
-		INLINE int raw_unpack_int8();
-		INLINE int raw_unpack_int16();
-		INLINE int raw_unpack_int32();
-		INLINE PN_int64 raw_unpack_int64();
-		INLINE unsigned int raw_unpack_uint8();
-		INLINE unsigned int raw_unpack_uint16();
-		INLINE unsigned int raw_unpack_uint32();
-		INLINE PN_uint64 raw_unpack_uint64();
+		INLINE int8_t raw_unpack_int8();
+		INLINE int16_t raw_unpack_int16();
+		INLINE int32_t raw_unpack_int32();
+		INLINE int64_t raw_unpack_int64();
+		INLINE uint8_t raw_unpack_uint8();
+		INLINE uint16_t raw_unpack_uint16();
+		INLINE uint32_t raw_unpack_uint32();
+		INLINE uint64_t raw_unpack_uint64();
 		INLINE double raw_unpack_float64();
+		INLINE length_tag_t raw_unpack_length_tag();
 		INLINE string raw_unpack_string();
 
 	public:
-		INLINE void raw_unpack_int8(int &value);
-		INLINE void raw_unpack_int16(int &value);
-		INLINE void raw_unpack_int32(int &value);
-		INLINE void raw_unpack_int64(PN_int64 &value);
-		INLINE void raw_unpack_uint8(unsigned int &value);
-		INLINE void raw_unpack_uint16(unsigned int &value);
-		INLINE void raw_unpack_uint32(unsigned int &value);
-		INLINE void raw_unpack_uint64(PN_uint64 &value);
+		INLINE void raw_unpack_int8(int8_t &value);
+		INLINE void raw_unpack_int16(int16_t &value);
+		INLINE void raw_unpack_int32(int32_t &value);
+		INLINE void raw_unpack_int64(int64_t &value);
+		INLINE void raw_unpack_uint8(uint8_t &value);
+		INLINE void raw_unpack_uint16(uint16_t &value);
+		INLINE void raw_unpack_uint32(uint32_t &value);
+		INLINE void raw_unpack_uint64(uint64_t &value);
 		INLINE void raw_unpack_float64(double &value);
+		INLINE void raw_unpack_length_tag(length_tag_t &value);
 		INLINE void raw_unpack_string(string &value);
 
 	public:

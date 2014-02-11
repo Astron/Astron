@@ -1,13 +1,19 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
-#include "core/config.h"
 #include "core/global.h"
-#include "core/messages.h"
+#include "core/msgtypes.h"
+#include "config/ConfigVariable.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
-static ConfigVariable<std::string> bind_addr("messagedirector/bind", "unspecified");
-static ConfigVariable<std::string> connect_addr("messagedirector/connect", "unspecified");
+
+static ConfigGroup md_config("messagedirector");
+static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
+static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
+
+static ConfigGroup daemon_config("daemon");
+static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
+static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 
 // Define convenience type
 typedef boost::icl::discrete_interval<channel_t> interval_t;
@@ -57,7 +63,7 @@ void MessageDirector::init_network()
 			start_accept();
 		}
 
-		// Connect to upstream server and start handling recieved messages
+		// Connect to upstream server and start handling received messages
 		if(connect_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
@@ -85,9 +91,9 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
+void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 {
-	m_log.spam() << "Processing datagram...." << std::endl;
+	m_log.trace() << "Processing datagram...." << std::endl;
 
 	uint8_t channels = 0;
 	DatagramIterator dgi(dg);
@@ -97,12 +103,12 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 		channels = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &recieve_log = m_log.spam();
-		recieve_log << "Recievers: ";
+		auto &receive_log = m_log.trace();
+		receive_log << "Recievers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
-			channel_t channel = dgi.read_uint64();
-			recieve_log << channel << ", ";
+			channel_t channel = dgi.read_channel();
+			receive_log << channel << ", ";
 			auto &subscriptions = m_channel_subscriptions[channel];
 			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
 			{
@@ -115,12 +121,21 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 				receiving_participants.insert(range->second.begin(), range->second.end());
 			}
 		}
-		recieve_log << std::endl;
+		receive_log << std::endl;
 	}
 	catch(DatagramIteratorEOF &e)
 	{
-		// Log error with receivers output
-		m_log.error() << "Detected truncated datagram reading header from '" << p->m_name << "'." << std::endl;
+		if(p)
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from '"
+			              << p->m_name << "'.\n";
+		}
+		else
+		{
+			// Log error with receivers output
+			m_log.error() << "Detected truncated datagram reading header from unknown participant.\n";
+		}
 		return;
 	}
 
@@ -131,7 +146,7 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1 + channels * 8);
+		DatagramIterator msg_dgi(dg, 1 + channels * sizeof(channel_t));
 		try
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
@@ -147,16 +162,16 @@ void MessageDirector::handle_datagram(MDParticipantInterface *p, Datagram &dg)
 
 	if(p && is_client)  // Send message upstream
 	{
-		network_send(dg);
-		m_log.spam() << "...routing upstream." << std::endl;
+		send_datagram(dg);
+		m_log.trace() << "...routing upstream." << std::endl;
 	}
 	else if(!p) // If there is no participant, then it came from the upstream
 	{
-		m_log.spam() << "...not routing upstream: It came from there." << std::endl;
+		m_log.trace() << "...not routing upstream: It came from there." << std::endl;
 	}
 	else // Otherwise is root node
 	{
-		m_log.spam() << "...not routing upstream: There is none." << std::endl;
+		m_log.trace() << "...not routing upstream: There is none." << std::endl;
 	}
 }
 
@@ -187,8 +202,8 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_CHANNEL);
-		dg.add_uint64(c);
-		network_send(dg);
+		dg.add_channel(c);
+		send_datagram(dg);
 	}
 }
 
@@ -234,8 +249,8 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 
 		// Send upstream control message
 		Datagram dg(CONTROL_REMOVE_CHANNEL);
-		dg.add_uint64(c);
-		network_send(dg);
+		dg.add_channel(c);
+		send_datagram(dg);
 	}
 }
 
@@ -268,7 +283,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	if(is_client)
 	{
 		// Check how many intervals along that range are already subscribed
-		uint64_t new_intervals = 0, premade_intervals = 0;
+		channel_t new_intervals = 0, premade_intervals = 0; // use channel_t to match max_channels
 		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
 		for(auto it = interval_range.first; it != interval_range.second; ++it)
 		{
@@ -287,9 +302,9 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 
 		// Send upstream control message
 		Datagram dg(CONTROL_ADD_RANGE);
-		dg.add_uint64(lo);
-		dg.add_uint64(hi);
-		network_send(dg);
+		dg.add_channel(lo);
+		dg.add_channel(hi);
+		send_datagram(dg);
 	}
 }
 
@@ -380,9 +395,9 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
-			dg.add_uint64(lo);
-			dg.add_uint64(hi);
-			network_send(dg);
+			dg.add_channel(lo);
+			dg.add_channel(hi);
+			send_datagram(dg);
 		}
 	}
 }
@@ -393,7 +408,7 @@ MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_
 	// Initialize m_range_susbcriptions with empty range
 	auto empty_set = std::set<MDParticipantInterface*>();
 	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
-	m_range_subscriptions += std::make_pair(interval_t::closed(0, ULLONG_MAX), empty_set);
+	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
 }
 
 void MessageDirector::start_accept()
@@ -406,10 +421,24 @@ void MessageDirector::start_accept()
 
 void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
 {
-	boost::asio::ip::tcp::endpoint remote = socket->remote_endpoint();
+	boost::asio::ip::tcp::endpoint remote;
+	try
+	{
+		remote = socket->remote_endpoint();
+	}
+	catch (std::exception &e)
+	{
+		// A client might disconnect immediately after connecting.
+		// If this happens, do nothing. Resolves #122.
+		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
+		// is_open() == true, so we just catch the exception on remote_endpoint
+		// instead.
+		start_accept();
+		return;
+	}
 	m_log.info() << "Got an incoming connection from "
 	             << remote.address() << ":" << remote.port() << std::endl;
-	new MDNetworkParticipant(socket); //It deletes itsself when connection is lost
+	new MDNetworkParticipant(socket); // It deletes itself when connection is lost
 	start_accept();
 }
 
@@ -446,12 +475,12 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 }
 
-void MessageDirector::network_datagram(Datagram &dg)
+void MessageDirector::receive_datagram(Datagram &dg)
 {
-	handle_datagram(NULL, dg);
+	route_datagram(NULL, dg);
 }
 
-void MessageDirector::network_disconnect()
+void MessageDirector::receive_disconnect()
 {
 	m_log.fatal() << "Lost connection to upstream md" << std::endl;
 	exit(1);

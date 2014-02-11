@@ -11,7 +11,7 @@ class EventSender
 	public:
 		EventSender();
 
-		void init();
+		void init(const std::string &target);
 		void send(const Datagram &dg);
 	private:
 		LogCategory m_log;

@@ -76,8 +76,8 @@ class DCNumericRange
 
 typedef DCNumericRange<int> DCIntRange;
 typedef DCNumericRange<unsigned int> DCUnsignedIntRange;
-typedef DCNumericRange<PN_int64> DCInt64Range;
-typedef DCNumericRange<PN_uint64> DCUnsignedInt64Range;
+typedef DCNumericRange<int64_t> DCInt64Range;
+typedef DCNumericRange<uint64_t> DCUnsignedInt64Range;
 typedef DCNumericRange<double> DCDoubleRange;
 
 #endif
