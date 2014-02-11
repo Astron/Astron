@@ -48,7 +48,7 @@ class SociSQLDatabase : public DatabaseBackend
 			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
 			bool storable = is_storable(dbo.dc_id);
 
-			uint32_t do_id = pop_next_id();
+			doid_t do_id = pop_next_id();
 			if(!do_id)
 			{
 				return 0;
@@ -507,9 +507,18 @@ class SociSQLDatabase : public DatabaseBackend
 
 		void check_tables()
 		{
-			m_sql << "CREATE TABLE IF NOT EXISTS objects ("
-			      "id INT NOT NULL PRIMARY KEY, class_id INT NOT NULL);";
-			//"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			if(sizeof(doid_t) <= sizeof(uint32_t))
+			{
+				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
+				      "id INT NOT NULL PRIMARY KEY, class_id INT NOT NULL);";
+				//"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			}
+			else
+			{
+				m_sql << "CREATE TABLE IF NOT EXISTS objects ("
+				      "id BIGINT NOT NULL PRIMARY KEY, class_id INT NOT NULL);";
+				//"CONSTRAINT check_object CHECK (id BETWEEN " << m_min_id << " AND " << m_max_id << "));";
+			}
 			m_sql << "CREATE TABLE IF NOT EXISTS classes ("
 			      "id INT NOT NULL PRIMARY KEY, hash INT NOT NULL, name VARCHAR(32) NOT NULL,"
 			      "storable BOOLEAN NOT NULL);";//, CONSTRAINT check_class CHECK (id BETWEEN 0 AND "
@@ -643,8 +652,16 @@ class SociSQLDatabase : public DatabaseBackend
 		bool create_fields_table(DCClass* dcc)
 		{
 			stringstream ss;
-			ss << "CREATE TABLE IF NOT EXISTS fields_" << dcc->get_name()
-			   << "(object_id INT NOT NULL PRIMARY KEY";
+			if(sizeof(doid_t) <= sizeof(uint32_t))
+			{
+				ss << "CREATE TABLE IF NOT EXISTS fields_" << dcc->get_name()
+				   << "(object_id INT NOT NULL PRIMARY KEY";
+			}
+			else
+			{
+				ss << "CREATE TABLE IF NOT EXISTS fields_" << dcc->get_name()
+				   << "(object_id BIGINT NOT NULL PRIMARY KEY";
+			}
 
 			int db_field_count = 0;
 			for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
