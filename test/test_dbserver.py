@@ -31,7 +31,7 @@ class DatabaseBaseTests(object):
 
         if check:
             dg = Datagram.create([doid], sender, DBSERVER_OBJECT_DELETE)
-            dg.add_uint32(doid)
+            dg.add_doid(doid)
             self.assertTrue(*self.objects.expect(dg))
         else:
             self.objects.flush()
