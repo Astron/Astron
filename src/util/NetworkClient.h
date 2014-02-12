@@ -6,7 +6,7 @@ class NetworkClient
 {
 	public:
 		// send_datagram immediately sends the datagram over TCP (blocking).
-		virtual void send_datagram(Datagram &dg);
+		virtual void send_datagram(Datagram_ptr &dg);
 		// send_disconnect closes the TCP connection
 		virtual void send_disconnect();
 		// is_connected returns true if the TCP connection is active, or false otherwise
