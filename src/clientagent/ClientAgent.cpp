@@ -92,7 +92,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 }
 
 // handle_datagram handles Datagrams received from the message director.
-void ClientAgent::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void ClientAgent::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
 {
 }
 

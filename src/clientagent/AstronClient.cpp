@@ -63,7 +63,7 @@ class AstronClient : public Client, public NetworkClient
 		// send_disconnect must close any connections with a connected client; the given reason and
 		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
 		// Handler for CLIENTAGENT_EJECT.
-		void send_disconnect(uint16_t reason, const std::string &error_string, bool security = false)
+    void send_disconnect(uint16_t reason, const std::string &error_string, bool security = false)
 		{
 			if(is_connected())
 			{
@@ -81,7 +81,7 @@ class AstronClient : public Client, public NetworkClient
 		}
 
 		// receive_datagram is the handler for datagrams received over the network from a Client.
-		void receive_datagram(Datagram &dg)
+		void receive_datagram(Datagram_ptr &dg)
 		{
 			DatagramIterator dgi(dg);
 			try
@@ -147,7 +147,7 @@ class AstronClient : public Client, public NetworkClient
 		// forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
 		// Handler for CLIENTAGENT_SEND_DATAGRAM.
-		void forward_datagram(Datagram &dg)
+		void forward_datagram(Datagram_ptr &dg)
 		{
 			send_datagram(dg);
 		}

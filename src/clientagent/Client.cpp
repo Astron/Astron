@@ -259,7 +259,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 }
 
 // handle_datagram is the handler for datagrams received from the Astron cluster
-void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
+void Client::handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
