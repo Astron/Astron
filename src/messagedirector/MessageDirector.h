@@ -38,7 +38,7 @@ class MessageDirector : public NetworkClient
 		// route_datagram accepts any Astron message (a Datagram), and
 		//     properly routes it to any subscribed listeners.
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-		void route_datagram(MDParticipantInterface *p, Datagram &dg);
+		void route_datagram(MDParticipantInterface *p, Datagram_ptr &dg);
 
 		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
 		// (Args) "c": the channel to be added.
@@ -141,7 +141,7 @@ class MDParticipantInterface
 		}
 
 	protected:
-		inline void route_datagram(Datagram &dg)
+		inline void route_datagram(Datagram_ptr &dg)
 		{
 			MessageDirector::singleton.route_datagram(this, dg);
 		}
@@ -167,7 +167,7 @@ class MDParticipantInterface
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
 		}
-		inline void add_post_remove(const Datagram dg)
+		inline void add_post_remove(const Datagram_ptr dg)
 		{
 			logger().trace() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(dg);
@@ -193,7 +193,7 @@ class MDParticipantInterface
 	private:
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-		std::vector<Datagram> m_post_removes; // The messages to be distributed on unexpected disconnect.
+		std::vector<Datagram_ptr> m_post_removes; // The messages to be distributed on unexpected disconnect.
 		std::string m_name;
 		std::string m_url;
 
