@@ -117,15 +117,14 @@ class YAMLDatabase : public DatabaseBackend
 			return do_id;
 		}
 
-		vector<uint8_t> read_yaml_field(const Field* field, YAML::Node node)
+		vector<uint8_t> read_yaml_field(const Field* field, YAML::Node node, doid_t id)
 		{
 			bool error;
 			string packed_data = dclass::parse_value(field->get_type(), node.as<string>(), error);
 			if(error)
 			{
-				m_log->error() << "Value for field '" << field->get_name()
-				               << "' read from database was formatted incorrectly, e.what(): "
-				               << packed_data << endl;
+				m_log->error() << "Failed parsing value for field '" << field->get_name()
+				               << "' of object " << id << "' from database.\n";
 				return vector<uint8_t>();
 			}
 
@@ -264,7 +263,7 @@ class YAMLDatabase : public DatabaseBackend
 					continue;
 				}
 
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -316,7 +315,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -353,7 +352,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -390,7 +389,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -429,7 +428,7 @@ class YAMLDatabase : public DatabaseBackend
 				auto found = fields.find(field);
 				if(found == fields.end())
 				{
-					vector<uint8_t> value = read_yaml_field(field, it->second);
+					vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 					if(value.size() > 0)
 					{
 						dbo.fields[field] = value;
@@ -470,7 +469,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -513,7 +512,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -556,7 +555,7 @@ class YAMLDatabase : public DatabaseBackend
 					                 << "', does not exist." << endl;
 					continue;
 				}
-				vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -617,7 +616,7 @@ class YAMLDatabase : public DatabaseBackend
 
 			m_log->trace() << "Found requested field: " + field->get_name() << endl;
 
-			value = read_yaml_field(field, node);
+			value = read_yaml_field(field, node, do_id);
 			if(value.size() > 0)
 			{
 				return true;
@@ -646,7 +645,7 @@ class YAMLDatabase : public DatabaseBackend
 				{
 					if(it2->first.as<string>() == field->get_name())
 					{
-						vector<uint8_t> value = read_yaml_field(field, it2->second);
+						vector<uint8_t> value = read_yaml_field(field, it2->second, do_id);
 						if(value.size() > 0)
 						{
 							values[*it] = value;
