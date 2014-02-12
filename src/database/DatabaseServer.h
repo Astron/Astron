@@ -11,7 +11,7 @@ class DatabaseServer : public Role
 	public:
 		DatabaseServer(RoleConfig);
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi);
 		
 	private:
 		DatabaseBackend *m_db_backend;
