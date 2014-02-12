@@ -15,7 +15,7 @@ class DistributedObject : public MDParticipantInterface
 		                  std::map<DCField*, std::vector<uint8_t> > ram_fields);
 		~DistributedObject();
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi);
 
 		inline doid_t get_id() const
 		{
@@ -58,8 +58,8 @@ class DistributedObject : public MDParticipantInterface
 		std::unordered_map<zone_t, doid_t> m_zone_count;
 		LogCategory *m_log;
 
-		void append_required_data(Datagram &dg, bool client_only = false, bool also_owner = false);
-		void append_other_data(Datagram &dg, bool client_only = false, bool also_owner = false);
+		void append_required_data(Datagram_ptr &dg, bool client_only = false, bool also_owner = false);
+		void append_other_data(Datagram_ptr &dg, bool client_only = false, bool also_owner = false);
 
 		void send_location_entry(channel_t location);
 		void send_ai_entry(channel_t location);
@@ -75,6 +75,6 @@ class DistributedObject : public MDParticipantInterface
 
 		void save_field(DCField *field, const std::vector<uint8_t> &data);
 		bool handle_one_update(DatagramIterator &dgi, channel_t sender);
-		bool handle_one_get(Datagram &out, uint16_t field_id,
+		bool handle_one_get(Datagram_ptr &out, uint16_t field_id,
 		                    bool succeed_if_unset = false, bool is_subfield = false);
 };
