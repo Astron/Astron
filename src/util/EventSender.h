@@ -12,7 +12,7 @@ class EventSender
 		EventSender();
 
 		void init(const std::string &target);
-		void send(const Datagram &dg);
+		void send(const Datagram_ptr &dg);
 	private:
 		LogCategory m_log;
 		udp::socket m_socket;

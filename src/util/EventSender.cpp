@@ -30,7 +30,7 @@ void EventSender::init(const std::string& target)
 	m_log.debug() << "Initialized." << std::endl;
 }
 
-void EventSender::send(const Datagram &dg)
+void EventSender::send(const Datagram_ptr &dg)
 {
 	if(!m_enabled)
 	{
@@ -39,7 +39,7 @@ void EventSender::send(const Datagram &dg)
 	}
 
 	m_log.trace() << "Sending event..." << std::endl;
-	m_socket.send_to(boost::asio::buffer(dg.get_data(), dg.size()),
+	m_socket.send_to(boost::asio::buffer(dg->get_data(), dg->size()),
 	                 m_target);
 }
 
