@@ -1340,7 +1340,7 @@ field_values
 	;
 
 array_value
-	: '[' ']' // default value
+	: '[' ']' // empty array
 	{
 		if(!check_depth()) depth_error("array");
 
@@ -1353,17 +1353,30 @@ array_value
 			$$ = "";
 			break;
 		}
-
 		const ArrayType* array = dtype->as_array();
-		if(!array->has_range()) // Simplest case
+
+		string val;
+
+		if(array->get_array_size() > 0)
 		{
-			$$ = "";
-			break;
+			// For fixed size arrays, an empty array is an error
+			parser_error("Fixed-sized array of size "
+			             + to_string(array->get_array_size())
+			             + " can't have 0 elements.");
+		}
+		else if(array->has_range())
+		{
+			// If we have a range, 0 elements must be valid in the range
+			if(0 < array->get_range().min.uinteger)
+			{
+				parser_error("Too few elements in array value, minimum "
+				             + to_string(array->get_range().min.uinteger) + ".");
+			}
 		}
 
-		// set to the obvious default value
-		uint64_t min_array_elements = array->get_range().min.uinteger;
-		$$ = string(min_array_elements, '\0');
+		// Since a fixed-size array can't have zero elements, this always
+		// the default value for a varsize array, which is the length-tag 0.
+		$$ = string(sizeof(sizetag_t), '\0');
 	}
 	| '['
 	{
@@ -1406,10 +1419,20 @@ array_value
 					             + to_string(array->get_range().min.uinteger) + ".");
 				}
 			}
+
+			if(array->get_array_size() == 0)
+			{
+				sizetag_t length = $3.length();
+				$$ = string((char*)&length, sizeof(sizetag_t)) + $3;
+			}
+			else
+			{
+				$$ = $3;
+			}
 			current_depth = type_stack.top().depth;
 		}
+
 		type_stack.pop(); // Remove array type from the stack
-		$$ = $3;
 	}
 	;
 
