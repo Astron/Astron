@@ -89,7 +89,7 @@ class MessageDirector : public NetworkClient
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void receive_datagram(Datagram &dg);
+		virtual void receive_datagram(Datagram_ptr &dg);
 		virtual void receive_disconnect();
 
 
@@ -119,7 +119,7 @@ class MDParticipantInterface
 
 		// handle_datagram should handle a message received from the MessageDirector.
 		// Implementations of handle_datagram should be non-blocking operations.
-		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
+		virtual void handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi) = 0;
 
 		// post_remove tells the MDParticipant to handle all of its post remove packets.
 		inline void post_remove()

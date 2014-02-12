@@ -201,8 +201,8 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_ADD_CHANNEL);
-		dg.add_channel(c);
+		Datagram_ptr dg = Datagram::create(CONTROL_ADD_CHANNEL);
+		dg->add_channel(c);
 		send_datagram(dg);
 	}
 }
@@ -248,8 +248,8 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_REMOVE_CHANNEL);
-		dg.add_channel(c);
+		Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
+		dg->add_channel(c);
 		send_datagram(dg);
 	}
 }
@@ -301,9 +301,9 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_ADD_RANGE);
-		dg.add_channel(lo);
-		dg.add_channel(hi);
+		Datagram_ptr dg = Datagram::create(CONTROL_ADD_RANGE);
+		dg->add_channel(lo);
+		dg->add_channel(hi);
 		send_datagram(dg);
 	}
 }
@@ -382,7 +382,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
 			              << it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
-			Datagram dg(CONTROL_REMOVE_RANGE);
+			Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_RANGE);
 
 			channel_t lo = it->lower();
 			channel_t hi = it->upper();
@@ -395,8 +395,8 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
-			dg.add_channel(lo);
-			dg.add_channel(hi);
+			dg->add_channel(lo);
+			dg->add_channel(hi);
 			send_datagram(dg);
 		}
 	}
@@ -475,7 +475,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 }
 
-void MessageDirector::receive_datagram(Datagram &dg)
+void MessageDirector::receive_datagram(Datagram_ptr &dg)
 {
 	route_datagram(NULL, dg);
 }
