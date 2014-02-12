@@ -127,9 +127,9 @@ class YAMLDatabase : public DatabaseBackend
 				{
 					std::string str = node.as<std::string>();
 					str = str.substr(2, str.length()-4);
-					Datagram dg;
-					dg.add_string(str);
-					return std::vector<uint8_t>(dg.get_data(), dg.get_data()+dg.size());
+					Datagram_ptr dg = Datagram::create();
+					dg->add_string(str);
+					return std::vector<uint8_t>(dg->get_data(), dg->get_data()+dg->size());
 				}
 			}
 		#endif
