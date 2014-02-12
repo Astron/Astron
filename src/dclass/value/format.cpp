@@ -220,27 +220,49 @@ struct Formatter
 					out << '[';
 					// Read array byte length
 					if(!remaining(sizeof(sizetag_t)))
+					{
+						out << ']';
 						return false;
+					}
 					sizetag_t length = read_length();
+
+					if(length == 0)
+					{
+						out << ']';
+						break;
+					}
 
 					// Read array
 					if(!remaining(length))
+					{
+						out << ']';
 						return false;
+					}
 					size_t array_end = offset + length;
 
 					const ArrayType* arr = dtype->as_array();
 					bool ok = format(arr->get_element_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ']';
+						return false;
+					}
+
 					while(offset < array_end)
 					{
 						out << ", ";
 						ok = format(arr->get_element_type());
-						if(!ok) return false;
+						if(!ok)
+						{
+							out << ']';
+							return false;
+						}
 					}
 
 					// Check to make sure we didn't overshoot the array while reading
 					if(offset > array_end)
 					{
+						out << ']';
 						return false;
 					}
 
@@ -272,12 +294,21 @@ struct Formatter
 					out << '[';
 					const ArrayType* arr = dtype->as_array();
 					bool ok = format(arr->get_element_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ']';
+						return false;
+					}
+
 					for(unsigned int i = 1; i < arr->get_array_size(); ++i)
 					{
 						out << ", ";
 						ok = format(arr->get_element_type());
-						if(!ok) return false;
+						if(!ok)
+						{
+							out << ']';
+							return false;
+						}
 					}
 
 					out << ']';
@@ -289,7 +320,8 @@ struct Formatter
 			{
 				// If we have a blob alias format as a hex constant
 				if(dtype->has_alias() && dtype->get_alias() == "blob")
-				{				// Read blob length
+				{
+					// Read blob length
 					if(!remaining(sizeof(sizetag_t)))
 						return false;
 					sizetag_t length = read_length();
@@ -310,27 +342,47 @@ struct Formatter
 					out << '[';
 					// Read array byte length
 					if(!remaining(sizeof(sizetag_t)))
+					{
+						out << ']';
 						return false;
+					}
 					sizetag_t length = read_length();
 
+					if(length == 0)
+					{
+						out << ']';
+						break;
+					}
 					// Read array
 					if(!remaining(length))
+					{
+						out << ']';
 						return false;
+					}
 					size_t array_end = offset + length;
 
 					const ArrayType* arr = dtype->as_array();
 					bool ok = format(arr->get_element_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ']';
+						return false;
+					}
 					while(offset < array_end)
 					{
 						out << ", ";
 						ok = format(arr->get_element_type());
-						if(!ok) return false;
+						if(!ok)
+						{
+							out << ']';
+							return false;
+						}
 					}
 
 					// Check to make sure we didn't overshoot the array while reading
 					if(offset > array_end)
 					{
+						out << ']';
 						return false;
 					}
 
@@ -344,12 +396,20 @@ struct Formatter
 				out << '[';
 				const ArrayType* arr = dtype->as_array();
 				bool ok = format(arr->get_element_type());
-				if(!ok) return false;
+				if(!ok)
+				{
+					out << ']';
+					return false;
+				}
 				for(unsigned int i = 1; i < arr->get_array_size(); ++i)
 				{
 					out << ", ";
 					ok = format(arr->get_element_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ']';
+						return false;
+					}
 				}
 
 				out << ']';
@@ -360,27 +420,48 @@ struct Formatter
 				out << '[';
 				// Read array byte length
 				if(!remaining(sizeof(sizetag_t)))
+				{
+					out << ']';
 					return false;
+				}
 				sizetag_t length = read_length();
+
+				if(length == 0)
+				{
+					out << ']';
+					break;
+				}
 
 				// Read array
 				if(!remaining(length))
+				{
 					return false;
+					out << ']';
+				}
 				size_t array_end = offset + length;
 
 				const ArrayType* arr = dtype->as_array();
 				bool ok = format(arr->get_element_type());
-				if(!ok) return false;
+				if(!ok)
+				{
+					out << ']';
+					return false;
+				}
 				while(offset < array_end)
 				{
 					out << ", ";
 					ok = format(arr->get_element_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ']';
+						return false;
+					}
 				}
 
 				// Check to make sure we didn't overshoot the array while reading
 				if(offset > array_end)
 				{
+					out << ']';
 					return false;
 				}
 
@@ -395,12 +476,20 @@ struct Formatter
 				if(num_fields > 0)
 				{
 					bool ok = format(strct->get_field(0)->get_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << '}';
+						return false;
+					}
 					for(unsigned int i = 1; i < num_fields; ++i)
 					{
 						out << ", ";
 						ok = format(strct->get_field(i)->get_type());
-						if(!ok) return false;
+						if(!ok)
+						{
+							out << '}';
+							return false;
+						}
 					}
 				}
 				out << '}';
@@ -414,16 +503,24 @@ struct Formatter
 				if(num_params > 0)
 				{
 					bool ok = format(method->get_parameter(0)->get_type());
-					if(!ok) return false;
+					if(!ok)
+					{
+						out << ')';
+						return false;
+					}
 					for(unsigned int i = 1; i < num_params; ++i)
 					{
 						out << ", ";
 						ok = format(method->get_parameter(i)->get_type());
-						if(!ok) return false;
+						if(!ok)
+						{
+							out << ')';
+							return false;
+						}
 					}
 				}
-					out << ')';
-					break;
+				out << ')';
+				break;
 			}
 			default:
 			{
