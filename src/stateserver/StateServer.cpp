@@ -66,7 +66,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	m_objs[do_id] = obj;
 }
 
-void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void StateServer::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
@@ -94,8 +94,8 @@ void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			if(targets.size())
 			{
-				Datagram dg(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
-				dg.add_channel(ai_channel);
+				Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
+				dg->add_channel(ai_channel);
 				route_datagram(dg);
 			}
 			break;
