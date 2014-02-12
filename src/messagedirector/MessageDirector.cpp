@@ -91,7 +91,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
+void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram_ptr &dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
