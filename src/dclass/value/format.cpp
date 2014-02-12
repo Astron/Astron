@@ -294,13 +294,14 @@ struct Formatter
 						return false;
 					sizetag_t length = read_length();
 
-					// Read blob
+
+					// Read blob with length
 					if(!remaining(length))
 						return false;
-					string blob((const char*)in + offset, length);
+					string blob((const char*)in + offset - 2, length + 2);
 					offset += length;
 
-					// Format blob as a hex constant then output
+					// Format blob and length as a hex constant then output
 					format_hex(blob, out);
 				}
 				else

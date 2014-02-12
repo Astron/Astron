@@ -571,12 +571,12 @@ static const yytype_uint16 yyrline[] =
      964,   976,   983,   993,   997,  1004,  1014,  1027,  1028,  1029,
     1030,  1035,  1034,  1048,  1055,  1060,  1069,  1068,  1080,  1079,
     1093,  1094,  1095,  1099,  1100,  1101,  1105,  1117,  1121,  1134,
-    1135,  1136,  1140,  1152,  1156,  1165,  1174,  1183,  1213,  1243,
-    1244,  1249,  1248,  1285,  1286,  1294,  1293,  1330,  1331,  1332,
-    1336,  1343,  1382,  1381,  1440,  1442,  1441,  1456,  1461,  1477,
-    1493,  1509,  1559,  1613,  1614,  1618,  1619,  1623,  1624,  1625,
-    1626,  1627,  1628,  1629,  1630,  1631,  1632,  1633,  1637,  1641,
-    1654
+    1135,  1136,  1140,  1152,  1156,  1165,  1174,  1183,  1213,  1241,
+    1242,  1247,  1246,  1283,  1284,  1292,  1291,  1328,  1329,  1330,
+    1334,  1341,  1380,  1379,  1438,  1440,  1439,  1454,  1459,  1475,
+    1491,  1507,  1557,  1611,  1612,  1616,  1617,  1621,  1622,  1623,
+    1624,  1625,  1626,  1627,  1628,  1629,  1630,  1631,  1635,  1639,
+    1652
 };
 #endif
 
@@ -2739,9 +2739,7 @@ yyreduce:
 		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
-			// Prepend length tag
-			sizetag_t length = (yyvsp[0].str).length();
-			(yyval.str) = string((char*)&length, sizeof(sizetag_t)) + (yyvsp[0].str);
+			(yyval.str) = (yyvsp[0].str);
 		}
 		else
 		{
@@ -2750,11 +2748,11 @@ yyreduce:
 			(yyval.str) = (yyvsp[0].str);
 		}
 	}
-#line 2754 "parser.cpp" /* yacc.c:1646  */
+#line 2752 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 131:
-#line 1249 "parser.ypp" /* yacc.c:1646  */
+#line 1247 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("method");
 
@@ -2779,11 +2777,11 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2783 "parser.cpp" /* yacc.c:1646  */
+#line 2781 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 132:
-#line 1274 "parser.ypp" /* yacc.c:1646  */
+#line 1272 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_method())
 		{
@@ -2792,19 +2790,19 @@ yyreduce:
 		type_stack.pop(); // Remove method type from the stack
 		(yyval.str) = (yyvsp[-1].str);
 	}
-#line 2796 "parser.cpp" /* yacc.c:1646  */
+#line 2794 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 134:
-#line 1287 "parser.ypp" /* yacc.c:1646  */
+#line 1285 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2804 "parser.cpp" /* yacc.c:1646  */
+#line 2802 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 135:
-#line 1294 "parser.ypp" /* yacc.c:1646  */
+#line 1292 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("struct");
 
@@ -2829,11 +2827,11 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2833 "parser.cpp" /* yacc.c:1646  */
+#line 2831 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 136:
-#line 1319 "parser.ypp" /* yacc.c:1646  */
+#line 1317 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_struct())
 		{
@@ -2842,27 +2840,27 @@ yyreduce:
 		type_stack.pop(); // Remove method type from the stack
 		(yyval.str) = (yyvsp[-1].str);
 	}
-#line 2846 "parser.cpp" /* yacc.c:1646  */
+#line 2844 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 139:
-#line 1333 "parser.ypp" /* yacc.c:1646  */
+#line 1331 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2854 "parser.cpp" /* yacc.c:1646  */
+#line 2852 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 140:
-#line 1337 "parser.ypp" /* yacc.c:1646  */
+#line 1335 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2862 "parser.cpp" /* yacc.c:1646  */
+#line 2860 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 141:
-#line 1344 "parser.ypp" /* yacc.c:1646  */
+#line 1342 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("array");
 
@@ -2900,11 +2898,11 @@ yyreduce:
 		// the default value for a varsize array, which is the length-tag 0.
 		(yyval.str) = string(sizeof(sizetag_t), '\0');
 	}
-#line 2904 "parser.cpp" /* yacc.c:1646  */
+#line 2902 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 142:
-#line 1382 "parser.ypp" /* yacc.c:1646  */
+#line 1380 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("array");
 
@@ -2926,11 +2924,11 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2930 "parser.cpp" /* yacc.c:1646  */
+#line 2928 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 143:
-#line 1404 "parser.ypp" /* yacc.c:1646  */
+#line 1402 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_array())
 		{
@@ -2964,11 +2962,11 @@ yyreduce:
 
 		type_stack.pop(); // Remove array type from the stack
 	}
-#line 2968 "parser.cpp" /* yacc.c:1646  */
+#line 2966 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 145:
-#line 1442 "parser.ypp" /* yacc.c:1646  */
+#line 1440 "parser.ypp" /* yacc.c:1646  */
     {
 		// We popped off the only element we added, so we're back to the array
 		// Don't increment the depth; the array_expansion will add to
@@ -2976,28 +2974,28 @@ yyreduce:
 		const ArrayType* array = type_stack.top().type->as_array();
 		type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
 	}
-#line 2980 "parser.cpp" /* yacc.c:1646  */
+#line 2978 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 146:
-#line 1450 "parser.ypp" /* yacc.c:1646  */
+#line 1448 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-3].str) + (yyvsp[0].str);
 	}
-#line 2988 "parser.cpp" /* yacc.c:1646  */
+#line 2986 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 147:
-#line 1457 "parser.ypp" /* yacc.c:1646  */
+#line 1455 "parser.ypp" /* yacc.c:1646  */
     {
 		current_depth++;
 		(yyval.str) = (yyvsp[0].str);
 	}
-#line 2997 "parser.cpp" /* yacc.c:1646  */
+#line 2995 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 148:
-#line 1462 "parser.ypp" /* yacc.c:1646  */
+#line 1460 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3013,11 +3011,11 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3017 "parser.cpp" /* yacc.c:1646  */
+#line 3015 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 149:
-#line 1478 "parser.ypp" /* yacc.c:1646  */
+#line 1476 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3033,11 +3031,11 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3037 "parser.cpp" /* yacc.c:1646  */
+#line 3035 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 150:
-#line 1494 "parser.ypp" /* yacc.c:1646  */
+#line 1492 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3053,11 +3051,11 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3057 "parser.cpp" /* yacc.c:1646  */
+#line 3055 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 151:
-#line 1510 "parser.ypp" /* yacc.c:1646  */
+#line 1508 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3107,11 +3105,11 @@ yyreduce:
 			(yyval.str) = val;
 		}
 	}
-#line 3111 "parser.cpp" /* yacc.c:1646  */
+#line 3109 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 152:
-#line 1560 "parser.ypp" /* yacc.c:1646  */
+#line 1558 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
 		type_stack.pop(); // Pop that array element type
@@ -3162,109 +3160,109 @@ yyreduce:
 			(yyval.str) = val;
 		}
 	}
-#line 3166 "parser.cpp" /* yacc.c:1646  */
+#line 3164 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 153:
-#line 1613 "parser.ypp" /* yacc.c:1646  */
+#line 1611 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.int64) = (yyvsp[0].u.uint64); }
-#line 3172 "parser.cpp" /* yacc.c:1646  */
+#line 3170 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 154:
-#line 1614 "parser.ypp" /* yacc.c:1646  */
+#line 1612 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.int64) = -(yyvsp[0].u.uint64); }
-#line 3178 "parser.cpp" /* yacc.c:1646  */
+#line 3176 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 155:
-#line 1618 "parser.ypp" /* yacc.c:1646  */
+#line 1616 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_STRING; }
-#line 3184 "parser.cpp" /* yacc.c:1646  */
+#line 3182 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 156:
-#line 1619 "parser.ypp" /* yacc.c:1646  */
+#line 1617 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_BLOB; }
-#line 3190 "parser.cpp" /* yacc.c:1646  */
+#line 3188 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 157:
-#line 1623 "parser.ypp" /* yacc.c:1646  */
+#line 1621 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_CHAR; }
-#line 3196 "parser.cpp" /* yacc.c:1646  */
+#line 3194 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 158:
-#line 1624 "parser.ypp" /* yacc.c:1646  */
+#line 1622 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT8; }
-#line 3202 "parser.cpp" /* yacc.c:1646  */
+#line 3200 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 159:
-#line 1625 "parser.ypp" /* yacc.c:1646  */
+#line 1623 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT16; }
-#line 3208 "parser.cpp" /* yacc.c:1646  */
+#line 3206 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 160:
-#line 1626 "parser.ypp" /* yacc.c:1646  */
+#line 1624 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT32; }
-#line 3214 "parser.cpp" /* yacc.c:1646  */
+#line 3212 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 161:
-#line 1627 "parser.ypp" /* yacc.c:1646  */
+#line 1625 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT64; }
-#line 3220 "parser.cpp" /* yacc.c:1646  */
+#line 3218 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 162:
-#line 1628 "parser.ypp" /* yacc.c:1646  */
+#line 1626 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT8; }
-#line 3226 "parser.cpp" /* yacc.c:1646  */
+#line 3224 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 163:
-#line 1629 "parser.ypp" /* yacc.c:1646  */
+#line 1627 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT16; }
-#line 3232 "parser.cpp" /* yacc.c:1646  */
+#line 3230 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 164:
-#line 1630 "parser.ypp" /* yacc.c:1646  */
+#line 1628 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT32; }
-#line 3238 "parser.cpp" /* yacc.c:1646  */
+#line 3236 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 165:
-#line 1631 "parser.ypp" /* yacc.c:1646  */
+#line 1629 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT64; }
-#line 3244 "parser.cpp" /* yacc.c:1646  */
+#line 3242 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 166:
-#line 1632 "parser.ypp" /* yacc.c:1646  */
+#line 1630 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_FLOAT32; }
-#line 3250 "parser.cpp" /* yacc.c:1646  */
+#line 3248 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 167:
-#line 1633 "parser.ypp" /* yacc.c:1646  */
+#line 1631 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_FLOAT64; }
-#line 3256 "parser.cpp" /* yacc.c:1646  */
+#line 3254 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 168:
-#line 1638 "parser.ypp" /* yacc.c:1646  */
+#line 1636 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.strings) = vector<string>();
 	}
-#line 3264 "parser.cpp" /* yacc.c:1646  */
+#line 3262 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 169:
-#line 1642 "parser.ypp" /* yacc.c:1646  */
+#line 1640 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!parsed_file->has_keyword((yyvsp[0].str)))
 		{
@@ -3275,11 +3273,11 @@ yyreduce:
 		(yyvsp[-1].strings).push_back((yyvsp[0].str));
 		(yyval.strings) = (yyvsp[-1].strings);
 	}
-#line 3279 "parser.cpp" /* yacc.c:1646  */
+#line 3277 "parser.cpp" /* yacc.c:1646  */
     break;
 
 
-#line 3283 "parser.cpp" /* yacc.c:1646  */
+#line 3281 "parser.cpp" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -3507,7 +3505,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 1658 "parser.ypp" /* yacc.c:1906  */
+#line 1656 "parser.ypp" /* yacc.c:1906  */
  /* Start helper function section */
 
 

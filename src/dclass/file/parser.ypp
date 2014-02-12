@@ -1229,9 +1229,7 @@ type_value
 		else if(dtype->get_type() == T_VARBLOB)
 		{
 			// TODO: Check for range limits
-			// Prepend length tag
-			sizetag_t length = $1.length();
-			$$ = string((char*)&length, sizeof(sizetag_t)) + $1;
+			$$ = $1;
 		}
 		else
 		{
