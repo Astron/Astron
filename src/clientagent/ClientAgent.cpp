@@ -12,6 +12,7 @@ using boost::asio::ip::tcp;
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
 static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
+static ValidAddressConstraint valid_bind_addr(bind_addr);
 
 static ConfigGroup channels_config("channels", clientagent_config);
 static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);

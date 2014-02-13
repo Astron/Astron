@@ -184,6 +184,35 @@ class TestConfigClientAgent(unittest.TestCase):
             """
         self.assertEquals(self.run_test(config), EXITED)
 
+    def test_ca_bind_address(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: clientagent
+                  bind: pizza:2314
+                  version: "Sword Art Online v5.1"
+                  channels:
+                      min: 3100
+                      max: 3999
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        # ipv6 test disabled because client agent can't accept them yet, and causes a crash
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: clientagent
+                  bind: ::1:2314
+                  version: "Sword Art Online v5.1"
+                  channels:
+                      min: 3100
+                      max: 3999
+            """
+        #self.assertEquals(self.run_test(config), TERMINATED)
 
 if __name__ == '__main__':
     unittest.main()
