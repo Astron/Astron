@@ -100,8 +100,7 @@ class ConfigVariable
 
 		rtest get_rtest()
 		{
-			using namespace std::placeholders;
-			return std::bind(&ConfigVariable::rtest_constraints, this, _1);
+			return std::bind(&ConfigVariable::rtest_constraints, this, std::placeholders::_1);
 		}
 
 		test get_test()
