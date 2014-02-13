@@ -85,6 +85,8 @@ class TestConfigClientAgent(unittest.TestCase):
                 - type: clientagent
                   bind: 127.0.0.1:57135
                   version: "Sword Art Online v5.1"
+                  client:
+                      type: libastron
                   channels:
                       min: 110600
                       max: 110699
@@ -164,6 +166,24 @@ class TestConfigClientAgent(unittest.TestCase):
                       max: 999
             """
         self.assertEquals(self.run_test(config), EXITED)
+
+    def test_ca_client_type_typo(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            roles:
+                - type: clientagent
+                  bind: 127.0.0.1:57128
+                  version: "Sword Art Online v5.1"
+                  client:
+                      type: astron
+                  channels:
+                      min: 3100
+                      max: 3999
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
 
 if __name__ == '__main__':
     unittest.main()

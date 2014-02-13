@@ -19,6 +19,12 @@ void ClientFactory::add_client_type(const std::string &name, BaseClientType *fac
 	m_factories[name] = factory;
 }
 
+// has_client_type returns true if a client handler exists for 'name'.
+bool ClientFactory::has_client_type(const std::string &name)
+{
+	return m_factories.find(name) != m_factories.end();
+}
+
 // instantiate_client creates a new Client object of type 'client_type'.
 Client* ClientFactory::instantiate_client(const std::string &client_type, ConfigNode config,
 		ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket)

@@ -9,7 +9,7 @@
 
 using boost::asio::ip::tcp;
 
-static RoleConfigGroup clientagent_config("clientagent");
+RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
 static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
 
@@ -23,6 +23,12 @@ static ReservedChannelConstraint max_not_reserved(max_channel);
 
 ConfigGroup ca_client_config("client", clientagent_config);
 ConfigVariable<std::string> ca_client_type("type", "libastron", ca_client_config);
+bool have_client_type(const string& backend)
+{
+	return ClientFactory::singleton().has_client_type(backend);
+}
+ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
+		"No Client handler exists for the given client type.");
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
 	m_server_version(server_version.get_rval(roleconfig))
