@@ -30,9 +30,9 @@ template<typename T>
 class ConfigVariable
 {
 	private:
-		ConfigGroup* m_group;
 		std::string m_name;
 		T m_def_val;
+		ConfigGroup* m_group;
 
 		std::list<ConfigConstraint<T>*> m_constraints;
 
