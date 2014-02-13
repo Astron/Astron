@@ -146,8 +146,10 @@ endif()
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	set(DBSERVER_FILES
+		src/database/DatabaseServer.h
 		src/database/DatabaseServer.cpp
 		src/database/DatabaseBackend.h
+		src/database/DatabaseBackend.cpp
 		src/database/DBBackendFactory.h
 		src/database/DBBackendFactory.cpp
 	)
@@ -216,8 +218,7 @@ if(BUILD_DBSERVER)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
-				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_posgres.py)
-
+				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
 			endif()
 		endif()
 	else()
