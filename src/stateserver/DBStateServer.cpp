@@ -599,6 +599,39 @@ void DBStateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			break;
 		}
+		case DBSS_OBJECT_GET_ACTIVATED:
+		{
+			uint32_t r_context = dgi.read_uint32();
+			doid_t r_do_id = dgi.read_doid();
+
+			m_log->trace() << "Received GetActivated for id " << r_do_id << std::endl;
+
+			if(m_loading.find(r_do_id) != m_loading.end())
+			{
+				break; // Not meant for me, handled by LoadingObject
+			}
+			else if(m_objs.find(r_do_id) != m_objs.end())
+			{
+				// If object is active return true
+				Datagram dg(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
+				dg.add_uint32(r_context);
+				dg.add_doid(r_do_id);
+				dg.add_bool(true);
+				route_datagram(dg);
+			}
+			else
+			{
+				// If object isn't active or loading, we can return false
+				Datagram dg(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
+				dg.add_uint32(r_context);
+				dg.add_doid(r_do_id);
+				dg.add_bool(false);
+				route_datagram(dg);
+			}
+
+
+			break;
+		}
 		default:
 		{
 			if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > DBSERVER_MSGTYPE_MAX)
