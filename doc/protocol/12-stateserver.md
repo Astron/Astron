@@ -334,6 +334,13 @@ to stored objects in the database.
 > If the wrong dclass_id is sent, the DBSS will ignore the message.
 
 
+**DBSS_OBJECT_GET_ACTIVATED(2207)** `args(uint32 context, uint32 do_id)`  
+**DBSS_OBJECT_GET_ACTIVATED_RESP(2208):**  
+    `args(uint32 context, uint32 do_id, bool is_activated)`  
+> Tests whether a particular object id has been activated on the DBSS.  
+> For a doid which doesn't exist, the message always returns false.
+
+
 **DBSS_OBJECT_DELETE_FIELD_DISK(2230)**  
     `args(uint32 do_id, uint16 field_id, <VALUE>)`  
 **DBSS_OBJECT_DELETE_FIELDS_DISK(2231)**  
