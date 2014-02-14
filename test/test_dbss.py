@@ -972,5 +972,119 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(99922)
         self.assertTrue(*self.shard.expect(dg))
 
+    def test_get_activated(self):
+        self.shard.flush()
+        self.database.flush()
+
+        doid = 9050
+
+        ### Test for GetActivated with non-existant or inactive object ###
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
+        dg.add_uint32(1) # Context
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Expect false
+        dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_doid(doid)
+        dg.add_uint8(BOOL_NO)
+        self.assertTrue(*self.shard.expect(dg))
+
+
+        ### Test for GetActivated on loading object that doesn't exist ###
+        # Activate object with defaults
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        dg.add_doid(doid) # Id
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        self.shard.send(dg)
+
+        # Expect values to be retrieved from database
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1200], doid, DBSERVER_OBJECT_GET_ALL,
+                                            remaining = 4 + DOID_SIZE_BYTES))
+        context = dgi.read_uint32() # Get context
+        self.assertEquals(dgi.read_doid(), doid) # object Id
+
+        # Ask if we are activated
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
+        dg.add_uint32(2) # Context
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Send back to the DBSS with failure
+        dg = Datagram.create([doid], 1200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(FAILURE)
+        self.database.send(dg)
+
+        # Expect false
+        dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_doid(doid)
+        dg.add_uint8(BOOL_NO)
+        self.assertTrue(*self.shard.expect(dg))
+
+
+        ### Test for GetActivated on loading object that exists ###
+        # Activate object with defaults
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
+        dg.add_doid(doid) # Id
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        self.shard.send(dg)
+
+        # Expect values to be retrieved from database
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1200], doid, DBSERVER_OBJECT_GET_ALL,
+                                            remaining = 4 + DOID_SIZE_BYTES))
+        context = dgi.read_uint32() # Get context
+        self.assertEquals(dgi.read_doid(), doid) # object Id
+
+        # Ask if we are activated
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
+        dg.add_uint32(3) # Context
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Send back to the DBSS with some values
+        dg = Datagram.create([doid], 1200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(2)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(777)
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(222)
+        self.database.send(dg)
+
+        # Expect true
+        dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_doid(doid)
+        dg.add_uint8(BOOL_YES)
+        self.assertTrue(*self.shard.expect(dg))
+
+
+        ### Test for GetActivated on activated object ### (continues from last)
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
+        dg.add_uint32(4) # Context
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Expect false
+        dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_doid(doid)
+        dg.add_uint8(BOOL_YES)
+        self.assertTrue(*self.shard.expect(dg))
+
+
 if __name__ == '__main__':
     unittest.main()
