@@ -168,8 +168,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					resp.add_uint16(it->first->get_number());
 					resp.add_data(it->second);
-					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
-					                  it->second.begin(), it->second.end()) << std::endl;
+					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-"
+					               << std::string(it->second.begin(), it->second.end()) << "\n";
 				}
 			}
 			else
@@ -194,7 +194,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(m_broadcast)
 			{
 				Datagram update;
-				update.add_server_header(do_id, sender, DBSERVER_OBJECT_DELETE);
+				update.add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_DELETE);
 				update.add_doid(do_id);
 				route_datagram(update);
 			}
@@ -228,7 +228,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(m_broadcast)
 			{
 				Datagram update;
-				update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELD);
+				update.add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_SET_FIELD);
 				update.add_doid(do_id);
 				update.add_uint16(field_id);
 				update.add_data(value);
@@ -283,7 +283,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				// Broadcast update to object's channel
 				Datagram update;
-				update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELDS);
+				update.add_server_header(DATABASE2OBJECT(do_id), sender,
+				                         DBSERVER_OBJECT_SET_FIELDS);
 
 				// Seek to doid & field-data and copy it to update
 				dgi.seek_payload();
@@ -299,7 +300,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the field
@@ -334,7 +336,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					Datagram update;
-					update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELD);
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELD);
 					update.add_doid(do_id);
 					update.add_uint16(field_id);
 					update.add_data(value);
@@ -359,7 +362,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the field
@@ -397,7 +401,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					Datagram update;
-					update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELD);
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELD);
 					update.add_doid(do_id);
 					update.add_uint16(field_id);
 					update.add_data(value);
@@ -422,7 +427,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the fields
@@ -481,7 +487,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					// Broadcast update to object's channel
 					Datagram update;
-					update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELDS);
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELDS);
 					update.add_doid(do_id);
 					update.add_uint16(field_count);
 					for(auto it = values.begin(); it != values.end(); ++it) {
@@ -662,7 +669,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					if(m_broadcast)
 					{
 						Datagram update;
-						update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELD);
+						update.add_server_header(DATABASE2OBJECT(do_id), sender,
+						                         DBSERVER_OBJECT_SET_FIELD);
 						update.add_doid(do_id);
 						update.add_uint16(field_id);
 						update.add_data(value);
@@ -679,7 +687,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					if(m_broadcast)
 					{
 						Datagram update;
-						update.add_server_header(do_id, sender, DBSERVER_OBJECT_DELETE_FIELD);
+						update.add_server_header(DATABASE2OBJECT(do_id), sender,
+						                         DBSERVER_OBJECT_DELETE_FIELD);
 						update.add_doid(do_id);
 						update.add_uint16(field_id);
 						route_datagram(update);
@@ -761,7 +770,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					Datagram update;
-					update.add_server_header(do_id, sender, DBSERVER_OBJECT_DELETE_FIELDS);
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_DELETE_FIELDS);
 					update.add_doid(do_id);
 					update.add_uint16(del_fields.size());
 					for(auto it = del_fields.begin(); it != del_fields.end(); ++it)
@@ -781,7 +791,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					Datagram update;
-					update.add_server_header(do_id, sender, DBSERVER_OBJECT_SET_FIELDS);
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELDS);
 					update.add_doid(do_id);
 					update.add_uint16(del_fields.size());
 					for(auto it = set_fields.begin(); it != set_fields.end(); ++it)
