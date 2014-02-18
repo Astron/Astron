@@ -32,9 +32,9 @@ template<typename T>
 class ConfigVariable
 {
 	private:
-		ConfigGroup* m_group;
 		std::string m_name;
 		T m_def_val;
+		ConfigGroup* m_group;
 
 		std::list<ConfigConstraint<T>*> m_constraints;
 		std::list<RawConfigConstraint<T>*> m_raw_constraints;
@@ -157,8 +157,7 @@ class ConfigVariable
 
 		rtest get_rtest()
 		{
-			using namespace std::placeholders;
-			return std::bind(&ConfigVariable::rtest_constraints, this, _1);
+			return std::bind(&ConfigVariable::rtest_constraints, this, std::placeholders::_1);
 		}
 
 		test get_test()

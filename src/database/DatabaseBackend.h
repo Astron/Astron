@@ -4,6 +4,8 @@
 #include "dcparser/dcField.h"
 #include <vector>
 
+extern ConfigGroup db_backend_config;
+extern ConfigVariable<std::string> db_backend_type;
 
 struct ObjectData
 {

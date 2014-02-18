@@ -15,6 +15,7 @@ static LogCategory mainlog("main", "Main");
 static ConfigGroup general_config("general");
 static ConfigVariable<vector<string> > dc_files("dc_files", vector<string>(), general_config);
 static ConfigVariable<string> eventlogger_addr("eventlogger", "", general_config);
+static ValidAddressConstraint valid_eventlogger_addr(eventlogger_addr);
 
 static ConfigList uberdogs_config("uberdogs");
 static ConfigVariable<doid_t> uberdog_id("id", INVALID_DO_ID, uberdogs_config);

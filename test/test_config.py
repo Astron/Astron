@@ -154,5 +154,93 @@ class TestConfigCore(unittest.TestCase):
             """
         self.assertEquals(self.run_test(config), EXITED)
 
+    def test_core_address_hosts(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+            general:
+                eventlogger: 127.0.0.1:9090
+            """
+        self.assertEquals(self.run_test(config), TERMINATED)
+
+        # ipv6 test disabled because message director can't accept them yet, and causes a crash
+        #config = """\
+        #    messagedirector:
+        #        bind: "::1:57123"
+        #    general:
+        #        eventlogger: "::1:9090"
+        #    """
+        #self.assertEquals(self.run_test(config), TERMINATED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0:20
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+            general:
+                eventlogger: 0.0.1:9090
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: foobar:20
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+            general:
+                eventlogger: ble3.3.3.3:20
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 10.0.0.0foobar
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: 10.0.blam.20
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: pizza-pie
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: "127:0:0:1:57123"
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: "127-0-0-1:57123"
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: "99-0-0-1:57123"
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
+        config = """\
+            messagedirector:
+                bind: "99.1:57123"
+            """
+        self.assertEquals(self.run_test(config), EXITED)
+
 if __name__ == '__main__':
     unittest.main()

@@ -146,8 +146,10 @@ endif()
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	set(DBSERVER_FILES
+		src/database/DatabaseServer.h
 		src/database/DatabaseServer.cpp
 		src/database/DatabaseBackend.h
+		src/database/DatabaseBackend.cpp
 		src/database/DBBackendFactory.h
 		src/database/DBBackendFactory.cpp
 	)

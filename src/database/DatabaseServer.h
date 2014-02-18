@@ -3,8 +3,7 @@
 #include "core/RoleFactory.h"
 #include "DatabaseBackend.h"
 
-extern ConfigGroup db_backend_config;
-extern ConfigVariable<std::string> db_backend_type;
+extern RoleConfigGroup dbserver_config;
 
 class DatabaseServer : public Role
 {

@@ -7,14 +7,14 @@
 
 static RoleFactoryItem<DatabaseServer> dbserver_fact("database");
 
-static RoleConfigGroup db_config("database");
-static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, db_config);
-static ConfigVariable<bool> broadcast_updates("broadcast", true, db_config);
+RoleConfigGroup dbserver_config("database");
+static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, dbserver_config);
+static ConfigVariable<bool> broadcast_updates("broadcast", true, dbserver_config);
 static InvalidChannelConstraint control_not_invalid(control_channel);
 static ReservedChannelConstraint control_not_reserved(control_channel);
 static BooleanValueConstraint broadcast_is_boolean(broadcast_updates);
 
-static ConfigGroup generate_config("generate", db_config);
+static ConfigGroup generate_config("generate", dbserver_config);
 static ConfigVariable<doid_t> min_id("min", INVALID_DO_ID, generate_config);
 static ConfigVariable<doid_t> max_id("max", UINT_MAX, generate_config);
 static InvalidDoidConstraint min_not_invalid(min_id);
@@ -22,17 +22,14 @@ static InvalidDoidConstraint max_not_invalid(max_id);
 static ReservedDoidConstraint min_not_reserved(min_id);
 static ReservedDoidConstraint max_not_reserved(max_id);
 
-ConfigGroup db_backend_config("backend", db_config);
-ConfigVariable<std::string> db_backend_type("type", "yaml", db_backend_config);
-
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	m_control_channel(control_channel.get_rval(roleconfig)),
 	m_min_id(min_id.get_rval(roleconfig)),
 	m_max_id(max_id.get_rval(roleconfig)),
 	m_broadcast(broadcast_updates.get_rval(roleconfig))
 {
-	ConfigNode generate = db_config.get_child_node(generate_config, roleconfig);
-	ConfigNode backend = db_config.get_child_node(db_backend_config, roleconfig);
+	ConfigNode generate = dbserver_config.get_child_node(generate_config, roleconfig);
+	ConfigNode backend = dbserver_config.get_child_node(db_backend_config, roleconfig);
 	m_db_backend = DBBackendFactory::singleton().instantiate_backend(
 		db_backend_type.get_rval(backend), backend,
 		min_id.get_rval(generate), max_id.get_rval(generate));

@@ -107,6 +107,8 @@
 // DBSS object message-type constants
 #define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS       2200
 #define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER 2201
+#define DBSS_OBJECT_GET_ACTIVATED                2207
+#define DBSS_OBJECT_GET_ACTIVATED_RESP           2208
 #define DBSS_OBJECT_DELETE_FIELD_RAM             2230
 #define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
 #define DBSS_OBJECT_DELETE_DISK                  2232

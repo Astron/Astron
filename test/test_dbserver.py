@@ -986,7 +986,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([doidA], 90, DBSERVER_OBJECT_DELETE_FIELD)
         dg.add_uint32(doidA)
         dg.add_uint16(setDb3)
-        self.objects.expect(dg)
+        self.assertTrue(*self.objects.expect(dg))
 
         # Get cleared field
         dg = Datagram.create([75757], 90, DBSERVER_OBJECT_GET_FIELD)

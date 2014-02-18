@@ -7,6 +7,7 @@ bool is_not_reserved_doid(const doid_t& id);
 bool is_not_invalid_channel(const channel_t& c);
 bool is_not_reserved_channel(const channel_t& c);
 bool is_boolean_keyword(const std::string& str);
+bool is_valid_ip_address(const std::string& addr);
 
 class BooleanValueConstraint : public RawConfigConstraint<bool>
 {
@@ -51,6 +52,15 @@ class ReservedChannelConstraint : public ConfigConstraint<channel_t>
 		ReservedChannelConstraint(ConfigVariable<channel_t>& var) :
 			ConfigConstraint(is_not_reserved_channel, var,
 				"Channel value cannot be in a reserved channel range.")
+		{
+		}
+};
+class ValidAddressConstraint : public ConfigConstraint<std::string>
+{
+	public:
+		ValidAddressConstraint(ConfigVariable<std::string>& var) :
+			ConfigConstraint(is_valid_ip_address, var,
+				"String is not valid ipv4 or ipv6 address.")
 		{
 		}
 };

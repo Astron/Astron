@@ -117,6 +117,8 @@
 | ---------------------------------------- |:-------:| ----------------------------------------------------------------------------------- |
 | DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS       |    2200 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                |
 | DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER |    2201 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<OTHER>` |
+| DBSS_OBJECT_GET_ACTIVATED                |    2207 | `uint32 context`, `uint32 do_id`                                                    |
+| DBSS_OBJECT_GET_ACTIVATED_RESP           |    2208 | `uint32 context`, `uint32 do_id`, `uint8 is_active`                                 |
 | DBSS_OBJECT_DELETE_FIELD_DISK            |    2230 | `uint32 do_id`, `uint16 field_id`                                                   |
 | DBSS_OBJECT_DELETE_FIELDS_DISK           |    2231 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id]*field_count`               |
 | DBSS_OBJECT_DELETE_DISK                  |    2232 | `uint32 do_id`                                                                      |
