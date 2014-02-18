@@ -1086,5 +1086,23 @@ class TestStateServer(unittest.TestCase):
         self.assertTrue(*self.shard.expect(dg))
 
 
+        ### Test for GetActivated when killing the object ### (continues from last)
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Is it still active?
+        dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
+        dg.add_uint32(5) # Context
+        dg.add_doid(doid)
+        self.shard.send(dg)
+
+        # Expect false
+        dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_doid(doid)
+        dg.add_uint8(BOOL_NO)
+        self.assertTrue(*self.shard.expect(dg))
+
 if __name__ == '__main__':
     unittest.main()
