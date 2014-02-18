@@ -31,113 +31,124 @@ int main(int argc, char *argv[])
 {
 	string cfg_file;
 
-	if(argc < 2)
+	int config_arg_index = -1;
+	cfg_file = "astrond.yml";
+	LogSeverity sev = g_logger->get_min_severity();
+	for(int i = 1; i < argc; i++)
 	{
-		cfg_file = "astrond.yml";
-	}
-	else
-	{
-		cfg_file = "astrond.yml";
-		LogSeverity sev = g_logger->get_min_severity();
-		for(int i = 1; i < argc; i++)
+		if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc)
 		{
-			if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc)
+			delete g_logger;
+			g_logger = new Logger(argv[++i], sev);
+		}
+		else if((strcmp(argv[i], "--loglevel") == 0 || strcmp(argv[i], "-l") == 0) && i + 1 < argc)
+		{
+			string llstr(argv[++i]);
+			if(llstr == "packet")
 			{
-				delete g_logger;
-				g_logger = new Logger(argv[++i], sev);
+				sev = LSEVERITY_PACKET;
+				g_logger->set_min_severity(sev);
 			}
-			else if((strcmp(argv[i], "--loglevel") == 0 || strcmp(argv[i], "-l") == 0) && i + 1 < argc)
+			else if(llstr == "trace")
 			{
-				string llstr(argv[++i]);
-				if(llstr == "packet")
-				{
-					sev = LSEVERITY_PACKET;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr == "trace")
-				{
-					sev = LSEVERITY_TRACE;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr == "debug")
-				{
-					sev = LSEVERITY_DEBUG;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr == "info")
-				{
-					sev = LSEVERITY_INFO;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr == "warning")
-				{
-					sev = LSEVERITY_INFO;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr == "security")
-				{
-					sev = LSEVERITY_SECURITY;
-					g_logger->set_min_severity(sev);
-				}
-				else if(llstr != "error" && llstr != "fatal")
-				{
-					cerr << "Unknown log-level \"" << llstr << "\"." << endl;
-					printHelp(cerr);
-					exit(1);
-				}
+				sev = LSEVERITY_TRACE;
+				g_logger->set_min_severity(sev);
 			}
-			else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+			else if(llstr == "debug")
 			{
-				printHelp(cout);
-				exit(0);
+				sev = LSEVERITY_DEBUG;
+				g_logger->set_min_severity(sev);
 			}
-			else if(argv[i][0] == '-')
+			else if(llstr == "info")
 			{
-				cerr << "Unrecognized option \"" << string(argv[i]) << "\"." << endl;
+				sev = LSEVERITY_INFO;
+				g_logger->set_min_severity(sev);
+			}
+			else if(llstr == "warning")
+			{
+				sev = LSEVERITY_INFO;
+				g_logger->set_min_severity(sev);
+			}
+			else if(llstr == "security")
+			{
+				sev = LSEVERITY_SECURITY;
+				g_logger->set_min_severity(sev);
+			}
+			else if(llstr != "error" && llstr != "fatal")
+			{
+				cerr << "Unknown log-level \"" << llstr << "\"." << endl;
 				printHelp(cerr);
 				exit(1);
 			}
 		}
-		if(argv[argc - 1][0] != '-')
+		else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
-			cfg_file = argv[argc - 1];
-			// seperate path
-			boost::filesystem::path p(cfg_file);
-			boost::filesystem::path dir = p.parent_path();
-			string filename = p.filename().string();
-			string dir_str = dir.string();
-
-			// change directory
-			try
+			printHelp(cout);
+			exit(0);
+		}
+		else if(argv[i][0] == '-')
+		{
+			cerr << "Unrecognized option \"" << string(argv[i]) << "\".\n";
+			printHelp(cerr);
+			exit(1);
+		}
+		else
+		{
+			if(config_arg_index != -1)
 			{
-				if(!dir_str.empty())
-				{
-					boost::filesystem::current_path(dir_str);
-				}
+				cerr << "Recieved additional positional argument \""
+				     << string(argv[i]) << "\" but can only accept one."
+				     << "\n  First positional: \""
+				     << string(argv[config_arg_index]) << "\".\n";
 			}
-			catch(const exception &e)
+			else
 			{
-				mainlog.fatal() << "Could not change working directory to config directory.\n";
-				exit(1);
+				config_arg_index = i;
 			}
-
-			cfg_file = filename; 	
 		}
 	}
 
-	mainlog.info() << "Loading configuration file..." << endl;
+	if(config_arg_index != -1)
+	{
+		string filename = "";
+		cfg_file = argv[config_arg_index];
+
+		try
+		{
+			// seperate path
+			boost::filesystem::path p(cfg_file);
+			boost::filesystem::path dir = p.parent_path();
+			filename = p.filename().string();
+			string dir_str = dir.string();
+
+			// change directory
+			if(!dir_str.empty())
+			{
+				boost::filesystem::current_path(dir_str);
+			}
+		}
+		catch(const exception &e)
+		{
+			mainlog.fatal() << "Could not change working directory to config directory.\n";
+			exit(1);
+		}
+
+		cfg_file = filename; 	
+	}
+
+	mainlog.info() << "Loading configuration file...\n";
 
 
 	ifstream file(cfg_file.c_str());
 	if(!file.is_open())
 	{
-		mainlog.fatal() << "Failed to open configuration file.\n";
+		mainlog.fatal() << "Failed to open configuration file \"" << cfg_file << "\".\n";
 		return 1;
 	}
 
 	if(!g_config->load(file))
 	{
-		mainlog.fatal() << "Could not parse configuration file!\n";
+		mainlog.fatal() << "Errors parsing YAML configuration file \"" << cfg_file << "\"!\n";
 		return 1;
 	}
 	file.close();
@@ -206,17 +217,27 @@ int main(int argc, char *argv[])
 // printHelp outputs the cli help-text to the given stream.
 void printHelp(ostream &s)
 {
-	s << "Usage: astrond [OPTION]... [CONFIG]" << endl
-	  << "Astrond is a distributed server daemon." << endl << endl
-	  << "-h, --help      Print this help dialog." << endl
-	  << "-L, --log       Specify a file to write log messages to." << endl
-	  << "-l, --loglevel  Specify the minimum log level that should be logged;" << endl
-	  << "                  Security, Error, and Fatal will always be logged;" << endl
-#ifdef DEBUG_MESSAGES
-	  << "                (levels): packet, trace, debug, info, warning, security" << endl;
+	s << "Usage:    astrond [options]... [CONFIG_FILE]\n"
+	     "\n"
+	     "Astrond is a distributed server daemon.\n"
+	     "By default Astron looks for a configuration file in the current\n"
+	     "working directory as \"astrond.yml\".  A different config file path\n"
+	     "can be specified as a positional argument.\n"
+	     "\n"
+	     "-h, --help      Print this help dialog.\n"
+	     "-L, --log       Specify a file to write log messages to.\n"
+	     "-l, --loglevel  Specify the minimum log level that should be logged;\n"
+	     "                  Security, Error, and Fatal will always be logged;\n"
+#ifdef ASTRON_DEBUG_MESSAGES
+	     "                (available): packet, trace, debug, info, warning, security\n"
 #else
-	  << "                (levels): info, warning, security" << endl;
+	     "                (available): info, warning, security\n"
+	     "                (unavailable): packet, trace, debug\n"
+	     "                        [build with -DCMAKE_BUILD_TYPE=Debug]\n"
 #endif
-
+         "\n"
+         "Example:\n"
+         "    ./astrond /tmp/my_config_file.yaml\n"
+         "\n";
 	s.flush();
 }
