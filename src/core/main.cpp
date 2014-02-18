@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 			if(!ud.dcc)
 			{
 				mainlog.fatal() << "DCClass " << udnode["class"].as<string>()
-				               << "Does not exist!" << endl;
+				                << " does not exist!" << endl;
 				exit(1);
 			}
 			ud.anonymous = udnode["anonymous"].as<bool>();
