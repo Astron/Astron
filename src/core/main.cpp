@@ -237,7 +237,7 @@ void printHelp(ostream &s)
 #endif
          "\n"
          "Example:\n"
-         "    ./astrond /tmp/my_config_file.yaml\n"
+         "    astrond /tmp/my_config_file.yaml\n"
          "\n";
 	s.flush();
 }
