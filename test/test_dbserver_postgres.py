@@ -3,7 +3,7 @@ import unittest, os, time
 from socket import *
 
 from testdc import test_dc
-from common import Daemon, MDConnection, Datagram
+from common import Daemon, MDConnection, Datagram, DATABASE_PREFIX
 from test_dbserver import DatabaseBaseTests
 
 CONFIG = """\
