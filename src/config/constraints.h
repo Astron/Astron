@@ -2,11 +2,22 @@
 #include "ConfigVariable.h"
 #include "core/types.h"
 
-bool is_not_invalid_doid(const doid_t& c);
-bool is_not_reserved_doid(const doid_t& c);
+bool is_not_invalid_doid(const doid_t& id);
+bool is_not_reserved_doid(const doid_t& id);
 bool is_not_invalid_channel(const channel_t& c);
 bool is_not_reserved_channel(const channel_t& c);
+bool is_boolean_keyword(const std::string& str);
 bool is_valid_ip_address(const std::string& addr);
+
+class BooleanValueConstraint : public RawConfigConstraint<bool>
+{
+	public:
+		BooleanValueConstraint(ConfigVariable<bool>& var) :
+			RawConfigConstraint(is_boolean_keyword, var,
+				"Boolean value must be either \"true\" or \"false\".")
+		{
+		}
+};
 
 class InvalidDoidConstraint : public ConfigConstraint<doid_t>
 {

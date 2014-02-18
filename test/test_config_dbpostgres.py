@@ -31,7 +31,7 @@ class ConfigTest(object):
             thread.join()
         return self.process.returncode
 
-class TestConfigDBYaml(unittest.TestCase):
+class TestConfigDBPostgres(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cfg, cls.config_file = tempfile.mkstemp()
@@ -60,7 +60,7 @@ class TestConfigDBYaml(unittest.TestCase):
         cls.write_config(config)
         return cls.test_command.run(timeout)
 
-    def test_dbyaml_good(self):
+    def test_postgres_good(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -72,17 +72,17 @@ class TestConfigDBYaml(unittest.TestCase):
             roles:
                 - type: database
                   control: 75757
-                  broadcast: false
+                  broadcast: true
                   generate:
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
-    def test_dbyaml_reserved_control(self):
+    def test_postgres_reserved_control(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -96,12 +96,12 @@ class TestConfigDBYaml(unittest.TestCase):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_yamldb_invalid_generate(self):
+    def test_postgres_invalid_generate(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -115,9 +115,9 @@ class TestConfigDBYaml(unittest.TestCase):
                     min: 0
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
         config = """\
@@ -133,12 +133,12 @@ class TestConfigDBYaml(unittest.TestCase):
                     min: 1000000
                     max: 0
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_yamldb_reserved_generate(self):
+    def test_postgres_reserved_generate(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -152,9 +152,9 @@ class TestConfigDBYaml(unittest.TestCase):
                     min: 444
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
         config = """\
@@ -170,12 +170,12 @@ class TestConfigDBYaml(unittest.TestCase):
                     min: 1000000
                     max: 555
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
-    def test_yamldb_boolean_broadcast(self):
+    def test_postgres_boolean_broadcast(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -187,14 +187,14 @@ class TestConfigDBYaml(unittest.TestCase):
             roles:
                 - type: database
                   control: 75757
-                  broadcast: FALSE
+                  broadcast: TRUE
                   generate:
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
         config = """\
@@ -208,17 +208,16 @@ class TestConfigDBYaml(unittest.TestCase):
             roles:
                 - type: database
                   control: 75757
-                  broadcast: pizza
+                  broadcast: False
                   generate:
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: yaml
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
-        self.assertEquals(self.run_test(config), EXITED)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
+        self.assertEquals(self.run_test(config), TERMINATED)
 
-    def test_yamldb_type_typo(self):
         config = """\
             messagedirector:
                 bind: 127.0.0.1:57123
@@ -230,13 +229,14 @@ class TestConfigDBYaml(unittest.TestCase):
             roles:
                 - type: database
                   control: 75757
+                  broadcast: 15012
                   generate:
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: yam
-                    foldername: %r
-            """ % (test_dc, self.yaml_dir)
+                    type: postgresql
+                    database: astron_test
+            """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
 if __name__ == '__main__':

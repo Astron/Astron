@@ -9,8 +9,10 @@ static RoleFactoryItem<DatabaseServer> dbserver_fact("database");
 
 RoleConfigGroup dbserver_config("database");
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, dbserver_config);
+static ConfigVariable<bool> broadcast_updates("broadcast", true, dbserver_config);
 static InvalidChannelConstraint control_not_invalid(control_channel);
 static ReservedChannelConstraint control_not_reserved(control_channel);
+static BooleanValueConstraint broadcast_is_boolean(broadcast_updates);
 
 static ConfigGroup generate_config("generate", dbserver_config);
 static ConfigVariable<doid_t> min_id("min", INVALID_DO_ID, generate_config);
@@ -23,7 +25,8 @@ static ReservedDoidConstraint max_not_reserved(max_id);
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	m_control_channel(control_channel.get_rval(roleconfig)),
 	m_min_id(min_id.get_rval(roleconfig)),
-	m_max_id(max_id.get_rval(roleconfig))
+	m_max_id(max_id.get_rval(roleconfig)),
+	m_broadcast(broadcast_updates.get_rval(roleconfig))
 {
 	ConfigNode generate = dbserver_config.get_child_node(generate_config, roleconfig);
 	ConfigNode backend = dbserver_config.get_child_node(db_backend_config, roleconfig);
@@ -165,8 +168,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					resp.add_uint16(it->first->get_number());
 					resp.add_data(it->second);
-					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-" << std::string(
-					                  it->second.begin(), it->second.end()) << std::endl;
+					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-"
+					               << std::string(it->second.begin(), it->second.end()) << "\n";
 				}
 			}
 			else
@@ -186,6 +189,15 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			doid_t do_id = dgi.read_doid();
 			m_db_backend->delete_object(do_id);
 			m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
+
+			// Broadcast update to object's channel
+			if(m_broadcast)
+			{
+				Datagram update;
+				update.add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_DELETE);
+				update.add_doid(do_id);
+				route_datagram(update);
+			}
 		}
 		break;
 		case DBSERVER_OBJECT_SET_FIELD:
@@ -202,12 +214,25 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			DCField *field = dcc->get_field_by_index(field_id);
 
 			// Make sure field exists and is a database field
-			if(field && field->is_db())
+			if(!field || !field->is_db())
 			{
-				// Update the field value
-				std::vector<uint8_t> value;
-				dgi.unpack_field(field, value);
-				m_db_backend->set_field(do_id, field, value);
+				return;
+			}
+
+			// Update the field value
+			std::vector<uint8_t> value;
+			dgi.unpack_field(field, value);
+			m_db_backend->set_field(do_id, field, value);
+
+			// Broadcast update to object's channel
+			if(m_broadcast)
+			{
+				Datagram update;
+				update.add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_SET_FIELD);
+				update.add_doid(do_id);
+				update.add_uint16(field_id);
+				update.add_data(value);
+				route_datagram(update);
 			}
 		}
 		break;
@@ -253,6 +278,20 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Update the field values in the database
 			m_db_backend->set_fields(do_id, fields);
+
+			if(m_broadcast)
+			{
+				// Broadcast update to object's channel
+				Datagram update;
+				update.add_server_header(DATABASE2OBJECT(do_id), sender,
+				                         DBSERVER_OBJECT_SET_FIELDS);
+
+				// Seek to doid & field-data and copy it to update
+				dgi.seek_payload();
+				dgi.skip(sizeof(channel_t) + sizeof(uint16_t));
+				update.add_data(dgi.read_remainder());
+				route_datagram(update);
+			}
 		}
 		break;
 		case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
@@ -261,7 +300,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the field
@@ -292,6 +332,17 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Update was successful, send reply
 				resp.add_uint8(SUCCESS);
 				route_datagram(resp);
+
+				if(m_broadcast)
+				{
+					Datagram update;
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELD);
+					update.add_doid(do_id);
+					update.add_uint16(field_id);
+					update.add_data(value);
+					route_datagram(update);
+				}
 				return;
 			}
 
@@ -311,7 +362,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the field
@@ -345,6 +397,17 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Update was successful, send reply
 				resp.add_uint8(SUCCESS);
 				route_datagram(resp);
+
+				if(m_broadcast)
+				{
+					Datagram update;
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELD);
+					update.add_doid(do_id);
+					update.add_uint16(field_id);
+					update.add_data(value);
+					route_datagram(update);
+				}
 				return;
 			}
 
@@ -364,7 +427,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Start response datagram
 			Datagram resp;
-			resp.add_server_header(sender, m_control_channel, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
+			resp.add_server_header(sender, m_control_channel,
+			                       DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 			resp.add_uint32(context);
 
 			// Get class so we can filter the fields
@@ -418,6 +482,21 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				// Update was successful, send reply
 				resp.add_uint8(SUCCESS);
 				route_datagram(resp);
+
+				if(m_broadcast)
+				{
+					// Broadcast update to object's channel
+					Datagram update;
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELDS);
+					update.add_doid(do_id);
+					update.add_uint16(field_count);
+					for(auto it = values.begin(); it != values.end(); ++it) {
+						update.add_uint16(it->first->get_number());
+						update.add_data(it->second);
+					}
+					route_datagram(update);
+				}
 				return;
 			}
 
@@ -586,6 +665,17 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					//memcpy(&value[0], str.c_str(), str.length());
 					m_db_backend->set_field(do_id, field, value);
 					m_log->trace() << "... field set to default." << std::endl;
+
+					if(m_broadcast)
+					{
+						Datagram update;
+						update.add_server_header(DATABASE2OBJECT(do_id), sender,
+						                         DBSERVER_OBJECT_SET_FIELD);
+						update.add_doid(do_id);
+						update.add_uint16(field_id);
+						update.add_data(value);
+						route_datagram(update);
+					}
 				}
 
 				// Otherwise just delete the field
@@ -593,6 +683,16 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				{
 					m_db_backend->del_field(do_id, field);
 					m_log->trace() << "... field deleted." << std::endl;
+
+					if(m_broadcast)
+					{
+						Datagram update;
+						update.add_server_header(DATABASE2OBJECT(do_id), sender,
+						                         DBSERVER_OBJECT_DELETE_FIELD);
+						update.add_doid(do_id);
+						update.add_uint16(field_id);
+						route_datagram(update);
+					}
 				}
 			}
 			else
@@ -666,6 +766,20 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_db_backend->del_fields(do_id, del_fields);
 				m_log->trace() << "... fields deleted." << std::endl;
+
+				if(m_broadcast)
+				{
+					Datagram update;
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_DELETE_FIELDS);
+					update.add_doid(do_id);
+					update.add_uint16(del_fields.size());
+					for(auto it = del_fields.begin(); it != del_fields.end(); ++it)
+					{
+						update.add_uint16((*it)->get_number());
+					}
+					route_datagram(update);
+				}
 			}
 
 			// Update fields with default values
@@ -673,6 +787,21 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				m_db_backend->set_fields(do_id, set_fields);
 				m_log->trace() << "... fields deleted." << std::endl;
+
+				if(m_broadcast)
+				{
+					Datagram update;
+					update.add_server_header(DATABASE2OBJECT(do_id), sender,
+					                         DBSERVER_OBJECT_SET_FIELDS);
+					update.add_doid(do_id);
+					update.add_uint16(del_fields.size());
+					for(auto it = set_fields.begin(); it != set_fields.end(); ++it)
+					{
+						update.add_uint16(it->first->get_number());
+						update.add_data(it->second);
+					}
+					route_datagram(update);
+				}
 			}
 		}
 		break;

@@ -18,4 +18,5 @@ class DatabaseServer : public Role
 
 		channel_t m_control_channel;
 		doid_t m_min_id, m_max_id;
+		bool m_broadcast;
 };

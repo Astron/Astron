@@ -76,6 +76,7 @@ CONSTANTS = {
     'INVALID_CHANNEL': 0,
     'CONTROL_CHANNEL': 1,
     'PARENT_PREFIX': 1 << 32,
+    'DATABASE_PREFIX': 2 << 32,
 
     # Control message-type constants
     'CONTROL_ADD_CHANNEL':          9000,
@@ -245,6 +246,8 @@ if 'USE_128BIT_CHANNELS' in os.environ:
     CONSTANTS['ZONE_MAX'] = (1 << 64) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 8
     CONSTANTS['ZONE_SIZE_BITS'] = 64
+    CONSTANTS['PARENT_PREFIX'] = 1 << 64
+    CONSTANTS['DATABASE_PREFIX'] = 2 << 64
 else:
     CONSTANTS['CHANNEL_MAX'] = (1 << 64) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 8
