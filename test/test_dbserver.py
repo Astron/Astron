@@ -30,7 +30,7 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         if check:
-            dg = Datagram.create([doid], sender, DBSERVER_OBJECT_DELETE)
+            dg = Datagram.create([DATABASE_PREFIX|doid], sender, DBSERVER_OBJECT_DELETE)
             dg.add_doid(doid)
             self.assertTrue(*self.objects.expect(dg))
         else:
@@ -983,8 +983,8 @@ class DatabaseBaseTests(object):
         self.assertTrue(self.conn.expect_none());
 
         # Expect DELETE_FIELD broadcast
-        dg = Datagram.create([doidA], 90, DBSERVER_OBJECT_DELETE_FIELD)
-        dg.add_uint32(doidA)
+        dg = Datagram.create([DATABASE_PREFIX|doidA], 90, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_doid(doidA)
         dg.add_uint16(setDb3)
         self.assertTrue(*self.objects.expect(dg))
 
@@ -1008,7 +1008,7 @@ class DatabaseBaseTests(object):
         self.conn.send(dg)
 
         # Expect SET_FIELD broadcast
-        dg = Datagram.create([doidA], 90, DBSERVER_OBJECT_SET_FIELD)
+        dg = Datagram.create([DATABASE_PREFIX|doidA], 90, DBSERVER_OBJECT_SET_FIELD)
         dg.add_doid(doidA)
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
@@ -1042,7 +1042,7 @@ class DatabaseBaseTests(object):
 
         # Expect DELETE_FIELDS...
         expected = []
-        dg = Datagram.create([doidB], 90, DBSERVER_OBJECT_DELETE_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_DELETE_FIELDS)
         dg.add_uint32(doidB)
         dg.add_uint16(3) # Field count
         dg.add_uint16(setDb3)
@@ -1050,7 +1050,7 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doidB)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
@@ -1094,14 +1094,14 @@ class DatabaseBaseTests(object):
 
         # Expect DELETE_FIELDS...
         expected = []
-        dg = Datagram.create([doidC], 90, DBSERVER_OBJECT_DELETE_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_DELETE_FIELDS)
         dg.add_uint32(doidC)
         dg.add_uint16(2) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doidC)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)

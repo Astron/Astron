@@ -76,6 +76,7 @@ CONSTANTS = {
     'INVALID_CHANNEL': 0,
     'CONTROL_CHANNEL': 1,
     'PARENT_PREFIX': 1 << 32,
+    'DATABASE_PREFIX': 2 << 32,
 
     # Control message-type constants
     'CONTROL_ADD_CHANNEL':          9000,

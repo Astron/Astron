@@ -39,12 +39,12 @@ class TestDatabaseServerPostgres(unittest.TestCase, DatabaseBaseTests):
         sock = socket(AF_INET, SOCK_STREAM)
         sock.connect(('127.0.0.1', 57123))
         cls.objects = MDConnection(sock)
-        cls.objects.send(Datagram.create_add_range(1000000, 1000010))
+        cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000, DATABASE_PREFIX|1000010))
 
     @classmethod
     def tearDownClass(cls):
         time.sleep(0.25) # Wait for database to finish any operations
-        cls.objects.send(Datagram.create_remove_range(1000000, 1000010))
+        cls.objects.send(Datagram.create_remove_range(DATABASE_PREFIX|1000000, DATABASE_PREFIX|1000010))
         cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
