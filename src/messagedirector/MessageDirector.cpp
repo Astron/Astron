@@ -3,13 +3,16 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/ConfigVariable.h"
+#include "config/constraints.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
-using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
+using boost::asio::ip::tcp;
 
 static ConfigGroup md_config("messagedirector");
 static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
+static ValidAddressConstraint valid_bind_addr(bind_addr);
+static ValidAddressConstraint valid_connect_addr(connect_addr);
 
 static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
