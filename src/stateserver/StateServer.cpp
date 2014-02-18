@@ -1,12 +1,14 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/constraints.h"
-#include "dcparser/dcClass.h"
+#include "dclass/dc/Class.h"
 #include <exception>
 #include <stdexcept>
 
 #include "DistributedObject.h"
 #include "StateServer.h"
+
+using dclass::Class;
 
 static RoleConfigGroup stateserver_config("stateserver");
 static ConfigVariable<channel_t> control_channel("control", INVALID_CHANNEL, stateserver_config);
@@ -39,34 +41,37 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	zone_t zone_id = dgi.read_zone();
 	uint16_t dc_id = dgi.read_uint16();
 
-	if(dc_id >= g_dcf->get_num_classes())
-	{
-		m_log->error() << "Received create for unknown dclass ID=" << dc_id << std::endl;
-		return;
-	}
-
+	// Make sure the object id is unique
 	if(m_objs.find(do_id) != m_objs.end())
 	{
 		m_log->warning() << "Received generate for already-existing object ID=" << do_id << std::endl;
 		return;
 	}
 
-	DCClass *dclass = g_dcf->get_class(dc_id);
+	// Make sure the class exists in the file
+	const Class *dc_class = g_dcf->get_class_by_id(dc_id);
+	if(!dc_class)
+	{
+		m_log->error() << "Received create for unknown dclass with class id '" << dc_id << "'\n";
+		return;
+	}
+
+	// Create the object
 	DistributedObject *obj;
 	try
 	{
-		obj = new DistributedObject(this, do_id, parent_id, zone_id, dclass, dgi, has_other);
+		obj = new DistributedObject(this, do_id, parent_id, zone_id, dc_class, dgi, has_other);
 	}
 	catch(std::exception &e)
 	{
 		m_log->error() << "Received truncated generate for "
-		               << dclass->get_name() << "(" << do_id << ")" << std::endl;
+		               << dc_class->get_name() << "(" << do_id << ")" << std::endl;
 		return;
 	}
 	m_objs[do_id] = obj;
 }
 
-void StateServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void StateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

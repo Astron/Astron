@@ -9,7 +9,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 	set_con_name("Network Participant");
 }
 
-void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator &dgi)
+void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator&)
 {
 	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	try

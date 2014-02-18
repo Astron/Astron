@@ -4,6 +4,11 @@
 #include "core/msgtypes.h"
 #include "config/constraints.h"
 #include "DBBackendFactory.h"
+#include "DatabaseBackend.h"
+
+using namespace std;
+using dclass::Field;
+using dclass::Class;
 
 static RoleFactoryItem<DatabaseServer> dbserver_fact("database");
 
@@ -35,7 +40,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 		min_id.get_rval(generate), max_id.get_rval(generate));
 
 	// Initialize DatabaseServer log
-	std::stringstream log_title;
+	stringstream log_title;
 	log_title << "Database(" << m_control_channel << ")";
 	m_log = new LogCategory("db", log_title.str());
 	set_con_name(log_title.str());
@@ -44,7 +49,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	if(!m_db_backend)
 	{
 		m_log->fatal() << "No database backend of type '"
-		               << db_backend_type.get_rval(backend) << "' exists." << std::endl;
+		               << db_backend_type.get_rval(backend) << "' exists." << endl;
 		exit(1);
 	}
 
@@ -69,10 +74,11 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get DistributedClass
 			uint16_t dc_id = dgi.read_uint16();
-			DCClass *dcc = g_dcf->get_class(dc_id);
+			const Class *dcc = g_dcf->get_class_by_id(dc_id);
 			if(!dcc)
 			{
-				m_log->error() << "Invalid DCClass when creating object: #" << dc_id << std::endl;
+				m_log->error() << "Received create_object with unknown dclass '"
+				               << dc_id << "'.\n";
 				resp.add_doid(INVALID_DO_ID);
 				route_datagram(resp);
 				return;
@@ -81,31 +87,31 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Unpack fields to be passed to database
 			ObjectData dbo(dc_id);
 			uint16_t field_count = dgi.read_uint16();
-			m_log->trace() << "Unpacking fields..." << std::endl;
+			m_log->trace() << "Unpacking fields..." << endl;
 			try
 			{
 				for(uint16_t i = 0; i < field_count; ++i)
 				{
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					const Field *field = dcc->get_field_by_id(field_id);
 					if(field)
 					{
-						if(field->is_db())
+						if(field->has_keyword("db"))
 						{
 							dgi.unpack_field(field, dbo.fields[field]);
 						}
 						else
 						{
-							m_log->warning() << "Recieved non-db field in CREATE_STORED_OBJECT." << std::endl;
+							m_log->warning() << "Recieved non-db field in create_object.\n";
 							dgi.skip_field(field);
 						}
 					}
 				}
 			}
-			catch(std::exception &e)
+			catch(exception &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
-				               << e.what() << std::endl;
+				               << e.what() << endl;
 
 				resp.add_doid(INVALID_DO_ID);
 				route_datagram(resp);
@@ -113,31 +119,31 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Populate with defaults
-			m_log->trace() << "Checking all required fields exist..." << std::endl;
-			for(int i = 0; i < dcc->get_num_inherited_fields(); ++i)
+			m_log->trace() << "Checking all required fields exist..." << endl;
+			for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
 			{
-				DCField *field = dcc->get_inherited_field(i);
-				if(field->is_db() && !field->as_molecular_field()
+				const Field *field = dcc->get_field(i);
+				if(field->has_keyword("db") && !field->as_molecular()
 				        && dbo.fields.find(field) == dbo.fields.end() && field->has_default_value())
 				{
-                    std::string val = field->get_default_value();
+                    string val = field->get_default_value();
                     dbo.fields[field] = vector<uint8_t>(val.begin(), val.end());
 				}
 			}
 
 			// Create object in database
-			m_log->trace() << "Creating stored object..." << std::endl;
+			m_log->trace() << "Creating stored object..." << endl;
 			doid_t do_id = m_db_backend->create_object(dbo);
 			if(do_id == INVALID_DO_ID || do_id < m_min_id || do_id > m_max_id)
 			{
-				m_log->error() << "Ran out of DistributedObject ids while creating new object." << std::endl;
+				m_log->error() << "Ran out of DistributedObject ids while creating new object." << endl;
 				resp.add_doid(INVALID_DO_ID);
 				route_datagram(resp);
 				return;
 			}
 
 			// Send the newly allocated doid back to caller
-			m_log->trace() << "... created with ID: " << do_id << std::endl;
+			m_log->trace() << "... created with ID: " << do_id << endl;
 			resp.add_doid(do_id);
 			route_datagram(resp);
 		}
@@ -153,29 +159,29 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			doid_t do_id = dgi.read_doid();
 
-			m_log->trace() << "Selecting all from do_id: " << do_id << "... " << std::endl;
+			m_log->trace() << "Selecting all from do_id: " << do_id << "... " << endl;
 
 			// Get object from database
 			ObjectData dbo;
 			if(m_db_backend->get_object(do_id, dbo))
 			{
 				// Object found, serialize fields and send all data back
-				m_log->trace() << "... object found!" << std::endl;
+				m_log->trace() << "... object found!" << endl;
 				resp.add_uint8(SUCCESS);
 				resp.add_uint16(dbo.dc_id);
 				resp.add_uint16(dbo.fields.size());
 				for(auto it = dbo.fields.begin(); it != dbo.fields.end(); ++it)
 				{
-					resp.add_uint16(it->first->get_number());
+					resp.add_uint16(it->first->get_id());
 					resp.add_data(it->second);
-					m_log->trace() << "Recieved field id-" << it->first->get_number() << ", value-"
-					               << std::string(it->second.begin(), it->second.end()) << "\n";
+					m_log->trace() << "Recieved field id-" << it->first->get_id() << ", value-"
+					               << string(it->second.begin(), it->second.end()) << "\n";
 				}
 			}
 			else
 			{
 				// Object not found, send failure.
-				m_log->trace() << "... object not found." << std::endl;
+				m_log->trace() << "... object not found." << endl;
 				resp.add_uint8(FAILURE);
 			}
 
@@ -188,7 +194,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Just delete the object
 			doid_t do_id = dgi.read_doid();
 			m_db_backend->delete_object(do_id);
-			m_log->debug() << "Deleted object with ID: " << do_id << std::endl;
+
+			m_log->debug() << "Deleted object with ID: " << do_id << endl;
 
 			// Broadcast update to object's channel
 			if(m_broadcast)
@@ -204,23 +211,23 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			// Check class so we can filter the field
 			doid_t do_id = dgi.read_doid();
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				return;
 			}
 
 			uint16_t field_id = dgi.read_uint16();
-			DCField *field = dcc->get_field_by_index(field_id);
+			const Field *field = dcc->get_field_by_id(field_id);
 
 			// Make sure field exists and is a database field
-			if(!field || !field->is_db())
+			if(!field || !field->has_keyword("db"))
 			{
 				return;
 			}
 
 			// Update the field value
-			std::vector<uint8_t> value;
+			vector<uint8_t> value;
 			dgi.unpack_field(field, value);
 			m_db_backend->set_field(do_id, field, value);
 
@@ -240,25 +247,25 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		{
 			// Check class so we can filter the fieldss
 			doid_t do_id = dgi.read_doid();
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				return;
 			}
 
 			// Make sure field exists and are database fields, storing their values
-			std::map<DCField*, std::vector<uint8_t> > fields;
+			map<const Field*, vector<uint8_t> > fields;
 			uint16_t field_count = dgi.read_uint16();
-			m_log->trace() << "Unpacking fields..." << std::endl;
+			m_log->trace() << "Unpacking fields..." << endl;
 			try
 			{
 				for(uint16_t i = 0; i < field_count; ++i)
 				{
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					const Field *field = dcc->get_field_by_id(field_id);
 					if(field)
 					{
-						if(field->is_db())
+						if(field->has_keyword("db"))
 						{
 							dgi.unpack_field(field, fields[field]);
 						}
@@ -269,10 +276,10 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(std::exception &e)
+			catch(exception &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
-				               << e.what() << std::endl;
+				               << e.what() << endl;
 				return;
 			}
 
@@ -306,7 +313,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get class so we can filter the field
 			doid_t do_id = dgi.read_doid();
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				resp.add_uint8(FAILURE);
@@ -316,8 +323,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Verify the field is a database field
 			uint16_t field_id = dgi.read_uint16();
-			DCField *field = dcc->get_field_by_index(field_id);
-			if(!field->is_db())
+			const Field *field = dcc->get_field_by_id(field_id);
+			if(!field->has_keyword("db"))
 			{
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
@@ -325,7 +332,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Try to set the field
-			std::vector<uint8_t> value;
+			vector<uint8_t> value;
 			dgi.unpack_field(field, value);
 			if(m_db_backend->set_field_if_empty(do_id, field, value))
 			{
@@ -368,7 +375,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get class so we can filter the field
 			doid_t do_id = dgi.read_doid();
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				resp.add_uint8(FAILURE);
@@ -378,16 +385,16 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Verify the field is a database field
 			uint16_t field_id = dgi.read_uint16();
-			DCField *field = dcc->get_field_by_index(field_id);
-			if(!field->is_db())
+			const Field *field = dcc->get_field_by_id(field_id);
+			if(!field->has_keyword("db"))
 			{
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
 
-			std::vector<uint8_t> equal;
-			std::vector<uint8_t> value;
+			vector<uint8_t> equal;
+			vector<uint8_t> value;
 			dgi.unpack_field(field, equal);
 			dgi.unpack_field(field, value);
 
@@ -433,7 +440,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get class so we can filter the fields
 			doid_t do_id = dgi.read_doid();
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				resp.add_uint8(FAILURE);
@@ -442,18 +449,18 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Unpack fields from datagram, validate that they are database fields
-			std::map<DCField*, std::vector<uint8_t> > equals;
-			std::map<DCField*, std::vector<uint8_t> > values;
+			map<const Field*, vector<uint8_t> > equals;
+			map<const Field*, vector<uint8_t> > values;
 			uint16_t field_count = dgi.read_uint16();
 			try
 			{
 				for(uint16_t i = 0; i < field_count; ++i)
 				{
 					uint16_t field_id = dgi.read_uint16();
-					DCField *field = dcc->get_field_by_index(field_id);
+					const Field *field = dcc->get_field_by_id(field_id);
 					if(field)
 					{
-						if(field->is_db())
+						if(field->has_keyword("db"))
 						{
 							dgi.unpack_field(field, equals[field]);
 							dgi.unpack_field(field, values[field]);
@@ -467,10 +474,10 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(std::exception &e)
+			catch(exception &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated."
-				               << " e.what(): " << e.what() << std::endl;
+				               << " e.what(): " << e.what() << endl;
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
@@ -492,7 +499,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					update.add_doid(do_id);
 					update.add_uint16(field_count);
 					for(auto it = values.begin(); it != values.end(); ++it) {
-						update.add_uint16(it->first->get_number());
+						update.add_uint16(it->first->get_id());
 						update.add_data(it->second);
 					}
 					route_datagram(update);
@@ -507,7 +514,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				resp.add_uint16(values.size());
 				for(auto it = values.begin(); it != values.end(); ++it)
 				{
-					resp.add_uint16(it->first->get_number());
+					resp.add_uint16(it->first->get_id());
 					resp.add_data(it->second);
 				}
 			}
@@ -525,13 +532,13 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get object id from datagram
 			doid_t do_id = dgi.read_doid();
-			m_log->trace() << "Reading field from obj-" << do_id << "..." << std::endl;
+			m_log->trace() << "Reading field from obj-" << do_id << "..." << endl;
 
 			// Get object class from db
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				m_log->trace() << "... object not found in database." << std::endl;
+				m_log->trace() << "... object not found in database." << endl;
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
@@ -539,21 +546,21 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get field from datagram
 			uint16_t field_id = dgi.read_uint16();
-			DCField *field = dcc->get_field_by_index(field_id);
+			const Field *field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
 				m_log->error() << "Asked for invalid field,"
-				               << " reading from obj-" << do_id << std::endl;
+				               << " reading from obj-" << do_id << endl;
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
 			}
 
 			// Get value from database
-			std::vector<uint8_t> value;
+			vector<uint8_t> value;
 			if(!m_db_backend->get_field(do_id, field, value))
 			{
-				m_log->trace() << "... field not set." << std::endl;
+				m_log->trace() << "... field not set." << endl;
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
@@ -564,7 +571,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			resp.add_uint16(field_id);
 			resp.add_data(value);
 			route_datagram(resp);
-			m_log->trace() << "... success." << std::endl;
+			m_log->trace() << "... success." << endl;
 		}
 		break;
 		case DBSERVER_OBJECT_GET_FIELDS:
@@ -578,10 +585,10 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get object id from datagram
 			doid_t do_id = dgi.read_doid();
-			m_log->trace() << "Reading fields from obj-" << do_id << "..." << std::endl;
+			m_log->trace() << "Reading fields from obj-" << do_id << "..." << endl;
 
 			// Get object class from db
-			DCClass *dcc = m_db_backend->get_class(do_id);
+			const Class *dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
 				resp.add_uint8(FAILURE);
@@ -591,15 +598,15 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			// Get fields from datagram
 			uint16_t field_count = dgi.read_uint16();
-			std::vector<DCField*> fields(field_count);
+			vector<const Field*> fields(field_count);
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				DCField *field = dcc->get_field_by_index(field_id);
+				const Field *field = dcc->get_field_by_id(field_id);
 				if(!field)
 				{
 					m_log->error() << "Asked for invalid field(s),"
-					               << " reading from object #" << do_id << std::endl;
+					               << " reading from object #" << do_id << endl;
 					resp.add_uint8(FAILURE);
 					route_datagram(resp);
 					return;
@@ -608,10 +615,10 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Get values from database
-			std::map<DCField*, std::vector<uint8_t> > values;
+			map<const Field*, vector<uint8_t> > values;
 			if(!m_db_backend->get_fields(do_id, fields, values))
 			{
-				m_log->trace() << "... failure." << std::endl;
+				m_log->trace() << "... failure." << endl;
 				resp.add_uint8(FAILURE);
 				route_datagram(resp);
 				return;
@@ -622,49 +629,50 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			resp.add_uint16(values.size());
 			for(auto it = values.begin(); it != values.end(); ++it)
 			{
-				resp.add_uint16(it->first->get_number());
+				resp.add_uint16(it->first->get_id());
 				resp.add_data(it->second);
 			}
 			route_datagram(resp);
-			m_log->trace() << "... success." << std::endl;
+			m_log->trace() << "... success." << endl;
 		}
 		break;
 		case DBSERVER_OBJECT_DELETE_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
-			m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
+			m_log->trace() << "Deleting field of obj-" << do_id << "..." << endl;
 
 			// Get class so we can validate the field
-			DCClass* dcc = m_db_backend->get_class(do_id);
+			const Class* dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				m_log->trace() << "... object does not exist." << std::endl;
+				m_log->trace() << "... object does not exist." << endl;
 				return;
 			}
 
 			// Check the field exists
 			uint16_t field_id = dgi.read_uint16();
-			DCField* field = dcc->get_field_by_index(field_id);
+			const Field* field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
 				m_log->error() << "Tried to delete an invalid field:" << field_id
-				               << " on obj-" << do_id << "." << std::endl;
+				               << " on obj-" << do_id << "." << endl;
 				return;
 			}
 
 			// Check the field is a database field
-			if(field->is_db())
+			if(field->has_keyword("db"))
 			{
 				// If field has a default, use it
 				if(field->has_default_value())
 				{
-					std::string str = field->get_default_value();
-					std::vector<uint8_t> value(str.begin(), str.end());
-					/* Alternate implementation for performance compare */
-					//std::vector<uint8_t> value(str.length());
+					string str = field->get_default_value();
+					vector<uint8_t> value(str.begin(), str.end());
+					/* TODO: Alternate implementation for performance compare */
+					//vector<uint8_t> value(str.length());
 					//memcpy(&value[0], str.c_str(), str.length());
 					m_db_backend->set_field(do_id, field, value);
-					m_log->trace() << "... field set to default." << std::endl;
+
+					m_log->trace() << "... field set to default.\n";
 
 					if(m_broadcast)
 					{
@@ -682,7 +690,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				else
 				{
 					m_db_backend->del_field(do_id, field);
-					m_log->trace() << "... field deleted." << std::endl;
+
+					m_log->trace() << "... field deleted.\n";
 
 					if(m_broadcast)
 					{
@@ -698,25 +707,25 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			else
 			{
 				m_log->warning() << "Cannot delete non-db field of obj-" << do_id
-				                 << "." << std::endl;
+				                 << "." << endl;
 			}
 		}
 		break;
 		case DBSERVER_OBJECT_DELETE_FIELDS:
 		{
 			doid_t do_id = dgi.read_doid();
-			m_log->trace() << "Deleting field of obj-" << do_id << "..." << std::endl;
+			m_log->trace() << "Deleting field of obj-" << do_id << "..." << endl;
 
 			// Get class to validate fields
-			DCClass* dcc = m_db_backend->get_class(do_id);
+			const Class* dcc = m_db_backend->get_class(do_id);
 			if(!dcc)
 			{
-				m_log->trace() << "... object does not exist." << std::endl;
+				m_log->trace() << "... object does not exist." << endl;
 				return;
 			}
 
-			std::vector<DCField*> del_fields; // deleted fields
-			std::map<DCField*, std::vector<uint8_t> > set_fields; // set to default
+			vector<const Field*> del_fields; // deleted fields
+			map<const Field*, vector<uint8_t> > set_fields; // set to default
 
 			// Iterate through all the fields
 			uint16_t field_count = dgi.read_uint16();
@@ -724,40 +733,40 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			{
 				// Check that field actually exists
 				uint16_t field_id = dgi.read_uint16();
-				DCField* field = dcc->get_field_by_index(field_id);
+				const Field* field = dcc->get_field_by_id(field_id);
 				if(!field)
 				{
 					m_log->error() << "Tried to delete an invalid field:" << field_id
-					               << " on obj-" << do_id << "." << std::endl;
+					               << " on obj-" << do_id << "." << endl;
 					return;
 				}
 
 				// Check the field is actually a database field
-				if(field->is_db())
+				if(field->has_keyword("db"))
 				{
 					// If field has a default, use it
 					if(field->has_default_value())
 					{
-						std::string str = field->get_default_value();
-						std::vector<uint8_t> value(str.begin(), str.end());
+						string str = field->get_default_value();
+						vector<uint8_t> value(str.begin(), str.end());
 						/* Alternate implementation for performance compare */
-						//std::vector<uint8_t> value(str.length());
+						//vector<uint8_t> value(str.length());
 						//memcpy(&value[0], str.c_str(), str.length());
 						set_fields[field] = value;
-						m_log->trace() << "... field set to default ..." << std::endl;
+						m_log->trace() << "... field set to default ..." << endl;
 					}
 
 					// Otherwise just delete the field
 					else
 					{
 						del_fields.push_back(field);
-						m_log->trace() << "... field deleted ..." << std::endl;
+						m_log->trace() << "... field deleted ..." << endl;
 					}
 				}
 				else
 				{
 					m_log->warning() << "Cannot delete non-db field of obj-" << do_id
-					                 << "." << std::endl;
+					                 << "." << endl;
 				}
 			}
 
@@ -765,7 +774,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(del_fields.size() > 0)
 			{
 				m_db_backend->del_fields(do_id, del_fields);
-				m_log->trace() << "... fields deleted." << std::endl;
+
+				m_log->trace() << "... fields deleted.\n";
 
 				if(m_broadcast)
 				{
@@ -776,7 +786,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					update.add_uint16(del_fields.size());
 					for(auto it = del_fields.begin(); it != del_fields.end(); ++it)
 					{
-						update.add_uint16((*it)->get_number());
+						update.add_uint16((*it)->get_id());
 					}
 					route_datagram(update);
 				}
@@ -786,7 +796,8 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(set_fields.size() > 0)
 			{
 				m_db_backend->set_fields(do_id, set_fields);
-				m_log->trace() << "... fields deleted." << std::endl;
+
+				m_log->trace() << "... fields deleted.\n";
 
 				if(m_broadcast)
 				{
@@ -797,7 +808,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					update.add_uint16(del_fields.size());
 					for(auto it = set_fields.begin(); it != set_fields.end(); ++it)
 					{
-						update.add_uint16(it->first->get_number());
+						update.add_uint16(it->first->get_id());
 						update.add_data(it->second);
 					}
 					route_datagram(update);
@@ -806,6 +817,6 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 		}
 		break;
 		default:
-			m_log->error() << "Recieved unknown MsgType: " << msg_type << std::endl;
+			m_log->error() << "Recieved unknown MsgType: " << msg_type << endl;
 	};
 }

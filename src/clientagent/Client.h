@@ -27,7 +27,7 @@ struct VisibleObject
 	doid_t id;
 	doid_t parent;
 	zone_t zone;
-	DCClass *dcc;
+	const dclass::Class *dcc;
 };
 
 // An Interest represents a Client's interest opened with a
@@ -97,7 +97,7 @@ class Client : public MDParticipantInterface
 
 		// lookup_object returns the class of the object with a do_id.
 		// If that object is not visible to the client, NULL will be returned instead.
-		DCClass* lookup_object(doid_t do_id);
+		const dclass::Class* lookup_object(doid_t do_id);
 
 		// lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
 		std::list<Interest> lookup_interests(doid_t parent_id, zone_t zone_id);

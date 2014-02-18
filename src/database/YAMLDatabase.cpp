@@ -2,59 +2,61 @@
 #include "DBBackendFactory.h"
 #include "DatabaseServer.h"
 
-#include "util/Datagram.h"
-#include "util/DatagramIterator.h"
-#include "core/Logger.h"
 #include "core/global.h"
-#include "dcparser/dcSubatomicType.h"
-#include "dcparser/dcAtomicField.h"
+#include "util/DatagramIterator.h"
+#include "dclass/value/format.h"
+#include "dclass/value/parse.h"
 
 #include <yaml-cpp/yaml.h>
-#include <fstream>
-#include <list>
+#include <fstream> // std::ifstream
+#include <list>    // std::list
 
-static ConfigVariable<std::string> foldername("foldername", "yaml_db", db_backend_config);
+using dclass::Class;
+using dclass::Field;
+using namespace std;
+
+static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
 
 class YAMLDatabase : public DatabaseBackend
 {
 	private:
 		doid_t m_next_id;
-		std::list<doid_t> m_free_ids;
-		std::string m_foldername;
+		list<doid_t> m_free_ids;
+		string m_foldername;
 		LogCategory *m_log;
 
-		inline std::string filename(doid_t do_id)
+		inline string filename(doid_t do_id)
 		{
-			std::stringstream filename;
+			stringstream filename;
 			filename << m_foldername << "/" << do_id << ".yaml";
 			return filename.str();
 		}
 
 		inline bool load(doid_t do_id, YAML::Node &document)
 		{
-			std::ifstream stream(filename(do_id));
+			ifstream stream(filename(do_id));
 			document = YAML::Load(stream);
 			if(!document.IsDefined() || document.IsNull())
 			{
-				m_log->error() << "obj-" << do_id << " does not exist in database." << std::endl;
+				m_log->error() << "obj-" << do_id << " does not exist in database." << endl;
 				return false;
 			}
 			if(!document["class"].IsDefined() || document["class"].IsNull())
 			{
-				m_log->error() << filename(do_id) << " does not contain the 'class' key." << std::endl;
+				m_log->error() << filename(do_id) << " does not contain the 'class' key." << endl;
 				return false;
 			}
 			if(!document["fields"].IsDefined() || document["fields"].IsNull())
 			{
-				m_log->error() << filename(do_id) << " does not contain the 'fields' key." << std::endl;
+				m_log->error() << filename(do_id) << " does not contain the 'fields' key." << endl;
 				return false;
 			}
 			// Read object's DistributedClass
-			std::string dc_name = document["class"].as<std::string>();
+			string dc_name = document["class"].as<string>();
 			if(!g_dcf->get_class_by_name(dc_name))
 			{
 				m_log->error() << "Class '" << dc_name << "', loaded from '" << filename(do_id)
-				                   << "', does not exist." << std::endl;
+				               << "', does not exist." << endl;
 				return false;
 			}
 
@@ -80,8 +82,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 			out << YAML::EndMap;
 
-			std::fstream file;
-			file.open(m_foldername + "/info.yaml", std::ios_base::out);
+			fstream file;
+			file.open(m_foldername + "/info.yaml", ios_base::out);
 			if(file.is_open())
 			{
 				file << out.c_str();
@@ -115,38 +117,29 @@ class YAMLDatabase : public DatabaseBackend
 			return do_id;
 		}
 
-		std::vector<uint8_t> read_yaml_field(const DCField* field, YAML::Node node)
+		vector<uint8_t> read_yaml_field(const Field* field, YAML::Node node, doid_t id)
 		{
-			// NOTE: This is a hack to get strings to work w/ 32-bit DGs until the DCParser can be
-			//       fixed/cleaned-up/rewritten and properly supports parse_string() for 32-bit DGs.
-		#ifdef ASTRON_32BIT_DATAGRAMS
-			const DCAtomicField* atomic = field->as_atomic_field();
-			if(atomic)
+			bool error;
+			string packed_data = dclass::parse_value(field->get_type(), node.as<string>(), error);
+			if(error)
 			{
-				if(atomic->get_num_elements() == 1 && atomic->get_element_type(0) == ST_string)
-				{
-					std::string str = node.as<std::string>();
-					str = str.substr(2, str.length()-4);
-					Datagram dg;
-					dg.add_string(str);
-					return std::vector<uint8_t>(dg.get_data(), dg.get_data()+dg.size());
-				}
+				m_log->error() << "Failed parsing value for field '" << field->get_name()
+				               << "' of object " << id << "' from database.\n";
+				return vector<uint8_t>();
 			}
-		#endif
 
-			std::string packed_data = const_cast<DCField*>(field)->parse_string(node.as<std::string>());
-			std::vector<uint8_t> result(packed_data.begin(), packed_data.end());
+			vector<uint8_t> result(packed_data.begin(), packed_data.end());
 			return result;
 		}
 
-		void write_yaml_field(YAML::Emitter& out, const DCField* field, const std::vector<uint8_t>& value)
+		void write_yaml_field(YAML::Emitter& out, const Field* field, const vector<uint8_t>& value)
 		{
 			out << YAML::Key << field->get_name() << YAML::Value;
-			std::string packed_data(value.begin(), value.end());
-			out << const_cast<DCField*>(field)->format_data(packed_data, false);
+			string packed_data(value.begin(), value.end());
+			out << dclass::format_value(field->get_type(), packed_data);
 		}
 
-		bool write_yaml_object(doid_t do_id, DCClass* dcc, const ObjectData &dbo)
+		bool write_yaml_object(doid_t do_id, const Class* dcc, const ObjectData &dbo)
 		{
 			// Build object as YAMl output
 			YAML::Emitter out;
@@ -165,8 +158,8 @@ class YAMLDatabase : public DatabaseBackend
 			    << YAML::EndMap;
 
 			// Print YAML to file
-			std::fstream file;
-			file.open(filename(do_id), std::ios_base::out);
+			fstream file;
+			file.open(filename(do_id), ios_base::out);
 			if(file.is_open())
 			{
 				file << out.c_str();
@@ -187,7 +180,7 @@ class YAMLDatabase : public DatabaseBackend
 			m_log = new LogCategory("yamldb", log_name.str());
 
 			// Open database info file
-			std::ifstream infostream(m_foldername + "/info.yaml");
+			ifstream infostream(m_foldername + "/info.yaml");
 			YAML::Node document = YAML::Load(infostream);
 
 			if(document.IsDefined() && !document.IsNull())
@@ -222,7 +215,7 @@ class YAMLDatabase : public DatabaseBackend
 				return 0;
 			}
 
-			DCClass *dcc = g_dcf->get_class(dbo.dc_id);
+			const Class *dcc = g_dcf->get_class_by_id(dbo.dc_id);
 
 			if(write_yaml_object(do_id, dcc, dbo))
 			{
@@ -234,8 +227,8 @@ class YAMLDatabase : public DatabaseBackend
 
 		void delete_object(doid_t do_id)
 		{
-			m_log->debug() << "Deleting file: " << filename(do_id) << std::endl;
-			if(!std::remove(filename(do_id).c_str()))
+			m_log->debug() << "Deleting file: " << filename(do_id) << endl;
+			if(!remove(filename(do_id).c_str()))
 			{
 				m_free_ids.insert(m_free_ids.end(), do_id);
 				update_info();
@@ -244,7 +237,7 @@ class YAMLDatabase : public DatabaseBackend
 
 		bool get_object(doid_t do_id, ObjectData &dbo)
 		{
-			m_log->trace() << "Getting obj-" << do_id << " ..." << std::endl;
+			m_log->trace() << "Getting obj-" << do_id << " ..." << endl;
 
 			// Open file for object
 			YAML::Node document;
@@ -254,23 +247,23 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Read object's DistributedClass
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			dbo.dc_id = dcc->get_number();
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			dbo.dc_id = dcc->get_id();
 
 			// Read object's fields
 			YAML::Node fields = document["fields"];
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
 
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -280,9 +273,9 @@ class YAMLDatabase : public DatabaseBackend
 			return true;
 		}
 
-		DCClass* get_class(doid_t do_id)
+		const Class* get_class(doid_t do_id)
 		{
-			m_log->trace() << "Getting dclass of obj-" << do_id << std::endl;
+			m_log->trace() << "Getting dclass of obj-" << do_id << endl;
 
 			// Open file for object
 			YAML::Node document;
@@ -291,15 +284,15 @@ class YAMLDatabase : public DatabaseBackend
 				return NULL;
 			}
 
-			return g_dcf->get_class_by_name(document["class"].as<std::string>());
+			return g_dcf->get_class_by_name(document["class"].as<string>());
 		}
 
 
-#define val_t std::vector<uint8_t>
-#define map_t std::map<DCField*, std::vector<uint8_t> >
-		void del_field(doid_t do_id, DCField* field)
+#define val_t vector<uint8_t>
+#define map_t map<const Field*, vector<uint8_t> >
+		void del_field(doid_t do_id, const Field* field)
 		{
-			m_log->trace() << "Deleting field on obj-" << do_id << std::endl;
+			m_log->trace() << "Deleting field on obj-" << do_id << endl;
 
 			// Read object from database
 			YAML::Node document;
@@ -309,20 +302,20 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -335,9 +328,9 @@ class YAMLDatabase : public DatabaseBackend
 			// Write out new object to file
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void del_fields(doid_t do_id, const std::vector<DCField*> &fields)
+		void del_fields(doid_t do_id, const vector<const Field*> &fields)
 		{
-			m_log->trace() << "Deleting fields on obj-" << do_id << std::endl;
+			m_log->trace() << "Deleting fields on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -346,20 +339,20 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -372,9 +365,9 @@ class YAMLDatabase : public DatabaseBackend
 			}
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void set_field(doid_t do_id, DCField* field, const val_t &value)
+		void set_field(doid_t do_id, const Field* field, const val_t &value)
 		{
-			m_log->trace() << "Setting field on obj-" << do_id << std::endl;
+			m_log->trace() << "Setting field on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -383,20 +376,20 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -409,7 +402,7 @@ class YAMLDatabase : public DatabaseBackend
 
 		void set_fields(doid_t do_id, const map_t &fields)
 		{
-			m_log->trace() << "Setting fields on obj-" << do_id << std::endl;
+			m_log->trace() << "Setting fields on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -418,29 +411,28 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get the fields from the file that are not being updated
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
 
 				auto found = fields.find(field);
 				if(found == fields.end())
 				{
-					std::vector<uint8_t> value = read_yaml_field(field, it->second);
+					vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 					if(value.size() > 0)
 					{
 						dbo.fields[field] = value;
 					}
-					dbo.fields[field] = read_yaml_field(field, it->second);
 				}
 			}
 
@@ -452,32 +444,32 @@ class YAMLDatabase : public DatabaseBackend
 
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		bool set_field_if_empty(doid_t do_id, DCField* field, val_t &value)
+		bool set_field_if_empty(doid_t do_id, const Field* field, val_t &value)
 		{
-			m_log->trace() << "Setting field if empty on obj-" << do_id << std::endl;
+			m_log->trace() << "Setting field if empty on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
 			{
-				value = std::vector<uint8_t>();
+				value = vector<uint8_t>();
 				return false;
 			}
 
 			// Get current field values from the file
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -495,32 +487,32 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool set_field_if_equals(doid_t do_id, DCField* field, const val_t &equal, val_t &value)
+		bool set_field_if_equals(doid_t do_id, const Field* field, const val_t &equal, val_t &value)
 		{
-			m_log->trace() << "Setting field if equal on obj-" << do_id << std::endl;
+			m_log->trace() << "Setting field if equal on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
 			{
-				value = std::vector<uint8_t>();
+				value = vector<uint8_t>();
 				return false;
 			}
 
 			// Get current field values from the file
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -540,7 +532,7 @@ class YAMLDatabase : public DatabaseBackend
 		}
 		bool set_fields_if_equals(doid_t do_id, const map_t &equals, map_t &values)
 		{
-			m_log->trace() << "Setting fields if equals on obj-" << do_id << std::endl;
+			m_log->trace() << "Setting fields if equals on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -550,20 +542,20 @@ class YAMLDatabase : public DatabaseBackend
 			}
 
 			// Get current field values from the file
-			DCClass* dcc = g_dcf->get_class_by_name(document["class"].as<std::string>());
-			ObjectData dbo(dcc->get_number());
+			const Class* dcc = g_dcf->get_class_by_name(document["class"].as<string>());
+			ObjectData dbo(dcc->get_id());
 			YAML::Node existing = document["fields"];
 			for(auto it = existing.begin(); it != existing.end(); ++it)
 			{
-				DCField* field = dcc->get_field_by_name(it->first.as<std::string>());
+				const Field* field = dcc->get_field_by_name(it->first.as<string>());
 				if(!field)
 				{
-					m_log->warning() << "Field '" << it->first.as<std::string>()
-					                     << "', loaded from '" << filename(do_id)
-					                     << "', does not exist." << std::endl;
+					m_log->warning() << "Field '" << it->first.as<string>()
+					                 << "', loaded from '" << filename(do_id)
+					                 << "', does not exist." << endl;
 					continue;
 				}
-				std::vector<uint8_t> value = read_yaml_field(field, it->second);
+				vector<uint8_t> value = read_yaml_field(field, it->second, do_id);
 				if(value.size() > 0)
 				{
 					dbo.fields[field] = value;
@@ -605,9 +597,9 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool get_field(doid_t do_id, const DCField* field, val_t &value)
+		bool get_field(doid_t do_id, const Field* field, val_t &value)
 		{
-			m_log->trace() << "Getting field on obj-" << do_id << std::endl;
+			m_log->trace() << "Getting field on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -622,9 +614,9 @@ class YAMLDatabase : public DatabaseBackend
 				return false;
 			}
 
-			m_log->trace() << "Found requested field: " + field->get_name() << std::endl;
+			m_log->trace() << "Found requested field: " + field->get_name() << endl;
 
-			value = read_yaml_field(field, node);
+			value = read_yaml_field(field, node, do_id);
 			if(value.size() > 0)
 			{
 				return true;
@@ -632,9 +624,9 @@ class YAMLDatabase : public DatabaseBackend
 
 			return false;
 		}
-		bool get_fields(doid_t do_id, const std::vector<DCField*> &fields, map_t &values)
+		bool get_fields(doid_t do_id, const vector<const Field*> &fields, map_t &values)
 		{
-			m_log->trace() << "Getting fields on obj-" << do_id << std::endl;
+			m_log->trace() << "Getting fields on obj-" << do_id << endl;
 
 			YAML::Node document;
 			if(!load(do_id, document))
@@ -645,18 +637,19 @@ class YAMLDatabase : public DatabaseBackend
 			// Get the fields from the file that are not being updated
 			for(auto it = fields.begin(); it != fields.end(); ++it)
 			{
-				DCField* field = *it;
-				m_log->trace() << "Searching for field: " << field->get_name() << std::endl;
+				const Field* field = *it;
+				m_log->trace() << "Searching for field: " << field->get_name() << endl;
+
 				YAML::Node existing = document["fields"];
 				for(auto it2 = existing.begin(); it2 != existing.end(); ++it2)
 				{
-					if(it2->first.as<std::string>() == field->get_name())
+					if(it2->first.as<string>() == field->get_name())
 					{
-						std::vector<uint8_t> value = read_yaml_field(field, it2->second);
+						vector<uint8_t> value = read_yaml_field(field, it2->second, do_id);
 						if(value.size() > 0)
 						{
 							values[*it] = value;
-							m_log->trace() << "Found requested field: " + field->get_name() << std::endl;
+							m_log->trace() << "Found requested field: " + field->get_name() << endl;
 						}
 					}
 				}

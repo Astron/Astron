@@ -33,7 +33,7 @@ def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if dclass is not None:
         datagram.add_uint16(dclass)
 
-class TestStateServer(unittest.TestCase):
+class TestDBStateServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)

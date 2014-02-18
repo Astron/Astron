@@ -1,0 +1,685 @@
+/*
+// Filename: lexer.lxx
+// Created by: drose (05 Oct, 2000)
+*/
+
+%{
+
+	#include "dc/File.h"
+	#include "file/lexerDefs.h"
+	#include "file/parserDefs.h"
+	#include "file/parser.h"
+	#include "file/write.h" // indent
+	#include <iostream>
+	#include <unistd.h>
+	using namespace dclass;
+
+	static int yyinput(void); // declared by flex.
+	extern int dclass::run_lexer();
+	extern "C" int should_lexer_wrap();
+
+	#define YYSTYPE dclass::TokenType
+	extern YYSTYPE yyltype;
+
+	#define YY_DECL int dclass::run_lexer(void)
+	#define yywrap should_lexer_wrap
+
+////////////////////////////////////////////////////////////////////
+// Static variables
+////////////////////////////////////////////////////////////////////
+
+	// We'll increment line_number and col_number as we parse the file, so
+	// that we can report the position of an error.
+	static int line_number = 0;
+	static int col_number = 0;
+
+	// current_line holds as much of the current line as will fit.  Its
+	// only purpose is for printing it out to report an error to the user.
+	static const int max_error_width = 1024;
+	static char current_line[max_error_width + 1];
+
+	static int error_count = 0;
+	static int warning_count = 0;
+
+	// This is the pointer to the current input stream.
+	static std::istream *input_p = NULL;
+
+	// This is the name of the dc file we're parsing.  We keep it so we
+	// can print it out for error messages.
+	static std::string dc_filename;
+
+	// This is the initial token state returned by the lexer.  It allows
+	// the yacc grammar to start from initial points.
+	static int initial_token;
+
+
+////////////////////////////////////////////////////////////////////
+// Defining the interface to the lexer.
+////////////////////////////////////////////////////////////////////
+
+	void dclass::init_file_lexer(std::istream& in, const std::string& filename)
+	{
+		input_p = &in;
+		dc_filename = filename;
+		line_number = 0;
+		col_number = 0;
+		error_count = 0;
+		warning_count = 0;
+		initial_token = START_DC_FILE;
+	}
+
+	void dclass::init_value_lexer(std::istream& in, const std::string& filename)
+	{
+		init_file_lexer(in, filename);
+		initial_token = START_DC_VALUE;
+	}
+
+	int dclass::lexer_error_count()
+	{
+		return error_count;
+	}
+
+	int dclass::lexer_warning_count()
+	{
+		return warning_count;
+	}
+
+
+////////////////////////////////////////////////////////////////////
+// Internal support functions.
+////////////////////////////////////////////////////////////////////
+
+	int should_lexer_wrap(void)
+	{
+		return 1;
+	}
+
+	void dclass::lexer_error(const std::string & msg)
+	{
+		std::cerr << "\nError";
+		if(!dc_filename.empty())
+		{
+			std::cerr << " in " << dc_filename;
+		}
+		std::cerr << " at line " << line_number << ", column " << col_number
+	              << ":\n" << current_line << "\n";
+		indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
+
+		error_count++;
+	}
+
+	void dclass::lexer_warning(const std::string & msg)
+	{
+		std::cerr << "\nWarning";
+		if(!dc_filename.empty())
+		{
+			std::cerr << " in " << dc_filename;
+		}
+		std::cerr << " at line " << line_number << ", column " << col_number
+	              << ":\n" << current_line << "\n";
+		indent(std::cerr, col_number - 1) << "^\n" << msg << "\n\n";
+
+		warning_count++;
+	}
+
+	// Now define a function to take input from an istream instead of a
+	// stdio FILE pointer.  This is flex-specific.
+	static void input_chars(char *buffer, int &result, int max_size)
+	{
+		if(*input_p)
+		{
+			input_p->read(buffer, max_size);
+			result = input_p->gcount();
+			if(result >= 0 && result < max_size)
+			{
+				// Truncate at the end of the read.
+				buffer[result] = '\0';
+			}
+
+			if(line_number == 0)
+			{
+				// This is a special case.  If we are reading the very first bit
+				// from the stream, copy it into the current_line array.  This
+				// is because the \n.* rule below, which fills current_line
+				// normally, doesn't catch the first line.
+				strncpy(current_line, yytext, max_error_width);
+				current_line[max_error_width] = '\0';
+				line_number++;
+				col_number = 0;
+
+				// Truncate it at the newline.
+				char *end = strchr(current_line, '\n');
+				if(end != NULL)
+				{
+					*end = '\0';
+				}
+			}
+
+		}
+		else
+		{
+			// End of file or I/O error.
+			result = 0;
+		}
+	}
+	#undef YY_INPUT
+
+	// Define this macro carefully, since different flex versions call it
+	// with a different type for result.
+	#define YY_INPUT(buffer, result, max_size) { \
+			int int_result; \
+			input_chars((buffer), int_result, (max_size)); \
+			(result) = int_result; \
+		}
+
+	// read_char reads and returns a single character, incrementing the
+	// supplied line and column numbers as appropriate.  A convenience
+	// function for the scanning functions below.
+	static int read_char(int &line, int &col)
+	{
+		int c = yyinput();
+		if(c == '\n')
+		{
+			line++;
+			col = 0;
+		}
+		else
+		{
+			col++;
+		}
+		return c;
+	}
+
+	// scan_quoted_string reads a string delimited by quotation marks and
+	// returns it.
+	static std::string scan_quoted_string(char quote_mark)
+	{
+		std::string result;
+
+		// We don't touch the current line number and column number during
+		// scanning, so that if we detect an error while scanning the string
+		// (e.g. an unterminated string), we'll report the error as
+		// occurring at the start of the string, not at the end--somewhat
+		// more convenient for the user.
+
+		// Instead of adjusting the global line_number and col_number
+		// variables, we'll operate on our own local variables for the
+		// interim.
+		int line = line_number;
+		int col = col_number;
+
+		int c;
+		c = read_char(line, col);
+		while(c != quote_mark && c != EOF)
+		{
+			// A newline is not allowed within a string unless it is escaped.
+			if(c == '\n')
+			{
+				c = EOF;
+				break;
+
+			}
+			else if(c == '\\')
+			{
+				// Backslash escapes the following character.  We also respect
+				// some C conventions.
+				c = read_char(line, col);
+				switch(c)
+				{
+					case 'a':
+						result += '\a';
+						c = read_char(line, col);
+						break;
+
+					case 'n':
+						result += '\n';
+						c = read_char(line, col);
+						break;
+
+					case 'r':
+						result += '\r';
+						c = read_char(line, col);
+						break;
+
+					case 't':
+						result += '\t';
+						c = read_char(line, col);
+						break;
+
+					case 'x':
+					{
+						int hex = 0;
+						c = read_char(line, col);
+						for(int i = 0; i < 2 && isxdigit(c); i++)
+						{
+							hex = hex * 16 + (isdigit(c) ? c - '0' : tolower(c) - 'a' + 10);
+							c = read_char(line, col);
+						}
+
+						result += hex;
+					}
+					break;
+
+					case '0':
+					{
+						int oct = 0;
+						c = read_char(line, col);
+						for(int i = 0; i < 3 && (c >= '0' && c < '7'); i++)
+						{
+							oct = oct * 8 + (c - '0');
+							c = read_char(line, col);
+						}
+
+						result += oct;
+					}
+					break;
+
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+					{
+						int dec = 0;
+						c = read_char(line, col);
+						for(int i = 0; i < 3 && isdigit(c); i++)
+						{
+							dec = dec * 10 + (c - '0');
+							c = read_char(line, col);
+						}
+
+						result += dec;
+					}
+					break;
+
+					case EOF:
+						break;
+
+					default:
+						result += c;
+						c = read_char(line, col);
+				}
+
+			}
+			else
+			{
+				result += c;
+				c = read_char(line, col);
+			}
+		}
+
+		if(c == EOF)
+		{
+			lexer_error("This quotation mark is unterminated.");
+		}
+
+		line_number = line;
+		col_number = col;
+
+		return result;
+	}
+
+	// scan_hex_string reads a string of hexadecimal digits delimited by
+	// angle brackets and returns the representative string.
+	static std::string scan_hex_string()
+	{
+		std::string result;
+
+		// We don't touch the current line number and column number during
+		// scanning, so that if we detect an error while scanning the string
+		// (e.g. an unterminated string), we'll report the error as
+		// occurring at the start of the string, not at the end--somewhat
+		// more convenient for the user.
+
+		// Instead of adjusting the global line_number and col_number
+		// variables, we'll operate on our own local variables for the
+		// interim.
+		int line = line_number;
+		int col = col_number;
+
+		bool odd = false;
+		int last = 0;
+		int c;
+		c = read_char(line, col);
+		while(c != '>' && c != EOF)
+		{
+			int value;
+			if(c >= '0' && c <= '9')
+			{
+				value = c - '0';
+			}
+			else if(c >= 'a' && c <= 'f')
+			{
+				value = c - 'a' + 10;
+			}
+			else if(c >= 'A' && c <= 'F')
+			{
+				value = c - 'A' + 10;
+			}
+			else
+			{
+				line_number = line;
+				col_number = col;
+				lexer_error("Invalid hex digit.");
+				return std::string();
+			}
+
+			odd = !odd;
+			if(odd)
+			{
+				last = value;
+			}
+			else
+			{
+				result += (char)((last << 4) | value);
+			}
+			c = read_char(line, col);
+		}
+
+		if(c == EOF)
+		{
+			lexer_error("This hex string is unterminated.");
+			return std::string();
+		}
+		else if(odd)
+		{
+			lexer_error("Odd number of hex digits.");
+			return std::string();
+		}
+
+		line_number = line;
+		col_number = col;
+
+		return result;
+	}
+
+	// eat_c_comment scans past all characters up until the first */
+	// encountered.
+	static void eat_c_comment()
+	{
+		// As above, we'll operate on our own local copies of line_number
+		// and col_number within this function.
+
+		int line = line_number;
+		int col = col_number;
+
+		int c, last_c;
+
+		last_c = '\0';
+		c = read_char(line, col);
+		while(c != EOF && !(last_c == '*' && c == '/'))
+		{
+			if(last_c == '/' && c == '*')
+			{
+				lexer_warning("This comment contains a nested /* symbol--possibly unclosed?");
+			}
+			last_c = c;
+			c = read_char(line, col);
+		}
+
+		if(c == EOF)
+		{
+			lexer_error("This comment marker is unclosed.");
+		}
+
+		line_number = line;
+		col_number = col;
+	}
+
+
+
+	// accept() is called below as each piece is pulled off and
+	// accepted by the lexer; it increments the current column number.
+	inline void accept()
+	{
+		col_number += yyleng;
+	}
+
+%}
+
+%option nounput
+
+INTEGERNUM  ([0-9]+)
+HEXNUM      (0x[0-9a-fA-F]*)
+REALNUM     ((([0-9]+[.])|([0-9]*[.][0-9]+))([eE][+-]?[0-9]+)?)
+
+%%
+
+%{
+	if(initial_token != 0)
+	{
+		int t = initial_token;
+		initial_token = 0;
+		return t;
+	}
+%}
+
+\n.* {
+	// New line.  Save a copy of the line so we can print it out for the
+	// benefit of the user in case we get an error.
+
+	strncpy(current_line, yytext + 1, max_error_width);
+	current_line[max_error_width] = '\0';
+	line_number++;
+	col_number = 0;
+
+	// Return the whole line to the lexer, except the newline character,
+	// which we eat.
+	yyless(1);
+}
+
+[ \t\r] {
+	// Eat whitespace.
+	accept();
+}
+
+"//".* {
+	// Eat C++-style comments.
+	accept();
+}
+
+"/*" {
+	// Eat C-style comments.
+	accept();
+	eat_c_comment();
+}
+
+
+"dclass" {
+	accept();
+	return KW_DCLASS;
+}
+
+"struct" {
+	accept();
+	return KW_STRUCT;
+}
+
+"from" {
+	accept();
+	return KW_FROM;
+}
+
+"import" {
+	accept();
+	return KW_IMPORT;
+}
+
+"keyword" {
+	accept();
+	return KW_KEYWORD;
+}
+
+"typedef" {
+	accept();
+	return KW_TYPEDEF;
+}
+
+"int8" {
+	accept();
+	return KW_INT8;
+}
+
+"int16" {
+	accept();
+	return KW_INT16;
+}
+
+"int32" {
+	accept();
+	return KW_INT32;
+}
+
+"int64" {
+	accept();
+	return KW_INT64;
+}
+
+"uint8" {
+	accept();
+	return KW_UINT8;
+}
+
+"uint16" {
+	accept();
+	return KW_UINT16;
+}
+
+"uint32" {
+	accept();
+	return KW_UINT32;
+}
+
+"uint64" {
+	accept();
+	return KW_UINT64;
+}
+
+"float32" {
+	accept();
+	return KW_FLOAT32;
+}
+
+"float64" {
+	accept();
+	return KW_FLOAT64;
+}
+
+"string" {
+	accept();
+	return KW_STRING;
+}
+
+"blob" {
+	accept();
+	return KW_BLOB;
+}
+
+"char" {
+	accept();
+	return KW_CHAR;
+}
+
+{INTEGERNUM} {
+	// An unsigned integer number.
+	accept();
+
+	// atoll isn't fully portable, so we'll decode the integer by hand.
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
+	const char *p = yytext;
+	while(*p != '\0')
+	{
+		uint64_t next_value = yylval.u.uint64 * 10;
+		if(next_value < yylval.u.uint64)
+		{
+			lexer_error("Number out of range.");
+			yylval.u.uint64 = 1;
+			return UNSIGNED_INTEGER;
+		}
+
+		yylval.u.uint64 = next_value + (*p - '0');
+		++p;
+	}
+
+	return UNSIGNED_INTEGER;
+}
+
+{HEXNUM} {
+	// A hexadecimal integer number.
+	accept();
+
+	// As above, we'll decode the hex string by hand.
+	yylval.str = yytext;
+	yylval.u.uint64 = 0;
+	const char *p = yytext + 2;
+	while(*p != '\0')
+	{
+		uint64_t next_value = yylval.u.uint64 * 16;
+		if(next_value < yylval.u.uint64)
+		{
+			lexer_error("Number out of range.");
+			yylval.u.uint64 = 1;
+			return UNSIGNED_INTEGER;
+		}
+
+		if(isalpha(*p))
+		{
+			yylval.u.uint64 = next_value + (tolower(*p) - 'a' + 10);
+		}
+		else
+		{
+			yylval.u.uint64 = next_value + (*p - '0');
+		}
+		++p;
+	}
+
+	return UNSIGNED_INTEGER;
+}
+
+{REALNUM} {
+	// A floating-point number.
+	accept();
+	yylval.u.real = atof(yytext);
+	yylval.str = yytext;
+	return REAL;
+}
+
+["] {
+	// Quoted string.
+	accept();
+	yylval.str = scan_quoted_string('"');
+	return STRING;
+}
+
+['] {
+	// Single-quoted string.
+	accept();
+	yylval.str = scan_quoted_string('\'');
+	return CHAR;
+}
+
+[<] {
+	// Long hex string.
+	accept();
+	yylval.str = scan_hex_string();
+	return HEX_STRING;
+}
+
+[A-Za-z_][A-Za-z_0-9]* {
+	// Identifier or keyword.
+	accept();
+	yylval.str = yytext;
+	return IDENTIFIER;
+}
+
+
+. {
+	// Send any other printable character as itself.
+	accept();
+	return yytext[0];
+}
