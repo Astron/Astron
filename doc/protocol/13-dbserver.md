@@ -14,9 +14,8 @@ This channel is used to request the Database Server to:
  - Run queries on objects stored in the database.
 
 When one or more of a database object's values is updated through a set- or delete-
-operation, the database will broadcast the recieved message to the channel with the
-object's ID (ie, the object's control channel, if it exists).  This behavior is
-default, but can be disabled through the daemon config.
+operation, the database will broadcast the recieved message over the database messages
+channel (2 << 32|do_id).  This behavior is default, but can be disabled through the daemon config.
 
 
 ### Section 1: Database Server Messages ###
