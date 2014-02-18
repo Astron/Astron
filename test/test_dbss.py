@@ -123,7 +123,7 @@ class TestStateServer(unittest.TestCase):
 
 
 
-        ### Test for Activate on non-existant Database object ###
+        ### Test for Activate on non-existent Database object ###
         # Enter an object into ram with activate
         dg = Datagram.create([doid2], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS)
         appendMeta(dg, doid2, 80000, 100)
@@ -978,7 +978,7 @@ class TestStateServer(unittest.TestCase):
 
         doid = 9050
 
-        ### Test for GetActivated with non-existant or inactive object ###
+        ### Test for GetActivated with non-existent or inactive object ###
         dg = Datagram.create([doid], 5, DBSS_OBJECT_GET_ACTIVATED)
         dg.add_uint32(1) # Context
         dg.add_doid(doid)
@@ -1078,7 +1078,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid)
         self.shard.send(dg)
 
-        # Expect false
+        # Expect true
         dg = Datagram.create([5], doid, DBSS_OBJECT_GET_ACTIVATED_RESP)
         dg.add_uint32(4) # Context
         dg.add_doid(doid)
