@@ -1158,6 +1158,12 @@ type_value
 		if(!check_depth()) depth_error("signed integer");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1167,6 +1173,12 @@ type_value
 		if(!check_depth()) depth_error("unsigned integer");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1176,6 +1188,12 @@ type_value
 		if(!check_depth()) depth_error("floating point");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		$$ = number_value(dtype->get_type(), $1);
@@ -1185,6 +1203,12 @@ type_value
 		if(!check_depth()) depth_error("string");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Remove string type from stack
 
 		if(dtype->get_type() == T_STRING || dtype->get_type() == T_BLOB)
@@ -1215,6 +1239,12 @@ type_value
 		if(!check_depth()) depth_error("hex-string");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Remove type from stack
 
 		if(dtype->get_type() == T_BLOB)
@@ -1248,6 +1278,11 @@ method_value
 		if(!check_depth()) depth_error("method");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_method())
 		{
 			current_depth++;
@@ -1293,6 +1328,11 @@ struct_value
 		if(!check_depth()) depth_error("struct");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_struct())
 		{
 			current_depth++;
@@ -1343,6 +1383,12 @@ array_value
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop();
 		if(!dtype->as_array())
 		{
@@ -1381,6 +1427,11 @@ array_value
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_array())
 		{
 			const ArrayType* array = dtype->as_array();
@@ -1403,7 +1454,16 @@ array_value
 		if(type_stack.top().type->as_array())
 		{
 			uint64_t actual_size = current_depth - type_stack.top().depth;
-			const ArrayType* array = type_stack.top().type->as_array();
+
+			const DistributedType* dtype = type_stack.top().type;
+			if(dtype == (DistributedType*)NULL)
+			{
+				// Ignore this field, it should have already generated an error
+				$$ = "";
+				break;
+			}
+
+			const ArrayType* array = dtype->as_array();
 			if(array->has_range())
 			{
 				if(actual_size > array->get_range().max.uinteger)
@@ -1441,7 +1501,13 @@ element_values
 		// We popped off the only element we added, so we're back to the array
 		// Don't increment the depth; the array_expansion will add to
 		// the current_depth depending on the number of elements it adds.
-		const ArrayType* array = type_stack.top().type->as_array();
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
+		const ArrayType* array = dtype->as_array();
 		type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
 	}
 	  array_expansion
@@ -1459,6 +1525,12 @@ array_expansion
 	| signed_integer '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
@@ -1475,6 +1547,12 @@ array_expansion
 	| UNSIGNED_INTEGER '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
@@ -1491,6 +1569,12 @@ array_expansion
 	| REAL '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
@@ -1507,6 +1591,12 @@ array_expansion
 	| STRING '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 
@@ -1557,6 +1647,12 @@ array_expansion
 	| HEX_STRING '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += $3; // For arrays, we add 1 to the depth per element
 

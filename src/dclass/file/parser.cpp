@@ -571,12 +571,12 @@ static const yytype_uint16 yyrline[] =
      964,   976,   983,   993,   997,  1004,  1014,  1027,  1028,  1029,
     1030,  1035,  1034,  1048,  1055,  1060,  1069,  1068,  1080,  1079,
     1093,  1094,  1095,  1099,  1100,  1101,  1105,  1117,  1121,  1134,
-    1135,  1136,  1140,  1152,  1156,  1165,  1174,  1183,  1213,  1241,
-    1242,  1247,  1246,  1283,  1284,  1292,  1291,  1328,  1329,  1330,
-    1334,  1341,  1380,  1379,  1438,  1440,  1439,  1454,  1459,  1475,
-    1491,  1507,  1557,  1611,  1612,  1616,  1617,  1621,  1622,  1623,
-    1624,  1625,  1626,  1627,  1628,  1629,  1630,  1631,  1635,  1639,
-    1652
+    1135,  1136,  1140,  1152,  1156,  1171,  1186,  1201,  1237,  1271,
+    1272,  1277,  1276,  1318,  1319,  1327,  1326,  1368,  1369,  1370,
+    1374,  1381,  1426,  1425,  1498,  1500,  1499,  1520,  1525,  1547,
+    1569,  1591,  1647,  1707,  1708,  1712,  1713,  1717,  1718,  1719,
+    1720,  1721,  1722,  1723,  1724,  1725,  1726,  1727,  1731,  1735,
+    1748
 };
 #endif
 
@@ -2652,45 +2652,69 @@ yyreduce:
 		if(!check_depth()) depth_error("signed integer");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		(yyval.str) = number_value(dtype->get_type(), (yyvsp[0].u.int64));
 	}
-#line 2660 "parser.cpp" /* yacc.c:1646  */
+#line 2666 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 125:
-#line 1166 "parser.ypp" /* yacc.c:1646  */
+#line 1172 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("unsigned integer");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		(yyval.str) = number_value(dtype->get_type(), (yyvsp[0].u.uint64));
 	}
-#line 2673 "parser.cpp" /* yacc.c:1646  */
+#line 2685 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 126:
-#line 1175 "parser.ypp" /* yacc.c:1646  */
+#line 1187 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("floating point");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Remove numeric type from stack
 
 		(yyval.str) = number_value(dtype->get_type(), (yyvsp[0].u.real));
 	}
-#line 2686 "parser.cpp" /* yacc.c:1646  */
+#line 2704 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 127:
-#line 1184 "parser.ypp" /* yacc.c:1646  */
+#line 1202 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("string");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Remove string type from stack
 
 		if(dtype->get_type() == T_STRING || dtype->get_type() == T_BLOB)
@@ -2716,15 +2740,21 @@ yyreduce:
 			(yyval.str) = (yyvsp[0].str);
 		}
 	}
-#line 2720 "parser.cpp" /* yacc.c:1646  */
+#line 2744 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 128:
-#line 1214 "parser.ypp" /* yacc.c:1646  */
+#line 1238 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("hex-string");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Remove type from stack
 
 		if(dtype->get_type() == T_BLOB)
@@ -2748,15 +2778,20 @@ yyreduce:
 			(yyval.str) = (yyvsp[0].str);
 		}
 	}
-#line 2752 "parser.cpp" /* yacc.c:1646  */
+#line 2782 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 131:
-#line 1247 "parser.ypp" /* yacc.c:1646  */
+#line 1277 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("method");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_method())
 		{
 			current_depth++;
@@ -2777,11 +2812,11 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2781 "parser.cpp" /* yacc.c:1646  */
+#line 2816 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 132:
-#line 1272 "parser.ypp" /* yacc.c:1646  */
+#line 1307 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_method())
 		{
@@ -2790,23 +2825,28 @@ yyreduce:
 		type_stack.pop(); // Remove method type from the stack
 		(yyval.str) = (yyvsp[-1].str);
 	}
-#line 2794 "parser.cpp" /* yacc.c:1646  */
+#line 2829 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 134:
-#line 1285 "parser.ypp" /* yacc.c:1646  */
+#line 1320 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2802 "parser.cpp" /* yacc.c:1646  */
+#line 2837 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 135:
-#line 1292 "parser.ypp" /* yacc.c:1646  */
+#line 1327 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("struct");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_struct())
 		{
 			current_depth++;
@@ -2827,11 +2867,11 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2831 "parser.cpp" /* yacc.c:1646  */
+#line 2871 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 136:
-#line 1317 "parser.ypp" /* yacc.c:1646  */
+#line 1357 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_struct())
 		{
@@ -2840,31 +2880,37 @@ yyreduce:
 		type_stack.pop(); // Remove method type from the stack
 		(yyval.str) = (yyvsp[-1].str);
 	}
-#line 2844 "parser.cpp" /* yacc.c:1646  */
+#line 2884 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 139:
-#line 1331 "parser.ypp" /* yacc.c:1646  */
+#line 1371 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2852 "parser.cpp" /* yacc.c:1646  */
+#line 2892 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 140:
-#line 1335 "parser.ypp" /* yacc.c:1646  */
+#line 1375 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-2].str) + (yyvsp[0].str);
 	}
-#line 2860 "parser.cpp" /* yacc.c:1646  */
+#line 2900 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 141:
-#line 1342 "parser.ypp" /* yacc.c:1646  */
+#line 1382 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop();
 		if(!dtype->as_array())
 		{
@@ -2898,15 +2944,20 @@ yyreduce:
 		// the default value for a varsize array, which is the length-tag 0.
 		(yyval.str) = string(sizeof(sizetag_t), '\0');
 	}
-#line 2902 "parser.cpp" /* yacc.c:1646  */
+#line 2948 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 142:
-#line 1380 "parser.ypp" /* yacc.c:1646  */
+#line 1426 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
 		if(dtype->as_array())
 		{
 			const ArrayType* array = dtype->as_array();
@@ -2924,16 +2975,25 @@ yyreduce:
 			             + format_type(dtype->get_type()) + "'.");
 		}
 	}
-#line 2928 "parser.cpp" /* yacc.c:1646  */
+#line 2979 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 143:
-#line 1402 "parser.ypp" /* yacc.c:1646  */
+#line 1453 "parser.ypp" /* yacc.c:1646  */
     {
 		if(type_stack.top().type->as_array())
 		{
 			uint64_t actual_size = current_depth - type_stack.top().depth;
-			const ArrayType* array = type_stack.top().type->as_array();
+
+			const DistributedType* dtype = type_stack.top().type;
+			if(dtype == (DistributedType*)NULL)
+			{
+				// Ignore this field, it should have already generated an error
+				(yyval.str) = "";
+				break;
+			}
+
+			const ArrayType* array = dtype->as_array();
 			if(array->has_range())
 			{
 				if(actual_size > array->get_range().max.uinteger)
@@ -2962,42 +3022,54 @@ yyreduce:
 
 		type_stack.pop(); // Remove array type from the stack
 	}
-#line 2966 "parser.cpp" /* yacc.c:1646  */
+#line 3026 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 145:
-#line 1440 "parser.ypp" /* yacc.c:1646  */
+#line 1500 "parser.ypp" /* yacc.c:1646  */
     {
 		// We popped off the only element we added, so we're back to the array
 		// Don't increment the depth; the array_expansion will add to
 		// the current_depth depending on the number of elements it adds.
-		const ArrayType* array = type_stack.top().type->as_array();
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			break;
+		}
+		const ArrayType* array = dtype->as_array();
 		type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
 	}
-#line 2978 "parser.cpp" /* yacc.c:1646  */
+#line 3044 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 146:
-#line 1448 "parser.ypp" /* yacc.c:1646  */
+#line 1514 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.str) = (yyvsp[-3].str) + (yyvsp[0].str);
 	}
-#line 2986 "parser.cpp" /* yacc.c:1646  */
+#line 3052 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 147:
-#line 1455 "parser.ypp" /* yacc.c:1646  */
+#line 1521 "parser.ypp" /* yacc.c:1646  */
     {
 		current_depth++;
 		(yyval.str) = (yyvsp[0].str);
 	}
-#line 2995 "parser.cpp" /* yacc.c:1646  */
+#line 3061 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 148:
-#line 1460 "parser.ypp" /* yacc.c:1646  */
+#line 1526 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[0].u.uint32); // For arrays, we add 1 to the depth per element
 
@@ -3011,13 +3083,19 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3015 "parser.cpp" /* yacc.c:1646  */
+#line 3087 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 149:
-#line 1476 "parser.ypp" /* yacc.c:1646  */
+#line 1548 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[0].u.uint32); // For arrays, we add 1 to the depth per element
 
@@ -3031,13 +3109,19 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3035 "parser.cpp" /* yacc.c:1646  */
+#line 3113 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 150:
-#line 1492 "parser.ypp" /* yacc.c:1646  */
+#line 1570 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[0].u.uint32); // For arrays, we add 1 to the depth per element
 
@@ -3051,13 +3135,19 @@ yyreduce:
 		}
 		(yyval.str) = val;
 	}
-#line 3055 "parser.cpp" /* yacc.c:1646  */
+#line 3139 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 151:
-#line 1508 "parser.ypp" /* yacc.c:1646  */
+#line 1592 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[0].u.uint32); // For arrays, we add 1 to the depth per element
 
@@ -3105,13 +3195,19 @@ yyreduce:
 			(yyval.str) = val;
 		}
 	}
-#line 3109 "parser.cpp" /* yacc.c:1646  */
+#line 3199 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 152:
-#line 1558 "parser.ypp" /* yacc.c:1646  */
+#line 1648 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			(yyval.str) = "";
+			break;
+		}
 		type_stack.pop(); // Pop that array element type
 		current_depth += (yyvsp[0].u.uint32); // For arrays, we add 1 to the depth per element
 
@@ -3160,109 +3256,109 @@ yyreduce:
 			(yyval.str) = val;
 		}
 	}
-#line 3164 "parser.cpp" /* yacc.c:1646  */
+#line 3260 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 153:
-#line 1611 "parser.ypp" /* yacc.c:1646  */
+#line 1707 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.int64) = (yyvsp[0].u.uint64); }
-#line 3170 "parser.cpp" /* yacc.c:1646  */
+#line 3266 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 154:
-#line 1612 "parser.ypp" /* yacc.c:1646  */
+#line 1708 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.int64) = -(yyvsp[0].u.uint64); }
-#line 3176 "parser.cpp" /* yacc.c:1646  */
+#line 3272 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 155:
-#line 1616 "parser.ypp" /* yacc.c:1646  */
+#line 1712 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_STRING; }
-#line 3182 "parser.cpp" /* yacc.c:1646  */
+#line 3278 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 156:
-#line 1617 "parser.ypp" /* yacc.c:1646  */
+#line 1713 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_BLOB; }
-#line 3188 "parser.cpp" /* yacc.c:1646  */
+#line 3284 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 157:
-#line 1621 "parser.ypp" /* yacc.c:1646  */
+#line 1717 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_CHAR; }
-#line 3194 "parser.cpp" /* yacc.c:1646  */
+#line 3290 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 158:
-#line 1622 "parser.ypp" /* yacc.c:1646  */
+#line 1718 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT8; }
-#line 3200 "parser.cpp" /* yacc.c:1646  */
+#line 3296 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 159:
-#line 1623 "parser.ypp" /* yacc.c:1646  */
+#line 1719 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT16; }
-#line 3206 "parser.cpp" /* yacc.c:1646  */
+#line 3302 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 160:
-#line 1624 "parser.ypp" /* yacc.c:1646  */
+#line 1720 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT32; }
-#line 3212 "parser.cpp" /* yacc.c:1646  */
+#line 3308 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 161:
-#line 1625 "parser.ypp" /* yacc.c:1646  */
+#line 1721 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_INT64; }
-#line 3218 "parser.cpp" /* yacc.c:1646  */
+#line 3314 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 162:
-#line 1626 "parser.ypp" /* yacc.c:1646  */
+#line 1722 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT8; }
-#line 3224 "parser.cpp" /* yacc.c:1646  */
+#line 3320 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 163:
-#line 1627 "parser.ypp" /* yacc.c:1646  */
+#line 1723 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT16; }
-#line 3230 "parser.cpp" /* yacc.c:1646  */
+#line 3326 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 164:
-#line 1628 "parser.ypp" /* yacc.c:1646  */
+#line 1724 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT32; }
-#line 3236 "parser.cpp" /* yacc.c:1646  */
+#line 3332 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 165:
-#line 1629 "parser.ypp" /* yacc.c:1646  */
+#line 1725 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_UINT64; }
-#line 3242 "parser.cpp" /* yacc.c:1646  */
+#line 3338 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 166:
-#line 1630 "parser.ypp" /* yacc.c:1646  */
+#line 1726 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_FLOAT32; }
-#line 3248 "parser.cpp" /* yacc.c:1646  */
+#line 3344 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 167:
-#line 1631 "parser.ypp" /* yacc.c:1646  */
+#line 1727 "parser.ypp" /* yacc.c:1646  */
     { (yyval.u.type) = T_FLOAT64; }
-#line 3254 "parser.cpp" /* yacc.c:1646  */
+#line 3350 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 168:
-#line 1636 "parser.ypp" /* yacc.c:1646  */
+#line 1732 "parser.ypp" /* yacc.c:1646  */
     {
 		(yyval.strings) = vector<string>();
 	}
-#line 3262 "parser.cpp" /* yacc.c:1646  */
+#line 3358 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 169:
-#line 1640 "parser.ypp" /* yacc.c:1646  */
+#line 1736 "parser.ypp" /* yacc.c:1646  */
     {
 		if(!parsed_file->has_keyword((yyvsp[0].str)))
 		{
@@ -3273,11 +3369,11 @@ yyreduce:
 		(yyvsp[-1].strings).push_back((yyvsp[0].str));
 		(yyval.strings) = (yyvsp[-1].strings);
 	}
-#line 3277 "parser.cpp" /* yacc.c:1646  */
+#line 3373 "parser.cpp" /* yacc.c:1646  */
     break;
 
 
-#line 3281 "parser.cpp" /* yacc.c:1646  */
+#line 3377 "parser.cpp" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -3505,7 +3601,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 1656 "parser.ypp" /* yacc.c:1906  */
+#line 1752 "parser.ypp" /* yacc.c:1906  */
  /* Start helper function section */
 
 
