@@ -69,6 +69,8 @@ CONSTANTS = {
     # Success booleans
     'SUCCESS': 1,
     'FAILURE': 0,
+    'BOOL_YES': 1,
+    'BOOL_NO': 0,
 
     # Reserved Channels
     'INVALID_CHANNEL': 0,
@@ -136,6 +138,8 @@ CONSTANTS = {
     # DBSS object message-type constants
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS':        2200,
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER':  2201,
+    'DBSS_OBJECT_GET_ACTIVATED':                 2207,
+    'DBSS_OBJECT_GET_ACTIVATED_RESP':            2208,
     'DBSS_OBJECT_DELETE_FIELD_DISK':             2230,
     'DBSS_OBJECT_DELETE_FIELDS_DISK':            2231,
     'DBSS_OBJECT_DELETE_DISK':                   2232,
