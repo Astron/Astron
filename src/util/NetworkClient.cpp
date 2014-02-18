@@ -100,8 +100,10 @@ void NetworkClient::send_disconnect()
 	m_socket->close();
 }
 
-void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
+	// TODO: We might want to actually check here that bytes_transferred is the expected value
+
 	if(ec.value() != 0)
 	{
 		receive_disconnect();
@@ -121,8 +123,10 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
 	async_receive();
 }
 
-void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
+void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
+	// TODO: We might want to actually check here that bytes_transferred is the expected value
+
 	if(ec.value() != 0)
 	{
 		receive_disconnect();

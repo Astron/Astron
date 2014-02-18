@@ -5,6 +5,8 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 
+using dclass::Class;
+
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
 	m_interests(), m_pending_interests()
@@ -51,7 +53,7 @@ void Client::log_event(const std::list<std::string> &event)
 
 // lookup_object returns the class of the object with a do_id.
 // If that object is not visible to the client, NULL will be returned instead.
-DCClass *Client::lookup_object(doid_t do_id)
+const Class *Client::lookup_object(doid_t do_id)
 {
 	// First see if it's an UberDOG:
 	if(g_uberdogs.find(do_id) != g_uberdogs.end())
@@ -258,7 +260,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 }
 
 // handle_datagram is the handler for datagrams received from the Astron cluster
-void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
+void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
@@ -338,7 +340,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 				obj.id = do_id;
 				obj.parent = parent;
 				obj.zone = zone;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				m_visible_objects[do_id] = obj;
 			}
 
@@ -400,7 +402,7 @@ void Client::handle_datagram(Datagram &dg, DatagramIterator &dgi)
 			{
 				VisibleObject obj;
 				obj.id = do_id;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				obj.parent = parent;
 				obj.zone = zone;
 				m_visible_objects[do_id] = obj;

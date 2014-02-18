@@ -419,8 +419,10 @@ void MessageDirector::start_accept()
 	                         this, socket, boost::asio::placeholders::error));
 }
 
-void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
+void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
 {
+	// TODO: We should probably accept the error code and maybe do something about it
+
 	boost::asio::ip::tcp::endpoint remote;
 	try
 	{

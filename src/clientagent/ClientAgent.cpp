@@ -1,17 +1,18 @@
 #include "ClientAgent.h"
 #include "ClientFactory.h"
 
-#include <boost/bind.hpp>
-
 #include "core/global.h"
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
-
+#include "dclass/file/hash.h"
+#include <boost/bind.hpp>
 using boost::asio::ip::tcp;
+using namespace std;
 
 static RoleConfigGroup clientagent_config("clientagent");
-static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
-static ConfigVariable<std::string> server_version("version", "dev", clientagent_config);
+static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
+static ConfigVariable<string> server_version("version", "dev", clientagent_config);
+static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0, clientagent_config);
 
 static ConfigGroup channels_config("channels", clientagent_config);
 static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
@@ -22,26 +23,40 @@ static ReservedChannelConstraint min_not_reserved(min_channel);
 static ReservedChannelConstraint max_not_reserved(max_channel);
 
 ConfigGroup ca_client_config("client", clientagent_config);
-ConfigVariable<std::string> ca_client_type("type", "libastron", ca_client_config);
+ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
 	m_server_version(server_version.get_rval(roleconfig))
 {
-	std::stringstream ss;
+	stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
 	m_log = new LogCategory("clientagent", ss.str());
 
+	// We need to get the client type...
 	ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
 	m_client_type = ca_client_type.get_rval(client);
 
+	// ... and also the channel range ...
 	ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
 	m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
 
+	// ... then store a copy of the client config.
 	m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
 
+	// Calculate the DC hash
+	const uint32_t config_hash = override_hash.get_rval(roleconfig);
+	if(config_hash > 0x0)
+	{
+		m_hash = config_hash;
+	}
+	else
+	{
+		m_hash = dclass::legacy_hash(g_dcf);
+	}
+
 	//Initialize the network
-	std::string str_ip = bind_addr.get_rval(m_roleconfig);
-	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
+	string str_ip = bind_addr.get_rval(m_roleconfig);
+	string str_port = str_ip.substr(str_ip.find(':', 0) + 1, string::npos);
 	str_ip = str_ip.substr(0, str_ip.find(':', 0));
 	tcp::resolver resolver(io_service);
 	tcp::resolver::query query(str_ip, str_port);
@@ -66,14 +81,16 @@ void ClientAgent::start_accept()
 }
 
 // handle_accepts generates a new Client object from a connection, then calls start_accept.
-void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
+void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
 {
+	// TODO: We probably want to check the error code here
+
 	boost::asio::ip::tcp::endpoint remote;
 	try
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (std::exception &e)
+	catch (exception &e)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
@@ -84,7 +101,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "
-	               << remote.address() << ":" << remote.port() << std::endl;
+	               << remote.address() << ":" << remote.port() << endl;
 
 	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
 
@@ -92,8 +109,9 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 }
 
 // handle_datagram handles Datagrams received from the message director.
-void ClientAgent::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void ClientAgent::handle_datagram(Datagram&, DatagramIterator&)
 {
+	// At the moment, the client agent doesn't actually handle any datagrams
 }
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");

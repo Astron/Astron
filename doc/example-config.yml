@@ -48,6 +48,10 @@ roles:
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
+      # Manual_dc_hash tells the server what DC hash version to expect from the client.
+      #     This is mostly used if the DC parser used by the client doesn't have hash parity
+      #     with the parser used by Astron. (Panda3D users will currently need to enable this).
+      #manual_dc_hash: 0xABCD1234
       version: "FooGame v7.0"
       client:
         # Type declares which client this client agent should generate when it receives a new
@@ -81,13 +85,14 @@ roles:
         type: bdb
         filename: main_database.db
 
-    # We will then create a database state server which provides state-server-like behavior on database
-    # objects.  The dbss does not have a control channel, and so cannot generate new objects.
+    # We will then create a database state server which provides state-server-like
+    #     behavior on database objects.  The dbss does not have a control channel,
+    #     and so cannot generate new objects.
     - type: dbss
       database: 402001 # The channel of the associated database
       ranges:
-      # Ranges defines a sequence of ranges of DistributedObject ids that the database-state server
-      # will provide stateserver-like behavior for.
+      # Ranges defines a sequence of ranges of DistributedObject ids that the
+      #     database-state server will provide stateserver-like behavior for.
       # Note: The ranges do not have to match that of the database. This allows for multiple dbss to
       #       split up the handling of a single database. Additionally, it can be used to exclude
       #       special-case or prepopulated objects from recieving SS behavior.

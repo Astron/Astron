@@ -5,6 +5,11 @@
 #include "util/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "dclass/dc/Class.h"
+#include "dclass/dc/Field.h"
+
+using dclass::Class;
+using dclass::Field;
 
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 
@@ -266,7 +271,7 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			const static uint32_t expected_hash = g_dcf->get_hash();
+			const static uint32_t expected_hash = m_client_agent->get_hash();
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;
@@ -358,7 +363,7 @@ class AstronClient : public Client, public NetworkClient
 			uint16_t field_id = dgi.read_uint16();
 
 			// Get class of object from cache
-			DCClass *dcc = lookup_object(do_id);
+			const Class *dcc = lookup_object(do_id);
 
 			// If the class couldn't be found, error out:
 			if(!dcc)
@@ -396,7 +401,7 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Check that the client sent a field that actually exists in the class.
-			DCField *field = dcc->get_field_by_index(field_id);
+			const Field *field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
 				std::stringstream ss;
@@ -408,7 +413,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// Check that the client is actually allowed to send updates to this field
 			bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
-			if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
+			if(!field->has_keyword("clsend") && !(is_owned && field->has_keyword("ownsend")))
 			{
 				std::stringstream ss;
 				ss << "Client tried to send update for non-sendable field: "

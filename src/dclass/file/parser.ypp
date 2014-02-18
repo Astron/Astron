@@ -1,0 +1,1860 @@
+// Filename: parser.yxx
+//
+
+%{
+	#include "file/lexerDefs.h"
+	#include "file/parserDefs.h"
+	#include "file/parser.h"
+	#include "file/write.h" // format_type(Type);
+
+	#include "dc/File.h"
+	#include "dc/DistributedType.h"
+	#include "dc/NumericRange.h"
+	#include "dc/NumericType.h"
+	#include "dc/ArrayType.h"
+	#include "dc/Struct.h"
+	#include "dc/Class.h"
+	#include "dc/Field.h"
+	#include "dc/Method.h"
+	#include "dc/Parameter.h"
+	#include "dc/MolecularField.h"
+
+	#include <unistd.h>
+	#include <stdint.h> // Fixed width integer limits
+	#include <math.h>   // Float INFINITY
+	#include <stack>    // std::stack
+
+	#define yyparse run_parser
+	#define yylex run_lexer
+	#define yyerror parser_error
+	#define yywarning parser_warning
+	#define yychar dcyychar
+	#define yydebug dcyydebug
+	#define yynerrs dcyynerrs
+
+	// Because our token type contains objects of type string, which
+	// require correct copy construction (and not simply memcpying), we
+	// cannot use bison's built-in auto-stack-grow feature.  As an easy
+	// solution, we ensure here that we have enough yacc stack to start
+	// with, and that it doesn't ever try to grow.
+	#define YYINITDEPTH 1000
+	#define YYMAXDEPTH 1000
+
+	using namespace std;
+	namespace dclass   // open namespace dclass
+	{
+
+
+	// Parser output
+	static File* parsed_file = (File*)NULL;
+	static string* parsed_value = (string*)NULL;
+
+	// Parser state
+	static Class* current_class = (Class*)NULL;
+	static Struct* current_struct = (Struct*)NULL;
+
+	// Stack of distributed types for parsing values
+	struct TypeAndDepth
+	{
+		int depth;
+		const DistributedType* type;
+		TypeAndDepth(const DistributedType* t, int d) : depth(d), type(t) {}
+	};
+	static stack<TypeAndDepth> type_stack;
+	static int current_depth;
+
+	// These two types are really common types the parser doesn't need to make new
+	//     duplicates of every time a string or blob is used.
+	static ArrayType* basic_string = (ArrayType*)NULL;
+	static ArrayType* basic_blob = (ArrayType*)NULL;
+
+	/* Helper functions */
+	static bool check_depth();
+	static void depth_error(string what);
+	static void depth_error(int depth, string what);
+	static string number_value(Type type, double &number);
+	static string number_value(Type type, int64_t &number);
+	static string number_value(Type type, uint64_t &number);
+
+////////////////////////////////////////////////////////////////////
+// Defining the interface to the parser.
+////////////////////////////////////////////////////////////////////
+
+	void init_file_parser(istream& in, const string& filename, File& file)
+	{
+		parsed_file = &file;
+		init_file_lexer(in, filename);
+	}
+
+	void init_value_parser(istream& in, const string& source,
+	                       const DistributedType* type, string& output)
+	{
+		parsed_value = &output;
+		current_depth = 0;
+		type_stack.push(TypeAndDepth(type, 0));
+		init_value_lexer(in, source);
+	}
+
+	void cleanup_parser()
+	{
+		current_depth = 0;
+		type_stack = stack<TypeAndDepth>();
+		parsed_file = (File*)NULL;
+		parsed_value = (string*)NULL;
+	}
+
+	int parser_error_count()
+	{
+		return lexer_error_count();
+	}
+	int parser_warning_count()
+	{
+		return lexer_warning_count();
+	}
+
+	void parser_error(const string &msg)
+	{
+		lexer_error(msg);
+	}
+	void parser_warning(const string &msg)
+	{
+		lexer_warning(msg);
+	}
+%}
+
+// Use verbose errors
+%error-verbose
+%debug
+
+/* Value tokens */
+%token <u.uint64> UNSIGNED_INTEGER
+%token <u.real> REAL
+%token <str> STRING HEX_STRING IDENTIFIER CHAR
+
+/* Initial Tokens */
+// These special tokens are used to set the starting state of the parser.
+//     The lexer places the appropriate one of these on the head of the input stream.
+%token START_DC_FILE
+%token START_DC_VALUE
+
+/* Define keywords */
+// Declaration Keywords
+%token KW_DCLASS
+%token KW_STRUCT
+%token KW_FROM
+%token KW_IMPORT
+%token KW_TYPEDEF
+%token KW_KEYWORD
+
+// Type Keywords
+%token KW_INT8
+%token KW_INT16
+%token KW_INT32
+%token KW_INT64
+%token KW_UINT8
+%token KW_UINT16
+%token KW_UINT32
+%token KW_UINT64
+%token KW_FLOAT32
+%token KW_FLOAT64
+%token KW_STRING
+%token KW_BLOB
+%token KW_CHAR
+
+
+/* Abstract Nonterminals */
+%type <u.dfield> named_field
+%type <u.dfield> unnamed_field
+%type <u.dparam> parameter
+%type <u.dmethod> method
+%type <u.dmolecule> molecular
+%type <strings> import_symbols
+%type <str> import_module
+%type <nametype> typedef
+
+/* Simple Nonterminals */
+%type <u.dfield> class_field
+%type <u.dfield> struct_field
+%type <u.dfield> defined_field
+%type <u.dclass> defined_class
+%type <u.dtype> defined_type
+%type <u.dtype> builtin_array_type
+%type <u.dnumeric> numeric_type
+%type <u.type> array_type_token
+%type <u.type> numeric_type_token
+%type <u.int64> signed_integer
+%type <u.uint32> small_unsigned_integer
+%type <u.uint32> char_or_uint
+%type <u.real> char_or_number
+%type <u.real> number
+%type <range> numeric_range
+%type <range> array_range
+%type <strings> keyword_list
+%type <strings> import_symbol_list
+%type <str> import_alternatives
+// Note: These value non-terminals are obvious/simple in the grammar but have complex actions
+%type <str> type_value
+%type <str> array_value
+%type <str> element_values
+%type <str> method_value
+%type <str> parameter_values
+%type <str> struct_value
+%type <str> field_values
+%type <str> array_expansion
+
+/* Complex Nonterminals */
+// These nonterminals are not-quite-obvious/kinda-hacky, but were made to statisfy a LALR-grammar.
+%type <nametype> typedef_type
+%type <nametype> nonmethod_type_with_name
+%type <u.dfield> field_with_name
+%type <u.dfield> field_with_name_as_array
+%type <u.dfield> field_with_name_and_default
+%type <u.dfield> method_as_field
+%type <u.dtype> nonmethod_type
+%type <u.dtype> nonmethod_type_no_array
+%type <u.dtype> type_with_array
+%type <u.dnumeric> numeric_token_only
+%type <u.dnumeric> numeric_with_range
+%type <u.dnumeric> numeric_with_modulus
+%type <u.dnumeric> numeric_with_divisor
+%type <u.dmethod> method_body
+%type <u.dparam> param_with_name
+%type <u.dparam> param_with_name_as_array
+%type <u.dparam> param_with_name_and_default
+
+%%
+
+grammar
+	: START_DC_FILE file
+	| START_DC_VALUE value
+	;
+
+
+file
+	: empty
+	| file ';'
+	| file dclass
+	| file dstruct
+	| file import
+	| file typedef
+	{
+
+	}
+	| file keyword_decl
+	;
+
+value
+	: empty
+	{
+		parsed_value->clear();
+	}
+	| type_value
+	{
+		parsed_value->assign($1);
+		if(!type_stack.empty()) depth_error(0, "type");
+	}
+	| method_value
+	{
+		parsed_value->assign($1);
+		if(!type_stack.empty()) depth_error(0, "method");
+	}
+	;
+
+import
+	: KW_IMPORT import_module
+	{
+		Import* import = new Import($2);
+		parsed_file->add_import(import);
+	}
+	| KW_FROM import_module KW_IMPORT import_symbols
+	{
+		Import* import = new Import($2);
+		import->symbols.assign($4.begin(), $4.end());
+		parsed_file->add_import(import);
+	}
+	;
+
+import_module
+	: import_alternatives { $$ = $1; }
+	| import_module '.' import_alternatives
+	{
+		$$ = $1 + string(".") + $3;
+	}
+	;
+
+import_symbols
+	: import_symbol_list { $$ = $1; }
+	| '*'
+	{
+		$$ = vector<string>();
+	}
+	;
+
+import_symbol_list
+	: import_alternatives
+	{
+		$$ = vector<string>(1, $1);
+	}
+	| import_symbol_list ',' import_alternatives
+	{
+		$1.push_back($3);
+		$$ = $1;
+	}
+	;
+
+import_alternatives
+	: IDENTIFIER { $$ = $1; }
+	| import_alternatives '/' IDENTIFIER
+	{
+		$$ = $1 + string("/") + $3;
+	}
+	;
+
+typedef
+	: typedef_type
+	{
+		if($1.type == (DistributedType*)NULL)
+		{
+			// Ignore this typedef, it should have already produced an error
+			break;
+		}
+
+		// Set the type's typedef
+		$1.type->set_alias($1.name);
+
+		bool type_added	= parsed_file->add_typedef($1.name, $1.type);
+		if(!type_added)
+		{
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name($1.name);
+			if(dtype == (DistributedType*)NULL)
+			{
+				parser_error("Unknown error adding typedef to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'typedef " + $1.name
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'typedef " + $1.name
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'typedef " + $1.name
+				             + "' to file because a struct was already declared with that name.");
+			}
+		}
+	}
+	;
+
+typedef_type
+	: KW_TYPEDEF nonmethod_type_with_name
+	{
+		$$ = $2;
+	}
+	| typedef_type '[' array_range ']'
+	{
+		$$ = $1;
+		$$.type = new ArrayType($1.type, $3);
+	}
+	;
+
+nonmethod_type_with_name
+	: nonmethod_type IDENTIFIER
+	{
+		TokenType::NameType nt;
+		nt.type = $1;
+		nt.name = $2;
+		$$ = nt;
+	}
+	;
+
+defined_type
+	: IDENTIFIER
+	{
+		DistributedType* dtype = parsed_file->get_type_by_name($1);
+		if(dtype == (DistributedType*)NULL)
+		{
+			parser_error("Type '" + string($1) + "' has not been declared.");
+			$$ = NULL;
+			break;
+		}
+
+		$$ = dtype;
+	}
+	;
+
+keyword_decl
+	: KW_KEYWORD keyword_decl_list
+	;
+
+keyword_decl_list
+	: empty
+	| keyword_decl_list IDENTIFIER
+	{
+		parsed_file->add_keyword($2);
+	}
+	;
+
+dclass
+	: KW_DCLASS IDENTIFIER
+	{
+		current_class = new Class(parsed_file, $2);
+	}
+	  class_inheritance '{' class_fields '}'
+	{
+		bool class_added = parsed_file->add_class(current_class);
+		if(!class_added)
+		{
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name(current_class->get_name());
+			if(dtype == (DistributedType*)NULL)
+			{
+				parser_error("Unknown error adding class to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'dclass " + current_class->get_name()
+				             + "' to file because a struct was already declared with that name.");
+			}
+		}
+	}
+	;
+
+class_inheritance
+	: empty
+	| ':' class_parents
+	;
+
+class_parents
+	: defined_class
+	{
+		if($1 != (Class*)NULL)
+		{
+			current_class->add_parent($1);
+		}
+	}
+	| class_parents ',' defined_class
+	{
+		if($3 != (Class*)NULL)
+		{
+			current_class->add_parent($3);
+		}
+	}
+	;
+
+defined_class
+	: IDENTIFIER
+	{
+		DistributedType* dtype = parsed_file->get_type_by_name($1);
+		if(dtype == (DistributedType*)NULL)
+		{
+			parser_error("'dclass " + string($1) + "' has not been declared.");
+			$$ = NULL;
+			break;
+		}
+
+		Struct* dstruct = dtype->as_struct();
+		if(dstruct == (Struct*)NULL)
+		{
+			parser_error("class cannot inherit from non-class type '" + string($1) + "'.");
+			$$ = NULL;
+			break;
+		}
+
+		Class* dclass = dstruct->as_class();
+		if(dclass == (Class*)NULL)
+		{
+			parser_error("class cannot inherit from struct type '" + string($1) + "'.");
+			$$ = NULL;
+			break;
+		}
+
+		$$ = dclass;
+	}
+	;
+
+class_fields
+	: empty
+	| class_fields ';'
+	| class_fields class_field ';'
+	{
+		if($2 == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated a parser error
+			break;
+		}
+
+		bool field_added = current_class->add_field($2);
+		if(!field_added)
+		{
+			// Lets be really descriptive about why this failed
+			if(current_class->get_field_by_name($2->get_name()))
+			{
+				parser_error("Cannot add field '" + $2->get_name()
+				             + "', a field with that name already exists in 'dclass "
+				             + current_class->get_name() + "'.");
+			}
+			else if(current_class->get_name() == $2->get_name())
+			{
+				if($2->as_molecular())
+				{
+					parser_error("Cannot use a molecular field as a constructor.");
+				}
+				else
+				{
+					parser_error("The constructor must be the first field in the class.");
+				}
+			}
+			else
+			{
+				parser_error("Unknown error adding field to class.");
+			}
+		}
+	}
+	;
+
+class_field
+	: named_field keyword_list
+	{
+		if($1 == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated a parser error
+			$$ = NULL;
+			break;
+		}
+
+		if($1->get_name().empty())
+		{
+			parser_error("An unnamed field can't be defined in a class.");
+			$$ = NULL;
+			break;
+		}
+
+		// Add the keywords to the class
+		for(auto it = $2.begin(); it != $2.end(); ++it)
+		{
+			$1->add_keyword(*it);
+		}
+
+		$$ = $1;
+	}
+	| molecular
+	{
+		$$ = (Field*)$1;
+	}
+	;
+
+dstruct
+	: KW_STRUCT IDENTIFIER
+	{
+		current_struct = new Struct(parsed_file, $2);
+	}
+	  '{' struct_fields '}'
+	{
+		bool struct_added = parsed_file->add_struct(current_struct);
+		if(!struct_added)
+		{
+			// Lets be really descriptive about why this failed
+			DistributedType* dtype = parsed_file->get_type_by_name(current_struct->get_name());
+			if(dtype == (DistributedType*)NULL)
+			{
+				parser_error("Unknown error adding struct to file.");
+				break;
+			}
+
+			Struct* dstruct = dtype->as_struct();
+			if(dstruct == (Struct*)NULL)
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a typedef was already declared with that name.");
+				break;
+			}
+
+			if(dstruct->as_class())
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a class was already declared with that name.");
+			}
+			else
+			{
+				parser_error("Cannot add 'struct " + current_struct->get_name()
+				             + "' to file because a struct was already declared with that name.");
+			}
+		}
+	}
+	;
+
+struct_fields
+	: empty
+	| struct_fields ';'
+	| struct_fields struct_field ';'
+	{
+		if($2 == (Field*)NULL || $2->get_type() == (DistributedType*)NULL)
+		{
+			// Ignore this field, it should have already generated a parser error
+			break;
+		}
+
+		if(!current_struct->add_field($2))
+		{
+			// Lets be really descriptive about why this failed
+			if(current_struct->get_field_by_name($2->get_name()))
+			{
+				parser_error("Cannot add field '" + $2->get_name()
+				             + "', a field with that name already exists in 'struct "
+				             + current_struct->get_name() + "'.");
+			}
+			else if(current_struct->get_name() == $2->get_name())
+			{
+				parser_error("A constructor can't be defined in a struct.");
+			}
+			else if($2->get_type()->as_method())
+			{
+				parser_error("A method can't be defined in a struct.");
+			}
+			else
+			{
+				parser_error("Unknown error adding field to struct.");
+			}
+		}
+	}
+	;
+
+struct_field
+	: named_field
+	| unnamed_field
+	;
+
+named_field
+	: field_with_name
+	| field_with_name_as_array
+	| field_with_name_and_default
+	| method_as_field
+	;
+
+unnamed_field
+	: nonmethod_type
+	{
+		$$ = new Field($1);
+	}
+	| nonmethod_type '='
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1, 0));
+	}
+	  type_value
+	{
+		Field* field = new Field($1);
+		if(!type_stack.empty()) depth_error(0, "unnamed field");
+		field->set_default_value($4);
+		$$ = field;
+	}
+	;
+
+field_with_name
+	: nonmethod_type_with_name
+	{
+		$$ = new Field($1.type, $1.name);
+	}
+	;
+
+field_with_name_as_array
+	: field_with_name '[' array_range ']'
+	{
+		$1->set_type(new ArrayType($1->get_type(), $3));
+		$$ = $1;
+	}
+	| field_with_name_as_array '[' array_range ']'
+	{
+		$1->set_type(new ArrayType($1->get_type(), $3));
+		$$ = $1;
+	}
+	;
+
+field_with_name_and_default
+	: field_with_name '=' 
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1->get_type(), 0));
+	}
+	  type_value
+	{
+		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
+		$1->set_default_value($4);
+		$$ = $1;
+	}
+	| field_with_name_as_array '='
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1->get_type(), 0));
+	}
+	  type_value
+	{
+		if(!type_stack.empty()) depth_error(0, "field '" + $1->get_name() + "'");
+		$1->set_default_value($4);
+		$$ = $1;
+	}
+	| method_as_field '=' method_value
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1->get_type(), 0));
+	}
+	  type_value
+	{
+		if(!type_stack.empty()) depth_error(0, "method");
+		$1->set_default_value($3);
+		$$ = $1;
+	}
+	;
+
+method_as_field
+	: IDENTIFIER method
+	{
+		$$ = new Field($2, $1);
+	}
+	;
+
+nonmethod_type
+	: nonmethod_type_no_array
+	| type_with_array
+	;
+
+nonmethod_type_no_array
+	: defined_type
+	{
+		if($1 == (DistributedType*)NULL)
+		{
+			// defined_type should have output an error, pass NULL upstream
+			$$ = NULL;
+			break;
+		}
+
+		if($1->get_type() == T_METHOD)
+		{
+			parser_error("Cannot use a method type here.");
+			$$ = NULL;
+			break;
+		}
+
+		$$ = $1;
+	}
+	| numeric_type
+	{
+		$$ = (DistributedType*)$1;
+	}
+	| builtin_array_type
+	;
+
+type_with_array
+	: numeric_type '[' array_range ']'
+	{
+		$$ = new ArrayType($1, $3);
+	}
+	| defined_type '[' array_range ']'
+	{
+		$$ = new ArrayType($1, $3);
+	}
+	| builtin_array_type '[' array_range ']'
+	{
+		$$ = new ArrayType($1, $3);
+	}
+	| type_with_array '[' array_range ']'
+	{
+		$$ = new ArrayType($1, $3);
+	}
+	;
+
+molecular
+	: IDENTIFIER ':' defined_field
+	{
+		MolecularField* mol = new MolecularField(current_class, $1);
+		if($3 == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = mol;
+			break;
+		}
+
+		bool field_added = mol->add_field($3);
+		if(!field_added)
+		{
+			if($3->as_molecular())
+			{
+				parser_error("Cannot add molecular '" + $3->get_name() + "' to a molecular field.");
+			}
+			else
+			{
+				parser_error("Unkown error adding field " + $3->get_name() + " to molecular '"
+				             + $1 + "'.");
+			}
+		}
+
+		$$ = mol;
+	}
+	| molecular ',' defined_field
+	{
+		if($3 == (Field*)NULL)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = $1;
+			break;
+		}
+
+		bool field_added = $1->add_field($3);
+		if(!field_added)
+		{
+			if($3->as_molecular())
+			{
+				parser_error("Cannot add molecular '" + $3->get_name() + "' to a molecular field.");
+			}
+			else if(!$1->has_matching_keywords(*$3))
+			{
+				parser_error("Mismatched keywords in molecular between " +
+					$1->get_field(0)->get_name() + " and " + $3->get_name() + ".");
+			}
+			else
+			{
+				parser_error("Unkown error adding field " + $3->get_name() + " to molecular '"
+				             + $1->get_name() + "'.");
+			}
+		}
+
+		$$ = $1;
+	}
+
+defined_field
+	: IDENTIFIER
+	{
+		if(!current_class)
+		{
+			parser_error("Field '" + $1 + "' not defined in current class.");
+			$$ = NULL;
+			break;
+		}
+
+		Field *field = current_class->get_field_by_name($1);
+		if(field == (Field*)NULL)
+		{
+			parser_error("Field '" + $1 + "' not defined in current class.");
+			$$ = NULL;
+			break;
+		}
+
+		$$ = field;
+	}
+	;
+
+builtin_array_type
+	: array_type_token
+	{
+		if($1 == T_STRING)
+		{
+			if(basic_string == NULL)
+			{
+				basic_string = new ArrayType(new NumericType(T_CHAR));
+				basic_string->set_alias("string");
+			}
+
+			$$ = basic_string;
+		}
+		else if($1 == T_BLOB)
+		{
+			if(basic_blob == NULL)
+			{
+				basic_blob = new ArrayType(new NumericType(T_UINT8));
+				basic_blob->set_alias("blob");
+			}
+
+			$$ = basic_blob;
+		}
+		else
+		{
+			parser_error("Found builtin ArrayType not handled by parser.");
+			$$ = NULL;
+		}
+	}
+	| array_type_token '(' array_range ')'
+	{
+		if($1 == T_STRING)
+		{
+			ArrayType* arr = new ArrayType(new NumericType(T_CHAR), $3);
+			arr->set_alias("string");
+			$$ = arr;
+		}
+		else if($1 == T_BLOB)
+		{
+			ArrayType* arr = new ArrayType(new NumericType(T_UINT8), $3);
+			arr->set_alias("blob");
+			$$ = arr;
+		}
+		else
+		{
+			parser_error("Found builtin ArrayType not handled by parser.");
+			$$ = NULL;
+		}
+	}
+	;
+
+numeric_type
+	: numeric_token_only
+	| numeric_with_modulus
+	| numeric_with_divisor
+	| numeric_with_range
+	;
+
+numeric_token_only
+	: numeric_type_token { $$ = new NumericType($1); }
+	;
+
+numeric_with_range
+	: numeric_token_only '(' numeric_range ')'
+	{
+		if(!$1->set_range($3))
+		{
+			parser_error("Invalid range for type.");
+		}
+
+		$$ = $1;
+	}
+	| numeric_with_modulus '(' numeric_range ')'
+	{
+		if(!$1->set_range($3))
+		{
+			parser_error("Invalid range for type.");
+		}
+
+		$$ = $1;
+	}
+	| numeric_with_divisor '(' numeric_range ')'
+	{
+		if(!$1->set_range($3))
+		{
+			parser_error("Invalid range for type.");
+		}
+
+		$$ = $1;
+	}
+	;
+
+numeric_with_modulus
+	: numeric_token_only '%' number
+	{
+		if(!$1->set_modulus($3))
+		{
+			parser_error("Invalid modulus for type.");
+		}
+
+		$$ = $1;
+	}
+	;
+
+numeric_with_divisor
+	: numeric_token_only '/' small_unsigned_integer
+	{
+		if(!$1->set_divisor($3))
+		{
+			parser_error("Invalid divisor for type.");
+		}
+	}
+	| numeric_with_modulus '/' small_unsigned_integer
+	{
+		if(!$1->set_divisor($3))
+		{
+			parser_error("Invalid divisor for type.");
+		}
+	}
+	;
+
+method
+	: '(' ')'
+	{
+		$$ = new Method();
+	}
+	| method_body ')'
+	{
+		$$ = $1;
+	}
+	;
+
+method_body
+	: '(' parameter
+	{
+		Method* fn = new Method();
+		bool param_added = fn->add_parameter($2);
+		if(!param_added)
+		{
+			parser_error("Unknown error adding parameter to method.");
+		}
+		$$ = fn;
+	}
+	| method_body ',' parameter
+	{
+		bool param_added = $1->add_parameter($3);
+		if(!param_added)
+		{
+			parser_error("Cannot add parameter '" + $3->get_name()
+			             + "', a parameter with that name is already used in this method.");
+		}
+		$$ = $1;
+	}
+	;
+
+parameter
+	: param_with_name
+	| param_with_name_as_array
+	| param_with_name_and_default
+	| nonmethod_type
+	{
+		$$ = new Parameter($1);
+	}
+	| nonmethod_type '=' 
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1,0));
+	}
+	  type_value
+	{
+		Parameter* param = new Parameter($1);
+		if(!type_stack.empty()) depth_error(0, "type");
+		param->set_default_value($4);
+		$$ = param;
+	}
+
+param_with_name
+	: nonmethod_type_no_array IDENTIFIER
+	{
+		$$ = new Parameter($1, $2);
+	}
+	;
+
+param_with_name_as_array
+	: param_with_name '[' array_range ']'
+	{
+		$1->set_type(new ArrayType($1->get_type(), $3));
+		$$ = $1;
+	}
+	| param_with_name_as_array '[' array_range ']'
+	{
+		$1->set_type(new ArrayType($1->get_type(), $3));
+		$$ = $1;
+	}
+	;
+
+param_with_name_and_default
+	: param_with_name '='
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1->get_type(), 0));
+	}
+	  type_value
+	{
+		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
+		$1->set_default_value($4);
+		$$ = $1;
+	}
+	| param_with_name_as_array '='
+	{
+		current_depth = 0;
+		type_stack.push(TypeAndDepth($1->get_type(), 0));
+	}
+	  type_value
+	{
+		if(!type_stack.empty()) depth_error(0, "parameter '" + $1->get_name() + "'");
+		$1->set_default_value($4);
+		$$ = $1;
+	}
+	;
+
+numeric_range
+	: empty { $$ = NumericRange(); }
+	| char_or_number { $$ = NumericRange($1, $1); }
+	| char_or_number '-' char_or_number { $$ = NumericRange($1, $3); }
+	;
+
+array_range
+	: empty { $$ = NumericRange(); }
+	| char_or_uint { $$ = NumericRange($1, $1); }
+	| char_or_uint '-' char_or_uint { $$ = NumericRange($1, $3); }
+	;
+
+char_or_uint
+	: CHAR
+	{
+		if($1.length() != 1)
+		{
+			parser_error("Single character required.");
+			$$ = 0;
+		}
+		else
+		{
+			$$ = (unsigned char)$1[0];
+		}
+	}
+	| small_unsigned_integer
+	;
+
+small_unsigned_integer
+	: UNSIGNED_INTEGER
+	{
+		unsigned int num = (unsigned int)$1;
+		if(num != $1)
+		{
+			parser_error("Number out of range.");
+			$$ = 1;
+		}
+		$$ = num;
+	}
+	;
+
+number
+	: UNSIGNED_INTEGER { $$ = (double)$1; }
+	| signed_integer { $$ = (double)$1; }
+	| REAL
+	;
+
+char_or_number
+	: CHAR
+	{
+		if($1.length() != 1)
+		{
+			parser_error("Single character required.");
+			$$ = 0;
+		}
+		else
+		{
+			$$ = (double)(unsigned char)$1[0];
+		}
+	}
+	| number
+	;
+
+type_value
+	: signed_integer
+	{
+		if(!check_depth()) depth_error("signed integer");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Remove numeric type from stack
+
+		$$ = number_value(dtype->get_type(), $1);
+	}
+	| UNSIGNED_INTEGER
+	{
+		if(!check_depth()) depth_error("unsigned integer");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Remove numeric type from stack
+
+		$$ = number_value(dtype->get_type(), $1);
+	}
+	| REAL
+	{
+		if(!check_depth()) depth_error("floating point");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Remove numeric type from stack
+
+		$$ = number_value(dtype->get_type(), $1);
+	}
+	| STRING
+	{
+		if(!check_depth()) depth_error("string");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Remove string type from stack
+
+		if(dtype->get_type() == T_STRING || dtype->get_type() == T_BLOB)
+		{
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length string has incorrect length.");
+			}
+
+			$$ = $1;
+		}
+		else if(dtype->get_type() == T_VARSTRING || dtype->get_type() == T_VARBLOB)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			$$ = string((char*)&length, sizeof(sizetag_t)) + $1;
+		}
+		else
+		{
+			parser_error("Cannot use string value for non-string type '"
+			             + format_type(dtype->get_type()) + "'.");
+			$$ = $1;
+		}
+	}
+	| HEX_STRING
+	{
+		if(!check_depth()) depth_error("hex-string");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Remove type from stack
+
+		if(dtype->get_type() == T_BLOB)
+		{
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length blob has incorrect length.");
+			}
+
+			$$ = $1;
+		}
+		else if(dtype->get_type() == T_VARBLOB)
+		{
+			// TODO: Check for range limits
+			$$ = $1;
+		}
+		else
+		{
+			parser_error("Cannot use hex value for non-blob type '"
+			             + format_type(dtype->get_type()) + "'.");
+			$$ = $1;
+		}
+	}
+	| array_value
+	| struct_value
+	;
+
+method_value
+	: '('
+	{
+		if(!check_depth()) depth_error("method");
+
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype->as_method())
+		{
+			current_depth++;
+			const Method* method = dtype->as_method();
+
+			size_t num_params = method->get_num_parameters();
+			for(unsigned int i = 1; i <= num_params; ++i)
+			{
+				// Reverse iteration
+				const Parameter* param = method->get_parameter(num_params-i);
+				// Add parameter types to stack such that the first is on top
+				type_stack.push(TypeAndDepth(param->get_type(), current_depth));
+			}
+		}
+		else
+		{
+			parser_error("Cannot use method-value for non-method type '"
+			             + format_type(dtype->get_type()) + "'.");
+		}
+	}
+	  parameter_values ')'
+	{
+		if(type_stack.top().type->as_method())
+		{
+			current_depth--;
+		}
+		type_stack.pop(); // Remove method type from the stack
+		$$ = $3;
+	}
+	;
+
+parameter_values
+	: type_value
+	| parameter_values ',' type_value
+	{
+		$$ = $1 + $3;
+	}
+	;
+
+struct_value
+	: '{'
+	{
+		if(!check_depth()) depth_error("struct");
+
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype->as_struct())
+		{
+			current_depth++;
+			const Struct* dstruct = dtype->as_struct();
+
+			size_t num_fields = dstruct->get_num_fields();
+			for(unsigned int i = 1; i <= num_fields; ++i)
+			{
+				// Reverse iteration
+				const Field* field = dstruct->get_field(num_fields-i);
+				// Add field types to stack such that the first is on top
+				type_stack.push(TypeAndDepth(field->get_type(), current_depth));
+			}
+		}
+		else
+		{
+			parser_error("Cannot use struct-composition for non-struct type '"
+			             + format_type(dtype->get_type()) + "'.");
+		}
+	}
+	  field_values '}'
+	{
+		if(type_stack.top().type->as_struct())
+		{
+			current_depth--;
+		}
+		type_stack.pop(); // Remove method type from the stack
+		$$ = $3;
+	}
+	;
+
+field_values
+	: type_value
+	| method_value
+	| field_values ',' type_value
+	{
+		$$ = $1 + $3;
+	}
+	| field_values ',' method_value
+	{
+		$$ = $1 + $3;
+	}
+	;
+
+array_value
+	: '[' ']' // empty array
+	{
+		if(!check_depth()) depth_error("array");
+
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop();
+		if(!dtype->as_array())
+		{
+			parser_error("Cannot use array-composition for non-array type '"
+			             + format_type(dtype->get_type()) + "'.");
+			$$ = "";
+			break;
+		}
+		const ArrayType* array = dtype->as_array();
+
+		string val;
+
+		if(array->get_array_size() > 0)
+		{
+			// For fixed size arrays, an empty array is an error
+			parser_error("Fixed-sized array of size "
+			             + to_string(array->get_array_size())
+			             + " can't have 0 elements.");
+		}
+		else if(array->has_range())
+		{
+			// If we have a range, 0 elements must be valid in the range
+			if(0 < array->get_range().min.uinteger)
+			{
+				parser_error("Too few elements in array value, minimum "
+				             + to_string(array->get_range().min.uinteger) + ".");
+			}
+		}
+
+		// Since a fixed-size array can't have zero elements, this always
+		// the default value for a varsize array, which is the length-tag 0.
+		$$ = string(sizeof(sizetag_t), '\0');
+	}
+	| '['
+	{
+		if(!check_depth()) depth_error("array");
+
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype->as_array())
+		{
+			const ArrayType* array = dtype->as_array();
+
+			// For arrays we're going to do something pretty hacky:
+			//    For every element we had we are going to increment the depth,
+			//    and after we finish the element_values production we will compare
+			//    the current_depth to the depth of our original symbol to check
+			//    if the array size is proper.
+			type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
+		}
+		else
+		{
+			parser_error("Cannot use array-composition for non-array type '"
+			             + format_type(dtype->get_type()) + "'.");
+		}
+	}
+	  element_values ']'
+	{
+		if(type_stack.top().type->as_array())
+		{
+			uint64_t actual_size = current_depth - type_stack.top().depth;
+			const ArrayType* array = type_stack.top().type->as_array();
+			if(array->has_range())
+			{
+				if(actual_size > array->get_range().max.uinteger)
+				{
+					parser_error("Too many elements in array value, maximum "
+					             + to_string(array->get_range().max.uinteger) + ".");
+				}
+				else if(actual_size < array->get_range().min.uinteger)
+				{
+					parser_error("Too few elements in array value, minimum "
+					             + to_string(array->get_range().min.uinteger) + ".");
+				}
+			}
+
+			if(array->get_array_size() == 0)
+			{
+				sizetag_t length = $3.length();
+				$$ = string((char*)&length, sizeof(sizetag_t)) + $3;
+			}
+			else
+			{
+				$$ = $3;
+			}
+			current_depth = type_stack.top().depth;
+		}
+
+		type_stack.pop(); // Remove array type from the stack
+	}
+	;
+
+element_values
+	: array_expansion
+	| element_values ',' 
+	{
+		// We popped off the only element we added, so we're back to the array
+		// Don't increment the depth; the array_expansion will add to
+		// the current_depth depending on the number of elements it adds.
+		const ArrayType* array = type_stack.top().type->as_array();
+		type_stack.push(TypeAndDepth(array->get_element_type(), current_depth));
+	}
+	  array_expansion
+	{
+		$$ = $1 + $4;
+	}
+	;
+
+array_expansion
+	: type_value
+	{
+		current_depth++;
+		$$ = $1;
+	}
+	| signed_integer '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
+		string val;
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
+		{
+			val += base;
+		}
+		$$ = val;
+	}
+	| UNSIGNED_INTEGER '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
+		string val;
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
+		{
+			val += base;
+		}
+		$$ = val;
+	}
+	| REAL '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		string base = number_value(dtype->get_type(), $1);
+
+		string val;
+		val.reserve(base.length() * $3);
+		for(unsigned int i = 0; i < $3; ++i)
+		{
+			val += base;
+		}
+		$$ = val;
+	}
+	| STRING '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		if(dtype->get_type() == T_STRING)
+		{
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length string has incorrect length.");
+			}
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+		else if(dtype->get_type() == T_VARSTRING)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			string base = string((char*)&length, sizeof(sizetag_t)) + $1;
+
+			string val;
+			val.reserve(base.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += base;
+			}
+			$$ = val;
+		}
+		else
+		{
+			parser_error("Cannot use string value for non-string type '"
+			             + format_type(dtype->get_type()) + "'.");
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+	}
+	| HEX_STRING '*' small_unsigned_integer
+	{
+		const DistributedType* dtype = type_stack.top().type;
+		type_stack.pop(); // Pop that array element type
+		current_depth += $3; // For arrays, we add 1 to the depth per element
+
+		if(dtype->get_type() == T_BLOB)
+		{
+			if($1.length() != dtype->get_size())
+			{
+				parser_error("Value for fixed-length blob has incorrect length.");
+			}
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+		else if(dtype->get_type() == T_VARBLOB)
+		{
+			// TODO: Check for range limits
+			// Prepend length tag
+			sizetag_t length = $1.length();
+			string base = string((char*)&length, sizeof(sizetag_t)) + $1;
+
+			string val;
+			val.reserve(base.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += base;
+			}
+			$$ = val;
+
+		}
+		else
+		{
+			parser_error("Cannot use hex value for non-blob type '"
+			             + format_type(dtype->get_type()) + "'.");
+
+			string val;
+			val.reserve($1.length() * $3);
+			for(unsigned int i = 0; i < $3; ++i)
+			{
+				val += $1;
+			}
+			$$ = val;
+		}
+	}
+	;
+
+signed_integer
+	: '+' UNSIGNED_INTEGER { $$ = $2; }
+	| '-' UNSIGNED_INTEGER { $$ = -$2; }
+	;
+
+array_type_token
+	: KW_STRING { $$ = T_STRING; }
+	| KW_BLOB { $$ = T_BLOB; }
+	;
+
+numeric_type_token
+	: KW_CHAR { $$ = T_CHAR; }
+	| KW_INT8 { $$ = T_INT8; }
+	| KW_INT16 { $$ = T_INT16; }
+	| KW_INT32 { $$ = T_INT32; }
+	| KW_INT64 { $$ = T_INT64; }
+	| KW_UINT8 { $$ = T_UINT8; }
+	| KW_UINT16 { $$ = T_UINT16; }
+	| KW_UINT32 { $$ = T_UINT32; }
+	| KW_UINT64 { $$ = T_UINT64; }
+	| KW_FLOAT32 { $$ = T_FLOAT32; }
+	| KW_FLOAT64 { $$ = T_FLOAT64; }
+	;
+
+keyword_list
+	: empty
+	{
+		$$ = vector<string>();
+	}
+	| keyword_list IDENTIFIER
+	{
+		if(!parsed_file->has_keyword($2))
+		{
+			parser_error("Keyword '" + $2 + "' has not been declared.");
+			break;
+		}
+
+		$1.push_back($2);
+		$$ = $1;
+	}
+	;
+
+empty
+	:
+	;
+
+%% /* Start helper function section */
+
+
+bool check_depth()
+{
+	return (!type_stack.empty() && current_depth == type_stack.top().depth);
+}
+
+void depth_error(string what)
+{
+	if(type_stack.empty() || current_depth < type_stack.top().depth)
+	{
+		parser_error("Too many nested values while parsing value for " + what + ".");
+	}
+	else
+	{
+		parser_error("Too few nested values while parsing value for " + what + ".");	
+	}
+}
+
+void depth_error(int depth, string what)
+{
+	if(current_depth > depth)
+	{
+		parser_error("Too few nested values before this " + what + " value.");
+	}
+	else
+	{
+		parser_error("Too many nested values before this " + what + " value.");
+	}
+}
+
+string number_value(Type type, double &number)
+{
+	switch(type)
+	{
+		case T_FLOAT32:
+		{
+			float v = number;
+			if(v == INFINITY || v == -INFINITY)
+			{
+				parser_error("Value is out of range for type 'float32'.");
+			}
+
+			return string((char*)&v, sizeof(float));
+		}
+		case T_FLOAT64:
+		{
+			return string((char*)&number, sizeof(double));
+		}
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
+		{
+			parser_error("Cannot use floating-point value for integer datatype.");
+			return string();
+		}
+		default:
+		{
+			parser_error("Cannot use floating-point value for non-numeric datatype.");
+			return string();
+		}
+	}
+}
+
+string number_value(Type type, int64_t &number)
+{
+	switch(type)
+	{
+		case T_INT8:
+		{
+			if(INT8_MIN > number || number > INT8_MAX)
+			{
+				parser_error("Signed integer out of range for type 'int8'.");
+			}
+
+			int8_t v = number;
+			return string((char*)&v, sizeof(int8_t));
+		}
+		case T_INT16:
+		{
+			if(INT16_MIN > number || number > INT16_MAX)
+			{
+				parser_error("Signed integer out of range for type 'int16'.");
+			}
+
+			uint16_t v = number;
+			return string((char*)&v, sizeof(int16_t));
+		}
+		case T_INT32:
+		{
+			if(INT32_MIN > number || number > INT32_MAX)
+			{
+				parser_error("Signed integer out of range for type 'int32'.");
+			}
+
+			int32_t v = number;
+			return string((char*)&v, sizeof(int32_t));
+		}
+		case T_INT64:
+		{
+			return string((char*)&number, sizeof(int64_t));
+		}
+		case T_CHAR:
+		case T_UINT8:
+		case T_UINT16:
+		case T_UINT32:
+		case T_UINT64:
+		{
+			if(number < 0)
+			{
+				parser_error("Can't use negative value for unsigned integer datatype.");
+			}
+			uint64_t v = number;
+			return number_value(type, v);
+		}
+		case T_FLOAT32:
+		case T_FLOAT64:
+		{
+			// Note: Expecting number to be converted to a double by value (ie. -1 becomes -1.0)
+			double v = number;
+			return number_value(type, v);
+		}
+		default:
+		{
+			parser_error("Cannot use signed integer value for non-numeric datatype.");
+			return string();
+		}
+	}
+}
+
+string number_value(Type type, uint64_t &number)
+{
+	switch(type)
+	{
+		case T_CHAR:
+		case T_UINT8:
+		{
+			if(number > UINT8_MAX)
+			{
+				parser_error("Unsigned integer out of range for type 'uint8'.");
+			}
+
+			uint8_t v = number;
+			return string((char*)&v, sizeof(uint8_t));
+		}
+		case T_UINT16:
+		{
+			if(number > UINT16_MAX)
+			{
+				parser_error("Unsigned integer out of range for type 'uint16'.");
+			}
+
+			uint16_t v = number;
+			return string((char*)&v, sizeof(uint16_t));
+		}
+		case T_UINT32:
+		{
+			if(number > UINT32_MAX)
+			{
+				parser_error("Unsigned integer out of range for type 'uint32'.");
+			}
+
+			uint32_t v = number;
+			return string((char*)&v, sizeof(uint32_t));
+		}
+		case T_UINT64:
+		{
+			return string((char*)&number, sizeof(uint64_t));
+		}
+		case T_INT8:
+		case T_INT16:
+		case T_INT32:
+		case T_INT64:
+		{
+			if(number > INT64_MAX)
+			{
+				parser_error("Unsigned integer out of range for signed integer datatype.");
+			}
+			int64_t v = number;
+			return number_value(type, v);
+		}
+		case T_FLOAT32:
+		case T_FLOAT64:
+		{
+			// Note: Expecting number to be converted to a double by value (ie. 3 becomes 3.0)
+			double v = number;
+			return number_value(type, v);
+		}
+		default:
+		{
+			parser_error("Cannot use unsigned integer value for non-numeric datatype.");
+			return string();
+		}
+	}
+}
+
+
+} // close namespace dclass

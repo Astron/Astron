@@ -8,9 +8,9 @@
 // unpack_db_fields reads the field_count and following fields into a required map and ram map
 // from a DBSERVER_GET_ALL_RESP or DBSERVER_GET_FIELDS_RESP message.
 // Returns false if unpacking failed for some reason.
-bool unpack_db_fields(DatagramIterator &dg, DCClass* dclass,
-                      std::unordered_map<DCField*, std::vector<uint8_t> > &required,
-                      std::map<DCField*, std::vector<uint8_t> > &ram);
+bool unpack_db_fields(DatagramIterator &dg, const dclass::Class* dclass,
+                      std::unordered_map<const dclass::Field*, std::vector<uint8_t> > &required,
+                      std::map<const dclass::Field*, std::vector<uint8_t> > &ram);
 
 class LoadingObject;
 

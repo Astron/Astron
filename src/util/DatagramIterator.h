@@ -1,7 +1,9 @@
 #pragma once
 #include "Datagram.h"
-#include "dcparser/dcClass.h"
-
+#include "dclass/dc/Struct.h"
+#include "dclass/dc/Method.h"
+#include "dclass/dc/Field.h"
+#include "dclass/dc/Parameter.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif
@@ -11,7 +13,7 @@
 class DatagramIteratorEOF : public std::runtime_error
 {
 	public:
-		DatagramIteratorEOF(const string &what) : std::runtime_error(what) { }
+		DatagramIteratorEOF(const std::string &what) : std::runtime_error(what) { }
 };
 
 // A DatagramIterator lets you step trough a datagram by reading a single value at a time.
@@ -222,103 +224,133 @@ class DatagramIterator
 			return read_data(m_dg.size() - m_offset);
 		}
 
-		// unpack_field accepts a DCField type and reads the value of the field into a buffer.
-		void unpack_field(DCPackerInterface *field, std::vector<uint8_t> &buffer)
-		{
-			// If field is a fixed-sized type like uint, int, float, etc
-			if(field->has_fixed_byte_size())
-			{
-				std::vector<uint8_t> data = read_data(field->get_fixed_byte_size());
-				buffer.insert(buffer.end(), data.begin(), data.end());
-				return;
-			}
 
-			// If field is a variable-sized type like string, blob, etc type with a "length" prefix
-			size_t length = field->get_num_length_bytes();
-			if(length > 0)
-			{
-				// Read length of field data
-				switch(length)
-				{
-					case 2:
-					{
-						uint16_t l = read_uint16();
-						buffer.insert(buffer.end(), (uint8_t*)&l, (uint8_t*)&l + 2);
-						length = l;
-					}
-					break;
-					case 4:
-					{
-						uint32_t l = read_uint32();
-						buffer.insert(buffer.end(), (uint8_t*)&l, (uint8_t*)&l + 4);
-						length = l;
-					}
-					break;
-				}
-
-				// Read field data into buffer
-				std::vector<uint8_t> data = read_data(length);
-				buffer.insert(buffer.end(), data.begin(), data.end());
-				return;
-			}
-
-			// If field is non-atomic, process each nested field
-			int num_nested = field->get_num_nested_fields();
-			for(int i = 0; i < num_nested; ++i)
-			{
-				unpack_field(field->get_nested_field(i), buffer);
-			}
-		}
-
-		// unpack_field can also be called without a reference to unpack into a new buffer.
-		std::vector<uint8_t> unpack_field(DCPackerInterface *field)
+		// unpack_field accepts a Field of a distributed class
+		//     and returns the packed value for the field.
+		std::vector<uint8_t> unpack_field(const dclass::Field* field)
 		{
 			std::vector<uint8_t> buffer;
 			unpack_field(field, buffer);
 			return buffer;
 		}
 
-		// skip_field can be used to seek past the packed field data for a DCField.
-		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
-		void skip_field(DCPackerInterface *field)
+		// unpack_field can also be called to read into an existing buffer.
+		void unpack_field(const dclass::Field* field, std::vector<uint8_t> &buffer)
 		{
-			// Skip over fields with fixed byte size
-			if(field->has_fixed_byte_size())
+			unpack_dtype(field->get_type(), buffer);
+		}
+
+		// unpack_dtype accepts a DistributedType and copies the data for the value into a buffer.
+		void unpack_dtype(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
+		{
+			using namespace dclass;
+			if(dtype->has_fixed_size())
 			{
-				check_read_length(field->get_fixed_byte_size());
-				m_offset += field->get_fixed_byte_size();
+				// If field is a fixed-sized type like uint, int, float, etc
+				// Also any other type lucky enough to be fixed size will be computed faster
+				std::vector<uint8_t> data = read_data(dtype->get_size());
+				buffer.insert(buffer.end(), data.begin(), data.end());
 				return;
 			}
 
-			// Skip over fields with variable byte size
-			size_t length = field->get_num_length_bytes();
-			if(length > 0)
+			// For the unlucky types, we have to figure out their size manually
+			switch(dtype->get_type())
 			{
-				// Get length of data
-				switch(length)
+				case T_VARSTRING:
+				case T_VARBLOB:
+				case T_VARARRAY:
 				{
-					case 2:
-					{
-						length = read_uint16();
-					}
+					dgsize_t len = read_size();
+					buffer.insert(buffer.end(), (uint8_t*)&len, (uint8_t*)&len + sizeof(dgsize_t));
+
+					std::vector<uint8_t> blob = read_data(len);
+					buffer.insert(buffer.end(), blob.begin(), blob.end());
 					break;
-					case 4:
+				}
+				case T_STRUCT:
+				{
+					const Struct* dstruct = dtype->as_struct();
+					size_t num_fields = dstruct->get_num_fields();
+					for(unsigned int i = 0; i < num_fields; ++i)
 					{
-						length = read_uint32();
+						unpack_dtype(dstruct->get_field(i)->get_type(), buffer);
 					}
 					break;
 				}
+				case T_METHOD:
+				{
+					const Method* dmethod = dtype->as_method();
+					size_t num_params = dmethod->get_num_parameters();
+					for(unsigned int i = 0; i < num_params; ++i)
+					{
+						unpack_dtype(dmethod->get_parameter(i)->get_type(), buffer);
+					}
+					break;
+				}
+				default:
+				{
+					// This case should be impossible, but a default is required by compilers
+					break;
+				}
+			}
+		}
 
-				// Skip over data
+		// skip_field can be used to seek past the packed field data for a Field.
+		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
+		void skip_field(const dclass::Field* field)
+		{
+			skip_dtype(field->get_type());
+		}
+
+		// skip_dtype can be used to seek past the packed data for a DistributedType.
+		//     Throws DatagramIteratorEOF if it skips past the end of the datagram.
+		void skip_dtype(const dclass::DistributedType *dtype)
+		{
+			using namespace dclass;
+			if(dtype->has_fixed_size())
+			{
+				dgsize_t length = dtype->get_size();
 				check_read_length(length);
 				m_offset += length;
 				return;
 			}
-			// If field is non-atomic, process each nested field
-			int num_nested = field->get_num_nested_fields();
-			for(int i = 0; i < num_nested; ++i)
+
+			switch(dtype->get_type())
 			{
-				skip_field(field->get_nested_field(i));
+				case T_VARSTRING:
+				case T_VARBLOB:
+				case T_VARARRAY:
+				{
+					dgsize_t length = read_size();
+					check_read_length(length);
+					m_offset += length;
+					break;
+				}
+				case T_STRUCT:
+				{
+					const Struct* dstruct = dtype->as_struct();
+					size_t num_fields = dstruct->get_num_fields();
+					for(unsigned int i = 0; i < num_fields; ++i)
+					{
+						skip_dtype(dstruct->get_field(i)->get_type());
+					}
+					break;
+				}
+				case T_METHOD:
+				{
+					const Method* dmethod = dtype->as_method();
+					size_t num_params = dmethod->get_num_parameters();
+					for(unsigned int i = 0; i < num_params; ++i)
+					{
+						skip_dtype(dmethod->get_parameter(i)->get_type());
+					}
+					break;
+				}
+				default:
+				{
+					// This case should be impossible, but a default is required by compilers
+					break;
+				}
 			}
 		}
 

@@ -1,9 +1,11 @@
 #include "global.h"
 #include "RoleFactory.h"
 #include "config/constraints.h"
+#include "dclass/file/read.h"
+#include "dclass/dc/Class.h"
+using dclass::Class;
 
 #include <boost/filesystem.hpp>
-
 #include <cstring>
 #include <string>  // std::string
 #include <vector>  // std::vector
@@ -103,8 +105,8 @@ int main(int argc, char *argv[])
 			// seperate path
 			boost::filesystem::path p(cfg_file);
 			boost::filesystem::path dir = p.parent_path();
-			string filename = p.filename().string();
-			string dir_str = dir.string();
+			std::string filename = p.filename().string();
+			std::string dir_str = dir.string();
 
 			// change directory
 			try
@@ -147,15 +149,27 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	dclass::File* dcf = new dclass::File();
+	dcf->add_keyword("required");
+	dcf->add_keyword("ram");
+	dcf->add_keyword("db");
+	dcf->add_keyword("broadcast");
+	dcf->add_keyword("clrecv");
+	dcf->add_keyword("clsend");
+	dcf->add_keyword("ownsend");
+	dcf->add_keyword("ownrecv");
+	dcf->add_keyword("airecv");
 	vector<string> dc_file_names = dc_files.get_val();
 	for(auto it = dc_file_names.begin(); it != dc_file_names.end(); ++it)
 	{
-		if(!g_dcf->read(*it))
+		bool ok = dclass::append(dcf, *it);
+		if(!ok)
 		{
 			mainlog.fatal() << "Could not read DC file " << *it << endl;
 			return 1;
 		}
 	}
+	g_dcf = dcf;
 
 	// Initialize configured MessageDirector
 	MessageDirector::singleton.init_network();
@@ -169,13 +183,20 @@ int main(int argc, char *argv[])
 		{
 			ConfigNode udnode = *it;
 			Uberdog ud;
-			ud.dcc = g_dcf->get_class_by_name(udnode["class"].as<string>());
-			if(!ud.dcc)
+
+			// Get the uberdog's class
+			const Class* dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
+			if(!dcc)
 			{
-				mainlog.fatal() << "DCClass " << udnode["class"].as<string>()
-				               << "Does not exist!" << endl;
+				// Make sure it exists
+				mainlog.fatal() << "For uberdog " << udnode["id"].as<doid_t>()
+								<< " Distributed class " << udnode["class"].as<std::string>()
+				                << " does not exist!" << std::endl;
 				exit(1);
 			}
+
+			// Setup uberdog
+			ud.dcc = dcc;
 			ud.anonymous = udnode["anonymous"].as<bool>();
 			g_uberdogs[udnode["id"].as<doid_t>()] = ud;
 		}

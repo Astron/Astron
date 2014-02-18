@@ -1,7 +1,12 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "dclass/dc/Class.h"
+#include "dclass/dc/Field.h"
 
 #include "LoadingObject.h"
+
+using dclass::Class;
+using dclass::Field;
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
                              doid_t parent_id, zone_t zone_id,
@@ -19,7 +24,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id,
-                             zone_t zone_id, DCClass *dclass, DatagramIterator &dgi,
+                             zone_t zone_id, const Class *dclass, DatagramIterator &dgi,
                              const std::unordered_set<uint32_t> &contexts) :
 	m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
 	m_dclass(dclass), m_valid_contexts(contexts)
@@ -100,7 +105,8 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			uint16_t dc_id = dgi.read_uint16();
-			if(dc_id >= g_dcf->get_num_classes())
+			const Class *r_dclass = g_dcf->get_class_by_id(dc_id);
+			if(!r_dclass)
 			{
 				m_log->error() << "Received object from database with unknown dclass"
 				               << " - id:" << dc_id << std::endl;
@@ -108,11 +114,10 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 				break;
 			}
 
-			DCClass *r_dclass = g_dcf->get_class(dc_id);
 			if(m_dclass && r_dclass != m_dclass)
 			{
-				m_log->error() << "Requested object of class " << m_dclass->get_number()
-				               << ", but received class " << dc_id << std::endl;
+				m_log->error() << "Requested object of class '" << m_dclass->get_id()
+				               << "', but received class " << dc_id << std::endl;
 				m_dbss->discard_loader(m_do_id);
 				break;
 			}
@@ -125,13 +130,13 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			}
 
 			// Add default values and updated values
-			int dcc_field_count = r_dclass->get_num_inherited_fields();
+			int dcc_field_count = r_dclass->get_num_fields();
 			for(int i = 0; i < dcc_field_count; ++i)
 			{
-				DCField *field = r_dclass->get_inherited_field(i);
-				if(!field->as_molecular_field())
+				const Field *field = r_dclass->get_field(i);
+				if(!field->as_molecular())
 				{
-					if(field->is_required())
+					if(field->has_keyword("required"))
 					{
 						if(m_field_updates.find(field) != m_field_updates.end())
 						{
@@ -143,7 +148,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 							m_required_fields[field] = std::vector<uint8_t>(val.begin(), val.end());
 						}
 					}
-					else if(field->is_ram())
+					else if(field->has_keyword("ram"))
 					{
 						if(m_field_updates.find(field) != m_field_updates.end())
 						{
