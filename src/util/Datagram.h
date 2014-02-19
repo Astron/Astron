@@ -153,7 +153,7 @@ class Datagram
 		void add_int8(const int8_t &v)
 		{
 			check_add_length(1);
-			memcpy(buf + buf_offset, &v, 1);
+			*(int8_t *)(buf + buf_offset) = v;
 			buf_offset += 1;
 		}
 
@@ -161,7 +161,7 @@ class Datagram
 		void add_int16(const int16_t &v)
 		{
 			check_add_length(2);
-			memcpy(buf + buf_offset, &v, 2);
+			*(int16_t *)(buf + buf_offset) = v;
 			buf_offset += 2;
 		}
 
@@ -169,7 +169,7 @@ class Datagram
 		void add_int32(const int32_t &v)
 		{
 			check_add_length(4);
-			memcpy(buf + buf_offset, &v, 4);
+			*(int32_t *)(buf + buf_offset) = v;
 			buf_offset += 4;
 		}
 
@@ -177,7 +177,7 @@ class Datagram
 		void add_int64(const int64_t &v)
 		{
 			check_add_length(8);
-			memcpy(buf + buf_offset, &v, 8);
+			*(int64_t *)(buf + buf_offset) = v;
 			buf_offset += 8;
 		}
 
@@ -185,7 +185,7 @@ class Datagram
 		void add_uint8(const uint8_t &v)
 		{
 			check_add_length(1);
-			memcpy(buf + buf_offset, &v, 1);
+			*(uint8_t *)(buf + buf_offset) = v;
 			buf_offset += 1;
 		}
 
@@ -193,7 +193,7 @@ class Datagram
 		void add_uint16(const uint16_t &v)
 		{
 			check_add_length(2);
-			memcpy(buf + buf_offset, &v, 2);
+			*(uint16_t *)(buf + buf_offset) = v;
 			buf_offset += 2;
 		}
 
@@ -201,7 +201,7 @@ class Datagram
 		void add_uint32(const uint32_t &v)
 		{
 			check_add_length(4);
-			memcpy(buf + buf_offset, &v, 4);
+			*(uint32_t *)(buf + buf_offset) = v;
 			buf_offset += 4;
 		}
 
@@ -209,7 +209,7 @@ class Datagram
 		void add_uint64(const uint64_t &v)
 		{
 			check_add_length(8);
-			memcpy(buf + buf_offset, &v, 8);
+			*(uint64_t *)(buf + buf_offset) = v;
 			buf_offset += 8;
 		}
 
@@ -217,7 +217,7 @@ class Datagram
 		void add_float32(const float &v)
 		{
 			check_add_length(4);
-			memcpy(buf + buf_offset, &v, 4);
+			*(float *)(buf + buf_offset) = v;
 			buf_offset += 4;
 		}
 
@@ -225,7 +225,7 @@ class Datagram
 		void add_float64(const double &v)
 		{
 			check_add_length(8);
-			memcpy(buf + buf_offset, &v, 8);
+			*(double *)(buf + buf_offset) = v;
 			buf_offset += 8;
 		}
 
@@ -235,7 +235,7 @@ class Datagram
 		void add_size(const dgsize_t &v)
 		{
 			check_add_length(sizeof(dgsize_t));
-			memcpy(buf + buf_offset, &v, sizeof(dgsize_t));
+			*(dgsize_t *)(buf + buf_offset) = v;
 			buf_offset += sizeof(dgsize_t);
 		}
 
@@ -245,7 +245,7 @@ class Datagram
 		void add_channel(const channel_t &v)
 		{
 			check_add_length(sizeof(channel_t));
-			memcpy(buf + buf_offset, &v, sizeof(channel_t));
+			*(channel_t *)(buf + buf_offset) = v;
 			buf_offset += sizeof(channel_t);
 		}
 
@@ -255,7 +255,7 @@ class Datagram
 		void add_doid(const doid_t &v)
 		{
 			check_add_length(sizeof(doid_t));
-			memcpy(buf + buf_offset, &v, sizeof(doid_t));
+			*(doid_t *)(buf + buf_offset) = v;
 			buf_offset += sizeof(doid_t);
 		}
 
@@ -265,7 +265,7 @@ class Datagram
 		void add_zone(const zone_t &v)
 		{
 			check_add_length(sizeof(zone_t));
-			memcpy(buf + buf_offset, &v, sizeof(zone_t));
+			*(zone_t *)(buf + buf_offset) = v;
 			buf_offset += sizeof(zone_t);
 		}
 
@@ -275,9 +275,9 @@ class Datagram
 		void add_location(const doid_t &parent, const zone_t &zone)
 		{
 			check_add_length(sizeof(doid_t) + sizeof(zone_t));
-			memcpy(buf + buf_offset, &parent, sizeof(doid_t));
+			*(doid_t *)(buf + buf_offset) = parent;
 			buf_offset += sizeof(doid_t);
-			memcpy(buf + buf_offset, &zone, sizeof(zone_t));
+			*(zone_t *)(buf + buf_offset) = zone;
 			buf_offset += sizeof(zone_t);
 		}
 
