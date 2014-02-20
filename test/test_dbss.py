@@ -279,7 +279,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(23) # setRDbD5
         expected.append(dg)
-        self.assertTrue(self.shard.expect_multi(expected))
+        self.assertTrue(*self.shard.expect_multi(expected, only = True))
 
 
         ### Cleanup ###
@@ -490,7 +490,7 @@ class TestDBStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect no response
-        self.assertTrue(*self.shard.expect_none())
+        self.assertTrue(self.shard.expect_none())
 
 
         ### Clean Up ###
@@ -799,7 +799,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # DBSS should expect none
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
         # Updated values should be returned from DBSS
         dg = self.shard.recv_maybe()
@@ -879,7 +879,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect nothing at database, DBSS only returns ram/required db fields
-        self.database.expect_none()
+        self.assertTrue(self.database.expect_none())
 
         # Expect failure resp sent to caller
         dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
@@ -923,14 +923,14 @@ class TestDBStateServer(unittest.TestCase):
 
         # Expect field value from DBSS
         dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(2) # Context
+        dg.add_uint32(3) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint32(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(99911)
         dg.add_uint16(setDb3)
         dg.add_string("He just really likes ice cream.")
-        self.shard.expect(dg)
+        self.assertTrue(*self.shard.expect(dg))
 
 
 

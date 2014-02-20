@@ -331,7 +331,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([50], 75757, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
         dg.add_uint32(5) # Context
         dg.add_uint8(FAILURE)
-        self.conn.expect(dg)
+        self.assertTrue(*self.conn.expect(dg))
         self.objects.flush()
 
         # Update shouldn't store ram fields, are update non-ram fields
@@ -356,7 +356,7 @@ class DatabaseBaseTests(object):
         dg = Datagram.create([50], 75757, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
         dg.add_uint32(7) # Context
         dg.add_uint8(FAILURE)
-        self.conn.expect(dg)
+        self.assertTrue(*self.conn.expect(dg))
         self.objects.flush()
 
         # Update shouldn't store ram fields, are update non-ram fields
@@ -415,7 +415,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Oh my gosh! Oh my gosh!! OMG! OMG!!!")
-        self.assertTrue(self.objects.expect(dg))
+        self.assertTrue(*self.objects.expect(dg))
 
         # Select all fields from the stored object
         dg = Datagram.create([75757], 60, DBSERVER_OBJECT_GET_ALL)
@@ -462,7 +462,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(9999)
         dg.add_uint16(setDb3)
         dg.add_string("... can you make me a sandwich?")
-        self.assertTrue(self.objects.expect(dg))
+        self.assertTrue(*self.objects.expect(dg))
 
         # Select all fields from the stored object
         dg = Datagram.create([75757], 60, DBSERVER_OBJECT_GET_ALL)
@@ -533,7 +533,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(doid)
         dg.add_uint16(setDb3)
         dg.add_string("Beware... beware!!!") # Field value
-        self.assertTrue(self.objects.expect(dg))
+        self.assertTrue(*self.objects.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([75757], 100, DBSERVER_OBJECT_GET_FIELD)
@@ -627,7 +627,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(doid)
         dg.add_uint16(setRDB3)
         dg.add_uint32(787878)
-        self.assertTrue(self.objects.expect(dg))
+        self.assertTrue(*self.objects.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([75757], 70, DBSERVER_OBJECT_GET_ALL)
@@ -771,7 +771,7 @@ class DatabaseBaseTests(object):
         dg.add_uint32(919191)
         dg.add_uint16(setDb3)
         dg.add_string("Mind if I... take a look inside the barn?!")
-        self.assertTrue(self.objects.expect(dg))
+        self.assertTrue(*self.objects.expect(dg))
 
         # Select object with new value
         dg = Datagram.create([75757], 70, DBSERVER_OBJECT_GET_ALL)
@@ -1057,7 +1057,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
 
-        self.assertTrue(self.objects.expect_multi(expected))
+        self.assertTrue(*self.objects.expect_multi(expected, only = True))
 
         # Get all object fields
         dg = Datagram.create([75757], 90, DBSERVER_OBJECT_GET_ALL)
@@ -1108,7 +1108,7 @@ class DatabaseBaseTests(object):
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
 
-        self.assertTrue(self.objects.expect_multi(expected))
+        self.assertTrue(*self.objects.expect_multi(expected, only = True))
 
 
         # Get all object fields
