@@ -22,4 +22,5 @@ class StateServer : public Role
 
 	private:
 		void handle_generate(DatagramIterator &dgi, bool has_other);
+		void handle_delete_ai(DatagramIterator &dgi, channel_t sender);
 };

@@ -1163,7 +1163,7 @@ class TestStateServer(ProtocolTest):
         conn.send(dg)
 
         # Then object should die:
-        dg = Datagram.create([62222<<ZONE_SIZE_BITS|125], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg = Datagram.create([62222<<ZONE_SIZE_BITS|125, 31337], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(201)
         self.expect(conn, dg)
 
@@ -1424,39 +1424,43 @@ class TestStateServer(ProtocolTest):
     def test_ownrecv(self):
         self.flush_failed()
         conn = self.connect(14253648)
+        doid = 77878788
+        owner = 14253648
+        location = 88833<<ZONE_SIZE_BITS|99922
 
         ### Test for broadcast of empty
         # Create an object
-        createEmptyDTO1(conn, 5, 77878788, 88833, 99922, 0)
+        createEmptyDTO1(conn, 5, doid, 88833, 99922, 0)
 
         # Set the object's owner
-        dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_OWNER)
-        dg.add_channel(14253648)
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_SET_OWNER)
+        dg.add_channel(owner)
         conn.send(dg)
 
         # Ignore EnterOwner message, not testing that here
         conn.flush()
 
         # Set field on an ownrecv message...
-        dg = Datagram.create([77878788], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_doid(77878788)
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
         conn.send(dg)
 
         # See if our owner channel gets it.
-        dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_doid(77878788)
+        dg = Datagram.create([owner, location], 5,
+                             STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
         self.expect(conn, dg)
 
         # Delete the object...
-        deleteObject(conn, 5, 77878788)
+        deleteObject(conn, 5, doid)
 
         # And expect to be notified
-        dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_DELETE_RAM)
-        dg.add_doid(77878788)
+        dg = Datagram.create([owner, location], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(doid)
         self.expect(conn, dg)
 
         ### Cleanup ###
