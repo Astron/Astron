@@ -249,12 +249,15 @@ class TestMessageDirector(ProtocolTest):
             for channel, should_receive in channels:
                 dg = Datagram.create([channel], 123456789, 5858)
                 dg.add_uint16(channel) # For some semblance of uniqueness
+
                 self.c2.send(dg)
+
                 if should_receive:
                     self.expect(self.c1, dg)
                     self.expectNone(self.c1) # No repeats!
                 else:
                     self.expectNone(self.c1)
+
                 # And, of course, l1 receives all of these:
                 self.expect(self.l1, dg)
 
@@ -364,8 +367,226 @@ class TestMessageDirector(ProtocolTest):
 
         # Grand finale: Cut c1 and see if the remaining range dies.
         self.c1.close()
-        self.__class__.c1 = self.new_connection()
+        self.c1 = self.new_connection()
         self.expect(self.l1, Datagram.create_remove_range(2000, 2100))
+        self.expectNone(self.l1)
+
+        # ... but we lied! Now there are some more tests
+
+        # Lets add a new range to play with
+        dg = Datagram.create_add_range(3000, 5000)
+        self.c1.send(dg)
+        self.expect(self.l1, dg)
+        check_channels([
+            (2499, False),
+            (2501, False),
+            (2999, False),
+            (3000, True),
+            (4000, True),
+            (4372, True),
+            (5000, True),
+            (5001, False),
+            (5109, False)])
+
+        # Test removing a range that intersects with the front part
+        dg = Datagram.create_remove_range(2950, 3043)
+        self.c1.send(dg)
+        self.expect(self.l1, dg)
+        check_channels([
+            (2913, False),
+            (2999, False),
+            (3000, False),
+            (3043, False),
+            (3044, True),
+            (4000, True),
+            (4372, True),
+            (5000, True),
+            (5001, False),
+            (5109, False)])
+
+        # Test removing a range that intersects with the end part
+        dg = Datagram.create_remove_range(4763, 6000)
+        self.c1.send(dg)
+        self.expect(self.l1, dg)
+        check_channels([
+            (3000, False),
+            (3043, False),
+            (3044, True),
+            (4000, True),
+            (4372, True),
+            (4762, True),
+            (4763, False),
+            (5000, False),
+            (5001, False),
+            (5109, False)])
+
+        # Now remove some from the middle again so we can test weird intersections
+        dg = Datagram.create_remove_range(3951, 4049)
+        self.c1.send(dg)
+        self.expect(self.l1, dg)
+        check_channels([
+            (3043, False),
+            (3044, True),
+            (3802, True),
+            (3950, True),
+            (3951, False),
+            (4049, False),
+            (4050, True),
+            (4133, True),
+            (4762, True),
+            (4763, False)])
+
+        # Ok... remove an intersection from the lower half of the upper range
+        dg = Datagram.create_remove_range(4030, 4070)
+        self.c1.send(dg)
+        # TODO: Decide what the appropriate forwarded message to l1 should be
+        #       For now, make sure we at least get a message but ignore it
+        self.assertTrue(self.l1.recv_maybe() is not None)
+        check_channels([
+            (3043, False),
+            (3044, True),
+            (3802, True),
+            (3950, True),
+            (3951, False),
+            (4070, False),
+            (4071, True),
+            (4133, True),
+            (4762, True),
+            (4763, False)])
+
+        # Now remove an intersection from the upper half of the lower range
+        dg = Datagram.create_remove_range(3891, 4040)
+        self.c1.send(dg)
+        # TODO: Decide what the appropriate forwarded message to l1 should be
+        #       For now, make sure we at least get a message but ignore it
+        self.assertTrue(self.l1.recv_maybe() is not None)
+        self.l1.flush()
+        check_channels([
+            (3043, False),
+            (3044, True),
+            (3672, True),
+            (3890, True),
+            (3891, False),
+            (3893, False),
+            (4070, False),
+            (4071, True),
+            (4762, True),
+            (4763, False)])
+
+        # Now lets intersect part of both the upper and lower range
+        dg = Datagram.create_remove_range(3700, 4200)
+        self.c1.send(dg)
+        # TODO: Decide what the appropriate forwarded message to l1 should be
+        #       For now, make sure we at least get a message but ignore it
+        self.assertTrue(self.l1.recv_maybe() is not None)
+        self.l1.flush()
+        check_channels([
+            (3043, False),
+            (3044, True),
+            (3699, True),
+            (3700, False),
+            (4200, False),
+            (4201, True),
+            (4762, True),
+            (4763, False)])
+
+        # Now lets subscribe our 2nd client to an intersecting range
+        dg = Datagram.create_add_range(3500, 4500)
+        self.c2.send(dg)
+        self.expect(self.l1, dg)
+
+        # Now remove an upper part of the lower range that is contained within c2's range
+        dg = Datagram.create_remove_range(3650, 3800)
+        self.c1.send(dg)
+        # We shouldn't get a remove for this upstream, because the 2nd client is still interested
+        self.expectNone(self.l1)
+        check_channels([
+            # Lower range
+            (3043, False),
+            (3044, True), # lower bound
+            (3333, True),
+            (3480, True),
+            (3499, True),
+            (3500, True),
+            (3649, True), # upper bound
+            (3650, False),
+
+            (3787, False),
+            (4000, False),
+
+            # Upper range
+            (4200, False),
+            (4201, True)]) # lower bound
+
+        # Now remove part of the lower range that contains just the lower bound of c2's range,
+        # but not the upper bound of the lower range.
+        dg = Datagram.create_remove_range(3475, 3525)
+        self.c1.send(dg)
+        # We should expect to receive only the portion of the range which is outside c2's range
+        self.expect(self.l1, Datagram.create_remove_range(3475, 3499))
+        check_channels([
+            # Lower range
+            (3043, False),
+            (3044, True), # lower bound
+            (3474, True), # upper bound
+            (3475, False),
+
+            (3482, False),
+            (3499, False),
+
+            # Mid range
+            (3525, False),
+            (3526, True), # Lower bound
+            (3600, True),
+            (3649, True), # upper bound
+            (3650, False),
+
+            # Upper range
+            (4200, False),
+            (4201, True)]) # lower bound
+
+        # Now remove a range from c2 which contains the mid-range's upper bound
+        # and the upper-range's lower bound.
+        dg = Datagram.create_remove_range(3620, 4300)
+        self.c2.send(dg)
+        # We should expect to recieve only the portion of c2 which is between the two ranges
+        self.expect(self.l1, Datagram.create_remove_range(3650, 4200))
+        check_channels([
+            # Lower range
+            (3474, True), # upper bound
+            (3475, False),
+
+            # Mid range
+            (3525, False),
+            (3526, True), # Lower bound
+            (3649, True), # upper bound
+            (3650, False),
+
+            # Upper range
+            (4200, False),
+            (4201, True), # lower bound
+            (4762, True), # upper bound
+            (4763, False)])
+
+        # Cut c2 and watch the part die that is not in c1
+        self.c2.close()
+        self.c2 = self.new_connection()
+        self.expect(self.l1, Datagram.create_remove_range(3500, 3525))
+        self.expectNone(self.l1)
+
+        # Now add c2 such that it contains all the c1 ranges
+        dg = Datagram.create_add_range(1000, 5000)
+        self.c2.send(dg)
+        self.expect(self.l1, dg)
+
+        # Then remove that range and see all the inbetween parts die
+        self.c2.send(Datagram.create_remove_range(1000, 5000))
+        expected = []
+        expected.append(Datagram.create_remove_range(1000, 3043))
+        expected.append(Datagram.create_remove_range(3475, 3525))
+        expected.append(Datagram.create_remove_range(3650, 4200))
+        expected.append(Datagram.create_remove_range(4763, 5000))
+        self.expectMany(self.l1, expected)
         self.expectNone(self.l1)
 
 if __name__ == '__main__':

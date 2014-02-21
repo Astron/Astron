@@ -313,8 +313,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 
 void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo, channel_t hi)
 {
-	m_log.debug() << "A participant has unsubscribed from range "
-	              << lo << "-" << hi << std::endl;
+	m_log.debug() << "A participant has unsubscribed from range [" << lo << ", " << hi << "].\n";
 
 	// Prepare participant and range
 	std::set<MDParticipantInterface*> participant_set;
@@ -358,7 +357,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		}
 		else if(m_range_subscriptions.rbegin()->first.upper() <= lo)
 		{
-			silent_intervals.insert(silent_intervals.end(), interval)
+			silent_intervals.insert(silent_intervals.end(), interval);
 		}
 		else
 		{
@@ -366,7 +365,6 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			auto next = ++m_range_subscriptions.begin();
 			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
 			{
-				fprintf(stderr, "Interval Lo: %u, Hi: %u\n", it->first.lower(), it->first.upper());
 				// For the range we care about
 				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
 				if(it->first.lower() <= hi && it->first.upper() >= lo)
@@ -394,7 +392,9 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-			              << it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
+			              << (it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
+			              << it->lower() << ", " << it->upper()
+			              << (it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
 			Datagram dg(CONTROL_REMOVE_RANGE);
 
 			channel_t lo = it->lower();
