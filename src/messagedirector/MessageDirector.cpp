@@ -322,9 +322,10 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 	interval_t interval = interval_t::closed(lo, hi);
 
+	const interval_t first = m_range_subscriptions.begin()->first;
+
 	// Unsubscribe participant from range
 	p->ranges() -= interval;
-	auto range_copy = m_range_subscriptions;
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
@@ -349,7 +350,15 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		// If that was the last interval in m_range_subscriptions, remove it upstream
 		if(boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
-			silent_intervals.insert(silent_intervals.end(), range_copy.begin()->first);
+			silent_intervals.insert(silent_intervals.end(), first);
+		}
+		else if(hi <= m_range_subscriptions.begin()->first.lower())
+		{
+			silent_intervals.insert(silent_intervals.end(), interval);
+		}
+		else if(m_range_subscriptions.rbegin()->first.upper() <= lo)
+		{
+			silent_intervals.insert(silent_intervals.end(), interval)
 		}
 		else
 		{
@@ -357,6 +366,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 			auto next = ++m_range_subscriptions.begin();
 			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
 			{
+				fprintf(stderr, "Interval Lo: %u, Hi: %u\n", it->first.lower(), it->first.upper());
 				// For the range we care about
 				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
 				if(it->first.lower() <= hi && it->first.upper() >= lo)
@@ -374,9 +384,9 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 							silent_intervals.insert(silent_intervals.end(),
 							                        boost::icl::inner_complement(it->first, next->first));
 						}
-						++next;
 					}
 				}
+				++next;
 			}
 		}
 

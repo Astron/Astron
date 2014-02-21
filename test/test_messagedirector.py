@@ -257,6 +257,7 @@ class TestMessageDirector(ProtocolTest):
                     self.expectNone(self.c1)
                 # And, of course, l1 receives all of these:
                 self.expect(self.l1, dg)
+
         check_channels([
             (500, False),
             (999, False),
@@ -310,7 +311,7 @@ class TestMessageDirector(ProtocolTest):
         # How about adding a second range that overlaps?
         dg = Datagram.create_add_range(1900, 2100)
         self.c1.send(dg)
-        # Verify that l1 asks for the entire range upstream...
+        # Verify that md asks for the entire range from l1...
         self.expect(self.l1, dg)
 
         # Now the subscriptions should be updated:
@@ -334,13 +335,21 @@ class TestMessageDirector(ProtocolTest):
         # Drop that first range...
         dg = Datagram.create_remove_range(1000, 1999)
         self.c1.send(dg)
-        # And again, l1 should ask for difference only...
-        expected = []
-        # Difference #1: Drop 1000-1299
-        expected.append(Datagram.create_remove_range(1000, 1299))
-        # Difference #2: Drop 1701-1999
-        expected.append(Datagram.create_remove_range(1701, 1999))
-        self.expectMany(self.l1, expected)
+
+        # -- See comments after block --
+        ## And again, l1 should ask for difference only...
+        #expected = []
+        ## Difference #1: Drop 1000-1299
+        #expected.append(Datagram.create_remove_range(1000, 1299))
+        ## Difference #2: Drop 1701-1999
+        #expected.append(Datagram.create_remove_range(1701, 1999))
+        #self.expectMany(self.l1, expected)
+
+        # In this case because there are no remaining subscriptions in the
+        # entire removed range, it is more efficient for the network, CPU,
+        # and memory to just forward the entire range.
+        dg = Datagram.create_remove_range(1000, 1999)
+        self.expect(self.l1, dg)
 
         # Now see if only the second range is active...
         check_channels([
