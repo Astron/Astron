@@ -251,6 +251,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 				dg.add_uint32(r_context);
 				dg.add_bool(false);
 				route_datagram(dg);
+				break;
 			}
 
 			if(field->has_keyword("db"))

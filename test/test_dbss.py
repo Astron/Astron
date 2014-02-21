@@ -835,7 +835,7 @@ class TestDBStateServer(ProtocolTest):
 
         doid1 = 9040
 
-        ### Test for GetField with required db field on inactive object###
+        ### Test for GetField with ram db field on inactive object###
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(1) # Context
@@ -867,7 +867,6 @@ class TestDBStateServer(ProtocolTest):
         dg.add_uint16(setDb3)
         dg.add_string("Slam-bam-in-a-can!")
         self.expect(self.shard, dg) # Expecting GetField success
-
 
 
         ### Test for GetField with existing non-ram db field ###
@@ -922,7 +921,7 @@ class TestDBStateServer(ProtocolTest):
         self.database.send(dg)
 
         # Expect field value from DBSS
-        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(3) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint32(2) # Field count
