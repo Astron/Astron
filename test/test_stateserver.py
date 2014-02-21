@@ -40,7 +40,7 @@ def deleteObject(conn, sender, doid):
     conn.send(dg)
 
 CONN_POOL_SIZE = 8
-class TestStateServer(unittest.TestCase):
+class TestStateServer(ProtocolTest):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
@@ -122,13 +122,13 @@ class TestStateServer(unittest.TestCase):
                                  STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
             appendMeta(dg, 101000000, 5000, 1500, DistributedTestObject1)
             dg.add_uint32(6789) # setRequired1
-            self.assertTrue(*ai.expect(dg))
+            self.expect(ai, dg)
 
             # .. as well as waking its children and getting their location.
             dg = Datagram.create([PARENT_PREFIX|101000000], 101000000,
                                  STATESERVER_OBJECT_GET_LOCATION)
             dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN)
-            self.assertTrue(*children.expect(dg))
+            self.expect(children, dg)
 
             ### Test for DeleteRam ### (continues from previous)
             # Destroy our object...
@@ -139,12 +139,12 @@ class TestStateServer(unittest.TestCase):
             dg.add_doid(101000000)
             appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New location
             appendMeta(dg, parent=5000, zone=1500) # Old location
-            self.assertTrue(*parent.expect(dg))
+            self.expect(parent, dg)
 
             # Object should announce its disappearance...
             dg = Datagram.create([5000<<ZONE_SIZE_BITS|1500], 5, STATESERVER_OBJECT_DELETE_RAM)
             dg.add_doid(101000000)
-            self.assertTrue(*ai.expect(dg))
+            self.expect(ai, dg)
 
         # We're done here...
         ### Cleanup ###
@@ -179,7 +179,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(101000005)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
-        self.assertTrue(*ai.expect(dg))
+        self.expect(ai, dg)
 
         ### Cleanup ###
         # Delete object
@@ -219,7 +219,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(100010)
         dg.add_uint16(setBA1)
         dg.add_uint16(0xF00D)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for AI notification of object deletions ### (continues from previous)
@@ -229,7 +229,7 @@ class TestStateServer(unittest.TestCase):
         # See if the AI receives the delete.
         dg = Datagram.create([1300, (5000<<ZONE_SIZE_BITS|1500)], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(100010)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         ### Cleanup ###
         self.disconnect(conn)
@@ -260,7 +260,7 @@ class TestStateServer(unittest.TestCase):
         createEmptyDTO1(conn, 5, doid1, 0, 0, 6789)
 
         # Object should not ask its parent (INVALID_CHANNEl) for an AI channel...
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # We'll ignore the wake children messages
         children1.flush()
@@ -275,10 +275,10 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.assertTrue(*ai1.expect(dg)) # AI received ENTER_AI
+        self.expect(ai1, dg) # AI received ENTER_AI
 
         # ... but should not tell its children (it has none) ...
-        self.assertTrue(children1.expect_none())
+        self.expectNone(children1)
 
 
 
@@ -294,13 +294,13 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1) # Id
         dg.add_channel(ai2chan) # New AI
         dg.add_channel(ai1chan) # Old AI
-        self.assertTrue(*ai1.expect(dg))
+        self.expect(ai1, dg)
 
         # ... and its new AI channel that it is entering.
         dg = Datagram.create([ai2chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(6789) # setRequired1
-        self.assertTrue(*ai2.expect(dg))
+        self.expect(ai2, dg)
 
 
 
@@ -328,21 +328,21 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(context)
         dg.add_doid(doid1)
         dg.add_channel(ai2chan)
-        self.assertTrue(*obj2.expect(dg)) # Receiving GET_AI_RESP from parent
+        self.expect(obj2, dg) # Receiving GET_AI_RESP from parent
 
         # Check to make sure we're receiving a wake children GetLocation message, and not something else
         dg = Datagram.create([PARENT_PREFIX|doid2], doid2, STATESERVER_OBJECT_GET_LOCATION)
         dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN)
-        self.assertTrue(*children2.expect(dg))
+        self.expect(children2, dg)
 
         # Then the second object should announce its presence to AI2...
         dg = Datagram.create([ai2chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid2, doid1, 1500, DistributedTestObject1)
         dg.add_uint32(1337) # setRequired1
-        self.assertTrue(*ai2.expect(dg)) # Obj2 enters AI2
+        self.expect(ai2, dg) # Obj2 enters AI2
 
         # ... but should not tell its children because it has none.
-        self.assertTrue(children2.expect_none())
+        self.expectNone(children2)
 
 
 
@@ -389,10 +389,10 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([ai2chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
         appendMeta(dg, doid2, doid1, 1500, DistributedTestObject1)
         dg.add_uint32(1337) # setRequired1
-        self.assertTrue(*ai2.expect(dg)) # Obj2 enters AI2
+        self.expect(ai2, dg) # Obj2 enters AI2
 
         # ... but should not tell its children because it has none.
-        self.assertTrue(children2.expect_none())
+        self.expectNone(children2)
 
 
 
@@ -409,7 +409,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1) # Id
         dg.add_channel(ai1chan) # New AI
         dg.add_channel(ai2chan) # Old AI
-        self.assertTrue(*children1.expect(dg))
+        self.expect(children1, dg)
         ai2expected.append(dg)
         # ... and its new AI channel that it is entering.
         dg = Datagram.create([ai1chan], doid1, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
@@ -422,7 +422,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid2) # Id
         dg.add_channel(ai1chan) # New AI
         dg.add_channel(ai2chan) # Old AI
-        self.assertTrue(children2.expect_none()) # It has no children
+        self.expectNone(children2) # It has no children
         ai2expected.append(dg)
         # ... and the new AI channel that it is entering.
         dg = Datagram.create([ai1chan], doid2, STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED)
@@ -430,8 +430,8 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(1337) # setRequired1
         ai1expected.append(dg)
 
-        self.assertTrue(*ai1.expect_multi(ai1expected, only=True))
-        self.assertTrue(*ai2.expect_multi(ai2expected, only=True))
+        self.expectMany(ai1, ai1expected)
+        self.expectMany(ai2, ai2expected)
 
 
 
@@ -444,11 +444,11 @@ class TestStateServer(unittest.TestCase):
         dg.add_channel(0x17FEEF71) # New AI
         dg.add_channel(ai1chan) # Old AI
         conn.send(dg)
-        self.assertTrue(*obj2.expect(dg)) # Ignore received dg
-        self.assertTrue(obj2.expect_none())
-        self.assertTrue(ai1.expect_none())
-        self.assertTrue(obj1.expect_none())
-        self.assertTrue(children2.expect_none())
+        self.expect(obj2, dg) # Ignore received dg
+        self.expectNone(obj2)
+        self.expectNone(ai1)
+        self.expectNone(obj1)
+        self.expectNone(children2)
 
         # A notification with the same AI channel should also do nothing:
         dg = Datagram.create([doid2], doid1, STATESERVER_OBJECT_CHANGING_AI)
@@ -456,11 +456,11 @@ class TestStateServer(unittest.TestCase):
         dg.add_channel(ai1chan)
         dg.add_channel(ai1chan)
         obj1.send(dg)
-        self.assertTrue(*obj2.expect(dg)) # Ignore received dg
-        self.assertTrue(obj2.expect_none())
-        self.assertTrue(ai1.expect_none())
-        self.assertTrue(obj1.expect_none())
-        self.assertTrue(children2.expect_none())
+        self.expect(obj2, dg) # Ignore received dg
+        self.expectNone(obj2)
+        self.expectNone(ai1)
+        self.expectNone(obj1)
+        self.expectNone(children2)
 
         ### Test for EnterAIWithRequiredOther ### (continues from previous)
         # Delete the object for easy reuse
@@ -493,7 +493,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Optional fields: 1
         dg.add_uint16(setBR1)
         dg.add_string("I should've been asleep 5 hours ago!")
-        self.assertTrue(*ai1.expect(dg)) # Obj2 enters AI1 w/ Required Other
+        self.expect(ai1, dg) # Obj2 enters AI1 w/ Required Other
 
 
 
@@ -518,7 +518,7 @@ class TestStateServer(unittest.TestCase):
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, 102000000, 13000, 6800, DistributedTestObject1)
         dg.add_uint32(12341234) # setRequired1
-        self.assertTrue(*ai.expect(dg))
+        self.expect(ai, dg)
 
         # At this point we don't care about zone 6800.
         ai.remove_channel(13000<<ZONE_SIZE_BITS|6800)
@@ -546,7 +546,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Other fields: 1
         dg.add_uint16(setBR1)
         dg.add_string("Boots of Coolness (+20%)")
-        self.assertTrue(*ai.expect(dg))
+        self.expect(ai, dg)
 
 
         ### Cleanup ###
@@ -573,7 +573,7 @@ class TestStateServer(unittest.TestCase):
         createEmptyDTO1(conn, 5, doid1, 0, 0, 43214321)
 
         # It shouldn't broadcast a location change because it doesn't have one.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Set the object's location
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
@@ -589,7 +589,7 @@ class TestStateServer(unittest.TestCase):
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid1, doid0, 9800, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        self.assertTrue(*location0.expect(dg))
+        self.expect(location0, dg)
 
 
 
@@ -599,7 +599,7 @@ class TestStateServer(unittest.TestCase):
         createEmptyDTO1(conn, 5, doid2, 0, 0, 66668888)
 
         # It shouldn't broadcast a location change because it doesn't have one.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Move the first object into a zone of the second
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_LOCATION)
@@ -613,9 +613,9 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1) # ID
         appendMeta(dg, parent=doid2, zone=9900) # New location
         appendMeta(dg, parent=doid0, zone=9800) # Old location
-        self.assertTrue(*location0.expect(dg))
-        self.assertTrue(*obj0.expect(dg))
-        self.assertTrue(*obj2.expect_multi([dg], only=False)) # Expect changing_location, ignore get_ai
+        self.expect(location0, dg)
+        self.expect(obj0, dg)
+        self.expectMany(obj2, [dg], ignoreExtra = True) # Expect changing_location, ignore get_ai
         obj2.flush()
 
         # ...and its entry into the new location
@@ -623,7 +623,7 @@ class TestStateServer(unittest.TestCase):
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid1, doid2, 9900, DistributedTestObject1)
         dg.add_uint32(43214321) # setRequired1
-        self.assertTrue(*location2.expect(dg))
+        self.expect(location2, dg)
 
 
 
@@ -636,7 +636,7 @@ class TestStateServer(unittest.TestCase):
         obj2.flush()
 
         # Expect no messages to children
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
         conn.remove_channel(PARENT_PREFIX|doid2)
 
         # Expect only the second to change zones.
@@ -644,9 +644,9 @@ class TestStateServer(unittest.TestCase):
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, doid2, doid0, 9800, DistributedTestObject1)
         dg.add_uint32(66668888) # setRequired1
-        self.assertTrue(*location0.expect(dg))
-        self.assertTrue(location0.expect_none())
-        self.assertTrue(location2.expect_none())
+        self.expect(location0, dg)
+        self.expectNone(location0)
+        self.expectNone(location2)
 
 
 
@@ -673,7 +673,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1)
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # New parent
         appendMeta(dg, parent=doid2, zone=9900) # Old parent
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Ignore already tested behavior
         conn.remove_channel(225)
@@ -712,7 +712,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1)
         appendMeta(dg, parent=doid0, zone=9800) # New parent
         appendMeta(dg, parent=INVALID_DO_ID, zone=INVALID_ZONE) # Old parent
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Ignore already tested behavior
         conn.remove_channel(230)
@@ -758,7 +758,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Optional fields: 1
         dg.add_uint16(setBR1)
         dg.add_string("The Cutest Thing Ever!")
-        self.assertTrue(*location2.expect(dg))
+        self.expect(location2, dg)
 
 
 
@@ -795,7 +795,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(44004400) # setRequired1
         dg.add_uint32(88008800) # setRDB3
         dg.add_uint16(0) # Optional fields: 0
-        self.assertTrue(*location0.expect(dg))
+        self.expect(location0, dg)
 
 
         ### Clean up ###
@@ -824,7 +824,7 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, 110000000, 67000, 2000, DistributedTestObject3)
         dg.add_uint32(12123434) # setRequired1
         dg.add_uint32(0xC0FFEE) # setRDB3
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Cool, now let's test the broadcast messages:
         for field in [setRDB3, setRequired1]:
@@ -837,7 +837,7 @@ class TestStateServer(unittest.TestCase):
             dg.add_doid(110000000)
             dg.add_uint16(field)
             dg.add_uint32(0x31415927)
-            self.assertTrue(*conn.expect(dg))
+            self.expect(conn, dg)
 
         # This message is NOT part of DTO1/3 and should fail.
         # Bonus points for logging an ERROR log.
@@ -846,7 +846,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(setB2)
         dg.add_uint32(0x11225533)
         conn.send(dg)
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         ### Cleanup ###
         deleteObject(conn, 5, 110000000)
@@ -867,7 +867,7 @@ class TestStateServer(unittest.TestCase):
                 STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
         dg.add_uint32(819442) # setRequired1
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Send it an update on a bad field...
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -877,7 +877,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Nothing should happen and the SS should log an error.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
 
         ### Test for updating with a truncated field ### (continues from previous)
@@ -889,7 +889,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Nothing should happen + error.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
 
         ### Test for creating an object with an in-use doid ### (continues from previous)
@@ -898,7 +898,7 @@ class TestStateServer(unittest.TestCase):
 
         # NOTHING SHOULD HAPPEN - additionally, the SS should log either an
         # error or a warning
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Sanity check, make sure neither of the last three tests have changed any values
         dg = Datagram.create([234000000], 5, STATESERVER_OBJECT_GET_ALL)
@@ -912,7 +912,7 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, 234000000, 80000, 1234, DistributedTestObject1)
         dg.add_uint32(819442) # setRequired1
         dg.add_uint16(0) # Optional fields: 0
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for creating an object without one if its required fields ###
@@ -922,7 +922,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Once again, nothing should happen and the SS should log an ERROR.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Additionally, no object should be received on a get all
         dg = Datagram.create([235000000], 5, STATESERVER_OBJECT_GET_ALL)
@@ -931,7 +931,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Values should be unchanged
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
 
         ### Test for creating an object with an unrecognized DistributedClass ###
@@ -941,7 +941,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Nothing should happen and the SS should log an ERROR.
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Additionally, no object should be received on a get all
         dg = Datagram.create([236000000], 5, STATESERVER_OBJECT_GET_ALL)
@@ -950,7 +950,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Values should be unchanged
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         ### Cleanup ###
         deleteObject(conn, 5, 234000000)
@@ -972,7 +972,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Expect no response
-        self.assertTrue(conn.expect_none()) # should not recieve GetFieldResp
+        self.expectNone(conn) # should not recieve GetFieldResp
         context += 1
 
 
@@ -987,7 +987,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Expect no response
-        self.assertTrue(conn.expect_none()) # should not recieve GetFieldsResp
+        self.expectNone(conn) # should not recieve GetFieldsResp
         context += 1
 
 
@@ -1000,7 +1000,7 @@ class TestStateServer(unittest.TestCase):
         context += 1
 
         # Expect no response
-        self.assertTrue(conn.expect_none()) # should not recieve GetAllResp
+        self.expectNone(conn) # should not recieve GetAllResp
 
 
         ### Test SetField won't update when given incorrect doid ###
@@ -1024,7 +1024,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRequired1)
         dg.add_uint32(0x828)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
 
@@ -1052,7 +1052,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRequired1)
         dg.add_uint32(0x828)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
     # Tests the message CREATE_OBJECT_WITH_REQUIRED_OTHER
     def test_create_with_other(self):
@@ -1075,7 +1075,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Extra fields: 1
         dg.add_uint16(setBR1)
         dg.add_string("Cupcakes, so sweet and tasty...")
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # If we try to include a non-ram as OTHER...
         dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER)
@@ -1092,7 +1092,7 @@ class TestStateServer(unittest.TestCase):
                              STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
         appendMeta(dg, 545640000, 90000, 4321, DistributedTestObject1)
         dg.add_uint32(2099) # setRequired1
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Cleanup ###
@@ -1125,7 +1125,7 @@ class TestStateServer(unittest.TestCase):
             dg = Datagram.create([0x4a03], doid, STATESERVER_OBJECT_GET_LOCATION_RESP)
             dg.add_uint32(context)
             appendMeta(dg, doid, parent, zone)
-            self.assertTrue(*conn.expect(dg))
+            self.expect(conn, dg)
 
             # Found the object! Now clean it up.
             deleteObject(conn, 5, doid)
@@ -1155,7 +1155,7 @@ class TestStateServer(unittest.TestCase):
         conn.send(dg)
 
         # Nothing should happen:
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
         # Now the correct AI:
         dg = Datagram.create([100100], 5, STATESERVER_DELETE_AI_OBJECTS)
@@ -1165,7 +1165,7 @@ class TestStateServer(unittest.TestCase):
         # Then object should die:
         dg = Datagram.create([62222<<ZONE_SIZE_BITS|125], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(201)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         ### Cleanup ###
         self.disconnect(conn)
@@ -1192,7 +1192,7 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, 15000, 4, 2, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         dg.add_uint16(0) # Optional fields: 0
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
 
@@ -1210,7 +1210,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setRequired1)
         dg.add_uint32(0)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         ### Test for GetField on a valid field with no set value ### (continues from previous)
         # Get a field not present on the object...
@@ -1224,7 +1224,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(0xBAD5EED) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for GetField on an invalid field ### (continues from previous)
@@ -1239,7 +1239,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(0x5EE5BAD) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for GetFields on fields with set values ### (continues from previous)
@@ -1299,7 +1299,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # Field count
         dg.add_uint16(setBR1)
         dg.add_string("MY HAT IS AWESOME!!!")
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for GetFields with only unset fields ### (continues from previous)
@@ -1317,7 +1317,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0x822F755F) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint16(0) # Field count
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for GetFields with only invalid fields ### (continues from previous)
@@ -1334,7 +1334,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(0x5FFC422C) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Test for GetFields with mixed valid and invalid fields ### (continues from previous)
@@ -1351,7 +1351,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
         dg.add_uint32(0x4EEB311B) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Cleanup ###
@@ -1395,7 +1395,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(setB1)
         dg.add_uint8(118)
         # TODO: Implement partial field broadcasts, then uncomment the test
-        #self.assertTrue(*location.expect(dg))
+        #self.expect(location, dg)
         location.flush()
 
         # Get the ram fields to make sure they're set
@@ -1413,7 +1413,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint16(1) # 1 extra field:
         dg.add_uint16(setDb3)
         dg.add_string('Time is candy')
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         ### Cleanup ###
         deleteObject(conn, 5985858, 55555)
@@ -1449,7 +1449,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(77878788)
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Delete the object...
         deleteObject(conn, 5, 77878788)
@@ -1457,7 +1457,7 @@ class TestStateServer(unittest.TestCase):
         # And expect to be notified
         dg = Datagram.create([14253648], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(77878788)
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         ### Cleanup ###
         self.disconnect(conn)
@@ -1488,7 +1488,7 @@ class TestStateServer(unittest.TestCase):
         dg = Datagram.create([owner1chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
-        self.assertTrue(*owner1.expect(dg))
+        self.expect(owner1, dg)
 
 
 
@@ -1503,12 +1503,12 @@ class TestStateServer(unittest.TestCase):
         dg.add_doid(doid1)
         dg.add_channel(owner2chan) # New owner
         dg.add_channel(owner1chan) # Old owner
-        self.assertTrue(*owner1.expect(dg))
+        self.expect(owner1, dg)
         # ... and see if it enters the new owner.
         dg = Datagram.create([owner2chan], doid1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         appendMeta(dg, doid1, 0, 0, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
-        self.assertTrue(*owner2.expect(dg))
+        self.expect(owner2, dg)
 
 
 
@@ -1588,7 +1588,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(37) # setY
         dg.add_uint32(999999) # setUnrelated
         dg.add_uint32(11) # setZ
-        self.assertTrue(*location0.expect(dg))
+        self.expect(location0, dg)
 
         # Send a molecular update...
         dg = Datagram.create([73317331], 5, STATESERVER_OBJECT_SET_FIELD)
@@ -1606,7 +1606,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(55) # setX
         dg.add_uint32(66) # setY
         dg.add_uint32(77) # setZ
-        self.assertTrue(*location0.expect(dg))
+        self.expect(location0, dg)
 
 
 
@@ -1626,7 +1626,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(999999) # setUnrelated
         dg.add_uint32(77) # setZ
         dg.add_uint16(0) # Optional fields: 0
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
 
@@ -1648,7 +1648,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint8(1) # setOne
         dg.add_uint8(2) # setTwo
         dg.add_uint8(3) # setThree
-        self.assertTrue(*location0.expect(dg))
+        self.expect(location0, dg)
 
         # A query should have all of the individual fields, not the molecular.
         dg = Datagram.create([73317331], 13371337, STATESERVER_OBJECT_GET_ALL)
@@ -1785,10 +1785,10 @@ class TestStateServer(unittest.TestCase):
         appendMeta(dg, doid3, doid0, 930, DistributedTestObject1)
         dg.add_uint32(0) # setRequired1
         expected.append(dg)
-        self.assertTrue(*conn.expect_multi(expected, only=True))
+        self.expectMany(conn, expected)
 
         # Shouldn't receive messages from any of the other objects
-        self.assertTrue(conn.expect_none())
+        self.expectNone(conn)
 
 
         ### Cleanup ###
@@ -1829,14 +1829,14 @@ class TestStateServer(unittest.TestCase):
         # Expect children to receive delete children...
         dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
         dg.add_doid(doid0)
-        self.assertTrue(*children0.expect(dg))
+        self.expect(children0, dg)
         # ... and then broadcast their own deletion
         dg = Datagram.create([doid0<<ZONE_SIZE_BITS|710], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid1)
-        self.assertTrue(*location1.expect(dg))
+        self.expect(location1, dg)
         dg = Datagram.create([doid0<<ZONE_SIZE_BITS|720], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid2)
-        self.assertTrue(*location20.expect(dg))
+        self.expect(location20, dg)
 
 
 
@@ -1857,15 +1857,15 @@ class TestStateServer(unittest.TestCase):
         # Expect the first object to receive delete children from object zero...
         dg = Datagram.create([PARENT_PREFIX|doid0], 5, STATESERVER_OBJECT_DELETE_CHILDREN)
         dg.add_doid(doid0)
-        self.assertTrue(*children0.expect(dg))
+        self.expect(children0, dg)
         # ... and delete itself...
         dg = Datagram.create([doid0<<ZONE_SIZE_BITS|710], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid1)
-        self.assertTrue(*location1.expect(dg))
+        self.expect(location1, dg)
         # ... and propogate the deletion to its child...
         dg = Datagram.create([doid1<<ZONE_SIZE_BITS|720], 5, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid2)
-        self.assertTrue(*location21.expect(dg))
+        self.expect(location21, dg)
 
 
         ### Cleanup ###
@@ -1907,7 +1907,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(0) # lastBlock.x
         dg.add_uint32(0) # lastBlock.y
         dg.add_uint32(0) # lastBlock.z
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
         # Update the object with some new values
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_SET_FIELDS)
@@ -1938,7 +1938,7 @@ class TestStateServer(unittest.TestCase):
         dg.add_uint32(171) # lastBlock.x
         dg.add_uint32(282) # lastBlock.y
         dg.add_uint32(393) # lastBlock.z
-        self.assertTrue(*conn.expect(dg))
+        self.expect(conn, dg)
 
 
         ### Cleanup ###

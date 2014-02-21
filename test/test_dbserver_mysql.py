@@ -1,11 +1,5 @@
 #!/usr/bin/env python2
 import unittest
-from socket import *
-
-from common import *
-from testdc import *
-
-from test_dbserver import DatabaseBaseTests
 
 '''
 CONFIG = """\
@@ -18,7 +12,8 @@ general:
 
 roles:
     - type: database
-      control: 777
+      control: 75757
+      broadcast: true
       generate:
         min: 1000000
         max: 1000010
@@ -28,17 +23,4 @@ roles:
         password: sudowoodo
         database: astron_test
 """ % test_dc
-
-class TestDatabaseServerMySQL(unittest.TestCase, DatabaseBaseTests):
-    @classmethod
-    def setUpClass(cls):
-        cls.daemon = Daemon(CONFIG)
-        cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
-if __name__ == '__main__':
-    unittest.main()
 '''

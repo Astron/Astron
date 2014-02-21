@@ -10,7 +10,7 @@ messagedirector:
     connect: 127.0.0.1:57124
 """
 
-class TestMessageDirector(unittest.TestCase):
+class TestMessageDirector(ProtocolTest):
     @classmethod
     def new_connection(cls):
         c = socket(AF_INET, SOCK_STREAM)
@@ -51,7 +51,7 @@ class TestMessageDirector(unittest.TestCase):
         self.c1.send(dg)
 
         # Make sure the MD passes it upward.
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
     def test_subscribe(self):
         self.l1.flush()
@@ -61,56 +61,56 @@ class TestMessageDirector(unittest.TestCase):
         # Subscribe to a channel...
         dg = Datagram.create_add_channel(12345654321)
         self.c1.send(dg)
-        self.assertTrue(self.c1.expect_none())
+        self.expectNone(self.c1)
         # Make sure the MD subscribes to its parent.
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
         # Send a test datagram on second connection...
         dg = Datagram()
         dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c2.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
+        self.expect(self.c1, dg)
         # MD will, of course, relay this datagram upward.
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
         # Subscribe on the second connection...
         dg = Datagram.create_add_channel(12345654321)
         self.c2.send(dg)
-        self.assertTrue(self.c2.expect_none())
+        self.expectNone(self.c2)
         # MD should not ask for the channel a second time.
-        self.assertTrue(self.l1.expect_none())
+        self.expectNone(self.l1)
 
         # Send a test datagram on first connection...
         dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c1.send(dg)
-        self.assertTrue(*self.c2.expect(dg)) # Should be relayed to second.
-        self.assertTrue(*self.l1.expect(dg)) # Should be sent upward.
-        #self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
+        self.expect(self.c2, dg) # Should be relayed to second.
+        self.expect(self.l1, dg) # Should be sent upward.
+        #self.expectNone(self.c1) # Should NOT be echoed back.
 
         # Unsubscribe on the first connection...
         dg = Datagram.create_remove_channel(12345654321)
         self.c1.send(dg)
-        self.assertTrue(self.c1.expect_none())
-        self.assertTrue(self.c2.expect_none())
+        self.expectNone(self.c1)
+        self.expectNone(self.c2)
         # MD should NOT unsubscribe from parent!
-        self.assertTrue(self.l1.expect_none())
+        self.expectNone(self.l1)
 
         # Send another test datagram on second connection...
         dg = Datagram.create([12345654321], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.c2.send(dg)
-        self.assertTrue(*self.l1.expect(dg)) # Should be sent upward.
-        self.assertTrue(self.c2.expect_none()) # Should NOT be relayed.
-        self.assertTrue(self.c1.expect_none()) # Should NOT be echoed back.
+        self.expect(self.l1, dg) # Should be sent upward.
+        self.expectNone(self.c2) # Should NOT be relayed.
+        self.expectNone(self.c1) # Should NOT be echoed back.
 
         # Abandon the second connection, which should auto-unsubscribe it.
         self.c2.close()
         self.__class__.c2 = self.new_connection()
-        self.assertTrue(self.c1.expect_none())
+        self.expectNone(self.c1)
         # MD should unsubscribe from parent.
-        self.assertTrue(*self.l1.expect(Datagram.create_remove_channel(12345654321)))
+        self.expect(self.l1, Datagram.create_remove_channel(12345654321))
 
     def test_multi(self):
         self.l1.flush()
@@ -133,42 +133,42 @@ class TestMessageDirector(unittest.TestCase):
         dg = Datagram.create([2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
-        self.assertTrue(*self.c2.expect(dg))
+        self.expect(self.c1, dg)
+        self.expect(self.c2, dg)
 
         # A datagram to channels 1111 and 3333 should be delievered to both.
         dg = Datagram.create([1111, 3333], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
-        self.assertTrue(*self.c2.expect(dg))
+        self.expect(self.c1, dg)
+        self.expect(self.c2, dg)
 
         # A datagram should only be delivered once if multiple channels match.
         dg = Datagram.create([1111, 2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
-        self.assertTrue(self.c1.expect_none())
-        self.assertTrue(*self.c2.expect(dg))
+        self.expect(self.c1, dg)
+        self.expectNone(self.c1)
+        self.expect(self.c2, dg)
 
         # Let's try something really absurd:
         dg = Datagram.create([1111, 2222, 3333, 1111, 1111,
                               2222, 3333, 3333, 2222], 0, 1234)
         dg.add_uint32(0xDEADBEEF)
         self.l1.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
-        self.assertTrue(self.c1.expect_none())
-        self.assertTrue(*self.c2.expect(dg))
-        self.assertTrue(self.c2.expect_none())
+        self.expect(self.c1, dg)
+        self.expectNone(self.c1)
+        self.expect(self.c2, dg)
+        self.expectNone(self.c2)
 
         # And, of course, sending this monstrosity on c1 should result in it
         # showing up on c2 and l1 once only; no echo back on c1.
         self.c1.send(dg)
-        self.assertTrue(*self.l1.expect(dg))
-        self.assertTrue(self.l1.expect_none())
-        self.assertTrue(*self.c2.expect(dg))
-        self.assertTrue(self.c2.expect_none())
-        self.assertTrue(self.c1.expect_none())
+        self.expect(self.l1, dg)
+        self.expectNone(self.l1)
+        self.expect(self.c2, dg)
+        self.expectNone(self.c2)
+        self.expectNone(self.c1)
 
         # Unsubscribe the channels...
         for channel in [1111, 2222, 3333]:
@@ -191,19 +191,19 @@ class TestMessageDirector(unittest.TestCase):
         self.c1.send(dg2)
 
         # Verify nothing's happening yet...
-        self.assertTrue(self.l1.expect_none())
-        self.assertTrue(self.c1.expect_none())
-        self.assertTrue(self.c2.expect_none())
+        self.expectNone(self.l1)
+        self.expectNone(self.c1)
+        self.expectNone(self.c2)
 
         # Reconnect c1 and see if dg gets sent.
         self.c1.close()
         self.__class__.c1 = self.new_connection()
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
         # Reconnect c1, the message shouldn't be sent again
         self.c1.close()
         self.__class__.c1 = self.new_connection()
-        self.assertTrue(self.l1.expect_none())
+        self.expectNone(self.l1)
 
         # Hang dg as a post-remove for c2...
         self.c2.send(dg2)
@@ -214,7 +214,7 @@ class TestMessageDirector(unittest.TestCase):
         # Did the cancellation work?
         self.c2.close()
         self.__class__.c2 = self.new_connection()
-        self.assertTrue(self.l1.expect_none())
+        self.expectNone(self.l1)
 
         # Try hanging multiple post-removes on c1
         dg2 = Datagram.create_add_post_remove(dg)
@@ -224,14 +224,14 @@ class TestMessageDirector(unittest.TestCase):
         self.c1.send(dg3)
 
         # After adding two, we don't want to see anything "pushed" or the like
-        self.assertTrue(self.l1.expect_none())
-        self.assertTrue(self.c1.expect_none())
-        self.assertTrue(self.c2.expect_none())
+        self.expectNone(self.l1)
+        self.expectNone(self.c1)
+        self.expectNone(self.c2)
 
         # Reconnect c1 and see if both datagrams gets sent.
         self.c1.close()
         self.__class__.c1 = self.new_connection()
-        self.assertTrue(*self.l1.expect_multi([dg, dg_pr], only=True))
+        self.expectMany(self.l1, [dg, dg_pr])
 
     def test_ranges(self):
         self.l1.flush()
@@ -242,7 +242,7 @@ class TestMessageDirector(unittest.TestCase):
         dg = Datagram.create_add_range(1000, 1999)
         self.c1.send(dg)
         # Verify that l1 asks for the range as well...
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
         # Send messages on a few channels on c2, see which ones c1 gets.
         def check_channels(channels):
@@ -251,12 +251,12 @@ class TestMessageDirector(unittest.TestCase):
                 dg.add_uint16(channel) # For some semblance of uniqueness
                 self.c2.send(dg)
                 if should_receive:
-                    self.assertTrue(*self.c1.expect(dg))
-                    self.assertTrue(self.c1.expect_none()) # No repeats!
+                    self.expect(self.c1, dg)
+                    self.expectNone(self.c1) # No repeats!
                 else:
-                    self.assertTrue(self.c1.expect_none())
+                    self.expectNone(self.c1)
                 # And, of course, l1 receives all of these:
-                self.assertTrue(*self.l1.expect(dg))
+                self.expect(self.l1, dg)
         check_channels([
             (500, False),
             (999, False),
@@ -279,15 +279,15 @@ class TestMessageDirector(unittest.TestCase):
         dg = Datagram.create([500, 1001, 1500], 0, 34)
         dg.add_string('test')
         self.c2.send(dg)
-        self.assertTrue(*self.c1.expect(dg))
-        self.assertTrue(self.c1.expect_none()) # No repeats!
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.c1, dg)
+        self.expectNone(self.c1) # No repeats!
+        self.expect(self.l1, dg)
 
         # Now let's "slice" the range.
         dg = Datagram.create_remove_range(1300, 1700)
         self.c1.send(dg)
         # l1 should request the slice upward
-        self.assertTrue(*self.l1.expect(dg))
+        self.expect(self.l1, dg)
 
         # And the slice should be gone:
         check_channels([
@@ -310,10 +310,8 @@ class TestMessageDirector(unittest.TestCase):
         # How about adding a second range that overlaps?
         dg = Datagram.create_add_range(1900, 2100)
         self.c1.send(dg)
-        # Verify that l1 asks for the range difference only...
-        #self.assertTrue(*self.l1.expect(Datagram.create_add_range(2000, 2100)))
-        # NOTE: We actually want to receive the entire range upstream
-        self.assertTrue(*self.l1.expect(dg))
+        # Verify that l1 asks for the entire range upstream...
+        self.expect(self.l1, dg)
 
         # Now the subscriptions should be updated:
         check_channels([
@@ -337,10 +335,12 @@ class TestMessageDirector(unittest.TestCase):
         dg = Datagram.create_remove_range(1000, 1999)
         self.c1.send(dg)
         # And again, l1 should ask for difference only...
+        expected = []
         # Difference #1: Drop 1000-1299
-        self.l1.expect(Datagram.create_remove_range(1000, 1299))
+        expected.append(Datagram.create_remove_range(1000, 1299))
         # Difference #2: Drop 1701-1999
-        self.l1.expect(Datagram.create_remove_range(1701, 1999))
+        expected.append(Datagram.create_remove_range(1701, 1999))
+        self.expectMany(self.l1, expected)
 
         # Now see if only the second range is active...
         check_channels([
@@ -356,8 +356,8 @@ class TestMessageDirector(unittest.TestCase):
         # Grand finale: Cut c1 and see if the remaining range dies.
         self.c1.close()
         self.__class__.c1 = self.new_connection()
-        self.assertTrue(*self.l1.expect(Datagram.create_remove_range(2000, 2100)))
-        self.assertTrue(self.l1.expect_none())
+        self.expect(self.l1, Datagram.create_remove_range(2000, 2100))
+        self.expectNone(self.l1)
 
 if __name__ == '__main__':
     unittest.main()
