@@ -606,6 +606,7 @@ class TestMessageDirector(ProtocolTest):
         self.expectMany(self.l1, expected)
         self.expectNone(self.l1)
 
+        # Cleanup
         self.c1.close()
         self.c2.close()
         self.__class__.c1 = self.new_connection()
