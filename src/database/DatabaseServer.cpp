@@ -451,6 +451,11 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			// Unpack fields from datagram, validate that they are database fields
 			map<const Field*, vector<uint8_t> > equals;
 			map<const Field*, vector<uint8_t> > values;
+
+			// We're going to use this to track the order locally, updates are handled in order
+			// already for the database because later updates overwrite newer updates.
+			list<const Field*> ordered;
+
 			uint16_t field_count = dgi.read_uint16();
 			try
 			{
@@ -462,6 +467,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					{
 						if(field->has_keyword("db"))
 						{
+							ordered.push_back(field);
 							dgi.unpack_field(field, equals[field]);
 							dgi.unpack_field(field, values[field]);
 						}
@@ -498,9 +504,11 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update.add_doid(do_id);
 					update.add_uint16(field_count);
-					for(auto it = values.begin(); it != values.end(); ++it) {
-						update.add_uint16(it->first->get_id());
-						update.add_data(it->second);
+					for(auto it = ordered.begin(); it != ordered.end(); ++it)
+					{
+						const Field* field = *it;
+						update.add_uint16(field->get_id());
+						update.add_data(values[field]);
 					}
 					route_datagram(update);
 				}
