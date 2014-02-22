@@ -344,9 +344,21 @@ class ProtocolTest(unittest.TestCase):
                     break
             else:
                 if not ignoreExtra:
-                    # This should always fail, but it produces more useful debugging output
-                    self.assertDatagramsEqual(datagram, received, isClient)
-                    # Lets guarantee that it fails for fun
+                    best = None
+                    for datagram in datagrams:
+                        # Try to find the most similar datagram
+                        if datagram.get_channels() == received.get_channels():
+                            self.assertDatagramsEqual(datagram, received, isClient)
+                            break
+                        elif datagram.get_size() == received.get_size() and best is None:
+                            best = datagram
+                    else:
+                        if best is not None:
+                            self.assertDatagramsEqual(best, received, isClient)
+                        else:
+                            self.assertDatagramsEqual(datagram, received, isClient)
+                    # This should always fail, but it produces more useful
+                    # debugging output.  Lets guarantee that it fails for fun.
                     self.fail("Testsuite implementation error.")
 
     def expectNone(self, conn):
@@ -392,6 +404,9 @@ class Datagram(object):
         for x in xrange(ord(self._data[0])):
             channels.append(iterator.read_channel())
         return set(channels)
+
+    def get_size(self):
+        return len(self._data)
 
     def matches(self, other):
         """Returns true if the set of channels and payload match.
