@@ -813,7 +813,7 @@ void DatabaseServer::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 					update.add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update.add_doid(do_id);
-					update.add_uint16(del_fields.size());
+					update.add_uint16(set_fields.size());
 					for(auto it = set_fields.begin(); it != set_fields.end(); ++it)
 					{
 						update.add_uint16(it->first->get_id());

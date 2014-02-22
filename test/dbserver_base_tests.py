@@ -1045,7 +1045,7 @@ class DatabaseBaseTests(object):
         # Expect DELETE_FIELDS...
         expected = []
         dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_DELETE_FIELDS)
-        dg.add_uint32(doidB)
+        dg.add_doid(doidB)
         dg.add_uint16(3) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
@@ -1053,7 +1053,7 @@ class DatabaseBaseTests(object):
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
         dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
-        dg.add_uint32(doidB)
+        dg.add_doid(doidB)
         dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
@@ -1098,9 +1098,10 @@ class DatabaseBaseTests(object):
         expected = []
         dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_DELETE_FIELDS)
         dg.add_uint32(doidC)
-        dg.add_uint16(2) # Field count
+        dg.add_uint16(3) # Field count
         dg.add_uint16(setDb3)
         dg.add_uint16(setRDB3)
+        dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
         dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
@@ -1128,7 +1129,6 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         self.expect(self.conn, dg)
-
 
         # Cleanup
         self.deleteObject(90, doidA)

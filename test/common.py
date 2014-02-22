@@ -356,7 +356,7 @@ class ProtocolTest(unittest.TestCase):
                         if best is not None:
                             self.assertDatagramsEqual(best, received, isClient)
                         else:
-                            self.assertDatagramsEqual(datagram, received, isClient)
+                            self.assertDatagramsEqual(datagrams[0], received, isClient)
                     # This should always fail, but it produces more useful
                     # debugging output.  Lets guarantee that it fails for fun.
                     self.fail("Testsuite implementation error.")
