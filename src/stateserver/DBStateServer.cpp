@@ -173,7 +173,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 			if(field && field->has_keyword("db"))
 			{
 				m_log->trace() << "Forwarding SetField for field with id " << field_id
-				              << ", on object " << do_id << " to database." << std::endl;
+				               << ", on object " << do_id << " to database." << std::endl;
 
 				Datagram dg(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
 				dg.add_doid(do_id);
@@ -490,7 +490,7 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 			m_context_datagrams[db_context].add_channel(INVALID_CHANNEL); // Location
 
 			// Cache the do_id --> context in case we get a dbss_activate
-			m_inactive_loads[r_do_id].insert(r_context);
+			m_inactive_loads[r_do_id].insert(db_context);
 
 			// Send query to database
 			Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
