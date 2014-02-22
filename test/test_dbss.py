@@ -254,7 +254,7 @@ class TestDBStateServer(ProtocolTest):
         dg = Datagram.create([doid1], 1200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
-        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(DistributedTestObject5)
         dg.add_uint16(2)
         dg.add_uint16(setRDB3)
         dg.add_uint32(32144123)
@@ -277,7 +277,6 @@ class TestDBStateServer(ProtocolTest):
         appendMeta(dg, doid1, 33000, 33, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(32144123) # setRDB3
-        dg.add_uint8(23) # setRDbD5
         expected.append(dg)
         self.expectMany(self.shard, expected)
 

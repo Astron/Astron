@@ -88,7 +88,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 
 			uint32_t db_context = dgi.read_uint32();
 			if(db_context != m_context &&
-			   m_valid_contexts.find(db_context) != m_valid_contexts.end())
+			   m_valid_contexts.find(db_context) == m_valid_contexts.end())
 			{
 				m_log->warning() << "Received get_all_resp with incorrect context" << std::endl;
 				break;
@@ -126,6 +126,7 @@ void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
 			if(!unpack_db_fields(dgi, r_dclass, m_required_fields, m_ram_fields))
 			{
 				m_log->error() << "Error while unpacking fields from database." << std::endl;
+				m_dbss->discard_loader(m_do_id);
 				break;
 			}
 
