@@ -457,11 +457,13 @@ class DatabaseBaseTests(object):
         # Expect SET_FIELDs broadcast
         dg = Datagram.create([DATABASE_PREFIX|doid], 60, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_uint32(doid)
-        dg.add_uint16(2) # Field count
+        dg.add_uint16(3) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(9999)
         dg.add_uint16(setDb3)
         dg.add_string("... can you make me a sandwich?")
+        dg.add_uint16(setADb3)
+        dg.add_string("sudo make me a sandwich")
         self.expect(self.objects, dg)
 
         # Select all fields from the stored object
