@@ -391,6 +391,8 @@ class TestMessageDirector(ProtocolTest):
         # Test removing a range that intersects with the front part
         dg = Datagram.create_remove_range(2950, 3043)
         self.c1.send(dg)
+        # --> and expect only the subscribed part to be removed
+        dg = Datagram.create_remove_range(3000, 3043)
         self.expect(self.l1, dg)
         check_channels([
             (2913, False),
@@ -407,6 +409,8 @@ class TestMessageDirector(ProtocolTest):
         # Test removing a range that intersects with the end part
         dg = Datagram.create_remove_range(4763, 6000)
         self.c1.send(dg)
+        # --> and expect only the subscribed part to be removed
+        dg = Datagram.create_remove_range(4763, 5000)
         self.expect(self.l1, dg)
         check_channels([
             (3000, False),
@@ -423,6 +427,7 @@ class TestMessageDirector(ProtocolTest):
         # Now remove some from the middle again so we can test weird intersections
         dg = Datagram.create_remove_range(3951, 4049)
         self.c1.send(dg)
+        # The entire range is subscribed, so it should all be unsubscribed
         self.expect(self.l1, dg)
         check_channels([
             (3043, False),
@@ -439,9 +444,12 @@ class TestMessageDirector(ProtocolTest):
         # Ok... remove an intersection from the lower half of the upper range
         dg = Datagram.create_remove_range(4030, 4070)
         self.c1.send(dg)
-        # TODO: Decide what the appropriate forwarded message to l1 should be
-        #       For now, make sure we at least get a message but ignore it
-        self.assertTrue(self.l1.recv_maybe() is not None)
+        # N.B. Its worth considering which of the following behaviors is preferred,
+        #      the first is a lot more work for the current MD, but may reduce the
+        #      work for other MDs. Consider performance testing both implementations.
+        ## --> and expect only the subscribed part to be removed
+        #self.expect(self.l1, Datagram.create_remove_range(4050, 4070))
+        self.expect(self.l1, dg)
         check_channels([
             (3043, False),
             (3044, True),
@@ -457,10 +465,12 @@ class TestMessageDirector(ProtocolTest):
         # Now remove an intersection from the upper half of the lower range
         dg = Datagram.create_remove_range(3891, 4040)
         self.c1.send(dg)
-        # TODO: Decide what the appropriate forwarded message to l1 should be
-        #       For now, make sure we at least get a message but ignore it
-        self.assertTrue(self.l1.recv_maybe() is not None)
-        self.l1.flush()
+        # N.B. Its worth considering which of the following behaviors is preferred,
+        #      the first is a lot more work for the current MD, but may reduce the
+        #      work for other MDs. Consider performance testing both implementations.
+        ## --> and expect only the subscribed part to be removed
+        #self.expect(self.l1, Datagram.create_remove_range(3891, 3950))
+        self.expect(self.l1, dg)
         check_channels([
             (3043, False),
             (3044, True),
@@ -476,10 +486,17 @@ class TestMessageDirector(ProtocolTest):
         # Now lets intersect part of both the upper and lower range
         dg = Datagram.create_remove_range(3700, 4200)
         self.c1.send(dg)
-        # TODO: Decide what the appropriate forwarded message to l1 should be
-        #       For now, make sure we at least get a message but ignore it
-        self.assertTrue(self.l1.recv_maybe() is not None)
-        self.l1.flush()
+        # N.B. Its worth considering which of the following behaviors is preferred,
+        #      the first is a lot more work for the current MD, but may reduce the
+        #      work for other MDs. Consider performance testing both implementations.
+        #      Additionally the first requires twice as much network traffice, but
+        #      it is still relatively small on a relatively infrequent operation.
+        ## --> and expect only the subscribed parts to be removed
+        #expected = []
+        #expected.append(Datagram.create_remove_range(3700, 3890))
+        #expected.append(Datagram.create_remove_range(4070, 4200))
+        #self.expectMany(self.l1, expected)
+        self.expect(self.l1, dg)
         check_channels([
             (3043, False),
             (3044, True),
