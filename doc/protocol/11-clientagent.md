@@ -160,3 +160,7 @@ session channel.
 > The antithesis of the message above: cause an open interest to be closed. This
 > is even valid for client-opened interests, if the interest_id matches a
 > client-requested interest.
+
+**CLIENTAGENT_DONE_INTEREST_RESP(1204)** `args(uint64 client_id, uint16 interest_id)`
+> Sent by the ClientAgent to the caller of CLIENTAGENT_ADD_INTEREST to inform
+> them that the interest operation has completed.

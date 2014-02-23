@@ -172,6 +172,9 @@ in order to accomplish various normal game tasks.
 > The client sends this to open an interest in a single zone within a parent.
 > The server will respond by sending a CREATE for every object in the new zone,
 > followed by a `CLIENT_DONE_INTEREST_RESP`.
+>
+> When the server sends this, it is informing the client of an interest added
+> to the client by the server with `CLIENTAGENT_ADD_INTEREST`.
 
 **CLIENT_ADD_INTEREST_MULTIPLE(201)**  
     `args(uint32 context, uint16 interest_id, uint32 parent_id,
@@ -179,6 +182,9 @@ in order to accomplish various normal game tasks.
 > The client sends this to open an interest cotaining multiple zones within a
 > single parent. The server will respond with a single DONE response after every
 > object from every zone replies.
+>
+> When the server sends this, it is informing the client of an interest added
+> to the client by the server with `CLIENTAGENT_ADD_INTEREST_MULTIPLE`.
 
 **CLIENT_REMOVE_INTEREST(203)**  
     `args(uint32 context, uint16 interest_id)`  
