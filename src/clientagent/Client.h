@@ -49,12 +49,13 @@ class InterestOperation
 		uint32_t m_client_context;
 		doid_t m_parent;
 		std::unordered_set<zone_t> m_zones;
+		std::set<channel_t> m_callers;
 
 		bool m_has_total;
 		doid_t m_total; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
 		InterestOperation(uint16_t interest_id, uint32_t client_context,
-		                  doid_t parent, std::unordered_set<zone_t> zones);
+		                  doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
 		bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects);
 		void store_total(doid_t total);
@@ -102,14 +103,20 @@ class Client : public MDParticipantInterface
 		// lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
 		std::list<Interest> lookup_interests(doid_t parent_id, zone_t zone_id);
 
+		// build_interest will build an interest from a datagram. It is expected that the datagram
+		// iterator is positioned such that next item to be read is the interest_id.
+		void build_interest(DatagramIterator &dgi, bool multiple, Interest &out);
+
 		// add_interest will start a new interest operation and retrieve all the objects an interest
 		// from the server, subscribing to each zone in the interest.  If the interest already
 		// exists, the interest will be updated with the new zones passed in by the argument.
-		void add_interest(Interest &i, uint32_t context);
+		// The caller is used to specify a server channel that should be informed when the interest
+		// operation is completed; typically that is not specified by subclasses.
+		void add_interest(Interest &i, uint32_t context, channel_t caller = 0);
 
 		// remove_interest find each zone an interest which is not part of another interest and
 		// passes it to close_zones() to be removed from the client's visibility.
-		void remove_interest(Interest &i, uint32_t context);
+		void remove_interest(Interest &i, uint32_t context, channel_t caller = 0);
 
 		// cloze_zones removes objects visible through the zones from the client and unsubscribes
 		// from the associated location channels for those objects.
@@ -134,6 +141,12 @@ class Client : public MDParticipantInterface
 		// handle_drop should immediately disconnect the client without sending any more data.
 		// Handler for CLIENTAGENT_DROP.
 		virtual void handle_drop() = 0;
+
+		// handle_add_interest should inform the client of an interest added by the server.
+		virtual void handle_add_interest(const Interest &i, uint32_t context) = 0;
+
+		// handle_remove_interest should inform the client an interest was removed by the server.
+		virtual void handle_remove_interest(uint16_t interest_id, uint32_t context) = 0;
 
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
@@ -166,4 +179,10 @@ class Client : public MDParticipantInterface
 		// handle_interest_done is called when all of the objects from an opened interest have been
 		// received. Typically, informs the client that a particular group of objects is loaded.
 		virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
+
+	private:
+		// notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
+		// interest operation's caller, if one has been set.
+		void notify_interest_done(uint16_t interest_id, channel_t caller);
+		void notify_interest_done(const InterestOperation* iop);
 };

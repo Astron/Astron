@@ -90,10 +90,37 @@ std::list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 	return interests;
 }
 
+// build_interest will build an interest from a datagram. It is expected that the datagram
+// iterator is positioned such that next item to be read is the interest_id.
+void Client::build_interest(DatagramIterator &dgi, bool multiple, Interest &out)
+{
+	uint16_t interest_id = dgi.read_uint16();
+	doid_t parent = dgi.read_doid();
+
+	out.id = interest_id;
+	out.parent = parent;
+
+	uint16_t count = 1;
+	if(multiple)
+	{
+		count = dgi.read_uint16();
+	}
+
+	// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
+	//       something wrong.
+	out.zones.rehash(ceil(count / out.zones.max_load_factor()));
+
+	for(int x = 0; x < count; ++x)
+	{
+		zone_t zone = dgi.read_zone();
+		out.zones.insert(out.zones.end(), zone);
+	}
+}
+
 // add_interest will start a new interest operation and retrieve all the objects an interest
 // from the server, subscribing to each zone in the interest.  If the interest already
 // exists, the interest will be updated with the new zones passed in by the argument.
-void Client::add_interest(Interest &i, uint32_t context)
+void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 {
 	std::unordered_set<zone_t> new_zones;
 
@@ -142,12 +169,13 @@ void Client::add_interest(Interest &i, uint32_t context)
 		// bother firing off a State Server request. Instead, let the client
 		// know we're already done:
 
+		notify_interest_done(i.id, caller);
 		handle_interest_done(i.id, context);
 
 		return;
 	}
 
-	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones);
+	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones, caller);
 
 	uint32_t request_context = m_next_context++;
 	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
@@ -167,7 +195,7 @@ void Client::add_interest(Interest &i, uint32_t context)
 
 // remove_interest find each zone an interest which is not part of another interest and
 // passes it to close_zones() to be removed from the client's visibility.
-void Client::remove_interest(Interest &i, uint32_t context)
+void Client::remove_interest(Interest &i, uint32_t context, channel_t caller)
 {
 	std::unordered_set<zone_t> killed_zones;
 
@@ -183,6 +211,7 @@ void Client::remove_interest(Interest &i, uint32_t context)
 	// Now that we know what zones to kill, let's get to it:
 	close_zones(i.parent, killed_zones);
 
+	notify_interest_done(i.id, caller);
 	handle_interest_done(i.id, context);
 
 	m_interests.erase(i.id);
@@ -285,6 +314,75 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			m_state = (ClientState)dgi.read_uint16();
 		}
 		break;
+		case CLIENTAGENT_ADD_INTEREST:
+		{
+			uint32_t context = m_next_context++;
+
+			Interest i;
+			build_interest(dgi, false, i);
+			handle_add_interest(i, context);
+			add_interest(i, context, sender);
+		}
+		break;
+		case CLIENTAGENT_ADD_INTEREST_MULTIPLE:
+		{
+			uint32_t context = m_next_context++;
+
+			Interest i;
+			build_interest(dgi, true, i);
+			handle_add_interest(i, context);
+			add_interest(i, context, sender);
+		}
+		break;
+		case CLIENTAGENT_REMOVE_INTEREST:
+		{
+			uint32_t context = m_next_context++;
+
+			uint16_t id = dgi.read_uint16();
+			Interest &i = m_interests[id];
+			handle_remove_interest(id, context);
+			remove_interest(i, context, sender);
+		}
+		break;
+		case CLIENTAGENT_SET_CLIENT_ID:
+		{
+			if(m_channel != m_allocated_channel)
+			{
+				unsubscribe_channel(m_channel);
+			}
+
+			m_channel = dgi.read_channel();
+			subscribe_channel(m_channel);
+		}
+		break;
+		case CLIENTAGENT_SEND_DATAGRAM:
+		{
+			Datagram forward;
+			forward.add_data(dgi.read_string());
+			forward_datagram(forward);
+		}
+		break;
+		case CLIENTAGENT_OPEN_CHANNEL:
+		{
+			subscribe_channel(dgi.read_channel());
+		}
+		break;
+		case CLIENTAGENT_CLOSE_CHANNEL:
+		{
+			unsubscribe_channel(dgi.read_channel());
+		}
+		break;
+		case CLIENTAGENT_ADD_POST_REMOVE:
+		{
+			add_post_remove(dgi.read_datagram());
+		}
+		break;
+		case CLIENTAGENT_CLEAR_POST_REMOVES:
+		{
+			clear_post_removes();
+		}
+		break;
+
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
@@ -348,44 +446,6 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 		                         msgtype == STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
 		}
 		break;
-		case CLIENTAGENT_SET_CLIENT_ID:
-		{
-			if(m_channel != m_allocated_channel)
-			{
-				unsubscribe_channel(m_channel);
-			}
-
-			m_channel = dgi.read_channel();
-			subscribe_channel(m_channel);
-		}
-		break;
-		case CLIENTAGENT_SEND_DATAGRAM:
-		{
-			Datagram forward;
-			forward.add_data(dgi.read_string());
-			forward_datagram(forward);
-		}
-		break;
-		case CLIENTAGENT_OPEN_CHANNEL:
-		{
-			subscribe_channel(dgi.read_channel());
-		}
-		break;
-		case CLIENTAGENT_CLOSE_CHANNEL:
-		{
-			unsubscribe_channel(dgi.read_channel());
-		}
-		break;
-		case CLIENTAGENT_ADD_POST_REMOVE:
-		{
-			add_post_remove(dgi.read_datagram());
-		}
-		break;
-		case CLIENTAGENT_CLEAR_POST_REMOVES:
-		{
-			clear_post_removes();
-		}
-		break;
 		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
 		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
 		{
@@ -420,6 +480,7 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			{
 				if(it->second->is_ready(m_visible_objects))
 				{
+					notify_interest_done(it->second);
 					handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
 					deferred_deletes.push_back(it->first);
 				}
@@ -447,6 +508,7 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 			if(m_pending_interests[context]->is_ready(m_visible_objects))
 			{
+				notify_interest_done(m_pending_interests[context]);
 				handle_interest_done(m_pending_interests[context]->m_interest_id,
 				                     m_pending_interests[context]->m_client_context);
 				m_pending_interests.erase(context);
@@ -497,14 +559,47 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 	}
 }
 
+// notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
+// interest operation's caller, if one has been set.
+void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
+{
+	if(caller == 0)
+	{
+		return;
+	}
+
+	Datagram resp;
+	resp.add_server_header(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp.add_channel(m_channel);
+	resp.add_uint16(interest_id);
+	route_datagram(resp);
+}
+
+// notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
+// interest operation's caller, if one has been set.
+void Client::notify_interest_done(const InterestOperation* iop)
+{
+	if(iop->m_callers.size() == 0)
+	{
+		return;
+	}
+
+	Datagram resp;
+	resp.add_server_header(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp.add_channel(m_channel);
+	resp.add_uint16(iop->m_interest_id);
+	route_datagram(resp);
+}
+
 /* ========================== *
  *       HELPER CLASSES       *
  * ========================== */
-InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_context,
-                                     doid_t parent, std::unordered_set<zone_t> zones) :
+InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_context, doid_t parent,
+                                     std::unordered_set<zone_t> zones, channel_t caller) :
 	m_interest_id(interest_id), m_client_context(client_context), m_parent(parent), m_zones(zones),
-	m_has_total(false), m_total(0)
+	m_callers(), m_has_total(false), m_total(0)
 {
+	m_callers.insert(m_callers.end(), caller);
 }
 
 bool InterestOperation::is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects)

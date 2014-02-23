@@ -165,6 +165,37 @@ class AstronClient : public Client, public NetworkClient
 			NetworkClient::send_disconnect();
 		}
 
+		// handle_add_interest should inform the client of an interest added by the server.
+		void handle_add_interest(const Interest& i, uint32_t context)
+		{
+			bool multiple = i.zones.size() > 1;
+
+			Datagram resp;
+			resp.add_uint16(multiple ? CLIENT_ADD_INTEREST_MULTIPLE : CLIENT_ADD_INTEREST);
+			resp.add_uint32(context);
+			resp.add_uint16(i.id);
+			resp.add_doid(i.parent);
+			if(multiple)
+			{
+				resp.add_uint16(i.zones.size());
+			}
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				resp.add_zone(*it);
+			}
+			send_datagram(resp);
+		}
+
+		// handle_remove_interest should inform the client an interest was removed by the server.
+		void handle_remove_interest(uint16_t interest_id, uint32_t context)
+		{
+			Datagram resp;
+			resp.add_uint16(CLIENT_REMOVE_INTEREST);
+			resp.add_uint32(context);
+			resp.add_uint16(interest_id);
+			send_datagram(resp);
+		}
+
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
 		// Handler for OBJECT_ENTER_LOCATION (an object, enters the Client's interest).
@@ -490,29 +521,9 @@ class AstronClient : public Client, public NetworkClient
 		void handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 		{
 			uint32_t context = dgi.read_uint32();
-			uint16_t interest_id = dgi.read_uint16();
-			doid_t parent = dgi.read_doid();
 
 			Interest i;
-			i.id = interest_id;
-			i.parent = parent;
-
-			uint16_t count = 1;
-			if(multiple)
-			{
-				count = dgi.read_uint16();
-			}
-
-			// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
-			//       something wrong.
-			i.zones.rehash(ceil(count / i.zones.max_load_factor()));
-
-			for(int x = 0; x < count; ++x)
-			{
-				zone_t zone = dgi.read_zone();
-				i.zones.insert(i.zones.end(), zone);
-			}
-
+			build_interest(dgi, multiple, i);
 			add_interest(i, context);
 		}
 
