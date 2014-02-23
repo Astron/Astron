@@ -381,7 +381,7 @@ class TestClientAgent(ProtocolTest):
         self.set_state(client, CLIENT_STATE_ESTABLISHED) # Let it out of the sandbox for this test.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(0xDECAFBAD)
+        dg.add_doid(0xDECAFBAD) # Doid
         dg.add_uint16(request)
         dg.add_string('Hello? Anyone there?')
         client.send(dg)
@@ -1554,6 +1554,74 @@ class TestClientAgent(ProtocolTest):
 
         self.server.flush()
         client.close()
+
+    def test_declare(self):
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Twiddle with the object, and get disconnected because we're not authenticate
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
+        self.expectNone(self.server)
+
+        # Lets connect again
+        client = self.connect()
+        id = self.identify(client)
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Give us the same object
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Twiddle with the object, and everything should run fine
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        self.expect(self.server, dg)
+
+        # Then undeclare the object
+        dg = Datagram.create([id], 1, CLIENTAGENT_UNDECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        self.server.send(dg)
+
+        # Twiddle with the object, and get disconnected because its not declared
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_MISSING_OBJECT)
+        self.expectNone(self.server)
+
+        # Cleanup
+        self.server.send(Datagram.create_remove_channel(10000))
 
 if __name__ == '__main__':
     unittest.main()
