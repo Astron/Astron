@@ -1623,5 +1623,123 @@ class TestClientAgent(ProtocolTest):
         # Cleanup
         self.server.send(Datagram.create_remove_channel(10000))
 
+    def test_fields_sendable(self):
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+        client.flush()
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedTestObject1) # dclass
+        self.server.send(dg)
+
+        # Then lets set a field sendable
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(2) # num fields
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setBR1)
+        self.server.send(dg)
+
+        # Try a SetField
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('Hello? Anyone there?')
+        self.expect(self.server, dg)
+
+        # Remove one of the set fields
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(1) # num fields
+        dg.add_uint16(setRequired1)
+        self.server.send(dg)
+
+        # Make sure setRequired1 is still sendable
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBA55)
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBA55)
+        self.expect(self.server, dg)
+
+        # But trying to send to the other field should disconnect us....
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('When you are tired, tea is the best remedy. Also at all other times.')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+        self.expectNone(self.server)
+
+        # Ok now lets try to do it with an uberdog
+        self.server.send(Datagram.create_remove_channel(10000))
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+        client.flush()
+
+        # Then lets set a field sendable
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(1235) # doid
+        dg.add_uint16(1) # num fields
+        dg.add_uint16(bar)
+        self.server.send(dg)
+
+        # Try a SetField
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        self.expect(self.server, dg)
+
+        # Then clear the fields
+        dg = Datagram.create([id], 0, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(1235) # doid
+        dg.add_uint16(0) # num fields
+        self.server.send(dg)
+
+        # Trying to set the field should disconnect us then
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+        self.expectNone(self.server)
+
 if __name__ == '__main__':
     unittest.main()
