@@ -216,6 +216,7 @@ prepared to receive them even if nothing else in the cluster uses these codes.
 - 108: The client sent an invalid msgtype.
 - 109: The client sent a truncated datagram.
 - 113: The client violated the rules of the anonymous sandbox.
+- 115: The client tried to send an unpermitted interest operation.
 - 117: The client tried to manipulate a nonexistent/unseen/unknown object ID.
 - 118: The client sent a `CLIENT_OBJECT_SET_FIELD` for a field they may not update.
 - 119: The client sent a `CLIENT_OBJECT_LOCATION` for an object they may not relocate.
