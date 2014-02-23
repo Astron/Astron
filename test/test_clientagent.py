@@ -1646,6 +1646,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(setBR1)
         self.server.send(dg)
 
+        # Mitigate race condition with set_fields_sendable and declare_object
+        time.sleep(0.1)
+
         # Try a SetField
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
@@ -1668,6 +1671,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(1) # num fields
         dg.add_uint16(setRequired1)
         self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable
+        time.sleep(0.1)
 
         # Make sure setRequired1 is still sendable
         dg = Datagram()
@@ -1708,6 +1714,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(1) # num fields
         dg.add_uint16(bar)
         self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable
+        time.sleep(0.1)
 
         # Try a SetField
         dg = Datagram()

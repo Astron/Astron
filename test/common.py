@@ -268,6 +268,14 @@ locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
 
 class ProtocolTest(unittest.TestCase):
+    def writeReceivedAndFail(self, received):
+        testName = self.__class__.__name__
+        f = open("%s-received.bin" % testName, "wb")
+        f.write(received.get_data())
+        f.close()
+        self.fail("Received datagram when expecting none.\n" +
+                  "\tWritten to \"%s-received.bin\"." % testName)
+
     def writeDatagramsAndFail(self, expected, received):
         testName = self.__class__.__name__
         f = open("%s-expected.bin" % testName, "wb")
@@ -364,7 +372,8 @@ class ProtocolTest(unittest.TestCase):
 
     def expectNone(self, conn):
         received = conn.recv_maybe()
-        self.assertTrue(received is None, "Received datagram when expecting none.")
+        if received is not None:
+            self.writeReceivedAndFail(received)
 
 class Datagram(object):
     def __init__(self, data=b''):
