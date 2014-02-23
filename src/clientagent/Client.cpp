@@ -9,7 +9,7 @@ using dclass::Class;
 
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
-	m_interests(), m_pending_interests()
+	m_visible_objects(), m_declared_objects(), m_interests(), m_pending_interests()
 {
 	m_channel = m_client_agent->m_ct.alloc_channel();
 	if(!m_channel)
@@ -70,6 +70,12 @@ const Class *Client::lookup_object(doid_t do_id)
 		{
 			return m_visible_objects[do_id].dcc;
 		}
+	}
+
+	// Hey we also know about it if its a declared object!
+	else if(m_declared_objects.find(do_id) != m_declared_objects.end())
+	{
+		return m_declared_objects[do_id].dcc;
 	}
 
 	// We're at the end of our rope; we have no clue what this object is.
@@ -382,13 +388,44 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			clear_post_removes();
 		}
 		break;
+		case CLIENTAGENT_DECLARE_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+			uint16_t dc_id = dgi.read_uint16();
 
+			if(m_declared_objects.find(do_id) != m_declared_objects.end())
+			{
+				m_log->warning() << "Received object declaration for previously declared object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			DeclaredObject obj;
+			obj.id = do_id;
+			obj.dcc = g_dcf->get_class_by_id(dc_id);
+			m_declared_objects[do_id] = obj;
+		}
+		break;
+		case CLIENTAGENT_UNDECLARE_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+
+			if(m_declared_objects.find(do_id) == m_declared_objects.end())
+			{
+				m_log->warning() << "Received undeclare object for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_declared_objects.erase(do_id);
+		}
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
 			if(!lookup_object(do_id))
 			{
-				m_log->warning() << "Received server-side field update for unknown object " << do_id << std::endl;
+				m_log->warning() << "Received server-side field update for unknown object "
+				                 << do_id << "\n";
 				return;
 			}
 			if(sender != m_channel)

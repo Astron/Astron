@@ -20,14 +20,18 @@ enum ClientState
     CLIENT_STATE_ESTABLISHED
 };
 
-// A VisibleObject is used to cache metadata associated with
-// a particular object when it becomes visible to a Client.
-struct VisibleObject
+struct DeclaredObject
 {
 	doid_t id;
+	const dclass::Class *dcc;
+};
+
+// A VisibleObject is used to cache metadata associated with
+// a particular object when it becomes visible to a Client.
+struct VisibleObject : DeclaredObject
+{
 	doid_t parent;
 	zone_t zone;
-	const dclass::Class *dcc;
 };
 
 // An Interest represents a Client's interest opened with a
@@ -84,6 +88,8 @@ class Client : public MDParticipantInterface
 		std::unordered_set<doid_t> m_historical_objects;
 		// m_visible_objects is a map which relates all visible objects to VisibleObject metadata.
 		std::unordered_map<doid_t, VisibleObject> m_visible_objects;
+		// m_declared_objects is a map of declared objects to their metadata.
+		std::unordered_map<doid_t, DeclaredObject> m_declared_objects;
 
 		// m_interests is a map of interest ids to interests.
 		std::unordered_map<uint16_t, Interest> m_interests;
