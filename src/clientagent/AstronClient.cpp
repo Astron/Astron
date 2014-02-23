@@ -446,11 +446,16 @@ class AstronClient : public Client, public NetworkClient
 			bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
 			if(!field->has_keyword("clsend") && !(is_owned && field->has_keyword("ownsend")))
 			{
-				std::stringstream ss;
-				ss << "Client tried to send update for non-sendable field: "
-				   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
-				return;
+				auto send_it = m_fields_sendable.find(do_id);
+				if(send_it == m_fields_sendable.end() ||
+				   send_it->second.find(field_id) == send_it->second.end())
+				{
+					std::stringstream ss;
+					ss << "Client tried to send update for non-sendable field: "
+					   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
+					return;
+				}
 			}
 
 			// If an exception occurs while unpacking data it will be handled by

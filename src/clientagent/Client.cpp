@@ -419,6 +419,19 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 			m_declared_objects.erase(do_id);
 		}
+		case CLIENTAGENT_SET_FIELDS_SENDABLE:
+		{
+			doid_t do_id = dgi.read_doid();
+			uint16_t field_count = dgi.read_uint16();
+
+			std::unordered_set<uint16_t> fields;
+			for(unsigned int i = 0; i < field_count; ++i)
+			{
+				fields.insert(dgi.read_uint16());
+			}
+			m_fields_sendable[do_id] = fields;
+		}
+		break;
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
