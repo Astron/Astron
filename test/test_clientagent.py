@@ -131,6 +131,7 @@ class TestClientAgent(ProtocolTest):
         time.sleep(0.1) # Mitigate race condition with set_state
 
     def test_hello(self):
+        self.server.flush()
         # First, see if the CA ensures that the first datagram is a HELLO.
         client = self.connect(False)
         dg = Datagram()
@@ -170,6 +171,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_anonymous(self):
+        self.server.flush()
         # Connect and hello:
         client = self.connect()
 
@@ -213,6 +215,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
     def test_disconnect(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -242,6 +245,7 @@ class TestClientAgent(ProtocolTest):
         self.assertEqual(client.s.recv(1024), '')
 
     def test_set_state(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -309,6 +313,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
     def test_receive_update(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -328,6 +333,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_set_sender(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -367,6 +373,7 @@ class TestClientAgent(ProtocolTest):
         self.expectNone(client)
 
     def test_errors(self):
+        self.server.flush()
         # Zero-length datagram:
         client = self.connect()
         dg = Datagram()
@@ -445,6 +452,7 @@ class TestClientAgent(ProtocolTest):
             self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
 
     def test_ownership(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -554,6 +562,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_RELOCATE)
 
     def test_postremove(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -590,6 +599,7 @@ class TestClientAgent(ProtocolTest):
         self.expectNone(self.server)
 
     def test_send_datagram(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -605,6 +615,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_channel(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -635,6 +646,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, 4321)
 
     def test_interest(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -1031,6 +1043,7 @@ class TestClientAgent(ProtocolTest):
         client3.close()
 
     def test_delete(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -1147,6 +1160,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_interest_overlap(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -1270,6 +1284,7 @@ class TestClientAgent(ProtocolTest):
 
     def test_alter_interest(self):
         # N.B. this is largely copied from the test above...
+        self.server.flush()
 
         client = self.connect()
         id = self.identify(client)
@@ -1469,6 +1484,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_serverside_interest(self):
+        self.server.flush()
         self.server.send(Datagram.create_add_channel(1015))
 
         # N. B. This is mostly copied from test_interest replacing
@@ -1778,6 +1794,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_declare(self):
+        self.server.flush()
         self.server.send(Datagram.create_add_channel(10000))
 
         # Declare a client
@@ -1846,6 +1863,7 @@ class TestClientAgent(ProtocolTest):
         self.server.send(Datagram.create_remove_channel(10000))
 
     def test_fields_sendable(self):
+        self.server.flush()
         self.server.send(Datagram.create_add_channel(10000))
 
         # Declare a client
