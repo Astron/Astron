@@ -36,7 +36,7 @@ Client::~Client()
 	// Delete all session objects
 	while(m_session_objects.size() > 0)
 	{
-		channel_t do_id = *m_session_objects.begin();
+		doid_t do_id = *m_session_objects.begin();
 		m_session_objects.erase(do_id);
 		m_log->debug() << "Client exited, deleting session object with id " << do_id << ".\n";
 		Datagram dg;
