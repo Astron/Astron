@@ -110,8 +110,8 @@ session channel.
 > if a session object is ever deleted by another process, the client is automatically
 > dropped.
 >
-> To add a session object, the object must be available to the client, either through
-> ownership, visibility, or declaration.  If the object is visible, but the client loses
+> To add a session object, the object must be visible to the client, either through
+> ownership or interests.  If the object is visible, but the client loses
 > visibility, this is considered an unexpected session object deletion.
 
 **CLIENTAGENT_REMOVE_SESSION_OBJECT(1013)** `args(uint32 do_id)`  
