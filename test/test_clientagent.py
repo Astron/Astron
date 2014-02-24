@@ -41,6 +41,15 @@ roles:
           max: 110699
       client:
           add_interest: disabled
+
+    - type: clientagent
+      bind: 127.0.0.1:57144
+      version: "Sword Art Online v5.1"
+      client:
+          add_interest: visible
+      channels:
+          min: 220600
+          max: 220699
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
@@ -632,6 +641,72 @@ class TestClientAgent(ProtocolTest):
         # Client needs to be outside of the sandbox for this:
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
+        # Open interest on a zone in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(2000) # Context
+        dg.add_uint16(1000) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
+        client.send(dg)
+
+        # Server should ask for the objects:
+        # N. B. This is not the current behavior of the ClientAgent, but its also not the point
+        #       of the test I'm trying to add because the stateserver doesn't actually implement
+        #       STATESERVER_OBJECT_GET_ZONE_OBJECTS, so I'll re-enable this part later when that
+        #       has been implemented, and we want to enforce that the behavior has changed
+        #dg = self.server.recv_maybe()
+        #self.assertTrue(dg is not None)
+        #dgi = DatagramIterator(dg)
+        #self.assertTrue(*dgi.matches_header([2345], id, STATESERVER_OBJECT_GET_ZONE_OBJECTS))
+        #ss_context = dgi.read_uint32()
+        #self.assertEquals(dgi.read_doid(), 1234)
+        #self.assertEquals(dgi.read_zone(), 4321)
+
+        ## The SS replies immediately with the count:
+        #dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONE_COUNT_RESP)
+        #dg.add_uint32(ss_context)
+        #dg.add_doid(0) # Object count, uses an integer with same width as doids
+        #self.server.send(dg)
+
+        # The server asks for objects this way instead for now
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 4321)
+
+        # In our first test, we'll open an interest containing no objects.
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(0) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(2000) # Context
+        dg.add_uint16(1000) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # Now, kill the interest!
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(2001) # Context
+        dg.add_uint16(1000) # Interest id
+        client.send(dg)
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(2001) # Context
+        dg.add_uint16(1000) # Interest id
+        self.expect(client, dg, isClient = True)
+
+        # Now lets try this again, but this time send actual objects
         # Open interest on two zones in 1234:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
@@ -808,6 +883,31 @@ class TestClientAgent(ProtocolTest):
         # We shouldn't get kicked...
         self.expectNone(client)
 
+        # Send an add interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(707) # Context
+        dg.add_uint16(505) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(400000) # Zone
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Send a remove interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Add interest from server
+        dg = Datagram.create([id2], 1, CLIENT_ADD_INTEREST)
+        dg.add_uint16(2) # Interest id
+        # ... and ignore all the actual interest messages
+
         # Send an add interest multiple on a client agent that has it disabled
         client2 = self.connect(port = 57135)
         id2 = self.identify(client2, min = 110600, max = 110699)
@@ -847,9 +947,88 @@ class TestClientAgent(ProtocolTest):
         # Which should cause an error
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
 
+        # Send an add interest on a client agent that allows only visible on a
+        # visble object (in this case an uberdog object)
+        client3 = self.connect(port = 57144)
+        id3 = self.identify(client3, min = 220600, max = 220699)
+        self.set_state(client3, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(81) # Context
+        dg.add_uint16(101) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
+        client3.send(dg)
+
+        # Server should ask for the objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id3, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([5555, 4444]))
+
+        # The SS replies immediately with the count:
+        dg = Datagram.create([id3], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(0) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(81) # Context
+        dg.add_uint16(101) # Interest Id
+        self.expect(client3, dg, isClient = True)
+
+        # Send a remove interest
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(82) # Context
+        dg.add_uint16(101) # Interest id
+        client3.send(dg)
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(82) # Context
+        dg.add_uint16(101) # Interest id
+        self.expect(client3, dg, isClient = True)
+
+        # We shouldn't get kicked, or receive anything else
+        self.expectNone(client3)
+
+        # Send an add interest on a client agent that allows only visible on a
+        # an object that is not visible to the client.
+        client3 = self.connect(port = 57144)
+        id3 = self.identify(client3, min = 220600, max = 220699)
+        self.set_state(client3, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(83) # Context
+        dg.add_uint16(102) # Interest id
+        dg.add_doid(10000) # Parent
+        dg.add_uint16(4) # Zone count
+        dg.add_zone(1010101) # Zone 1
+        dg.add_zone(2010101) # Zone 2
+        dg.add_zone(3010101) # Zone 3
+        dg.add_zone(4010101) # Zone 4
+        client3.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client3, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Cleanup
         self.server.flush()
         client.close()
         client2.close()
+        client3.close()
 
     def test_delete(self):
         client = self.connect()
