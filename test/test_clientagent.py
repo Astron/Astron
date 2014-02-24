@@ -31,6 +31,7 @@ roles:
           max: 3999
       client:
           relocate: true
+          add_interest: enabled
 
     - type: clientagent
       bind: 127.0.0.1:57135
@@ -38,6 +39,8 @@ roles:
       channels:
           min: 110600
           max: 110699
+      client:
+          add_interest: disabled
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
@@ -805,8 +808,48 @@ class TestClientAgent(ProtocolTest):
         # We shouldn't get kicked...
         self.expectNone(client)
 
+        # Send an add interest multiple on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(4) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Send a remove interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Add interest from server
+        dg = Datagram.create([id2], 1, CLIENT_ADD_INTEREST)
+        dg.add_uint16(2) # Interest id
+        # ... and ignore all the actual interest messages
+        client2.flush()
+        self.server.flush()
+
+        # Remove some interest
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(0xF00) # Context
+        dg.add_uint16(2) # Interest id
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
         self.server.flush()
         client.close()
+        client2.close()
 
     def test_delete(self):
         client = self.connect()
