@@ -32,6 +32,18 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_stat
 Client::~Client()
 {
 	m_client_agent->m_ct.free_channel(m_allocated_channel);
+
+	// Delete all session objects
+	while(m_session_objects.size() > 0)
+	{
+		channel_t do_id = *m_session_objects.begin();
+		m_session_objects.erase(do_id);
+		m_log->debug() << "Client exited, deleting session object with id " << do_id << ".\n";
+		Datagram dg;
+		dg.add_server_header(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
+		dg.add_doid(do_id);
+		route_datagram(dg);
+	}
 }
 
 // log_event sends an event to the EventLogger
@@ -242,9 +254,16 @@ void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed
 		{
 			if(m_owned_objects.find(it->second.id) != m_owned_objects.end())
 			{
-				// Owned objects are always zone-visible. I think.
-				// TODO: Is this assumption correct?
+				// Owned objects are always visible, ignore this object
 				continue;
+			}
+
+			if(m_session_objects.find(it->second.id) != m_session_objects.end())
+			{
+				// This object is a session object. The client should be disconnected.
+				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
+				                "A session object has unexpectedly left interest.");
+				return;
 			}
 
 			handle_remove_object(it->second.id);
@@ -432,13 +451,51 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			m_fields_sendable[do_id] = fields;
 		}
 		break;
+		case CLIENTAGENT_ADD_SESSION_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+			if(m_visible_objects.find(do_id) == m_visible_objects.end())
+			{
+				m_log->error() << "Received add session object for unknown object "
+				               << do_id << ".\n";
+				return;
+			}
+
+			if(m_session_objects.find(do_id) != m_session_objects.end())
+			{
+				m_log->warning() << "Received add session object for existing session object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_log->debug() << "Added session object with id " << do_id << ".\n";
+
+			m_session_objects.insert(do_id);
+		}
+		break;
+		case CLIENTAGENT_REMOVE_SESSION_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+
+			if(m_session_objects.find(do_id) == m_session_objects.end())
+			{
+				m_log->warning() << "Received remove session object for non-session object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_log->debug() << "Removed session object with id " << do_id << ".\n";
+
+			m_session_objects.erase(do_id);
+		}
+		break;
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
 			if(!lookup_object(do_id))
 			{
 				m_log->warning() << "Received server-side field update for unknown object "
-				                 << do_id << "\n";
+				                 << do_id << ".\n";
 				return;
 			}
 			if(sender != m_channel)
@@ -451,25 +508,40 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_DELETE_RAM:
 		{
 			doid_t do_id = dgi.read_doid();
+
+			m_log->trace() << "Received DeleteRam for object with id " << do_id << "\n.";
+
 			if(!lookup_object(do_id))
 			{
-				m_log->warning() << "Received server-side object delete for unknown object " << do_id << std::endl;
+				m_log->warning() << "Received server-side object delete for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			if(m_session_objects.find(do_id) != m_session_objects.end())
+			{
+				// We have to erase the object from our session_objects here, because
+				// the object has already been deleted and we don't want it to be deleted
+				// again in the client's destructor.
+				m_session_objects.erase(do_id);
+				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
+				                "A session object has been unexpectedly deleted.");
 				return;
 			}
 
 			if(m_seen_objects.find(do_id) != m_seen_objects.end())
 			{
-				m_seen_objects.erase(do_id);
-				m_historical_objects.insert(do_id);
 				handle_remove_object(do_id);
+				m_seen_objects.erase(do_id);
 			}
 
 			if(m_owned_objects.find(do_id) != m_owned_objects.end())
 			{
-				m_owned_objects.erase(do_id);
 				handle_remove_ownership(do_id);
+				m_owned_objects.erase(do_id);
 			}
 
+			m_historical_objects.insert(do_id);
 			m_visible_objects.erase(do_id);
 		}
 		break;
@@ -550,7 +622,7 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			if(m_pending_interests.find(context) == m_pending_interests.end())
 			{
 				m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
-				               << context << std::endl;
+				               << context << ".\n";
 				return;
 			}
 
@@ -593,6 +665,13 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 
 			if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
 			{
+				if(m_session_objects.find(do_id) != m_session_objects.end())
+				{
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
+					                "A session object has unexpectedly left interest.");
+					return;
+				}
+
 				handle_remove_object(do_id);
 				m_seen_objects.erase(do_id);
 				m_historical_objects.insert(do_id);
@@ -604,8 +683,44 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 			}
 		}
 		break;
+		case STATESERVER_OBJECT_CHANGING_OWNER:
+		{
+			doid_t do_id = dgi.read_doid();
+			channel_t n_owner = dgi.read_channel();
+			dgi.skip(sizeof(channel_t)); // don't care about the old owner
+
+			if(n_owner == m_channel)
+			{
+				// We should already own this object, nothing changes and we
+				// might get another enter_owner message.
+				return;
+			}
+
+			if(m_owned_objects.find(do_id) == m_owned_objects.end())
+			{
+				m_log->error() << "Received ChangingOwner for unowned object with id "
+				               << do_id << ".\n";
+				return;
+			}
+
+			if(m_seen_objects.find(do_id) == m_seen_objects.end())
+			{
+				if(m_session_objects.find(do_id) != m_session_objects.end())
+				{
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
+					                "A session object has unexpectedly left ownership.");
+					return;
+				}
+
+				handle_remove_ownership(do_id);
+				m_owned_objects.erase(do_id);
+				m_historical_objects.insert(do_id);
+				m_visible_objects.erase(do_id);
+			}
+		}
+		break;
 		default:
-			m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
+			m_log->error() << "Recv'd unknown server msgtype " << msgtype << "\n.";
 	}
 }
 
