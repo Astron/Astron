@@ -524,7 +524,56 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
 
 
-        # Send a relocate on a client agent that has it disabled
+
+        ### Test loss of ownership when receiving CHANGE_OWNER message
+        # Ok, we want another client to play with
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Give it an object that it owns.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_doid(11226655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_doid(11226655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.expect(client, dg, isClient = True)
+
+        # Then change the object's owner
+        dg = Datagram.create([id], 11226655, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_doid(11226655)
+        dg.add_channel(0)
+        dg.add_channel(id)
+        self.server.send(dg)
+
+        # Now the client should record an owner delete:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
+        dg.add_doid(11226655)
+        self.expect(client, dg, isClient = True)
+
+
+
+        ### Send a relocate on a client agent that has it disabled
         client2 = self.connect(port = 57135)
         id2 = self.identify(client2, min = 110600, max = 110699)
         self.set_state(client2, CLIENT_STATE_ESTABLISHED)
