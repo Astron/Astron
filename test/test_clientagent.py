@@ -1634,7 +1634,7 @@ class TestClientAgent(ProtocolTest):
 
         # So the CA should tell the client and caller the handle/context operation is done.
         dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
-        dg.add_uint64(id) # Client id
+        dg.add_channel(id) # Client id
         dg.add_uint16(12)  # Interest id
         self.expect(self.server, dg)
         dg = Datagram()
@@ -1723,7 +1723,7 @@ class TestClientAgent(ProtocolTest):
 
         # The server should say it's done being interesting...
         dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
-        dg.add_uint64(id) # Client id
+        dg.add_channel(id) # Client id
         dg.add_uint16(12)  # Interest id
         self.expect(self.server, dg)
         dg = Datagram()
@@ -1823,7 +1823,7 @@ class TestClientAgent(ProtocolTest):
 
         # The server should say it's done being interesting...
         dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
-        dg.add_uint64(id) # Client id
+        dg.add_channel(id) # Client id
         dg.add_uint16(17) # Interest id
         self.expect(self.server, dg)
         dg = Datagram()
