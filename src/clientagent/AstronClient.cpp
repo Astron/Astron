@@ -572,7 +572,7 @@ class AstronClient : public Client, public NetworkClient
 			if(m_interests_allowed == INTERESTS_VISIBLE && !lookup_object(i.parent))
 			{
 				std::stringstream ss;
-				ss << "Cannot add interest to  parent with id " << i.parent
+				ss << "Cannot add interest to parent with id " << i.parent
 				   << " because parent is not visible to client.";
 				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST, ss.str(), true);
 				return;
