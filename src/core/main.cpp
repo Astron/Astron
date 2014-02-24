@@ -25,6 +25,7 @@ static ConfigVariable<string> uberdog_class("class", "", uberdogs_config);
 static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
 static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
+static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 
 static void printHelp(ostream &s);
 
