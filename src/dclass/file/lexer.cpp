@@ -540,7 +540,7 @@ char *yytext;
 	using namespace dclass;
 
 	static int yyinput(void); // declared by flex.
-	extern int dclass::run_lexer();
+	namespace dclass{ int run_lexer(); }
 	extern "C" int should_lexer_wrap();
 
 	#define YYSTYPE dclass::TokenType
