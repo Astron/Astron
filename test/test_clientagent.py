@@ -2050,7 +2050,12 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2062,14 +2067,6 @@ class TestClientAgent(ProtocolTest):
         # Ignore the data in the entry forwarded to the client, we're not testing that here
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Then disconnect the client, and the object should die
         client.close()
@@ -2085,7 +2082,12 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2097,14 +2099,6 @@ class TestClientAgent(ProtocolTest):
         # Ignore the data in the entry forwarded to the client, we're not testing that here
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Then delete the object, the client should be disconnected
         dg = Datagram.create([id], 10052, STATESERVER_OBJECT_DELETE_RAM)
@@ -2122,7 +2116,12 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2134,14 +2133,6 @@ class TestClientAgent(ProtocolTest):
         # Ignore the data in the entry forwarded to the client, we're not testing that here
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Then change the object's owner, the client should be disconnected
         dg = Datagram.create([id], 10052, STATESERVER_OBJECT_CHANGING_OWNER)
@@ -2162,6 +2153,11 @@ class TestClientAgent(ProtocolTest):
         client = self.connect()
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
 
         # Open interest on a zone in 1234:
         dg = Datagram()
@@ -2201,7 +2197,7 @@ class TestClientAgent(ProtocolTest):
         self.assertEquals(dgi.read_uint16(), 1) # Zone count
         self.assertEquals(dgi.read_zone(), 4321)
 
-        # The interest contains 1 object
+        # The interest contains our object
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(ss_context)
         dg.add_doid(1) # Object count, uses an integer with same width as doids
@@ -2218,14 +2214,6 @@ class TestClientAgent(ProtocolTest):
 
         # Ignore the enter location and done interest response.
         client.flush()
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Then remove the client's interest in the object, the client should be disconnected
         dg = Datagram()
@@ -2246,6 +2234,11 @@ class TestClientAgent(ProtocolTest):
         client = self.connect()
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
 
         # Open interest on a zone in 1234:
         dg = Datagram()
@@ -2285,7 +2278,7 @@ class TestClientAgent(ProtocolTest):
         self.assertEquals(dgi.read_uint16(), 1) # Zone count
         self.assertEquals(dgi.read_zone(), 4321)
 
-        # The interest contains 1 object
+        # The interest contains our object
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
         dg.add_uint32(ss_context)
         dg.add_doid(1) # Object count, uses an integer with same width as doids
@@ -2302,11 +2295,6 @@ class TestClientAgent(ProtocolTest):
 
         # Ignore the enter location and done interest response.
         client.flush()
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
 
         # Wait a little bit to mitigate any potential race condition
         time.sleep(0.1)
@@ -2333,7 +2321,17 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Declare another session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10053) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the first object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2346,7 +2344,7 @@ class TestClientAgent(ProtocolTest):
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
 
-        # Give it another object that it owns
+        # Give it ownership of the second object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10053) # Doid
         dg.add_doid(0) # Parent
@@ -2358,17 +2356,6 @@ class TestClientAgent(ProtocolTest):
         # Ignore the data in the entry forwarded to the client, we're not testing that here
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
-
-        # Set both objects as a session objects
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10053) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Then delete the object, the client should be disconnected
         dg = Datagram.create([id], 10052, STATESERVER_OBJECT_DELETE_RAM)
@@ -2388,7 +2375,12 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2400,14 +2392,6 @@ class TestClientAgent(ProtocolTest):
         # Ignore the data in the entry forwarded to the client, we're not testing that here
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Remove that object as a session object
         dg = Datagram.create([id], 1, CLIENTAGENT_REMOVE_SESSION_OBJECT)
@@ -2429,7 +2413,12 @@ class TestClientAgent(ProtocolTest):
         id = self.identify(client)
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Give it an object that it owns
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
         dg.add_doid(10052) # Doid
         dg.add_doid(0) # Parent
@@ -2442,14 +2431,6 @@ class TestClientAgent(ProtocolTest):
         dg = client.recv_maybe()
         self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
         client.flush()
-
-        # Set that object as a session object
-        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
-        dg.add_doid(10052) # doid
-        self.server.send(dg)
-
-        # Wait a little bit to mitigate any potential race condition
-        time.sleep(0.1)
 
         # Remove that object as a session object
         dg = Datagram.create([id], 1, CLIENTAGENT_REMOVE_SESSION_OBJECT)

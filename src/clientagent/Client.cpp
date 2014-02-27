@@ -454,13 +454,6 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case CLIENTAGENT_ADD_SESSION_OBJECT:
 		{
 			doid_t do_id = dgi.read_doid();
-			if(m_visible_objects.find(do_id) == m_visible_objects.end())
-			{
-				m_log->error() << "Received add session object for unknown object "
-				               << do_id << ".\n";
-				return;
-			}
-
 			if(m_session_objects.find(do_id) != m_session_objects.end())
 			{
 				m_log->warning() << "Received add session object for existing session object "

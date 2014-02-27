@@ -105,14 +105,11 @@ session channel.
 
 **CLIENTAGENT_ADD_SESSION_OBJECT(1012)** `args(uint32 do_id)`  
 > Declares the specified object to be a "session object" -- an avatar, for example --
-> that is automatically cleaned up when the client disconnects. In addition, session
-> objects are presumed to be required for the proper function of a client. Therefore,
-> if a session object is ever deleted by another process, the client is automatically
-> dropped.
+> that is automatically cleaned up when the client disconnects.
 >
-> To add a session object, the object must be visible to the client, either through
-> ownership or interests.  If the object is visible, but the client loses
-> visibility, this is considered an unexpected session object deletion.
+> In addition, session objects are presumed to be required for the proper function of a client.
+> After the client receives visibility on the object, if it is deleted by another process,
+> or if the client loses visibility of the object, the client is automatically dropped.
 
 **CLIENTAGENT_REMOVE_SESSION_OBJECT(1013)** `args(uint32 do_id)`  
 > Antithesis of above message. The declared object is no longer tied to the client's
