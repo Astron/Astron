@@ -409,6 +409,24 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	}
 }
 
+void MessageDirector::unsubscribe_all(MDParticipantInterface* p)
+{
+	// Send out unsubscribe messages for indivually subscribed channels
+	auto channels = std::set<channel_t>(p->channels());
+	for(auto it = channels.begin(); it != channels.end(); ++it)
+	{
+		channel_t channel = *it;
+		unsubscribe_channel(p, channel);
+	}
+
+	// Send out unsubscribe messages for subscribed channel ranges
+	auto ranges = boost::icl::interval_set<channel_t>(p->ranges());
+	for(auto it = ranges.begin(); it != ranges.end(); ++it)
+	{
+		unsubscribe_range(p, it->lower(), it->upper());
+	}
+}
+
 void MessageDirector::start_accept()
 {
 	tcp::socket *socket = new tcp::socket(io_service);
@@ -449,20 +467,7 @@ void MessageDirector::add_participant(MDParticipantInterface* p)
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
-	// Send out unsubscribe messages for indivually subscribed channels
-	auto channels = std::set<channel_t>(p->channels());
-	for(auto it = channels.begin(); it != channels.end(); ++it)
-	{
-		channel_t channel = *it;
-		unsubscribe_channel(p, channel);
-	}
-
-	// Send out unsubscribe messages for subscribed channel ranges
-	auto ranges = boost::icl::interval_set<channel_t>(p->ranges());
-	for(auto it = ranges.begin(); it != ranges.end(); ++it)
-	{
-		unsubscribe_range(p, it->lower(), it->upper());
-	}
+	unsubscribe_all(p);
 
 	// Stop tracking participant
 	m_participants.remove(p);

@@ -31,7 +31,7 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_stat
 
 Client::~Client()
 {
-	unsubscribe_channel(m_channel);
+	unsubscribe_all();
 	m_client_agent->m_ct.free_channel(m_allocated_channel);
 
 	// Delete all session objects
