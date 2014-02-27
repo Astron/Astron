@@ -158,7 +158,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 		{
 			// Log error with receivers output
 			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
-			              " from participant '" << p->m_name << "' ." << std::endl;
+			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
 	}
