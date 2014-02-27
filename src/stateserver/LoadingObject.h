@@ -37,6 +37,10 @@ class LoadingObject : public MDParticipantInterface
 		std::list<Datagram> m_datagram_queue;
 		bool m_is_loaded;
 
+		// send_get_object makes the initial request to the database for the object data
 		void inline send_get_object(doid_t do_id);
+		// replay_datagrams while replay the datagrams for a loaded distributed object
 		void inline replay_datagrams(DistributedObject* obj);
+		// forward_datagrams will replay the datagrams to the dbss for a failed load
+		void inline forward_datagrams();
 };

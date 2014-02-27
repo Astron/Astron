@@ -57,8 +57,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 	// Check object is not already active
 	if(m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end())
 	{
-		m_log->warning() << "Received activate for already-active object"
-		                 << " - id:" << do_id << std::endl;
+		m_log->warning() << "Received activate for already-active object with id " << do_id << "\n";
 		return;
 	}
 
@@ -125,6 +124,12 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case DBSS_OBJECT_DELETE_DISK:
 		{
 			doid_t do_id = dgi.read_uint32();
+			if(m_loading.find(do_id) != m_loading.end())
+			{
+				// Ignore this message for now, it'll be bounced back to us
+				// from the loading object if it succeeds or fails at loading.
+				break;
+			}
 
 			// If object exists broadcast the delete message
 			auto obj_keyval = m_objs.find(do_id);
@@ -167,6 +172,13 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_FIELD:
 		{
 			doid_t do_id = dgi.read_doid();
+			if(m_loading.find(do_id) != m_loading.end())
+			{
+				// Ignore this message for now, it'll be bounced back to us
+				// from the loading object if it succeeds or fails at loading.
+				break;
+			}
+
 			uint16_t field_id = dgi.read_uint16();
 
 			const Field* field = g_dcf->get_field_by_id(field_id);
@@ -186,6 +198,13 @@ void DBStateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_FIELDS:
 		{
 			doid_t do_id = dgi.read_doid();
+			if(m_loading.find(do_id) != m_loading.end())
+			{
+				// Ignore this message for now, it'll be bounced back to us
+				// from the loading object if it succeeds or fails at loading.
+				break;
+			}
+
 			uint16_t field_count = dgi.read_uint16();
 
 			std::unordered_map<const Field*, std::vector<uint8_t> > db_fields;
