@@ -7,6 +7,7 @@
 #include "dc/Field.h"
 #include "dc/Method.h"
 #include "dc/Parameter.h"
+#include "util/byteorder.h"
 
 #include "format.h"
 using namespace std;
@@ -44,7 +45,7 @@ struct Formatter
 
 	inline sizetag_t read_length()
 	{
-		sizetag_t v = *(sizetag_t*)(in+offset);
+		sizetag_t v = swap_le(*(sizetag_t*)(in+offset));
 		offset += sizeof(sizetag_t);
 		return v;
 	}
@@ -72,7 +73,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(int16_t)))
 					return false;
-				int v = *(int16_t*)(in+offset);
+				int v = swap_le(*(int16_t*)(in+offset));
 				offset += sizeof(int16_t);
 				out << v;
 				break;
@@ -81,7 +82,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(int32_t)))
 					return false;
-				int v = *(int32_t*)(in+offset);
+				int v = swap_le(*(int32_t*)(in+offset));
 				offset += sizeof(int32_t);
 				out << v;
 				break;
@@ -90,7 +91,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(int64_t)))
 					return false;
-				int v = *(int64_t*)(in+offset);
+				int v = swap_le(*(int64_t*)(in+offset));
 				offset += sizeof(int64_t);
 				out << v;
 				break;
@@ -108,7 +109,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(uint16_t)))
 					return false;
-				unsigned int v = *(uint16_t*)(in+offset);
+				unsigned int v = swap_le(*(uint16_t*)(in+offset));
 				offset += sizeof(uint16_t);
 				out << v;
 				break;
@@ -117,7 +118,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(uint32_t)))
 					return false;
-				unsigned int v = *(uint32_t*)(in+offset);
+				unsigned int v = swap_le(*(uint32_t*)(in+offset));
 				offset += sizeof(uint32_t);
 				out << v;
 				break;
@@ -126,7 +127,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(uint64_t)))
 					return false;
-				unsigned int v = *(uint64_t*)(in+offset);
+				unsigned int v = swap_le(*(uint64_t*)(in+offset));
 				offset += sizeof(uint64_t);
 				out << v;
 				break;
@@ -135,7 +136,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(float)))
 					return false;
-				float v = *(float*)(in+offset);
+				float v = (float)swap_le(*(float*)(in+offset));
 				offset += sizeof(float);
 				out << v;
 				break;
@@ -144,7 +145,7 @@ struct Formatter
 			{
 				if(!remaining(sizeof(double)))
 					return false;
-				double v = *(double*)(in+offset);
+				double v = (double)swap_le(*(double*)(in+offset));
 				offset += sizeof(double);
 				out << v;
 				break;
@@ -435,8 +436,8 @@ struct Formatter
 				// Read array
 				if(!remaining(length))
 				{
-					return false;
 					out << ']';
+					return false;
 				}
 				size_t array_end = offset + length;
 

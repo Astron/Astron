@@ -64,7 +64,7 @@ class DatagramIterator
 			check_read_length(2);
 			int16_t r = *(int16_t*)(m_dg.get_data() + m_offset);
 			m_offset += 2;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_int32 reads 4 bytes from the datagram,
@@ -74,7 +74,7 @@ class DatagramIterator
 			check_read_length(4);
 			int32_t r = *(int32_t*)(m_dg.get_data() + m_offset);
 			m_offset += 4;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_int64 reads 8 bytes from the datagram,
@@ -84,7 +84,7 @@ class DatagramIterator
 			check_read_length(8);
 			int64_t r = *(int64_t*)(m_dg.get_data() + m_offset);
 			m_offset += 8;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_uint8 reads a byte from the datagram,
@@ -104,7 +104,7 @@ class DatagramIterator
 			check_read_length(2);
 			uint16_t r = *(uint16_t*)(m_dg.get_data() + m_offset);
 			m_offset += 2;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_uint32 reads 4 bytes from the datagram,
@@ -114,7 +114,7 @@ class DatagramIterator
 			check_read_length(4);
 			uint32_t r = *(uint32_t*)(m_dg.get_data() + m_offset);
 			m_offset += 4;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_uint64 reads 8 bytes from the datagram,
@@ -124,7 +124,7 @@ class DatagramIterator
 			check_read_length(8);
 			uint64_t r = *(uint64_t*)(m_dg.get_data() + m_offset);
 			m_offset += 8;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_size reads a dgsize_t from the datagram.
@@ -133,7 +133,7 @@ class DatagramIterator
 			check_read_length(sizeof(dgsize_t));
 			dgsize_t r = *(dgsize_t*)(m_dg.get_data() + m_offset);
 			m_offset += sizeof(dgsize_t);
-			return r;
+			return swap_le(r);
 		}
 
 		// read_channel reads a channel_t from the datagram.
@@ -142,7 +142,7 @@ class DatagramIterator
 			check_read_length(sizeof(channel_t));
 			channel_t r = *(channel_t*)(m_dg.get_data() + m_offset);
 			m_offset += sizeof(channel_t);
-			return r;
+			return swap_le(r);
 		}
 
 		// read_doid reads a doid_t from the datagram.
@@ -151,7 +151,7 @@ class DatagramIterator
 			check_read_length(sizeof(doid_t));
 			doid_t r = *(doid_t*)(m_dg.get_data() + m_offset);
 			m_offset += sizeof(doid_t);
-			return r;
+			return swap_le(r);
 		}
 
 		// read_zone reads a zone_t from the datagram.
@@ -160,7 +160,7 @@ class DatagramIterator
 			check_read_length(sizeof(zone_t));
 			zone_t r = *(zone_t*)(m_dg.get_data() + m_offset);
 			m_offset += sizeof(zone_t);
-			return r;
+			return swap_le(r);
 		}
 
 		// read_float32 reads 4 bytes from the datagram,
@@ -170,7 +170,7 @@ class DatagramIterator
 			check_read_length(4);
 			float r = *(float*)(m_dg.get_data() + m_offset);
 			m_offset += 4;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_float64 reads 8 bytes from the datagram,
@@ -180,7 +180,7 @@ class DatagramIterator
 			check_read_length(8);
 			double r = *(double*)(m_dg.get_data() + m_offset);
 			m_offset += 8;
-			return r;
+			return swap_le(r);
 		}
 
 		// read_string reads a string from the datagram in the format
@@ -261,7 +261,8 @@ class DatagramIterator
 				case T_VARARRAY:
 				{
 					dgsize_t len = read_size();
-					buffer.insert(buffer.end(), (uint8_t*)&len, (uint8_t*)&len + sizeof(dgsize_t));
+					dgsize_t net_len = swap_le(len);
+					buffer.insert(buffer.end(), (uint8_t*)&net_len, (uint8_t*)&net_len + sizeof(dgsize_t));
 
 					std::vector<uint8_t> blob = read_data(len);
 					buffer.insert(buffer.end(), blob.begin(), blob.end());

@@ -31,7 +31,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				remote = socket->remote_endpoint();
 			}
-			catch (std::exception &e)
+			catch (std::exception&)
 			{
 				// A client might disconnect immediately after connecting.
 				// If this happens, do nothing. Resolves #122.
@@ -108,14 +108,14 @@ class AstronClient : public Client, public NetworkClient
 						break;
 				}
 			}
-			catch(DatagramIteratorEOF &e)
+			catch(DatagramIteratorEOF&)
 			{
 				// Occurs when a handler attempts to read past end of datagram
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM,
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
-			catch(DatagramOverflow &e)
+			catch(DatagramOverflow&)
 			{
 				// Occurs when a handler attempts to prepare or forward a datagram to be sent
 				// internally and, the resulting datagram is larger than the max datagram size.
@@ -505,7 +505,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
 			//       something wrong.
-			i.zones.rehash(ceil(count / i.zones.max_load_factor()));
+			i.zones.rehash((unsigned int)ceil(count / i.zones.max_load_factor()));
 
 			for(int x = 0; x < count; ++x)
 			{

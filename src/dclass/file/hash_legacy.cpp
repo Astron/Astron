@@ -4,6 +4,7 @@
 
 #include <set>      // std::set
 #include <iostream> // std::cerr
+#include <math.h>
 #include "dc/File.h"
 #include "dc/Class.h"
 #include "dc/Method.h"
@@ -205,7 +206,7 @@ void hash_keywords(HashGenerator& hashgen, const KeywordList* list)
 	{
 		bool set_flag = false;
 		string keyword = list->get_keyword(i);
-		for(int j = 0; j < sizeof(legacy_keywords); ++j)
+		for(unsigned int j = 0; j < sizeof(legacy_keywords); ++j)
 		{
 			if(keyword == legacy_keywords[j].keyword)
 			{

@@ -5,7 +5,7 @@
 #define __STDC_LIMIT_MACROS
 #endif
 
-#include <inttypes.h> // UINT64_MAX
+#include <stdint.h>
 #include "util/HashGenerator.h"
 
 #include "ArrayType.h"
@@ -30,7 +30,7 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
 	}
 	else if(m_array_range.min == m_array_range.max)
 	{
-		m_array_size = m_array_range.min.uinteger;
+		m_array_size = (unsigned int)m_array_range.min.uinteger;
 	}
 	else
 	{
@@ -91,8 +91,8 @@ void ArrayType::generate_hash(HashGenerator& hashgen) const
 	m_element_type->generate_hash(hashgen);
 	if(has_range())
 	{
-		hashgen.add_int(m_array_range.min.integer);
-		hashgen.add_int(m_array_range.max.integer);
+		hashgen.add_int(int(m_array_range.min.integer));
+		hashgen.add_int(int(m_array_range.max.integer));
 	}
 	else
 	{

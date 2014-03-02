@@ -137,7 +137,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 		}
 		receive_log << std::endl;
 	}
-	catch(DatagramIteratorEOF &e)
+	catch(DatagramIteratorEOF &)
 	{
 		if(p)
 		{
@@ -165,11 +165,11 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
 		}
-		catch(DatagramIteratorEOF &e)
+		catch(DatagramIteratorEOF &)
 		{
 			// Log error with receivers output
 			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
-			              " from participant '" << p->m_name << "' ." << std::endl;
+			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
 	}
@@ -426,7 +426,7 @@ void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::er
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (std::exception &e)
+	catch (std::exception &)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
