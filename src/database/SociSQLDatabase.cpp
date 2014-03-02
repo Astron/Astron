@@ -673,7 +673,7 @@ class SociSQLDatabase : public DatabaseBackend
 			}
 
 			int db_field_count = 0;
-			for(int i = 0; i < dcc->get_num_fields(); ++i)
+			for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
 			{
 				const Field* field = dcc->get_field(i);
 				if(field->has_keyword("db") && !field->as_molecular())
@@ -712,7 +712,7 @@ class SociSQLDatabase : public DatabaseBackend
 		{
 			string value;
 			indicator ind;
-			for(int i = 0; i < dcc->get_num_fields(); ++i)
+			for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
 			{
 				const Field* field = dcc->get_field(i);
 				if(field->has_keyword("db"))
