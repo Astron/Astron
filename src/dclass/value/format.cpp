@@ -436,8 +436,8 @@ struct Formatter
 				// Read array
 				if(!remaining(length))
 				{
-					return false;
 					out << ']';
+					return false;
 				}
 				size_t array_end = offset + length;
 
