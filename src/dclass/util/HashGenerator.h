@@ -6,6 +6,7 @@
 //
 
 #pragma once
+#include <stdint.h>
 #include <string> // std::string
 namespace dclass   // open namespace dclass
 {

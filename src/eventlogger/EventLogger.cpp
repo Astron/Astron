@@ -136,7 +136,7 @@ void EventLogger::process_packet(const Datagram &dg)
 		{
 			msg.push_back(dgi.read_string());
 		}
-		catch(std::exception &e)
+		catch(std::exception&)
 		{
 			m_log.error() << "Received truncated packet from "
 			              << m_remote.address() << ":" << m_remote.port() << std::endl;

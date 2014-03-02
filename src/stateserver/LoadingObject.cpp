@@ -66,7 +66,7 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 			dgi.seek_payload();
 			obj->handle_datagram(*it, dgi);
 		}
-		catch(DatagramIteratorEOF &e)
+		catch(DatagramIteratorEOF&)
 		{
 			m_log->error() << "Detected truncated datagram while replaying"
 			               " datagrams to object, from loaded object. Skipped.\n";
@@ -88,7 +88,7 @@ void LoadingObject::forward_datagrams()
 			dgi.seek_payload();
 			m_dbss->handle_datagram(*it, dgi);
 		}
-		catch(DatagramIteratorEOF &e)
+		catch(DatagramIteratorEOF&)
 		{
 			m_log->error() << "Detected truncated datagram while replaying"
 			               " datagrams to dbss, from failed loading object. Skipped.\n";

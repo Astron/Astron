@@ -1,5 +1,6 @@
 // Filename: File.h
 #pragma once
+#include <stdint.h>
 #include <string>        // std::string
 #include <vector>        // std::vector
 #include <unordered_map> // std::unordered_map

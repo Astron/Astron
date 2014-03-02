@@ -38,6 +38,7 @@ endif()
 ### Add per-compiler flags ###
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -Wall -Wextra")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
 		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -Wall")
 
@@ -45,7 +46,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
 
 	# debug flags, wall, wextra
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra")
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
@@ -171,8 +172,8 @@ if(BUILD_DBSERVER)
 			${DBSERVER_FILES}
 			src/database/YAMLDatabase.cpp
 		)
-		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
-		add_test(validate_config_dbyaml ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
+		add_test(db_yaml python ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
+		add_test(validate_config_dbyaml python ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
 		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
 	endif()
 
@@ -230,9 +231,9 @@ if(BUILD_DBSERVER)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
-				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
+				add_test(db_pgsql  python ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
 				add_test(validate_config_dbpostgres
-					${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py)
+					 python ${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py)
 				set(PYTHON_TESTS ${PYTHON_TESTS} db_pgsql validate_config_dbpostgres)
 			endif()
 		endif()
@@ -259,8 +260,8 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
-	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
-	add_test(validate_config_stateserver ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
+	add_test(stateserver python ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
+	add_test(validate_config_stateserver python ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
 	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver validate_config_stateserver)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
@@ -272,8 +273,8 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.h
 			src/stateserver/LoadingObject.cpp
 		)
-		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
-		add_test(validate_config_dbss ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
+		add_test(dbss python ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
+		add_test(validate_config_dbss python ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
 		set(PYTHON_TESTS ${PYTHON_TESTS} dbss validate_config_dbss)
 	endif()
 else()
@@ -286,7 +287,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
-	add_test(validate_config_eventlogger ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
+	add_test(validate_config_eventlogger python ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
@@ -301,8 +302,8 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientFactory.h
 		src/clientagent/AstronClient.cpp
 	)
-	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
-	add_test(validate_config_clientagent ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
+	add_test(clientagent python ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+	add_test(validate_config_clientagent python ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
 	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent validate_config_clientagent)
 endif()
 
@@ -346,8 +347,8 @@ set(UTIL_FILES
 )
 
 include_directories(src)
-add_test(validate_config_core ${CMAKE_SOURCE_DIR}/test/test_config.py)
-add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
+add_test(validate_config_core python ${CMAKE_SOURCE_DIR}/test/test_config.py)
+add_test(messagedirector python ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
 set(PYTHON_TESTS ${PYTHON_TESTS} messagedirector)
 add_executable(astrond
 	${CORE_FILES}
