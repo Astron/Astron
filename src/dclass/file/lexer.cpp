@@ -168,6 +168,7 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_LAST_MATCH 2
 
     #define YY_LESS_LINENO(n)
+    #define YY_LINENO_REWIND_TO(ptr)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -964,7 +965,7 @@ char *yytext;
 		col_number += yyleng;
 	}
 
-#line 968 "lexer.cpp"
+#line 969 "lexer.cpp"
 
 #define INITIAL 0
 
@@ -1144,20 +1145,6 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 450 "lexer.lpp"
-
-
-
-	if(initial_token != 0)
-	{
-		int t = initial_token;
-		initial_token = 0;
-		return t;
-	}
-
-
-#line 1160 "lexer.cpp"
-
 	if ( !(yy_init) )
 		{
 		(yy_init) = 1;
@@ -1184,6 +1171,21 @@ YY_DECL
 		yy_load_buffer_state( );
 		}
 
+	{
+#line 451 "lexer.lpp"
+
+
+
+	if(initial_token != 0)
+	{
+		int t = initial_token;
+		initial_token = 0;
+		return t;
+	}
+
+
+#line 1188 "lexer.cpp"
+
 	while ( 1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = (yy_c_buf_p);
@@ -1200,7 +1202,7 @@ YY_DECL
 yy_match:
 		do
 			{
-			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
+			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
 			if ( yy_accept[yy_current_state] )
 				{
 				(yy_last_accepting_state) = yy_current_state;
@@ -1215,16 +1217,12 @@ yy_match:
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 148 );
+		while ( yy_current_state != 103 );
+		yy_cp = (yy_last_accepting_cpos);
+		yy_current_state = (yy_last_accepting_state);
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
-		if ( yy_act == 0 )
-			{ /* have to back up */
-			yy_cp = (yy_last_accepting_cpos);
-			yy_current_state = (yy_last_accepting_state);
-			yy_act = yy_accept[yy_current_state];
-			}
 
 		YY_DO_BEFORE_ACTION;
 
@@ -1242,7 +1240,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 461 "lexer.lpp"
+#line 462 "lexer.lpp"
 {
 	// New line.  Save a copy of the line so we can print it out for the
 	// benefit of the user in case we get an error.
@@ -1259,7 +1257,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 475 "lexer.lpp"
+#line 476 "lexer.lpp"
 {
 	// Eat whitespace.
 	accept();
@@ -1267,7 +1265,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 480 "lexer.lpp"
+#line 481 "lexer.lpp"
 {
 	// Eat C++-style comments.
 	accept();
@@ -1275,7 +1273,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 485 "lexer.lpp"
+#line 486 "lexer.lpp"
 {
 	// Eat C-style comments.
 	accept();
@@ -1284,7 +1282,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 492 "lexer.lpp"
+#line 493 "lexer.lpp"
 {
 	accept();
 	return KW_DCLASS;
@@ -1292,7 +1290,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 497 "lexer.lpp"
+#line 498 "lexer.lpp"
 {
 	accept();
 	return KW_STRUCT;
@@ -1300,7 +1298,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 502 "lexer.lpp"
+#line 503 "lexer.lpp"
 {
 	accept();
 	return KW_FROM;
@@ -1308,7 +1306,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 507 "lexer.lpp"
+#line 508 "lexer.lpp"
 {
 	accept();
 	return KW_IMPORT;
@@ -1316,7 +1314,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 512 "lexer.lpp"
+#line 513 "lexer.lpp"
 {
 	accept();
 	return KW_KEYWORD;
@@ -1324,7 +1322,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 517 "lexer.lpp"
+#line 518 "lexer.lpp"
 {
 	accept();
 	return KW_TYPEDEF;
@@ -1332,7 +1330,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 522 "lexer.lpp"
+#line 523 "lexer.lpp"
 {
 	accept();
 	return KW_INT8;
@@ -1340,7 +1338,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 527 "lexer.lpp"
+#line 528 "lexer.lpp"
 {
 	accept();
 	return KW_INT16;
@@ -1348,7 +1346,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 532 "lexer.lpp"
+#line 533 "lexer.lpp"
 {
 	accept();
 	return KW_INT32;
@@ -1356,7 +1354,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 537 "lexer.lpp"
+#line 538 "lexer.lpp"
 {
 	accept();
 	return KW_INT64;
@@ -1364,7 +1362,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 542 "lexer.lpp"
+#line 543 "lexer.lpp"
 {
 	accept();
 	return KW_UINT8;
@@ -1372,7 +1370,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 547 "lexer.lpp"
+#line 548 "lexer.lpp"
 {
 	accept();
 	return KW_UINT16;
@@ -1380,7 +1378,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 552 "lexer.lpp"
+#line 553 "lexer.lpp"
 {
 	accept();
 	return KW_UINT32;
@@ -1388,7 +1386,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 557 "lexer.lpp"
+#line 558 "lexer.lpp"
 {
 	accept();
 	return KW_UINT64;
@@ -1396,7 +1394,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 562 "lexer.lpp"
+#line 563 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT32;
@@ -1404,7 +1402,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 567 "lexer.lpp"
+#line 568 "lexer.lpp"
 {
 	accept();
 	return KW_FLOAT64;
@@ -1412,7 +1410,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 572 "lexer.lpp"
+#line 573 "lexer.lpp"
 {
 	accept();
 	return KW_STRING;
@@ -1420,7 +1418,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 577 "lexer.lpp"
+#line 578 "lexer.lpp"
 {
 	accept();
 	return KW_BLOB;
@@ -1428,7 +1426,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 582 "lexer.lpp"
+#line 583 "lexer.lpp"
 {
 	accept();
 	return KW_CHAR;
@@ -1436,7 +1434,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 587 "lexer.lpp"
+#line 588 "lexer.lpp"
 {
 	// An unsigned integer number.
 	accept();
@@ -1464,7 +1462,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 612 "lexer.lpp"
+#line 613 "lexer.lpp"
 {
 	// A hexadecimal integer number.
 	accept();
@@ -1499,7 +1497,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 644 "lexer.lpp"
+#line 645 "lexer.lpp"
 {
 	// A floating-point number.
 	accept();
@@ -1510,7 +1508,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 652 "lexer.lpp"
+#line 653 "lexer.lpp"
 {
 	// Quoted string.
 	accept();
@@ -1520,7 +1518,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 659 "lexer.lpp"
+#line 660 "lexer.lpp"
 {
 	// Single-quoted string.
 	accept();
@@ -1530,7 +1528,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 666 "lexer.lpp"
+#line 667 "lexer.lpp"
 {
 	// Long hex string.
 	accept();
@@ -1540,7 +1538,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 673 "lexer.lpp"
+#line 674 "lexer.lpp"
 {
 	// Identifier or keyword.
 	accept();
@@ -1550,7 +1548,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 681 "lexer.lpp"
+#line 682 "lexer.lpp"
 {
 	// Send any other printable character as itself.
 	accept();
@@ -1559,10 +1557,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 686 "lexer.lpp"
+#line 687 "lexer.lpp"
 ECHO;
 	YY_BREAK
-#line 1566 "lexer.cpp"
+#line 1564 "lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1629,7 +1627,8 @@ case YY_STATE_EOF(INITIAL):
 
 			else
 				{
-				yy_cp = (yy_c_buf_p);
+				yy_cp = (yy_last_accepting_cpos);
+				yy_current_state = (yy_last_accepting_state);
 				goto yy_find_action;
 				}
 			}
@@ -1693,6 +1692,7 @@ case YY_STATE_EOF(INITIAL):
 			"fatal flex scanner internal error--no action found" );
 	} /* end of action switch */
 		} /* end of scanning one token */
+	} /* end of user's declarations */
 } /* end of yylex */
 
 /* yy_get_next_buffer - try to read in a new buffer
@@ -2098,7 +2098,7 @@ static void yy_load_buffer_state  (void)
         b->yy_bs_column = 0;
     }
 
-        b->yy_is_interactive = file ? (isatty( fileno(file) ) > 0) : 0;
+        b->yy_is_interactive = 0;
     
 	errno = oerrno;
 }
@@ -2289,7 +2289,7 @@ YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len 
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -2519,4 +2519,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 686 "lexer.lpp"
+#line 687 "lexer.lpp"
