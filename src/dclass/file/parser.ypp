@@ -21,7 +21,6 @@
 
 	#include "util/byteorder.h"
 
-	#include <unistd.h>
 	#include <stdint.h> // Fixed width integer limits
 	#include <math.h>   // Float INFINITY
 	#include <stack>    // std::stack
@@ -1408,7 +1407,7 @@ array_value
 		{
 			// For fixed size arrays, an empty array is an error
 			parser_error("Fixed-sized array of size "
-			             + to_string(array->get_array_size())
+			             + to_string((unsigned long long)array->get_array_size())
 			             + " can't have 0 elements.");
 		}
 		else if(array->has_range())
@@ -1707,8 +1706,8 @@ array_expansion
 	;
 
 signed_integer
-	: '+' UNSIGNED_INTEGER { $$ = $2; }
-	| '-' UNSIGNED_INTEGER { $$ = -$2; }
+	: '+' UNSIGNED_INTEGER { $$ = int64_t($2); }
+	| '-' UNSIGNED_INTEGER { $$ = -int64_t($2); }
 	;
 
 array_type_token
@@ -1791,7 +1790,8 @@ string number_value(Type type, double &number)
 		case T_FLOAT32:
 		{
 			float v = number;
-			if(v == INFINITY || v == -INFINITY)
+			if(v == std::numeric_limits<float>::infinity() ||
+			   v == -std::numeric_limits<float>::infinity())
 			{
 				parser_error("Value is out of range for type 'float32'.");
 			}

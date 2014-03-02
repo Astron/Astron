@@ -88,7 +88,6 @@
 
 	#include "util/byteorder.h"
 
-	#include <unistd.h>
 	#include <stdint.h> // Fixed width integer limits
 	#include <math.h>   // Float INFINITY
 	#include <stack>    // std::stack
@@ -3218,7 +3217,7 @@ yyreduce:
 		{
 			// For fixed size arrays, an empty array is an error
 			parser_error("Fixed-sized array of size "
-			             + to_string(array->get_array_size())
+			             + to_string((unsigned long long)array->get_array_size())
 			             + " can't have 0 elements.");
 		}
 		else if(array->has_range())
@@ -3563,14 +3562,14 @@ yyreduce:
 
 /* Line 1464 of yacc.c  */
 #line 1710 "parser.ypp"
-    { (yyval.u.int64) = (yyvsp[(2) - (2)].u.uint64); ;}
+    { (yyval.u.int64) = int64_t(yyvsp[(2) - (2)].u.uint64); ;}
     break;
 
   case 154:
 
 /* Line 1464 of yacc.c  */
 #line 1711 "parser.ypp"
-    { (yyval.u.int64) = -(yyvsp[(2) - (2)].u.uint64); ;}
+    { (yyval.u.int64) = -int64_t(yyvsp[(2) - (2)].u.uint64); ;}
     break;
 
   case 155:
@@ -3944,7 +3943,7 @@ string number_value(Type type, double &number)
 		case T_FLOAT32:
 		{
 			float v = number;
-			if(v == INFINITY || v == -INFINITY)
+			if(v == std::numeric_limits<float>::infinity() || v == -std::numeric_limits<float>::infinity())
 			{
 				parser_error("Value is out of range for type 'float32'.");
 			}

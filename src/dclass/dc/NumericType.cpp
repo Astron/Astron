@@ -5,7 +5,7 @@
 #define __STDC_LIMIT_MACROS
 #endif
 
-#include <inttypes.h> // fixed-width integer limits
+#include <stdint.h> // fixed-width integer limits
 #include "util/HashGenerator.h"
 
 #include "NumericType.h"
@@ -91,28 +91,28 @@ bool NumericType::set_modulus(double modulus)
 	}
 
 	double float_modulus = modulus * m_divisor;
-	uint64_t uint_modulus = floor(modulus * m_divisor + 0.5);
+	uint64_t uint_modulus = uint64_t(floor(modulus * m_divisor + 0.5));
 
 	// Check the range.  A valid range for the modulus is 1 to (maximum_value + 1) after scaling.
 	switch(m_type)
 	{
 		case T_CHAR:
 		case T_UINT8:
-			if(uint_modulus < 1 || UINT8_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || uint16_t(UINT8_MAX)+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
 		case T_UINT16:
-			if(uint_modulus < 1 || UINT16_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || uint32_t(UINT16_MAX)+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
 		case T_UINT32:
-			if(uint_modulus < 1 || UINT32_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || uint64_t(UINT32_MAX)+1L < uint_modulus)
 			{
 				return false;
 			}
@@ -126,21 +126,21 @@ bool NumericType::set_modulus(double modulus)
 			m_modulus = uint_modulus;
 			break;
 		case T_INT8:
-			if(uint_modulus < 1 || INT8_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || uint16_t(UINT8_MAX)+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
 		case T_INT16:
-			if(uint_modulus < 1 || INT16_MAX+1 < uint_modulus)
+			if(uint_modulus < 1 || uint32_t(UINT16_MAX)+1 < uint_modulus)
 			{
 				return false;
 			}
 			m_modulus = uint_modulus;
 			break;
 		case T_INT32:
-			if(uint_modulus < 1 || INT32_MAX+1l < uint_modulus)
+			if(uint_modulus < 1 || uint64_t(UINT32_MAX)+1L < uint_modulus)
 			{
 				return false;
 			}
@@ -225,12 +225,12 @@ void NumericType::generate_hash(HashGenerator &hashgen) const
 	hashgen.add_int(m_divisor);
 	if(has_modulus())
 	{
-		hashgen.add_int(m_modulus.integer);
+		hashgen.add_int(int(m_modulus.integer));
 	}
 	if(has_range())
 	{
-		hashgen.add_int(m_range.min.integer);
-		hashgen.add_int(m_range.max.integer);
+		hashgen.add_int(int(m_range.min.integer));
+		hashgen.add_int(int(m_range.max.integer));
 	}
 }
 

@@ -536,7 +536,6 @@ char *yytext;
 	#include "file/parser.h"
 	#include "file/write.h" // indent
 	#include <iostream>
-	#include <unistd.h>
 	using namespace dclass;
 
 	static int yyinput(void); // declared by flex.
@@ -546,6 +545,7 @@ char *yytext;
 	#define YYSTYPE dclass::TokenType
 	extern YYSTYPE yyltype;
 
+	#define YY_NO_UNISTD_H
 	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap
 
