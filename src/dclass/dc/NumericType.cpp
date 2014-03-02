@@ -6,6 +6,7 @@
 #endif
 
 #include <stdint.h> // fixed-width integer limits
+#include <math.h>
 #include "util/HashGenerator.h"
 
 #include "NumericType.h"
