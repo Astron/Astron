@@ -4,6 +4,7 @@
 
 #include <boost/asio.hpp>
 
+extern RoleConfigGroup clientagent_config;
 extern ConfigGroup ca_client_config;
 extern ConfigVariable<std::string> ca_client_type;
 
@@ -43,9 +44,14 @@ class ClientAgent : public Role
 		// and delegates everything to the Client objects.
 		void handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi);
 
-		const std::string& get_version()
+		const std::string& get_version() const
 		{
 			return m_server_version;
+		}
+
+		uint32_t get_hash() const
+		{
+			return m_hash;
 		}
 
 	private:
@@ -55,4 +61,5 @@ class ClientAgent : public Role
 		ChannelTracker m_ct;
 		ConfigNode m_clientconfig;
 		LogCategory *m_log;
+		uint32_t m_hash;
 };

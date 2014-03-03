@@ -10,7 +10,7 @@ class LoadingObject : public MDParticipantInterface
 		LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id, zone_t zone_id,
 		              const std::unordered_set<uint32_t> &contexts = std::unordered_set<uint32_t>());
 		LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id, zone_t zone_id,
-		              DCClass *dclass, DatagramIterator &dgi,
+		              const dclass::Class *dclass, DatagramIterator &dgi,
 		              const std::unordered_set<uint32_t> &contexts = std::unordered_set<uint32_t>());
 		~LoadingObject();
 
@@ -27,16 +27,20 @@ class LoadingObject : public MDParticipantInterface
 		LogCategory *m_log;
 
 		// Upstream object data
-		DCClass *m_dclass;
-		std::unordered_map<DCField*, std::vector<uint8_t> > m_field_updates;
-		std::unordered_map<DCField*, std::vector<uint8_t> > m_required_fields;
-		std::map<DCField*, std::vector<uint8_t> > m_ram_fields;
+		const dclass::Class *m_dclass;
+		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_field_updates;
+		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_required_fields;
+		std::map<const dclass::Field*, std::vector<uint8_t> > m_ram_fields;
 		std::unordered_set<uint32_t> m_valid_contexts;
 
 		// Received datagrams while waiting for reply
 		std::list<Datagram_ptr> m_datagram_queue;
 		bool m_is_loaded;
 
+		// send_get_object makes the initial request to the database for the object data
 		void inline send_get_object(doid_t do_id);
+		// replay_datagrams while replay the datagrams for a loaded distributed object
 		void inline replay_datagrams(DistributedObject* obj);
+		// forward_datagrams will replay the datagrams to the dbss for a failed load
+		void inline forward_datagrams();
 };

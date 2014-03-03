@@ -5,6 +5,11 @@
 #include "util/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "dclass/dc/Class.h"
+#include "dclass/dc/Field.h"
+
+using dclass::Class;
+using dclass::Field;
 
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 
@@ -26,7 +31,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				remote = socket->remote_endpoint();
 			}
-			catch (std::exception &e)
+			catch (std::exception&)
 			{
 				// A client might disconnect immediately after connecting.
 				// If this happens, do nothing. Resolves #122.
@@ -103,14 +108,14 @@ class AstronClient : public Client, public NetworkClient
 						break;
 				}
 			}
-			catch(DatagramIteratorEOF &e)
+			catch(DatagramIteratorEOF&)
 			{
 				// Occurs when a handler attempts to read past end of datagram
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM,
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
-			catch(DatagramOverflow &e)
+			catch(DatagramOverflow&)
 			{
 				// Occurs when a handler attempts to prepare or forward a datagram to be sent
 				// internally and, the resulting datagram is larger than the max datagram size.
@@ -266,7 +271,7 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			const static uint32_t expected_hash = g_dcf->get_hash();
+			const static uint32_t expected_hash = m_client_agent->get_hash();
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;
@@ -358,7 +363,7 @@ class AstronClient : public Client, public NetworkClient
 			uint16_t field_id = dgi.read_uint16();
 
 			// Get class of object from cache
-			DCClass *dcc = lookup_object(do_id);
+			const Class *dcc = lookup_object(do_id);
 
 			// If the class couldn't be found, error out:
 			if(!dcc)
@@ -396,7 +401,7 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Check that the client sent a field that actually exists in the class.
-			DCField *field = dcc->get_field_by_index(field_id);
+			const Field *field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
 				std::stringstream ss;
@@ -408,7 +413,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// Check that the client is actually allowed to send updates to this field
 			bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
-			if(!field->is_clsend() && !(is_owned && field->is_ownsend()))
+			if(!field->has_keyword("clsend") && !(is_owned && field->has_keyword("ownsend")))
 			{
 				std::stringstream ss;
 				ss << "Client tried to send update for non-sendable field: "
@@ -500,7 +505,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
 			//       something wrong.
-			i.zones.rehash(ceil(count / i.zones.max_load_factor()));
+			i.zones.rehash((unsigned int)ceil(count / i.zones.max_load_factor()));
 
 			for(int x = 0; x < count; ++x)
 			{

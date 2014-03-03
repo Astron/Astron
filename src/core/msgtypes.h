@@ -5,11 +5,13 @@
 #define BCHAN_CLIENTS 10
 #define BCHAN_STATESERVERS 12
 #define BCHAN_DBSERVERS 13
-#define PARENT_PREFIX ((channel_t)(1) << ZONE_BITS)
+#define PARENT_PREFIX (channel_t(1) << ZONE_BITS)
+#define DATABASE_PREFIX (channel_t(2) << ZONE_BITS)
 
 // Location macros
-#define LOCATION2CHANNEL(p, z) ((channel_t)(p) << ZONE_BITS|(channel_t)(z))
-#define PARENT2CHILDREN(p) (PARENT_PREFIX|(channel_t)(p))
+#define LOCATION2CHANNEL(p, z) ((channel_t(p) << ZONE_BITS) | channel_t(z))
+#define PARENT2CHILDREN(parent) (PARENT_PREFIX|channel_t(parent))
+#define DATABASE2OBJECT(doid) (DATABASE_PREFIX|channel_t(doid))
 
 // Message Booleans
 #define SUCCESS 1
@@ -107,6 +109,8 @@
 // DBSS object message-type constants
 #define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS       2200
 #define DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER 2201
+#define DBSS_OBJECT_GET_ACTIVATED                2207
+#define DBSS_OBJECT_GET_ACTIVATED_RESP           2208
 #define DBSS_OBJECT_DELETE_FIELD_RAM             2230
 #define DBSS_OBJECT_DELETE_FIELDS_RAM            2231
 #define DBSS_OBJECT_DELETE_DISK                  2232

@@ -2,12 +2,14 @@
 #include <cctype>
 
 #include "core/RoleFactory.h"
+#include "config/constraints.h"
 #include "EventLogger.h"
 
 static RoleConfigGroup el_config("eventlogger");
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197", el_config);
 static ConfigVariable<std::string> output_format("output", "events-%Y%m%d-%H%M%S.csv", el_config);
 static ConfigVariable<std::string> rotate_interval("rotate_interval", "0", el_config);
+static ValidAddressConstraint valid_bind_addr(bind_addr);
 
 EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 	m_log("eventlogger", "Event Logger"), m_file(0)
@@ -51,7 +53,7 @@ void EventLogger::open_log()
 		m_file->close();
 	}
 
-	m_file = new ofstream(filename);
+	m_file = new std::ofstream(filename);
 
 	m_log.info() << "Opened new log." << std::endl;
 }
@@ -134,7 +136,7 @@ void EventLogger::process_packet(const Datagram_ptr &dg)
 		{
 			msg.push_back(dgi.read_string());
 		}
-		catch(std::exception &e)
+		catch(std::exception&)
 		{
 			m_log.error() << "Received truncated packet from "
 			              << m_remote.address() << ":" << m_remote.port() << std::endl;

@@ -3,13 +3,16 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/ConfigVariable.h"
+#include "config/constraints.h"
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
-using boost::asio::ip::tcp; // I don't want to type all of that god damned shit
+using boost::asio::ip::tcp;
 
 static ConfigGroup md_config("messagedirector");
 static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
+static ValidAddressConstraint valid_bind_addr(bind_addr);
+static ValidAddressConstraint valid_connect_addr(connect_addr);
 
 static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
@@ -123,7 +126,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram_ptr &dg
 		}
 		receive_log << std::endl;
 	}
-	catch(DatagramIteratorEOF &e)
+	catch(DatagramIteratorEOF &)
 	{
 		if(p)
 		{
@@ -151,11 +154,11 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram_ptr &dg
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
 		}
-		catch(DatagramIteratorEOF &e)
+		catch(DatagramIteratorEOF &)
 		{
 			// Log error with receivers output
 			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
-			              " from participant '" << p->m_name << "' ." << std::endl;
+			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
 	}
@@ -419,14 +422,16 @@ void MessageDirector::start_accept()
 	                         this, socket, boost::asio::placeholders::error));
 }
 
-void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
+void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
 {
+	// TODO: We should probably accept the error code and maybe do something about it
+
 	boost::asio::ip::tcp::endpoint remote;
 	try
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (std::exception &e)
+	catch (std::exception &)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.

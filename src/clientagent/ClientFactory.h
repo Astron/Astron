@@ -44,6 +44,9 @@ class ClientFactory
 		// add_client_type adds a factory for client of type 'name'
 		// It is called automatically when instantiating a new ClientType.
 		void add_client_type(const std::string &name, BaseClientType *factory);
+
+		// has_client_type returns true if a client handler exists for 'name'.
+		bool has_client_type(const std::string &name);
 	private:
 		std::unordered_map<std::string, BaseClientType*> m_factories;
 };

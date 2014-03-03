@@ -72,6 +72,7 @@ class TestConfigDBYaml(unittest.TestCase):
             roles:
                 - type: database
                   control: 75757
+                  broadcast: false
                   generate:
                     min: 1000000
                     max: 1000010
@@ -174,6 +175,69 @@ class TestConfigDBYaml(unittest.TestCase):
             """ % (test_dc, self.yaml_dir)
         self.assertEquals(self.run_test(config), EXITED)
 
+    def test_yamldb_boolean_broadcast(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            general:
+                dc_files:
+                    - %r
+
+            roles:
+                - type: database
+                  control: 75757
+                  broadcast: FALSE
+                  generate:
+                    min: 1000000
+                    max: 1000010
+                  backend:
+                    type: yaml
+                    foldername: %r
+            """ % (test_dc, self.yaml_dir)
+        self.assertEquals(self.run_test(config), TERMINATED)
+
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            general:
+                dc_files:
+                    - %r
+
+            roles:
+                - type: database
+                  control: 75757
+                  broadcast: pizza
+                  generate:
+                    min: 1000000
+                    max: 1000010
+                  backend:
+                    type: yaml
+                    foldername: %r
+            """ % (test_dc, self.yaml_dir)
+        self.assertEquals(self.run_test(config), EXITED)
+
+    def test_yamldb_type_typo(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            general:
+                dc_files:
+                    - %r
+
+            roles:
+                - type: database
+                  control: 75757
+                  generate:
+                    min: 1000000
+                    max: 1000010
+                  backend:
+                    type: yam
+                    foldername: %r
+            """ % (test_dc, self.yaml_dir)
+        self.assertEquals(self.run_test(config), EXITED)
 
 if __name__ == '__main__':
     unittest.main()

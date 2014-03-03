@@ -20,14 +20,14 @@ class EventLogger : public Role
 	public:
 		EventLogger(RoleConfig roleconfig);
 
-		void handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi) { } // Doesn't take DGs.
+		void handle_datagram(Datagram&, DatagramIterator&) { } // Doesn't take DGs.
 
 	private:
 		LogCategory m_log;
 		udp::socket *m_socket;
 		udp::endpoint m_remote;
 		std::string m_file_format;
-		ofstream *m_file;
+		std::ofstream *m_file;
 		uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
 		void bind(const std::string &addr);
@@ -36,5 +36,5 @@ class EventLogger : public Role
 		void write_log(const std::vector<std::string> &msg);
 		void start_receive();
 		void handle_receive(const boost::system::error_code &error, std::size_t bytes);
-		void process_packet(const Datagram_ptr &dg);
+		void process_packet(const Datagram &dg);
 };

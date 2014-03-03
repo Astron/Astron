@@ -5,6 +5,8 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 
+using dclass::Class;
+
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
 	m_interests(), m_pending_interests()
@@ -35,16 +37,15 @@ Client::~Client()
 // log_event sends an event to the EventLogger
 void Client::log_event(const std::list<std::string> &event)
 {
-
-	Datagram_ptr dg = Datagram::create();
+	Datagram dg;
 
 	std::stringstream ss;
 	ss << "Client:" << m_allocated_channel;
-	dg->add_string(ss.str());
+	dg.add_string(ss.str());
 
 	for(auto it = event.begin(); it != event.end(); ++it)
 	{
-		dg->add_string(*it);
+		dg.add_string(*it);
 	}
 
 	g_eventsender.send(dg);
@@ -52,7 +53,7 @@ void Client::log_event(const std::list<std::string> &event)
 
 // lookup_object returns the class of the object with a do_id.
 // If that object is not visible to the client, NULL will be returned instead.
-DCClass *Client::lookup_object(doid_t do_id)
+const Class *Client::lookup_object(doid_t do_id)
 {
 	// First see if it's an UberDOG:
 	if(g_uberdogs.find(do_id) != g_uberdogs.end())
@@ -151,14 +152,14 @@ void Client::add_interest(Interest &i, uint32_t context)
 	uint32_t request_context = m_next_context++;
 	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
 
-    Datagram_ptr resp = Datagram::create();
-	resp->add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-	resp->add_uint32(request_context);
-	resp->add_doid(i.parent);
-	resp->add_uint16(new_zones.size());
+	Datagram resp;
+	resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
+	resp.add_uint32(request_context);
+	resp.add_doid(i.parent);
+	resp.add_uint16(new_zones.size());
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{
-		resp->add_zone(*it);
+		resp.add_zone(*it);
 		subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
 	}
 	route_datagram(resp);
@@ -259,7 +260,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 }
 
 // handle_datagram is the handler for datagrams received from the Astron cluster
-void Client::handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi)
+void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
@@ -339,7 +340,7 @@ void Client::handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi)
 				obj.id = do_id;
 				obj.parent = parent;
 				obj.zone = zone;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				m_visible_objects[do_id] = obj;
 			}
 
@@ -360,8 +361,8 @@ void Client::handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi)
 		break;
 		case CLIENTAGENT_SEND_DATAGRAM:
 		{
-			Datagram_ptr forward = Datagram::create();
-			forward->add_data(dgi.read_string());
+			Datagram forward;
+			forward.add_data(dgi.read_string());
 			forward_datagram(forward);
 		}
 		break;
@@ -401,7 +402,7 @@ void Client::handle_datagram(Datagram_ptr &dg, DatagramIterator &dgi)
 			{
 				VisibleObject obj;
 				obj.id = do_id;
-				obj.dcc = g_dcf->get_class(dc_id);
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
 				obj.parent = parent;
 				obj.zone = zone;
 				m_visible_objects[do_id] = obj;

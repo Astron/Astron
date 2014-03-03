@@ -45,6 +45,10 @@ class DBBackendFactory
 		// add_backend adds a factory for backend of type 'name'
 		// It is called automatically when instantiating a new BaseDBBackendFactoryItem.
 		void add_backend(const std::string &name, BaseDBBackendFactoryItem* factory);
+
+		// has_backend returns true if a backend exists for 'name'.
+		bool has_backend(const std::string &name);
+
 	private:
 		std::map<std::string, BaseDBBackendFactoryItem*> m_factories;
 };

@@ -4,6 +4,7 @@ daemon:
     url: http://123.45.67.89/coremd/ # URL where the web interface may be located.
     #id: 3  #default: automatically assigned
 
+
 # The General section contains config settings that are shared among daemons in the cluster.
 general:
     # An "IP:port" for the Event Logger to be used when logging global events.
@@ -15,6 +16,7 @@ general:
         - game.dc
         - minigames.dc
 
+
 # The Uberdog section describes the existence of UberDOGs, which are objects
 #     that are assumed to exist statically.
 uberdogs:
@@ -24,6 +26,7 @@ uberdogs:
     #     the ClientAgent from an unauthenticated client.
     anonymous: true # Default: false
 
+
 # The Web section enables a status and debugging webpage on this daemon.
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
@@ -32,22 +35,21 @@ web:
     #    username: foo
     #    password: bar
 
+
 messagedirector:
     bind: 0.0.0.0:6660
     #connect: 127.0.0.1:5555
 
-# This describes the existence of UberDOGs, which are objects that are assumed to exist statically.
-# anonymous specifies whether an uberdog can be accessed through the CA from an unauthenticated client.
-uberdogs:
-    - id: 1234
-      class: LoginManager
-      anonymous: true # Default: false
 
 # The Roles section allows specifying roles that we would like this daemon to perform.
 roles:
     # For example, let's have a client agent which listens on port 6667 on all interfaces:
     - type: clientagent
       bind: 0.0.0.0:6667
+      # Manual_dc_hash tells the server what DC hash version to expect from the client.
+      #     This is mostly used if the DC parser used by the client doesn't have hash parity
+      #     with the parser used by Astron. (Panda3D users will currently need to enable this).
+      #manual_dc_hash: 0xABCD1234
       version: "FooGame v7.0"
       client:
         # Type declares which client this client agent should generate when it receives a new
@@ -72,22 +74,24 @@ roles:
     # uses BerkeleyDB as a backing store.
     - type: database
       control: 402001
+      #broadcast: off # Controls whether object-updates are broadcast, default: on.
       generate:
       # Generate defines the range of DistributedObject ids that the database can create new objects with,
       # and is generally responsible for. Min and max are both optional fields.
-        min: 100000000 # Required (no default)
-      # max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
+          min: 100000000 # Required (no default)
+          #max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
       backend:
-        type: bdb
-        filename: main_database.db
+          type: bdb
+          filename: main_database.db
 
-    # We will then create a database state server which provides state-server-like behavior on database
-    # objects.  The dbss does not have a control channel, and so cannot generate new objects.
+    # We will then create a database state server which provides state-server-like
+    #     behavior on database objects.  The dbss does not have a control channel,
+    #     and so cannot generate new objects.
     - type: dbss
       database: 402001 # The channel of the associated database
       ranges:
-      # Ranges defines a sequence of ranges of DistributedObject ids that the database-state server
-      # will provide stateserver-like behavior for.
+      # Ranges defines a sequence of ranges of DistributedObject ids that the
+      #     database-state server will provide stateserver-like behavior for.
       # Note: The ranges do not have to match that of the database. This allows for multiple dbss to
       #       split up the handling of a single database. Additionally, it can be used to exclude
       #       special-case or prepopulated objects from recieving SS behavior.

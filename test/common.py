@@ -69,11 +69,14 @@ CONSTANTS = {
     # Success booleans
     'SUCCESS': 1,
     'FAILURE': 0,
+    'BOOL_YES': 1,
+    'BOOL_NO': 0,
 
     # Reserved Channels
     'INVALID_CHANNEL': 0,
     'CONTROL_CHANNEL': 1,
     'PARENT_PREFIX': 1 << 32,
+    'DATABASE_PREFIX': 2 << 32,
 
     # Control message-type constants
     'CONTROL_ADD_CHANNEL':          9000,
@@ -136,6 +139,8 @@ CONSTANTS = {
     # DBSS object message-type constants
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS':        2200,
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER':  2201,
+    'DBSS_OBJECT_GET_ACTIVATED':                 2207,
+    'DBSS_OBJECT_GET_ACTIVATED_RESP':            2208,
     'DBSS_OBJECT_DELETE_FIELD_DISK':             2230,
     'DBSS_OBJECT_DELETE_FIELDS_DISK':            2231,
     'DBSS_OBJECT_DELETE_DISK':                   2232,
@@ -241,6 +246,8 @@ if 'USE_128BIT_CHANNELS' in os.environ:
     CONSTANTS['ZONE_MAX'] = (1 << 64) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 8
     CONSTANTS['ZONE_SIZE_BITS'] = 64
+    CONSTANTS['PARENT_PREFIX'] = 1 << 64
+    CONSTANTS['DATABASE_PREFIX'] = 2 << 64
 else:
     CONSTANTS['CHANNEL_MAX'] = (1 << 64) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 8

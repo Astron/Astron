@@ -38,14 +38,15 @@ endif()
 ### Add per-compiler flags ###
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -Wall -Wextra")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
 		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -Wall")
 
 	# warnings are errors, release code should not have warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
 
-	# debug flags, Wall
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+	# debug flags, wall, wextra
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra")
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
@@ -134,8 +135,19 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-set(BUILD_TESTS OFF CACHE BOOL "If set to true, test files will be compiled in")
+set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
+	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
+if(USE_32BIT_DATAGRAMS)
+	add_definitions(-DASTRON_32BIT_DATAGRAMS)
+	add_definitions(-DDCLASS_32BIT_SIZETAG)
+endif()
+set(USE_128BIT_CHANNELS OFF CACHE BOOL
+	"If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).")
+if(USE_128BIT_CHANNELS)
+	add_definitions(-DASTRON_128BIT_CHANNELS)
+endif()
 
+set(BUILD_TESTS OFF CACHE BOOL "If set to true, test files will be compiled in")
 if(BUILD_TESTS)
 	set(TEST_FILES
 		src/tests/MDParticipantTest.cpp
@@ -146,8 +158,10 @@ endif()
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	set(DBSERVER_FILES
+		src/database/DatabaseServer.h
 		src/database/DatabaseServer.cpp
 		src/database/DatabaseBackend.h
+		src/database/DatabaseBackend.cpp
 		src/database/DBBackendFactory.h
 		src/database/DBBackendFactory.cpp
 	)
@@ -158,8 +172,9 @@ if(BUILD_DBSERVER)
 			${DBSERVER_FILES}
 			src/database/YAMLDatabase.cpp
 		)
-		add_test(db_yaml ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
-		add_test(validate_config_dbyaml ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
+		add_test(db_yaml python ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
+		add_test(validate_config_dbyaml python ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -216,8 +231,10 @@ if(BUILD_DBSERVER)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
-				add_test(db_pgsql ${CMAKE_SOURCE_DIR}/test/test_dbserver_posgres.py)
-
+				add_test(db_pgsql  python ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
+				add_test(validate_config_dbpostgres
+					 python ${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py)
+				set(PYTHON_TESTS ${PYTHON_TESTS} db_pgsql validate_config_dbpostgres)
 			endif()
 		endif()
 	else()
@@ -243,8 +260,9 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
-	add_test(stateserver ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
-	add_test(validate_config_stateserver ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
+	add_test(stateserver python ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
+	add_test(validate_config_stateserver python ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver validate_config_stateserver)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
 	if(BUILD_STATESERVER_DBSS)
@@ -255,8 +273,9 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.h
 			src/stateserver/LoadingObject.cpp
 		)
-		add_test(dbss ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
-		add_test(validate_config_dbss ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
+		add_test(dbss python ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
+		add_test(validate_config_dbss python ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
+		set(PYTHON_TESTS ${PYTHON_TESTS} dbss validate_config_dbss)
 	endif()
 else()
 	unset(BUILD_STATESERVER_DBSS CACHE)
@@ -268,7 +287,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
-	add_test(validate_config_eventlogger ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
+	add_test(validate_config_eventlogger python ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
@@ -283,21 +302,10 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientFactory.h
 		src/clientagent/AstronClient.cpp
 	)
-	add_test(clientagent ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
-	add_test(validate_config_clientagent ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
+	add_test(clientagent python ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
+	add_test(validate_config_clientagent python ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
+	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent validate_config_clientagent)
 endif()
-
-set(USE_128BIT_CHANNELS OFF CACHE BOOL "If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).")
-if(USE_128BIT_CHANNELS)
-	add_definitions(-DASTRON_128BIT_CHANNELS)
-endif()
-
-set(USE_32BIT_DATAGRAMS OFF CACHE BOOL "If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
-if(USE_32BIT_DATAGRAMS)
-	add_definitions(-DASTRON_32BIT_DATAGRAMS)
-	add_definitions(-DDCPARSER_32BIT_LENGTH_TAG)
-endif()
-
 
 ### Define core components ###
 set(CORE_FILES
@@ -339,8 +347,9 @@ set(UTIL_FILES
 )
 
 include_directories(src)
-add_test(validate_config_core ${CMAKE_SOURCE_DIR}/test/test_config.py)
-add_test(messagedirector ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
+add_test(validate_config_core python ${CMAKE_SOURCE_DIR}/test/test_config.py)
+add_test(messagedirector python ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
+set(PYTHON_TESTS ${PYTHON_TESTS} messagedirector)
 add_executable(astrond
 	${CORE_FILES}
 	${CONFIG_FILES}
@@ -382,12 +391,18 @@ endif()
 #endforeach(sourcefile)
 #source_group("Header Files" FILES ${ASTROND_HEADERS})
 
-add_library(dcparser
-	src/dcparser/p3dcparser_composite1.cxx 
-	src/dcparser/p3dcparser_composite2.cxx 
-	src/dcparser/dcLexer.cxx
-	src/dcparser/dcParser.cxx
-)
+add_subdirectory(src/dclass)
 
-add_dependencies(astrond dcparser)
-target_link_libraries(astrond dcparser ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+add_dependencies(astrond dclass)
+target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+
+### Handle some final testing configuration ###
+if(USE_32BIT_DATAGRAMS)
+	set(PYTHON_TEST_ENV ${PYTHON_TEST_ENV} "USE_32BIT_DATAGRAMS=true")
+endif()
+if(USE_128BIT_CHANNELS)
+	set(PYTHON_TEST_ENV ${PYTHON_TEST_ENV} "USE_128BIT_CHANNELS=true")
+endif()
+if(PYTHON_TEST_ENV)
+	set_tests_properties(${PYTHON_TESTS} PROPERTIES ENVIRONMENT "${PYTHON_TEST_ENV}")
+endif()

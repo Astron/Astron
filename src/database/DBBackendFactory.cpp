@@ -15,7 +15,7 @@ DBBackendFactory& DBBackendFactory::singleton()
 DatabaseBackend* DBBackendFactory::instantiate_backend(const std::string &backend_name,
 	ConfigNode config, doid_t min_id, doid_t max_id)
 {
-	if(m_factories[backend_name])
+	if(m_factories.find(backend_name) != m_factories.end())
 	{
 		return m_factories[backend_name]->instantiate(config, min_id, max_id);
 	}
@@ -27,4 +27,10 @@ DatabaseBackend* DBBackendFactory::instantiate_backend(const std::string &backen
 void DBBackendFactory::add_backend(const std::string &name, BaseDBBackendFactoryItem* factory)
 {
 	m_factories[name] = factory;
+}
+
+// has_backend returns true if a backend exists for 'name'.
+bool DBBackendFactory::has_backend(const std::string &name)
+{
+	return m_factories.find(name) != m_factories.end();
 }
