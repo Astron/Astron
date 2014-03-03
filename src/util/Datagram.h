@@ -6,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string.h> // memcpy
+#include <memory>
 #include "core/types.h"
 #include "dclass/util/byteorder.h"
 
