@@ -33,7 +33,7 @@ def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if dclass is not None:
         datagram.add_uint16(dclass)
 
-class TestDBStateServer(unittest.TestCase):
+class TestDBStateServer(ProtocolTest):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
@@ -101,7 +101,7 @@ class TestDBStateServer(unittest.TestCase):
         appendMeta(dg, doid1, 80000, 100, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(3117) # setRDB3
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
         ### Test for Activate while object is already loaded into ram
@@ -112,8 +112,8 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # The object is already activated, so this should be ignored
-        self.assertTrue(self.shard.expect_none())
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.shard)
+        self.expectNone(self.database)
 
         # Remove object from ram
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_DELETE_RAM)
@@ -145,7 +145,7 @@ class TestDBStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect no entry messages
-        self.assertTrue(self.shard.expect_none())
+        self.expectNone(self.shard)
 
         ### Clean up ###
         self.shard.send(Datagram.create_remove_channel(80000<<ZONE_SIZE_BITS|100))
@@ -194,7 +194,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(32144123) # setRDB3
         dg.add_uint8(23) # setRDbD5
         dg.add_uint16(0) # Optional field count
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
 
@@ -221,7 +221,7 @@ class TestDBStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Should receive no stateserver object response
-        self.assertTrue(self.shard.expect_none())
+        self.expectNone(self.shard)
 
 
 
@@ -248,13 +248,13 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect not to receive another request at the database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         # Send back to the DBSS with some required values
         dg = Datagram.create([doid1], 1200, DBSERVER_OBJECT_GET_ALL_RESP)
         dg.add_uint32(context)
         dg.add_uint8(SUCCESS)
-        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint16(DistributedTestObject5)
         dg.add_uint16(2)
         dg.add_uint16(setRDB3)
         dg.add_uint32(32144123)
@@ -277,9 +277,8 @@ class TestDBStateServer(unittest.TestCase):
         appendMeta(dg, doid1, 33000, 33, DistributedTestObject5)
         dg.add_uint32(setRequired1DefaultValue) # setRequired1
         dg.add_uint32(32144123) # setRDB3
-        dg.add_uint8(23) # setRDbD5
         expected.append(dg)
-        self.assertTrue(self.shard.expect_multi(expected))
+        self.expectMany(self.shard, expected)
 
 
         ### Cleanup ###
@@ -303,12 +302,12 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object doesn't have a location and so shouldn't announce its disappearance...
-        self.assertTrue(self.shard.expect_none())
+        self.expectNone(self.shard)
 
         # Database should expect a delete message
         dg = Datagram.create([1200], doid1, DBSERVER_OBJECT_DELETE)
         dg.add_doid(doid1) # Object Id
-        self.assertTrue(*self.database.expect(dg))
+        self.expect(self.database, dg)
 
 
 
@@ -346,7 +345,7 @@ class TestDBStateServer(unittest.TestCase):
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], 13, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid2)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
 
@@ -357,12 +356,12 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Object no longer has a location and so shouldn't announce its disappearance...
-        self.assertTrue(self.shard.expect_none())
+        self.expectNone(self.shard)
 
         # Database should expect a delete message
         dg = Datagram.create([1200], doid2, DBSERVER_OBJECT_DELETE)
         dg.add_doid(doid2) # Object Id
-        self.assertTrue(*self.database.expect(dg))
+        self.expect(self.database, dg)
 
 
 
@@ -404,12 +403,12 @@ class TestDBStateServer(unittest.TestCase):
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], 13, DBSS_OBJECT_DELETE_DISK)
         dg.add_doid(doid3)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
         # Database should expect a delete message
         dg = Datagram.create([1200], doid3, DBSERVER_OBJECT_DELETE)
         dg.add_doid(doid3) # Object Id
-        self.assertTrue(*self.database.expect(dg))
+        self.expect(self.database, dg)
 
         # Check that Ram/Requried fields still exist in ram still
         dg = Datagram.create([doid3], 5, STATESERVER_OBJECT_GET_ALL)
@@ -456,7 +455,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(333444) # setRDB3
         dg.add_uint8(34) # setRDbD5
         dg.add_uint16(0) # Optional field count
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
 
@@ -469,7 +468,7 @@ class TestDBStateServer(unittest.TestCase):
         # Object should announce its disappearance...
         dg = Datagram.create([90000<<ZONE_SIZE_BITS|200], doid3, STATESERVER_OBJECT_DELETE_RAM)
         dg.add_doid(doid3)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
         # Check that object no longer exists
         dg = Datagram.create([doid3], 5, STATESERVER_OBJECT_GET_ALL)
@@ -490,7 +489,7 @@ class TestDBStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect no response
-        self.assertTrue(*self.shard.expect_none())
+        self.expectNone(self.shard)
 
 
         ### Clean Up ###
@@ -569,7 +568,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_doid(9030) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(4096)
-        self.assertTrue(*self.database.expect(dg))
+        self.expect(self.database, dg)
 
 
 
@@ -612,7 +611,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         ### Test for SetFields with all non-db fields on unloaded object ###
         # Update fields on stateserver object
@@ -625,7 +624,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         ### Test for SetFields with mixed db and non-db fields on unloaded object ###
         # Update field multiple on stateserver object
@@ -702,7 +701,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_doid(9031) # id
         dg.add_uint16(setFoo)
         dg.add_uint16(6604)
-        self.assertTrue(*self.database.expect(dg))
+        self.expect(self.database, dg)
 
 
 
@@ -748,7 +747,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         # Ignore any previous setField broadcasts
         self.shard.flush()
@@ -760,7 +759,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         # Updated values should be returned from DBSS
         dg = Datagram.create([5], 9031, STATESERVER_OBJECT_GET_ALL_RESP)
@@ -770,7 +769,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(18811881) #setRDB3
         dg.add_uint8(222) # setRDbD5
         dg.add_uint16(0) # Optional fields count
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
 
@@ -787,7 +786,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect none at database
-        self.assertTrue(self.database.expect_none())
+        self.expectNone(self.database)
 
         # Ignore broadcast
         self.shard.flush()
@@ -799,7 +798,7 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # DBSS should expect none
-        self.database.expect_none()
+        self.expectNone(self.database)
 
         # Updated values should be returned from DBSS
         dg = self.shard.recv_maybe()
@@ -835,7 +834,7 @@ class TestDBStateServer(unittest.TestCase):
 
         doid1 = 9040
 
-        ### Test for GetField with required db field on inactive object###
+        ### Test for GetField with ram db field on inactive object###
         # Query field from StateServer object
         dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_GET_FIELD)
         dg.add_uint32(1) # Context
@@ -866,8 +865,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint8(SUCCESS)
         dg.add_uint16(setDb3)
         dg.add_string("Slam-bam-in-a-can!")
-        self.assertTrue(*self.shard.expect(dg)) # Expecting GetField success
-
+        self.expect(self.shard, dg) # Expecting GetField success
 
 
         ### Test for GetField with existing non-ram db field ###
@@ -879,13 +877,13 @@ class TestDBStateServer(unittest.TestCase):
         self.shard.send(dg)
 
         # Expect nothing at database, DBSS only returns ram/required db fields
-        self.database.expect_none()
+        self.expectNone(self.database)
 
         # Expect failure resp sent to caller
         dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
         dg.add_uint32(2) # Context
         dg.add_uint8(FAILURE)
-        self.assertTrue(*self.shard.expect(dg)) # Expecting GetField failure
+        self.expect(self.shard, dg) # Expecting GetField failure
 
 
 
@@ -922,15 +920,15 @@ class TestDBStateServer(unittest.TestCase):
         self.database.send(dg)
 
         # Expect field value from DBSS
-        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELD_RESP)
-        dg.add_uint32(2) # Context
+        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(3) # Context
         dg.add_uint8(SUCCESS)
         dg.add_uint32(2) # Field count
         dg.add_uint16(setRDB3)
         dg.add_uint32(99911)
         dg.add_uint16(setDb3)
         dg.add_string("He just really likes ice cream.")
-        self.shard.expect(dg)
+        self.expect(self.shard, dg)
 
 
 
@@ -970,7 +968,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint16(1)
         dg.add_uint16(setRDB3)
         dg.add_uint32(99922)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
     def test_get_activated(self):
         self.shard.flush()
@@ -989,7 +987,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(1) # Context
         dg.add_doid(doid)
         dg.add_uint8(BOOL_NO)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
         ### Test for GetActivated on loading object that doesn't exist ###
@@ -1026,7 +1024,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(2) # Context
         dg.add_doid(doid)
         dg.add_uint8(BOOL_NO)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
         ### Test for GetActivated on loading object that exists ###
@@ -1069,7 +1067,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(3) # Context
         dg.add_doid(doid)
         dg.add_uint8(BOOL_YES)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
         ### Test for GetActivated on activated object ### (continues from last)
@@ -1083,7 +1081,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(4) # Context
         dg.add_doid(doid)
         dg.add_uint8(BOOL_YES)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 
         ### Test for GetActivated when killing the object ### (continues from last)
@@ -1102,7 +1100,7 @@ class TestDBStateServer(unittest.TestCase):
         dg.add_uint32(5) # Context
         dg.add_doid(doid)
         dg.add_uint8(BOOL_NO)
-        self.assertTrue(*self.shard.expect(dg))
+        self.expect(self.shard, dg)
 
 if __name__ == '__main__':
     unittest.main()

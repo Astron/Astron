@@ -82,8 +82,8 @@ struct uint128_t {
 	inline uint128_t& operator-=(const uint128_t& rhs)
 	{
 		uint64_t low = this->low;
-		this->low -= this->low;
-		this->high -= this->high;
+		this->low -= rhs.low;
+		this->high -= rhs.high;
 		if(this->low > low)
 		{
 			--this->high;

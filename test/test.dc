@@ -36,7 +36,7 @@ dclass DistributedTestObject4 {
 dclass DistributedTestObject5 : DistributedTestObject3 {
     setRDbD5(uint8 rdbd = 20) required db;
     setFoo(uint16 foo) db;
-}
+};
 
 dclass UberDog1 {
 	request(string what) clsend;

@@ -387,7 +387,7 @@ class SociSQLDatabase : public DatabaseBackend
 			bool failed = false;
 			string value;
 			indicator ind;
-			vector<const Field*> null_fields;
+			map<const Field*, vector<uint8_t> > stored_values;
 			try
 			{
 				m_sql.begin(); // Start transaction
@@ -400,7 +400,6 @@ class SociSQLDatabase : public DatabaseBackend
 						      << " WHERE object_id=" << do_id << ";", into(value, ind);
 						if(ind != i_ok)
 						{
-							null_fields.push_back(field);
 							failed = true;
 							continue;
 						}
@@ -425,16 +424,13 @@ class SociSQLDatabase : public DatabaseBackend
 							               << "' of object " << do_id << "' from database.\n";
 							continue;
 						}
-						values[field] = vector<uint8_t>(value.begin(), value.end());
+						stored_values[field] = vector<uint8_t>(value.begin(), value.end());
 					}
 				}
 
 				if(failed)
 				{
-					for(auto it = null_fields.begin(); it != null_fields.end(); ++it)
-					{
-						values.erase(*it);
-					}
+					values = stored_values;
 					m_sql.rollback(); // Revert transaction
 					return false;
 				}

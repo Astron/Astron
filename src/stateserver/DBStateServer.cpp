@@ -114,12 +114,12 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 		if(load_it == m_inactive_loads.end())
 		{
 			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id);
+			m_loading[do_id]->begin();
 		}
 		else
 		{
 			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, load_it->second);
 		}
-		m_loading[do_id]->begin();
 	}
 	else
 	{
@@ -143,12 +143,12 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 		if(load_it == m_inactive_loads.end())
 		{
 			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dcc, dgi);
+			m_loading[do_id]->begin();
 		}
 		else
 		{
 			m_loading[do_id] = new LoadingObject(this, do_id, parent_id, zone_id, dcc, dgi, load_it->second);
 		}
-		m_loading[do_id]->begin();
 	}
 }
 
