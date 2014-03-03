@@ -338,8 +338,8 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 		// Prepare reponse datagram
 		if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 		{
-			m_context_datagrams[db_context]->add_server_header(sender, r_do_id,
-			        STATESERVER_OBJECT_GET_FIELD_RESP);
+			m_context_datagrams[db_context] = Datagram::create(sender, r_do_id,
+			                                                   STATESERVER_OBJECT_GET_FIELD_RESP);
 		}
 
 		m_context_datagrams[db_context]->add_uint32(r_context);
@@ -444,8 +444,8 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
 		// Prepare reponse datagram
 		if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 		{
-			m_context_datagrams[db_context]->add_server_header(sender, r_do_id,
-			        STATESERVER_OBJECT_GET_FIELDS_RESP);
+			m_context_datagrams[db_context] = Datagram::create(sender, r_do_id,
+			                                                   STATESERVER_OBJECT_GET_FIELDS_RESP);
 		}
 		m_context_datagrams[db_context]->add_uint32(r_context);
 		m_context_datagrams[db_context]->add_bool(true);
@@ -538,8 +538,8 @@ void DBStateServer::handle_get_all(channel_t sender, DatagramIterator &dgi)
 
 	if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 	{
-		m_context_datagrams[db_context]->add_server_header(sender, r_do_id,
-		        STATESERVER_OBJECT_GET_ALL_RESP);
+		m_context_datagrams[db_context] = Datagram::create(sender, r_do_id,
+		                                                   STATESERVER_OBJECT_GET_ALL_RESP);
 	}
 
 	m_context_datagrams[db_context]->add_uint32(r_context);
