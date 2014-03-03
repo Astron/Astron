@@ -9,7 +9,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 	set_con_name("Network Participant");
 }
 
-void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator&)
+void MDNetworkParticipant::handle_datagram(Datagram_ptr &dg, DatagramIterator&)
 {
 	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
 	try
@@ -24,7 +24,7 @@ void MDNetworkParticipant::handle_datagram(Datagram &dg, DatagramIterator&)
 	}
 }
 
-void MDNetworkParticipant::receive_datagram(Datagram &dg)
+void MDNetworkParticipant::receive_datagram(Datagram_ptr &dg)
 {
 	DatagramIterator dgi(dg);
 	uint16_t channels = dgi.read_uint8();

@@ -84,11 +84,11 @@ DistributedObject::~DistributedObject()
 	delete m_log;
 }
 
-void DistributedObject::append_required_data(Datagram &dg, bool client_only, bool also_owner)
+void DistributedObject::append_required_data(Datagram_ptr &dg, bool client_only, bool also_owner)
 {
-	dg.add_doid(m_do_id);
-	dg.add_location(m_parent_id, m_zone_id);
-	dg.add_uint16(m_dclass->get_id());
+	dg->add_doid(m_do_id);
+	dg->add_location(m_parent_id, m_zone_id);
+	dg->add_uint16(m_dclass->get_id());
 	size_t field_count = m_dclass->get_num_fields();
 	for(size_t i = 0; i < field_count; ++i)
 	{
@@ -97,12 +97,12 @@ void DistributedObject::append_required_data(Datagram &dg, bool client_only, boo
 		        || field->has_keyword("broadcast") || field->has_keyword("clrecv")
 		        || (also_owner && field->has_keyword("ownrecv"))))
 		{
-			dg.add_data(m_required_fields[field]);
+			dg->add_data(m_required_fields[field]);
 		}
 	}
 }
 
-void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool also_owner)
+void DistributedObject::append_other_data(Datagram_ptr &dg, bool client_only, bool also_owner)
 {
 	if(client_only)
 	{
@@ -116,20 +116,20 @@ void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool a
 			}
 		}
 
-		dg.add_uint16(broadcast_fields.size());
+		dg->add_uint16(broadcast_fields.size());
 		for(auto it = broadcast_fields.begin(); it != broadcast_fields.end(); ++it)
 		{
-			dg.add_uint16((*it)->get_id());
-			dg.add_data(m_ram_fields[*it]);
+			dg->add_uint16((*it)->get_id());
+			dg->add_data(m_ram_fields[*it]);
 		}
 	}
 	else
 	{
-		dg.add_uint16(m_ram_fields.size());
+		dg->add_uint16(m_ram_fields.size());
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
-			dg.add_uint16(it->first->get_id());
-			dg.add_data(it->second);
+			dg->add_uint16(it->first->get_id());
+			dg->add_data(it->second);
 		}
 	}
 }
@@ -138,7 +138,7 @@ void DistributedObject::append_other_data(Datagram &dg, bool client_only, bool a
 
 void DistributedObject::send_location_entry(channel_t location)
 {
-	Datagram dg(location, m_do_id, m_ram_fields.size() ?
+	Datagram_ptr dg = Datagram::create(location, m_do_id, m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER :
 	            STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED);
 	append_required_data(dg, true);
@@ -151,7 +151,7 @@ void DistributedObject::send_location_entry(channel_t location)
 
 void DistributedObject::send_ai_entry(channel_t ai)
 {
-	Datagram dg(ai, m_do_id, m_ram_fields.size() ?
+	Datagram_ptr dg = Datagram::create(ai, m_do_id, m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER :
 	            STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED);
 	append_required_data(dg);
@@ -164,7 +164,7 @@ void DistributedObject::send_ai_entry(channel_t ai)
 
 void DistributedObject::send_owner_entry(channel_t owner)
 {
-	Datagram dg(owner, m_do_id, m_ram_fields.size() ?
+	Datagram_ptr dg = Datagram::create(owner, m_do_id, m_ram_fields.size() ?
 	            STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER :
 	            STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED);
 	append_required_data(dg, true, true);
@@ -224,8 +224,8 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 			if(!m_ai_explicitly_set)
 			{
 				// Ask the new parent what its AI is.
-				Datagram dg(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
-				dg.add_uint32(m_next_context++);
+				Datagram_ptr dg = Datagram::create(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);
+				dg->add_uint32(m_next_context++);
 				route_datagram(dg);
 			}
 			targets.insert(new_parent); // Notify new parent of changing location
@@ -249,10 +249,10 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 	}
 
 	// Send changing location message
-	Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
-	dg.add_doid(m_do_id);
-	dg.add_location(new_parent, new_zone);
-	dg.add_location(old_parent, old_zone);
+	Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
+	dg->add_doid(m_do_id);
+	dg->add_location(new_parent, new_zone);
+	dg->add_location(old_parent, old_zone);
 	route_datagram(dg);
 
 	// Send enter location message
@@ -286,10 +286,10 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 	m_ai_channel = new_ai;
 	m_ai_explicitly_set = channel_is_explicit;
 
-	Datagram dg(targets, sender, STATESERVER_OBJECT_CHANGING_AI);
-	dg.add_doid(m_do_id);
-	dg.add_channel(new_ai);
-	dg.add_channel(old_ai);
+	Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_OBJECT_CHANGING_AI);
+	dg->add_doid(m_do_id);
+	dg->add_channel(new_ai);
+	dg->add_channel(old_ai);
 	route_datagram(dg);
 
 	if(new_ai)
@@ -310,10 +310,10 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 		// Leave parent on explicit delete ram
 		if(notify_parent)
 		{
-			Datagram dg(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
-			dg.add_doid(m_do_id);
-			dg.add_location(INVALID_DO_ID, 0);
-			dg.add_location(m_parent_id, m_zone_id);
+			Datagram_ptr dg = Datagram::create(m_parent_id, sender, STATESERVER_OBJECT_CHANGING_LOCATION);
+			dg->add_doid(m_do_id);
+			dg->add_location(INVALID_DO_ID, 0);
+			dg->add_location(m_parent_id, m_zone_id);
 			route_datagram(dg);
 		}
 	}
@@ -325,8 +325,8 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 	{
 		targets.insert(m_ai_channel);
 	}
-	Datagram dg(targets, sender, STATESERVER_OBJECT_DELETE_RAM);
-	dg.add_doid(m_do_id);
+	Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_OBJECT_DELETE_RAM);
+	dg->add_doid(m_do_id);
 	route_datagram(dg);
 
 	delete_children(sender);
@@ -340,17 +340,17 @@ void DistributedObject::delete_children(channel_t sender)
 {
 	if(m_child_count)
 	{
-		Datagram dg(PARENT2CHILDREN(m_do_id), sender,
+		Datagram_ptr dg = Datagram::create(PARENT2CHILDREN(m_do_id), sender,
 		            STATESERVER_OBJECT_DELETE_CHILDREN);
-		dg.add_doid(m_do_id);
+		dg->add_doid(m_do_id);
 		route_datagram(dg);
 	}
 }
 
 void DistributedObject::wake_children()
 {
-	Datagram dg(PARENT2CHILDREN(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
-	dg.add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN);
+	Datagram_ptr dg = Datagram::create(PARENT2CHILDREN(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
+	dg->add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN);
 	route_datagram(dg);
 }
 
@@ -426,16 +426,16 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	}
 	if(targets.size()) // TODO: Review this for efficiency?
 	{
-		Datagram dg(targets, sender, STATESERVER_OBJECT_SET_FIELD);
-		dg.add_doid(m_do_id);
-		dg.add_uint16(field_id);
-		dg.add_data(data);
+		Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_OBJECT_SET_FIELD);
+		dg->add_doid(m_do_id);
+		dg->add_uint16(field_id);
+		dg->add_data(data);
 		route_datagram(dg);
 	}
 	return true;
 }
 
-bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
+bool DistributedObject::handle_one_get(Datagram_ptr &out, uint16_t field_id,
                                        bool succeed_if_unset, bool is_subfield)
 {
 	const Field *field = m_dclass->get_field_by_id(field_id);
@@ -451,7 +451,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	if(molecular)
 	{
 		int n = molecular->get_num_fields();
-		out.add_uint16(field_id);
+		out->add_uint16(field_id);
 		for(int i = 0; i < n; ++i)
 		{
 			if(!handle_one_get(out, molecular->get_field(i)->get_id(), succeed_if_unset, true))
@@ -466,17 +466,17 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	{
 		if(!is_subfield)
 		{
-			out.add_uint16(field_id);
+			out->add_uint16(field_id);
 		}
-		out.add_data(m_required_fields[field]);
+		out->add_data(m_required_fields[field]);
 	}
 	else if(m_ram_fields.count(field))
 	{
 		if(!is_subfield)
 		{
-			out.add_uint16(field_id);
+			out->add_uint16(field_id);
 		}
-		out.add_data(m_ram_fields[field]);
+		out->add_data(m_ram_fields[field]);
 	}
 	else
 	{
@@ -486,7 +486,7 @@ bool DistributedObject::handle_one_get(Datagram &out, uint16_t field_id,
 	return true;
 }
 
-void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
+void DistributedObject::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
@@ -584,10 +584,10 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_GET_AI:
 		{
 			m_log->trace() << "Received AI query from " << sender << std::endl;
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_AI_RESP);
-			dg.add_uint32(dgi.read_uint32()); // Get context
-			dg.add_doid(m_do_id);
-			dg.add_channel(m_ai_channel);
+			Datagram_ptr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_AI_RESP);
+			dg->add_uint32(dgi.read_uint32()); // Get context
+			dg->add_doid(m_do_id);
+			dg->add_channel(m_ai_channel);
 			route_datagram(dg);
 
 			break;
@@ -666,10 +666,10 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 		{
 			uint32_t context = dgi.read_uint32();
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_LOCATION_RESP);
-			dg.add_uint32(context);
-			dg.add_doid(m_do_id);
-			dg.add_location(m_parent_id, m_zone_id);
+			Datagram_ptr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_LOCATION_RESP);
+			dg->add_uint32(context);
+			dg->add_doid(m_do_id);
+			dg->add_location(m_parent_id, m_zone_id);
 			route_datagram(dg);
 
 			break;
@@ -709,8 +709,8 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 			{
 				return;    // Not meant for this object!
 			}
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
-			dg.add_uint32(context);
+			Datagram_ptr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
+			dg->add_uint32(context);
 			append_required_data(dg);
 			append_other_data(dg);
 			route_datagram(dg);
@@ -726,15 +726,15 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 			}
 			uint16_t field_id = dgi.read_uint16();
 
-			Datagram raw_field;
+			Datagram_ptr raw_field = Datagram::create();
 			bool success = handle_one_get(raw_field, field_id);
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
-			dg.add_uint32(context);
-			dg.add_bool(success);
+			Datagram_ptr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+			dg->add_uint32(context);
+			dg->add_bool(success);
 			if(success)
 			{
-				dg.add_data(raw_field);
+				dg->add_data(raw_field);
 			}
 			route_datagram(dg);
 
@@ -749,31 +749,31 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 			}
 			uint16_t field_count = dgi.read_uint16();
 
-			Datagram raw_fields;
+			Datagram_ptr raw_fields = Datagram::create();
 			bool success = true;
 			uint16_t fields_found = 0;
 			for(int i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				uint16_t length = raw_fields.size();
+				uint16_t length = raw_fields->size();
 				if(!handle_one_get(raw_fields, field_id, true))
 				{
 					success = false;
 					break;
 				}
-				if(raw_fields.size() > length)
+				if(raw_fields->size() > length)
 				{
 					fields_found++;
 				}
 			}
 
-			Datagram dg(sender, m_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
-			dg.add_uint32(context);
-			dg.add_bool(success);
+			Datagram_ptr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
+			dg->add_uint32(context);
+			dg->add_bool(success);
 			if(success)
 			{
-				dg.add_uint16(fields_found);
-				dg.add_data(raw_fields);
+				dg->add_uint16(fields_found);
+				dg->add_data(raw_fields);
 			}
 			route_datagram(dg);
 
@@ -792,10 +792,10 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 			if(m_owner_channel)
 			{
 				m_log->trace() << "... broadcasting changing owner..." << std::endl;
-				Datagram dg(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
-				dg.add_doid(m_do_id);
-				dg.add_channel(new_owner);
-				dg.add_channel(m_owner_channel);
+				Datagram_ptr dg = Datagram::create(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
+				dg->add_doid(m_do_id);
+				dg->add_channel(new_owner);
+				dg->add_channel(m_owner_channel);
 				route_datagram(dg);
 			}
 
@@ -843,24 +843,24 @@ void DistributedObject::handle_datagram(Datagram&, DatagramIterator &dgi)
 				uint16_t zone_count = dgi.read_uint16();
 
 				// Start datagram to relay to children
-				Datagram child_dg(PARENT2CHILDREN(m_do_id), sender,
+				Datagram_ptr child_dg = Datagram::create(PARENT2CHILDREN(m_do_id), sender,
 				                  STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-				child_dg.add_uint32(context);
-				child_dg.add_doid(queried_parent);
-				child_dg.add_uint16(zone_count);
+				child_dg->add_uint32(context);
+				child_dg->add_doid(queried_parent);
+				child_dg->add_uint16(zone_count);
 
 				// Get all zones requested
 				for(int i = 0; i < zone_count; ++i)
 				{
 					zone_t zone = dgi.read_zone();
 					child_count += m_zone_count[zone];
-					child_dg.add_zone(zone);
+					child_dg->add_zone(zone);
 				}
 
 				// Reply to requestor with count of objects expected
-				Datagram count_dg(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
-				count_dg.add_uint32(context);
-				count_dg.add_doid(child_count);
+				Datagram_ptr count_dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP);
+				count_dg->add_uint32(context);
+				count_dg->add_doid(child_count);
 				route_datagram(count_dg);
 
 				// Bounce the message down to all children and have them decide

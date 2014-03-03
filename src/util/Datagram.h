@@ -54,7 +54,6 @@ class Datagram
 				buf_cap = buf_cap + len + 64;
 			}
 		}
-	public:
 		// default-constructor:
 		//     creates a new datagram with some pre-allocated space
 		Datagram() : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
@@ -135,6 +134,69 @@ class Datagram
 		{
 			add_control_header(message_type);
 		}
+    
+    
+public:
+    static std::shared_ptr<Datagram> create()
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram);
+        return dg_ptr;
+    }
+    
+    //HACK: this is to get this named constructor to compile...
+    typedef std::shared_ptr<Datagram> Datagram_ptr;
+    
+    static std::shared_ptr<Datagram> create(const Datagram_ptr &dg)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram( *dg.get() ));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(uint8_t *data, dgsize_t length, dgsize_t capacity)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length, capacity));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(const uint8_t *data, dgsize_t length)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(const std::vector<uint8_t> &data)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(const std::string &data)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(channel_t to_channel, channel_t from_channel,
+                                            uint16_t message_type)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channel, from_channel, message_type));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(const std::set<channel_t> &to_channels,
+                                            channel_t from_channel,
+                                            uint16_t message_type)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channels, from_channel, message_type));
+        return dg_ptr;
+    }
+    
+    static std::shared_ptr<Datagram> create(uint16_t message_type)
+    {
+        std::shared_ptr<Datagram> dg_ptr(new Datagram(message_type));
+        return dg_ptr;
+    }
+
 
 		// destructor
 		~Datagram()
@@ -309,13 +371,13 @@ class Datagram
 				buf_offset += length;
 			}
 		}
-		void add_data(const Datagram &dg)
+		void add_data(const Datagram_ptr &dg)
 		{
-			if(dg.buf_offset)
+			if(dg->buf_offset)
 			{
-				check_add_length(dg.buf_offset);
-				memcpy(buf + buf_offset, dg.buf, dg.buf_offset);
-				buf_offset += dg.buf_offset;
+				check_add_length(dg->buf_offset);
+				memcpy(buf + buf_offset, dg->buf, dg->buf_offset);
+				buf_offset += dg->buf_offset;
 			}
 		}
 
@@ -429,3 +491,6 @@ class Datagram
 			return buf;
 		}
 };
+
+//TODO: this should really be moved somewhere nicer.
+typedef std::shared_ptr<Datagram> Datagram_ptr;
