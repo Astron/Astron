@@ -42,7 +42,7 @@ class ClientAgent : public Role
 		// handle_datagram handles Datagrams received from the message director.
 		// Currently the ClientAgent does not handle any datagrams,
 		// and delegates everything to the Client objects.
-		void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
 		const std::string& get_version() const
 		{

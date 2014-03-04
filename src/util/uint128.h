@@ -1,8 +1,9 @@
 #pragma once
 #include <iostream>
+#include "dclass/util/byteorder.h"
 
 struct uint128_t {
-	#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+	#if PLATFORM_BIG_ENDIAN
 		uint64_t high;
 		uint64_t low;
 	#else

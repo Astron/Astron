@@ -30,7 +30,7 @@ bool is_boolean_keyword(const string& str)
 bool is_valid_ip_address(const string& host)
 {
 	using namespace boost::asio;
-	using namespace boost::system;
+	//using namespace boost::system;
 
 	// Parse out port from address string
 	string addr;
@@ -46,7 +46,7 @@ bool is_valid_ip_address(const string& host)
 	}
 
 
-	error_code ec;
+	boost::system::error_code ec;
 	ip::address::from_string(addr, ec);
 	if(ec.value() != 0)
 	{

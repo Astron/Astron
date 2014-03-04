@@ -16,7 +16,7 @@ class LoadingObject : public MDParticipantInterface
 
 		void begin();
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
 	private:
 		DBStateServer *m_dbss;
@@ -34,9 +34,13 @@ class LoadingObject : public MDParticipantInterface
 		std::unordered_set<uint32_t> m_valid_contexts;
 
 		// Received datagrams while waiting for reply
-		std::list<Datagram> m_datagram_queue;
+		std::list<DatagramHandle> m_datagram_queue;
 		bool m_is_loaded;
 
+		// send_get_object makes the initial request to the database for the object data
 		void inline send_get_object(doid_t do_id);
+		// replay_datagrams while replay the datagrams for a loaded distributed object
 		void inline replay_datagrams(DistributedObject* obj);
+		// forward_datagrams will replay the datagrams to the dbss for a failed load
+		void inline forward_datagrams();
 };

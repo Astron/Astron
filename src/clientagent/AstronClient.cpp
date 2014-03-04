@@ -64,7 +64,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				remote = socket->remote_endpoint();
 			}
-			catch (std::exception &e)
+			catch (std::exception&)
 			{
 				// A client might disconnect immediately after connecting.
 				// If this happens, do nothing. Resolves #122.
@@ -101,16 +101,16 @@ class AstronClient : public Client, public NetworkClient
 		// send_disconnect must close any connections with a connected client; the given reason and
 		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
 		// Handler for CLIENTAGENT_EJECT.
-		void send_disconnect(uint16_t reason, const std::string &error_string, bool security = false)
+    void send_disconnect(uint16_t reason, const std::string &error_string, bool security = false)
 		{
 			if(is_connected())
 			{
 				Client::send_disconnect(reason, error_string, security);
 
-				Datagram resp;
-				resp.add_uint16(CLIENT_EJECT);
-				resp.add_uint16(reason);
-				resp.add_string(error_string);
+				DatagramPtr resp = Datagram::create();
+				resp->add_uint16(CLIENT_EJECT);
+				resp->add_uint16(reason);
+				resp->add_string(error_string);
 				send_datagram(resp);
 
 				m_clean_disconnect = true;
@@ -119,7 +119,7 @@ class AstronClient : public Client, public NetworkClient
 		}
 
 		// receive_datagram is the handler for datagrams received over the network from a Client.
-		void receive_datagram(Datagram &dg)
+		void receive_datagram(DatagramHandle dg)
 		{
 			DatagramIterator dgi(dg);
 			try
@@ -141,14 +141,14 @@ class AstronClient : public Client, public NetworkClient
 						break;
 				}
 			}
-			catch(DatagramIteratorEOF &e)
+			catch(DatagramIteratorEOF&)
 			{
 				// Occurs when a handler attempts to read past end of datagram
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM,
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
-			catch(DatagramOverflow &e)
+			catch(DatagramOverflow&)
 			{
 				// Occurs when a handler attempts to prepare or forward a datagram to be sent
 				// internally and, the resulting datagram is larger than the max datagram size.
@@ -185,7 +185,7 @@ class AstronClient : public Client, public NetworkClient
 		// forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
 		// Handler for CLIENTAGENT_SEND_DATAGRAM.
-		void forward_datagram(Datagram &dg)
+		void forward_datagram(DatagramHandle dg)
 		{
 			send_datagram(dg);
 		}
@@ -203,18 +203,18 @@ class AstronClient : public Client, public NetworkClient
 		{
 			bool multiple = i.zones.size() > 1;
 
-			Datagram resp;
-			resp.add_uint16(multiple ? CLIENT_ADD_INTEREST_MULTIPLE : CLIENT_ADD_INTEREST);
-			resp.add_uint32(context);
-			resp.add_uint16(i.id);
-			resp.add_doid(i.parent);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(multiple ? CLIENT_ADD_INTEREST_MULTIPLE : CLIENT_ADD_INTEREST);
+			resp->add_uint32(context);
+			resp->add_uint16(i.id);
+			resp->add_doid(i.parent);
 			if(multiple)
 			{
-				resp.add_uint16(i.zones.size());
+				resp->add_uint16(i.zones.size());
 			}
 			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
 			{
-				resp.add_zone(*it);
+				resp->add_zone(*it);
 			}
 			send_datagram(resp);
 		}
@@ -222,10 +222,10 @@ class AstronClient : public Client, public NetworkClient
 		// handle_remove_interest should inform the client an interest was removed by the server.
 		void handle_remove_interest(uint16_t interest_id, uint32_t context)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_REMOVE_INTEREST);
-			resp.add_uint32(context);
-			resp.add_uint16(interest_id);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_REMOVE_INTEREST);
+			resp->add_uint32(context);
+			resp->add_uint16(interest_id);
 			send_datagram(resp);
 		}
 
@@ -235,12 +235,12 @@ class AstronClient : public Client, public NetworkClient
 		void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                       DatagramIterator &dgi, bool other)
 		{
-			Datagram resp;
-			resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER : CLIENT_ENTER_OBJECT_REQUIRED);
-			resp.add_doid(do_id);
-			resp.add_location(parent_id, zone_id);
-			resp.add_uint16(dc_id);
-			resp.add_data(dgi.read_remainder());
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER : CLIENT_ENTER_OBJECT_REQUIRED);
+			resp->add_doid(do_id);
+			resp->add_location(parent_id, zone_id);
+			resp->add_uint16(dc_id);
+			resp->add_data(dgi.read_remainder());
 			send_datagram(resp);
 		}
 
@@ -250,34 +250,34 @@ class AstronClient : public Client, public NetworkClient
 		void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                          DatagramIterator &dgi, bool other)
 		{
-			Datagram resp;
-			resp.add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER
 			                : CLIENT_ENTER_OBJECT_REQUIRED_OWNER);
-			resp.add_doid(do_id);
-			resp.add_location(parent_id, zone_id);
-			resp.add_uint16(dc_id);
-			resp.add_data(dgi.read_remainder());
+			resp->add_doid(do_id);
+			resp->add_location(parent_id, zone_id);
+			resp->add_uint16(dc_id);
+			resp->add_data(dgi.read_remainder());
 			send_datagram(resp);
 		}
 
 		// handle_set_field should inform the client that the field has been updated.
 		void handle_set_field(doid_t do_id, uint16_t field_id, DatagramIterator &dgi)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_SET_FIELD);
-			resp.add_doid(do_id);
-			resp.add_uint16(field_id);
-			resp.add_data(dgi.read_remainder());
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_SET_FIELD);
+			resp->add_doid(do_id);
+			resp->add_uint16(field_id);
+			resp->add_data(dgi.read_remainder());
 			send_datagram(resp);
 		}
 
 		// handle_change_location should inform the client that the objects location has changed.
 		void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_LOCATION);
-			resp.add_doid(do_id);
-			resp.add_location(new_parent, new_zone);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_LOCATION);
+			resp->add_doid(do_id);
+			resp->add_location(new_parent, new_zone);
 			send_datagram(resp);
 		}
 
@@ -286,9 +286,9 @@ class AstronClient : public Client, public NetworkClient
 		//     for example, when it changes zone, leaves visibility, or is deleted.
 		void handle_remove_object(doid_t do_id)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_LEAVING);
-			resp.add_doid(do_id);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_LEAVING);
+			resp->add_doid(do_id);
 			send_datagram(resp);
 		}
 
@@ -296,9 +296,9 @@ class AstronClient : public Client, public NetworkClient
 		// Handle when the client loses ownership of an object.
 		void handle_remove_ownership(doid_t do_id)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
-			resp.add_doid(do_id);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
+			resp->add_doid(do_id);
 			send_datagram(resp);
 		}
 
@@ -306,10 +306,10 @@ class AstronClient : public Client, public NetworkClient
 		// received. Typically, informs the client that a particular group of objects is loaded.
 		void handle_interest_done(uint16_t interest_id, uint32_t context)
 		{
-			Datagram resp;
-			resp.add_uint16(CLIENT_DONE_INTEREST_RESP);
-			resp.add_uint32(context);
-			resp.add_uint16(interest_id);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_DONE_INTEREST_RESP);
+			resp->add_uint32(context);
+			resp->add_uint16(interest_id);
 			send_datagram(resp);
 		}
 
@@ -344,8 +344,8 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			Datagram resp;
-			resp.add_uint16(CLIENT_HELLO_RESP);
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_HELLO_RESP);
 			send_datagram(resp);
 
 			m_state = CLIENT_STATE_ANONYMOUS;
@@ -498,11 +498,11 @@ class AstronClient : public Client, public NetworkClient
 
 			// If an exception occurs while packing data it will be handled by
 			// receive_datagram and the client will be dc'd with "oversized datagram".
-			Datagram resp;
-			resp.add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
-			resp.add_doid(do_id);
-			resp.add_uint16(field_id);
-			resp.add_data(data);
+			DatagramPtr resp = Datagram::create();
+			resp->add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
+			resp->add_doid(do_id);
+			resp->add_uint16(field_id);
+			resp->add_data(data);
 			route_datagram(resp);
 		}
 
@@ -549,9 +549,9 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Update the object's location
-			Datagram dg(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
-			dg.add_doid(dgi.read_doid()); // Parent
-			dg.add_zone(dgi.read_zone()); // Zone
+            DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
+			dg->add_doid(dgi.read_doid()); // Parent
+			dg->add_zone(dgi.read_zone()); // Zone
 			route_datagram(dg);
 		}
 

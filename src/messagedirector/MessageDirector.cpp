@@ -105,7 +105,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
+void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
@@ -118,7 +118,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 
 		// Route messages to participants
 		auto &receive_log = m_log.trace();
-		receive_log << "Recievers: ";
+		receive_log << "Receivers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
 			channel_t channel = dgi.read_channel();
@@ -137,7 +137,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 		}
 		receive_log << std::endl;
 	}
-	catch(DatagramIteratorEOF &e)
+	catch(DatagramIteratorEOF &)
 	{
 		if(p)
 		{
@@ -165,11 +165,11 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram &dg)
 		{
 			(*it)->handle_datagram(dg, msg_dgi);
 		}
-		catch(DatagramIteratorEOF &e)
+		catch(DatagramIteratorEOF &)
 		{
 			// Log error with receivers output
 			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
-			              " from participant '" << p->m_name << "' ." << std::endl;
+			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
 	}
@@ -215,8 +215,8 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_ADD_CHANNEL);
-		dg.add_channel(c);
+		DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
+		dg->add_channel(c);
 		send_datagram(dg);
 	}
 }
@@ -262,8 +262,8 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_REMOVE_CHANNEL);
-		dg.add_channel(c);
+		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
+		dg->add_channel(c);
 		send_datagram(dg);
 	}
 }
@@ -315,9 +315,9 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		}
 
 		// Send upstream control message
-		Datagram dg(CONTROL_ADD_RANGE);
-		dg.add_channel(lo);
-		dg.add_channel(hi);
+		DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
+		dg->add_channel(lo);
+		dg->add_channel(hi);
 		send_datagram(dg);
 	}
 }
@@ -386,10 +386,10 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-			              << (it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
+			              << int(it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
 			              << it->lower() << ", " << it->upper()
-			              << (it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
-			Datagram dg(CONTROL_REMOVE_RANGE);
+			              << int(it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
+
 
 			channel_t lo = it->lower();
 			channel_t hi = it->upper();
@@ -402,8 +402,9 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
-			dg.add_channel(lo);
-			dg.add_channel(hi);
+			DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
+			dg->add_channel(lo);
+			dg->add_channel(hi);
 			send_datagram(dg);
 		}
 	}
@@ -444,7 +445,7 @@ void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::er
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (std::exception &e)
+	catch (std::exception &)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
@@ -480,7 +481,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 }
 
-void MessageDirector::receive_datagram(Datagram &dg)
+void MessageDirector::receive_datagram(DatagramHandle dg)
 {
 	route_datagram(NULL, dg);
 }

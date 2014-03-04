@@ -97,7 +97,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (exception &e)
+	catch (exception&)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
@@ -116,7 +116,7 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 }
 
 // handle_datagram handles Datagrams received from the message director.
-void ClientAgent::handle_datagram(Datagram&, DatagramIterator&)
+void ClientAgent::handle_datagram(DatagramHandle, DatagramIterator&)
 {
 	// At the moment, the client agent doesn't actually handle any datagrams
 }

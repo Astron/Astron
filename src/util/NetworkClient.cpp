@@ -66,7 +66,7 @@ void NetworkClient::async_receive()
 			           boost::asio::placeholders::bytes_transferred));
 		}
 	}
-	catch(std::exception &e)
+	catch(std::exception&)
 	{
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection. Therefore:
@@ -74,20 +74,20 @@ void NetworkClient::async_receive()
 	}
 }
 
-void NetworkClient::send_datagram(Datagram &dg)
+void NetworkClient::send_datagram(DatagramHandle dg)
 {
 	//TODO: make this asynch if necessary
-	dgsize_t len = dg.size();
+	dgsize_t len = swap_le(dg->size());
 	try
 	{
 		m_socket->non_blocking(true);
 		m_socket->native_non_blocking(true);
 		std::list<boost::asio::const_buffer> gather;
 		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
-		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
+		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
 		m_socket->send(gather);
 	}
-	catch(std::exception &e)
+	catch(std::exception&)
 	{
 		// We assume that the message just got dropped if the remote end died
 		// before we could send it.
@@ -113,7 +113,7 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
 	dgsize_t old_size = m_data_size;
 	// required to disable strict-aliasing optimizations, which can break the code
 	dgsize_t* new_size_p = (dgsize_t*)m_size_buf;
-	m_data_size = *new_size_p;
+	m_data_size = swap_le(*new_size_p);
 	if(m_data_size > old_size)
 	{
 		delete [] m_data_buf;
@@ -133,7 +133,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 		return;
 	}
 
-	Datagram dg(m_data_buf, m_data_size); // Datagram makes a copy
+	DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
 	m_is_data = false;
 	receive_datagram(dg);
 	async_receive();

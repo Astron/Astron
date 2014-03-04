@@ -11,16 +11,16 @@
 	#include "file/parser.h"
 	#include "file/write.h" // indent
 	#include <iostream>
-	#include <unistd.h>
 	using namespace dclass;
 
 	static int yyinput(void); // declared by flex.
-	extern int dclass::run_lexer();
+	namespace dclass{ int run_lexer(); }
 	extern "C" int should_lexer_wrap();
 
 	#define YYSTYPE dclass::TokenType
 	extern YYSTYPE yyltype;
 
+	#define YY_NO_UNISTD_H
 	#define YY_DECL int dclass::run_lexer(void)
 	#define yywrap should_lexer_wrap
 
@@ -442,6 +442,7 @@
 %}
 
 %option nounput
+%option never-interactive
 
 INTEGERNUM  ([0-9]+)
 HEXNUM      (0x[0-9a-fA-F]*)

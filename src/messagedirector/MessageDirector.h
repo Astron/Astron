@@ -1,9 +1,8 @@
 #pragma once
 #include <list>
 #include <set>
-#include <map>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
@@ -38,7 +37,7 @@ class MessageDirector : public NetworkClient
 		// route_datagram accepts any Astron message (a Datagram), and
 		//     properly routes it to any subscribed listeners.
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
-		void route_datagram(MDParticipantInterface *p, Datagram &dg);
+		void route_datagram(MDParticipantInterface *p, DatagramHandle dg);
 
 		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
 		// (Args) "c": the channel to be added.
@@ -92,7 +91,7 @@ class MessageDirector : public NetworkClient
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void receive_datagram(Datagram &dg);
+		virtual void receive_datagram(DatagramHandle dg);
 		virtual void receive_disconnect();
 
 
@@ -122,7 +121,7 @@ class MDParticipantInterface
 
 		// handle_datagram should handle a message received from the MessageDirector.
 		// Implementations of handle_datagram should be non-blocking operations.
-		virtual void handle_datagram(Datagram &dg, DatagramIterator &dgi) = 0;
+		virtual void handle_datagram(DatagramHandle dg, DatagramIterator &dgi) = 0;
 
 		// post_remove tells the MDParticipant to handle all of its post remove packets.
 		inline void post_remove()
@@ -144,7 +143,7 @@ class MDParticipantInterface
 		}
 
 	protected:
-		inline void route_datagram(Datagram &dg)
+		inline void route_datagram(DatagramHandle dg)
 		{
 			MessageDirector::singleton.route_datagram(this, dg);
 		}
@@ -175,7 +174,7 @@ class MDParticipantInterface
 			logger().trace() << "MDParticipant '" << m_name << "' unsubscribing from all.\n";
 			MessageDirector::singleton.unsubscribe_all(this);
 		}
-		inline void add_post_remove(const Datagram dg)
+		inline void add_post_remove(const DatagramPtr dg)
 		{
 			logger().trace() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(dg);
@@ -201,7 +200,7 @@ class MDParticipantInterface
 	private:
 		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
 		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
-		std::vector<Datagram> m_post_removes; // The messages to be distributed on unexpected disconnect.
+		std::vector<DatagramHandle> m_post_removes; // The messages to be distributed on unexpected disconnect.
 		std::string m_name;
 		std::string m_url;
 

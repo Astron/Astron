@@ -4,6 +4,7 @@
 
 #include <set>      // std::set
 #include <iostream> // std::cerr
+#include <math.h>
 #include "dc/File.h"
 #include "dc/Class.h"
 #include "dc/Method.h"

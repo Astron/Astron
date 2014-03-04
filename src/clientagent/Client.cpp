@@ -40,9 +40,8 @@ Client::~Client()
 		doid_t do_id = *m_session_objects.begin();
 		m_session_objects.erase(do_id);
 		m_log->debug() << "Client exited, deleting session object with id " << do_id << ".\n";
-		Datagram dg;
-		dg.add_server_header(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
-		dg.add_doid(do_id);
+		DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
+		dg->add_doid(do_id);
 		route_datagram(dg);
 	}
 }
@@ -50,15 +49,15 @@ Client::~Client()
 // log_event sends an event to the EventLogger
 void Client::log_event(const std::list<std::string> &event)
 {
-	Datagram dg;
+	DatagramPtr dg = Datagram::create();
 
 	std::stringstream ss;
 	ss << "Client:" << m_allocated_channel;
-	dg.add_string(ss.str());
+	dg->add_string(ss.str());
 
 	for(auto it = event.begin(); it != event.end(); ++it)
 	{
-		dg.add_string(*it);
+		dg->add_string(*it);
 	}
 
 	g_eventsender.send(dg);
@@ -199,14 +198,14 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 	uint32_t request_context = m_next_context++;
 	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
 
-	Datagram resp;
-	resp.add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
-	resp.add_uint32(request_context);
-	resp.add_doid(i.parent);
-	resp.add_uint16(new_zones.size());
+	DatagramPtr resp = Datagram::create();
+	resp->add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
+	resp->add_uint32(request_context);
+	resp->add_doid(i.parent);
+	resp->add_uint16(new_zones.size());
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{
-		resp.add_zone(*it);
+		resp->add_zone(*it);
 		subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
 	}
 	route_datagram(resp);
@@ -315,7 +314,7 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 }
 
 // handle_datagram is the handler for datagrams received from the Astron cluster
-void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
+void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
@@ -383,8 +382,8 @@ void Client::handle_datagram(Datagram&, DatagramIterator &dgi)
 		break;
 		case CLIENTAGENT_SEND_DATAGRAM:
 		{
-			Datagram forward;
-			forward.add_data(dgi.read_string());
+			DatagramPtr forward = Datagram::create();
+			forward->add_data(dgi.read_string());
 			forward_datagram(forward);
 		}
 		break;
@@ -727,10 +726,9 @@ void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 		return;
 	}
 
-	Datagram resp;
-	resp.add_server_header(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
-	resp.add_channel(m_channel);
-	resp.add_uint16(interest_id);
+	DatagramPtr resp = Datagram::create(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp->add_channel(m_channel);
+	resp->add_uint16(interest_id);
 	route_datagram(resp);
 }
 
@@ -743,10 +741,9 @@ void Client::notify_interest_done(const InterestOperation* iop)
 		return;
 	}
 
-	Datagram resp;
-	resp.add_server_header(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
-	resp.add_channel(m_channel);
-	resp.add_uint16(iop->m_interest_id);
+	DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp->add_channel(m_channel);
+	resp->add_uint16(iop->m_interest_id);
 	route_datagram(resp);
 }
 

@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 				boost::filesystem::current_path(dir_str);
 			}
 		}
-		catch(const exception &e)
+		catch(const exception&)
 		{
 			mainlog.fatal() << "Could not change working directory to config directory.\n";
 			exit(1);

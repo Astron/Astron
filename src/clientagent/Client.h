@@ -71,7 +71,7 @@ class Client : public MDParticipantInterface
 		virtual ~Client();
 
 		// handle_datagram is the handler for datagrams received from the server
-		void handle_datagram(Datagram &dg, DatagramIterator &dgi);
+		void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
 	protected:
 		ClientAgent* m_client_agent; // The client_agent handling this client
 		ClientState m_state; // current state of the Client state machine
@@ -148,7 +148,7 @@ class Client : public MDParticipantInterface
 		// forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
 		// Handler for CLIENTAGENT_SEND_DATAGRAM.
-		virtual void forward_datagram(Datagram &dg) = 0;
+		virtual void forward_datagram(DatagramHandle dg) = 0;
 
 		// handle_drop should immediately disconnect the client without sending any more data.
 		// Handler for CLIENTAGENT_DROP.
