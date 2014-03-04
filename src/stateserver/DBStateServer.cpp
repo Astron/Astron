@@ -336,13 +336,9 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 		uint32_t db_context = m_next_context++;
 
 		// Prepare reponse datagram
-		if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
-		{
-			m_context_datagrams[db_context] = Datagram::create(sender, r_do_id,
-			                                                   STATESERVER_OBJECT_GET_FIELD_RESP);
-		}
-
-		m_context_datagrams[db_context]->add_uint32(r_context);
+		Datagram_ptr dg_resp = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		dg_resp->add_uint32(r_context);
+		m_context_datagrams[db_context] = dg_resp;
 
 		// Send query to database
 		Datagram_ptr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
@@ -362,9 +358,9 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 	}
 	else
 	{
-		Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
-		dg.add_uint32(r_context);
-		dg.add_bool(false);
+		Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		dg->add_uint32(r_context);
+		dg->add_bool(false);
 		route_datagram(dg);
 	}
 }
@@ -547,7 +543,7 @@ void DBStateServer::handle_get_all(channel_t sender, DatagramIterator &dgi)
 	resp_dg->add_uint32(r_context);
 	resp_dg->add_doid(r_do_id);
 	resp_dg->add_channel(INVALID_CHANNEL); // Location
-	m_context_context[db_context] = resp_dg
+	m_context_datagrams[db_context] = resp_dg;
 
 	// Cache the do_id --> context in case we get a dbss_activate
 	m_inactive_loads[r_do_id].insert(db_context);

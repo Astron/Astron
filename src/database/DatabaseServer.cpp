@@ -504,11 +504,6 @@ void DatabaseServer::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update->add_doid(do_id);
 					update->add_uint16(field_count);
-					for(auto it = values.begin(); it != values.end(); ++it) {
-						update->add_uint16(it->first->get_id());
-						update->add_data(it->second);
-					update->add_doid(do_id);
-					update->add_uint16(field_count);
 					for(auto it = ordered.begin(); it != ordered.end(); ++it)
 					{
 						const Field* field = *it;
