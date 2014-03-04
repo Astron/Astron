@@ -4,6 +4,7 @@
 #include "core/msgtypes.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
+#include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp;
@@ -47,6 +48,16 @@ bool ChannelList::operator==(const ChannelList &rhs)
 }
 
 MessageDirector MessageDirector::singleton;
+
+
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
+	m_log("msgdir", "Message Director")
+{
+	// Initialize m_range_susbcriptions with empty range
+	auto empty_set = std::set<MDParticipantInterface*>();
+	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
+	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
+}
 
 void MessageDirector::init_network()
 {
@@ -313,8 +324,11 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 
 void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo, channel_t hi)
 {
-	m_log.debug() << "A participant has unsubscribed from range "
-	              << lo << "-" << hi << std::endl;
+	m_log.debug() << "A participant has unsubscribed from range [" << lo << ", " << hi << "].\n";
+
+	// Stash these for later
+	const interval_t first = m_range_subscriptions.begin()->first;
+	const interval_t last = m_range_subscriptions.rbegin()->first;
 
 	// Prepare participant and range
 	std::set<MDParticipantInterface*> participant_set;
@@ -324,7 +338,6 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 
 	// Unsubscribe participant from range
 	p->ranges() -= interval;
-	auto range_copy = m_range_subscriptions;
 	m_range_subscriptions -= std::make_pair(interval, participant_set);
 
 	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
@@ -344,38 +357,27 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 	if(is_client)
 	{
 		// Declare list of intervals that are no longer subscribed too
-		std::list<interval_t> silent_intervals;
+		boost::icl::interval_set<channel_t> silent_intervals;
 
 		// If that was the last interval in m_range_subscriptions, remove it upstream
 		if(boost::icl::interval_count(m_range_subscriptions) == 0)
 		{
-			silent_intervals.insert(silent_intervals.end(), range_copy.begin()->first);
+			silent_intervals += first;
 		}
 		else
 		{
-			// Check each interval range (except the last, so we can stop there)
-			auto next = ++m_range_subscriptions.begin();
+			// Start with the entire range (bounded by what could exist)
+			channel_t rmin = std::max(first.lower(), lo);
+			channel_t rmax = std::min(last.upper(), hi);
+			interval_t bounded = interval_t::closed(rmin, rmax);
+			silent_intervals += bounded;
+
+			// If a range remains that intersects, don't unsubscribe from that range
 			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
 			{
-				// For the range we care about
-				// TODO: Read Boost::ICL to find a way to restrict the iterator to a range we care about
-				if(it->first.lower() <= hi && it->first.upper() >= lo)
+				if(boost::icl::intersects(it->first, bounded))
 				{
-					// If an existing interval is empty it is silent
-					if(it->second.empty())
-					{
-						silent_intervals.insert(silent_intervals.end(), it->first);
-					}
-					if(next != m_range_subscriptions.end())
-					{
-						// If there is room between intervals, that is a silent interval
-						if(next->first.lower() - it->first.upper() > 0)
-						{
-							silent_intervals.insert(silent_intervals.end(),
-							                        boost::icl::inner_complement(it->first, next->first));
-						}
-						++next;
-					}
+					silent_intervals -= it->first;
 				}
 			}
 		}
@@ -384,8 +386,10 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
 		{
 			m_log.debug() << "Unsubscribing from upstream range: "
-			              << it->lower() << "-" << it->upper() << " " << int(it->bounds().bits()) << std::endl;
-			Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_RANGE);
+			              << int(it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
+			              << it->lower() << ", " << it->upper()
+			              << int(it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
+
 
 			channel_t lo = it->lower();
 			channel_t hi = it->upper();
@@ -398,20 +402,12 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
+			Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_RANGE);
 			dg->add_channel(lo);
 			dg->add_channel(hi);
 			send_datagram(dg);
 		}
 	}
-}
-
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
-	m_log("msgdir", "Message Director")
-{
-	// Initialize m_range_susbcriptions with empty range
-	auto empty_set = std::set<MDParticipantInterface*>();
-	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
-	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
 }
 
 void MessageDirector::start_accept()

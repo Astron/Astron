@@ -1,11 +1,5 @@
 #!/usr/bin/env python2
 import unittest
-from socket import *
-
-from common import *
-from testdc import *
-
-from test_dbserver import DatabaseBaseTests
 
 '''
 CONFIG = """\
@@ -18,7 +12,8 @@ general:
 
 roles:
     - type: database
-      control: 777
+      control: 75757
+      broadcast: true
       generate:
         min: 1000000
         max: 1000010
@@ -28,7 +23,7 @@ roles:
         database: astron_test
 """ % test_dc
 
-class TestDatabaseServerMongo(unittest.TestCase, DatabaseBaseTests):
+class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)

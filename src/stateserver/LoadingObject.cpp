@@ -112,9 +112,10 @@ void LoadingObject::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
 
 			uint32_t db_context = dgi.read_uint32();
 			if(db_context != m_context &&
-			   m_valid_contexts.find(db_context) != m_valid_contexts.end())
+			   m_valid_contexts.find(db_context) == m_valid_contexts.end())
 			{
-				m_log->warning() << "Received get_all_resp with incorrect context" << std::endl;
+				m_log->warning() << "Received get_all_resp with incorrect context '"
+				                 << db_context << "'.\n";
 				break;
 			}
 

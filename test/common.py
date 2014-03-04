@@ -1,3 +1,4 @@
+import unittest
 import subprocess
 import tempfile
 import struct
@@ -5,7 +6,9 @@ import socket
 import time
 import os
 
-__all__ = ['Daemon', 'Datagram', 'DatagramIterator', 'MDConnection', 'ChannelConnection', 'ClientConnection']
+__all__ = ['Daemon', 'ProtocolTest',
+           'Datagram', 'DatagramIterator',
+           'MDConnection', 'ChannelConnection', 'ClientConnection']
 
 class Daemon(object):
     DAEMON_PATH = './astrond'
@@ -263,6 +266,121 @@ else:
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
 
+class ProtocolTest(unittest.TestCase):
+    def writeUnexpectedAndFail(self, received):
+        testName = self.__class__.__name__
+        f = open("%s-received.bin" % testName, "wb")
+        f.write(received.get_data())
+        f.close()
+        self.fail("Received unexpected datagram.\n" +
+                  "\tWritten to \"%s-received.bin\"." % testName)
+
+    def writeDatagramsAndFail(self, expected, received):
+        testName = self.__class__.__name__
+        f = open("%s-expected.bin" % testName, "wb")
+        f.write(expected.get_data())
+        f.close()
+        f = open("%s-received.bin" % testName, "wb")
+        f.write(received.get_data())
+        f.close()
+        self.fail("Received datagram doesn't match expected.\n" +
+                  "\tWritten to \"%s-{expected,received}.bin\"." % testName)
+
+    def assertDatagramsEqual(self, expected, received, isClient = False):
+        lhs = DatagramIterator(expected)
+        rhs = DatagramIterator(received)
+
+        if isClient:
+            expectedMsgtype = lhs.read_uint16()
+            receivedMsgtype = rhs.read_uint16()
+            self.assertEquals(expectedMsgtype, receivedMsgtype)
+
+            if not received.equals(expected):
+                self.writeDatagramsAndFail(expected, received)
+
+        else:
+            numChannelsExpected = lhs.read_uint8()
+            numChannelsReceived = rhs.read_uint8()
+            self.assertEquals(numChannelsExpected, numChannelsReceived)
+
+            expectedRecipients = expected.get_channels()
+            receivedRecipients = received.get_channels()
+            self.assertEquals(expectedRecipients, receivedRecipients)
+
+            lhs.seek(1 + CHANNEL_SIZE_BYTES * numChannelsExpected)
+            rhs.seek(1 + CHANNEL_SIZE_BYTES * numChannelsReceived)
+
+            if expectedRecipients != set([CONTROL_CHANNEL]):
+                # If we aren't a control datagram, check the sender
+                expectedSender = lhs.read_channel()
+                receivedSender = rhs.read_channel()
+                self.assertEquals(expectedSender, receivedSender)
+
+            expectedMsgtype = lhs.read_uint16()
+            receivedMsgtype = rhs.read_uint16()
+            self.assertEquals(expectedMsgtype, receivedMsgtype)
+
+            if not received.matches(expected):
+                self.writeDatagramsAndFail(expected, received)
+
+    def expect(self, conn, expected, isClient = False):
+        received = conn.recv_maybe()
+        if received is None:
+            self.fail("No datagram received.")
+        self.assertDatagramsEqual(expected, received, isClient)
+
+    def expectMany(self, conn, datagrams, ignoreExtra = False, isClient = False):
+        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
+        recvs = []
+
+        numRecvd = 0
+        numMatch = 0
+        numExpct = len(datagrams)
+        while datagrams:
+            received = conn.recv_maybe()
+            if received is None:
+                if numMatch == 0:
+                    self.fail("Received %d datagrams, but expected %d." % (numRecvd, numExpct))
+                else:
+                    error = "Received %d datagrams, of which %d matched, but expected %d."
+                    error += "\n  Received msgtypes: ( "
+                    for dg in recvs:
+                        error += "%s " % dg.get_msgtype()
+                    error = error % (numRecvd, numMatch, numExpct)
+                    error += ")"
+                    self.fail(error)
+            numRecvd += 1
+
+            for datagram in datagrams:
+                if (isClient and received.equals(datagram)) or received.matches(datagram):
+                    recvs.append(datagram)
+                    datagrams.remove(datagram)
+                    numMatch += 1
+                    break
+            else:
+                if not ignoreExtra:
+                    best = None
+                    for datagram in datagrams:
+                        # Try to find the most similar datagram
+                        if datagram.get_channels() == received.get_channels():
+                            self.assertDatagramsEqual(datagram, received, isClient)
+                            break
+                        elif datagram.get_size() == received.get_size() and best is None:
+                            best = datagram
+                    else:
+                        if best is not None:
+                            self.assertDatagramsEqual(best, received, isClient)
+                        else:
+                            self.assertDatagramsEqual(datagrams[0], received, isClient)
+                    # This should always fail, but it produces more useful
+                    # debugging output.  Lets guarantee that it fails for fun.
+                    self.fail("Testsuite implementation error.")
+
+    def expectNone(self, conn):
+        received = conn.recv_maybe()
+        if received is not None:
+            self.writeUnexpectedAndFail(received)
+
 class Datagram(object):
     def __init__(self, data=b''):
         self._data = data
@@ -296,6 +414,9 @@ class Datagram(object):
     def get_payload(self):
         return self._data[CHANNEL_SIZE_BYTES*ord(self._data[0])+1:]
 
+    def get_msgtype(self):
+        return struct.unpack('<H', self.get_payload()[CHANNEL_SIZE_BYTES:CHANNEL_SIZE_BYTES+2])[0]
+
     def get_channels(self):
         channels = []
         iterator = DatagramIterator(self, 1)
@@ -303,11 +424,23 @@ class Datagram(object):
             channels.append(iterator.read_channel())
         return set(channels)
 
-    def is_subset_of(self, other):
+    def get_size(self):
+        return len(self._data)
+
+    def matches(self, other):
+        """Returns true if the set of channels and payload match.
+
+        This may be used instead of Datagram.equals() to compare two packets
+        while ignoring the ordering of the recipient channels.
+
+        This should not be called for a client datagram, because clients do not
+        have a list of recipients in their datagram headers.
+        """
         return self.get_payload() == other.get_payload() and \
                self.get_channels() <= other.get_channels()
 
     def equals(self, other):
+        """Returns true only if all bytes are equal and in the same order."""
         return self.get_data() == other.get_data()
 
     # Common datagram type helpers:
@@ -477,6 +610,12 @@ class MDConnection(object):
             return None
         return Datagram(dg)
 
+    def close(self):
+        self.s.close()
+
+    def flush(self):
+        while self._read(): pass
+
     def _read(self):
         try:
             length = DGSIZE_SIZE_BYTES
@@ -498,50 +637,6 @@ class MDConnection(object):
             result += data
 
         return result
-
-    def close(self):
-        self.s.close()
-
-    def flush(self):
-        while self._read(): pass
-
-    def expect(self, datagram):
-        return self.expect_multi([datagram], only=True)
-
-    def expect_multi(self, datagrams, only=False):
-        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
-
-        numIn = 0
-        numE = len(datagrams)
-        while datagrams:
-            dg = self._read()
-            if dg is None:
-                if numIn is 0:
-                    return (False, "No datagram received.")
-                else:
-                    return (False, "Only received " + str(numIn) + " datagrams, but expected " + str(numE))
-            numIn += 1
-            dg = Datagram(dg)
-
-            for datagram in datagrams:
-                if datagram.is_subset_of(dg):
-                    datagrams.remove(datagram)
-                    break
-            else:
-                if only:
-                    f = open("test.received", "wb")
-                    f.write(dg.get_data())
-                    f.close()
-                    f = open("test.expected", "wb")
-                    f.write(datagram.get_data())
-                    f.close()
-                    return (False, "Received wrong datagram; written to test.{expected,received}.")
-
-        return (True, "")
-
-
-    def expect_none(self):
-        return self._read() == None
 
 class ChannelConnection(MDConnection):
     def __init__(self, connAddr, connPort, MDChannel=None):

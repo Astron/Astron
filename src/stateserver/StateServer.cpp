@@ -71,6 +71,26 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	m_objs[do_id] = obj;
 }
 
+void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
+{
+	channel_t ai_channel = dgi.read_channel();
+	std::set <channel_t> targets;
+	for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
+	{
+		if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
+		{
+			targets.insert(it->second->m_do_id);
+		}
+	}
+
+	if(targets.size())
+	{
+		Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
+		dg->add_channel(ai_channel);
+		route_datagram(dg);
+	}
+}
+
 void StateServer::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
@@ -89,20 +109,7 @@ void StateServer::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
 		}
 		case STATESERVER_DELETE_AI_OBJECTS:
 		{
-			channel_t ai_channel = dgi.read_channel();
-			std::set <channel_t> targets;
-			for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
-				if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
-				{
-					targets.insert(it->second->m_do_id);
-				}
-
-			if(targets.size())
-			{
-				Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
-				dg->add_channel(ai_channel);
-				route_datagram(dg);
-			}
+			handle_delete_ai(dgi, sender);
 			break;
 		}
 		default:
