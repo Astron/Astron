@@ -267,6 +267,14 @@ locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
 
 class ProtocolTest(unittest.TestCase):
+    def writeUnexpectedAndFail(self, received):
+        testName = self.__class__.__name__
+        f = open("%s-received.bin" % testName, "wb")
+        f.write(received.get_data())
+        f.close()
+        self.fail("Received unexpected datagram.\n" +
+                  "\tWritten to \"%s-received.bin\"." % testName)
+
     def writeDatagramsAndFail(self, expected, received):
         testName = self.__class__.__name__
         f = open("%s-expected.bin" % testName, "wb")
@@ -323,6 +331,7 @@ class ProtocolTest(unittest.TestCase):
 
     def expectMany(self, conn, datagrams, ignoreExtra = False, isClient = False):
         datagrams = list(datagrams) # We're going to be doing datagrams.remove()
+        recvs = []
 
         numRecvd = 0
         numMatch = 0
@@ -333,12 +342,18 @@ class ProtocolTest(unittest.TestCase):
                 if numMatch == 0:
                     self.fail("Received %d datagrams, but expected %d." % (numRecvd, numExpct))
                 else:
-                    self.fail("Received %d datagrams, of which %d matched, but expected %d." %
-                                (numRecvd, numMatch, numExpct))
+                    error = "Received %d datagrams, of which %d matched, but expected %d."
+                    error += "\n  Received msgtypes: ( "
+                    for dg in recvs:
+                        error += "%s " % dg.get_msgtype()
+                    error = error % (numRecvd, numMatch, numExpct)
+                    error += ")"
+                    self.fail(error)
             numRecvd += 1
 
             for datagram in datagrams:
                 if (isClient and received.equals(datagram)) or received.matches(datagram):
+                    recvs.append(datagram)
                     datagrams.remove(datagram)
                     numMatch += 1
                     break
@@ -363,7 +378,8 @@ class ProtocolTest(unittest.TestCase):
 
     def expectNone(self, conn):
         received = conn.recv_maybe()
-        self.assertTrue(received is None, "Received datagram when expecting none.")
+        if received is not None:
+            self.writeUnexpectedAndFail(received)
 
 class Datagram(object):
     def __init__(self, data=b''):
@@ -397,6 +413,9 @@ class Datagram(object):
 
     def get_payload(self):
         return self._data[CHANNEL_SIZE_BYTES*ord(self._data[0])+1:]
+
+    def get_msgtype(self):
+        return struct.unpack('<H', self.get_payload()[CHANNEL_SIZE_BYTES:CHANNEL_SIZE_BYTES+2])[0]
 
     def get_channels(self):
         channels = []

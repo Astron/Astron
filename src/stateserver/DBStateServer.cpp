@@ -321,13 +321,13 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 
 	// Check field is "ram db" or "required"
 	const Field* field = g_dcf->get_field_by_id(field_id);
-	if(!field || !(field->has_keyword("required") ||
-	               (field->has_keyword("ram") && field->has_keyword("db"))))
+	if(!field || !(field->has_keyword("required") || field->has_keyword("ram")))
 	{
 		Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg.add_uint32(r_context);
 		dg.add_bool(false);
 		route_datagram(dg);
+		return;
 	}
 
 	if(field->has_keyword("db"))
@@ -351,13 +351,20 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 		dg.add_uint16(field_id);
 		route_datagram(dg);
 	}
-	else // Field is required and not-db
+	else if(field->has_default_value()) // Field is required and not-db
 	{
 		Datagram dg = Datagram(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg.add_uint32(r_context);
 		dg.add_bool(true);
 		dg.add_uint16(field_id);
 		dg.add_data(field->get_default_value());
+		route_datagram(dg);
+	}
+	else
+	{
+		Datagram dg(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		dg.add_uint32(r_context);
+		dg.add_bool(false);
 		route_datagram(dg);
 	}
 }
@@ -539,15 +546,17 @@ void DBStateServer::handle_get_all(channel_t sender, DatagramIterator &dgi)
 	if(m_context_datagrams.find(db_context) == m_context_datagrams.end())
 	{
 		m_context_datagrams[db_context].add_server_header(sender, r_do_id,
-		        STATESERVER_OBJECT_GET_ALL_RESP);
+		                                                  STATESERVER_OBJECT_GET_ALL_RESP);
 	}
 
-	m_context_datagrams[db_context].add_uint32(r_context);
-	m_context_datagrams[db_context].add_doid(r_do_id);
-	m_context_datagrams[db_context].add_channel(INVALID_CHANNEL); // Location
+	Datagram& resp_dg = m_context_datagrams[db_context];
+	resp_dg.add_uint32(r_context);
+	resp_dg.add_doid(r_do_id);
+	resp_dg.add_channel(INVALID_CHANNEL); // Location
+	m_context_datagrams[db_context] = resp_dg;
 
 	// Cache the do_id --> context in case we get a dbss_activate
-	m_inactive_loads[r_do_id].insert(r_context);
+	m_inactive_loads[r_do_id].insert(db_context);
 
 	// Send query to database
 	Datagram dg(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
