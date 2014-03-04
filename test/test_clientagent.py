@@ -330,6 +330,29 @@ class TestClientAgent(ProtocolTest):
         dg.add_string('It... is... ON!')
         self.expect(client, dg, isClient = True)
 
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(1235)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(foo) # Field: foo
+        dg.add_uint8(109)
+        dg.add_uint8(111)
+        dg.add_uint8(113)
+        dg.add_uint16(bar) # Field: bar
+        dg.add_uint16(8118)
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELDS)
+        dg.add_doid(1235)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(foo) # Field: foo
+        dg.add_uint8(109)
+        dg.add_uint8(111)
+        dg.add_uint8(113)
+        dg.add_uint16(bar) # Field: bar
+        dg.add_uint16(8118)
+        self.expect(client, dg, isClient = True)
+
         client.close()
 
     def test_set_sender(self):
