@@ -18,6 +18,11 @@
 
 #define DGSIZE_MAX ((dgsize_t)(-1))
 
+
+class Datagram; // foward declaration
+typedef std::shared_ptr<Datagram> Datagram_ptr;
+typedef std::shared_ptr<const Datagram> DatagramHandle;
+
 // A DatagramOverflow is an exception which occurs when an add_<value> method is called which would
 // increase the size of the datagram past DGSIZE_MAX (preventing integer and buffer overflow).
 class DatagramOverflow : public std::runtime_error
@@ -42,7 +47,7 @@ class Datagram
 			{
 				std::stringstream err_str;
 				err_str << "dg tried to add data past max datagram size, buf_offset+len("
-				    << buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
+					<< buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
 				throw DatagramOverflow(err_str.str());
 			}
 
@@ -124,7 +129,7 @@ class Datagram
 		// server-header-constructor(multi-target):
 		//     creates a new datagram initialized with a server header (accepts a set of receivers)
 		Datagram(const std::set<channel_t> &to_channels, channel_t from_channel,
-		         uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
+				 uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
 		{
 			add_server_header(to_channels, from_channel, message_type);
 		}
@@ -135,68 +140,65 @@ class Datagram
 		{
 			add_control_header(message_type);
 		}
-    
-    
-public:
-    static std::shared_ptr<Datagram> create()
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram);
-        return dg_ptr;
-    }
-    
-    //HACK: this is to get this named constructor to compile...
-    typedef std::shared_ptr<Datagram> Datagram_ptr;
-    
-    static std::shared_ptr<Datagram> create(const Datagram_ptr &dg)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram( *dg.get() ));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(uint8_t *data, dgsize_t length, dgsize_t capacity)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length, capacity));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(const uint8_t *data, dgsize_t length)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(data, length));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(const std::vector<uint8_t> &data)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(const std::string &data)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(data));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(channel_t to_channel, channel_t from_channel,
-                                            uint16_t message_type)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channel, from_channel, message_type));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(const std::set<channel_t> &to_channels,
-                                            channel_t from_channel,
-                                            uint16_t message_type)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(to_channels, from_channel, message_type));
-        return dg_ptr;
-    }
-    
-    static std::shared_ptr<Datagram> create(uint16_t message_type)
-    {
-        std::shared_ptr<Datagram> dg_ptr(new Datagram(message_type));
-        return dg_ptr;
-    }
+	
+	
+	public:
+		static Datagram_ptr create()
+		{
+			Datagram_ptr dg_ptr(new Datagram);
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(const DatagramHandle dg)
+		{
+			Datagram_ptr dg_ptr(new Datagram( *dg.get() ));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(uint8_t *data, dgsize_t length, dgsize_t capacity)
+		{
+			Datagram_ptr dg_ptr(new Datagram(data, length, capacity));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(const uint8_t *data, dgsize_t length)
+		{
+			Datagram_ptr dg_ptr(new Datagram(data, length));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(const std::vector<uint8_t> &data)
+		{
+			Datagram_ptr dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(const std::string &data)
+		{
+			Datagram_ptr dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(channel_t to_channel, channel_t from_channel,
+												uint16_t message_type)
+		{
+			Datagram_ptr dg_ptr(new Datagram(to_channel, from_channel, message_type));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(const std::set<channel_t> &to_channels,
+												channel_t from_channel,
+												uint16_t message_type)
+		{
+			Datagram_ptr dg_ptr(new Datagram(to_channels, from_channel, message_type));
+			return dg_ptr;
+		}
+		
+		static Datagram_ptr create(uint16_t message_type)
+		{
+			Datagram_ptr dg_ptr(new Datagram(message_type));
+			return dg_ptr;
+		}
 
 
 		// destructor
@@ -372,7 +374,7 @@ public:
 				buf_offset += length;
 			}
 		}
-		void add_data(const Datagram_ptr &dg)
+		void add_data(const DatagramHandle dg)
 		{
 			if(dg->buf_offset)
 			{
@@ -492,6 +494,3 @@ public:
 			return buf;
 		}
 };
-
-//TODO: this should really be moved somewhere nicer.
-typedef std::shared_ptr<Datagram> Datagram_ptr;

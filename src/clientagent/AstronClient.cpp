@@ -86,7 +86,7 @@ class AstronClient : public Client, public NetworkClient
 		}
 
 		// receive_datagram is the handler for datagrams received over the network from a Client.
-		void receive_datagram(Datagram_ptr &dg)
+		void receive_datagram(DatagramHandle dg)
 		{
 			DatagramIterator dgi(dg);
 			try
@@ -152,7 +152,7 @@ class AstronClient : public Client, public NetworkClient
 		// forward_datagram should foward the datagram to the client, or where appopriate parse
 		// the packet and send the appropriate equivalent data.
 		// Handler for CLIENTAGENT_SEND_DATAGRAM.
-		void forward_datagram(Datagram_ptr &dg)
+		void forward_datagram(DatagramHandle dg)
 		{
 			send_datagram(dg);
 		}

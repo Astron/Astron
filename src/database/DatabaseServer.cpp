@@ -57,7 +57,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	subscribe_channel(m_control_channel);
 }
 
-void DatabaseServer::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
+void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msg_type = dgi.read_uint16();

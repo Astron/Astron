@@ -105,7 +105,7 @@ void MessageDirector::init_network()
 	}
 }
 
-void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram_ptr &dg)
+void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
@@ -118,7 +118,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, Datagram_ptr &dg
 
 		// Route messages to participants
 		auto &receive_log = m_log.trace();
-		receive_log << "Recievers: ";
+		receive_log << "Receivers: ";
 		for(uint8_t i = 0; i < channels; ++i)
 		{
 			channel_t channel = dgi.read_channel();
@@ -476,7 +476,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	p->post_remove();
 }
 
-void MessageDirector::receive_datagram(Datagram_ptr &dg)
+void MessageDirector::receive_datagram(DatagramHandle dg)
 {
 	route_datagram(NULL, dg);
 }

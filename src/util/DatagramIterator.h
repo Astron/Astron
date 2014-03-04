@@ -20,7 +20,7 @@ class DatagramIteratorEOF : public std::runtime_error
 class DatagramIterator
 {
 	protected:
-		const Datagram_ptr &m_dg;
+		DatagramHandle m_dg;
 		dgsize_t m_offset;
 
 		void check_read_length(dgsize_t length)
@@ -35,7 +35,7 @@ class DatagramIterator
 		}
 	public:
 		// constructor
-		DatagramIterator(const Datagram_ptr &dg, dgsize_t offset = 0) : m_dg(dg), m_offset(offset)
+		DatagramIterator(DatagramHandle dg, dgsize_t offset = 0) : m_dg(dg), m_offset(offset)
 		{
 			check_read_length(0); //shortcuts, yay
 		}

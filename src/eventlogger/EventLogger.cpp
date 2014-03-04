@@ -124,7 +124,7 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 	*m_file << "\r\n" << std::flush;
 }
 
-void EventLogger::process_packet(const Datagram_ptr &dg)
+void EventLogger::process_packet(const DatagramHandle dg)
 {
 	DatagramIterator dgi(dg);
 

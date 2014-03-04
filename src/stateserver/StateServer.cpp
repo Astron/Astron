@@ -91,7 +91,7 @@ void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 	}
 }
 
-void StateServer::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
+void StateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

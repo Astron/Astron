@@ -30,7 +30,7 @@ void EventSender::init(const std::string& target)
 	m_log.debug() << "Initialized." << std::endl;
 }
 
-void EventSender::send(const Datagram_ptr &dg)
+void EventSender::send(const DatagramHandle dg)
 {
 	if(!m_enabled)
 	{

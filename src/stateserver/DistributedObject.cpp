@@ -84,7 +84,7 @@ DistributedObject::~DistributedObject()
 	delete m_log;
 }
 
-void DistributedObject::append_required_data(Datagram_ptr &dg, bool client_only, bool also_owner)
+void DistributedObject::append_required_data(Datagram_ptr dg, bool client_only, bool also_owner)
 {
 	dg->add_doid(m_do_id);
 	dg->add_location(m_parent_id, m_zone_id);
@@ -102,7 +102,7 @@ void DistributedObject::append_required_data(Datagram_ptr &dg, bool client_only,
 	}
 }
 
-void DistributedObject::append_other_data(Datagram_ptr &dg, bool client_only, bool also_owner)
+void DistributedObject::append_other_data(Datagram_ptr dg, bool client_only, bool also_owner)
 {
 	if(client_only)
 	{
@@ -435,7 +435,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	return true;
 }
 
-bool DistributedObject::handle_one_get(Datagram_ptr &out, uint16_t field_id,
+bool DistributedObject::handle_one_get(Datagram_ptr out, uint16_t field_id,
                                        bool succeed_if_unset, bool is_subfield)
 {
 	const Field *field = m_dclass->get_field_by_id(field_id);
@@ -486,7 +486,7 @@ bool DistributedObject::handle_one_get(Datagram_ptr &out, uint16_t field_id,
 	return true;
 }
 
-void DistributedObject::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
+void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

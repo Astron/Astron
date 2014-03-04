@@ -74,7 +74,7 @@ void NetworkClient::async_receive()
 	}
 }
 
-void NetworkClient::send_datagram(Datagram_ptr &dg)
+void NetworkClient::send_datagram(DatagramHandle dg)
 {
 	//TODO: make this asynch if necessary
 	dgsize_t len = swap_le(dg->size());

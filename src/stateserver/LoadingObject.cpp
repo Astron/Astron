@@ -97,7 +97,7 @@ void LoadingObject::forward_datagrams()
 	m_log->trace() << "... forwarding finished.\n";
 }
 
-void LoadingObject::handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi)
+void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
 	/*channel_t sender =*/ dgi.read_channel(); // sender not used
 	uint16_t msgtype = dgi.read_uint16();

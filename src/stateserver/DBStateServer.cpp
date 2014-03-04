@@ -48,7 +48,7 @@ DBStateServer::~DBStateServer()
 	delete m_log;
 }
 
-void DBStateServer::handle_datagram(Datagram_ptr&, DatagramIterator &dgi)
+void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

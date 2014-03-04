@@ -22,7 +22,7 @@ class DBStateServer : public StateServer
 		DBStateServer(RoleConfig roleconfig);
 		~DBStateServer();
 
-		virtual void handle_datagram(Datagram_ptr &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
 	private:
 		channel_t m_db_channel; // database control channel
