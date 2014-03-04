@@ -23,6 +23,7 @@
 | CLIENT_ENTER_OBJECT_REQUIRED_OWNER       |    0172 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`                         |
 | CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER |    0173 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>`              |
 | CLIENT_OBJECT_SET_FIELD                  |    0120 | `uint32 do_id`, `uint16 field_id`, `<VALUE>`                                                                   |
+| CLIENT_OBJECT_SET_FIELDS                 |    0121 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id, <VALUE>]*field_count`                                 |
 | CLIENT_OBJECT_LEAVING                    |    0132 | `uint32 do_id`                                                                                                 |
 | CLIENT_OBJECT_LOCATION                   |    0140 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                                                           |
 | CLIENT_ADD_INTEREST                      |    0200 | `uint32 context`, `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |

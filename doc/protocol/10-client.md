@@ -138,6 +138,11 @@ in order to accomplish various normal game tasks.
 > on a given object. The format of this message is analogous to 
 > `STATESERVER_OBJECT_SET_FIELD` in the internal protocol.
 
+**CLIENT_OBJECT_SET_FIELDS(121)**  
+    `args(uint32 do_id, uint16 num_fields, [uint16 field_id, <VALUE>]*num_fields)`  
+> This is sent by the Client Agentto issue a field update on a given object.
+> The format of this message is analogous to `STATESERVER_OBJECT_SET_FIELDS`
+> in the internal protocol.
 
 **CLIENT_OBJECT_LEAVING(132)** `args(uint32 do_id)`  
 > This is sent by the Client Agent to let the client know that an object is
