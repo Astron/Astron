@@ -31,6 +31,7 @@ roles:
           max: 3999
       client:
           relocate: true
+          add_interest: enabled
 
     - type: clientagent
       bind: 127.0.0.1:57135
@@ -38,6 +39,17 @@ roles:
       channels:
           min: 110600
           max: 110699
+      client:
+          add_interest: disabled
+
+    - type: clientagent
+      bind: 127.0.0.1:57144
+      version: "Sword Art Online v5.1"
+      client:
+          add_interest: visible
+      channels:
+          min: 220600
+          max: 220699
 """ % test_dc
 VERSION = 'Sword Art Online v5.1'
 
@@ -119,6 +131,7 @@ class TestClientAgent(ProtocolTest):
         time.sleep(0.1) # Mitigate race condition with set_state
 
     def test_hello(self):
+        self.server.flush()
         # First, see if the CA ensures that the first datagram is a HELLO.
         client = self.connect(False)
         dg = Datagram()
@@ -158,6 +171,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_anonymous(self):
+        self.server.flush()
         # Connect and hello:
         client = self.connect()
 
@@ -201,6 +215,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
     def test_disconnect(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -230,6 +245,7 @@ class TestClientAgent(ProtocolTest):
         self.assertEqual(client.s.recv(1024), '')
 
     def test_set_state(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -297,6 +313,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
     def test_receive_update(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -313,9 +330,33 @@ class TestClientAgent(ProtocolTest):
         dg.add_string('It... is... ON!')
         self.expect(client, dg, isClient = True)
 
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(1235)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(foo) # Field: foo
+        dg.add_uint8(109)
+        dg.add_uint8(111)
+        dg.add_uint8(113)
+        dg.add_uint16(bar) # Field: bar
+        dg.add_uint16(8118)
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELDS)
+        dg.add_doid(1235)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(foo) # Field: foo
+        dg.add_uint8(109)
+        dg.add_uint8(111)
+        dg.add_uint8(113)
+        dg.add_uint16(bar) # Field: bar
+        dg.add_uint16(8118)
+        self.expect(client, dg, isClient = True)
+
         client.close()
 
     def test_set_sender(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -355,6 +396,7 @@ class TestClientAgent(ProtocolTest):
         self.expectNone(client)
 
     def test_errors(self):
+        self.server.flush()
         # Zero-length datagram:
         client = self.connect()
         dg = Datagram()
@@ -381,7 +423,7 @@ class TestClientAgent(ProtocolTest):
         self.set_state(client, CLIENT_STATE_ESTABLISHED) # Let it out of the sandbox for this test.
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
-        dg.add_uint32(0xDECAFBAD)
+        dg.add_doid(0xDECAFBAD) # Doid
         dg.add_uint16(request)
         dg.add_string('Hello? Anyone there?')
         client.send(dg)
@@ -433,6 +475,7 @@ class TestClientAgent(ProtocolTest):
             self.assertDisconnect(client, CLIENT_DISCONNECT_OVERSIZED_DATAGRAM)
 
     def test_ownership(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -504,7 +547,56 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
 
 
-        # Send a relocate on a client agent that has it disabled
+
+        ### Test loss of ownership when receiving CHANGE_OWNER message
+        # Ok, we want another client to play with
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Give it an object that it owns.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_doid(11226655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_doid(11226655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.expect(client, dg, isClient = True)
+
+        # Then change the object's owner
+        dg = Datagram.create([id], 11226655, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_doid(11226655)
+        dg.add_channel(0)
+        dg.add_channel(id)
+        self.server.send(dg)
+
+        # Now the client should record an owner delete:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
+        dg.add_doid(11226655)
+        self.expect(client, dg, isClient = True)
+
+
+
+        ### Send a relocate on a client agent that has it disabled
         client2 = self.connect(port = 57135)
         id2 = self.identify(client2, min = 110600, max = 110699)
         self.set_state(client2, CLIENT_STATE_ESTABLISHED)
@@ -542,6 +634,7 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_RELOCATE)
 
     def test_postremove(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -578,6 +671,7 @@ class TestClientAgent(ProtocolTest):
         self.expectNone(self.server)
 
     def test_send_datagram(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -593,6 +687,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_channel(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -623,12 +718,79 @@ class TestClientAgent(ProtocolTest):
         self.assertDisconnect(client, 4321)
 
     def test_interest(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
         # Client needs to be outside of the sandbox for this:
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
+        # Open interest on a zone in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(2000) # Context
+        dg.add_uint16(1000) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
+        client.send(dg)
+
+        # Server should ask for the objects:
+        # N. B. This is not the current behavior of the ClientAgent, but its also not the point
+        #       of the test I'm trying to add because the stateserver doesn't actually implement
+        #       STATESERVER_OBJECT_GET_ZONE_OBJECTS, so I'll re-enable this part later when that
+        #       has been implemented, and we want to enforce that the behavior has changed
+        #dg = self.server.recv_maybe()
+        #self.assertTrue(dg is not None)
+        #dgi = DatagramIterator(dg)
+        #self.assertTrue(*dgi.matches_header([2345], id, STATESERVER_OBJECT_GET_ZONE_OBJECTS))
+        #ss_context = dgi.read_uint32()
+        #self.assertEquals(dgi.read_doid(), 1234)
+        #self.assertEquals(dgi.read_zone(), 4321)
+
+        ## The SS replies immediately with the count:
+        #dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONE_COUNT_RESP)
+        #dg.add_uint32(ss_context)
+        #dg.add_doid(0) # Object count, uses an integer with same width as doids
+        #self.server.send(dg)
+
+        # The server asks for objects this way instead for now
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 4321)
+
+        # In our first test, we'll open an interest containing no objects.
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(0) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(2000) # Context
+        dg.add_uint16(1000) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # Now, kill the interest!
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(2001) # Context
+        dg.add_uint16(1000) # Interest id
+        client.send(dg)
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(2001) # Context
+        dg.add_uint16(1000) # Interest id
+        self.expect(client, dg, isClient = True)
+
+        # Now lets try this again, but this time send actual objects
         # Open interest on two zones in 1234:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
@@ -805,10 +967,155 @@ class TestClientAgent(ProtocolTest):
         # We shouldn't get kicked...
         self.expectNone(client)
 
+        # Send an add interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(707) # Context
+        dg.add_uint16(505) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(400000) # Zone
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Send a remove interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Add interest from server
+        dg = Datagram.create([id2], 1, CLIENT_ADD_INTEREST)
+        dg.add_uint16(2) # Interest id
+        # ... and ignore all the actual interest messages
+
+        # Send an add interest multiple on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(4) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Send a remove interest on a client agent that has it disabled
+        client2 = self.connect(port = 57135)
+        id2 = self.identify(client2, min = 110600, max = 110699)
+        self.set_state(client2, CLIENT_STATE_ESTABLISHED)
+        # Add interest from server
+        dg = Datagram.create([id2], 1, CLIENT_ADD_INTEREST)
+        dg.add_uint16(2) # Interest id
+        # ... and ignore all the actual interest messages
+        client2.flush()
+        self.server.flush()
+
+        # Remove some interest
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(0xF00) # Context
+        dg.add_uint16(2) # Interest id
+        client2.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Send an add interest on a client agent that allows only visible on a
+        # visble object (in this case an uberdog object)
+        client3 = self.connect(port = 57144)
+        id3 = self.identify(client3, min = 220600, max = 220699)
+        self.set_state(client3, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(81) # Context
+        dg.add_uint16(101) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
+        client3.send(dg)
+
+        # Server should ask for the objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id3, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([5555, 4444]))
+
+        # The SS replies immediately with the count:
+        dg = Datagram.create([id3], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(0) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(81) # Context
+        dg.add_uint16(101) # Interest Id
+        self.expect(client3, dg, isClient = True)
+
+        # Send a remove interest
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(82) # Context
+        dg.add_uint16(101) # Interest id
+        client3.send(dg)
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(82) # Context
+        dg.add_uint16(101) # Interest id
+        self.expect(client3, dg, isClient = True)
+
+        # We shouldn't get kicked, or receive anything else
+        self.expectNone(client3)
+
+        # Send an add interest on a client agent that allows only visible on a
+        # an object that is not visible to the client.
+        client3 = self.connect(port = 57144)
+        id3 = self.identify(client3, min = 220600, max = 220699)
+        self.set_state(client3, CLIENT_STATE_ESTABLISHED)
+        # Open interest on two zones in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(83) # Context
+        dg.add_uint16(102) # Interest id
+        dg.add_doid(10000) # Parent
+        dg.add_uint16(4) # Zone count
+        dg.add_zone(1010101) # Zone 1
+        dg.add_zone(2010101) # Zone 2
+        dg.add_zone(3010101) # Zone 3
+        dg.add_zone(4010101) # Zone 4
+        client3.send(dg)
+
+        # Which should cause an error
+        self.assertDisconnect(client3, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
+
+        # Cleanup
         self.server.flush()
         client.close()
+        client2.close()
+        client3.close()
 
     def test_delete(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -925,6 +1232,7 @@ class TestClientAgent(ProtocolTest):
         client.close()
 
     def test_interest_overlap(self):
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -1048,6 +1356,7 @@ class TestClientAgent(ProtocolTest):
 
     def test_alter_interest(self):
         # N.B. this is largely copied from the test above...
+        self.server.flush()
 
         client = self.connect()
         id = self.identify(client)
@@ -1245,6 +1554,933 @@ class TestClientAgent(ProtocolTest):
 
         # Cave Johnson, we're done here.
         client.close()
+
+    def test_serverside_interest(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(1015))
+
+        # N. B. This is mostly copied from test_interest replacing
+        #       CLIENT_ADD_INTEREST with CLIENTAGENT_ADD_INTEREST
+        client = self.connect()
+        id = self.identify(client)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Open interest on two zones in 1234:
+        dg = Datagram.create([id], 1015, CLIENTAGENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint16(12) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5555) # Zone 1
+        dg.add_zone(4444) # Zone 2
+        self.server.send(dg)
+
+        # Client should have the interest forwarded back to it
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting fowarded interest.")
+        dgi = DatagramIterator(dg)
+        self.assertEquals(dgi.read_uint16(), CLIENT_ADD_INTEREST_MULTIPLE) # MsgType
+        cl_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 12) # Interest id
+        self.assertEquals(dgi.read_doid(), 1234) # Parent
+        self.assertEquals(dgi.read_uint16(), 2) # Zone count
+        # We don't actually care what order the zones are in
+        zones = [5555, 4444]
+        received_zone = dgi.read_zone()
+        self.assertTrue(received_zone in zones) # Zone 1
+        zones.remove(received_zone)
+        received_zone = dgi.read_zone()
+        self.assertTrue(received_zone in zones) # Zone 2
+
+        # Server should ask for the objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([5555, 4444]))
+
+        # The SS replies immediately with the count:
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(2) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # We'll throw a couple objects its way:
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(5555) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(5555) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        # Now the CA discovers the second object...
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string('What cause have I to feel glad?')
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(88888) # setRequired1
+        dg.add_uint16(1)
+        dg.add_uint16(setBR1)
+        dg.add_string('What cause have I to feel glad?')
+        self.expect(client, dg, isClient = True)
+
+        # And the CA is done opening the interest.
+
+        # So the CA should tell the client and caller the handle/context operation is done.
+        dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
+        dg.add_channel(id) # Client id
+        dg.add_uint16(12)  # Interest id
+        self.expect(self.server, dg)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(cl_context) # Context
+        dg.add_uint16(12) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # One of the objects broadcasts!
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(7777) # do_id
+        dg.add_uint16(setBR1)
+        dg.add_string("I've built my life on judgement and causing pain...")
+        self.server.send(dg)
+
+        # And the client is informed.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(7777) # do_id
+        dg.add_uint16(setBR1)
+        dg.add_string("I've built my life on judgement and causing pain...")
+        self.expect(client, dg, isClient = True)
+
+        # Now, let's move the objects around...
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|5555], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # new_parent
+        dg.add_zone(4444) # new_zone
+        dg.add_doid(1234) # old_parent
+        dg.add_zone(5555) # old_zone
+        self.server.send(dg)
+
+        # The client should get a zone change notification.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
+        self.expect(client, dg, isClient = True)
+
+        # Realistically, object 8888 would send an enterzone on the new location:
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4444) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        # But the CA should silently ignore it:
+        self.expectNone(client)
+
+        # How about moving the other object outside of interest?
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4444], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(7777) # do_id
+        dg.add_doid(1234) # new_parent
+        dg.add_zone(1111) # new_zone
+        dg.add_doid(1234) # old_parent
+        dg.add_zone(4444) # old_zone
+        self.server.send(dg)
+
+        # This time the client should have the object disabled.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
+        dg.add_doid(7777)
+        self.expect(client, dg, isClient = True)
+
+        # Now, kill the interest!
+        dg = Datagram.create([id], 1015, CLIENTAGENT_REMOVE_INTEREST)
+        dg.add_uint16(12) # Interest id
+        self.server.send(dg)
+
+        # And the client should be informed
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting remove interest.")
+        dgi = DatagramIterator(dg)
+        self.assertEquals(dgi.read_uint16(), CLIENT_REMOVE_INTEREST) # MsgType
+        cl_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 12) # Interest id
+
+        # The remaining seen object should die...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
+        dg.add_doid(8888)
+        self.expect(client, dg, isClient = True)
+
+        # The server should say it's done being interesting...
+        dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
+        dg.add_channel(id) # Client id
+        dg.add_uint16(12)  # Interest id
+        self.expect(self.server, dg)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(cl_context) # Context
+        dg.add_uint16(12) # Interest id
+        self.expect(client, dg, isClient = True)
+
+        # And NOTHING ELSE:
+        self.expectNone(client)
+
+        # Meanwhile, nothing happens on the server either:
+        self.expectNone(self.server)
+
+        # Additionally, if we try to twiddle with a previously visible object...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(8888)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(232323)
+        client.send(dg)
+
+        # We shouldn't get kicked...
+        self.expectNone(client)
+        # but the client agent should also ignore it
+        self.expectNone(self.server)
+
+        # Ok, we should also try to do some of this for add_interest
+        dg = Datagram.create([id], 1015, CLIENTAGENT_ADD_INTEREST)
+        dg.add_uint16(17) # Interest id
+        dg.add_doid(1235) # Parent
+        dg.add_zone(8888) # Zone
+        self.server.send(dg)
+
+        # Client should have the interest forwarded back to it
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting fowarded interest.")
+        dgi = DatagramIterator(dg)
+        self.assertEquals(dgi.read_uint16(), CLIENT_ADD_INTEREST) # MsgType
+        cl_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 17) # Interest id
+        self.assertEquals(dgi.read_doid(), 1235) # Parent
+        self.assertEquals(dgi.read_zone(), 8888) # Zone
+
+        # Server should ask for the objects:
+        # N. B. This is not the current behavior of the ClientAgent, but its also not the point
+        #       of the test I'm trying to add because the stateserver doesn't actually implement
+        #       STATESERVER_OBJECT_GET_ZONE_OBJECTS, so I'll re-enable this part later when that
+        #       has been implemented, and we want to enforce that the behavior has changed
+        #dg = self.server.recv_maybe()
+        #self.assertTrue(dg is not None)
+        #dgi = DatagramIterator(dg)
+        #self.assertTrue(*dgi.matches_header([2345], id, STATESERVER_OBJECT_GET_ZONE_OBJECTS))
+        #ss_context = dgi.read_uint32()
+        #self.assertEquals(dgi.read_doid(), 2345)
+        #self.assertEquals(dgi.read_zone(), 8888)
+
+        ## The SS replies immediately with the count:
+        #dg = Datagram.create([id], 2345, STATESERVER_OBJECT_GET_ZONE_COUNT_RESP)
+        #dg.add_uint32(ss_context)
+        #dg.add_doid(1) # Object count, uses an integer with same width as doids
+        #self.server.send(dg)
+
+        # INSTEAD WE DO -- Server should ask for the objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1235], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1235)
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_zone(), 8888)
+        # The SS replies immediately with the count:
+        dg = Datagram.create([id], 1235, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(1) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # We'll throw an object its way:
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(343536) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(8888) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(219129) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(343536) # do_id
+        dg.add_doid(1235) # parent_id
+        dg.add_zone(8888) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(219129) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        # The server should say it's done being interesting...
+        dg = Datagram.create([1015], id, CLIENTAGENT_DONE_INTEREST_RESP)
+        dg.add_channel(id) # Client id
+        dg.add_uint16(17) # Interest id
+        self.expect(self.server, dg)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(cl_context) # Context
+        dg.add_uint16(17) # Interest id
+        self.expect(client, dg, isClient = True)
+
+        # And NOTHING ELSE:
+        self.expectNone(client)
+
+        # Meanwhile, nothing happens on the server either:
+        self.expectNone(self.server)
+        self.server.send(Datagram.create_remove_channel(1015))
+
+        self.server.flush()
+        client.close()
+
+    def test_declare(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Twiddle with the object, and get disconnected because we're not authenticate
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
+        self.expectNone(self.server)
+
+        # Lets connect again
+        client = self.connect()
+        id = self.identify(client)
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Give us the same object
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Twiddle with the object, and everything should run fine
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        self.expect(self.server, dg)
+
+        # Then undeclare the object
+        dg = Datagram.create([id], 1, CLIENTAGENT_UNDECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        self.server.send(dg)
+
+        # Twiddle with the object, and get disconnected because its not declared
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_MISSING_OBJECT)
+        self.expectNone(self.server)
+
+        # Cleanup
+        self.server.send(Datagram.create_remove_channel(10000))
+
+    def test_fields_sendable(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+        client.flush()
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedTestObject1) # dclass
+        self.server.send(dg)
+
+        # Then lets set a field sendable
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(2) # num fields
+        dg.add_uint16(setRequired1)
+        dg.add_uint16(setBR1)
+        self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable and declare_object
+        time.sleep(0.1)
+
+        # Try a SetField
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('Hello? Anyone there?')
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('Hello? Anyone there?')
+        self.expect(self.server, dg)
+
+        # Remove one of the set fields
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(1) # num fields
+        dg.add_uint16(setRequired1)
+        self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable
+        time.sleep(0.1)
+
+        # Make sure setRequired1 is still sendable
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBA55)
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([10000], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0xBA55)
+        self.expect(self.server, dg)
+
+        # But trying to send to the other field should disconnect us....
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setBR1)
+        dg.add_string('When you are tired, tea is the best remedy. Also at all other times.')
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+        self.expectNone(self.server)
+
+        # Ok now lets try to do it with an uberdog
+        self.server.send(Datagram.create_remove_channel(10000))
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+        client.flush()
+
+        # Then lets set a field sendable
+        dg = Datagram.create([id], 1, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(1235) # doid
+        dg.add_uint16(1) # num fields
+        dg.add_uint16(bar)
+        self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable
+        time.sleep(0.1)
+
+        # Try a SetField
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        client.send(dg)
+        self.expectNone(client)
+
+        # Expect the message forwarded to the object
+        dg = Datagram.create([1235], id, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        self.expect(self.server, dg)
+
+        # Then clear the fields
+        dg = Datagram.create([id], 0, CLIENTAGENT_SET_FIELDS_SENDABLE)
+        dg.add_doid(1235) # doid
+        dg.add_uint16(0) # num fields
+        self.server.send(dg)
+
+        # Trying to set the field should disconnect us then
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(1235)
+        dg.add_uint16(bar)
+        dg.add_uint16(323)
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
+        self.expectNone(self.server)
+
+    def test_session_objects(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10052))
+        self.server.send(Datagram.create_add_channel(10053))
+
+        ### Lets test the behavior of a client exiting with one session object
+        # Give us a client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Then disconnect the client, and the object should die
+        client.close()
+        dg = Datagram.create([10052], id, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.expect(self.server, dg)
+
+
+
+        ### Lets test a session object being deleted with one object
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Then delete the object, the client should be disconnected
+        dg = Datagram.create([id], 10052, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.server.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        # The server sent the delete, it shouldn't receive a message
+        self.expectNone(self.server)
+
+
+
+        ### Lets test a session object leaving ownership with one object
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Then change the object's owner, the client should be disconnected
+        dg = Datagram.create([id], 10052, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_doid(10052)
+        dg.add_channel(0)
+        dg.add_channel(id)
+        self.server.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        # Additionally the object should be deleted
+        dg = Datagram.create([10052], id, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.expect(self.server, dg)
+
+
+
+        ### Lets test a session object leaving interest with one object
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Open interest on a zone in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(5000) # Context
+        dg.add_uint16(3000) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
+        client.send(dg)
+
+        # Server should ask for the objects:
+        # N. B. This is not the current behavior of the ClientAgent, but its also not the point
+        #       of the test I'm trying to add because the stateserver doesn't actually implement
+        #       STATESERVER_OBJECT_GET_ZONE_OBJECTS, so I'll re-enable this part later when that
+        #       has been implemented, and we want to enforce that the behavior has changed
+        #dg = self.server.recv_maybe()
+        #self.assertTrue(dg is not None)
+        #dgi = DatagramIterator(dg)
+        #self.assertTrue(*dgi.matches_header([2345], id, STATESERVER_OBJECT_GET_ZONE_OBJECTS))
+        #ss_context = dgi.read_uint32()
+        #self.assertEquals(dgi.read_doid(), 1234)
+        #self.assertEquals(dgi.read_zone(), 4321)
+
+        ## The SS replies immediately with the count:
+        #dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONE_COUNT_RESP)
+        #dg.add_uint32(ss_context)
+        #dg.add_doid(0) # Object count, uses an integer with same width as doids
+        #self.server.send(dg)
+
+        # The server asks for objects this way instead for now
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 4321)
+
+        # The interest contains our object
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(1) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # Pass the object from the stateserver
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(10052) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4321) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(709907) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the enter location and done interest response.
+        client.flush()
+
+        # Then remove the client's interest in the object, the client should be disconnected
+        dg = Datagram()
+        dg.add_uint16(CLIENT_REMOVE_INTEREST)
+        dg.add_uint32(5001) # Context
+        dg.add_uint16(3000) # Interest id
+        client.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        # Additionally the object should be deleted
+        dg = Datagram.create([10052], id, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.expect(self.server, dg)
+
+
+
+        ### Lets test a session object changing location out of interest
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Open interest on a zone in 1234:
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(5002) # Context
+        dg.add_uint16(3001) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(4321) # Zone
+        client.send(dg)
+
+        # Server should ask for the objects:
+        # N. B. This is not the current behavior of the ClientAgent, but its also not the point
+        #       of the test I'm trying to add because the stateserver doesn't actually implement
+        #       STATESERVER_OBJECT_GET_ZONE_OBJECTS, so I'll re-enable this part later when that
+        #       has been implemented, and we want to enforce that the behavior has changed
+        #dg = self.server.recv_maybe()
+        #self.assertTrue(dg is not None)
+        #dgi = DatagramIterator(dg)
+        #self.assertTrue(*dgi.matches_header([2345], id, STATESERVER_OBJECT_GET_ZONE_OBJECTS))
+        #ss_context = dgi.read_uint32()
+        #self.assertEquals(dgi.read_doid(), 1234)
+        #self.assertEquals(dgi.read_zone(), 4321)
+
+        ## The SS replies immediately with the count:
+        #dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONE_COUNT_RESP)
+        #dg.add_uint32(ss_context)
+        #dg.add_doid(0) # Object count, uses an integer with same width as doids
+        #self.server.send(dg)
+
+        # The server asks for objects this way instead for now
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 4321)
+
+        # The interest contains our object
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(1) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # Pass the object from the stateserver
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(10052) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(4321) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(709907) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the enter location and done interest response.
+        client.flush()
+
+        # Wait a little bit to mitigate any potential race condition
+        time.sleep(0.1)
+
+        # Then change the object's location, out of interest, the client should be disconnected
+        dg = Datagram.create([id], 10052, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(10052)
+        dg.add_doid(0) # new parent
+        dg.add_zone(0) # new zone
+        dg.add_doid(1234) # old parent
+        dg.add_zone(4321) # old zone
+        self.server.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        # Additionally the object should be deleted
+        dg = Datagram.create([10052], id, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.expect(self.server, dg)
+
+
+
+        ### Lets test a session object being deleted with multiple session objects
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Declare another session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10053) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the first object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Give it ownership of the second object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10053) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xB0053) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Then delete the object, the client should be disconnected
+        dg = Datagram.create([id], 10052, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.server.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        # The server should expect a delete for the second object
+        dg = Datagram.create([10053], id, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10053)
+        self.expect(self.server, dg)
+
+
+
+        ### Lets make sure we don't get notified about object deletions after removing session objs
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+
+        # Remove that object as a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_REMOVE_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Wait a little bit to mitigate any potential race condition
+        time.sleep(0.1)
+
+        # Then disconnect the client, and the object shouldn't die
+        client.close()
+        self.expectNone(self.server)
+
+
+
+        ### Lets make sure we don't get dc'd about by a delete object after removing session objs
+        # Give us another client
+        client = self.connect()
+        id = self.identify(client)
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Declare a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Give it ownership of the object
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED)
+        dg.add_doid(10052) # Doid
+        dg.add_doid(0) # Parent
+        dg.add_zone(0) # Zone
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0xBEE) # setRequired1
+        self.server.send(dg)
+
+        # Ignore the data in the entry forwarded to the client, we're not testing that here
+        dg = client.recv_maybe()
+        self.assertTrue(dg is not None, "The client didn't receive a datagram after ENTER_OWNER.")
+        client.flush()
+
+        # Remove that object as a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_REMOVE_SESSION_OBJECT)
+        dg.add_doid(10052) # doid
+        self.server.send(dg)
+
+        # Wait a little bit to mitigate any potential race condition
+        time.sleep(0.1)
+
+        # Then delete the object, the client should not be disconnected
+        dg = Datagram.create([id], 10052, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(10052)
+        self.server.send(dg)
+        # We should receive an object leaving owner
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
+        dg.add_doid(10052)
+        self.expect(client, dg, isClient = True)
+        # But we shouldn't get disconnected
+        self.expectNone(client)
+        # The server sent the delete, so it shouldn't get anything back
+        self.expectNone(self.server)
+
+
+        ### Cleanup after all the tests
+        self.server.send(Datagram.create_remove_channel(10052))
+        self.server.send(Datagram.create_remove_channel(10053))
 
 if __name__ == '__main__':
     unittest.main()

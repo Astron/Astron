@@ -138,13 +138,11 @@ in order to accomplish various normal game tasks.
 > on a given object. The format of this message is analogous to 
 > `STATESERVER_OBJECT_SET_FIELD` in the internal protocol.
 
-
 **CLIENT_OBJECT_SET_FIELDS(121)**  
-    `args(uint32 do_id, uint16 field_id, <VALUE>)`  
-> This is sent either by the Client Agent or the client to issue a field update
-> on a given object. The format of this message is analogous to 
-> `STATESERVER_OBJECT_SET_FIELD` in the internal protocol.
-
+    `args(uint32 do_id, uint16 num_fields, [uint16 field_id, <VALUE>]*num_fields)`  
+> This is sent by the Client Agentto issue a field update on a given object.
+> The format of this message is analogous to `STATESERVER_OBJECT_SET_FIELDS`
+> in the internal protocol.
 
 **CLIENT_OBJECT_LEAVING(132)** `args(uint32 do_id)`  
 > This is sent by the Client Agent to let the client know that an object is
@@ -172,6 +170,9 @@ in order to accomplish various normal game tasks.
 > The client sends this to open an interest in a single zone within a parent.
 > The server will respond by sending a CREATE for every object in the new zone,
 > followed by a `CLIENT_DONE_INTEREST_RESP`.
+>
+> When the server sends this, it is informing the client of an interest added
+> to the client by the server with `CLIENTAGENT_ADD_INTEREST`.
 
 **CLIENT_ADD_INTEREST_MULTIPLE(201)**  
     `args(uint32 context, uint16 interest_id, uint32 parent_id,
@@ -179,6 +180,9 @@ in order to accomplish various normal game tasks.
 > The client sends this to open an interest cotaining multiple zones within a
 > single parent. The server will respond with a single DONE response after every
 > object from every zone replies.
+>
+> When the server sends this, it is informing the client of an interest added
+> to the client by the server with `CLIENTAGENT_ADD_INTEREST_MULTIPLE`.
 
 **CLIENT_REMOVE_INTEREST(203)**  
     `args(uint32 context, uint16 interest_id)`  
@@ -217,6 +221,7 @@ prepared to receive them even if nothing else in the cluster uses these codes.
 - 108: The client sent an invalid msgtype.
 - 109: The client sent a truncated datagram.
 - 113: The client violated the rules of the anonymous sandbox.
+- 115: The client tried to send an unpermitted interest operation.
 - 117: The client tried to manipulate a nonexistent/unseen/unknown object ID.
 - 118: The client sent a `CLIENT_OBJECT_SET_FIELD` for a field they may not update.
 - 119: The client sent a `CLIENT_OBJECT_LOCATION` for an object they may not relocate.

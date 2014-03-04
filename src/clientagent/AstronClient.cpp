@@ -5,6 +5,7 @@
 #include "util/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 
@@ -12,19 +13,51 @@ using dclass::Class;
 using dclass::Field;
 
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
+static ConfigVariable<std::string> interest_permissions("add_interest", "visible", ca_client_config);
+static BooleanValueConstraint relocate_is_boolean(relocate_owned);
+static bool is_permission_level(const std::string& str)
+{
+	return (str == "visible" || str == "disabled" || str == "enabled");
+}
+static ConfigConstraint<std::string> valid_permission_level(is_permission_level, interest_permissions,
+	"Permissions for add_interest must be one of 'visible', 'enabled', 'disabled'.");
+
+enum InterestPermission
+{
+	INTERESTS_ENABLED,
+	INTERESTS_VISIBLE,
+	INTERESTS_DISABLED
+};
 
 class AstronClient : public Client, public NetworkClient
 {
 	private:
+		ConfigNode m_config;
 		bool m_clean_disconnect;
 		bool m_relocate_owned;
+		InterestPermission m_interests_allowed;
 
 	public:
 		AstronClient(ConfigNode config, ClientAgent* client_agent,
 			         boost::asio::ip::tcp::socket *socket) :
-			Client(client_agent), NetworkClient(socket),
+			Client(client_agent), NetworkClient(socket), m_config(config),
 			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config))
 		{
+			// Set interest permissions
+			std::string permission_level = interest_permissions.get_rval(config);
+			if(permission_level == "enabled")
+			{
+				m_interests_allowed = INTERESTS_ENABLED;
+			}
+			else if(permission_level == "visible")
+			{
+				m_interests_allowed = INTERESTS_VISIBLE;
+			}
+			else
+			{
+				m_interests_allowed = INTERESTS_DISABLED;
+			}
+
 			std::stringstream ss;
 			boost::asio::ip::tcp::endpoint remote;
 			try
@@ -165,6 +198,37 @@ class AstronClient : public Client, public NetworkClient
 			NetworkClient::send_disconnect();
 		}
 
+		// handle_add_interest should inform the client of an interest added by the server.
+		void handle_add_interest(const Interest& i, uint32_t context)
+		{
+			bool multiple = i.zones.size() > 1;
+
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(multiple ? CLIENT_ADD_INTEREST_MULTIPLE : CLIENT_ADD_INTEREST);
+			resp->add_uint32(context);
+			resp->add_uint16(i.id);
+			resp->add_doid(i.parent);
+			if(multiple)
+			{
+				resp->add_uint16(i.zones.size());
+			}
+			for(auto it = i.zones.begin(); it != i.zones.end(); ++it)
+			{
+				resp->add_zone(*it);
+			}
+			send_datagram(resp);
+		}
+
+		// handle_remove_interest should inform the client an interest was removed by the server.
+		void handle_remove_interest(uint16_t interest_id, uint32_t context)
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_REMOVE_INTEREST);
+			resp->add_uint32(context);
+			resp->add_uint16(interest_id);
+			send_datagram(resp);
+		}
+
 		// handle_add_object should inform the client of a new object. The datagram iterator
 		// provided starts at the 'required fields' data, and may have optional fields following.
 		// Handler for OBJECT_ENTER_LOCATION (an object, enters the Client's interest).
@@ -203,6 +267,17 @@ class AstronClient : public Client, public NetworkClient
 			resp->add_uint16(CLIENT_OBJECT_SET_FIELD);
 			resp->add_doid(do_id);
 			resp->add_uint16(field_id);
+			resp->add_data(dgi.read_remainder());
+			send_datagram(resp);
+		}
+
+		// handle_set_fields should inform the client that a group of fields has been updated.
+		void handle_set_fields(doid_t do_id, uint16_t num_fields, DatagramIterator &dgi)
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_SET_FIELDS);
+			resp->add_doid(do_id);
+			resp->add_uint16(num_fields);
 			resp->add_data(dgi.read_remainder());
 			send_datagram(resp);
 		}
@@ -415,11 +490,16 @@ class AstronClient : public Client, public NetworkClient
 			bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
 			if(!field->has_keyword("clsend") && !(is_owned && field->has_keyword("ownsend")))
 			{
-				std::stringstream ss;
-				ss << "Client tried to send update for non-sendable field: "
-				   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
-				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
-				return;
+				auto send_it = m_fields_sendable.find(do_id);
+				if(send_it == m_fields_sendable.end() ||
+				   send_it->second.find(field_id) == send_it->second.end())
+				{
+					std::stringstream ss;
+					ss << "Client tried to send update for non-sendable field: "
+					   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
+					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
+					return;
+				}
 			}
 
 			// If an exception occurs while unpacking data it will be handled by
@@ -489,36 +569,38 @@ class AstronClient : public Client, public NetworkClient
 		// handle_client_add_interest occurs is called when the client adds an interest.
 		void handle_client_add_interest(DatagramIterator &dgi, bool multiple)
 		{
+			if(m_interests_allowed == INTERESTS_DISABLED)
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST,
+				                "Client is not allowed to add interests.", true);
+				return;
+			}
+
 			uint32_t context = dgi.read_uint32();
-			uint16_t interest_id = dgi.read_uint16();
-			doid_t parent = dgi.read_doid();
 
 			Interest i;
-			i.id = interest_id;
-			i.parent = parent;
-
-			uint16_t count = 1;
-			if(multiple)
+			build_interest(dgi, multiple, i);
+			if(m_interests_allowed == INTERESTS_VISIBLE && !lookup_object(i.parent))
 			{
-				count = dgi.read_uint16();
+				std::stringstream ss;
+				ss << "Cannot add interest to parent with id " << i.parent
+				   << " because parent is not visible to client.";
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST, ss.str(), true);
+				return;
 			}
-
-			// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
-			//       something wrong.
-			i.zones.rehash((unsigned int)ceil(count / i.zones.max_load_factor()));
-
-			for(int x = 0; x < count; ++x)
-			{
-				zone_t zone = dgi.read_zone();
-				i.zones.insert(i.zones.end(), zone);
-			}
-
 			add_interest(i, context);
 		}
 
 		// handle_client_remove_interest is called when the client removes an interest.
 		void handle_client_remove_interest(DatagramIterator &dgi)
 		{
+			if(m_interests_allowed == INTERESTS_DISABLED)
+			{
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST,
+				                "Client is not allowed to remove interests.", true);
+				return;
+			}
+
 			uint32_t context = dgi.read_uint32();
 			uint16_t id = dgi.read_uint16();
 
@@ -530,6 +612,14 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			Interest &i = m_interests[id];
+			if(m_interests_allowed == INTERESTS_VISIBLE && !lookup_object(i.parent))
+			{
+				std::stringstream ss;
+				ss << "Cannot remove interest for parent with id " << i.parent
+				   << " because parent is not visible to client.";
+				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST, ss.str(), true);
+				return;
+			}
 			remove_interest(i, context);
 		}
 };

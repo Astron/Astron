@@ -1,9 +1,8 @@
 #pragma once
 #include <list>
 #include <set>
-#include <map>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
@@ -59,6 +58,9 @@ class MessageDirector : public NetworkClient
 		//        "hi": the highest channel to be removed.
 		// The range is inclusive.
 		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
+
+		// unsubscribe_all removes all channel and range subscriptions from a participant.
+		void unsubscribe_all(MDParticipantInterface*p);
 
 		// logger returns the MessageDirector log category.
 		inline LogCategory& logger()
@@ -166,6 +168,11 @@ class MDParticipantInterface
 			logger().trace() << "MDParticipant '" << m_name << "' unsubscribed range, "
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
+		}
+		inline void unsubscribe_all()
+		{
+			logger().trace() << "MDParticipant '" << m_name << "' unsubscribing from all.\n";
+			MessageDirector::singleton.unsubscribe_all(this);
 		}
 		inline void add_post_remove(const DatagramPtr dg)
 		{

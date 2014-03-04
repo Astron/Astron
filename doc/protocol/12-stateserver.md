@@ -226,7 +226,7 @@ to one object at a time.
     `args(uint32 do_id, uint64 new_owner_channel, uint64 old_owner_channel)`  
 > A set owner message moves receiving object to a new owner.
 >
-> A changing location message is sent to notify others of the change:
+> A changing owner message is sent to notify others of the change:
 >  - If an object had an old owner, notify the object's old owner.
 > The notification's "sender" is set to the original message's sender.
 >

@@ -9,7 +9,7 @@ using dclass::Class;
 
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
 	m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
-	m_interests(), m_pending_interests()
+	m_visible_objects(), m_declared_objects(), m_interests(), m_pending_interests()
 {
 	m_channel = m_client_agent->m_ct.alloc_channel();
 	if(!m_channel)
@@ -31,7 +31,19 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_stat
 
 Client::~Client()
 {
+	unsubscribe_all();
 	m_client_agent->m_ct.free_channel(m_allocated_channel);
+
+	// Delete all session objects
+	while(m_session_objects.size() > 0)
+	{
+		doid_t do_id = *m_session_objects.begin();
+		m_session_objects.erase(do_id);
+		m_log->debug() << "Client exited, deleting session object with id " << do_id << ".\n";
+		DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
+		dg->add_doid(do_id);
+		route_datagram(dg);
+	}
 }
 
 // log_event sends an event to the EventLogger
@@ -72,6 +84,12 @@ const Class *Client::lookup_object(doid_t do_id)
 		}
 	}
 
+	// Hey we also know about it if its a declared object!
+	else if(m_declared_objects.find(do_id) != m_declared_objects.end())
+	{
+		return m_declared_objects[do_id].dcc;
+	}
+
 	// We're at the end of our rope; we have no clue what this object is.
 	return NULL;
 }
@@ -90,10 +108,37 @@ std::list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 	return interests;
 }
 
+// build_interest will build an interest from a datagram. It is expected that the datagram
+// iterator is positioned such that next item to be read is the interest_id.
+void Client::build_interest(DatagramIterator &dgi, bool multiple, Interest &out)
+{
+	uint16_t interest_id = dgi.read_uint16();
+	doid_t parent = dgi.read_doid();
+
+	out.id = interest_id;
+	out.parent = parent;
+
+	uint16_t count = 1;
+	if(multiple)
+	{
+		count = dgi.read_uint16();
+	}
+
+	// TODO: We shouldn't have to do this ourselves, figure out where else we're doing
+	//       something wrong.
+	out.zones.rehash(ceil(count / out.zones.max_load_factor()));
+
+	for(int x = 0; x < count; ++x)
+	{
+		zone_t zone = dgi.read_zone();
+		out.zones.insert(out.zones.end(), zone);
+	}
+}
+
 // add_interest will start a new interest operation and retrieve all the objects an interest
 // from the server, subscribing to each zone in the interest.  If the interest already
 // exists, the interest will be updated with the new zones passed in by the argument.
-void Client::add_interest(Interest &i, uint32_t context)
+void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 {
 	std::unordered_set<zone_t> new_zones;
 
@@ -142,12 +187,13 @@ void Client::add_interest(Interest &i, uint32_t context)
 		// bother firing off a State Server request. Instead, let the client
 		// know we're already done:
 
+		notify_interest_done(i.id, caller);
 		handle_interest_done(i.id, context);
 
 		return;
 	}
 
-	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones);
+	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones, caller);
 
 	uint32_t request_context = m_next_context++;
 	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
@@ -167,7 +213,7 @@ void Client::add_interest(Interest &i, uint32_t context)
 
 // remove_interest find each zone an interest which is not part of another interest and
 // passes it to close_zones() to be removed from the client's visibility.
-void Client::remove_interest(Interest &i, uint32_t context)
+void Client::remove_interest(Interest &i, uint32_t context, channel_t caller)
 {
 	std::unordered_set<zone_t> killed_zones;
 
@@ -183,6 +229,7 @@ void Client::remove_interest(Interest &i, uint32_t context)
 	// Now that we know what zones to kill, let's get to it:
 	close_zones(i.parent, killed_zones);
 
+	notify_interest_done(i.id, caller);
 	handle_interest_done(i.id, context);
 
 	m_interests.erase(i.id);
@@ -207,9 +254,16 @@ void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed
 		{
 			if(m_owned_objects.find(it->second.id) != m_owned_objects.end())
 			{
-				// Owned objects are always zone-visible. I think.
-				// TODO: Is this assumption correct?
+				// Owned objects are always visible, ignore this object
 				continue;
+			}
+
+			if(m_session_objects.find(it->second.id) != m_session_objects.end())
+			{
+				// This object is a session object. The client should be disconnected.
+				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
+				                "A session object has unexpectedly left interest.");
+				return;
 			}
 
 			handle_remove_object(it->second.id);
@@ -285,67 +339,34 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			m_state = (ClientState)dgi.read_uint16();
 		}
 		break;
-		case STATESERVER_OBJECT_SET_FIELD:
+		case CLIENTAGENT_ADD_INTEREST:
 		{
-			doid_t do_id = dgi.read_doid();
-			if(!lookup_object(do_id))
-			{
-				m_log->warning() << "Received server-side field update for unknown object " << do_id << std::endl;
-				return;
-			}
-			if(sender != m_channel)
-			{
-				uint16_t field_id = dgi.read_uint16();
-				handle_set_field(do_id, field_id, dgi);
-			}
+			uint32_t context = m_next_context++;
+
+			Interest i;
+			build_interest(dgi, false, i);
+			handle_add_interest(i, context);
+			add_interest(i, context, sender);
 		}
 		break;
-		case STATESERVER_OBJECT_DELETE_RAM:
+		case CLIENTAGENT_ADD_INTEREST_MULTIPLE:
 		{
-			doid_t do_id = dgi.read_doid();
-			if(!lookup_object(do_id))
-			{
-				m_log->warning() << "Received server-side object delete for unknown object " << do_id << std::endl;
-				return;
-			}
+			uint32_t context = m_next_context++;
 
-			if(m_seen_objects.find(do_id) != m_seen_objects.end())
-			{
-				m_seen_objects.erase(do_id);
-				m_historical_objects.insert(do_id);
-				handle_remove_object(do_id);
-			}
-
-			if(m_owned_objects.find(do_id) != m_owned_objects.end())
-			{
-				m_owned_objects.erase(do_id);
-				handle_remove_ownership(do_id);
-			}
-
-			m_visible_objects.erase(do_id);
+			Interest i;
+			build_interest(dgi, true, i);
+			handle_add_interest(i, context);
+			add_interest(i, context, sender);
 		}
 		break;
-		case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
-        case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED:
+		case CLIENTAGENT_REMOVE_INTEREST:
 		{
-			doid_t do_id = dgi.read_doid();
-			doid_t parent = dgi.read_doid();
-			zone_t zone = dgi.read_zone();
-			uint16_t dc_id = dgi.read_uint16();
-			m_owned_objects.insert(do_id);
+			uint32_t context = m_next_context++;
 
-			if(m_visible_objects.find(do_id) == m_visible_objects.end())
-			{
-				VisibleObject obj;
-				obj.id = do_id;
-				obj.parent = parent;
-				obj.zone = zone;
-				obj.dcc = g_dcf->get_class_by_id(dc_id);
-				m_visible_objects[do_id] = obj;
-			}
-
-			handle_add_ownership(do_id, parent, zone, dc_id, dgi,
-		                         msgtype == STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
+			uint16_t id = dgi.read_uint16();
+			Interest &i = m_interests[id];
+			handle_remove_interest(id, context);
+			remove_interest(i, context, sender);
 		}
 		break;
 		case CLIENTAGENT_SET_CLIENT_ID:
@@ -386,6 +407,178 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			clear_post_removes();
 		}
 		break;
+		case CLIENTAGENT_DECLARE_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+			uint16_t dc_id = dgi.read_uint16();
+
+			if(m_declared_objects.find(do_id) != m_declared_objects.end())
+			{
+				m_log->warning() << "Received object declaration for previously declared object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			DeclaredObject obj;
+			obj.id = do_id;
+			obj.dcc = g_dcf->get_class_by_id(dc_id);
+			m_declared_objects[do_id] = obj;
+		}
+		break;
+		case CLIENTAGENT_UNDECLARE_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+
+			if(m_declared_objects.find(do_id) == m_declared_objects.end())
+			{
+				m_log->warning() << "Received undeclare object for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_declared_objects.erase(do_id);
+		}
+		case CLIENTAGENT_SET_FIELDS_SENDABLE:
+		{
+			doid_t do_id = dgi.read_doid();
+			uint16_t field_count = dgi.read_uint16();
+
+			std::unordered_set<uint16_t> fields;
+			for(unsigned int i = 0; i < field_count; ++i)
+			{
+				fields.insert(dgi.read_uint16());
+			}
+			m_fields_sendable[do_id] = fields;
+		}
+		break;
+		case CLIENTAGENT_ADD_SESSION_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+			if(m_session_objects.find(do_id) != m_session_objects.end())
+			{
+				m_log->warning() << "Received add session object for existing session object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_log->debug() << "Added session object with id " << do_id << ".\n";
+
+			m_session_objects.insert(do_id);
+		}
+		break;
+		case CLIENTAGENT_REMOVE_SESSION_OBJECT:
+		{
+			doid_t do_id = dgi.read_doid();
+
+			if(m_session_objects.find(do_id) == m_session_objects.end())
+			{
+				m_log->warning() << "Received remove session object for non-session object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			m_log->debug() << "Removed session object with id " << do_id << ".\n";
+
+			m_session_objects.erase(do_id);
+		}
+		break;
+		case STATESERVER_OBJECT_SET_FIELD:
+		{
+			doid_t do_id = dgi.read_doid();
+			if(!lookup_object(do_id))
+			{
+				m_log->warning() << "Received server-side field update for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+			if(sender != m_channel)
+			{
+				uint16_t field_id = dgi.read_uint16();
+				handle_set_field(do_id, field_id, dgi);
+			}
+		}
+		break;
+		case STATESERVER_OBJECT_SET_FIELDS:
+		{
+			doid_t do_id = dgi.read_doid();
+			if(!lookup_object(do_id))
+			{
+				m_log->warning() << "Received server-side multi-field update for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+			if(sender != m_channel)
+			{
+				uint16_t num_fields = dgi.read_uint16();
+				handle_set_fields(do_id, num_fields, dgi);
+			}
+		}
+		break;
+		case STATESERVER_OBJECT_DELETE_RAM:
+		{
+			doid_t do_id = dgi.read_doid();
+
+			m_log->trace() << "Received DeleteRam for object with id " << do_id << "\n.";
+
+			if(!lookup_object(do_id))
+			{
+				m_log->warning() << "Received server-side object delete for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+
+			if(m_session_objects.find(do_id) != m_session_objects.end())
+			{
+				// We have to erase the object from our session_objects here, because
+				// the object has already been deleted and we don't want it to be deleted
+				// again in the client's destructor.
+				m_session_objects.erase(do_id);
+
+				std::stringstream ss;
+				ss << "The session object with id " << do_id << " has been unexpectedly deleted.";
+				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+				return;
+			}
+
+			if(m_seen_objects.find(do_id) != m_seen_objects.end())
+			{
+				handle_remove_object(do_id);
+				m_seen_objects.erase(do_id);
+			}
+
+			if(m_owned_objects.find(do_id) != m_owned_objects.end())
+			{
+				handle_remove_ownership(do_id);
+				m_owned_objects.erase(do_id);
+			}
+
+			m_historical_objects.insert(do_id);
+			m_visible_objects.erase(do_id);
+		}
+		break;
+		case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER:
+        case STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED:
+		{
+			doid_t do_id = dgi.read_doid();
+			doid_t parent = dgi.read_doid();
+			zone_t zone = dgi.read_zone();
+			uint16_t dc_id = dgi.read_uint16();
+			m_owned_objects.insert(do_id);
+
+			if(m_visible_objects.find(do_id) == m_visible_objects.end())
+			{
+				VisibleObject obj;
+				obj.id = do_id;
+				obj.parent = parent;
+				obj.zone = zone;
+				obj.dcc = g_dcf->get_class_by_id(dc_id);
+				m_visible_objects[do_id] = obj;
+			}
+
+			handle_add_ownership(do_id, parent, zone, dc_id, dgi,
+		                         msgtype == STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
+		}
+		break;
 		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
 		case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
 		{
@@ -420,6 +613,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			{
 				if(it->second->is_ready(m_visible_objects))
 				{
+					notify_interest_done(it->second);
 					handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
 					deferred_deletes.push_back(it->first);
 				}
@@ -439,7 +633,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			if(m_pending_interests.find(context) == m_pending_interests.end())
 			{
 				m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
-				               << context << std::endl;
+				               << context << ".\n";
 				return;
 			}
 
@@ -447,6 +641,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			if(m_pending_interests[context]->is_ready(m_visible_objects))
 			{
+				notify_interest_done(m_pending_interests[context]);
 				handle_interest_done(m_pending_interests[context]->m_interest_id,
 				                     m_pending_interests[context]->m_client_context);
 				m_pending_interests.erase(context);
@@ -481,6 +676,15 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			if(disable && m_owned_objects.find(do_id) == m_owned_objects.end())
 			{
+				if(m_session_objects.find(do_id) != m_session_objects.end())
+				{
+					std::stringstream ss;
+					ss << "The session object with id " << do_id
+					   << " has unexpectedly left interest.";
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+					return;
+				}
+
 				handle_remove_object(do_id);
 				m_seen_objects.erase(do_id);
 				m_historical_objects.insert(do_id);
@@ -492,19 +696,88 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			}
 		}
 		break;
+		case STATESERVER_OBJECT_CHANGING_OWNER:
+		{
+			doid_t do_id = dgi.read_doid();
+			channel_t n_owner = dgi.read_channel();
+			dgi.skip(sizeof(channel_t)); // don't care about the old owner
+
+			if(n_owner == m_channel)
+			{
+				// We should already own this object, nothing changes and we
+				// might get another enter_owner message.
+				return;
+			}
+
+			if(m_owned_objects.find(do_id) == m_owned_objects.end())
+			{
+				m_log->error() << "Received ChangingOwner for unowned object with id "
+				               << do_id << ".\n";
+				return;
+			}
+
+			if(m_seen_objects.find(do_id) == m_seen_objects.end())
+			{
+				if(m_session_objects.find(do_id) != m_session_objects.end())
+				{
+					std::stringstream ss;
+					ss << "The session object with id " << do_id
+					   << " has unexpectedly left ownership.";
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+					return;
+				}
+
+				handle_remove_ownership(do_id);
+				m_owned_objects.erase(do_id);
+				m_historical_objects.insert(do_id);
+				m_visible_objects.erase(do_id);
+			}
+		}
+		break;
 		default:
-			m_log->error() << "Recv'd unk server msgtype " << msgtype << std::endl;
+			m_log->error() << "Recv'd unknown server msgtype " << msgtype << "\n.";
 	}
+}
+
+// notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
+// interest operation's caller, if one has been set.
+void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
+{
+	if(caller == 0)
+	{
+		return;
+	}
+
+	DatagramPtr resp = Datagram::create(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp->add_channel(m_channel);
+	resp->add_uint16(interest_id);
+	route_datagram(resp);
+}
+
+// notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
+// interest operation's caller, if one has been set.
+void Client::notify_interest_done(const InterestOperation* iop)
+{
+	if(iop->m_callers.size() == 0)
+	{
+		return;
+	}
+
+	DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+	resp->add_channel(m_channel);
+	resp->add_uint16(iop->m_interest_id);
+	route_datagram(resp);
 }
 
 /* ========================== *
  *       HELPER CLASSES       *
  * ========================== */
-InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_context,
-                                     doid_t parent, std::unordered_set<zone_t> zones) :
+InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_context, doid_t parent,
+                                     std::unordered_set<zone_t> zones, channel_t caller) :
 	m_interest_id(interest_id), m_client_context(client_context), m_parent(parent), m_zones(zones),
-	m_has_total(false), m_total(0)
+	m_callers(), m_has_total(false), m_total(0)
 {
+	m_callers.insert(m_callers.end(), caller);
 }
 
 bool InterestOperation::is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects)

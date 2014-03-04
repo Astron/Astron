@@ -105,10 +105,11 @@ session channel.
 
 **CLIENTAGENT_ADD_SESSION_OBJECT(1012)** `args(uint32 do_id)`  
 > Declares the specified object to be a "session object" -- an avatar, for example --
-> that is automatically cleaned up when the client disconnects. In addition, session
-> objects are presumed to be required for the proper function of a client. Therefore,
-> if a session object is ever deleted by another process, the client is automatically
-> dropped.
+> that is automatically cleaned up when the client disconnects.
+>
+> In addition, session objects are presumed to be required for the proper function of a client.
+> After the client receives visibility on the object, if it is deleted by another process,
+> or if the client loses visibility of the object, the client is automatically dropped.
 
 **CLIENTAGENT_REMOVE_SESSION_OBJECT(1013)** `args(uint32 do_id)`  
 > Antithesis of above message. The declared object is no longer tied to the client's
@@ -160,3 +161,7 @@ session channel.
 > The antithesis of the message above: cause an open interest to be closed. This
 > is even valid for client-opened interests, if the interest_id matches a
 > client-requested interest.
+
+**CLIENTAGENT_DONE_INTEREST_RESP(1204)** `args(uint64 client_id, uint16 interest_id)`
+> Sent by the ClientAgent to the caller of CLIENTAGENT_ADD_INTEREST to inform
+> them that the interest operation has completed.

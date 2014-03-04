@@ -189,6 +189,7 @@ CONSTANTS = {
     'CLIENTAGENT_ADD_INTEREST':                     1200,
     'CLIENTAGENT_ADD_INTEREST_MULTIPLE':            1201,
     'CLIENTAGENT_REMOVE_INTEREST':                  1203,
+    'CLIENTAGENT_DONE_INTEREST_RESP':               1204,
 
     # Client
     'CLIENT_HELLO':                                  1,
@@ -197,6 +198,7 @@ CONSTANTS = {
     'CLIENT_EJECT':                                  4,
     'CLIENT_HEARTBEAT':                              5,
     'CLIENT_OBJECT_SET_FIELD':                       120,
+    'CLIENT_OBJECT_SET_FIELDS':                      121,
     'CLIENT_OBJECT_LEAVING':                         132,
     'CLIENT_OBJECT_LEAVING_OWNER':                   161,
     'CLIENT_ENTER_OBJECT_REQUIRED':                  142,
@@ -214,6 +216,7 @@ CONSTANTS = {
     'CLIENT_DISCONNECT_INVALID_MSGTYPE': 108,
     'CLIENT_DISCONNECT_TRUNCATED_DATAGRAM': 109,
     'CLIENT_DISCONNECT_ANONYMOUS_VIOLATION': 113,
+    'CLIENT_DISCONNECT_FORBIDDEN_INTEREST': 115,
     'CLIENT_DISCONNECT_MISSING_OBJECT': 117,
     'CLIENT_DISCONNECT_FORBIDDEN_FIELD': 118,
     'CLIENT_DISCONNECT_FORBIDDEN_RELOCATE': 119,
@@ -272,7 +275,7 @@ class ProtocolTest(unittest.TestCase):
         f = open("%s-received.bin" % testName, "wb")
         f.write(received.get_data())
         f.close()
-        self.fail("Received unexpected datagram.\n" +
+        self.fail("Received datagram when expecting none.\n" +
                   "\tWritten to \"%s-received.bin\"." % testName)
 
     def writeDatagramsAndFail(self, expected, received):

@@ -82,15 +82,27 @@ class TestConfigClientAgent(unittest.TestCase):
                       max: 3999
                   client:
                       relocate: true
+                      add_interest: enabled
 
                 - type: clientagent
                   bind: 127.0.0.1:57135
                   version: "Sword Art Online v5.1"
                   client:
                       type: libastron
+                      add_interest: disabled
                   channels:
                       min: 110600
                       max: 110699
+
+                - type: clientagent
+                  bind: 127.0.0.1:57144
+                  version: "Sword Art Online v5.1"
+                  client:
+                      type: libastron
+                      add_interest: visible
+                  channels:
+                      min: 220600
+                      max: 220699
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
