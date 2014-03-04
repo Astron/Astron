@@ -74,7 +74,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				Client::send_disconnect(reason, error_string, security);
 
-				Datagram_ptr resp = Datagram::create();
+				DatagramPtr resp = Datagram::create();
 				resp->add_uint16(CLIENT_EJECT);
 				resp->add_uint16(reason);
 				resp->add_string(error_string);
@@ -171,7 +171,7 @@ class AstronClient : public Client, public NetworkClient
 		void handle_add_object(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                       DatagramIterator &dgi, bool other)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER : CLIENT_ENTER_OBJECT_REQUIRED);
 			resp->add_doid(do_id);
 			resp->add_location(parent_id, zone_id);
@@ -186,7 +186,7 @@ class AstronClient : public Client, public NetworkClient
 		void handle_add_ownership(doid_t do_id, doid_t parent_id, zone_t zone_id, uint16_t dc_id,
 		                          DatagramIterator &dgi, bool other)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(other ? CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER
 			                : CLIENT_ENTER_OBJECT_REQUIRED_OWNER);
 			resp->add_doid(do_id);
@@ -199,7 +199,7 @@ class AstronClient : public Client, public NetworkClient
 		// handle_set_field should inform the client that the field has been updated.
 		void handle_set_field(doid_t do_id, uint16_t field_id, DatagramIterator &dgi)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_OBJECT_SET_FIELD);
 			resp->add_doid(do_id);
 			resp->add_uint16(field_id);
@@ -210,7 +210,7 @@ class AstronClient : public Client, public NetworkClient
 		// handle_change_location should inform the client that the objects location has changed.
 		void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_OBJECT_LOCATION);
 			resp->add_doid(do_id);
 			resp->add_location(new_parent, new_zone);
@@ -222,7 +222,7 @@ class AstronClient : public Client, public NetworkClient
 		//     for example, when it changes zone, leaves visibility, or is deleted.
 		void handle_remove_object(doid_t do_id)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_OBJECT_LEAVING);
 			resp->add_doid(do_id);
 			send_datagram(resp);
@@ -232,7 +232,7 @@ class AstronClient : public Client, public NetworkClient
 		// Handle when the client loses ownership of an object.
 		void handle_remove_ownership(doid_t do_id)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
 			resp->add_doid(do_id);
 			send_datagram(resp);
@@ -242,7 +242,7 @@ class AstronClient : public Client, public NetworkClient
 		// received. Typically, informs the client that a particular group of objects is loaded.
 		void handle_interest_done(uint16_t interest_id, uint32_t context)
 		{
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_DONE_INTEREST_RESP);
 			resp->add_uint32(context);
 			resp->add_uint16(interest_id);
@@ -280,7 +280,7 @@ class AstronClient : public Client, public NetworkClient
 				return;
 			}
 
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_uint16(CLIENT_HELLO_RESP);
 			send_datagram(resp);
 
@@ -429,7 +429,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// If an exception occurs while packing data it will be handled by
 			// receive_datagram and the client will be dc'd with "oversized datagram".
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(do_id, m_channel, STATESERVER_OBJECT_SET_FIELD);
 			resp->add_doid(do_id);
 			resp->add_uint16(field_id);
@@ -480,7 +480,7 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			// Update the object's location
-            Datagram_ptr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
+            DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_SET_LOCATION);
 			dg->add_doid(dgi.read_doid()); // Parent
 			dg->add_zone(dgi.read_zone()); // Zone
 			route_datagram(dg);

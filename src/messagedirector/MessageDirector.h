@@ -167,7 +167,7 @@ class MDParticipantInterface
 			                << "lo: " << lo << ", hi: " << hi << std::endl;
 			MessageDirector::singleton.unsubscribe_range(this, lo, hi);
 		}
-		inline void add_post_remove(const Datagram_ptr dg)
+		inline void add_post_remove(const DatagramPtr dg)
 		{
 			logger().trace() << "MDParticipant '" << m_name << "' added post remove." << std::endl;
 			m_post_removes.push_back(dg);

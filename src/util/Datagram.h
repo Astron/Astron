@@ -20,7 +20,7 @@
 
 
 class Datagram; // foward declaration
-typedef std::shared_ptr<Datagram> Datagram_ptr;
+typedef std::shared_ptr<Datagram> DatagramPtr;
 typedef std::shared_ptr<const Datagram> DatagramHandle;
 
 // A DatagramOverflow is an exception which occurs when an add_<value> method is called which would
@@ -143,60 +143,60 @@ class Datagram
 	
 	
 	public:
-		static Datagram_ptr create()
+		static DatagramPtr create()
 		{
-			Datagram_ptr dg_ptr(new Datagram);
+			DatagramPtr dg_ptr(new Datagram);
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(const DatagramHandle dg)
+		static DatagramPtr create(const DatagramHandle dg)
 		{
-			Datagram_ptr dg_ptr(new Datagram( *dg.get() ));
+			DatagramPtr dg_ptr(new Datagram( *dg.get() ));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(uint8_t *data, dgsize_t length, dgsize_t capacity)
+		static DatagramPtr create(uint8_t *data, dgsize_t length, dgsize_t capacity)
 		{
-			Datagram_ptr dg_ptr(new Datagram(data, length, capacity));
+			DatagramPtr dg_ptr(new Datagram(data, length, capacity));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(const uint8_t *data, dgsize_t length)
+		static DatagramPtr create(const uint8_t *data, dgsize_t length)
 		{
-			Datagram_ptr dg_ptr(new Datagram(data, length));
+			DatagramPtr dg_ptr(new Datagram(data, length));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(const std::vector<uint8_t> &data)
+		static DatagramPtr create(const std::vector<uint8_t> &data)
 		{
-			Datagram_ptr dg_ptr(new Datagram(data));
+			DatagramPtr dg_ptr(new Datagram(data));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(const std::string &data)
+		static DatagramPtr create(const std::string &data)
 		{
-			Datagram_ptr dg_ptr(new Datagram(data));
+			DatagramPtr dg_ptr(new Datagram(data));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(channel_t to_channel, channel_t from_channel,
+		static DatagramPtr create(channel_t to_channel, channel_t from_channel,
 												uint16_t message_type)
 		{
-			Datagram_ptr dg_ptr(new Datagram(to_channel, from_channel, message_type));
+			DatagramPtr dg_ptr(new Datagram(to_channel, from_channel, message_type));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(const std::set<channel_t> &to_channels,
+		static DatagramPtr create(const std::set<channel_t> &to_channels,
 												channel_t from_channel,
 												uint16_t message_type)
 		{
-			Datagram_ptr dg_ptr(new Datagram(to_channels, from_channel, message_type));
+			DatagramPtr dg_ptr(new Datagram(to_channels, from_channel, message_type));
 			return dg_ptr;
 		}
 		
-		static Datagram_ptr create(uint16_t message_type)
+		static DatagramPtr create(uint16_t message_type)
 		{
-			Datagram_ptr dg_ptr(new Datagram(message_type));
+			DatagramPtr dg_ptr(new Datagram(message_type));
 			return dg_ptr;
 		}
 

@@ -37,7 +37,7 @@ Client::~Client()
 // log_event sends an event to the EventLogger
 void Client::log_event(const std::list<std::string> &event)
 {
-	Datagram_ptr dg = Datagram::create();
+	DatagramPtr dg = Datagram::create();
 
 	std::stringstream ss;
 	ss << "Client:" << m_allocated_channel;
@@ -152,7 +152,7 @@ void Client::add_interest(Interest &i, uint32_t context)
 	uint32_t request_context = m_next_context++;
 	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
 
-	Datagram_ptr resp = Datagram::create();
+	DatagramPtr resp = Datagram::create();
 	resp->add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 	resp->add_uint32(request_context);
 	resp->add_doid(i.parent);
@@ -361,7 +361,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		break;
 		case CLIENTAGENT_SEND_DATAGRAM:
 		{
-			Datagram_ptr forward = Datagram::create();
+			DatagramPtr forward = Datagram::create();
 			forward->add_data(dgi.read_string());
 			forward_datagram(forward);
 		}

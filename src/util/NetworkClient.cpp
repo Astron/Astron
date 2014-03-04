@@ -133,7 +133,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 		return;
 	}
 
-	Datagram_ptr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
+	DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
 	m_is_data = false;
 	receive_datagram(dg);
 	async_receive();

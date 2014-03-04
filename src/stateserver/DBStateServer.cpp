@@ -166,7 +166,7 @@ void DBStateServer::handle_get_activated(channel_t sender, DatagramIterator& dgi
 	if(m_objs.find(r_do_id) != m_objs.end())
 	{
 		// If object is active return true
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
 		dg->add_uint32(r_context);
 		dg->add_doid(r_do_id);
 		dg->add_bool(true);
@@ -175,7 +175,7 @@ void DBStateServer::handle_get_activated(channel_t sender, DatagramIterator& dgi
 	else
 	{
 		// If object isn't active or loading, we can return false
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, DBSS_OBJECT_GET_ACTIVATED_RESP);
 		dg->add_uint32(r_context);
 		dg->add_doid(r_do_id);
 		dg->add_bool(false);
@@ -219,13 +219,13 @@ void DBStateServer::handle_delete_disk(channel_t sender, DatagramIterator& dgi)
 		}
 
 		// Build and send datagram
-		Datagram_ptr dg = Datagram::create(targets, sender, DBSS_OBJECT_DELETE_DISK);
+		DatagramPtr dg = Datagram::create(targets, sender, DBSS_OBJECT_DELETE_DISK);
 		dg->add_doid(do_id);
 		route_datagram(dg);
 	}
 
 	// Send delete to database
-	Datagram_ptr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
+	DatagramPtr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_DELETE);
 	dg->add_doid(do_id);
 	route_datagram(dg);
 
@@ -249,7 +249,7 @@ void DBStateServer::handle_set_field(DatagramIterator &dgi)
 		m_log->trace() << "Forwarding SetField for field \"" << field->get_name()
 		              << "\" on object with id " << do_id << " to database.\n";
 
-		Datagram_ptr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
+		DatagramPtr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELD);
 		dg->add_doid(do_id);
 		dg->add_uint16(field_id);
 		dg->add_data(dgi.read_remainder());
@@ -294,7 +294,7 @@ void DBStateServer::handle_set_fields(DatagramIterator &dgi)
 	{
 		m_log->trace() << "Forwarding SetFields on object with id " << do_id << " to database.\n";
 
-		Datagram_ptr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
+		DatagramPtr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
 		dg->add_doid(do_id);
 		dg->add_uint16(db_fields.size());
 		for(auto it = db_fields.begin(); it != db_fields.end(); ++it)
@@ -323,7 +323,7 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 	const Field* field = g_dcf->get_field_by_id(field_id);
 	if(!field || !(field->has_keyword("required") || field->has_keyword("ram")))
 	{
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg->add_uint32(r_context);
 		dg->add_bool(false);
 		route_datagram(dg);
@@ -336,12 +336,12 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 		uint32_t db_context = m_next_context++;
 
 		// Prepare reponse datagram
-		Datagram_ptr dg_resp = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		DatagramPtr dg_resp = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg_resp->add_uint32(r_context);
 		m_context_datagrams[db_context] = dg_resp;
 
 		// Send query to database
-		Datagram_ptr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
+		DatagramPtr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELD);
 		dg->add_uint32(db_context);
 		dg->add_doid(r_do_id);
 		dg->add_uint16(field_id);
@@ -349,7 +349,7 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 	}
 	else if(field->has_default_value()) // Field is required and not-db
 	{
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg->add_uint32(r_context);
 		dg->add_bool(true);
 		dg->add_uint16(field_id);
@@ -358,7 +358,7 @@ void DBStateServer::handle_get_field(channel_t sender, DatagramIterator &dgi)
 	}
 	else
 	{
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELD_RESP);
 		dg->add_uint32(r_context);
 		dg->add_bool(false);
 		route_datagram(dg);
@@ -374,7 +374,7 @@ void DBStateServer::handle_get_field_resp(DatagramIterator& dgi)
 	}
 
 	// Get the datagram from the db_context
-	Datagram_ptr dg = m_context_datagrams[db_context];
+	DatagramPtr dg = m_context_datagrams[db_context];
 	m_context_datagrams.erase(db_context);
 
 	// Check to make sure the datagram is appropriate
@@ -421,7 +421,7 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
 		const Field* field = g_dcf->get_field_by_id(field_id);
 		if(!field)
 		{
-			Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
+			DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 			dg->add_uint32(r_context);
 			dg->add_uint8(false);
 			route_datagram(dg);
@@ -460,7 +460,7 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
 		}
 
 		// Send query to database
-		Datagram_ptr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELDS);
+		DatagramPtr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_FIELDS);
 		dg->add_uint32(db_context);
 		dg->add_doid(r_do_id);
 		dg->add_uint16(db_fields.size());
@@ -472,7 +472,7 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
 	}
 	else // If no database fields exist
 	{
-		Datagram_ptr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
+		DatagramPtr dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 		dg->add_uint32(r_context);
 		dg->add_bool(true);
 		dg->add_uint16(ram_fields.size());
@@ -494,7 +494,7 @@ void DBStateServer::handle_get_fields_resp(DatagramIterator& dgi)
 	}
 
 	// Get the datagram from the db_context
-	Datagram_ptr dg = m_context_datagrams[db_context];
+	DatagramPtr dg = m_context_datagrams[db_context];
 	m_context_datagrams.erase(db_context);
 
 	// Check to make sure the datagram is appropriate
@@ -539,7 +539,7 @@ void DBStateServer::handle_get_all(channel_t sender, DatagramIterator &dgi)
 	// Get context for db query, and remember caller with it
 	uint32_t db_context = m_next_context++;
 
-	Datagram_ptr resp_dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
+	DatagramPtr resp_dg = Datagram::create(sender, r_do_id, STATESERVER_OBJECT_GET_ALL_RESP);
 	resp_dg->add_uint32(r_context);
 	resp_dg->add_doid(r_do_id);
 	resp_dg->add_channel(INVALID_CHANNEL); // Location
@@ -549,7 +549,7 @@ void DBStateServer::handle_get_all(channel_t sender, DatagramIterator &dgi)
 	m_inactive_loads[r_do_id].insert(db_context);
 
 	// Send query to database
-	Datagram_ptr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
+	DatagramPtr dg = Datagram::create(m_db_channel, r_do_id, DBSERVER_OBJECT_GET_ALL);
 	dg->add_uint32(db_context);
 	dg->add_doid(r_do_id);
 	route_datagram(dg);
@@ -564,7 +564,7 @@ void DBStateServer::handle_get_all_resp(DatagramIterator& dgi)
 	}
 
 	// Get the datagram from the db_context
-	Datagram_ptr dg = m_context_datagrams[db_context];
+	DatagramPtr dg = m_context_datagrams[db_context];
 	m_context_datagrams.erase(db_context);
 
 	// Check to make sure the datagram is appropriate

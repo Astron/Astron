@@ -85,7 +85,7 @@ void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 
 	if(targets.size())
 	{
-		Datagram_ptr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
+		DatagramPtr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
 		dg->add_channel(ai_channel);
 		route_datagram(dg);
 	}

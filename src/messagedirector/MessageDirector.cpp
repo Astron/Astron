@@ -215,7 +215,7 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 		}
 
 		// Send upstream control message
-		Datagram_ptr dg = Datagram::create(CONTROL_ADD_CHANNEL);
+		DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
 		dg->add_channel(c);
 		send_datagram(dg);
 	}
@@ -262,7 +262,7 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 		}
 
 		// Send upstream control message
-		Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
+		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
 		dg->add_channel(c);
 		send_datagram(dg);
 	}
@@ -315,7 +315,7 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 		}
 
 		// Send upstream control message
-		Datagram_ptr dg = Datagram::create(CONTROL_ADD_RANGE);
+		DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
 		dg->add_channel(lo);
 		dg->add_channel(hi);
 		send_datagram(dg);
@@ -402,7 +402,7 @@ void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo,
 				hi -= 1;
 			}
 
-			Datagram_ptr dg = Datagram::create(CONTROL_REMOVE_RANGE);
+			DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
 			dg->add_channel(lo);
 			dg->add_channel(hi);
 			send_datagram(dg);

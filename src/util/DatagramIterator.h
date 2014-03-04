@@ -203,7 +203,7 @@ class DatagramIterator
 		}
 
 		// read_datagram reads a blob from the datagram and returns it as another datagram.
-		Datagram_ptr read_datagram()
+		DatagramPtr read_datagram()
 		{
 			dgsize_t length = read_size();
 			return Datagram::create(m_dg->get_data() + m_offset, length);

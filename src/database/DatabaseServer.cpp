@@ -68,7 +68,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response with generic header
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel, DBSERVER_CREATE_OBJECT_RESP);
 			resp->add_uint32(context);
 
@@ -153,7 +153,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start the reply datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_ALL_RESP);
 			resp->add_uint32(context);
 
@@ -200,7 +200,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			// Broadcast update to object's channel
 			if(m_broadcast)
 			{
-				Datagram_ptr update = Datagram::create();
+				DatagramPtr update = Datagram::create();
 				update->add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_DELETE);
 				update->add_doid(do_id);
 				route_datagram(update);
@@ -234,7 +234,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			// Broadcast update to object's channel
 			if(m_broadcast)
 			{
-				Datagram_ptr update = Datagram::create();
+				DatagramPtr update = Datagram::create();
 				update->add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_SET_FIELD);
 				update->add_doid(do_id);
 				update->add_uint16(field_id);
@@ -289,7 +289,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			if(m_broadcast)
 			{
 				// Broadcast update to object's channel
-				Datagram_ptr update = Datagram::create();
+				DatagramPtr update = Datagram::create();
 				update->add_server_header(DATABASE2OBJECT(do_id), sender,
 				                         DBSERVER_OBJECT_SET_FIELDS);
 
@@ -306,7 +306,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel,
 			                       DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP);
 			resp->add_uint32(context);
@@ -342,7 +342,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 				if(m_broadcast)
 				{
-					Datagram_ptr update = Datagram::create();
+					DatagramPtr update = Datagram::create();
 					update->add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELD);
 					update->add_doid(do_id);
@@ -368,7 +368,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel,
 			                       DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP);
 			resp->add_uint32(context);
@@ -407,7 +407,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 				if(m_broadcast)
 				{
-					Datagram_ptr update = Datagram::create();
+					DatagramPtr update = Datagram::create();
 					update->add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELD);
 					update->add_doid(do_id);
@@ -433,7 +433,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel,
 			                       DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP);
 			resp->add_uint32(context);
@@ -499,7 +499,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 				if(m_broadcast)
 				{
 					// Broadcast update to object's channel
-					Datagram_ptr update = Datagram::create();
+					DatagramPtr update = Datagram::create();
 					update->add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update->add_doid(do_id);
@@ -534,7 +534,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELD_RESP);
 			resp->add_uint32(context);
 
@@ -587,7 +587,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 			uint32_t context = dgi.read_uint32();
 
 			// Start response datagram
-			Datagram_ptr resp = Datagram::create();
+			DatagramPtr resp = Datagram::create();
 			resp->add_server_header(sender, m_control_channel, DBSERVER_OBJECT_GET_FIELDS_RESP);
 			resp->add_uint32(context);
 
@@ -684,7 +684,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 					if(m_broadcast)
 					{
-						Datagram_ptr update = Datagram::create();
+						DatagramPtr update = Datagram::create();
 						update->add_server_header(DATABASE2OBJECT(do_id), sender,
 						                         DBSERVER_OBJECT_SET_FIELD);
 						update->add_doid(do_id);
@@ -703,7 +703,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 					if(m_broadcast)
 					{
-						Datagram_ptr update = Datagram::create();
+						DatagramPtr update = Datagram::create();
 						update->add_server_header(DATABASE2OBJECT(do_id), sender,
 						                         DBSERVER_OBJECT_DELETE_FIELD);
 						update->add_doid(do_id);
@@ -787,7 +787,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 				if(m_broadcast)
 				{
-					Datagram_ptr update = Datagram::create();
+					DatagramPtr update = Datagram::create();
 					update->add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_DELETE_FIELDS);
 					update->add_doid(do_id);
@@ -809,7 +809,7 @@ void DatabaseServer::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi
 
 				if(m_broadcast)
 				{
-					Datagram_ptr update = Datagram::create();
+					DatagramPtr update = Datagram::create();
 					update->add_server_header(DATABASE2OBJECT(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update->add_doid(do_id);
