@@ -198,6 +198,7 @@ CONSTANTS = {
     'CLIENT_EJECT':                                  4,
     'CLIENT_HEARTBEAT':                              5,
     'CLIENT_OBJECT_SET_FIELD':                       120,
+    'CLIENT_OBJECT_SET_FIELDS':                      121,
     'CLIENT_OBJECT_LEAVING':                         132,
     'CLIENT_OBJECT_LEAVING_OWNER':                   161,
     'CLIENT_ENTER_OBJECT_REQUIRED':                  142,

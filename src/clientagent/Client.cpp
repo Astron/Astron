@@ -498,6 +498,22 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			}
 		}
 		break;
+		case STATESERVER_OBJECT_SET_FIELDS:
+		{
+			doid_t do_id = dgi.read_doid();
+			if(!lookup_object(do_id))
+			{
+				m_log->warning() << "Received server-side multi-field update for unknown object "
+				                 << do_id << ".\n";
+				return;
+			}
+			if(sender != m_channel)
+			{
+				uint16_t num_fields = dgi.read_uint16();
+				handle_set_fields(do_id, num_fields, dgi);
+			}
+		}
+		break;
 		case STATESERVER_OBJECT_DELETE_RAM:
 		{
 			doid_t do_id = dgi.read_doid();

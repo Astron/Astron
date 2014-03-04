@@ -176,6 +176,9 @@ class Client : public MDParticipantInterface
 		virtual void handle_set_field(doid_t do_id, uint16_t field_id,
 		                              DatagramIterator &dgi) = 0;
 
+		// handle_set_fields should inform the client that a group of fields has been updated.
+		virtual void handle_set_fields(doid_t do_id, uint16_t num_fields, DatagramIterator &dgi) = 0;
+
 		// handle_change_location should inform the client that the objects location has changed.
 		virtual void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone) = 0;
 

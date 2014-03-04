@@ -271,6 +271,17 @@ class AstronClient : public Client, public NetworkClient
 			send_datagram(resp);
 		}
 
+		// handle_set_fields should inform the client that a group of fields has been updated.
+		void handle_set_fields(doid_t do_id, uint16_t num_fields, DatagramIterator &dgi)
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_uint16(CLIENT_OBJECT_SET_FIELDS);
+			resp->add_doid(do_id);
+			resp->add_uint16(num_fields);
+			resp->add_data(dgi.read_remainder());
+			send_datagram(resp);
+		}
+
 		// handle_change_location should inform the client that the objects location has changed.
 		void handle_change_location(doid_t do_id, doid_t new_parent, zone_t new_zone)
 		{
