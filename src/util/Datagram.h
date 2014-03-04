@@ -6,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string.h> // memcpy
+#include <memory>
 #include "core/types.h"
 #include "dclass/util/byteorder.h"
 
@@ -16,6 +17,11 @@
 #endif
 
 #define DGSIZE_MAX ((dgsize_t)(-1))
+
+
+class Datagram; // foward declaration
+typedef std::shared_ptr<Datagram> DatagramPtr;
+typedef std::shared_ptr<const Datagram> DatagramHandle;
 
 // A DatagramOverflow is an exception which occurs when an add_<value> method is called which would
 // increase the size of the datagram past DGSIZE_MAX (preventing integer and buffer overflow).
@@ -41,7 +47,7 @@ class Datagram
 			{
 				std::stringstream err_str;
 				err_str << "dg tried to add data past max datagram size, buf_offset+len("
-				    << buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
+					<< buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
 				throw DatagramOverflow(err_str.str());
 			}
 
@@ -54,7 +60,6 @@ class Datagram
 				buf_cap = buf_cap + len + 64;
 			}
 		}
-	public:
 		// default-constructor:
 		//     creates a new datagram with some pre-allocated space
 		Datagram() : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
@@ -124,7 +129,7 @@ class Datagram
 		// server-header-constructor(multi-target):
 		//     creates a new datagram initialized with a server header (accepts a set of receivers)
 		Datagram(const std::set<channel_t> &to_channels, channel_t from_channel,
-		         uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
+				 uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
 		{
 			add_server_header(to_channels, from_channel, message_type);
 		}
@@ -135,6 +140,66 @@ class Datagram
 		{
 			add_control_header(message_type);
 		}
+	
+	
+	public:
+		static DatagramPtr create()
+		{
+			DatagramPtr dg_ptr(new Datagram);
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(const DatagramHandle dg)
+		{
+			DatagramPtr dg_ptr(new Datagram( *dg.get() ));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(uint8_t *data, dgsize_t length, dgsize_t capacity)
+		{
+			DatagramPtr dg_ptr(new Datagram(data, length, capacity));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(const uint8_t *data, dgsize_t length)
+		{
+			DatagramPtr dg_ptr(new Datagram(data, length));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(const std::vector<uint8_t> &data)
+		{
+			DatagramPtr dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(const std::string &data)
+		{
+			DatagramPtr dg_ptr(new Datagram(data));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(channel_t to_channel, channel_t from_channel,
+												uint16_t message_type)
+		{
+			DatagramPtr dg_ptr(new Datagram(to_channel, from_channel, message_type));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(const std::set<channel_t> &to_channels,
+												channel_t from_channel,
+												uint16_t message_type)
+		{
+			DatagramPtr dg_ptr(new Datagram(to_channels, from_channel, message_type));
+			return dg_ptr;
+		}
+		
+		static DatagramPtr create(uint16_t message_type)
+		{
+			DatagramPtr dg_ptr(new Datagram(message_type));
+			return dg_ptr;
+		}
+
 
 		// destructor
 		~Datagram()
@@ -309,13 +374,13 @@ class Datagram
 				buf_offset += length;
 			}
 		}
-		void add_data(const Datagram &dg)
+		void add_data(const DatagramHandle dg)
 		{
-			if(dg.buf_offset)
+			if(dg->buf_offset)
 			{
-				check_add_length(dg.buf_offset);
-				memcpy(buf + buf_offset, dg.buf, dg.buf_offset);
-				buf_offset += dg.buf_offset;
+				check_add_length(dg->buf_offset);
+				memcpy(buf + buf_offset, dg->buf, dg->buf_offset);
+				buf_offset += dg->buf_offset;
 			}
 		}
 

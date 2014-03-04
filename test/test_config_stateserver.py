@@ -28,7 +28,8 @@ class ConfigTest(object):
         if thread.is_alive():
             self.process.terminate()
             thread.join()
-        return self.process.returncode
+            return TERMINATED
+        return EXITED
 
 class TestConfigStateServer(unittest.TestCase):
     @classmethod

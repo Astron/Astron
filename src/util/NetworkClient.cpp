@@ -74,17 +74,17 @@ void NetworkClient::async_receive()
 	}
 }
 
-void NetworkClient::send_datagram(Datagram &dg)
+void NetworkClient::send_datagram(DatagramHandle dg)
 {
 	//TODO: make this asynch if necessary
-	dgsize_t len = swap_le(dg.size());
+	dgsize_t len = swap_le(dg->size());
 	try
 	{
 		m_socket->non_blocking(true);
 		m_socket->native_non_blocking(true);
 		std::list<boost::asio::const_buffer> gather;
 		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
-		gather.push_back(boost::asio::buffer(dg.get_data(), dg.size()));
+		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
 		m_socket->send(gather);
 	}
 	catch(std::exception&)
@@ -133,7 +133,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 		return;
 	}
 
-	Datagram dg(m_data_buf, m_data_size); // Datagram makes a copy
+	DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
 	m_is_data = false;
 	receive_datagram(dg);
 	async_receive();

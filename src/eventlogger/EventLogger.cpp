@@ -124,13 +124,13 @@ void EventLogger::write_log(const std::vector<std::string> &msg)
 	*m_file << "\r\n" << std::flush;
 }
 
-void EventLogger::process_packet(const Datagram &dg)
+void EventLogger::process_packet(const DatagramHandle dg)
 {
 	DatagramIterator dgi(dg);
 
 	std::vector<std::string> msg;
 
-	while(dgi.tell() != dg.size())
+	while(dgi.tell() != dg->size())
 	{
 		try
 		{
@@ -169,7 +169,7 @@ void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_
 	m_log.trace() << "Got packet from "
 	              << m_remote.address() << ":" << m_remote.port() << std::endl;
 
-	Datagram dg(m_buffer, bytes);
+	DatagramPtr dg = Datagram::create(m_buffer, bytes);
 	process_packet(dg);
 
 	start_receive();

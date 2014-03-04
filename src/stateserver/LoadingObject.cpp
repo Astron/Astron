@@ -47,9 +47,9 @@ void LoadingObject::begin()
 
 void LoadingObject::send_get_object(doid_t do_id)
 {
-	Datagram dg(m_dbss->m_db_channel, do_id, DBSERVER_OBJECT_GET_ALL);
-	dg.add_uint32(m_context); // Context
-	dg.add_doid(do_id);
+	DatagramPtr dg = Datagram::create(m_dbss->m_db_channel, do_id, DBSERVER_OBJECT_GET_ALL);
+	dg->add_uint32(m_context); // Context
+	dg->add_doid(do_id);
 	route_datagram(dg);
 }
 
@@ -97,7 +97,7 @@ void LoadingObject::forward_datagrams()
 	m_log->trace() << "... forwarding finished.\n";
 }
 
-void LoadingObject::handle_datagram(Datagram &in_dg, DatagramIterator &dgi)
+void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
 	/*channel_t sender =*/ dgi.read_channel(); // sender not used
 	uint16_t msgtype = dgi.read_uint16();

@@ -14,7 +14,7 @@ class StateServer : public Role
 		StateServer(RoleConfig roleconfig);
 		~StateServer();
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
 	protected:
 		LogCategory *m_log;

@@ -22,7 +22,7 @@ class DBStateServer : public StateServer
 		DBStateServer(RoleConfig roleconfig);
 		~DBStateServer();
 
-		virtual void handle_datagram(Datagram &in_dg, DatagramIterator &dgi);
+		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
 	private:
 		channel_t m_db_channel; // database control channel
@@ -33,7 +33,7 @@ class DBStateServer : public StateServer
 		// m_context_datagrams is a map of "context sent to db" to datagram response stubs to send
 		// back to the caller. It stores the data used to correctly route the response while the
 		// dbss is waiting on the db.
-		std::unordered_map<uint32_t, Datagram> m_context_datagrams;
+		std::unordered_map<uint32_t, DatagramPtr> m_context_datagrams;
 
 		std::unordered_map<doid_t, std::unordered_set<uint32_t> > m_inactive_loads;
 

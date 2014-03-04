@@ -29,7 +29,8 @@ class ConfigTest(object):
         if thread.is_alive():
             self.process.terminate()
             thread.join()
-        return self.process.returncode
+            return TERMINATED
+        return EXITED
 
 class TestConfigDBPostgres(unittest.TestCase):
     @classmethod

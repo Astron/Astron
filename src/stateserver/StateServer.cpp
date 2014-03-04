@@ -76,20 +76,22 @@ void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 	channel_t ai_channel = dgi.read_channel();
 	std::set <channel_t> targets;
 	for(auto it = m_objs.begin(); it != m_objs.end(); ++it)
+	{
 		if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set)
 		{
 			targets.insert(it->second->m_do_id);
 		}
+	}
 
 	if(targets.size())
 	{
-		Datagram dg(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
-		dg.add_channel(ai_channel);
+		DatagramPtr dg = Datagram::create(targets, sender, STATESERVER_DELETE_AI_OBJECTS);
+		dg->add_channel(ai_channel);
 		route_datagram(dg);
 	}
 }
 
-void StateServer::handle_datagram(Datagram&, DatagramIterator &dgi)
+void StateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();

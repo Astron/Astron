@@ -6,7 +6,7 @@ class NetworkClient
 {
 	public:
 		// send_datagram immediately sends the datagram over TCP (blocking).
-		virtual void send_datagram(Datagram &dg);
+		virtual void send_datagram(DatagramHandle dg);
 		// send_disconnect closes the TCP connection
 		virtual void send_disconnect();
 		// is_connected returns true if the TCP connection is active, or false otherwise
@@ -23,7 +23,7 @@ class NetworkClient
 
 		// receive_datagram is called when both a datagram's size and its data
 		//     have been received asynchronously from the network.
-		virtual void receive_datagram(Datagram &dg) = 0;
+		virtual void receive_datagram(DatagramHandle dg) = 0;
 		// receive_disconnect is called when the remote host closes the
 		//     connection or otherwise when the tcp connection is lost.
 		virtual void receive_disconnect() = 0;
