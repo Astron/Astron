@@ -533,8 +533,10 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				// the object has already been deleted and we don't want it to be deleted
 				// again in the client's destructor.
 				m_session_objects.erase(do_id);
-				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
-				                "A session object has been unexpectedly deleted.");
+
+				std::stringstream ss;
+				ss << "The session object with id " << do_id << " has been unexpectedly deleted.";
+				send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
 				return;
 			}
 
@@ -676,8 +678,10 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			{
 				if(m_session_objects.find(do_id) != m_session_objects.end())
 				{
-					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
-					                "A session object has unexpectedly left interest.");
+					std::stringstream ss;
+					ss << "The session object with id " << do_id
+					   << " has unexpectedly left interest.";
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
 					return;
 				}
 
@@ -716,8 +720,10 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			{
 				if(m_session_objects.find(do_id) != m_session_objects.end())
 				{
-					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
-					                "A session object has unexpectedly left ownership.");
+					std::stringstream ss;
+					ss << "The session object with id " << do_id
+					   << " has unexpectedly left ownership.";
+					send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
 					return;
 				}
 
