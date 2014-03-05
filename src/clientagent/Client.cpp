@@ -44,6 +44,8 @@ Client::~Client()
 		dg->add_doid(do_id);
 		route_datagram(dg);
 	}
+
+	delete m_log;
 }
 
 // log_event sends an event to the EventLogger
