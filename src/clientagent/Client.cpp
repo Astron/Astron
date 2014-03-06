@@ -266,6 +266,8 @@ void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed
 				return;
 			}
 
+			m_log->trace() << "Sending remove object to client for losing interest"
+			               " on object with id " << it->second.id << ".\n";
 			handle_remove_object(it->second.id);
 
 			m_seen_objects.erase(it->second.id);
@@ -364,6 +366,17 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			uint32_t context = m_next_context++;
 
 			uint16_t id = dgi.read_uint16();
+			auto found_i = m_interests.find(id);
+			if(found_i == m_interests.end()) {
+				m_log->error() << "Received server-side remove interest"
+				               " for unknown interest with id " << id << ".\n";
+				return;
+			}
+			else
+			{
+				m_log->trace() << "Handling server-side remove interest"
+				               " for interest with id " << id << ".\n";
+			}
 			Interest &i = m_interests[id];
 			handle_remove_interest(id, context);
 			remove_interest(i, context, sender);
@@ -542,12 +555,16 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			if(m_seen_objects.find(do_id) != m_seen_objects.end())
 			{
+				m_log->trace() << "Sending remove object to client for deleted object"
+				               " with id " << do_id << ".\n";
 				handle_remove_object(do_id);
 				m_seen_objects.erase(do_id);
 			}
 
 			if(m_owned_objects.find(do_id) != m_owned_objects.end())
 			{
+				m_log->trace() << "Sending remove ownership to client for deleted object"
+				               " with id " << do_id << ".\n";
 				handle_remove_ownership(do_id);
 				m_owned_objects.erase(do_id);
 			}
@@ -685,6 +702,8 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					return;
 				}
 
+				m_log->trace() << "Sending remove object to client for object"
+				               " changing location with id " << do_id << ".\n";
 				handle_remove_object(do_id);
 				m_seen_objects.erase(do_id);
 				m_historical_objects.insert(do_id);
@@ -748,6 +767,8 @@ void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 		return;
 	}
 
+	m_log->trace() << "Notifying caller " << caller << " of completed interest operation"
+	               " for interest with id " << interest_id << ".\n";
 	DatagramPtr resp = Datagram::create(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
 	resp->add_channel(m_channel);
 	resp->add_uint16(interest_id);
@@ -763,6 +784,8 @@ void Client::notify_interest_done(const InterestOperation* iop)
 		return;
 	}
 
+	m_log->trace() << "Notifying callers of completed interest operation"
+	               " for interest with id " << iop->m_interest_id << ".\n";
 	DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
 	resp->add_channel(m_channel);
 	resp->add_uint16(iop->m_interest_id);
