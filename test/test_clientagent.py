@@ -1031,6 +1031,12 @@ class TestClientAgent(ProtocolTest):
         # Which should cause an error
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
 
+        # Cleanup
+        self.server.flush()
+        client.close()
+        client2.close()
+
+    def test_interest_visible_only(self):
         # Send an add interest on a client agent that allows only visible on a
         # visble object (in this case an uberdog object)
         client3 = self.connect(port = 57144)
@@ -1108,10 +1114,143 @@ class TestClientAgent(ProtocolTest):
         # Which should cause an error
         self.assertDisconnect(client3, CLIENT_DISCONNECT_FORBIDDEN_INTEREST)
 
-        # Cleanup
+        # Send an add interest on a client agent that allows only visible on a
+        # visible object. Then remove visibility from that object.
+        self.server.send(Datagram.create_add_channel(10025))
+        self.server.send(Datagram.create_add_channel(990099))
+        self.server.send(Datagram.create_add_channel(0xF00BA5))
+        client3 = self.connect(port = 57144)
+        id3 = self.identify(client3, min = 220600, max = 220699)
+        self.set_state(client3, CLIENT_STATE_ESTABLISHED)
+
+        # First lets give ourselves a visible object
+        dg = Datagram.create([id3], 10025, CLIENTAGENT_ADD_INTEREST)
+        dg.add_uint16(103) # Interest id
+        dg.add_doid(990099) # Parent
+        dg.add_zone(30303) # Zone 1
+        self.server.send(dg)
+
+        # Client should have the interest forwarded back to it
+        dg = client3.recv_maybe()
+        self.assertTrue(dg is not None, "No datagram received while expecting fowarded interest.")
+        dgi = DatagramIterator(dg)
+        self.assertEquals(dgi.read_uint16(), CLIENT_ADD_INTEREST) # MsgType
+        cl_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_uint16(), 103) # Interest id
+        self.assertEquals(dgi.read_doid(), 990099) # Parent
+        self.assertEquals(dgi.read_zone(), 30303) # Zone 1
+
+        # Server should ask for the objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([990099], id3, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 990099)
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 30303) # Zone 1
+
+        # The SS replies immediately with the count, lets give at least one.
+        dg = Datagram.create([id3], 990099, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(1) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # Lets give the client its first visible object
+        dg = Datagram.create([id3], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg.add_doid(0xF00BA5) # do_id
+        dg.add_doid(990099) # parent_id
+        dg.add_zone(30303) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0x5AB00F) # setRequired1
+        self.server.send(dg)
+
+        # Does the client see it?
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(0xF00BA5) # do_id
+        dg.add_doid(990099) # parent_id
+        dg.add_zone(30303) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(0x5AB00F) # setRequired1
+        self.expect(client3, dg, isClient = True)
+
+        # So the CA should tell the client and caller the handle/context operation is done.
+        dg = Datagram.create([10025], id3, CLIENTAGENT_DONE_INTEREST_RESP)
+        dg.add_channel(id3) # Client id
+        dg.add_uint16(103)  # Interest id
+        self.expect(self.server, dg)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(cl_context) # Context
+        dg.add_uint16(103) # Interest Id
+        self.expect(client3, dg, isClient = True)
+
+        # Now lets have the client add interest to a zone on the object
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(87) # Context
+        dg.add_uint16(104) # Interest id
+        dg.add_doid(0xF00BA5) # Parent
+        dg.add_uint16(1) # Zone count
+        dg.add_zone(0x20) # Zone 1
+        client3.send(dg)
+
+        # CA, of course, asks for objects:
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([0xF00BA5], id3, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        ss_context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 0xF00BA5) # Parent
+        self.assertEquals(dgi.read_uint16(), 1) # Zone count
+        self.assertEquals(dgi.read_zone(), 0x20) # Zone #1
+
+        # Lets say first say that there are no object for simplicity.
+        dg = Datagram.create([id3], 0xF00BA5, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(ss_context)
+        dg.add_doid(0) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        # So the CA should tell the client the handle/context operation is done.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(87) # Context
+        dg.add_uint16(104) # Interest Id
+        self.expect(client3, dg, isClient = True)
+
+        # Now remove the interest
+        dg = Datagram.create([id3], 10025, CLIENTAGENT_REMOVE_INTEREST)
+        dg.add_uint16(103) # Interest id
+        self.server.send(dg)
+
+        # Now, expect the object, and interest, to be killed.
+        cl_context = None
+        expectedMsgtypes = [CLIENT_OBJECT_LEAVING, CLIENT_REMOVE_INTEREST]
+        while len(expectedMsgtypes) > 0:
+            dg = client3.recv_maybe()
+            self.assertTrue(dg is None, "No datagram received but expecting %d." % len(expectedMsgtypes))
+            msgtype = dgi.read_uint16()
+            if msgtype not in expectedMsgtypes:
+                self.fail("Received unexpected message type %d." % msgtype)
+            elif msgtype is CLIENT_OBJECT_LEAVING:
+                self.assertEquals(self.read_doid(), 0xF00BA5)
+            elif msgtype is CLIENT_REMOVE_INTEREST:
+                cl_context = dgi.read_uint32()
+                self.assertEquals(dgi.read_uint16(), 104) # Interest id
+            expectedMsgtypes.remove(msgtype)
+
+        # Lets ignore the return value to the server
         self.server.flush()
-        client.close()
-        client2.close()
+
+        # The server should say it's done being interesting...
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(cl_context) # Context
+        dg.add_uint16(104) # Interest id
+        self.expect(client3, dg, isClient = True)
+
+        self.server.flush()
         client3.close()
 
     def test_delete(self):
