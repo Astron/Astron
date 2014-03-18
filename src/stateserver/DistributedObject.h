@@ -31,7 +31,7 @@ class DistributedObject : public MDParticipantInterface
 		}
 		inline channel_t get_location() const
 		{
-			return LOCATION2CHANNEL(m_parent_id, m_zone_id);
+			return location_as_channel(m_parent_id, m_zone_id);
 		}
 		inline channel_t get_ai() const
 		{

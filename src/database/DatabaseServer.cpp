@@ -201,7 +201,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			if(m_broadcast)
 			{
 				DatagramPtr update = Datagram::create();
-				update->add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_DELETE);
+				update->add_server_header(database_to_object(do_id), sender, DBSERVER_OBJECT_DELETE);
 				update->add_doid(do_id);
 				route_datagram(update);
 			}
@@ -235,7 +235,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			if(m_broadcast)
 			{
 				DatagramPtr update = Datagram::create();
-				update->add_server_header(DATABASE2OBJECT(do_id), sender, DBSERVER_OBJECT_SET_FIELD);
+				update->add_server_header(database_to_object(do_id), sender, DBSERVER_OBJECT_SET_FIELD);
 				update->add_doid(do_id);
 				update->add_uint16(field_id);
 				update->add_data(value);
@@ -290,7 +290,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			{
 				// Broadcast update to object's channel
 				DatagramPtr update = Datagram::create();
-				update->add_server_header(DATABASE2OBJECT(do_id), sender,
+				update->add_server_header(database_to_object(do_id), sender,
 				                         DBSERVER_OBJECT_SET_FIELDS);
 
 				// Seek to doid & field-data and copy it to update
@@ -343,7 +343,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					DatagramPtr update = Datagram::create();
-					update->add_server_header(DATABASE2OBJECT(do_id), sender,
+					update->add_server_header(database_to_object(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELD);
 					update->add_doid(do_id);
 					update->add_uint16(field_id);
@@ -408,7 +408,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					DatagramPtr update = Datagram::create();
-					update->add_server_header(DATABASE2OBJECT(do_id), sender,
+					update->add_server_header(database_to_object(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELD);
 					update->add_doid(do_id);
 					update->add_uint16(field_id);
@@ -500,7 +500,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				{
 					// Broadcast update to object's channel
 					DatagramPtr update = Datagram::create();
-					update->add_server_header(DATABASE2OBJECT(do_id), sender,
+					update->add_server_header(database_to_object(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update->add_doid(do_id);
 					update->add_uint16(field_count);
@@ -685,7 +685,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					if(m_broadcast)
 					{
 						DatagramPtr update = Datagram::create();
-						update->add_server_header(DATABASE2OBJECT(do_id), sender,
+						update->add_server_header(database_to_object(do_id), sender,
 						                         DBSERVER_OBJECT_SET_FIELD);
 						update->add_doid(do_id);
 						update->add_uint16(field_id);
@@ -704,7 +704,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					if(m_broadcast)
 					{
 						DatagramPtr update = Datagram::create();
-						update->add_server_header(DATABASE2OBJECT(do_id), sender,
+						update->add_server_header(database_to_object(do_id), sender,
 						                         DBSERVER_OBJECT_DELETE_FIELD);
 						update->add_doid(do_id);
 						update->add_uint16(field_id);
@@ -788,7 +788,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					DatagramPtr update = Datagram::create();
-					update->add_server_header(DATABASE2OBJECT(do_id), sender,
+					update->add_server_header(database_to_object(do_id), sender,
 					                         DBSERVER_OBJECT_DELETE_FIELDS);
 					update->add_doid(do_id);
 					update->add_uint16(del_fields.size());
@@ -810,7 +810,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				if(m_broadcast)
 				{
 					DatagramPtr update = Datagram::create();
-					update->add_server_header(DATABASE2OBJECT(do_id), sender,
+					update->add_server_header(database_to_object(do_id), sender,
 					                         DBSERVER_OBJECT_SET_FIELDS);
 					update->add_doid(do_id);
 					update->add_uint16(set_fields.size());

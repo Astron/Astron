@@ -207,11 +207,11 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 		// Unsubscribe from the old parent's child-broadcast channel.
 		if(old_parent) // If we have an old parent
 		{
-			MessageDirector::singleton.unsubscribe_channel(this, PARENT2CHILDREN(m_parent_id));
+			MessageDirector::singleton.unsubscribe_channel(this, parent_to_children(m_parent_id));
 			// Notify old parent of changing location
 			targets.insert(old_parent);
 			// Notify old location of changing location
-			targets.insert(LOCATION2CHANNEL(old_parent, old_zone));
+			targets.insert(location_as_channel(old_parent, old_zone));
 		}
 
 		m_parent_id = new_parent;
@@ -220,7 +220,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 		// Subscribe to new one...
 		if(new_parent) // If we have a new parent
 		{
-			MessageDirector::singleton.subscribe_channel(this, PARENT2CHILDREN(m_parent_id));
+			MessageDirector::singleton.subscribe_channel(this, parent_to_children(m_parent_id));
 			if(!m_ai_explicitly_set)
 			{
 				// Ask the new parent what its AI is.
@@ -241,7 +241,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 		// Notify parent of changing zone
 		targets.insert(m_parent_id);
 		// Notify old location of changing location
-		targets.insert(LOCATION2CHANNEL(m_parent_id, old_zone));
+		targets.insert(location_as_channel(m_parent_id, old_zone));
 	}
 	else
 	{
@@ -258,7 +258,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 	// Send enter location message
 	if(new_parent)
 	{
-		send_location_entry(LOCATION2CHANNEL(new_parent, new_zone));
+		send_location_entry(location_as_channel(new_parent, new_zone));
 	}
 }
 
@@ -280,7 +280,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 	}
 	if(m_child_count)
 	{
-		targets.insert(PARENT2CHILDREN(m_do_id));
+		targets.insert(parent_to_children(m_do_id));
 	}
 
 	m_ai_channel = new_ai;
@@ -306,7 +306,7 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 	std::set<channel_t> targets;
 	if(m_parent_id)
 	{
-		targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+		targets.insert(location_as_channel(m_parent_id, m_zone_id));
 		// Leave parent on explicit delete ram
 		if(notify_parent)
 		{
@@ -340,7 +340,7 @@ void DistributedObject::delete_children(channel_t sender)
 {
 	if(m_child_count)
 	{
-		DatagramPtr dg = Datagram::create(PARENT2CHILDREN(m_do_id), sender,
+		DatagramPtr dg = Datagram::create(parent_to_children(m_do_id), sender,
 		            STATESERVER_OBJECT_DELETE_CHILDREN);
 		dg->add_doid(m_do_id);
 		route_datagram(dg);
@@ -349,7 +349,7 @@ void DistributedObject::delete_children(channel_t sender)
 
 void DistributedObject::wake_children()
 {
-	DatagramPtr dg = Datagram::create(PARENT2CHILDREN(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
+	DatagramPtr dg = Datagram::create(parent_to_children(m_do_id), m_do_id, STATESERVER_OBJECT_GET_LOCATION);
 	dg->add_uint32(STATESERVER_CONTEXT_WAKE_CHILDREN);
 	route_datagram(dg);
 }
@@ -414,7 +414,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	std::set <channel_t> targets;
 	if(field->has_keyword("broadcast"))
 	{
-		targets.insert(LOCATION2CHANNEL(m_parent_id, m_zone_id));
+		targets.insert(location_as_channel(m_parent_id, m_zone_id));
 	}
 	if(field->has_keyword("airecv") && m_ai_channel)
 	{
@@ -843,7 +843,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				uint16_t zone_count = dgi.read_uint16();
 
 				// Start datagram to relay to children
-				DatagramPtr child_dg = Datagram::create(PARENT2CHILDREN(m_do_id), sender,
+				DatagramPtr child_dg = Datagram::create(parent_to_children(m_do_id), sender,
 				                  STATESERVER_OBJECT_GET_ZONES_OBJECTS);
 				child_dg->add_uint32(context);
 				child_dg->add_doid(queried_parent);
