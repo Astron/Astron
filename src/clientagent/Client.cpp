@@ -206,7 +206,7 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 	for(auto it = new_zones.begin(); it != new_zones.end(); ++it)
 	{
 		resp->add_zone(*it);
-		subscribe_channel(LOCATION2CHANNEL(i.parent, *it));
+		subscribe_channel(location_as_channel(i.parent, *it));
 	}
 	route_datagram(resp);
 }
@@ -282,7 +282,7 @@ void Client::close_zones(doid_t parent, const std::unordered_set<zone_t> &killed
 	// Close all of the channels:
 	for(auto it = killed_zones.begin(); it != killed_zones.end(); ++it)
 	{
-		unsubscribe_channel(LOCATION2CHANNEL(parent, *it));
+		unsubscribe_channel(location_as_channel(parent, *it));
 	}
 }
 

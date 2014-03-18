@@ -1,25 +1,14 @@
 #pragma once
 #include "types.h"
 
-// Channel constants
-#define BCHAN_CLIENTS 10
-#define BCHAN_STATESERVERS 12
-#define BCHAN_DBSERVERS 13
-#define PARENT_PREFIX (channel_t(1) << ZONE_BITS)
-#define DATABASE_PREFIX (channel_t(2) << ZONE_BITS)
-
-// Location macros
-#define LOCATION2CHANNEL(p, z) ((channel_t(p) << ZONE_BITS) | channel_t(z))
-#define PARENT2CHILDREN(parent) (PARENT_PREFIX|channel_t(parent))
-#define DATABASE2OBJECT(doid) (DATABASE_PREFIX|channel_t(doid))
-
-// Message Booleans
+/* Message boolean macros */
 #define SUCCESS 1
 #define FAILURE 0
 
-// Defined context values
-#define STATESERVER_CONTEXT_WAKE_CHILDREN 1001
+/* Defined context values */
+const uint32_t STATESERVER_CONTEXT_WAKE_CHILDREN = 1001;
 
+/* Msgtype limits enum */
 enum MsgtypeRanges {
 	// Control range
 	CONTROL_MSGTYPE_MIN = 9000,
@@ -35,6 +24,7 @@ enum MsgtypeRanges {
 	DBSERVER_MSGTYPE_MAX = 3999,
 };
 
+/* Message type definitins */
 enum MessageTypes {
 	// Reserved
 	RESERVED_MSG_TYPE = 0,
