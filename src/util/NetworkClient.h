@@ -1,5 +1,7 @@
 #pragma once
 #include <boost/asio.hpp>
+#include <vector>
+#include <queue>
 #include "Datagram.h"
 
 class NetworkClient
@@ -41,11 +43,17 @@ class NetworkClient
 		virtual void receive_size(const boost::system::error_code &ec, size_t bytes_transferred);
 		// receive_data is called by _async_receive when receiving the datagram data
 		virtual void receive_data(const boost::system::error_code &ec, size_t bytes_transferred);
+	private:
+		void make_network_write_op();
+		friend class NetworkWriteOperation;
+		void async_write_done(bool success);
+		class NetworkWriteOperation *m_netwriteop;
 
+		std::queue<DatagramHandle> m_send_queue;
+		unsigned int m_send_queue_size;
+		bool m_send_in_progress;
 
 		boost::asio::ip::tcp::socket *m_socket;
-
-	private:
 
 		uint8_t m_size_buf[sizeof(dgsize_t)];
 		uint8_t* m_data_buf;

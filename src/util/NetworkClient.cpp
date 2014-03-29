@@ -5,12 +5,62 @@
 
 using boost::asio::ip::tcp;
 
+const unsigned int max_queue_size = 256*1024;
+
+class NetworkWriteOperation
+{
+	public:
+		NetworkWriteOperation(NetworkClient *nc) : m_network_client(nc)
+		{
+			std::list<boost::asio::const_buffer> gather;
+			nc->m_send_in_progress = true;
+			m_sending_handles = new DatagramHandle[nc->m_send_queue.size()];
+			unsigned int i = 0;
+			while(!nc->m_send_queue.empty())
+			{
+				DatagramHandle dg = nc->m_send_queue.front();
+				m_sending_handles[i] = dg;
+				nc->m_send_queue.pop();
+				dgsize_t len = swap_le(dg->size());
+				gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
+				gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
+				++i;
+			}
+			async_write(*nc->m_socket, gather, boost::bind(&NetworkWriteOperation::write_handler,
+				this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+		}
+
+		NetworkWriteOperation::~NetworkWriteOperation()
+		{
+			delete [] m_sending_handles;
+		}
+
+		void write_handler(const boost::system::error_code &ec, size_t bytes_transferred)
+		{
+			if(m_network_client)
+			{
+				m_network_client->async_write_done(ec.value() == 0);
+			}
+			delete this;
+		}
+
+		void network_client_deleted()
+		{
+			m_network_client = NULL;
+		}
+
+	private:
+		DatagramHandle *m_sending_handles;
+		NetworkClient *m_network_client;
+};
+
 NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0), m_is_data(false)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
-	m_data_size(0), m_is_data(false)
+	m_data_size(0), m_is_data(false), m_send_in_progress(false), m_send_queue(), 
+	m_netwriteop(NULL), m_send_queue_size(0)
 {
 	start_receive();
 }
@@ -22,6 +72,10 @@ NetworkClient::~NetworkClient()
 		m_socket->close();
 	}
 	delete m_socket;
+	if(m_netwriteop)
+	{
+		m_netwriteop->network_client_deleted();
+	}
 	delete [] m_data_buf;
 }
 
@@ -76,22 +130,16 @@ void NetworkClient::async_receive()
 
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
-	//TODO: make this asynch if necessary
-	dgsize_t len = swap_le(dg->size());
-	try
+	m_send_queue.push(dg);
+	m_send_queue_size += dg->size();
+	if(m_send_queue_size > max_queue_size)
 	{
-		m_socket->non_blocking(true);
-		m_socket->native_non_blocking(true);
-		std::list<boost::asio::const_buffer> gather;
-		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
-		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
-		m_socket->send(gather);
-	}
-	catch(std::exception&)
-	{
-		// We assume that the message just got dropped if the remote end died
-		// before we could send it.
 		send_disconnect();
+		return;
+	}
+	if(!m_send_in_progress)
+	{
+		make_network_write_op();
 	}
 }
 
@@ -139,7 +187,30 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 	async_receive();
 }
 
+void NetworkClient::make_network_write_op()
+{
+	m_send_in_progress = true;
+	m_netwriteop = new NetworkWriteOperation(this);
+}
+
 bool NetworkClient::is_connected()
 {
 	return m_socket->is_open();
+}
+
+void NetworkClient::async_write_done(bool success)
+{
+	m_netwriteop = NULL;
+	if(!success)
+	{
+		send_disconnect();
+	}
+	else if(m_send_queue.empty())
+	{
+		m_send_in_progress = false;
+	}
+	else
+	{
+		make_network_write_op();
+	}
 }
