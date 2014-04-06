@@ -2,10 +2,13 @@
 #include "NetworkClient.h"
 #include <boost/bind.hpp>
 #include <stdexcept>
+#include <config/ConfigVariable.h>
 
 using boost::asio::ip::tcp;
 
-const unsigned int max_queue_size = 256*1024;
+static ConfigGroup nc_configgroup("networkclient");
+static ConfigVariable<unsigned int> max_queue_size("max_write_queue_size", 256*1024, nc_configgroup);
+static ConfigVariable<unsigned int> write_send_timeout("write_send_timeout", 5, nc_configgroup);
 
 class NetworkWriteOperation
 {
@@ -136,14 +139,14 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 {
 	m_send_queue.push(dg);
 	m_send_queue_size += dg->size();
-	if(m_send_queue_size > max_queue_size)
+	if(m_send_queue_size > max_queue_size.get_val())
 	{
 		send_disconnect();
 		return;
 	}
 	if(!m_send_in_progress)
 	{
-		m_async_timer.expires_from_now(boost::posix_time::seconds(5));
+		m_async_timer.expires_from_now(boost::posix_time::seconds(write_send_timeout.get_val()));
 		m_async_timer.async_wait(boost::bind(&NetworkClient::async_time_expired, this, 
 			boost::asio::placeholders::error));
 		make_network_write_op();
