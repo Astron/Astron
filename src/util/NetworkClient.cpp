@@ -57,13 +57,14 @@ class NetworkWriteOperation
 		NetworkClient *m_network_client;
 };
 
-NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(NULL), 
+	m_data_buf(NULL), m_data_size(0), m_is_data(false), m_async_timer(io_service)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
 	m_data_size(0), m_is_data(false), m_send_in_progress(false), m_send_queue(), 
-	m_netwriteop(NULL), m_send_queue_size(0)
+	m_netwriteop(NULL), m_send_queue_size(0), m_async_timer(io_service)
 {
 	start_receive();
 }
@@ -142,6 +143,9 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 	}
 	if(!m_send_in_progress)
 	{
+		m_async_timer.expires_from_now(boost::posix_time::seconds(5));
+		m_async_timer.async_wait(boost::bind(&NetworkClient::async_time_expired, this, 
+			boost::asio::placeholders::error));
 		make_network_write_op();
 	}
 }
@@ -212,9 +216,18 @@ void NetworkClient::async_write_done(bool success)
 	else if(m_send_queue.empty())
 	{
 		m_send_in_progress = false;
+		m_async_timer.cancel();
 	}
 	else
 	{
 		make_network_write_op();
+	}
+}
+
+void NetworkClient::async_time_expired(const boost::system::error_code& error)
+{
+	if(error != boost::asio::error::operation_aborted)
+	{
+		send_disconnect();
 	}
 }

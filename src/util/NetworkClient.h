@@ -53,7 +53,10 @@ class NetworkClient
 		unsigned int m_send_queue_size;
 		bool m_send_in_progress;
 
+		void async_time_expired(const boost::system::error_code& error);
+
 		boost::asio::ip::tcp::socket *m_socket;
+		boost::asio::deadline_timer m_async_timer;
 
 		uint8_t m_size_buf[sizeof(dgsize_t)];
 		uint8_t* m_data_buf;
