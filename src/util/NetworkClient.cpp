@@ -15,14 +15,15 @@ class NetworkWriteOperation
 			std::list<boost::asio::const_buffer> gather;
 			nc->m_send_in_progress = true;
 			m_sending_handles = new DatagramHandle[nc->m_send_queue.size()];
+			m_dg_sizes = new dgsize_t[nc->m_send_queue.size()];
 			unsigned int i = 0;
 			while(!nc->m_send_queue.empty())
 			{
 				DatagramHandle dg = nc->m_send_queue.front();
 				m_sending_handles[i] = dg;
 				nc->m_send_queue.pop();
-				dgsize_t len = swap_le(dg->size());
-				gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
+				m_dg_sizes[i] = swap_le(dg->size());
+				gather.push_back(boost::asio::buffer((uint8_t*)(m_dg_sizes+i), sizeof(dgsize_t)));
 				gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
 				++i;
 			}
@@ -33,6 +34,7 @@ class NetworkWriteOperation
 		NetworkWriteOperation::~NetworkWriteOperation()
 		{
 			delete [] m_sending_handles;
+			delete [] m_dg_sizes;
 		}
 
 		void write_handler(const boost::system::error_code &ec, size_t bytes_transferred)
@@ -51,6 +53,7 @@ class NetworkWriteOperation
 
 	private:
 		DatagramHandle *m_sending_handles;
+		dgsize_t *m_dg_sizes;
 		NetworkClient *m_network_client;
 };
 
@@ -191,6 +194,7 @@ void NetworkClient::make_network_write_op()
 {
 	m_send_in_progress = true;
 	m_netwriteop = new NetworkWriteOperation(this);
+	m_send_queue_size = 0;
 }
 
 bool NetworkClient::is_connected()
