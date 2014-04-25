@@ -341,6 +341,8 @@ set(CONFIG_FILES
 )
 
 set(MESSAGEDIRECTOR_FILES
+	src/messagedirector/ChannelMap.cpp
+	src/messagedirector/ChannelMap.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp

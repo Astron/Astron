@@ -2,7 +2,7 @@
 #include <list>
 #include <set>
 #include <string>
-#include <unordered_map>
+#include "ChannelMap.h"
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
@@ -26,7 +26,7 @@ class MDParticipantInterface;
 // A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector : public NetworkClient
+class MessageDirector : public NetworkClient, public ChannelMap
 {
 	public:
 		// init_network causes the MessageDirector to start listening for
@@ -39,34 +39,20 @@ class MessageDirector : public NetworkClient
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
 		void route_datagram(MDParticipantInterface *p, DatagramHandle dg);
 
-		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
-		// (Args) "c": the channel to be added.
-		void subscribe_channel(MDParticipantInterface* p, channel_t c);
-
-		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
-		// (Args) "c": the channel to be removed.
-		void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
-
-		// subscribe_range handles a CONTROL_ADD_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
-
-		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
-
-		// unsubscribe_all removes all channel and range subscriptions from a participant.
-		void unsubscribe_all(MDParticipantInterface*p);
-
 		// logger returns the MessageDirector log category.
 		inline LogCategory& logger()
 		{
 			return m_log;
 		}
+	protected:
+		virtual void on_add_channel(channel_t c);
+
+		virtual void on_remove_channel(channel_t c);
+
+		virtual void on_add_range(channel_t lo, channel_t hi);
+
+		virtual void on_remove_range(channel_t lo, channel_t hi);
+
 	private:
 		MessageDirector();
 		boost::asio::ip::tcp::acceptor *m_acceptor;
@@ -76,13 +62,6 @@ class MessageDirector : public NetworkClient
 
 		// Connected participants
 		std::list<MDParticipantInterface*> m_participants;
-
-		// Single channel subscriptions
-		std::unordered_map<channel_t, std::set<MDParticipantInterface*> > m_channel_subscriptions;
-
-		// Range channel subscriptions
-		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> > m_range_subscriptions;
-
 
 		friend class MDParticipantInterface;
 		void add_participant(MDParticipantInterface* participant);
@@ -105,7 +84,7 @@ class MessageDirector : public NetworkClient
 //     DB-server, or etc. which are on the node and will be transferred
 //     internally.  Another server with its own MessageDirector also would
 //     be an MDParticipant.
-class MDParticipantInterface
+class MDParticipantInterface : public ChannelSubscriber
 {
 		friend class MessageDirector;
 
@@ -131,15 +110,6 @@ class MDParticipantInterface
 			{
 				route_datagram(*it);
 			}
-		}
-
-		inline std::set<channel_t> &channels()
-		{
-			return m_channels;
-		}
-		inline boost::icl::interval_set<channel_t> &ranges()
-		{
-			return m_ranges;
 		}
 
 	protected:
@@ -198,8 +168,6 @@ class MDParticipantInterface
 		}
 
 	private:
-		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
-		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 		std::vector<DatagramHandle> m_post_removes; // The messages to be distributed on unexpected disconnect.
 		std::string m_name;
 		std::string m_url;

@@ -53,10 +53,6 @@ MessageDirector MessageDirector::singleton;
 MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
 	m_log("msgdir", "Message Director")
 {
-	// Initialize m_range_susbcriptions with empty range
-	auto empty_set = std::set<MDParticipantInterface*>();
-	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
-	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
 }
 
 void MessageDirector::init_network()
@@ -109,31 +105,21 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
-	uint8_t channels = 0;
+	std::list<channel_t> channels;
 	DatagramIterator dgi(dg);
-	std::set<MDParticipantInterface*> receiving_participants;
+	std::set<ChannelSubscriber*> receiving_participants;
 	try
 	{
-		channels = dgi.read_uint8();
+		uint8_t channel_count = dgi.read_uint8();
 
 		// Route messages to participants
 		auto &receive_log = m_log.trace();
 		receive_log << "Receivers: ";
-		for(uint8_t i = 0; i < channels; ++i)
+		for(uint8_t i = 0; i < channel_count; ++i)
 		{
 			channel_t channel = dgi.read_channel();
 			receive_log << channel << ", ";
-			auto &subscriptions = m_channel_subscriptions[channel];
-			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
-			{
-				receiving_participants.insert(receiving_participants.end(), *it);
-			}
-
-			auto range = boost::icl::find(m_range_subscriptions, channel);
-			if(range != m_range_subscriptions.end())
-			{
-				receiving_participants.insert(range->second.begin(), range->second.end());
-			}
+			channels.push_back(channel);
 		}
 		receive_log << std::endl;
 	}
@@ -153,6 +139,8 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		return;
 	}
 
+	lookup_channels(receiving_participants, channels);
+
 	if(p)
 	{
 		receiving_participants.erase(p);
@@ -160,15 +148,16 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1 + channels * sizeof(channel_t));
+		auto participant = static_cast<MDParticipantInterface*>(*it);
+		DatagramIterator msg_dgi(dg, dgi.tell());
 		try
 		{
-			(*it)->handle_datagram(dg, msg_dgi);
+			participant->handle_datagram(dg, msg_dgi);
 		}
 		catch(DatagramIteratorEOF &)
 		{
 			// Log error with receivers output
-			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
+			m_log.error() << "Detected truncated datagram in handle_datagram for '" << participant->m_name << "'"
 			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
@@ -189,31 +178,10 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 	}
 }
 
-void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
+void MessageDirector::on_add_channel(channel_t c)
 {
-	// Check if participant is already subscribed in a range
-	if(boost::icl::find(p->ranges(), c) == p->ranges().end())
-	{
-		// If not, subscribe participant to channel
-		p->channels().insert(p->channels().end(), c);
-		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
-	}
-	// Check if should subscribe upstream...
 	if(is_client)
 	{
-		// Check if there was a previous subscription on that channel
-		if(m_channel_subscriptions[c].size() > 1)
-		{
-			return;
-		}
-
-		// Check if we are already subscribing to that channel upstream via a range
-		auto range_it = boost::icl::find(m_range_subscriptions, c);
-		if(range_it != m_range_subscriptions.end()  && !range_it->second.empty())
-		{
-			return;
-		}
-
 		// Send upstream control message
 		DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
 		dg->add_channel(c);
@@ -221,46 +189,10 @@ void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
 	}
 }
 
-void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c)
+void MessageDirector::on_remove_channel(channel_t c)
 {
-	// Unsubscribe participant from channel
-	p->channels().erase(c);
-	m_channel_subscriptions[c].erase(p);
-
-	// Check if unsubscribed channel in the middle of a range
-	auto range_it = boost::icl::find(m_range_subscriptions, c); // O(log n)
-	if(range_it != m_range_subscriptions.end())
-	{
-		auto p_it = range_it->second.find(p);
-		if(p_it != range_it->second.end())
-		{
-			// Prepare participant and range
-			std::set<MDParticipantInterface*> participant_set;
-			participant_set.insert(p);
-
-			interval_t interval = interval_t::closed(c, c);
-
-			// Split range around channel split([a,b], n) -> [a,n) (n, b]
-			m_range_subscriptions -= std::make_pair(interval, participant_set); // O(n)
-		}
-	}
-
-	// Check if should unsubscribe upstream...
 	if(is_client)
 	{
-		// Check if there are any remaining single channel subscriptions
-		if(m_channel_subscriptions[c].size() > 0)
-		{
-			return; // Don't unsubscribe upstream
-		}
-
-		// Check if the range containing the unsubscribed channel has subscribers
-		auto range = boost::icl::find(m_range_subscriptions, c);
-		if(range != m_range_subscriptions.end()  && !range->second.empty())
-		{
-			return; // Don't unsubscribe upstream
-		}
-
 		// Send upstream control message
 		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
 		dg->add_channel(c);
@@ -268,52 +200,10 @@ void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c
 	}
 }
 
-void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi)
+void MessageDirector::on_add_range(channel_t lo, channel_t hi)
 {
-	// Prepare participant and range
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	interval_t interval = interval_t::closed(lo, hi);
-
-	// Subscribe participant to range
-	p->ranges() += interval;
-	m_range_subscriptions += std::make_pair(interval, participant_set);
-
-	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for(auto it = p->channels().begin(); it != p->channels().end();)
-	{
-		auto prev = it++;
-		channel_t c = *prev;
-
-		if(lo <= c && c <= hi)
-		{
-			m_channel_subscriptions[c].erase(p);
-			p->channels().erase(prev);
-		}
-	}
-
-	// Check if should subscribe upstream...
 	if(is_client)
 	{
-		// Check how many intervals along that range are already subscribed
-		channel_t new_intervals = 0, premade_intervals = 0; // use channel_t to match max_channels
-		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
-		for(auto it = interval_range.first; it != interval_range.second; ++it)
-		{
-			++new_intervals;
-			if(it->second.size() > 1)
-			{
-				++premade_intervals;
-			}
-		}
-
-		// If all existing intervals are already subscribed, don't upstream
-		if(new_intervals == premade_intervals)
-		{
-			return;
-		}
-
 		// Send upstream control message
 		DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
 		dg->add_channel(lo);
@@ -322,109 +212,15 @@ void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, c
 	}
 }
 
-void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo, channel_t hi)
+void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 {
-	m_log.debug() << "A participant has unsubscribed from range [" << lo << ", " << hi << "].\n";
-
-	// Stash these for later
-	const interval_t first = m_range_subscriptions.begin()->first;
-	const interval_t last = m_range_subscriptions.rbegin()->first;
-
-	// Prepare participant and range
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	interval_t interval = interval_t::closed(lo, hi);
-
-	// Unsubscribe participant from range
-	p->ranges() -= interval;
-	m_range_subscriptions -= std::make_pair(interval, participant_set);
-
-	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for(auto it = p->channels().begin(); it != p->channels().end();)
-	{
-		auto prev = it++;
-		channel_t c = *prev;
-
-		if(lo <= c && c <= hi)
-		{
-			m_channel_subscriptions[c].erase(p);
-			p->channels().erase(prev);
-		}
-	}
-
-	// Check if should unsubscribe upstream...
 	if(is_client)
 	{
-		// Declare list of intervals that are no longer subscribed too
-		boost::icl::interval_set<channel_t> silent_intervals;
-
-		// If that was the last interval in m_range_subscriptions, remove it upstream
-		if(boost::icl::interval_count(m_range_subscriptions) == 0)
-		{
-			silent_intervals += first;
-		}
-		else
-		{
-			// Start with the entire range (bounded by what could exist)
-			channel_t rmin = std::max(first.lower(), lo);
-			channel_t rmax = std::min(last.upper(), hi);
-			interval_t bounded = interval_t::closed(rmin, rmax);
-			silent_intervals += bounded;
-
-			// If a range remains that intersects, don't unsubscribe from that range
-			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
-			{
-				if(boost::icl::intersects(it->first, bounded))
-				{
-					silent_intervals -= it->first;
-				}
-			}
-		}
-
-		// Send unsubscribe messages
-		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
-		{
-			m_log.debug() << "Unsubscribing from upstream range: "
-			              << int(it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
-			              << it->lower() << ", " << it->upper()
-			              << int(it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
-
-
-			channel_t lo = it->lower();
-			channel_t hi = it->upper();
-			if(!(it->bounds().bits() & BOOST_BINARY(10)))
-			{
-				lo += 1;
-			}
-			if(!(it->bounds().bits() & BOOST_BINARY(01)))
-			{
-				hi -= 1;
-			}
-
-			DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
-			dg->add_channel(lo);
-			dg->add_channel(hi);
-			send_datagram(dg);
-		}
-	}
-}
-
-void MessageDirector::unsubscribe_all(MDParticipantInterface* p)
-{
-	// Send out unsubscribe messages for indivually subscribed channels
-	auto channels = std::set<channel_t>(p->channels());
-	for(auto it = channels.begin(); it != channels.end(); ++it)
-	{
-		channel_t channel = *it;
-		unsubscribe_channel(p, channel);
-	}
-
-	// Send out unsubscribe messages for subscribed channel ranges
-	auto ranges = boost::icl::interval_set<channel_t>(p->ranges());
-	for(auto it = ranges.begin(); it != ranges.end(); ++it)
-	{
-		unsubscribe_range(p, it->lower(), it->upper());
+		// Send upstream control message
+		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
+		dg->add_channel(lo);
+		dg->add_channel(hi);
+		send_datagram(dg);
 	}
 }
 
