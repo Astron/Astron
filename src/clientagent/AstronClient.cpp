@@ -16,7 +16,9 @@ static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 static ConfigVariable<std::string> interest_permissions("add_interest", "visible", ca_client_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 
-static ConfigVariable<bool> send_hash_and_version_to_client("send_hash", false, ca_client_config);
+//set default to true
+static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
+static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
 
 static bool is_permission_level(const std::string& str)
 {
@@ -39,6 +41,7 @@ class AstronClient : public Client, public NetworkClient
 		bool m_clean_disconnect;
 		bool m_relocate_owned;
 		bool m_send_hash;
+		bool m_send_version;
 		InterestPermission m_interests_allowed;
 
 	public:
@@ -46,7 +49,8 @@ class AstronClient : public Client, public NetworkClient
 			         boost::asio::ip::tcp::socket *socket) :
 			Client(client_agent), NetworkClient(socket), m_config(config),
 			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
-			m_send_hash(send_hash_and_version_to_client.get_rval(config))
+			m_send_hash(send_hash_to_client.get_rval(config)),
+			m_send_version(send_version_to_client.get_rval(config))
 		{
 			// Set interest permissions
 			std::string permission_level = interest_permissions.get_rval(config);
@@ -346,9 +350,8 @@ class AstronClient : public Client, public NetworkClient
 			if(version != m_client_agent->get_version())
 			{
 				std::stringstream ss;
-				//ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
 				ss << "Client version mismatch: client=" << version;
-				if (m_send_hash) {
+				if (m_send_version) {
 					ss << ", server=" << m_client_agent->get_version();
 				}
 
@@ -361,7 +364,6 @@ class AstronClient : public Client, public NetworkClient
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;
-				//ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
 				ss << "Client DC hash mismatch: client=0x" << std::hex << dc_hash;
 				if (m_send_hash) {
 					ss << ", server=0x" << expected_hash;
