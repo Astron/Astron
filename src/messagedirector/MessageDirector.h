@@ -10,17 +10,6 @@
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
-// A ChannelList represents a single channel, or range of channels
-//     that a MDParticipant can be subscribed to.
-struct ChannelList
-{
-	channel_t a;
-	channel_t b;
-	bool is_range;
-	bool qualifies(channel_t channel);
-	bool operator==(const ChannelList &rhs);
-};
-
 class MDParticipantInterface;
 
 // A MessageDirector is the internal networking object for an Astron server-node.

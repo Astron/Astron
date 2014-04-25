@@ -19,34 +19,6 @@ static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
 static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 
-// Define convenience type
-typedef boost::icl::discrete_interval<channel_t> interval_t;
-
-bool ChannelList::qualifies(channel_t channel)
-{
-	if(is_range)
-	{
-		return (channel >= a && channel <= b);
-	}
-	else
-	{
-		return channel == a;
-	}
-}
-
-bool ChannelList::operator==(const ChannelList &rhs)
-{
-	if(is_range && rhs.is_range)
-	{
-		return (a == rhs.a && b == rhs.b);
-	}
-	else if(!is_range && !rhs.is_range)
-	{
-		return a == rhs.a;
-	}
-	return false;
-}
-
 MessageDirector MessageDirector::singleton;
 
 
