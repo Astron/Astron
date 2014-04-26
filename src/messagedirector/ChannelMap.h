@@ -57,10 +57,10 @@ class ChannelMap
 		bool is_subscribed(ChannelSubscriber *p, channel_t c);
 
 		// lookup_channel populates a set with the subscribers for a channel.
-		void lookup_channel(std::set<ChannelSubscriber *> &ps, channel_t c);
+		void lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps);
 
 		// lookup_channels is the same, but it works on a list of channels.
-		void lookup_channels(std::set<ChannelSubscriber *> &ps, const std::list<channel_t> &cl);
+		void lookup_channels(const std::list<channel_t> &cl, std::set<ChannelSubscriber *> &ps);
 
 	protected:
 		virtual void on_add_channel(channel_t) { }

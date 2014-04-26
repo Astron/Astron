@@ -115,7 +115,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		return;
 	}
 
-	lookup_channels(receiving_participants, channels);
+	lookup_channels(channels, receiving_participants);
 
 	if(p)
 	{

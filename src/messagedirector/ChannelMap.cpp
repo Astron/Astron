@@ -167,21 +167,21 @@ void ChannelMap::unsubscribe_all(ChannelSubscriber* p)
 bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
 {
 	std::set<ChannelSubscriber *> pset;
-	lookup_channel(pset, c);
+	lookup_channel(c, pset);
 
 	return pset.find(p) != pset.end();
 }
 
-void ChannelMap::lookup_channel(std::set<ChannelSubscriber *> &ps, channel_t c)
+void ChannelMap::lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps)
 {
 	// TODO: Faster implementation.
 	std::list<channel_t> channels;
 	channels.push_back(c);
 
-	lookup_channels(ps, channels);
+	lookup_channels(channels, ps);
 }
 
-void ChannelMap::lookup_channels(std::set<ChannelSubscriber *> &ps, const std::list<channel_t> &cl)
+void ChannelMap::lookup_channels(const std::list<channel_t> &cl, std::set<ChannelSubscriber *> &ps)
 {
 	for(auto it = cl.begin(); it != cl.end(); ++it)
 	{
