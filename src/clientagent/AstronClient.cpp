@@ -2,7 +2,7 @@
 #include "ClientMessages.h"
 #include "ClientFactory.h"
 #include "ClientAgent.h"
-#include "util/NetworkClient.h"
+#include "net/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/constraints.h"

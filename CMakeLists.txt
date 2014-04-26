@@ -352,10 +352,13 @@ set(MESSAGEDIRECTOR_FILES
 set(UTIL_FILES
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
-	src/util/NetworkClient.cpp
-	src/util/NetworkClient.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
+)
+
+set(NET_FILES
+	src/net/NetworkClient.cpp
+	src/net/NetworkClient.h
 )
 
 include_directories(src)
@@ -367,6 +370,7 @@ add_executable(astrond
 	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
+  ${NET_FILES}
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${CLIENTAGENT_FILES}

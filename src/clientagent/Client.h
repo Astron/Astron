@@ -1,5 +1,5 @@
 #pragma once
-#include "util/NetworkClient.h"
+#include "net/NetworkClient.h"
 #include "messagedirector/MessageDirector.h"
 
 #include <queue>

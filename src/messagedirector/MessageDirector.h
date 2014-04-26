@@ -6,7 +6,7 @@
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "util/NetworkClient.h"
+#include "net/NetworkClient.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
@@ -61,8 +61,6 @@ class MessageDirector : public NetworkClient, public ChannelMap
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
 		virtual void receive_datagram(DatagramHandle dg);
 		virtual void receive_disconnect();
-
-
 };
 
 
