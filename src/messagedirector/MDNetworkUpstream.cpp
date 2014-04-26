@@ -1,5 +1,6 @@
 #include "MDNetworkUpstream.h"
 #include "MessageDirector.h"
+#include "net/NetworkConnector.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
 
@@ -13,26 +14,14 @@ MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
 
 boost::system::error_code MDNetworkUpstream::connect(const std::string &address)
 {
-	std::string str_ip = address;
-	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-	str_ip = str_ip.substr(0, str_ip.find(':', 0));
-
-	tcp::resolver resolver(io_service);
-	tcp::resolver::query query(str_ip, str_port);
-	tcp::resolver::iterator it = resolver.resolve(query);
-
-	tcp::socket* remote_md = new tcp::socket(io_service);
-
+	NetworkConnector connector(io_service);
 	boost::system::error_code ec;
-	remote_md->connect(*it, ec);
+	tcp::socket *socket = connector.connect(address, 7199, ec);
 
-	if(ec.value() != 0)
+	if(socket)
 	{
-		delete remote_md;
-		return ec;
+		set_socket(socket);
 	}
-
-	set_socket(remote_md);
 
 	return ec;
 }

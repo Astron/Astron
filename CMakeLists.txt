@@ -361,6 +361,8 @@ set(UTIL_FILES
 set(NET_FILES
 	src/net/NetworkClient.cpp
 	src/net/NetworkClient.h
+	src/net/NetworkConnector.cpp
+	src/net/NetworkConnector.h
 )
 
 include_directories(src)
