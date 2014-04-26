@@ -6,7 +6,7 @@
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "net/NetworkClient.h"
+#include "net/NetworkAcceptor.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
@@ -50,7 +50,7 @@ class MessageDirector : public ChannelMap
 
 	private:
 		MessageDirector();
-		boost::asio::ip::tcp::acceptor *m_acceptor;
+		NetworkAcceptor *m_net_acceptor;
 		bool m_initialized;
 		LogCategory m_log;
 
@@ -64,8 +64,7 @@ class MessageDirector : public ChannelMap
 		void remove_participant(MDParticipantInterface* participant);
 
 		// I/O OPERATIONS
-		void start_accept(); // Accept new connections from downstream
-		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
+		void handle_connection(boost::asio::ip::tcp::socket *socket);
 };
 
 

@@ -5,7 +5,7 @@
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <functional>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp;
 
@@ -22,7 +22,7 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_upstream(NULL), m_initialized(false),
+MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_initialized(false),
 	m_log("msgdir", "Message Director")
 {
 }
@@ -35,14 +35,22 @@ void MessageDirector::init_network()
 		if(bind_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
-			std::string str_ip = bind_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-			str_ip = str_ip.substr(0, str_ip.find(':', 0));
-			tcp::resolver resolver(io_service);
-			tcp::resolver::query query(str_ip, str_port);
-			tcp::resolver::iterator it = resolver.resolve(query);
-			m_acceptor = new tcp::acceptor(io_service, *it, true);
-			start_accept();
+
+			AcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
+			                                      this, std::placeholders::_1);
+			m_net_acceptor = new NetworkAcceptor(io_service, callback);
+			boost::system::error_code ec;
+			ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
+			if(ec.value() != 0)
+			{
+				m_log.fatal() << "Could not bind listening port: "
+				              << bind_addr.get_val() << std::endl;
+				m_log.fatal() << "Error code: " << ec.value()
+				              << "(" << ec.category().message(ec.value()) << ")"
+				              << std::endl;
+				exit(1);
+			}
+			m_net_acceptor->start();
 		}
 
 		// Connect to upstream server and start handling received messages
@@ -182,37 +190,13 @@ void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 	}
 }
 
-void MessageDirector::start_accept()
+void MessageDirector::handle_connection(tcp::socket *socket)
 {
-	tcp::socket *socket = new tcp::socket(io_service);
-	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept,
-	                         this, socket, boost::asio::placeholders::error));
-}
-
-void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
-{
-	// TODO: We should probably accept the error code and maybe do something about it
-
 	boost::asio::ip::tcp::endpoint remote;
-	try
-	{
-		remote = socket->remote_endpoint();
-	}
-	catch (std::exception &)
-	{
-		// A client might disconnect immediately after connecting.
-		// If this happens, do nothing. Resolves #122.
-		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-		// is_open() == true, so we just catch the exception on remote_endpoint
-		// instead.
-		start_accept();
-		return;
-	}
+	remote = socket->remote_endpoint();
 	m_log.info() << "Got an incoming connection from "
 	             << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); // It deletes itself when connection is lost
-	start_accept();
 }
 
 void MessageDirector::add_participant(MDParticipantInterface* p)

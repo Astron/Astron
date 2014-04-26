@@ -359,6 +359,8 @@ set(UTIL_FILES
 )
 
 set(NET_FILES
+	src/net/NetworkAcceptor.cpp
+	src/net/NetworkAcceptor.h
 	src/net/NetworkClient.cpp
 	src/net/NetworkClient.h
 	src/net/NetworkConnector.cpp
