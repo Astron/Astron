@@ -347,6 +347,8 @@ set(MESSAGEDIRECTOR_FILES
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
 	src/messagedirector/MDNetworkParticipant.h
+	src/messagedirector/MDNetworkUpstream.cpp
+	src/messagedirector/MDNetworkUpstream.h
 )
 
 set(UTIL_FILES

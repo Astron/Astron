@@ -11,11 +11,12 @@
 #include <boost/icl/interval_map.hpp>
 
 class MDParticipantInterface;
+class MDUpstream;
 
 // A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector : public NetworkClient, public ChannelMap
+class MessageDirector : public ChannelMap
 {
 	public:
 		// init_network causes the MessageDirector to start listening for
@@ -33,6 +34,11 @@ class MessageDirector : public NetworkClient, public ChannelMap
 		{
 			return m_log;
 		}
+
+		// For MDUpstream (and subclasses) to call.
+		void receive_datagram(DatagramHandle dg);
+		void receive_disconnect();
+
 	protected:
 		virtual void on_add_channel(channel_t c);
 
@@ -46,8 +52,9 @@ class MessageDirector : public NetworkClient, public ChannelMap
 		MessageDirector();
 		boost::asio::ip::tcp::acceptor *m_acceptor;
 		bool m_initialized;
-		bool is_client;
 		LogCategory m_log;
+
+		MDUpstream *m_upstream;
 
 		// Connected participants
 		std::list<MDParticipantInterface*> m_participants;
@@ -59,8 +66,6 @@ class MessageDirector : public NetworkClient, public ChannelMap
 		// I/O OPERATIONS
 		void start_accept(); // Accept new connections from downstream
 		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void receive_datagram(DatagramHandle dg);
-		virtual void receive_disconnect();
 };
 
 
@@ -159,4 +164,17 @@ class MDParticipantInterface : public ChannelSubscriber
 		std::string m_name;
 		std::string m_url;
 
+};
+
+// This class abstractly represents an "upstream" link on the Message Director.
+// All messages routed on the Message Director will be sent to the upstream link,
+// except for messages that originated on the link to begin with.
+class MDUpstream
+{
+	public:
+		virtual void subscribe_channel(channel_t c) = 0;
+		virtual void unsubscribe_channel(channel_t c) = 0;
+		virtual void subscribe_range(channel_t lo, channel_t hi) = 0;
+		virtual void unsubscribe_range(channel_t lo, channel_t hi) = 0;
+		virtual void handle_datagram(DatagramHandle dg) = 0;
 };

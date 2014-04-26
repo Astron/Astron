@@ -1,7 +1,7 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
+#include "MDNetworkUpstream.h"
 #include "core/global.h"
-#include "core/msgtypes.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
 #include <algorithm>
@@ -22,7 +22,7 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
+MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false),
 	m_log("msgdir", "Message Director")
 {
 }
@@ -49,15 +49,11 @@ void MessageDirector::init_network()
 		if(connect_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
-			std::string str_ip = connect_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-			str_ip = str_ip.substr(0, str_ip.find(':', 0));
-			tcp::resolver resolver(io_service);
-			tcp::resolver::query query(str_ip, str_port);
-			tcp::resolver::iterator it = resolver.resolve(query);
-			tcp::socket* remote_md = new tcp::socket(io_service);
+
+			MDNetworkUpstream *upstream = new MDNetworkUpstream(this);
+
 			boost::system::error_code ec;
-			remote_md->connect(*it, ec);
+			upstream->connect(connect_addr.get_val());
 			if(ec.value() != 0)
 			{
 				m_log.fatal() << "Could not connect to remote MD at IP: "
@@ -67,8 +63,8 @@ void MessageDirector::init_network()
 				              << std::endl;
 				exit(1);
 			}
-			set_socket(remote_md);
-			is_client = true;
+
+			m_upstream = upstream;
 		}
 	}
 }
@@ -135,9 +131,9 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		}
 	}
 
-	if(p && is_client)  // Send message upstream
+	if(p && m_upstream)  // Send message upstream
 	{
-		send_datagram(dg);
+		m_upstream->handle_datagram(dg);
 		m_log.trace() << "...routing upstream." << std::endl;
 	}
 	else if(!p) // If there is no participant, then it came from the upstream
@@ -152,47 +148,37 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 
 void MessageDirector::on_add_channel(channel_t c)
 {
-	if(is_client)
+	if(m_upstream)
 	{
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
-		dg->add_channel(c);
-		send_datagram(dg);
+		m_upstream->subscribe_channel(c);
 	}
 }
 
 void MessageDirector::on_remove_channel(channel_t c)
 {
-	if(is_client)
+	if(m_upstream)
 	{
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
-		dg->add_channel(c);
-		send_datagram(dg);
+		m_upstream->unsubscribe_channel(c);
 	}
 }
 
 void MessageDirector::on_add_range(channel_t lo, channel_t hi)
 {
-	if(is_client)
+	if(m_upstream)
 	{
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
-		dg->add_channel(lo);
-		dg->add_channel(hi);
-		send_datagram(dg);
+		m_upstream->subscribe_range(lo, hi);
 	}
 }
 
 void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 {
-	if(is_client)
+	if(m_upstream)
 	{
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
-		dg->add_channel(lo);
-		dg->add_channel(hi);
-		send_datagram(dg);
+		m_upstream->unsubscribe_range(lo, hi);
 	}
 }
 
