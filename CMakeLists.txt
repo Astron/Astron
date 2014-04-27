@@ -341,19 +341,30 @@ set(CONFIG_FILES
 )
 
 set(MESSAGEDIRECTOR_FILES
+	src/messagedirector/ChannelMap.cpp
+	src/messagedirector/ChannelMap.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
 	src/messagedirector/MDNetworkParticipant.h
+	src/messagedirector/MDNetworkUpstream.cpp
+	src/messagedirector/MDNetworkUpstream.h
 )
 
 set(UTIL_FILES
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
-	src/util/NetworkClient.cpp
-	src/util/NetworkClient.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
+)
+
+set(NET_FILES
+	src/net/NetworkAcceptor.cpp
+	src/net/NetworkAcceptor.h
+	src/net/NetworkClient.cpp
+	src/net/NetworkClient.h
+	src/net/NetworkConnector.cpp
+	src/net/NetworkConnector.h
 )
 
 include_directories(src)
@@ -365,6 +376,7 @@ add_executable(astrond
 	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
+  ${NET_FILES}
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${CLIENTAGENT_FILES}
