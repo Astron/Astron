@@ -7,7 +7,7 @@ find_package(PythonInterp)
 if(PYTHONINTERP_FOUND)
 	enable_testing()
 	if(PYTHON_VERSION_MAJOR EQUAL 2)
-		set(PYTHON2_EXECUTABLE  ${PYTHON2_EXECUTABLE} )
+		set(PYTHON2_EXECUTABLE "${PYTHON_EXECUTABLE}")
 	else()
 		set(PYTHON2_EXECUTABLE python2)
 	endif()
@@ -30,12 +30,12 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
 	RelWithDebInfo Release Debug)
 
 ### Define astron’s git aha for use in program ###
-if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	find_package(Git)
 	if(GIT_FOUND)
 		exec_program(
-			${GIT_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}
+			"${GIT_EXECUTABLE}"
+			"${CMAKE_CURRENT_SOURCE_DIR}"
 			ARGS "describe --abbrev=8 --dirty --always"
 			OUTPUT_VARIABLE GIT_SHA_VERSION
 		)
@@ -73,7 +73,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	execute_process(COMMAND "${CMAKE_C_COMPILER}" -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	message(STATUS "GCC Version: ${GCC_VERSION}")
 	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
 		add_definitions(-std=c++11) # Enable the new C++ standard
@@ -182,8 +182,8 @@ if(BUILD_DBSERVER)
 			${DBSERVER_FILES}
 			src/database/YAMLDatabase.cpp
 		)
-		add_test(db_yaml ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py)
-		add_test(validate_config_dbyaml ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py)
+		add_test(db_yaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py")
+		add_test(validate_config_dbyaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py")
 		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
 	endif()
 
@@ -241,9 +241,9 @@ if(BUILD_DBSERVER)
 			set(SOCI_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
 				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
-				add_test(db_pgsql  ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py)
+				add_test(db_pgsql "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
 				add_test(validate_config_dbpostgres
-					 ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py)
+					 "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
 				set(PYTHON_TESTS ${PYTHON_TESTS} db_pgsql validate_config_dbpostgres)
 			endif()
 		endif()
@@ -270,8 +270,8 @@ if(BUILD_STATESERVER)
 		src/stateserver/DistributedObject.cpp
 		src/stateserver/DistributedObject.h
 	)
-	add_test(stateserver ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_stateserver.py)
-	add_test(validate_config_stateserver ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py)
+	add_test(stateserver "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_stateserver.py")
+	add_test(validate_config_stateserver "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_stateserver.py")
 	set(PYTHON_TESTS ${PYTHON_TESTS} stateserver validate_config_stateserver)
 
 	set(BUILD_STATESERVER_DBSS ON CACHE BOOL "If on, the Database-State Server will be built into binary")
@@ -283,8 +283,8 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.h
 			src/stateserver/LoadingObject.cpp
 		)
-		add_test(dbss ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_dbss.py)
-		add_test(validate_config_dbss ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_dbss.py)
+		add_test(dbss "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbss.py")
+		add_test(validate_config_dbss "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbss.py")
 		set(PYTHON_TESTS ${PYTHON_TESTS} dbss validate_config_dbss)
 	endif()
 else()
@@ -297,7 +297,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
-	add_test(validate_config_eventlogger ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py)
+	add_test(validate_config_eventlogger "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py")
 endif()
 
 set(BUILD_CLIENTAGENT ON CACHE BOOL "If on, Client Agent will be built into binary")
@@ -312,8 +312,8 @@ if(BUILD_CLIENTAGENT)
 		src/clientagent/ClientFactory.h
 		src/clientagent/AstronClient.cpp
 	)
-	add_test(clientagent ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_clientagent.py)
-	add_test(validate_config_clientagent ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py)
+	add_test(clientagent "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_clientagent.py")
+	add_test(validate_config_clientagent "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_clientagent.py")
 	set(PYTHON_TESTS ${PYTHON_TESTS} clientagent validate_config_clientagent)
 endif()
 
@@ -341,30 +341,42 @@ set(CONFIG_FILES
 )
 
 set(MESSAGEDIRECTOR_FILES
+	src/messagedirector/ChannelMap.cpp
+	src/messagedirector/ChannelMap.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
 	src/messagedirector/MDNetworkParticipant.h
+	src/messagedirector/MDNetworkUpstream.cpp
+	src/messagedirector/MDNetworkUpstream.h
 )
 
 set(UTIL_FILES
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
-	src/util/NetworkClient.cpp
-	src/util/NetworkClient.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
 )
 
+set(NET_FILES
+	src/net/NetworkAcceptor.cpp
+	src/net/NetworkAcceptor.h
+	src/net/NetworkClient.cpp
+	src/net/NetworkClient.h
+	src/net/NetworkConnector.cpp
+	src/net/NetworkConnector.h
+)
+
 include_directories(src)
-add_test(validate_config_core ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_config.py)
-add_test(messagedirector ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/test/test_messagedirector.py)
+add_test(validate_config_core "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config.py")
+add_test(messagedirector "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_messagedirector.py")
 set(PYTHON_TESTS ${PYTHON_TESTS} messagedirector)
 add_executable(astrond
 	${CORE_FILES}
 	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
+  ${NET_FILES}
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${CLIENTAGENT_FILES}

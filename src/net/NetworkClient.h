@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/asio.hpp>
-#include "Datagram.h"
+#include "util/Datagram.h"
 
 class NetworkClient
 {

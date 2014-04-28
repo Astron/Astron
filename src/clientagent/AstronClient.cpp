@@ -2,7 +2,7 @@
 #include "ClientMessages.h"
 #include "ClientFactory.h"
 #include "ClientAgent.h"
-#include "util/NetworkClient.h"
+#include "net/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/constraints.h"
@@ -15,6 +15,11 @@ using dclass::Field;
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 static ConfigVariable<std::string> interest_permissions("add_interest", "visible", ca_client_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
+
+//set default to true
+static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
+static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+
 static bool is_permission_level(const std::string& str)
 {
 	return (str == "visible" || str == "disabled" || str == "enabled");
@@ -35,13 +40,17 @@ class AstronClient : public Client, public NetworkClient
 		ConfigNode m_config;
 		bool m_clean_disconnect;
 		bool m_relocate_owned;
+		bool m_send_hash;
+		bool m_send_version;
 		InterestPermission m_interests_allowed;
 
 	public:
 		AstronClient(ConfigNode config, ClientAgent* client_agent,
 			         boost::asio::ip::tcp::socket *socket) :
 			Client(client_agent), NetworkClient(socket), m_config(config),
-			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config))
+			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
+			m_send_hash(send_hash_to_client.get_rval(config)),
+			m_send_version(send_version_to_client.get_rval(config))
 		{
 			// Set interest permissions
 			std::string permission_level = interest_permissions.get_rval(config);
@@ -341,8 +350,13 @@ class AstronClient : public Client, public NetworkClient
 			if(version != m_client_agent->get_version())
 			{
 				std::stringstream ss;
-				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
+				ss << "Client version mismatch: client=" << version;
+				if (m_send_version) {
+					ss << ", server=" << m_client_agent->get_version();
+				}
+
 				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
+
 				return;
 			}
 
@@ -350,7 +364,10 @@ class AstronClient : public Client, public NetworkClient
 			if(dc_hash != expected_hash)
 			{
 				std::stringstream ss;
-				ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
+				ss << "Client DC hash mismatch: client=0x" << std::hex << dc_hash;
+				if (m_send_hash) {
+					ss << ", server=0x" << expected_hash;
+				}
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
 				return;
 			}
