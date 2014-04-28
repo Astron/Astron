@@ -27,6 +27,14 @@ MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_i
 {
 }
 
+MessageDirector::~MessageDirector()
+{
+	for(auto it = m_participants.begin(); it != m_participants.end(); ++it) {
+		delete *it;
+	}
+	m_participants.clear();
+}
+
 void MessageDirector::init_network()
 {
 	if(!m_initialized)

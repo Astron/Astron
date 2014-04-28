@@ -19,6 +19,8 @@ class MDUpstream;
 class MessageDirector : public ChannelMap
 {
 	public:
+		~MessageDirector();
+
 		// init_network causes the MessageDirector to start listening for
 		//     messages if it hasn't already been initialized.
 		void init_network();
