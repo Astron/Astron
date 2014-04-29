@@ -14,6 +14,7 @@ static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 static ValidAddressConstraint valid_connect_addr(connect_addr);
+static ConfigVariable<bool> threaded_mode("threaded", true, md_config);
 
 static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
@@ -23,8 +24,13 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_initialized(false),
-	m_log("msgdir", "Message Director")
+	m_thread(NULL), m_log("msgdir", "Message Director")
 {
+}
+
+MessageDirector::~MessageDirector()
+{
+	shutdown_threading();
 }
 
 void MessageDirector::init_network()
@@ -74,10 +80,84 @@ void MessageDirector::init_network()
 
 			m_upstream = upstream;
 		}
+
+		if(threaded_mode.get_val())
+		{
+			m_thread = new std::thread(std::bind(&MessageDirector::routing_thread, this));
+		}
+
+		m_initialized = true;
 	}
 }
 
+void MessageDirector::shutdown_threading()
+{
+	if(!m_thread)
+	{
+		return;
+	}
+
+	// Signal routing thread to shut down:
+	{
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+		m_shutdown = true;
+		m_cv.notify_one();
+	}
+
+	// Wait for it to do so:
+	m_thread->join();
+	delete m_thread;
+}
+
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
+{
+	if(!m_thread)
+	{
+		// We aren't working in threaded mode, so we can simply process this in
+		// the current thread.
+		process_datagram(p, dg);
+	}
+	else
+	{
+		// Threaded mode! First, we have to get the lock to our queue:
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+
+		// Now, we put the message into our queue and ring the bell:
+		m_messages.push(std::make_pair(p, dg));
+		m_cv.notify_one();
+	}
+}
+
+// This function runs in a thread; it loops until it's told to shut down:
+void MessageDirector::routing_thread()
+{
+	std::unique_lock<std::mutex> lock(m_messages_lock);
+
+	while(true)
+	{
+		// Wait for something interesting to handle...
+		while(m_messages.empty() && !m_shutdown)
+		{
+			m_cv.wait(lock);
+		}
+
+		if(m_shutdown)
+		{
+			// Ehh, we've been told to shut off:
+			return;
+		}
+
+		// Get and process the message:
+		auto msg = m_messages.front();
+		m_messages.pop();
+
+		lock.unlock();
+		process_datagram(msg.first, msg.second);
+		lock.lock();
+	}
+}
+
+void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
@@ -89,7 +169,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		uint8_t channel_count = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &receive_log = m_log.trace();
+		auto receive_log = m_log.trace();
 		receive_log << "Receivers: ";
 		for(uint8_t i = 0; i < channel_count; ++i)
 		{
@@ -141,6 +221,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 
 	if(p && m_upstream)  // Send message upstream
 	{
+		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		m_upstream->handle_datagram(dg);
 		m_log.trace() << "...routing upstream." << std::endl;
 	}
@@ -158,6 +239,7 @@ void MessageDirector::on_add_channel(channel_t c)
 {
 	if(m_upstream)
 	{
+		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->subscribe_channel(c);
 	}
@@ -167,6 +249,7 @@ void MessageDirector::on_remove_channel(channel_t c)
 {
 	if(m_upstream)
 	{
+		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->unsubscribe_channel(c);
 	}
@@ -176,6 +259,7 @@ void MessageDirector::on_add_range(channel_t lo, channel_t hi)
 {
 	if(m_upstream)
 	{
+		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->subscribe_range(lo, hi);
 	}
@@ -185,6 +269,7 @@ void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 {
 	if(m_upstream)
 	{
+		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->unsubscribe_range(lo, hi);
 	}

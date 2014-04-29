@@ -2,6 +2,10 @@
 #include <list>
 #include <set>
 #include <string>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include "ChannelMap.h"
 #include "core/Logger.h"
 #include "util/Datagram.h"
@@ -50,6 +54,8 @@ class MessageDirector : public ChannelMap
 
 	private:
 		MessageDirector();
+		~MessageDirector();
+
 		NetworkAcceptor *m_net_acceptor;
 		bool m_initialized;
 		LogCategory m_log;
@@ -58,6 +64,18 @@ class MessageDirector : public ChannelMap
 
 		// Connected participants
 		std::list<MDParticipantInterface*> m_participants;
+
+		// Threading stuff:
+		bool m_shutdown;
+		std::thread *m_thread;
+		std::mutex m_participants_lock;
+		std::mutex m_messages_lock;
+		std::mutex m_upstream_lock;
+		std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
+		std::condition_variable m_cv;
+		void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
+		void routing_thread();
+		void shutdown_threading();
 
 		friend class MDParticipantInterface;
 		void add_participant(MDParticipantInterface* participant);
