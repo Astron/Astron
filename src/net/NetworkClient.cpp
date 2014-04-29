@@ -19,6 +19,7 @@ NetworkClient::~NetworkClient()
 {
 	if(m_socket)
 	{
+		std::lock_guard<std::recursive_mutex> lock(m_lock);
 		m_socket->close();
 	}
 	delete m_socket;
@@ -27,6 +28,7 @@ NetworkClient::~NetworkClient()
 
 void NetworkClient::set_socket(tcp::socket *socket)
 {
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	if(m_socket)
 	{
 		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
@@ -49,6 +51,7 @@ void NetworkClient::start_receive()
 
 void NetworkClient::async_receive()
 {
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	try
 	{
 		if(m_is_data) // Read data
@@ -76,6 +79,7 @@ void NetworkClient::async_receive()
 
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	//TODO: make this asynch if necessary
 	dgsize_t len = swap_le(dg->size());
 	try
@@ -97,6 +101,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 void NetworkClient::send_disconnect()
 {
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	m_socket->close();
 }
 
@@ -141,5 +146,6 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 
 bool NetworkClient::is_connected()
 {
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	return m_socket->is_open();
 }
