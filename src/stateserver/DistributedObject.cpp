@@ -15,7 +15,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
                                      bool has_other) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
+	m_ai_explicitly_set(false), m_next_context(0)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -65,7 +65,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
                                      std::map<const Field*, std::vector<uint8_t> > ram) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-	m_ai_explicitly_set(false), m_next_context(0), m_child_count(0)
+	m_ai_explicitly_set(false), m_next_context(0)
 {
 	std::stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
@@ -278,8 +278,9 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 	{
 		targets.insert(old_ai);
 	}
-	if(m_child_count)
+	if(!m_zone_objects.empty())
 	{
+		// We have at least one child, so we want to notify the children as well
 		targets.insert(parent_to_children(m_do_id));
 	}
 
@@ -338,8 +339,9 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 
 void DistributedObject::delete_children(channel_t sender)
 {
-	if(m_child_count)
+	if(!m_zone_objects.empty())
 	{
+		// We have at least one child, so we want to notify the children as well
 		DatagramPtr dg = Datagram::create(parent_to_children(m_do_id), sender,
 		            STATESERVER_OBJECT_DELETE_CHILDREN);
 		dg->add_doid(m_do_id);
@@ -622,26 +624,31 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			zone_t r_zone = dgi.read_zone();
 			if(new_parent == m_do_id)
 			{
-				if(new_parent != r_do_id)
-				{
-					m_child_count++;
-				}
-				else
+				if(m_do_id == r_do_id)
 				{
 					if(new_zone == r_zone)
 					{
 						break; // No change, so do nothing.
 					}
 
-					m_zone_count[r_zone] = m_zone_count[r_zone] - 1;
+					auto children = m_zone_objects[r_zone];
+					children.erase(child_id);
+					if(children.empty())
+					{
+						m_zone_objects.erase(r_zone);
+					}
 				}
 
-				m_zone_count[new_zone] = m_zone_count[new_zone] + 1;
+				m_zone_objects[new_zone].insert(child_id);
 			}
 			else if(r_do_id == m_do_id)
 			{
-				m_zone_count[r_zone] = m_zone_count[r_zone] - 1;
-				m_child_count--;
+				auto children = m_zone_objects[r_zone];
+				children.erase(child_id);
+				if(children.empty())
+				{
+					m_zone_objects.erase(r_zone);
+				}
 			}
 			else
 			{
@@ -687,8 +694,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                 break;
 			}
 
-			// Discard do_id
-			dgi.skip(sizeof(doid_t));
+			// Get DOID of our child
+			doid_t doid = dgi.read_doid();
 
 			// Get location
 			doid_t r_parent = dgi.read_doid();
@@ -697,8 +704,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			// Update the child count
 			if(r_parent == m_do_id)
 			{
-				m_child_count += 1;
-				m_zone_count[r_zone] += 1;
+				m_zone_objects[r_zone].insert(doid);
 			}
 			break;
 		}
@@ -853,7 +859,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				for(int i = 0; i < zone_count; ++i)
 				{
 					zone_t zone = dgi.read_zone();
-					child_count += m_zone_count[zone];
+					child_count += m_zone_objects[zone].size();
 					child_dg->add_zone(zone);
 				}
 
