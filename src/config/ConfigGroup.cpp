@@ -198,7 +198,7 @@ bool KeyedConfigList::validate(ConfigNode node)
 
 void KeyedConfigList::print_keys()
 {
-	ostream& out = config_log.info();
+	auto out = config_log.info();
 	out << "Expected value in '" << m_name << "',\n"
 	    << "    Candidates for attribute '" << m_key << "' are:\n";
 	for(auto it = m_children.begin(); it != m_children.end(); ++it)

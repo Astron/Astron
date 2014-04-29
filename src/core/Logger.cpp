@@ -21,13 +21,14 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_null
 }
 
 // log returns an output stream for C++ style stream operations.
-std::ostream &Logger::log(LogSeverity sev)
+LockedLogOutput Logger::log(LogSeverity sev)
 {
 	const char *sevtext;
 
 	if(sev < m_severity)
 	{
-		return m_null;
+		LockedLogOutput null_out(m_null, NULL);
+		return null_out;
 	}
 
 	switch(sev)
@@ -63,8 +64,9 @@ std::ostream &Logger::log(LogSeverity sev)
 	char timetext[1024];
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
-	m_output << "[" << timetext << "] " << sevtext << ": ";
-	return m_output;
+	LockedLogOutput out(m_output, &m_lock);
+	out << "[" << timetext << "] " << sevtext << ": ";
+	return out;
 }
 
 // set_min_serverity sets the lowest severity that will be output to the log.
