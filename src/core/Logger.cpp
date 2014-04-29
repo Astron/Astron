@@ -8,14 +8,14 @@ NullStream null_stream; // used to print nothing by compiling out the unwanted m
 NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messages
 
 Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output) :
-	m_buf(log_file, console_output), m_severity(sev), m_output(&m_buf), m_null(&null_buffer)
+	m_buf(log_file, console_output), m_severity(sev), m_output(&m_buf)
 {	
 }
 
 #ifdef ASTRON_DEBUG_MESSAGES
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_null(&null_buffer)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf)
 #else
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_null(&null_buffer)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf)
 #endif
 {
 }
@@ -27,7 +27,7 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
 	if(sev < m_severity)
 	{
-		LockedLogOutput null_out(m_null, NULL);
+		LockedLogOutput null_out(NULL, NULL);
 		return null_out;
 	}
 
@@ -64,7 +64,7 @@ LockedLogOutput Logger::log(LogSeverity sev)
 	char timetext[1024];
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
-	LockedLogOutput out(m_output, &m_lock);
+	LockedLogOutput out(&m_output, &m_lock);
 	out << "[" << timetext << "] " << sevtext << ": ";
 	return out;
 }

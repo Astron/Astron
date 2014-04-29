@@ -69,7 +69,7 @@ class LoggerBuf : public std::streambuf
 class LockedLogOutput
 {
 	public:
-		LockedLogOutput(std::ostream &stream, std::recursive_mutex *lock) : m_stream(stream), m_lock(lock)
+		LockedLogOutput(std::ostream *stream, std::recursive_mutex *lock) : m_stream(stream), m_lock(lock)
 		{
 			if(m_lock)
 			{
@@ -98,24 +98,33 @@ class LockedLogOutput
 		template <typename T>
 		LockedLogOutput &operator<<(const T &x)
 		{
-			m_stream << x;
+			if(m_stream)
+			{
+				*m_stream << x;
+			}
 			return *this;
 		}
 
 		LockedLogOutput& operator<<( std::ostream& (*pf)( std::ostream& ) )
 		{
-			m_stream << pf;
+			if(m_stream)
+			{
+				*m_stream << pf;
+			}
 			return *this;
 		}
 
 		LockedLogOutput& operator<<( std::basic_ios<char>& (*pf)( std::basic_ios<char>& ) )
 		{
-			m_stream << pf;
+			if(m_stream)
+			{
+				*m_stream << pf;
+			}
 			return *this;
 		}
 
 	private:
-		std::ostream &m_stream;
+		std::ostream *m_stream;
 		std::recursive_mutex *m_lock;
 };
 
@@ -141,7 +150,6 @@ class Logger
 		LoggerBuf m_buf;
 		LogSeverity m_severity;
 		std::ostream m_output;
-		std::ostream m_null;
 		std::recursive_mutex m_lock;
 };
 
