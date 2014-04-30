@@ -130,7 +130,7 @@ class AstronClient : public Client, public NetworkClient
 		// receive_datagram is the handler for datagrams received over the network from a Client.
 		void receive_datagram(DatagramHandle dg)
 		{
-			std::lock_guard<std::mutex> lock(m_client_lock);
+			std::lock_guard<std::recursive_mutex> lock(m_client_lock);
 			DatagramIterator dgi(dg);
 			try
 			{
