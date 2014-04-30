@@ -631,7 +631,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 						break; // No change, so do nothing.
 					}
 
-					auto children = m_zone_objects[r_zone];
+					auto &children = m_zone_objects[r_zone];
 					children.erase(child_id);
 					if(children.empty())
 					{
@@ -643,7 +643,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			}
 			else if(r_do_id == m_do_id)
 			{
-				auto children = m_zone_objects[r_zone];
+				auto &children = m_zone_objects[r_zone];
 				children.erase(child_id);
 				if(children.empty())
 				{
