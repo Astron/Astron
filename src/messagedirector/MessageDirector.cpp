@@ -24,7 +24,7 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_initialized(false),
-	m_thread(NULL), m_log("msgdir", "Message Director")
+	m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
 }
 
@@ -111,13 +111,7 @@ void MessageDirector::shutdown_threading()
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
-	if(!m_thread)
-	{
-		// We aren't working in threaded mode, so we can simply process this in
-		// the current thread.
-		process_datagram(p, dg);
-	}
-	else
+	if(m_thread)
 	{
 		// Threaded mode! First, we have to get the lock to our queue:
 		std::lock_guard<std::mutex> lock(m_messages_lock);
@@ -125,6 +119,17 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		// Now, we put the message into our queue and ring the bell:
 		m_messages.push(std::make_pair(p, dg));
 		m_cv.notify_one();
+	}
+	else if(std::this_thread::get_id() != m_main_thread)
+	{
+		// We aren't working in threaded mode, but we aren't in the main thread
+		// either. For safety, we should post this down to the main thread.
+		io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+	}
+	else
+	{
+		// Main thread; we can just process it here.
+		process_datagram(p, dg);
 	}
 }
 
