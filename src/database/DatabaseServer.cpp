@@ -140,6 +140,18 @@ class DBOperationImpl_Create : public DBOperationImpl
 				return false;
 			}
 
+			// Set all non-present fields to defaults (if they exist)
+			for(unsigned int i = 0; i < m_dclass->get_num_fields(); ++i)
+			{
+				const dclass::Field *field = m_dclass->get_field(i);
+				if(field->has_default_value() && field->has_keyword("db") && m_set_fields.find(field) == m_set_fields.end())
+				{
+					string val = field->get_default_value();
+					m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
+				}
+			}
+
+
 			return true;
 		}
 
