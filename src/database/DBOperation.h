@@ -77,6 +77,24 @@ class DBOperation
 		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_set_fields;
 		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_criteria_fields;
 
+		// ***CONVENIENCE FUNCTIONS***
+
+		// Because many operations that operate on existing objects are created
+		// without foreknowledge of the object's dclass, the frontend cannot
+		// double-check that the fields included in the request are appropriate
+		// for that kind of object.
+		//
+		// If (when) the backend discovers the object's dclass, it should call
+		// this function, which will sanity-check the operation to make sure it
+		// is appropriate for the dclass. If this function returns true, then all
+		// is well and the backend may proceed. If this function returns false,
+		// then the backend is to abort the current operation (safely reverting
+		// any changes it may already have made) and then call on_failure().
+		//
+		// This function handles logging, so the backend need not report when
+		// false is returned.
+		virtual bool verify_class(const dclass::Class *dclass) { return true; }
+
 		// ***CALLBACK FUNCTIONS***
 		// The database backend invokes these when the operation completes.
 		// N.B. when this happens, the DBOperation regains control of its own

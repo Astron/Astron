@@ -40,6 +40,12 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 			return;
 		}
 
+		if(!operation->verify_class(dclass))
+		{
+			operation->on_failure();
+			return;
+		}
+
 		DBObjectSnapshot *snap = new DBObjectSnapshot();
 		snap->m_dclass = dclass;
 		snap->m_fields = dbo.fields;
@@ -51,6 +57,19 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		// TODO: This can be implemented *much* more efficiently, but for now:
 		ObjectData dbo;
 		if(!get_object(operation->m_doid, dbo))
+		{
+			operation->on_failure();
+			return;
+		}
+
+		const dclass::Class *dclass = g_dcf->get_class_by_id(dbo.dc_id);
+		if(!dclass)
+		{
+			operation->on_failure();
+			return;
+		}
+
+		if(!operation->verify_class(dclass))
 		{
 			operation->on_failure();
 			return;

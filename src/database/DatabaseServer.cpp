@@ -151,7 +151,6 @@ class DBOperationImpl_Create : public DBOperationImpl
 				}
 			}
 
-
 			return true;
 		}
 
@@ -244,6 +243,30 @@ class DBOperationImpl_Get : public DBOperationImpl
 			}
 
 			return populate_get_fields(dgi, field_count);
+		}
+
+		virtual bool verify_class(const dclass::Class *dclass)
+		{
+			if(m_type == GET_OBJECT)
+			{
+				// GET_OBJECT requests do not expect any class, so this is never
+				// invalid:
+				return true;
+			}
+
+			for(auto it = m_get_fields.begin(); it != m_get_fields.end(); ++it)
+			{
+				if(!dclass->get_field_by_id((*it)->get_id()))
+				{
+					m_dbserver->m_log->warning() << "Requested field " << (*it)->get_name()
+					                             << " does not belong to object " << m_doid
+					                             << "(" << dclass->get_name() << ")" << std::endl;
+				}
+			}
+
+			// Though we may have encountered problems above, they aren't strictly
+			// cause for failure. The fields will simply be absent from the reply.
+			return true;
 		}
 
 		virtual void on_failure()
@@ -406,6 +429,35 @@ class DBOperationImpl_Modify : public DBOperationImpl
 			}
 
 			return true;
+		}
+
+		virtual bool verify_class(const dclass::Class *dclass)
+		{
+			bool errors = false;
+
+			for(auto it = m_set_fields.begin(); it != m_set_fields.end(); ++it)
+			{
+				if(!dclass->get_field_by_id(it->first->get_id()))
+				{
+					m_dbserver->m_log->warning() << "Attempted to modify field " << it->first->get_name()
+					                             << " which does not belong to object " << m_doid
+					                             << "(" << dclass->get_name() << ")" << std::endl;
+					errors = true;
+				}
+			}
+
+			for(auto it = m_criteria_fields.begin(); it != m_criteria_fields.end(); ++it)
+			{
+				if(!dclass->get_field_by_id(it->first->get_id()))
+				{
+					m_dbserver->m_log->warning() << "Criterion field " << it->first->get_name()
+					                             << " not belong to object " << m_doid
+					                             << "(" << dclass->get_name() << ")" << std::endl;
+					errors = true;
+				}
+			}
+
+			return !errors;
 		}
 
 		virtual void on_failure()
