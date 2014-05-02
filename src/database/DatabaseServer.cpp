@@ -42,7 +42,7 @@ class DBOperationImpl : public DBOperation
 				const Field *field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
-					// TODO: Error!
+					m_dbserver->m_log->error() << "Create/modify field request included invalid field #" << field_id << std::endl;
 					return false;
 				}
 
@@ -68,7 +68,7 @@ class DBOperationImpl : public DBOperation
 				}
 				else
 				{
-					// TODO: Warning!
+					m_dbserver->m_log->warning() << "Create/modify field request included non-DB field " << field->get_name() << std::endl;
 					if(!deletes)
 					{
 						dgi.skip_field(field);
@@ -92,7 +92,7 @@ class DBOperationImpl : public DBOperation
 				const Field *field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
-					// TODO: Error!
+					m_dbserver->m_log->error() << "Get field request included invalid field #" << field_id << std::endl;
 					return false;
 				}
 				if(field->has_keyword("db"))
@@ -101,7 +101,7 @@ class DBOperationImpl : public DBOperation
 				}
 				else
 				{
-					// TODO: Warning!
+					m_dbserver->m_log->error() << "Get field request included non-DB field " << field->get_name() << std::endl;
 				}
 			}
 
@@ -128,7 +128,7 @@ class DBOperationImpl_Create : public DBOperationImpl
 			m_dclass = g_dcf->get_class_by_id(dclass_id);
 			if(!m_dclass)
 			{
-				// TODO: Error!
+				m_dbserver->m_log->error() << "Create object request for invalid dclass ID #" << dclass_id << std::endl;
 				on_failure();
 				return false;
 			}
