@@ -34,9 +34,8 @@ class DBOperationImpl : public DBOperation
 
 		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi) = 0;
 
-		bool populate_set_fields(DatagramIterator &dgi)
+		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count)
 		{
-			uint16_t field_count = dgi.read_uint16();
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
@@ -54,6 +53,30 @@ class DBOperationImpl : public DBOperation
 				{
 					// TODO: Warning!
 					dgi.skip_field(field);
+				}
+			}
+
+			return true;
+		}
+
+		bool populate_get_fields(DatagramIterator &dgi, uint16_t field_count)
+		{
+			for(uint16_t i = 0; i < field_count; ++i)
+			{
+				uint16_t field_id = dgi.read_uint16();
+				const Field *field = g_dcf->get_field_by_id(field_id);
+				if(!field)
+				{
+					// TODO: Error!
+					return false;
+				}
+				if(field->has_keyword("db"))
+				{
+					m_get_fields.insert(field);
+				}
+				else
+				{
+					// TODO: Warning!
 				}
 			}
 
@@ -85,7 +108,8 @@ class DBOperationImpl_Create : public DBOperationImpl
 				return false;
 			}
 
-			if(!populate_set_fields(dgi))
+			uint16_t field_count = dgi.read_uint16();
+			if(!populate_set_fields(dgi, field_count))
 			{
 				on_failure();
 				return false;
@@ -137,8 +161,134 @@ class DBOperationImpl_Delete : public DBOperationImpl
 
 		virtual void on_complete()
 		{
+			// Broadcast update to object's channel
+			if(m_dbserver->m_broadcast)
+			{
+				DatagramPtr update = Datagram::create();
+				update->add_server_header(database_to_object(m_doid), m_sender, DBSERVER_OBJECT_DELETE);
+				update->add_doid(m_doid);
+				m_dbserver->route_datagram(update);
+			}
 			delete this;
 		}
+};
+
+class DBOperationImpl_Get : public DBOperationImpl
+{
+	public:
+		DBOperationImpl_Get(DatabaseServer *db) : DBOperationImpl(db) { }
+
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+		{
+			m_sender = sender;
+
+			m_context = dgi.read_uint32();
+			m_doid = dgi.read_doid();
+
+			if(msg_type == DBSERVER_OBJECT_GET_ALL)
+			{
+				m_type = GET_OBJECT;
+				m_resp_msgtype = DBSERVER_OBJECT_GET_ALL_RESP;
+				return true;
+			}
+
+			m_type = GET_FIELDS;
+			uint16_t field_count;
+
+			if(msg_type == DBSERVER_OBJECT_GET_FIELD)
+			{
+				field_count = 1;
+				m_resp_msgtype = DBSERVER_OBJECT_GET_FIELD_RESP;
+			}
+			else if(msg_type == DBSERVER_OBJECT_GET_FIELDS)
+			{
+				field_count = dgi.read_uint16();
+				m_resp_msgtype = DBSERVER_OBJECT_GET_FIELDS_RESP;
+			}
+
+			populate_get_fields(dgi, field_count);
+		}
+
+		virtual void on_failure()
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+			                        m_resp_msgtype);
+			resp->add_uint32(m_context);
+			resp->add_uint8(FAILURE);
+			m_dbserver->route_datagram(resp);
+
+			delete this;
+		}
+
+		virtual void on_complete(DBObjectSnapshot *snapshot)
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+			                        m_resp_msgtype);
+			resp->add_uint32(m_context);
+			resp->add_uint8(SUCCESS);
+
+			// Calculate the fields that we are sending in our response:
+			std::unordered_map<const dclass::Field*, std::vector<uint8_t> > response_fields;
+			if(m_resp_msgtype == DBSERVER_OBJECT_GET_ALL_RESP)
+			{
+				// Send everything:
+				response_fields = snapshot->m_fields;
+			}
+			else
+			{
+				// Send only what was requested:
+				for(auto it = m_get_fields.begin(); it != m_get_fields.end(); ++it)
+				{
+					auto it2 = snapshot->m_fields.find(*it);
+					if(it2 != snapshot->m_fields.end())
+					{
+						response_fields[it2->first] = it2->second;
+					}
+				}
+			}
+
+			// WHAT we send depends on our m_resp_msgtype, so:
+			if(m_resp_msgtype == DBSERVER_OBJECT_GET_FIELD_RESP)
+			{
+				if(response_fields.empty())
+				{
+					// We did not find the field we were looking for.
+					// Therefore, this is a failure.
+					on_failure();
+					return;
+				}
+
+				resp->add_uint16 (response_fields.begin()->first->get_id());
+				resp->add_data(response_fields.begin()->second);
+
+				// And that's it. We're done.
+				m_dbserver->route_datagram(resp);
+				delete snapshot;
+				delete this;
+				return;
+			}
+
+			if(m_resp_msgtype == DBSERVER_OBJECT_GET_ALL_RESP)
+			{
+				resp->add_uint16(snapshot->m_dclass->get_id());
+			}
+
+			resp->add_uint16(response_fields.size());
+			for(auto it = response_fields.begin(); it != response_fields.end(); ++it)
+			{
+				resp->add_uint16(it->first->get_id());
+				resp->add_data(it->second);
+			}
+
+			m_dbserver->route_datagram(resp);
+			delete snapshot;
+			delete this;
+		}
+
+	uint32_t m_context;
+	uint16_t m_resp_msgtype;
 };
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
@@ -199,7 +349,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		case DBSERVER_OBJECT_GET_FIELD:
 		case DBSERVER_OBJECT_GET_FIELDS:
 		{
-			//op = new DBOperationImpl_Get(this);
+			op = new DBOperationImpl_Get(this);
 		}
 		break;
 		case DBSERVER_OBJECT_SET_FIELD:
@@ -211,6 +361,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		case DBSERVER_OBJECT_DELETE_FIELDS:
 		{
 			//op = new DBOperationImpl_Modify(this);
+			return;
 		}
 		break;
 		default:

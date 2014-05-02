@@ -8,6 +8,7 @@ extern RoleConfigGroup dbserver_config;
 class DBOperationImpl;
 class DBOperationImpl_Create;
 class DBOperationImpl_Delete;
+class DBOperationImpl_Get;
 
 class DatabaseServer : public Role
 {
@@ -29,4 +30,5 @@ class DatabaseServer : public Role
 		friend class DBOperationImpl;
 		friend class DBOperationImpl_Create;
 		friend class DBOperationImpl_Delete;
+		friend class DBOperationImpl_Get;
 };

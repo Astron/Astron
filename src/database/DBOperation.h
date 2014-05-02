@@ -12,7 +12,7 @@
 class DBObjectSnapshot
 {
 	public:
-		dclass::Class *m_dclass;
+		const dclass::Class *m_dclass;
 
 		// Absense from this map indicates that the field is either not present
 		// on the object, or was not requested by the corresponding DBOperation.

@@ -1,4 +1,5 @@
 #include "OldDatabaseBackend.h"
+#include "core/global.h"
 
 void OldDatabaseBackend::submit(DBOperation *operation)
 {
@@ -21,5 +22,28 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 	{
 		delete_object(operation->m_doid);
 		operation->on_complete();
+	}
+	else if(operation->m_type == DBOperation::OperationType::GET_OBJECT ||
+	        operation->m_type == DBOperation::OperationType::GET_FIELDS)
+	{
+		ObjectData dbo;
+		if(!get_object(operation->m_doid, dbo))
+		{
+			operation->on_failure();
+			return;
+		}
+
+		const dclass::Class *dclass = g_dcf->get_class_by_id(dbo.dc_id);
+		if(!dclass)
+		{
+			operation->on_failure();
+			return;
+		}
+
+		DBObjectSnapshot *snap = new DBObjectSnapshot();
+		snap->m_dclass = dclass;
+		snap->m_fields = dbo.fields;
+		operation->on_complete(snap);
+		// snap is deleted by on_complete.
 	}
 }
