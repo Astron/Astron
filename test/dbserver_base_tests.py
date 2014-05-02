@@ -135,6 +135,41 @@ class DatabaseBaseTests(object):
         dg.add_uint8(FAILURE)
         self.expect(self.conn, dg)
 
+        ### Test for CreateObject and GetAll with default field values ###
+        # Create a stored DistributedTestObject1 with no initial values...
+        dg = Datagram.create([75757], 20, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(7) # Context
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(0) # Field count
+        self.conn.send(dg)
+
+        # The Database should return the context and do_id...
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([20], 75757, DBSERVER_CREATE_OBJECT_RESP,
+                                            remaining = 4 + DOID_SIZE_BYTES))
+        self.assertEquals(dgi.read_uint32(), 7) # Check context
+        doids.append(dgi.read_doid())
+        self.assertGreaterEqual(doids[-1], 1000000) # do_id in valid range
+        self.assertLessEqual(doids[-1], 1000010) # do_id in valid range
+
+        # Select all fields from the stored object
+        dg = Datagram.create([75757], 20, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(8) # Context
+        dg.add_doid(doids[-1])
+        self.conn.send(dg)
+
+        # Retrieve object from the database, we stored no DB values, so get none back
+        dg = Datagram.create([20], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(8) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(setRDbD5DefaultValue)
+        self.expect(self.conn, dg)
+
         # Cleanup
         for doid in doids:
             self.deleteObject(20, doid)
