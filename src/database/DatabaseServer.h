@@ -2,6 +2,7 @@
 #include "core/Role.h"
 #include "core/RoleFactory.h"
 #include "DatabaseBackend.h"
+#include "DBOperation.h"
 
 extern RoleConfigGroup dbserver_config;
 
@@ -19,7 +20,7 @@ class DatabaseServer : public Role
 		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 		
 	private:
-		void handle_operation(DBOperationImpl *op);
+		void handle_operation(DBOperation *op);
 
 		DatabaseBackend *m_db_backend;
 		LogCategory *m_log;

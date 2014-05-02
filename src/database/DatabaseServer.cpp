@@ -560,7 +560,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	subscribe_channel(m_control_channel);
 }
 
-void DatabaseServer::handle_operation(DBOperationImpl *op)
+void DatabaseServer::handle_operation(DBOperation *op)
 {
 	m_db_backend->submit(op);
 }
