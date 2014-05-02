@@ -40,7 +40,7 @@ class DBOperationImpl : public DBOperation
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
-				const Field *field = m_dclass->get_field_by_id(field_id);
+				const Field *field = g_dcf->get_field_by_id(field_id);
 				if(!field)
 				{
 					// TODO: Error!
@@ -125,7 +125,7 @@ class DBOperationImpl_Delete : public DBOperationImpl
 			m_sender = sender;
 
 			m_type = DELETE_OBJECT;
-			m_doid = dgi.read_uint32();
+			m_doid = dgi.read_doid();
 
 			return true;
 		}
