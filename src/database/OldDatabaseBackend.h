@@ -8,7 +8,7 @@
 struct ObjectData
 {
 	uint16_t dc_id;
-	std::map<const dclass::Field*, std::vector<uint8_t> > fields;
+	std::unordered_map<const dclass::Field*, std::vector<uint8_t> > fields;
 
 	ObjectData()
 	{

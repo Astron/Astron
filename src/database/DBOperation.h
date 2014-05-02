@@ -88,23 +88,23 @@ class DBOperation
 		// * The requested object is absent.
 		// * The frontend requested modification of a field that is not valid
 		//   for the class.
-		virtual void on_failure() = 0;
+		virtual void on_failure() { }
 
 		// This is used in the case of MODIFY_FIELDS operations where the fields
 		// in m_criteria_fields were NOT satisfied. The backend provides a snapshot
 		// of the current values to be sent back to the client.
 		// (Or it may include a *complete* snapshot and the frontend will filter.)
 		// The frontend gets ownership of this pointer once it's passed.
-		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot) = 0;
+		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot) { }
 
 		// The on_complete callback is overloaded. When called without any arguments,
 		// it means the delete or modify succeeded.
-		virtual void on_complete() = 0;
+		virtual void on_complete() { }
 
 		// This variant is used for successful create:
-		virtual void on_complete(doid_t new_doid) = 0;
+		virtual void on_complete(doid_t new_doid) { }
 
 		// This variant is used for GET_* -- N.B. the ownership of the pointer
 		// transfers to the frontend.
-		virtual void on_complete(DBObjectSnapshot *snapshot) = 0;
+		virtual void on_complete(DBObjectSnapshot *snapshot) { }
 };
