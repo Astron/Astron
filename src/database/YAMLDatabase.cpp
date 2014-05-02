@@ -1,4 +1,4 @@
-#include "DatabaseBackend.h"
+#include "OldDatabaseBackend.h"
 #include "DBBackendFactory.h"
 #include "DatabaseServer.h"
 
@@ -17,7 +17,7 @@ using namespace std;
 
 static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
 
-class YAMLDatabase : public DatabaseBackend
+class YAMLDatabase : public OldDatabaseBackend
 {
 	private:
 		doid_t m_next_id;
@@ -170,7 +170,7 @@ class YAMLDatabase : public DatabaseBackend
 		}
 	public:
 		YAMLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-			DatabaseBackend(dbeconfig, min_id, max_id),
+			OldDatabaseBackend(dbeconfig, min_id, max_id),
 			m_next_id(min_id),
 			m_free_ids(),
 			m_foldername(foldername.get_rval(m_config))

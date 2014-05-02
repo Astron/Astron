@@ -7,6 +7,18 @@
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 
+// This represents a "snapshot" of a particular object. It is essentially just a
+// dclass and a map of fields.
+class DBObjectSnapshot
+{
+	public:
+		dclass::Class *m_dclass;
+
+		// Absense from this map indicates that the field is either not present
+		// on the object, or was not requested by the corresponding DBOperation.
+		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_fields;
+};
+
 // DBOperation represents any single operation that can be asynchronously
 // executed on the database backend.
 class DBOperation
@@ -64,4 +76,35 @@ class DBOperation
 		// Only meaningful in the case of MODIFY_FIELDS.
 		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_set_fields;
 		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_criteria_fields;
+
+		// ***CALLBACK FUNCTIONS***
+		// The database backend invokes these when the operation completes.
+		// N.B. when this happens, the DBOperation regains control of its own
+		// pointer (therefore the backend should not perform any more operations
+		// on the DBOperation* after one of these is called)
+
+		// This is used to indicate a generic failure, it could mean:
+		// * The database backend is broken.
+		// * The requested object is absent.
+		// * The frontend requested modification of a field that is not valid
+		//   for the class.
+		virtual void on_failure() = 0;
+
+		// This is used in the case of MODIFY_FIELDS operations where the fields
+		// in m_criteria_fields were NOT satisfied. The backend provides a snapshot
+		// of the current values to be sent back to the client.
+		// (Or it may include a *complete* snapshot and the frontend will filter.)
+		// The frontend gets ownership of this pointer once it's passed.
+		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot) = 0;
+
+		// The on_complete callback is overloaded. When called without any arguments,
+		// it means the delete or modify succeeded.
+		virtual void on_complete() = 0;
+
+		// This variant is used for successful create:
+		virtual void on_complete(doid_t new_doid) = 0;
+
+		// This variant is used for GET_* -- N.B. the ownership of the pointer
+		// transfers to the frontend.
+		virtual void on_complete(DBObjectSnapshot *snapshot) = 0;
 };

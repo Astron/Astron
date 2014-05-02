@@ -172,6 +172,8 @@ if(BUILD_DBSERVER)
 		src/database/DatabaseServer.cpp
 		src/database/DatabaseBackend.h
 		src/database/DatabaseBackend.cpp
+		src/database/OldDatabaseBackend.h
+		src/database/OldDatabaseBackend.cpp
 		src/database/DBBackendFactory.h
 		src/database/DBBackendFactory.cpp
 	)

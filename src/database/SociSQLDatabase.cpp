@@ -1,4 +1,4 @@
-#include "DatabaseBackend.h"
+#include "OldDatabaseBackend.h"
 #include "DBBackendFactory.h"
 #include "DatabaseServer.h"
 
@@ -22,11 +22,11 @@ static ConfigVariable<string> database_name("database", "null", db_backend_confi
 static ConfigVariable<string> session_user("username", "null", db_backend_config);
 static ConfigVariable<string> session_passwd("password", "null", db_backend_config);
 
-class SociSQLDatabase : public DatabaseBackend
+class SociSQLDatabase : public OldDatabaseBackend
 {
 	public:
 		SociSQLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-			DatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
+			OldDatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
 			m_backend(db_backend_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),
 			m_sess_user(session_user.get_rval(dbeconfig)),
