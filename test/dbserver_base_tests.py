@@ -1052,9 +1052,8 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELD)
         dg.add_doid(doidB)
-        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
@@ -1104,9 +1103,8 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELD)
         dg.add_doid(doidC)
-        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)

@@ -9,6 +9,7 @@ class DBOperationImpl;
 class DBOperationImpl_Create;
 class DBOperationImpl_Delete;
 class DBOperationImpl_Get;
+class DBOperationImpl_Modify;
 
 class DatabaseServer : public Role
 {
@@ -31,4 +32,5 @@ class DatabaseServer : public Role
 		friend class DBOperationImpl_Create;
 		friend class DBOperationImpl_Delete;
 		friend class DBOperationImpl_Get;
+		friend class DBOperationImpl_Modify;
 };

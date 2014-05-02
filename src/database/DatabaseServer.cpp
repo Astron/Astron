@@ -34,7 +34,7 @@ class DBOperationImpl : public DBOperation
 
 		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi) = 0;
 
-		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count)
+		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count, bool deletes=false, bool values=false)
 		{
 			for(uint16_t i = 0; i < field_count; ++i)
 			{
@@ -45,14 +45,39 @@ class DBOperationImpl : public DBOperation
 					// TODO: Error!
 					return false;
 				}
+
 				if(field->has_keyword("db"))
 				{
-					dgi.unpack_field(field, m_set_fields[field]);
+					if(values)
+					{
+						dgi.unpack_field(field, m_criteria_fields[field]);
+					}
+					if(!deletes)
+					{
+						dgi.unpack_field(field, m_set_fields[field]);
+					}
+					else if(field->has_default_value())
+					{
+						std::string val = field->get_default_value();
+						m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
+					}
+					else
+					{
+						m_set_fields[field]; // Force insertion of blank vector
+					}
 				}
 				else
 				{
 					// TODO: Warning!
-					dgi.skip_field(field);
+					if(!deletes)
+					{
+						dgi.skip_field(field);
+					}
+					if(values)
+					{
+						// It is not proper to expect a non-db field in criteria.
+						return false;
+					}
 				}
 			}
 
@@ -206,7 +231,7 @@ class DBOperationImpl_Get : public DBOperationImpl
 				m_resp_msgtype = DBSERVER_OBJECT_GET_FIELDS_RESP;
 			}
 
-			populate_get_fields(dgi, field_count);
+			return populate_get_fields(dgi, field_count);
 		}
 
 		virtual void on_failure()
@@ -287,8 +312,222 @@ class DBOperationImpl_Get : public DBOperationImpl
 			delete this;
 		}
 
-	uint32_t m_context;
-	uint16_t m_resp_msgtype;
+		uint32_t m_context;
+		uint16_t m_resp_msgtype;
+};
+
+class DBOperationImpl_Modify : public DBOperationImpl
+{
+	public:
+		DBOperationImpl_Modify(DatabaseServer *db) : DBOperationImpl(db) { }
+
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+		{
+			m_sender = sender;
+
+			m_type = MODIFY_FIELDS;
+
+			if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS ||
+			   msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS ||
+			   msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
+			{
+				m_context = dgi.read_uint32();
+			}
+
+			m_doid = dgi.read_doid();
+
+			uint16_t field_count;
+			if(msg_type == DBSERVER_OBJECT_SET_FIELDS ||
+			   msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS ||
+			   msg_type == DBSERVER_OBJECT_DELETE_FIELDS)
+			{
+				field_count = dgi.read_uint16();
+			}
+			else
+			{
+				field_count = 1;
+			}
+
+			bool deletes;
+			bool values;
+			if(msg_type == DBSERVER_OBJECT_SET_FIELD ||
+			   msg_type == DBSERVER_OBJECT_SET_FIELDS)
+			{
+				m_resp_msgtype = 0;
+				deletes = false;
+				values = false;
+			}
+			else if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS ||
+			        msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
+			{
+				m_resp_msgtype = (msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS) ?
+				                 DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP :
+				                 DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP;
+				deletes = false;
+				values = true;
+			}
+			else if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
+			{
+				m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP;
+				deletes = false;
+				values = false;
+			}
+			else if(msg_type == DBSERVER_OBJECT_DELETE_FIELD ||
+			        msg_type == DBSERVER_OBJECT_DELETE_FIELDS)
+			{
+				m_resp_msgtype = 0;
+				deletes = true;
+				values = false;
+			}
+
+			if(!populate_set_fields(dgi, field_count, deletes, values))
+			{
+				on_failure();
+				return false;
+			}
+
+			if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
+			{
+				// We must satisfy the IF_EMPTY constraint here, because we don't
+				// handle it in populate_set_fields.
+				m_criteria_fields[m_set_fields.begin()->first]; // Force insertion of blank vector
+			}
+
+			return true;
+		}
+
+		virtual void on_failure()
+		{
+			if(!m_resp_msgtype)
+			{
+				// The request msgtype doesn't have a response.
+				delete this;
+				return;
+			}
+
+			DatagramPtr resp = Datagram::create();
+			resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+			                        m_resp_msgtype);
+			resp->add_uint32(m_context);
+			resp->add_uint8(FAILURE);
+			m_dbserver->route_datagram(resp);
+
+			delete this;
+		}
+
+		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot)
+		{
+			DatagramPtr resp = Datagram::create();
+			resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+			                        m_resp_msgtype);
+			resp->add_uint32(m_context);
+			resp->add_uint8(FAILURE);
+
+			// Calculate the fields that we are sending in our response:
+			std::unordered_map<const dclass::Field*, std::vector<uint8_t> > mismatched_fields;
+
+			for(auto it = m_criteria_fields.begin(); it != m_criteria_fields.end(); ++it)
+			{
+				auto it2 = snapshot->m_fields.find(it->first);
+				if(it2 != snapshot->m_fields.end() && !it2->second.empty())
+				{
+					mismatched_fields[it2->first] = it2->second;
+				}
+			}
+
+			if(m_resp_msgtype == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP)
+			{
+				resp->add_uint16(mismatched_fields.size());
+			}
+
+			for(auto it = mismatched_fields.begin(); it != mismatched_fields.end(); ++it)
+			{
+				resp->add_uint16(it->first->get_id());
+				resp->add_data(it->second);
+			}
+
+			m_dbserver->route_datagram(resp);
+
+			delete snapshot;
+			delete this;
+		}
+
+		virtual void on_complete()
+		{
+			// Broadcast update to object's channel
+			if(m_dbserver->m_broadcast)
+			{
+				// Calculate the fields that we are sending in our response:
+				std::unordered_map<const dclass::Field*, std::vector<uint8_t> > changed_fields;
+				std::unordered_set<const dclass::Field*> deleted_fields;
+
+				for(auto it = m_set_fields.begin(); it != m_set_fields.end(); ++it)
+				{
+					if(it->second.empty())
+					{
+						deleted_fields.insert(it->first);
+					}
+					else
+					{
+						changed_fields[it->first] = it->second;
+					}
+				}
+
+				if(!deleted_fields.empty())
+				{
+					bool multi = (deleted_fields.size() > 1);
+					DatagramPtr update = Datagram::create();
+					update->add_server_header(database_to_object(m_doid), m_sender,
+					                          multi ? DBSERVER_OBJECT_DELETE_FIELDS :
+					                                  DBSERVER_OBJECT_DELETE_FIELD);
+					update->add_doid(m_doid);
+					if(multi)
+					{
+						update->add_uint16(deleted_fields.size());
+					}
+					for(auto it = deleted_fields.begin(); it != deleted_fields.end(); ++it)
+					{
+						update->add_uint16((*it)->get_id());
+					}
+					m_dbserver->route_datagram(update);
+				}
+
+				if(!changed_fields.empty())
+				{
+					bool multi = (changed_fields.size() > 1);
+					DatagramPtr update = Datagram::create();
+					update->add_server_header(database_to_object(m_doid), m_sender,
+					                          multi ? DBSERVER_OBJECT_SET_FIELDS :
+					                                  DBSERVER_OBJECT_SET_FIELD);
+					update->add_doid(m_doid);
+					if(multi)
+					{
+						update->add_uint16(changed_fields.size());
+					}
+					for(auto it = changed_fields.begin(); it != changed_fields.end(); ++it)
+					{
+						update->add_uint16(it->first->get_id());
+						update->add_data(it->second);
+					}
+					m_dbserver->route_datagram(update);
+				}
+			}
+
+			if(m_resp_msgtype)
+			{
+				DatagramPtr resp = Datagram::create();
+				resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+				                        m_resp_msgtype);
+				resp->add_uint32(m_context);
+				resp->add_uint8(SUCCESS);
+				m_dbserver->route_datagram(resp);
+			}
+
+			delete this;
+		}
+
+		uint32_t m_context;
+		uint16_t m_resp_msgtype;
 };
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
@@ -360,8 +599,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		case DBSERVER_OBJECT_DELETE_FIELD:
 		case DBSERVER_OBJECT_DELETE_FIELDS:
 		{
-			//op = new DBOperationImpl_Modify(this);
-			return;
+			op = new DBOperationImpl_Modify(this);
 		}
 		break;
 		default:

@@ -46,4 +46,39 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		operation->on_complete(snap);
 		// snap is deleted by on_complete.
 	}
+	else if(operation->m_type == DBOperation::OperationType::MODIFY_FIELDS)
+	{
+		// TODO: This can be implemented *much* more efficiently, but for now:
+		ObjectData dbo;
+		if(!get_object(operation->m_doid, dbo))
+		{
+			operation->on_failure();
+			return;
+		}
+
+		for(auto it = operation->m_criteria_fields.begin(); it != operation->m_criteria_fields.end(); ++it)
+		{
+			if(dbo.fields[it->first] != it->second)
+			{
+				DBObjectSnapshot *snap = new DBObjectSnapshot();
+				snap->m_fields = dbo.fields;
+				operation->on_criteria_mismatch(snap);
+				return;
+			}
+		}
+
+		for(auto it = operation->m_set_fields.begin(); it != operation->m_set_fields.end(); ++it)
+		{
+			if(!it->second.empty())
+			{
+				set_field(operation->m_doid, it->first, it->second);
+			}
+			else
+			{
+				del_field(operation->m_doid, it->first);
+			}
+		}
+
+		operation->on_complete();
+	}
 }
