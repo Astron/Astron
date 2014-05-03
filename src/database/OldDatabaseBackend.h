@@ -4,6 +4,7 @@
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 #include <vector>
+#include <mutex>
 
 struct ObjectData
 {
@@ -56,4 +57,7 @@ class OldDatabaseBackend : public DatabaseBackend
 		                        map_t &values) = 0;
 #undef map_t
 #undef val_t
+
+	private:
+		std::mutex m_submit_lock;
 };

@@ -3,6 +3,7 @@
 
 void OldDatabaseBackend::submit(DBOperation *operation)
 {
+	std::lock_guard<std::mutex> lock(m_submit_lock);
 	if(operation->m_type == DBOperation::OperationType::CREATE_OBJECT)
 	{
 		ObjectData dbo(operation->m_dclass->get_id());

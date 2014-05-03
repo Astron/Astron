@@ -631,11 +631,6 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	subscribe_channel(m_control_channel);
 }
 
-void DatabaseServer::handle_operation(DBOperation *op)
-{
-	m_db_backend->submit(op);
-}
-
 void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
 	channel_t sender = dgi.read_channel();
@@ -680,6 +675,6 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 	if(op->initialize(sender, msg_type, dgi))
 	{
-		handle_operation(op);
+		m_db_backend->submit(op);
 	}
 }
