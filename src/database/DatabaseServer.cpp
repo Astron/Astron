@@ -108,6 +108,11 @@ class DBOperationImpl : public DBOperation
 			return true;
 		}
 
+		void cleanup()
+		{
+			delete this;
+		}
+
 		DatabaseServer *m_dbserver;
 		channel_t m_sender;
 };
@@ -163,7 +168,7 @@ class DBOperationImpl_Create : public DBOperationImpl
 			resp->add_doid(doid);
 			m_dbserver->route_datagram(resp);
 
-			delete this;
+			cleanup();
 		}
 
 		virtual void on_failure()
@@ -192,7 +197,7 @@ class DBOperationImpl_Delete : public DBOperationImpl
 
 		virtual void on_failure()
 		{
-			delete this;
+			cleanup();
 		}
 
 		virtual void on_complete()
@@ -205,7 +210,7 @@ class DBOperationImpl_Delete : public DBOperationImpl
 				update->add_doid(m_doid);
 				m_dbserver->route_datagram(update);
 			}
-			delete this;
+			cleanup();
 		}
 };
 
@@ -278,7 +283,7 @@ class DBOperationImpl_Get : public DBOperationImpl
 			resp->add_uint8(FAILURE);
 			m_dbserver->route_datagram(resp);
 
-			delete this;
+			cleanup();
 		}
 
 		virtual void on_complete(DBObjectSnapshot *snapshot)
@@ -326,7 +331,7 @@ class DBOperationImpl_Get : public DBOperationImpl
 				// And that's it. We're done.
 				m_dbserver->route_datagram(resp);
 				delete snapshot;
-				delete this;
+				cleanup();
 				return;
 			}
 
@@ -344,7 +349,7 @@ class DBOperationImpl_Get : public DBOperationImpl
 
 			m_dbserver->route_datagram(resp);
 			delete snapshot;
-			delete this;
+			cleanup();
 		}
 
 		uint32_t m_context;
@@ -465,7 +470,7 @@ class DBOperationImpl_Modify : public DBOperationImpl
 			if(!m_resp_msgtype)
 			{
 				// The request msgtype doesn't have a response.
-				delete this;
+				cleanup();
 				return;
 			}
 
@@ -476,7 +481,7 @@ class DBOperationImpl_Modify : public DBOperationImpl
 			resp->add_uint8(FAILURE);
 			m_dbserver->route_datagram(resp);
 
-			delete this;
+			cleanup();
 		}
 
 		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot)
@@ -513,7 +518,7 @@ class DBOperationImpl_Modify : public DBOperationImpl
 			m_dbserver->route_datagram(resp);
 
 			delete snapshot;
-			delete this;
+			cleanup();
 		}
 
 		virtual void on_complete()
@@ -587,7 +592,7 @@ class DBOperationImpl_Modify : public DBOperationImpl
 				m_dbserver->route_datagram(resp);
 			}
 
-			delete this;
+			cleanup();
 		}
 
 		uint32_t m_context;
