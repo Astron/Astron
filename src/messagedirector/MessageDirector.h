@@ -56,10 +56,9 @@ class MessageDirector : public ChannelMap
 		MessageDirector();
 		~MessageDirector();
 
-		NetworkAcceptor *m_net_acceptor;
 		bool m_initialized;
-		LogCategory m_log;
 
+		NetworkAcceptor *m_net_acceptor;
 		MDUpstream *m_upstream;
 
 		// Connected participants
@@ -70,13 +69,14 @@ class MessageDirector : public ChannelMap
 		std::thread *m_thread;
 		std::mutex m_participants_lock;
 		std::mutex m_messages_lock;
-		std::mutex m_upstream_lock;
 		std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
 		std::condition_variable m_cv;
         std::thread::id m_main_thread;
 		void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
 		void routing_thread();
 		void shutdown_threading();
+
+		LogCategory m_log;
 
 		friend class MDParticipantInterface;
 		void add_participant(MDParticipantInterface* participant);
