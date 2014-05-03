@@ -3,6 +3,9 @@
 #include "net/NetworkClient.h"
 #include <boost/asio.hpp>
 
+// All MDUpstreams must be thread-safe. This class does not need a lock, however,
+// because all of its operations are based on local variables and the functions
+// of NetworkClient (which are themselves thread-safe)
 class MDNetworkUpstream : public NetworkClient, public MDUpstream
 {
 	public:

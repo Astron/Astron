@@ -226,7 +226,6 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
 	if(p && m_upstream)  // Send message upstream
 	{
-		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		m_upstream->handle_datagram(dg);
 		m_log.trace() << "...routing upstream." << std::endl;
 	}
@@ -244,7 +243,6 @@ void MessageDirector::on_add_channel(channel_t c)
 {
 	if(m_upstream)
 	{
-		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->subscribe_channel(c);
 	}
@@ -254,7 +252,6 @@ void MessageDirector::on_remove_channel(channel_t c)
 {
 	if(m_upstream)
 	{
-		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->unsubscribe_channel(c);
 	}
@@ -264,7 +261,6 @@ void MessageDirector::on_add_range(channel_t lo, channel_t hi)
 {
 	if(m_upstream)
 	{
-		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->subscribe_range(lo, hi);
 	}
@@ -274,7 +270,6 @@ void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 {
 	if(m_upstream)
 	{
-		std::lock_guard<std::mutex> lock(m_upstream_lock);
 		// Send upstream control message
 		m_upstream->unsubscribe_range(lo, hi);
 	}
