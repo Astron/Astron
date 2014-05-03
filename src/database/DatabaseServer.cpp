@@ -147,6 +147,24 @@ class DBOperationImpl_Create : public DBOperationImpl
 				return false;
 			}
 
+			// Make sure that all present fields actually belong to the dclass.
+			bool errors = false;
+			for(auto it = m_set_fields.begin(); it != m_set_fields.end(); ++it)
+			{
+				if(!m_dclass->get_field_by_id(it->first->get_id()))
+				{
+					m_dbserver->m_log->warning() << "Attempted to create object " << m_dclass->get_name()
+					                             << " which includes non-belonging field: "
+					                             << it->first->get_name() << std::endl;
+					errors = true;
+				}
+			}
+			if(errors)
+			{
+				on_failure();
+				return false;
+			}
+
 			// Set all non-present fields to defaults (if they exist)
 			for(unsigned int i = 0; i < m_dclass->get_num_fields(); ++i)
 			{
