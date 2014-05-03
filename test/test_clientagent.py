@@ -1924,6 +1924,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_doid(10000) # doid
         self.server.send(dg)
 
+        # Mitigate race condition with undeclare_object
+        time.sleep(0.1)
+
         # Twiddle with the object, and get disconnected because its not declared
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
