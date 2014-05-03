@@ -93,7 +93,7 @@ class DBOperation
 		//
 		// This function handles logging, so the backend need not report when
 		// false is returned.
-		virtual bool verify_class(const dclass::Class *dclass) { return true; }
+		virtual bool verify_class(const dclass::Class *) { return true; }
 
 		// ***CALLBACK FUNCTIONS***
 		// The database backend invokes these when the operation completes.
@@ -113,16 +113,16 @@ class DBOperation
 		// of the current values to be sent back to the client.
 		// (Or it may include a *complete* snapshot and the frontend will filter.)
 		// The frontend gets ownership of this pointer once it's passed.
-		virtual void on_criteria_mismatch(DBObjectSnapshot *snapshot) { }
+		virtual void on_criteria_mismatch(DBObjectSnapshot *) { }
 
 		// The on_complete callback is overloaded. When called without any arguments,
 		// it means the delete or modify succeeded.
 		virtual void on_complete() { }
 
 		// This variant is used for successful create:
-		virtual void on_complete(doid_t new_doid) { }
+		virtual void on_complete(doid_t) { }
 
 		// This variant is used for GET_* -- N.B. the ownership of the pointer
 		// transfers to the frontend.
-		virtual void on_complete(DBObjectSnapshot *snapshot) { }
+		virtual void on_complete(DBObjectSnapshot *) { }
 };

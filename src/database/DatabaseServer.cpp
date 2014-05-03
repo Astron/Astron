@@ -32,6 +32,8 @@ class DBOperationImpl : public DBOperation
 	public:
 		DBOperationImpl(DatabaseServer *db) : m_dbserver(db) { }
 
+		virtual ~DBOperationImpl() { }
+
 		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi) = 0;
 
 		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count, bool deletes=false, bool values=false)
@@ -122,7 +124,7 @@ class DBOperationImpl_Create : public DBOperationImpl
 	public:
 		DBOperationImpl_Create(DatabaseServer *db) : DBOperationImpl(db) { }
 
-		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+		virtual bool initialize(channel_t sender, uint16_t /*msg_type*/, DatagramIterator &dgi)
 		{
 			m_sender = sender;
 
@@ -185,7 +187,7 @@ class DBOperationImpl_Delete : public DBOperationImpl
 	public:
 		DBOperationImpl_Delete(DatabaseServer *db) : DBOperationImpl(db) { }
 
-		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+		virtual bool initialize(channel_t sender, uint16_t /*msg_type*/, DatagramIterator &dgi)
 		{
 			m_sender = sender;
 
