@@ -23,7 +23,7 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_initialized(false),
+MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL), m_upstream(NULL),
 	m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
 }
