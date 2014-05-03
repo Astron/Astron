@@ -1252,6 +1252,24 @@ class DatabaseBaseTests(object):
         dg.add_uint8(FAILURE)
         self.expect(self.conn, dg)
 
+        ### TEST CREATING AN OBJECT WITH NON-BELONGING FIELDS ###
+        # Create a DTO3 with field setFoo (which doesn't belong):
+        dg = Datagram.create([75757], 100, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(5) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(32112)
+        self.conn.send(dg)
+
+        # The database must refuse to create our object:
+        dg = Datagram.create([100], 75757, DBSERVER_CREATE_OBJECT_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(INVALID_DO_ID)
+        self.expect(self.conn, dg)
+
         # Cleanup
         self.deleteObject(100, doid)
         self.conn.send(Datagram.create_remove_channel(100))
