@@ -1750,6 +1750,9 @@ class TestStateServer(ProtocolTest):
 
         # Convenience function:
         def checkObjects(objects, zones):
+            # Mitigate race condition - allow SS time to process recent changes
+            time.sleep(0.1)
+
             # 1. Send query:
             dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
             dg.add_uint32(0xF337) # Context
