@@ -1,7 +1,15 @@
 #!/usr/bin/env python2
 import unittest
+import os
+import time
+import tempfile
+import subprocess
+from socket import *
 
-'''
+from testdc import *
+from common import *
+from dbserver_base_tests import DatabaseBaseTests
+
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -17,15 +25,28 @@ roles:
       generate:
         min: 1000000
         max: 1000010
-      storage:
+      backend:
         type: mongodb
-        connection: mongodb://astron_test:sudowoodo@localhost
-        database: astron_test
+        server: 127.0.0.1:57023
+        database: test
 """ % test_dc
 
 class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
     @classmethod
     def setUpClass(cls):
+        tmppath = tempfile.gettempdir() + '/astron';
+        if not os.path.exists(tmppath):
+            os.makedirs(tmppath);
+        dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)
+
+        cls.mongod = subprocess.Popen(['mongod',
+                                       '--noauth', '--quiet',
+                                       '--bind_ip', '127.0.0.1',
+                                       '--port', '57023',
+                                       '--dbpath', dbpath],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(5.0) # Allow mongod to start up...
+
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
@@ -33,6 +54,19 @@ class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
         sock.connect(('127.0.0.1', 57123))
         cls.conn = MDConnection(sock)
 
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.connect(('127.0.0.1', 57123))
+        cls.objects = MDConnection(sock)
+        cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
+                                                   DATABASE_PREFIX|1000010))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.objects.send(Datagram.create_remove_range(DATABASE_PREFIX|1000000,
+                                                      DATABASE_PREFIX|1000010))
+        cls.objects.close()
+        cls.daemon.stop()
+        cls.mongod.terminate()
+
 if __name__ == '__main__':
     unittest.main()
-'''

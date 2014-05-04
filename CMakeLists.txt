@@ -165,6 +165,9 @@ if(BUILD_TESTS)
 	)
 endif()
 
+# DB backends can add libraries here as needed:
+set(DB_LIBRARY_NAMES)
+
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	set(DBSERVER_FILES
@@ -187,6 +190,27 @@ if(BUILD_DBSERVER)
 		add_test(db_yaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py")
 		add_test(validate_config_dbyaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py")
 		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
+	endif()
+
+	### Check for the presence of the MongoDB client library ###
+	find_package(MongoDB)
+
+	if(MONGO_FOUND)
+		set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
+		message(STATUS "MongoDB client library found")
+	else()
+		unset(BUILD_DB_MONGO CACHE)
+		message(STATUS "MongoDB client library not found")
+	endif()
+	if(BUILD_DB_MONGO)
+		list(APPEND DBSERVER_FILES
+		     src/database/MongoDatabase.cpp)
+		include_directories("${MONGO_INCLUDE_DIR}")
+		list(APPEND DB_LIBRARY_NAMES ${MONGO_LIBRARIES})
+
+		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
+		# TODO: Config validation test
+		list(APPEND PYTHON_TESTS db_mongo)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -240,9 +264,9 @@ if(BUILD_DBSERVER)
 				${DBSERVER_FILES}
 				src/database/SociSQLDatabase.cpp
 			)
-			set(SOCI_LIBRARY_NAMES soci_core dl)
+    list(APPEND DB_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
-				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
+        list(APPEND DB_LIBRARY_NAMES pq)
 				add_test(db_pgsql "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
 				add_test(validate_config_dbpostgres
 					 "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
@@ -262,6 +286,7 @@ else()
 	unset(BUILD_DB_MYSQL CACHE)
 	unset(BUILD_DB_POSTGRESQL CACHE)
 	unset(BUILD_DB_SQLITE CACHE)
+	unset(BUILD_DB_MONGO CACHE)
 endif()
 
 set(BUILD_STATESERVER ON CACHE BOOL "If on, State Server will be built into binary")
@@ -418,7 +443,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${DB_LIBRARY_NAMES})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
