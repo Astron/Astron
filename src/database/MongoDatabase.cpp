@@ -61,7 +61,7 @@ class MongoDatabase : public DatabaseBackend
 				exit(1);
 			}
 
-			database.get_rval(m_config);
+			m_db = database.get_rval(m_config);
 
 			string u = username.get_rval(m_config);
 			string p = password.get_rval(m_config);
@@ -128,7 +128,55 @@ class MongoDatabase : public DatabaseBackend
 
 		void handle_create(DBOperation *operation)
 		{
-			// TODO: CREATE
+			// First, let's convert the requested object into BSON; this way, if
+			// a failure happens, it happens before we waste a doid.
+			BSONObjBuilder fields;
+
+			try
+			{
+				for(auto it = operation->m_set_fields.begin();
+				    it != operation->m_set_fields.end();
+				    ++it)
+				{
+					unpack_bson(it->first, it->second, fields);
+				}
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "While formatting "
+				               << operation->m_dclass->get_name()
+				               << " for insertion: " << e.what() << endl;
+				operation->on_failure();
+				return;
+			}
+
+			doid_t doid = assign_doid();
+			if(doid == INVALID_DO_ID)
+			{
+				// The error will already have been emitted at this point, so
+				// all that's left for us to do is fail silently:
+				operation->on_failure();
+				return;
+			}
+
+			BSONObj b = BSON("_id" << doid <<
+			                 "dclass" << operation->m_dclass->get_name() <<
+			                 "fields" << fields.obj());
+
+			try
+			{
+				m_conn.insert(m_obj_collection, b);
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Cannot insert new "
+				               << operation->m_dclass->get_name()
+				               << "(" << doid <<"): " << e.what() << endl;
+				operation->on_failure();
+				return;
+			}
+
+			operation->on_complete(doid);
 		}
 
 		void handle_delete(DBOperation *operation)
@@ -149,8 +197,59 @@ class MongoDatabase : public DatabaseBackend
 		// This function is used by handle_create to get a fresh DOID assignment.
 		doid_t assign_doid()
 		{
-			// TODO: DOID assignment
-			return 0;
+			BSONObj result;
+
+			bool success = false;
+			try
+			{
+				success = m_conn.runCommand(
+					m_db,
+					BSON("findandmodify" << "astron.globals" <<
+					     "query" << BSON(
+						     "_id" << "GLOBALS" <<
+						     "doid.monotonic" << GTE << m_min_id <<
+						     "doid.monotonic" << LTE << m_max_id
+					     ) <<
+					     "update" << BSON(
+						     "$inc" << BSON("doid.monotonic" << 1)
+					     )), result);
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Communication failure while trying to allocate a DOID: "
+				               << e.what() << endl;
+				return INVALID_DO_ID;
+			}
+
+			// If the findandmodify command failed, the document either doesn't
+			// exist, or we ran out of monotonic doids.
+			if(!success || result["value"].isNull())
+			{
+				m_log->error() << "Could not allocate a monotonic DOID!" << endl;
+				return INVALID_DO_ID;
+			}
+
+			m_log->trace() << "Got globals element: " << result << endl;
+
+			doid_t doid;
+			try
+			{
+				const BSONElement &element = result["value"]["doid"]["monotonic"];
+				if(sizeof(doid) == sizeof(long long))
+				{
+					doid = element.Long();
+				}
+				else if(sizeof(doid) == sizeof(int))
+				{
+					doid = element.Int();
+				}
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Cannot allocate DOID; globals element is corrupt: " << e.what() << endl;
+				return INVALID_DO_ID;
+			}
+			return doid;
 		}
 };
 
