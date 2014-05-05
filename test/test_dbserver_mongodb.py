@@ -45,7 +45,17 @@ class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
                                        '--port', '57023',
                                        '--dbpath', dbpath],
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(5.0) # Allow mongod to start up...
+
+        # Wait for mongod to start up:
+        while True:
+            try:
+                mongosock = socket(AF_INET, SOCK_STREAM)
+                mongosock.connect(('127.0.0.1', 57023))
+            except error:
+                time.sleep(0.5)
+            else:
+                mongosock.close()
+                break
 
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
