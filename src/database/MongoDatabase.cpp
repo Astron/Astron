@@ -44,7 +44,7 @@ class MongoDatabase : public DatabaseBackend
 {
 	public:
 		MongoDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-			DatabaseBackend(dbeconfig, min_id, max_id)
+			DatabaseBackend(dbeconfig, min_id, max_id), m_monotonic_exhausted(false)
 		{
 			stringstream log_name;
 			log_name << "Database-MongoDB" << "(Range: [" << min_id << ", " << max_id << "])";
@@ -77,15 +77,16 @@ class MongoDatabase : public DatabaseBackend
 			// Init the collection names:
 			stringstream obj_collection;
 			obj_collection << m_db << ".astron.objects";
-			string m_obj_collection = obj_collection.str();
+			m_obj_collection = obj_collection.str();
 			stringstream global_collection;
 			global_collection << m_db << ".astron.globals";
-			string m_global_collection = global_collection.str();
+			m_global_collection = global_collection.str();
 
 			// Init the globals collection/document:
 			BSONObj globals = BSON("_id" << "GLOBALS" <<
 			                       "doid" << BSON(
-				                       "monotonic" << min_id
+				                       "monotonic" << min_id <<
+				                       "free" << BSONArray()
 			                       ));
 			m_conn.insert(m_global_collection, globals);
 		}
@@ -103,6 +104,18 @@ class MongoDatabase : public DatabaseBackend
 		string m_db;
 		string m_obj_collection;
 		string m_global_collection;
+
+		// N.B. this variable is NOT guarded by a lock. While there can conceivably
+		// be races on accessing it, this is not a problem, because:
+		// 1) It is initialized to false by the main thread, and only set to true
+		//    by sub-threads. There is no way for this variable to go back from
+		//    true to false.
+		// 2) It is only used to tell the DOID allocator to stop trying to use the
+		//    monotonic counter. If a thread misses the update from false->true,
+		//    it will only waste time fruitlessly trying to allocate an ID from
+		//    the (exhausted) monotonic counter, before falling back on the free
+		//    DOIDs list.
+		bool m_monotonic_exhausted;
 
 		void handle_operation(DBOperation *operation)
 		{
@@ -163,6 +176,9 @@ class MongoDatabase : public DatabaseBackend
 			                 "dclass" << operation->m_dclass->get_name() <<
 			                 "fields" << fields.obj());
 
+			m_log->trace() << "Inserting new " << operation->m_dclass->get_name()
+				           << "(" << doid << "): " << b << endl;
+
 			try
 			{
 				m_conn.insert(m_obj_collection, b);
@@ -171,7 +187,7 @@ class MongoDatabase : public DatabaseBackend
 			{
 				m_log->error() << "Cannot insert new "
 				               << operation->m_dclass->get_name()
-				               << "(" << doid <<"): " << e.what() << endl;
+				               << "(" << doid << "): " << e.what() << endl;
 				operation->on_failure();
 				return;
 			}
@@ -181,7 +197,42 @@ class MongoDatabase : public DatabaseBackend
 
 		void handle_delete(DBOperation *operation)
 		{
-			// TODO: DELETE
+			BSONObj result;
+
+			bool success;
+			try
+			{
+				success = m_conn.runCommand(
+					m_db,
+					BSON("findandmodify" << "astron.objects" <<
+					     "query" << BSON(
+						     "_id" << operation->m_doid) <<
+					     "remove" << true),
+					result);
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Unexpected error while deleting "
+				               << operation->m_doid << ": " << e.what() << endl;
+				operation->on_failure();
+				return;
+			}
+
+			m_log->trace() << "handle_delete: got response: "
+			               << result << endl;
+
+			// If the findandmodify command failed, there wasn't anything there
+			// to delete in the first place.
+			if(!success || result["value"].isNull())
+			{
+				m_log->error() << "Tried to delete non-existent doid "
+				               << operation->m_doid << endl;
+				operation->on_failure();
+				return;
+			}
+
+			free_doid(operation->m_doid);
+			operation->on_complete();
 		}
 
 		void handle_get(DBOperation *operation)
@@ -197,59 +248,130 @@ class MongoDatabase : public DatabaseBackend
 		// This function is used by handle_create to get a fresh DOID assignment.
 		doid_t assign_doid()
 		{
-			BSONObj result;
-
-			bool success = false;
 			try
 			{
-				success = m_conn.runCommand(
-					m_db,
-					BSON("findandmodify" << "astron.globals" <<
-					     "query" << BSON(
-						     "_id" << "GLOBALS" <<
-						     "doid.monotonic" << GTE << m_min_id <<
-						     "doid.monotonic" << LTE << m_max_id
-					     ) <<
-					     "update" << BSON(
-						     "$inc" << BSON("doid.monotonic" << 1)
-					     )), result);
+				if(!m_monotonic_exhausted)
+				{
+					doid_t doid = assign_doid_monotonic();
+					if(doid == INVALID_DO_ID)
+					{
+						m_monotonic_exhausted = true;
+					}
+					else
+					{
+						return doid;
+					}
+				}
+
+				// We've exhausted our supply of doids from the monotonic counter.
+				// We must now resort to pulling things out of the free list:
+				return assign_doid_reuse();
 			}
 			catch(bson::assertion &e)
 			{
-				m_log->error() << "Communication failure while trying to allocate a DOID: "
-				               << e.what() << endl;
+				m_log->error() << "Unexpected error occurred while trying to"
+				                  " allocate a new DOID: " << e.what() << endl;
 				return INVALID_DO_ID;
 			}
+		}
+
+		doid_t assign_doid_monotonic()
+		{
+			BSONObj result;
+
+			bool success = m_conn.runCommand(
+				m_db,
+				BSON("findandmodify" << "astron.globals" <<
+				     "query" << BSON(
+					     "_id" << "GLOBALS" <<
+					     "doid.monotonic" << GTE << m_min_id <<
+					     "doid.monotonic" << LTE << m_max_id
+				     ) <<
+				     "update" << BSON(
+					     "$inc" << BSON("doid.monotonic" << 1)
+				     )), result);
 
 			// If the findandmodify command failed, the document either doesn't
 			// exist, or we ran out of monotonic doids.
 			if(!success || result["value"].isNull())
 			{
-				m_log->error() << "Could not allocate a monotonic DOID!" << endl;
 				return INVALID_DO_ID;
 			}
 
-			m_log->trace() << "Got globals element: " << result << endl;
+			m_log->trace() << "assign_doid_monotonic: got globals element: "
+			               << result << endl;
 
 			doid_t doid;
+			const BSONElement &element = result["value"]["doid"]["monotonic"];
+			if(sizeof(doid) == sizeof(long long))
+			{
+				doid = element.Long();
+			}
+			else if(sizeof(doid) == sizeof(int))
+			{
+				doid = element.Int();
+			}
+			return doid;
+		}
+
+		// This is used when the monotonic counter is exhausted:
+		doid_t assign_doid_reuse()
+		{
+			BSONObj result;
+
+			bool success = m_conn.runCommand(
+				m_db,
+				BSON("findandmodify" << "astron.globals" <<
+				     "query" << BSON(
+					     "_id" << "GLOBALS" <<
+					     "doid.free.0" << BSON("$exists" << true)
+				     ) <<
+				     "update" << BSON(
+					     "$pop" << BSON("doid.free" << -1)
+				     )), result);
+
+			// If the findandmodify command failed, the document either doesn't
+			// exist, or we ran out of reusable doids.
+			if(!success || result["value"].isNull())
+			{
+				m_log->error() << "Could not allocate a reused DOID!" << endl;
+				return INVALID_DO_ID;
+			}
+
+			m_log->trace() << "assign_doid_reuse: got globals element: "
+			               << result << endl;
+
+			// Otherwise, use the first one:
+			doid_t doid;
+			const BSONElement &element = result["value"]["doid"]["free"];
+			if(sizeof(doid) == sizeof(long long))
+			{
+				doid = element.Array()[0].Long();
+			}
+			else if(sizeof(doid) == sizeof(int))
+			{
+				doid = element.Array()[0].Int();
+			}
+			return doid;
+		}
+
+		// This returns a DOID to the free list:
+		void free_doid(doid_t doid)
+		{
+			m_log->trace() << "Returning doid " << doid << " to the free pool..." << endl;
+
 			try
 			{
-				const BSONElement &element = result["value"]["doid"]["monotonic"];
-				if(sizeof(doid) == sizeof(long long))
-				{
-					doid = element.Long();
-				}
-				else if(sizeof(doid) == sizeof(int))
-				{
-					doid = element.Int();
-				}
+				m_conn.update(
+					m_global_collection,
+					BSON("_id" << "GLOBALS"),
+					BSON("$push" << BSON("doid.free" << doid)));
 			}
 			catch(bson::assertion &e)
 			{
-				m_log->error() << "Cannot allocate DOID; globals element is corrupt: " << e.what() << endl;
-				return INVALID_DO_ID;
+				m_log->error() << "Could not return doid " << doid
+				               << " to free pool: " << e.what() << endl;
 			}
-			return doid;
 		}
 };
 
