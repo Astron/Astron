@@ -32,7 +32,7 @@ static void unpack_bson(const dclass::Field *field,
 
 static void pack_bson(const dclass::Field *field,
                       const BSONElement &element,
-                      std::vector<uint8_t> data)
+                      std::vector<uint8_t> &data)
 {
 	int len;
 	const char *rawdata = element.binData(len);
@@ -237,12 +237,86 @@ class MongoDatabase : public DatabaseBackend
 
 		void handle_get(DBOperation *operation)
 		{
-			// TODO: GET
+			BSONObj obj;
+			try
+			{
+				obj = m_conn.findOne(m_obj_collection,
+				                     BSON("_id" << operation->m_doid));
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Unexpected error occurred while trying to"
+				                  " retrieve object with DOID "
+				               << operation->m_doid << ": " << e.what() << endl;
+				operation->on_failure();
+				return;
+			}
+
+			if(obj.isEmpty())
+			{
+				m_log->warning() << "Got queried for non-existent object with DOID "
+				                 << operation->m_doid << endl;
+				operation->on_failure();
+				return;
+			}
+
+			DBObjectSnapshot *snap = format_snapshot(operation->m_doid, obj);
+			if(!snap || !operation->verify_class(snap->m_dclass))
+			{
+				operation->on_failure();
+			}
+			else
+			{
+				operation->on_complete(snap);
+			}
 		}
 
 		void handle_modify(DBOperation *operation)
 		{
 			// TODO: MODIFY
+		}
+
+		// Get a DBObjectSnapshot from a MongoDB BSON object; returns NULL if failure.
+		DBObjectSnapshot *format_snapshot(doid_t doid, const BSONObj &obj)
+		{
+			try
+			{
+				string dclass_name = obj["dclass"].String();
+				const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
+				if(!dclass)
+				{
+					m_log->error() << "Encountered unknown database object: "
+					               << dclass_name << "(" << doid << ")" << endl;
+					return NULL;
+				}
+
+				BSONObj fields = obj["fields"].Obj();
+
+				DBObjectSnapshot *snap = new DBObjectSnapshot();
+				snap->m_dclass = dclass;
+				for(auto it = fields.begin(); it.more(); ++it)
+				{
+					const char *name = (*it).fieldName();
+					const dclass::Field *field = dclass->get_field_by_name(name);
+					if(!field)
+					{
+						m_log->warning() << "Encountered unexpected field " << name
+						                 << " while formatting " << dclass_name
+						                 << "(" << doid << "); ignored." << endl;
+						continue;
+					}
+					pack_bson(field, *it, snap->m_fields[field]);
+				}
+
+				return snap;
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Unexpected error while trying to format"
+				                  " database snapshot for " << doid << ": "
+				               << e.what() << endl;
+				return NULL;
+			}
 		}
 
 		// This function is used by handle_create to get a fresh DOID assignment.
