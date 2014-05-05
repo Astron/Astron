@@ -273,7 +273,55 @@ class MongoDatabase : public DatabaseBackend
 
 		void handle_modify(DBOperation *operation)
 		{
-			// TODO: MODIFY
+			// First, we have to format our findandmodify.
+			BSONObjBuilder sets;
+			bool has_sets = false;
+			BSONObjBuilder unsets;
+			bool has_unsets = false;
+			for(auto it  = operation->m_set_fields.begin();
+				     it != operation->m_set_fields.end(); ++it)
+			{
+				stringstream fieldname;
+				fieldname << "fields." << it->first->get_name();
+				if(it->second.empty())
+				{
+					unsets << fieldname.str() << true;
+					has_unsets = true;
+				}
+				else
+				{
+					BSONObjBuilder field;
+					unpack_bson(it->first, it->second, field);
+					sets << fieldname.str() << field.obj()[it->first->get_name()];
+					has_sets = true;
+				}
+			}
+
+			BSONObjBuilder updates_b;
+			if(has_sets)
+			{
+				updates_b << "$set" << sets.obj();
+			}
+			if(has_unsets)
+			{
+				updates_b << "$unset" << unsets.obj();
+			}
+			BSONObj updates = updates_b.obj();
+
+			m_log->trace() << "Performing updates to " << operation->m_doid
+			               << ": " << updates << endl;
+
+			BSONObj result;
+			m_conn.runCommand(
+				m_db,
+				BSON("findandmodify" << "astron.objects"
+				     << "query" << BSON("_id" << operation->m_doid)
+				     << "update" << updates),
+				result);
+
+			m_log->trace() << "Update result: " << result << endl;
+
+			operation->on_complete();
 		}
 
 		// Get a DBObjectSnapshot from a MongoDB BSON object; returns NULL if failure.
