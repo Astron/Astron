@@ -41,6 +41,7 @@ class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
 
         cls.mongod = subprocess.Popen(['mongod',
                                        '--noauth', '--quiet',
+                                       '--nojournal', '--noprealloc',
                                        '--bind_ip', '127.0.0.1',
                                        '--port', '57023',
                                        '--dbpath', dbpath],
