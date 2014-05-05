@@ -27,6 +27,8 @@ ChannelMap::ChannelMap()
 
 void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	if(is_subscribed(p, c))
 		return;
 
@@ -43,6 +45,8 @@ void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
 
 void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	if(!is_subscribed(p, c))
 		return;
 
@@ -59,6 +63,8 @@ void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
 
 void ChannelMap::subscribe_range(ChannelSubscriber *p, channel_t lo, channel_t hi)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	// Prepare participant and range
 	std::set<ChannelSubscriber *> participant_set;
 	participant_set.insert(p);
@@ -86,6 +92,8 @@ void ChannelMap::subscribe_range(ChannelSubscriber *p, channel_t lo, channel_t h
 
 void ChannelMap::unsubscribe_range(ChannelSubscriber *p, channel_t lo, channel_t hi)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	// Pre-check: if there are no ranges subscribed anyway, no use doing this:
 	if(m_range_subscriptions.empty())
 	{
@@ -145,6 +153,8 @@ void ChannelMap::unsubscribe_range(ChannelSubscriber *p, channel_t lo, channel_t
 
 void ChannelMap::unsubscribe_all(ChannelSubscriber* p)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	// Unsubscribe from indivually subscribed channels
 	auto channels = std::set<channel_t>(p->channels());
 	for(auto it = channels.begin(); it != channels.end(); ++it)
@@ -166,6 +176,8 @@ void ChannelMap::unsubscribe_all(ChannelSubscriber* p)
 
 bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	std::set<ChannelSubscriber *> pset;
 	lookup_channel(c, pset);
 
@@ -174,6 +186,8 @@ bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
 
 void ChannelMap::lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	// TODO: Faster implementation.
 	std::list<channel_t> channels;
 	channels.push_back(c);
@@ -183,6 +197,8 @@ void ChannelMap::lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps)
 
 void ChannelMap::lookup_channels(const std::list<channel_t> &cl, std::set<ChannelSubscriber *> &ps)
 {
+	std::lock_guard<std::recursive_mutex> guard(m_lock);
+
 	for(auto it = cl.begin(); it != cl.end(); ++it)
 	{
 		auto &subscriptions = m_channel_subscriptions[*it];

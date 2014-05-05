@@ -8,6 +8,7 @@ from testdc import *
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -16,7 +17,7 @@ general:
 roles:
     - type: stateserver
       control: 100100
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:
@@ -1748,6 +1749,40 @@ class TestStateServer(ProtocolTest):
         doid5 = 2005
         doid6 = 3006 # Child of child
 
+        # Convenience function:
+        def checkObjects(objects, zones):
+            # Mitigate race condition - allow SS time to process recent changes
+            time.sleep(0.1)
+
+            # 1. Send query:
+            dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
+            dg.add_uint32(0xF337) # Context
+            dg.add_doid(doid0) # Parent Id
+            dg.add_uint16(len(zones)) # Zone count
+            for zone in zones:
+                dg.add_zone(zone)
+            conn.send(dg)
+
+            # 2. Expect object count:
+            expected = []
+            dg = Datagram.create([5], doid0, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+            dg.add_uint32(0xF337) # Context
+            dg.add_doid(len(objects)) # Count of objects
+                                      # Note: Using doid because range of object-count matches total doid size
+            expected.append(dg)
+
+            # 3. Expect objects:
+            for id, zone in objects:
+                dg = Datagram.create([5], id, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+                appendMeta(dg, id, doid0, zone, DistributedTestObject1)
+                dg.add_uint32(0) # setRequired1
+                expected.append(dg)
+
+            self.expectMany(conn, expected)
+
+            # Shouldn't receive messages from any of the other objects
+            self.expectNone(conn)
+
         ### Test for GetZonesObjects ###
         # Make a bunch of objects
         createEmptyDTO1(conn, 5, doid0)
@@ -1759,41 +1794,26 @@ class TestStateServer(ProtocolTest):
         createEmptyDTO1(conn, 5, doid6, doid1, 860)
 
         # Ask for objects from some of the zones...
-        dg = Datagram.create([doid0], 5, STATESERVER_OBJECT_GET_ZONES_OBJECTS)
-        dg.add_uint32(0xF337) # Context
-        dg.add_doid(doid0) # Parent Id
-        dg.add_uint16(2) # Zone count
-        dg.add_zone(912)
-        dg.add_zone(930)
+        checkObjects([(doid1, 912), (doid2, 912), (doid3, 930)], [912, 930])
+
+        ### Test for proper updating ###
+
+        # Let's move doid4 in there:
+        dg = Datagram.create([doid4], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid0, zone=930)
         conn.send(dg)
 
-        expected = []
-        # ... expecting the count of objects in the zone...
-        dg = Datagram.create([5], doid0, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
-        dg.add_uint32(0xF337) # Context
-        dg.add_doid(3) # Count of objects [(912, [obj1, obj2]), (930, [obj3])]
-                       # Note: Using doid because range of object-count matches total doid size
-        expected.append(dg)
-        # ... and object1's enter zone message...
-        dg = Datagram.create([5], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid1, doid0, 912, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        expected.append(dg)
-        # ... and object2's enter zone message...
-        dg = Datagram.create([5], doid2, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid2, doid0, 912, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        expected.append(dg)
-        # ... and object3's enter zone message...
-        dg = Datagram.create([5], doid3, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
-        appendMeta(dg, doid3, doid0, 930, DistributedTestObject1)
-        dg.add_uint32(0) # setRequired1
-        expected.append(dg)
-        self.expectMany(conn, expected)
+        checkObjects([(doid1, 912), (doid2, 912), (doid3, 930), (doid4, 930)], [912, 930])
 
-        # Shouldn't receive messages from any of the other objects
-        self.expectNone(conn)
+        # Delete doid2:
+        deleteObject(conn, 5, doid2)
+        checkObjects([(doid1, 912), (doid3, 930), (doid4, 930)], [912, 930])
 
+        # Move doid3 away:
+        dg = Datagram.create([doid3], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=doid1, zone=930)
+        conn.send(dg)
+        checkObjects([(doid1, 912), (doid4, 930)], [912, 930])
 
         ### Cleanup ###
         for doid in (doid0, doid1, doid2, doid3, doid4, doid5, doid6):

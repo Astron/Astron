@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include <boost/asio.hpp>
 #include "util/Datagram.h"
 
@@ -51,4 +52,6 @@ class NetworkClient
 		uint8_t* m_data_buf;
 		dgsize_t m_data_size;
 		bool m_is_data;
+
+		std::recursive_mutex m_lock;
 };

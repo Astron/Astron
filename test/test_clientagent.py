@@ -8,6 +8,7 @@ from testdc import *
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -50,7 +51,7 @@ roles:
       channels:
           min: 220600
           max: 220699
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):
@@ -1901,6 +1902,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(DistributedClientTestObject) # dclass
         self.server.send(dg)
 
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
         # Twiddle with the object, and everything should run fine
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
@@ -1920,6 +1924,9 @@ class TestClientAgent(ProtocolTest):
         dg = Datagram.create([id], 1, CLIENTAGENT_UNDECLARE_OBJECT)
         dg.add_doid(10000) # doid
         self.server.send(dg)
+
+        # Mitigate race condition with undeclare_object
+        time.sleep(0.1)
 
         # Twiddle with the object, and get disconnected because its not declared
         dg = Datagram()
@@ -2051,6 +2058,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_doid(1235) # doid
         dg.add_uint16(0) # num fields
         self.server.send(dg)
+
+        # Mitigate race condition with set_fields_sendable
+        time.sleep(0.1)
 
         # Trying to set the field should disconnect us then
         dg = Datagram()
