@@ -279,7 +279,7 @@ class MongoDatabase : public DatabaseBackend
 			BSONObjBuilder unsets;
 			bool has_unsets = false;
 			for(auto it  = operation->m_set_fields.begin();
-				     it != operation->m_set_fields.end(); ++it)
+			         it != operation->m_set_fields.end(); ++it)
 			{
 				stringstream fieldname;
 				fieldname << "fields." << it->first->get_name();
@@ -308,25 +308,159 @@ class MongoDatabase : public DatabaseBackend
 			}
 			BSONObj updates = updates_b.obj();
 
+			// Also format any criteria for the change:
+			BSONObjBuilder query_b;
+			query_b << "_id" << operation->m_doid;
+			for(auto it  = operation->m_criteria_fields.begin();
+			         it != operation->m_criteria_fields.end(); ++it)
+			{
+				stringstream fieldname;
+				fieldname << "fields." << it->first->get_name();
+				if(it->second.empty())
+				{
+					query_b << fieldname.str() << BSON("$exists" << false);
+				}
+				else
+				{
+					BSONObjBuilder field;
+					unpack_bson(it->first, it->second, field);
+					query_b << fieldname.str() << field.obj()[it->first->get_name()];
+				}
+			}
+			BSONObj query = query_b.obj();
+
 			m_log->trace() << "Performing updates to " << operation->m_doid
 			               << ": " << updates << endl;
+			m_log->trace() << "Query is: " << query << endl;
 
 			BSONObj result;
-			m_conn.runCommand(
-				m_db,
-				BSON("findandmodify" << "astron.objects"
-				     << "query" << BSON("_id" << operation->m_doid)
-				     << "update" << updates),
-				result);
+			bool success;
+			try
+			{
+				success = m_conn.runCommand(
+					m_db,
+					BSON("findandmodify" << "astron.objects"
+					     << "query" << query
+					     << "update" << updates),
+					result);
+			}
+			catch(bson::assertion &e)
+			{
+				m_log->error() << "Unexpected error while modifying "
+				               << operation->m_doid << ": " << e.what() << endl;
+				operation->on_failure();
+				return;
+			}
 
 			m_log->trace() << "Update result: " << result << endl;
 
-			operation->on_complete();
+			BSONObj obj;
+			if(!success || result["value"].isNull())
+			{
+				// Okay, something didn't work right. If we had criteria, let's
+				// try to fetch the object without the criteria to see if it's a
+				// criteria mismatch or a missing DOID.
+				if(!operation->m_criteria_fields.empty())
+				{
+					try
+					{
+						obj = m_conn.findOne(m_obj_collection,
+						                     BSON("_id" << operation->m_doid));
+					}
+					catch(bson::assertion &e)
+					{
+						m_log->error() << "Unexpected error while modifying "
+						               << operation->m_doid << ": " << e.what() << endl;
+						operation->on_failure();
+						return;
+					}
+					if(!obj.isEmpty())
+					{
+						// There's the problem. Now we can send back a snapshot:
+						DBObjectSnapshot *snap = format_snapshot(operation->m_doid, obj);
+						if(snap && operation->verify_class(snap->m_dclass))
+						{
+							operation->on_criteria_mismatch(snap);
+							return;
+						}
+						else
+						{
+							// Something else weird happened with our snapshot;
+							// either the class wasn't recognized or it was the
+							// wrong class. Either way, an error has been logged,
+							// and we need to fail the operation.
+							operation->on_failure();
+							return;
+						}
+					}
+				}
+
+				// Nope, not that. We're missing the DOID.
+				m_log->error() << "Attempted to modify unknown DOID: "
+				               << operation->m_doid << endl;
+				operation->on_failure();
+				return;
+			}
+
+			// If we've gotten to this point: Hooray! The change has gone
+			// through to the database.
+			// Let's, however, double-check our changes. (Specifically, we should
+			// run verify_class so that we know the frontend is happy with what
+			// kind of object we just modified.)
+			obj = result["value"].Obj();
+			try
+			{
+				string dclass_name = obj["dclass"].String();
+				const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
+				if(!dclass)
+				{
+					m_log->error() << "Encountered unknown database object: "
+					               << dclass_name << "(" << operation->m_doid << ")" << endl;
+				}
+				else if(operation->verify_class(dclass))
+				{
+					// Yep, it all checks out. Complete the operation:
+					operation->on_complete();
+					return;
+				}
+			}
+			catch(bson::assertion &e) { }
+
+			// If we've gotten here, something is seriously wrong. We've just
+			// mucked with an object without knowing the consequences! What have
+			// we done?! We've created an abomination in the database! Kill it!
+			// Kill it with fire!
+
+			// All we really can do to mitigate this is scream at the user (which
+			// the above verification has already done by now) and revert the
+			// object back to how it was when we found it.
+			// NOTE: This DOES have the potential for data loss, because we're
+			// wiping out any changes that conceivably could have happened
+			// between the findandmodify and now. In dev environments, (which we
+			// are probably in right now, if other components are making
+			// outlandish requests like this) this shouldn't be a huge issue.
+			m_log->trace() << "Reverting changes made to " << operation->m_doid << endl;
+			try
+			{
+				m_conn.update(
+						m_obj_collection,
+						BSON("_id" << operation->m_doid),
+						obj);
+			}
+			catch(bson::assertion &e)
+			{
+				// Wow, we REALLY fail at life.
+				m_log->error() << "Could not revert corrupting changes to "
+				               << operation->m_doid << ": " << e.what() << endl;
+			}
+			operation->on_failure();
 		}
 
 		// Get a DBObjectSnapshot from a MongoDB BSON object; returns NULL if failure.
 		DBObjectSnapshot *format_snapshot(doid_t doid, const BSONObj &obj)
 		{
+			m_log->trace() << "Formatting database snapshot of " << doid << ": "
+			               << obj << endl;
 			try
 			{
 				string dclass_name = obj["dclass"].String();
