@@ -83,7 +83,9 @@ class DBOperationImpl : public DBOperation
 				}
 			}
 
-			return true;
+			// A MODIFY_FIELDS request is only valid if we're actually trying to
+			// change fields. A CREATE_OBJECT request is valid even without fields.
+			return (m_type == CREATE_OBJECT) || !m_set_fields.empty();
 		}
 
 		bool populate_get_fields(DatagramIterator &dgi, uint16_t field_count)
@@ -107,7 +109,9 @@ class DBOperationImpl : public DBOperation
 				}
 			}
 
-			return true;
+			// A GET_FIELDS request is only really valid if we're actually requesting
+			// fields.
+			return !m_get_fields.empty();
 		}
 
 		void cleanup()
