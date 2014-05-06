@@ -6,6 +6,11 @@
 #include "util/DatagramIterator.h"
 #include "util/Datagram.h"
 
+#include "dclass/dc/DistributedType.h"
+#include "dclass/dc/ArrayType.h"
+#include "dclass/dc/Struct.h"
+#include "dclass/dc/Method.h"
+
 #include <client/dbclient.h>
 #include <bson/bson.h>
 
@@ -20,24 +25,326 @@ static ConfigVariable<string> password("password", "", db_backend_config);
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
 
-// TODO: Right now they just store the packed Bamboo field data in a BSON blob
-//       verbatim. They need to do an in-depth conversion so that the database
-//       is accessible by other tools and tolerant of changes to the .dc file.
-static void unpack_bson(const dclass::Field *field,
-                        const std::vector<uint8_t> data,
-                        BSONObjBuilder &ob)
+static BSONObj bamboo2bson(const dclass::DistributedType *type,
+                           DatagramIterator &dgi)
 {
-	ob.appendBinData(field->get_name(), data.size(), BinDataGeneral, data.data());
+	// The BSON library's weird data model doesn't allow elements to exist on
+	// their own; they must be part of an object. Therefore, we always return
+	// results in a single BSONObj with key "_"
+	BSONObjBuilder b;
+	switch(type->get_type())
+	{
+		case dclass::Type::T_INT8:
+		{
+			b << "_" << dgi.read_int8();
+		}
+		break;
+		case dclass::Type::T_INT16:
+		{
+			b << "_" << dgi.read_int16();
+		}
+		break;
+		case dclass::Type::T_INT32:
+		{
+			b << "_" << dgi.read_int32();
+		}
+		break;
+		case dclass::Type::T_INT64:
+		{
+			b.appendIntOrLL("_", dgi.read_int64());
+		}
+		break;
+		case dclass::Type::T_UINT8:
+		{
+			b << "_" << dgi.read_uint8();
+		}
+		break;
+		case dclass::Type::T_UINT16:
+		{
+			b << "_" << dgi.read_uint16();
+		}
+		break;
+		case dclass::Type::T_UINT32:
+		{
+			b << "_" << dgi.read_uint32();
+		}
+		break;
+		case dclass::Type::T_UINT64:
+		{
+			b.appendIntOrLL("_", dgi.read_uint64());
+		}
+		break;
+		case dclass::Type::T_CHAR:
+		{
+			unsigned char c = dgi.read_uint8();
+			string str(c, 1);
+			b << "_" << str;
+		}
+		break;
+		case dclass::Type::T_FLOAT32:
+		{
+			b << "_" << dgi.read_float32();
+		}
+		break;
+		case dclass::Type::T_FLOAT64:
+		{
+			b << "_" << dgi.read_float64();
+		}
+		break;
+		case dclass::Type::T_STRING:
+		{
+			vector<uint8_t> vec = dgi.read_data(type->get_size());
+			string str((const char *)vec.data(), vec.size());
+			b << "_" << str;
+		}
+		case dclass::Type::T_VARSTRING:
+		{
+			b << "_" << dgi.read_string();
+		}
+		break;
+		case dclass::Type::T_BLOB:
+		{
+			vector<uint8_t> blob = dgi.read_data(type->get_size());
+			b.appendBinData("_", blob.size(), BinDataGeneral, blob.data());
+		}
+		break;
+		case dclass::Type::T_VARBLOB:
+		{
+			vector<uint8_t> blob = dgi.read_blob();
+			b.appendBinData("_", blob.size(), BinDataGeneral, blob.data());
+		}
+		break;
+		case dclass::Type::T_ARRAY:
+		{
+			const dclass::ArrayType *array = type->as_array();
+
+			BSONArrayBuilder ab;
+
+			for(size_t i = 0; i < array->get_array_size(); i++)
+			{
+				ab << bamboo2bson(array->get_element_type(), dgi)["_"];
+			}
+
+			b << "_" << ab.arr();
+		}
+		break;
+		case dclass::Type::T_VARARRAY:
+		{
+			const dclass::ArrayType *array = type->as_array();
+
+			dgsize_t array_length = dgi.read_size();
+			dgsize_t starting_size = dgi.tell();
+
+			BSONArrayBuilder ab;
+
+			while(dgi.tell() != starting_size+array_length)
+			{
+				ab << bamboo2bson(array->get_element_type(), dgi)["_"];
+				if(dgi.tell() > starting_size+array_length)
+				{
+					throw bson::assertion(0, "Discovered corrupt array-length tag!");
+				}
+			}
+
+			b << "_" << ab.arr();
+		}
+		break;
+		case dclass::Type::T_STRUCT:
+		{
+			const dclass::Struct *s = type->as_struct();
+			size_t fields = s->get_num_fields();
+			BSONObjBuilder ob;
+
+			for(unsigned int i = 0; i < fields; ++i)
+			{
+				const dclass::Field *field = s->get_field(i);
+				ob << field->get_name() << bamboo2bson(field->get_type(), dgi)["_"];
+			}
+
+			b << "_" << ob.obj();
+		}
+		break;
+		case dclass::Type::T_METHOD:
+		{
+			const dclass::Method *m = type->as_method();
+			size_t parameters = m->get_num_parameters();
+			BSONObjBuilder ob;
+
+			for(unsigned int i = 0; i < parameters; ++i)
+			{
+				const dclass::Parameter *parameter = m->get_parameter(i);
+				string name = parameter->get_name();
+				if(name.empty())
+				{
+					stringstream n;
+					n << "_" << i;
+					name = n.str();
+				}
+				ob << name << bamboo2bson(parameter->get_type(), dgi)["_"];
+			}
+
+			b << "_" << ob.obj();
+		}
+		break;
+		case dclass::Type::T_INVALID:
+		default:
+			assert(false);
+		break;
+	}
+
+	return b.obj();
 }
 
-static void pack_bson(const dclass::Field *field,
-                      const BSONElement &element,
-                      std::vector<uint8_t> &data)
+static void bson2bamboo(const dclass::DistributedType *type,
+                        const BSONElement &element,
+                        Datagram &dg)
 {
-	int len;
-	const char *rawdata = element.binData(len);
-	data.resize(len);
-	memcpy(data.data(), rawdata, len);
+	switch(type->get_type())
+	{
+		case dclass::Type::T_INT8:
+		{
+			dg.add_int8(element.Int());
+		}
+		break;
+		case dclass::Type::T_INT16:
+		{
+			dg.add_int16(element.Int());
+		}
+		break;
+		case dclass::Type::T_INT32:
+		{
+			dg.add_int32(element.Int());
+		}
+		break;
+		case dclass::Type::T_INT64:
+		{
+			dg.add_int64(element.Int());
+		}
+		break;
+		case dclass::Type::T_UINT8:
+		{
+			dg.add_uint8(element.Int());
+		}
+		break;
+		case dclass::Type::T_UINT16:
+		{
+			dg.add_uint16(element.Int());
+		}
+		break;
+		case dclass::Type::T_UINT32:
+		{
+			dg.add_uint32(element.Int());
+		}
+		break;
+		case dclass::Type::T_UINT64:
+		{
+			dg.add_uint64(element.Int());
+		}
+		break;
+		case dclass::Type::T_CHAR:
+		{
+			string str = element.String();
+			if(str.size() != 1)
+			{
+				throw bson::assertion(0, "Expected single-length string for char field");
+			}
+			dg.add_uint8(str[0]);
+		}
+		break;
+		case dclass::Type::T_FLOAT32:
+		{
+			dg.add_float32(element.Number());
+		}
+		break;
+		case dclass::Type::T_FLOAT64:
+		{
+			dg.add_float64(element.Number());
+		}
+		break;
+		case dclass::Type::T_STRING:
+		{
+			dg.add_data(element.String());
+		}
+		break;
+		case dclass::Type::T_VARSTRING:
+		{
+			dg.add_string(element.String());
+		}
+		break;
+		case dclass::Type::T_BLOB:
+		{
+			int len;
+			const uint8_t *rawdata = (const uint8_t *)element.binData(len);
+			dg.add_data(rawdata, len);
+		}
+		break;
+		case dclass::Type::T_VARBLOB:
+		{
+			int len;
+			const uint8_t *rawdata = (const uint8_t *)element.binData(len);
+			dg.add_blob(rawdata, len);
+		}
+		break;
+		case dclass::Type::T_ARRAY:
+		{
+			const dclass::ArrayType *array = type->as_array();
+			std::vector<BSONElement> data = element.Array();
+
+			for(auto it = data.begin(); it != data.end(); ++it)
+			{
+				bson2bamboo(array->get_element_type(), *it, dg);
+			}
+		}
+		break;
+		case dclass::Type::T_VARARRAY:
+		{
+			const dclass::ArrayType *array = type->as_array();
+			std::vector<BSONElement> data = element.Array();
+
+			DatagramPtr newdg = Datagram::create();
+
+			for(auto it = data.begin(); it != data.end(); ++it)
+			{
+				bson2bamboo(array->get_element_type(), *it, *newdg);
+			}
+
+			dg.add_blob(newdg->get_data(), newdg->size());
+		}
+		break;
+		case dclass::Type::T_STRUCT:
+		{
+			const dclass::Struct *s = type->as_struct();
+			size_t fields = s->get_num_fields();
+			for(unsigned int i = 0; i < fields; ++i)
+			{
+				const dclass::Field *field = s->get_field(i);
+				bson2bamboo(field->get_type(), element[field->get_name()], dg);
+			}
+		}
+		break;
+		case dclass::Type::T_METHOD:
+		{
+			const dclass::Method *m = type->as_method();
+			size_t parameters = m->get_num_parameters();
+			for(unsigned int i = 0; i < parameters; ++i)
+			{
+				const dclass::Parameter *parameter = m->get_parameter(i);
+				string name = parameter->get_name();
+				if(name.empty() || element[name].eoo())
+				{
+					stringstream n;
+					n << "_" << i;
+					name = n.str();
+				}
+				bson2bamboo(parameter->get_type(), element[name], dg);
+			}
+		}
+		break;
+		case dclass::Type::T_INVALID:
+		default:
+			assert(false);
+		break;
+	}
 }
 
 class MongoDatabase : public DatabaseBackend
@@ -151,7 +458,11 @@ class MongoDatabase : public DatabaseBackend
 				    it != operation->m_set_fields.end();
 				    ++it)
 				{
-					unpack_bson(it->first, it->second, fields);
+					DatagramPtr dg = Datagram::create();
+					dg->add_data(it->second);
+					DatagramIterator dgi(dg);
+					fields << it->first->get_name()
+					       << bamboo2bson(it->first->get_type(), dgi)["_"];
 				}
 			}
 			catch(bson::assertion &e)
@@ -290,9 +601,10 @@ class MongoDatabase : public DatabaseBackend
 				}
 				else
 				{
-					BSONObjBuilder field;
-					unpack_bson(it->first, it->second, field);
-					sets << fieldname.str() << field.obj()[it->first->get_name()];
+					DatagramPtr dg = Datagram::create();
+					dg->add_data(it->second);
+					DatagramIterator dgi(dg);
+					sets << fieldname.str() << bamboo2bson(it->first->get_type(), dgi)["_"];
 					has_sets = true;
 				}
 			}
@@ -322,9 +634,10 @@ class MongoDatabase : public DatabaseBackend
 				}
 				else
 				{
-					BSONObjBuilder field;
-					unpack_bson(it->first, it->second, field);
-					query_b << fieldname.str() << field.obj()[it->first->get_name()];
+					DatagramPtr dg = Datagram::create();
+					dg->add_data(it->second);
+					DatagramIterator dgi(dg);
+					query_b << fieldname.str() << bamboo2bson(it->first->get_type(), dgi)["_"];
 				}
 			}
 			BSONObj query = query_b.obj();
@@ -487,7 +800,12 @@ class MongoDatabase : public DatabaseBackend
 						                 << "(" << doid << "); ignored." << endl;
 						continue;
 					}
-					pack_bson(field, *it, snap->m_fields[field]);
+					{
+						DatagramPtr dg = Datagram::create();
+						bson2bamboo(field->get_type(), *it, *dg);
+						snap->m_fields[field].resize(dg->size());
+						memcpy(snap->m_fields[field].data(), dg->get_data(), dg->size());
+					}
 				}
 
 				return snap;
