@@ -11,8 +11,8 @@
 #include "dclass/dc/Struct.h"
 #include "dclass/dc/Method.h"
 
-#include <client/dbclient.h>
-#include <bson/bson.h>
+#include "mongo/client/dbclient.h"
+#include "mongo/bson/bson.h"
 
 using namespace std;
 using namespace mongo;
@@ -142,7 +142,7 @@ static BSONObj bamboo2bson(const dclass::DistributedType *type,
 				ab << bamboo2bson(array->get_element_type(), dgi)["_"];
 				if(dgi.tell() > starting_size+array_length)
 				{
-					throw bson::assertion(0, "Discovered corrupt array-length tag!");
+					throw mongo::DBException("Discovered corrupt array-length tag!", 0);
 				}
 			}
 
@@ -246,7 +246,7 @@ static void bson2bamboo(const dclass::DistributedType *type,
 			string str = element.String();
 			if(str.size() != 1)
 			{
-				throw bson::assertion(0, "Expected single-length string for char field");
+				throw mongo::DBException("Expected single-length string for char field", 0);
 			}
 			dg.add_uint8(str[0]);
 		}
@@ -390,12 +390,13 @@ class MongoDatabase : public DatabaseBackend
 			m_global_collection = global_collection.str();
 
 			// Init the globals collection/document:
-			BSONObj globals = BSON("_id" << "GLOBALS" <<
+			BSONObj query = BSON("_id" << "GLOBALS");
+			BSONObj globals = BSON("$setOnInsert" << BSON(
 			                       "doid" << BSON(
 				                       "monotonic" << min_id <<
-				                       "free" << BSONArray()
+				                       "free" << BSONArray())
 			                       ));
-			m_conn.insert(m_global_collection, globals);
+			m_conn.update(m_global_collection, query, globals, true);
 		}
 
 		virtual void submit(DBOperation *operation)
@@ -465,7 +466,7 @@ class MongoDatabase : public DatabaseBackend
 					       << bamboo2bson(it->first->get_type(), dgi)["_"];
 				}
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "While formatting "
 				               << operation->m_dclass->get_name()
@@ -494,7 +495,7 @@ class MongoDatabase : public DatabaseBackend
 			{
 				m_conn.insert(m_obj_collection, b);
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Cannot insert new "
 				               << operation->m_dclass->get_name()
@@ -521,7 +522,7 @@ class MongoDatabase : public DatabaseBackend
 					     "remove" << true),
 					result);
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error while deleting "
 				               << operation->m_doid << ": " << e.what() << endl;
@@ -554,7 +555,7 @@ class MongoDatabase : public DatabaseBackend
 				obj = m_conn.findOne(m_obj_collection,
 				                     BSON("_id" << operation->m_doid));
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error occurred while trying to"
 				                  " retrieve object with DOID "
@@ -657,7 +658,7 @@ class MongoDatabase : public DatabaseBackend
 					     << "update" << updates),
 					result);
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error while modifying "
 				               << operation->m_doid << ": " << e.what() << endl;
@@ -680,7 +681,7 @@ class MongoDatabase : public DatabaseBackend
 						obj = m_conn.findOne(m_obj_collection,
 						                     BSON("_id" << operation->m_doid));
 					}
-					catch(bson::assertion &e)
+					catch(mongo::DBException &e)
 					{
 						m_log->error() << "Unexpected error while modifying "
 						               << operation->m_doid << ": " << e.what() << endl;
@@ -737,7 +738,7 @@ class MongoDatabase : public DatabaseBackend
 					return;
 				}
 			}
-			catch(bson::assertion &e) { }
+			catch(mongo::DBException &e) { }
 
 			// If we've gotten here, something is seriously wrong. We've just
 			// mucked with an object without knowing the consequences! What have
@@ -760,7 +761,7 @@ class MongoDatabase : public DatabaseBackend
 						BSON("_id" << operation->m_doid),
 						obj);
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				// Wow, we REALLY fail at life.
 				m_log->error() << "Could not revert corrupting changes to "
@@ -810,7 +811,7 @@ class MongoDatabase : public DatabaseBackend
 
 				return snap;
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error while trying to format"
 				                  " database snapshot for " << doid << ": "
@@ -841,7 +842,7 @@ class MongoDatabase : public DatabaseBackend
 				// We must now resort to pulling things out of the free list:
 				return assign_doid_reuse();
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error occurred while trying to"
 				                  " allocate a new DOID: " << e.what() << endl;
@@ -941,7 +942,7 @@ class MongoDatabase : public DatabaseBackend
 					BSON("_id" << "GLOBALS"),
 					BSON("$push" << BSON("doid.free" << doid)));
 			}
-			catch(bson::assertion &e)
+			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Could not return doid " << doid
 				               << " to free pool: " << e.what() << endl;
