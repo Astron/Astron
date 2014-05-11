@@ -4,6 +4,7 @@
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
 #include "EventLogger.h"
+#include "util/EventSender.h"
 
 #include "msgpack_decode.h"
 
@@ -21,7 +22,9 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 	m_file_format = output_format.get_rval(roleconfig);
 	open_log();
 
-	// TODO: Log message.
+	LoggedEvent event("log-opened", "EventLogger");
+	event.add("msg", "Log opened upon Event Logger startup.");
+	process_packet(event.make_datagram());
 
 	start_receive();
 }
@@ -61,7 +64,9 @@ void EventLogger::cycle_log()
 {
 	open_log();
 
-	// TODO: Log message
+	LoggedEvent event("log-opened", "EventLogger");
+	event.add("msg", "Log cycled.");
+	process_packet(event.make_datagram());
 }
 
 void EventLogger::process_packet(const DatagramHandle dg)
