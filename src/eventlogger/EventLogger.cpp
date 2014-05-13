@@ -4,6 +4,9 @@
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
 #include "EventLogger.h"
+#include "util/EventSender.h"
+
+#include "msgpack_decode.h"
 
 static RoleConfigGroup el_config("eventlogger");
 static ConfigVariable<std::string> bind_addr("bind", "0.0.0.0:7197", el_config);
@@ -18,11 +21,10 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 
 	m_file_format = output_format.get_rval(roleconfig);
 	open_log();
-	std::vector<std::string> msg;
-	msg.push_back("EventLogger");
-	msg.push_back("log_opened");
-	msg.push_back("Log opened upon Event Logger startup.");
-	write_log(msg);
+
+	LoggedEvent event("log-opened", "EventLogger");
+	event.add("msg", "Log opened upon Event Logger startup.");
+	process_packet(event.make_datagram());
 
 	start_receive();
 }
@@ -62,89 +64,57 @@ void EventLogger::cycle_log()
 {
 	open_log();
 
-	std::vector<std::string> msg;
-	msg.push_back("EventLogger");
-	msg.push_back("log_opened");
-	msg.push_back("Log cycled.");
-	write_log(msg);
-}
-
-void EventLogger::write_log(const std::vector<std::string> &msg)
-{
-	time_t rawtime;
-	time(&rawtime);
-
-	char timestamp[1024];
-	strftime(timestamp, 1024, "\"%Y-%m-%d %H:%M:%S\"", localtime(&rawtime));
-
-	*m_file << timestamp;
-
-	for(auto it = msg.begin(); it != msg.end(); ++it)
-	{
-		// If the column consists purely of alphanumerics, we can just dump it
-		// without quoting it...
-		bool alnum = true;
-		for(const char *c = it->c_str(); *c; ++c)
-		{
-			if(!isalnum(*c) && *c != '_')
-			{
-				alnum = false;
-				break;
-			}
-		}
-		if(alnum)
-		{
-			*m_file << ',' << *it;
-			continue;
-		}
-
-		// Okay, there's other stuff in this column, so we're going to quote:
-
-		char *cleaned = new char[it->length() * 2 + 1];
-
-		char *p = cleaned;
-		for(const char *c = it->c_str(); *c; ++c)
-		{
-			if(*c == '"')
-			{
-				*(p++) = '"';
-				*(p++) = '"';
-			}
-			else
-			{
-				*(p++) = *c;
-			}
-		}
-		*p = 0;
-
-		*m_file << ",\"" << cleaned << '"';
-		delete [] cleaned;
-	}
-
-	*m_file << "\r\n" << std::flush;
+	LoggedEvent event("log-opened", "EventLogger");
+	event.add("msg", "Log cycled.");
+	process_packet(event.make_datagram());
 }
 
 void EventLogger::process_packet(const DatagramHandle dg)
 {
 	DatagramIterator dgi(dg);
+	std::stringstream stream;
 
-	std::vector<std::string> msg;
-
-	while(dgi.tell() != dg->size())
+	try
 	{
-		try
-		{
-			msg.push_back(dgi.read_string());
-		}
-		catch(std::exception&)
-		{
-			m_log.error() << "Received truncated packet from "
-			              << m_remote.address() << ":" << m_remote.port() << std::endl;
-			return;
-		}
+		msgpack_decode(stream, dgi);
+	}
+	catch(DatagramIteratorEOF&)
+	{
+		m_log.error() << "Received truncated packet from "
+						<< m_remote.address() << ":" << m_remote.port() << std::endl;
+		return;
 	}
 
-	write_log(msg);
+	if(dgi.tell() != dg->size())
+	{
+		m_log.error() << "Received packet with extraneous data from "
+						<< m_remote.address() << ":" << m_remote.port() << std::endl;
+		return;
+	}
+
+	std::string data = stream.str();
+	m_log.trace() << "Received: " << data << std::endl;
+
+	// This is a little bit of a kludge, but we should make sure we got a
+	// MessagePack map as the event log element, and not some other type. The
+	// easiest way to do this is to make sure that the JSON representation
+	// begins with {
+	if(data[0] != '{')
+	{
+		m_log.error() << "Received non-map event log from "
+						<< m_remote.address() << ":" << m_remote.port()
+						<< ": " << data << std::endl;
+		return;
+	}
+
+	// Now let's insert our timestamp:
+	time_t rawtime;
+	time(&rawtime);
+
+	char timestamp[64];
+	strftime(timestamp, 64, "{\"_time\": \"%Y-%m-%d %H:%M:%S%z\", ", localtime(&rawtime));
+
+	*m_file << timestamp << data.substr(1) << std::endl;
 }
 
 void EventLogger::start_receive()

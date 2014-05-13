@@ -88,20 +88,19 @@ class AstronClient : public Client, public NetworkClient
 			set_con_name(ss.str());
 
 			// Create event for EventLogger
-			std::list<std::string> event;
-			event.push_back("client-connected");
+			LoggedEvent event("client-connected");
 
 			// Add remote endpoint to log
 			ss.str(""); // empty the stream
 			ss << remote.address().to_string()
 			   << ":" << remote.port();
-			event.push_back(ss.str());
+			event.add("remote_address", ss.str());
 
 			// Add local endpoint to log
 			ss.str(""); // empty the stream
 			ss << socket->local_endpoint().address().to_string()
 			   << ":" << socket->local_endpoint().port();
-			event.push_back(ss.str());
+			event.add("local_address", ss.str());
 
 			// Log created event
 			log_event(event);
@@ -185,8 +184,7 @@ class AstronClient : public Client, public NetworkClient
 		{
 			if(!m_clean_disconnect)
 			{
-				std::list<std::string> event;
-				event.push_back("client-lost");
+				LoggedEvent event("client-lost");
 				log_event(event);
 			}
 			delete this;
@@ -388,8 +386,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				case CLIENT_DISCONNECT:
 				{
-					std::list<std::string> event;
-					event.push_back("client-disconnected");
+					LoggedEvent event("client-disconnected");
 					log_event(event);
 
 					m_clean_disconnect = true;
@@ -418,8 +415,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				case CLIENT_DISCONNECT:
 				{
-					std::list<std::string> event;
-					event.push_back("client-disconnected");
+					LoggedEvent event("client-disconnected");
 					log_event(event);
 
 					m_clean_disconnect = true;
