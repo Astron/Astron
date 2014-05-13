@@ -8,6 +8,7 @@ from testdc import *
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -50,7 +51,7 @@ roles:
       channels:
           min: 220600
           max: 220699
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):

@@ -265,6 +265,7 @@ else:
     CONSTANTS['ZONE_SIZE_BYTES'] = 4
     CONSTANTS['ZONE_SIZE_BITS'] = 32
 
+CONSTANTS['USE_THREADING'] = 'DISABLE_THREADING' not in os.environ
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())

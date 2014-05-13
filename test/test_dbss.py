@@ -8,6 +8,7 @@ from testdc import *
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -19,7 +20,7 @@ roles:
       ranges:
           - min: 9000
             max: 9999
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 
 CONTEXT_OFFSET = 1 + (CHANNEL_SIZE_BYTES*2) + 2
 
