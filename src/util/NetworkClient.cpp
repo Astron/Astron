@@ -61,13 +61,15 @@ class NetworkWriteOperation
 };
 
 NetworkClient::NetworkClient() : m_socket(NULL), 
-	m_data_buf(NULL), m_data_size(0), m_is_data(false), m_async_timer(io_service)
+	m_data_buf(NULL), m_data_size(0), m_is_data(false), m_async_timer(io_service),
+	m_pending_drop(false)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
 	m_data_size(0), m_is_data(false), m_send_in_progress(false), m_send_queue(), 
-	m_netwriteop(NULL), m_send_queue_size(0), m_async_timer(io_service)
+	m_netwriteop(NULL), m_send_queue_size(0), m_async_timer(io_service),
+	m_pending_drop(false)
 {
 	start_receive();
 }
@@ -155,7 +157,23 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 void NetworkClient::send_disconnect()
 {
-	m_socket->close();
+	// The client is being disconnected, but we attempt to send the datagrams in queue
+	// This should fix issue #126
+
+	// These are the possible scenarios:
+
+	// I. There's nothing being sent: just close the socket
+	if(!m_send_in_progress)
+	{
+		m_socket->close();
+	}
+
+	// II. There's data being sent: make the op and tag it to be closed by async_write_done later
+	else
+	{
+		m_pending_drop = true;
+		make_network_write_op();
+	}
 }
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
@@ -215,6 +233,10 @@ void NetworkClient::async_write_done(bool success)
 	if(!success)
 	{
 		send_disconnect();
+	}
+	else if(m_pending_drop)
+	{
+		m_socket->close();
 	}
 	else if(m_send_queue.empty())
 	{

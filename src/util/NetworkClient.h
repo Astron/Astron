@@ -62,4 +62,5 @@ class NetworkClient
 		uint8_t* m_data_buf;
 		dgsize_t m_data_size;
 		bool m_is_data;
+		bool m_pending_drop;
 };
