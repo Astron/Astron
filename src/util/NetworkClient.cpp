@@ -168,11 +168,10 @@ void NetworkClient::send_disconnect()
 		m_socket->close();
 	}
 
-	// II. There's data being sent: make the op and tag it to be closed by async_write_done later
+	// II. There's data being sent: tag it to be closed by async_write_done later
 	else
 	{
 		m_pending_drop = true;
-		make_network_write_op();
 	}
 }
 
