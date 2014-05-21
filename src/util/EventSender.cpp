@@ -46,9 +46,15 @@ void EventSender::send(const DatagramHandle dg)
 EventSender g_eventsender;
 
 // And now the convenience class:
-LoggedEvent::LoggedEvent() : LoggedEvent("unset", "unset") { }
+LoggedEvent::LoggedEvent() {
+	add("type", "unset");
+	add("sender", "unset");
+}
 
-LoggedEvent::LoggedEvent(const std::string &type) : LoggedEvent(type, "unset") { }
+LoggedEvent::LoggedEvent(const std::string &type) {
+	add("type", type);
+	add("sender", "unset");
+}
 
 LoggedEvent::LoggedEvent(const std::string &type, const std::string &sender)
 {
