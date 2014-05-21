@@ -431,6 +431,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			m_declared_objects.erase(do_id);
 		}
+		break;
 		case CLIENTAGENT_SET_FIELDS_SENDABLE:
 		{
 			doid_t do_id = dgi.read_doid();
