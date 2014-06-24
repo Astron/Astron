@@ -44,6 +44,9 @@ class HTTPConnection
             
         }
         
+        std::string handleRequest(std::string requestName, std::vector<std::string> params, std::string method);
+        std::string handleAppPage(std::string url);
+        
         boost::asio::ip::tcp::socket m_socket;
         char m_request[MAX_HTTP_DATA_LENGTH];
 };
