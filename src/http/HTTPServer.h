@@ -6,6 +6,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
+#include <boost/algorithm/string.hpp>
+
 #define MAX_HTTP_DATA_LENGTH 4096
 
 class HTTPConnection 

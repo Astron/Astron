@@ -66,10 +66,21 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     size_t /* bytes_transferred*/)
 {
     
+    std::vector<std::string> headers;
+    boost::split(headers, m_request, boost::is_any_of("\r\n"));
+    
+    std::vector<std::string> topLine;
+    boost::split(topLine, headers[0], boost::is_any_of(" "));
+    
+    string requestType = topLine[0];
+    string url = topLine[1];
     
     stringstream content;
-    content << "<i>We're sorry, but Astron Web Administration is currently under construction. Nothing to see here!</i>"
-                            << m_request;
+    content << "<h1><i>We're sorry, but Astron Web Administration is currently under construction. Nothing to see here!</i></h1><br/>"
+                            << "....<h2>Alternately, for developers and creeps stalking Astron's pull requests, here's some info:</h2></br>"
+                            << "<h3>Request Type: </h3> " << requestType << "<br/>"
+                            << "<h3> URL: </h3> " << url << "<br/>"
+                            << "<h3> Full Request: </h3> <p>" << m_request << "</p>";
     
     stringstream s;
     s << "HTTP/1.1 200 OK\nServer: Astron Web Administration\nContent-Type: text/html; charset=UTF-8;\nContent-Length: "
