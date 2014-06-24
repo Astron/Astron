@@ -1,6 +1,9 @@
 #include "global.h"
 #include "RoleFactory.h"
 #include "config/constraints.h"
+
+#include "http/HTTPServer.h"
+
 #include "dclass/file/read.h"
 #include "dclass/dc/Class.h"
 using dclass::Class;
@@ -26,6 +29,8 @@ static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
 static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
+
+static ConfigList web_config("web");
 
 static void printHelp(ostream &s);
 
@@ -222,6 +227,8 @@ int main(int argc, char *argv[])
 	{
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
+    
+    HTTPServer http ("localhost", "8080");
 
 	try
 	{

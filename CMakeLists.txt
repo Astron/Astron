@@ -330,6 +330,9 @@ set(CORE_FILES
 	src/core/RoleFactory.cpp
 	src/core/types.h
 	src/core/msgtypes.h
+    
+    src/http/HTTPServer.cpp
+    src/http/HTTPServer.h
 )
 
 set(CONFIG_FILES
