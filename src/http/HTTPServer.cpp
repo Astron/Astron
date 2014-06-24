@@ -84,7 +84,15 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
         content = handleAppPage(url);
         mimeType = "text/html";
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
-        content = handleRequest(urlParts[2], dataParts, requestType);
+        map <string, string> parameters;
+        
+        for(int i = 0; i < (int) dataParts.size(); ++i) {
+            std::vector<std::string> dparts;
+            boost::split(dparts, dataParts[i], boost::is_any_of("="));
+            parameters[dparts[0]] = dparts[1];
+        }
+        
+        content = handleRequest(urlParts[2], parameters, requestType);
         mimeType = "text/plain";
     }
     
@@ -99,8 +107,8 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     boost::asio::placeholders::bytes_transferred));
 }
 
-std::string HTTPConnection::handleRequest(std::string requestName, std::vector<std::string> params, std::string method) {
-    cout << "Request " << requestName << " made: argument 1 " << params.front() << "\n";
+std::string HTTPConnection::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
+    cout << "Request " << requestName << " made: password " << params["password"] << "\n";
     
     return "{\"success\" : \"1\"}";
 }
