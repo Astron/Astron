@@ -13,6 +13,9 @@ using dclass::Class;
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
+
+#include <boost/algorithm/string.hpp>
+
 using namespace std;
 
 static LogCategory mainlog("main", "Main");
@@ -30,7 +33,10 @@ static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 
-static ConfigList web_config("web");
+static ConfigGroup web_config("web");
+static ConfigVariable<std::string> web_addr("address", "localhost:8080", web_config);
+static ConfigVariable<bool> webEnabled("enabled", false, web_config);
+
 
 static void printHelp(ostream &s);
 
@@ -228,8 +234,23 @@ int main(int argc, char *argv[])
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
     
-    HTTPServer http ("localhost", "8080");
-
+    if(webEnabled.get_val())
+    {
+        std::string web_addr_str = web_addr.get_val();
+    
+        std::vector<std::string> webAddressPort;
+        boost::split(webAddressPort, web_addr_str, boost::is_any_of(":"));
+    
+        string webPort = "80";
+        
+        if(webAddressPort.size() > 1) 
+        {
+            webPort = webAddressPort[1];
+        }
+    
+        HTTPServer httpServer (webAddressPort[0], webPort);    
+    }
+    
 	try
 	{
 		io_service.run();
