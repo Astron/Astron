@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <mutex>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -62,7 +63,7 @@ class NetworkClient
 		typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
 
 		void socket_read(uint8_t* buf, size_t length, receive_handler_t callback);
-		//void socket_write(const boost::asio::buffer&, int callback);
+		void socket_write(std::list<boost::asio::const_buffer>&);
 
 		bool m_ssl_enabled;
 		uint8_t m_size_buf[sizeof(dgsize_t)];

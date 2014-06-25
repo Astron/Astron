@@ -51,10 +51,16 @@ roles:
       #     with the parser used by Astron. (Panda3D users will currently need to enable this).
       #manual_dc_hash: 0xABCD1234
       version: "FooGame v7.0"
+
+      # TLS is an optional section (though it should ALWAYS be used in production)
+      # It enables SSL/TLS, allowing you to configure a number of TLS options.
       tls:
-        certificate: FooGame.crt
-        key_file: hidden/FooSecret.key
-        chain_file: CertProvider.crt
+        certificate: FooGame.crt # Required, a ".pem" format certificat file
+        key_file: hidden/FooSecret.key # Required, key for your cert file
+        #chain_file: CertProvider.crt  # Specify a cert for your Intermediate CA
+        #tlsv1: true   # Enables TLSv1; enabled by default;
+        #sslv2: false  # Enables SSLv2; disabled by default.
+        #sslv3: false  # Enables SSLv3; disabled by default.
       client:
         # Type declares which client this client agent should generate when it receives a new
         # connection.  By default, it is a "libastron" client which accepts connections from a

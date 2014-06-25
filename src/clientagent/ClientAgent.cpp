@@ -6,6 +6,7 @@
 #include "config/constraints.h"
 #include "dclass/file/hash.h"
 #include "net/TcpAcceptor.h"
+#include "net/SslAcceptor.h"
 using namespace std;
 namespace ssl = boost::asio::ssl;
 
@@ -14,6 +15,20 @@ static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_conf
 static ConfigVariable<string> server_version("version", "dev", clientagent_config);
 static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0, clientagent_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
+
+static ConfigGroup tls_config("tls", clientagent_config);
+static ConfigVariable<string> tls_cert("certificate", "", tls_config);
+static ConfigVariable<string> tls_key("key_file", "", tls_config);
+static ConfigVariable<string> tls_chain("chain_file", "", tls_config);
+static ConfigVariable<bool> sslv2_enabled("sslv2", false, tls_config);
+static ConfigVariable<bool> sslv3_enabled("sslv3", false, tls_config);
+static ConfigVariable<bool> tlsv1_enabled("tlsv1", true, tls_config);
+static FileAvailableConstraint tls_cert_exists(tls_cert);
+static FileAvailableConstraint tls_key_exists(tls_key);
+static FileAvailableConstraint tls_chain_exists(tls_chain);
+static BooleanValueConstraint sslv2_is_boolean(sslv2_enabled);
+static BooleanValueConstraint sslv3_is_boolean(sslv3_enabled);
+static BooleanValueConstraint tlsv1_is_boolean(tlsv1_enabled);
 
 static ConfigGroup channels_config("channels", clientagent_config);
 static ConfigVariable<channel_t> min_channel("min", INVALID_CHANNEL, channels_config);
@@ -61,10 +76,62 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 		m_hash = dclass::legacy_hash(g_dcf);
 	}
 
-	//Initialize the network
-	TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
-	                                         this, std::placeholders::_1);
-	m_net_acceptor = new TcpAcceptor(io_service, callback);
+	// Load SSL data from Config vars
+	string certificate = tls_cert.get_rval(roleconfig);
+	string key_file = tls_key.get_rval(roleconfig);
+
+	// Handle no SSL
+	if(certificate.empty() && key_file.empty())
+	{
+		TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
+		                                         this, std::placeholders::_1);
+		m_net_acceptor = new TcpAcceptor(io_service, callback);
+
+		// TODO: Yell loudly at the user that this shouldn't be used in production
+	}
+
+	// Handle SSL requested, but some information missing
+	else if(certificate.empty() != key_file.empty())
+	{
+		m_log->fatal() << "TLS requested but either certificate or key is missing.\n";
+		exit(1);
+	}
+
+	// Handle SSL
+	else
+	{
+		// Get the enabled SSL/TLS protocols
+		long int options = ssl::context::default_workarounds;
+		if(!sslv2_enabled.get_rval(roleconfig))
+		{
+			options |= ssl::context::no_sslv2;
+		}
+		if(!sslv3_enabled.get_rval(roleconfig))
+		{
+			options |= ssl::context::no_sslv3;
+		}
+		if(!tlsv1_enabled.get_rval(roleconfig))
+		{
+			options |= ssl::context::no_tlsv1;
+		}
+
+		// Prepare the context
+		ssl::context ctx(ssl::context::sslv23);
+		ctx.set_options(options);
+		ctx.use_certificate_file(certificate, ssl::context::file_format::pem);
+		ctx.use_private_key_file(tls_key.get_rval(roleconfig), ssl::context::file_format::pem);
+
+		string chain_file = tls_chain.get_rval(roleconfig);
+		if(!chain_file.empty()) {
+			ctx.use_certificate_chain_file(chain_file);
+		}
+
+		SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
+		                                         this, std::placeholders::_1);
+		m_net_acceptor = new SslAcceptor(io_service, ctx, callback);
+	}
+
+	// Begin listening for new Clients
 	boost::system::error_code ec;
 	ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
 	if(ec.value() != 0)
