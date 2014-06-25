@@ -5,8 +5,7 @@
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
 #include "dclass/file/hash.h"
-#include <boost/bind.hpp>
-using boost::asio::ip::tcp;
+#include "net/TcpAcceptor.h"
 using namespace std;
 
 RoleConfigGroup clientagent_config("clientagent");
@@ -32,7 +31,7 @@ bool have_client_type(const string& backend)
 ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
 		"No Client handler exists for the given client type.");
 
-ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(NULL),
+ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
 	m_server_version(server_version.get_rval(roleconfig))
 {
 	stringstream ss;
@@ -62,15 +61,21 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_acceptor(N
 	}
 
 	//Initialize the network
-	string str_ip = bind_addr.get_rval(m_roleconfig);
-	string str_port = str_ip.substr(str_ip.find(':', 0) + 1, string::npos);
-	str_ip = str_ip.substr(0, str_ip.find(':', 0));
-	tcp::resolver resolver(io_service);
-	tcp::resolver::query query(str_ip, str_port);
-	tcp::resolver::iterator it = resolver.resolve(query);
-	m_acceptor = new tcp::acceptor(io_service, *it, true);
-
-	start_accept();
+	TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
+	                                         this, std::placeholders::_1);
+	m_net_acceptor = new TcpAcceptor(io_service, callback);
+	boost::system::error_code ec;
+	ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
+	if(ec.value() != 0)
+	{
+		m_log->fatal() << "Could not bind listening port: "
+		               << bind_addr.get_val() << std::endl;
+		m_log->fatal() << "Error code: " << ec.value()
+		               << "(" << ec.category().message(ec.value()) << ")"
+		               << std::endl;
+		exit(1);
+	}
+	m_net_acceptor->start();
 }
 
 ClientAgent::~ClientAgent()
@@ -78,21 +83,10 @@ ClientAgent::~ClientAgent()
 	delete m_log;
 }
 
-// start_accept waits for a new client connection and calls handle_accept when received.
-void ClientAgent::start_accept()
+// handle_tcp generates a new Client object from a raw tcp connection.
+void ClientAgent::handle_tcp(tcp::socket *socket)
 {
-	tcp::socket *socket = new tcp::socket(io_service);
-	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*socket, boost::bind(&ClientAgent::handle_accept,
-	                         this, socket, boost::asio::placeholders::error));
-}
-
-// handle_accepts generates a new Client object from a connection, then calls start_accept.
-void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
-{
-	// TODO: We probably want to check the error code here
-
-	boost::asio::ip::tcp::endpoint remote;
+	tcp::endpoint remote;
 	try
 	{
 		remote = socket->remote_endpoint();
@@ -104,15 +98,12 @@ void ClientAgent::handle_accept(tcp::socket *socket, const boost::system::error_
 		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 		// is_open() == true, so we just catch the exception on remote_endpoint
 		// instead.
-		start_accept();
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "
 	               << remote.address() << ":" << remote.port() << endl;
 
 	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
-
-	start_accept();
 }
 
 // handle_datagram handles Datagrams received from the message director.
