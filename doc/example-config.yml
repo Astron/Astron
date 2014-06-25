@@ -30,7 +30,12 @@ uberdogs:
 # The Web section enables a status and debugging webpage on this daemon.
 web:
     bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
-    enabled: true
+    enabled: true # if undefined or set to false, webserver will be disabled
+    
+    
+    # the admin directory resides in the current working directory, relative to this file
+    path: .
+    
     # Authentication enables a BASIC authentication mechanism for the website
     #authentication:
     #    username: foo
