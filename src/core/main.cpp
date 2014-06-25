@@ -36,6 +36,8 @@ static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 static ConfigGroup web_config("web");
 static ConfigVariable<std::string> web_addr("address", "localhost:8080", web_config);
 static ConfigVariable<bool> webEnabled("enabled", false, web_config);
+static ConfigVariable<std::string> web_path("path", ".", web_config);
+
 
 
 static void printHelp(ostream &s);
@@ -248,7 +250,7 @@ int main(int argc, char *argv[])
             webPort = webAddressPort[1];
         }
     
-        HTTPServer httpServer (webAddressPort[0], webPort);    
+        HTTPServer httpServer (webAddressPort[0], webPort, web_path.get_val());    
     }
     
 	try

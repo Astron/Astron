@@ -2,9 +2,13 @@
 
 using boost::asio::ip::tcp;
 using namespace std;
+
+static string s_webPath;
  
-HTTPServer::HTTPServer(string str_ip, string str_port)
+HTTPServer::HTTPServer(string str_ip, string str_port, string web_path)
 {    
+    s_webPath = web_path;
+    
     tcp::resolver resolver(io_service);
     tcp::resolver::query query(str_ip, str_port);
     tcp::resolver::iterator it = resolver.resolve(query);
@@ -70,20 +74,11 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
         boost::split(dataParts, urlVsData[1], boost::is_any_of("&"));
     }
     
-    /*stringstream content;
-    content << "<h1><i>We're sorry, but Astron Web Administration is currently under construction. Nothing to see here!</i></h1><br/>"
-                            << "....<h2>Alternately, for developers and creeps stalking Astron's pull requests, here's some info:</h2></br>"
-                            << "<h3>Request Type: </h3> " << requestType << "<br/>"
-                            << "<h3> URL: </h3> " << url << "<br/>"
-                            << "<h3> Full Request: </h3> <p>" << m_request << "</p>";*/
-    
-    std::string content = "Default";
-    std::string mimeType = "text/plain";
-    
-    m_errorCode = 404;
+    string mimeType = "text/plain";
+    errorResponse_t resp = std::make_tuple(404, "Malformed request");
     
     if(urlParts[1] == "admin") {
-        content = handleAppPage(url);
+        resp = HTTPServer::handleAppPage(url);
         mimeType = "text/html";
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
         map <string, string> parameters;
@@ -94,14 +89,14 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
             parameters[dparts[0]] = dparts[1];
         }
         
-        content = handleRequest(urlParts[2], parameters, requestType);
+        resp = HTTPServer::handleRequest(urlParts[2], parameters, requestType);
         mimeType = "text/plain";
     }
     
     stringstream s;
-    s << "HTTP/1.1 " << m_errorCode << " OK\nServer: Astron Web Administration\nContent-Type: " << mimeType << "\nContent-Length: "
-         << content.length() << "\nConnection: close\n\n" 
-         << content << "\n";
+    s << "HTTP/1.1 " << std::get<0>(resp) << " OK\nServer: Astron Web Administration\nContent-Type: " << mimeType << "\nContent-Length: "
+         << std::get<1>(resp).length() << "\nConnection: close\n\n" 
+         << std::get<1>(resp) << "\n";
     
     boost::asio::async_write(m_socket, boost::asio::buffer(s.str()), 
         boost::bind(&HTTPConnection::handle_write, shared_from_this(),
@@ -109,40 +104,35 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     boost::asio::placeholders::bytes_transferred));
 }
 
-std::string HTTPConnection::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
+errorResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
+                                                                 
     cout << "Request " << requestName << " made: password " << params["password"] << "\n";
     
-    return "{\"success\" : \"1\"}";
+    return std::make_tuple(200, "{\"success\" : \"1\"}");
 }
 
-std::string HTTPConnection::handleAppPage(std::string url) {
+errorResponse_t HTTPServer::handleAppPage(std::string url) {
     cout << "Serve page " << url << "\n";
     
     if(boost::find_first(url, "..") || boost::find_first(url, "~")) {
         cout << "LIKELY HACKING ATTEMPT" << "\n";
-        return "<script>alert('Stop hacking');</script>"; // TODO: log IP
+        return std::make_tuple(200, "<script>alert('Stop hacking');</script>"); // TODO: log IP
     }
     
     stringstream pathStream;
-    pathStream << "." << url;
+    pathStream << s_webPath << url;
     
     string path = pathStream.str();
     
-    if(!boost::filesystem::exists(path)) {
-        m_errorCode = 404;
-        return "404 File Not Found.";
-    }
+    if(!boost::filesystem::exists(path)) return std::make_tuple(404, "404 File Not Found");
     
     std::ifstream stream;
     stream.open(path, std::ios::in);
     
-    if(!stream) {
-        m_errorCode = 404;
-        return "404 File Not Found. (stream null)";
-    }
+    if(!stream) return std::make_tuple(404, "404 File Not Found (stream null)");
     
     stringstream s;
     s << stream.rdbuf();
     
-    return s.str();
+    return std::make_tuple(200, s.str());
 }

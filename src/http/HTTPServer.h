@@ -11,6 +11,8 @@
 
 #define MAX_HTTP_DATA_LENGTH 4096
 
+typedef std::tuple <int, std::string> errorResponse_t;
+
 class HTTPConnection 
     : public boost::enable_shared_from_this<HTTPConnection>
 {
@@ -45,19 +47,15 @@ class HTTPConnection
             
         }
         
-        std::string handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method);
-        std::string handleAppPage(std::string url);
         
         boost::asio::ip::tcp::socket m_socket;
         char m_request[MAX_HTTP_DATA_LENGTH];
-        
-        int m_errorCode;
 };
 
 class HTTPServer
 {
     public:
-        HTTPServer(std::string str_ip, std::string str_port);
+        HTTPServer(std::string str_ip, std::string str_port, std::string web_path);
         ~HTTPServer();
         
         // connection loop, calls handle_accept
@@ -66,6 +64,12 @@ class HTTPServer
         // client connected callback
         void handle_accept(HTTPConnection::pointer new_connection, 
                             const boost::system::error_code &ec);
+                            
+                            
+        static errorResponse_t handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method);
+        static errorResponse_t handleAppPage(std::string url);
+                            
+        static std::string m_webPath;
                             
     private:
         boost::asio::ip::tcp::acceptor *m_acceptor;
