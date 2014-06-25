@@ -49,6 +49,8 @@ class HTTPConnection
         
         
         boost::asio::ip::tcp::socket m_socket;
+		std::string m_ipAddress;
+		
         char m_request[MAX_HTTP_DATA_LENGTH];
 };
 
@@ -66,8 +68,8 @@ class HTTPServer
                             const boost::system::error_code &ec);
                             
                             
-        static errorMimeResponse_t handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method);
-        static errorMimeResponse_t handleAppPage(std::string url);
+        static errorMimeResponse_t handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method, std::string ipAddress);
+        static errorMimeResponse_t handleAppPage(std::string url, std::string ipAddress);
         
         static errorMimeResponse_t serve404(std::string info = "");
         static errorMimeResponse_t serveFile(std::string mimeType, std::string content);    
@@ -75,6 +77,8 @@ class HTTPServer
         static errorMimeResponse_t serveFrozenPage(std::string url, std::string mimeType);  
         
         static std::string mimeFromExt(std::string ext);
+		static bool detectDirectoryTraversal(std::string url);
+		
                             
         static std::string m_webPath;
                             

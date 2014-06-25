@@ -5,6 +5,8 @@ using boost::asio::ip::tcp;
 using namespace std;
 
 static string s_webPath;
+
+static LogCategory weblog("web", "Web");
  
 HTTPServer::HTTPServer(string str_ip, string str_port, string web_path)
 {    
@@ -46,6 +48,8 @@ void HTTPServer::handle_accept(HTTPConnection::pointer new_connection,
 
 void HTTPConnection::start ()
 {
+	m_ipAddress = m_socket.remote_endpoint().address().to_string();
+	
     m_socket.async_read_some( boost::asio::buffer(m_request, MAX_HTTP_DATA_LENGTH), 
                                boost::bind(&HTTPConnection::handle_read, shared_from_this(),
                                             boost::asio::placeholders::error,
@@ -55,7 +59,8 @@ void HTTPConnection::start ()
 void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     size_t /* bytes_transferred*/)
 {
-    
+    // split request into headers, method, and data (see HTTP protocol)
+	
     std::vector<std::string> headers;
     boost::split(headers, m_request, boost::is_any_of("\r\n"));
     
@@ -69,6 +74,8 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     string requestType = topLine[0];
     string url = topLine[1];
     
+	// decode URL
+	
     std::vector<std::string> urlVsData;
     boost::split(urlVsData, url, boost::is_any_of("?"));
         
@@ -81,13 +88,15 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     {
         boost::split(dataParts, urlVsData[1], boost::is_any_of("&"));
     }
+	
+	//serve request depending on type
     
     errorMimeResponse_t resp = HTTPServer::serve404("Malformed request");
         
     if(urlParts.size() < 2) {
         resp = HTTPServer::serve404();
     } else if(urlParts[1] == "admin") {
-        resp = HTTPServer::handleAppPage(url);
+        resp = HTTPServer::handleAppPage(url, m_ipAddress);
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
         // create a map from URL parameters of form ?a=b&c=d&e=f 
         
@@ -100,8 +109,10 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
             parameters[dparts[0]] = dparts[1];
         }
         
-        resp = HTTPServer::handleRequest(urlParts[2], parameters, requestType);
+        resp = HTTPServer::handleRequest(urlParts[2], parameters, requestType, m_ipAddress);
     }
+	
+	// serve HTTP response
     
     stringstream s;
     
@@ -119,18 +130,25 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     boost::asio::placeholders::bytes_transferred));
 }
 
-errorMimeResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method)
+// requestName is stated in the URL
+// params is in URL GET request form
+// method is the HTTP method, GET, POST, etc.
+
+errorMimeResponse_t HTTPServer::handleRequest(	std::string /*requestName*/, 
+												std::map <std::string, std::string> /*params*/, 
+												std::string /*method*/, 
+												std::string /*ip*/)
 {                                                             
     return serveRequest(200, "{\"success\" : \"1\"}");
 }
 
-errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
-{
-    if(boost::find_first(url, "..") || boost::find_first(url, "~"))
-    {
-        return serveFile("text/html", "<script>alert('Stop hacking');</script>"); // TODO: log IP
-    }
-    
+// HTTPServer::handleAppPage
+// called when the request is in the application space
+// currently /admin/
+
+errorMimeResponse_t HTTPServer::handleAppPage(std::string url, std::string ip)
+{   
+	// determine mime type, defaults to text/plain
     string mimeType = "text/plain";
         
     std::vector<std::string> fileParts;
@@ -141,21 +159,35 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
         mimeType = mimeFromExt(fileParts[1]);
     }
     
+	// configurable frozen mode: skip filesystem access for security, portabillity, and performance
     if(s_webPath == "FROZEN")
     {
         return serveFrozenPage(url, mimeType);
     }
     
+	// protect against directory traversal attack
+    if(detectDirectoryTraversal(url))
+    {
+		weblog.security() << "Directory Traversal Attack Detected from " << ip << " at " << url << "\n";
+        return serveFile("text/html", "<script>alert('Stop hacking');</script>"); // TODO: log IP
+    }
+	
+	// determine relative path
+	
     stringstream pathStream;
     pathStream << s_webPath << url;
     
     string path = pathStream.str();
     
+	// 404 if non-existent
+	
     if(!boost::filesystem::exists(path))
     {
         return serve404();
     } 
     
+	// read file and serve to browser
+	
     std::ifstream stream;
     stream.open(path, std::ios::in);
     
@@ -172,6 +204,8 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
 
 errorMimeResponse_t HTTPServer::serveFrozenPage(std::string url, std::string mimeType)
 {    
+	// ensure frozen file exists
+	
     if(!g_frozenWeb.count(url))
     {
         return serve404();
@@ -186,6 +220,8 @@ errorMimeResponse_t HTTPServer::serve404(std::string info)
     
     message << "<h1>404 File Not Found</h1>";
     
+	//info defaults to length 0, optional additional info support
+	
     if(info.length()) {
         message << "<h2>Additional Info</h2>" << info;
     }
@@ -218,4 +254,11 @@ std::string HTTPServer::mimeFromExt(std::string ext)
     if(ext == "mp3") return "audio/mpeg";
     
     return "text/plain";   
+}
+
+bool HTTPServer::detectDirectoryTraversal(std::string url) 
+{
+    return	boost::find_first(url, "..")
+		 || boost::find_first(url, "~")
+		 || boost::find_first(url, "%2e%2e");
 }
