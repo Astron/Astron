@@ -59,15 +59,19 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     std::vector<std::string> headers;
     boost::split(headers, m_request, boost::is_any_of("\r\n"));
     
+    if(headers.size() < 2) return;
+    
     std::vector<std::string> topLine;
     boost::split(topLine, headers[0], boost::is_any_of(" "));
+    
+    if(topLine.size() < 3) return;
     
     string requestType = topLine[0];
     string url = topLine[1];
     
     std::vector<std::string> urlVsData;
     boost::split(urlVsData, url, boost::is_any_of("?"));
-    
+        
     std::vector<std::string> urlParts;
     boost::split(urlParts, urlVsData[0], boost::is_any_of("/"));
     
@@ -79,8 +83,10 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     }
     
     errorMimeResponse_t resp = HTTPServer::serve404("Malformed request");
-    
-    if(urlParts[1] == "admin") {
+        
+    if(urlParts.size() < 2) {
+        resp = HTTPServer::serve404();
+    } else if(urlParts[1] == "admin") {
         resp = HTTPServer::handleAppPage(url);
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
         // create a map from URL parameters of form ?a=b&c=d&e=f 
