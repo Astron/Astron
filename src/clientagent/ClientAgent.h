@@ -3,6 +3,7 @@
 #include "Client.h"
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 extern RoleConfigGroup clientagent_config;
 extern ConfigGroup ca_client_config;
@@ -35,6 +36,9 @@ class ClientAgent : public Role
 
 		// handle_tcp generates a new Client object from a raw tcp connection.
 		void handle_tcp(boost::asio::ip::tcp::socket *socket);
+
+		// handle_ssl generates a new Client object from an ssl stream.
+		void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
 
 		// handle_datagram handles Datagrams received from the message director.
 		// Currently the ClientAgent does not handle any datagrams,

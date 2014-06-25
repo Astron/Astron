@@ -7,6 +7,7 @@
 #include "dclass/file/hash.h"
 #include "net/TcpAcceptor.h"
 using namespace std;
+namespace ssl = boost::asio::ssl;
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
@@ -105,6 +106,30 @@ void ClientAgent::handle_tcp(tcp::socket *socket)
 
 	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
 }
+
+// handle_ssl generates a new Client object from an ssl stream.
+void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
+{
+	tcp::endpoint remote;
+	try
+	{
+		remote = stream->next_layer().remote_endpoint();
+	}
+	catch (exception&)
+	{
+		// A client might disconnect immediately after connecting.
+		// If this happens, do nothing. Resolves #122.
+		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
+		// is_open() == true, so we just catch the exception on remote_endpoint
+		// instead.
+		return;
+	}
+	m_log->debug() << "Got an incoming connection from "
+	               << remote.address() << ":" << remote.port() << endl;
+
+	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream);
+}
+
 
 // handle_datagram handles Datagrams received from the message director.
 void ClientAgent::handle_datagram(DatagramHandle, DatagramIterator&)
