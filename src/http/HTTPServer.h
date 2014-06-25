@@ -71,7 +71,10 @@ class HTTPServer
         
         static errorMimeResponse_t serve404(std::string info = "");
         static errorMimeResponse_t serveFile(std::string mimeType, std::string content);    
-        static errorMimeResponse_t serveRequest(int error, std::string request);   
+        static errorMimeResponse_t serveRequest(int error, std::string request); 
+        static errorMimeResponse_t serveFrozenPage(std::string url, std::string mimeType);  
+        
+        static std::string mimeFromExt(std::string ext);
                             
         static std::string m_webPath;
                             

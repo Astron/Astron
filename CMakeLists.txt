@@ -333,6 +333,8 @@ set(CORE_FILES
     
     src/http/HTTPServer.cpp
     src/http/HTTPServer.h
+    src/http/frozenweb.cpp
+    src/http/frozenweb.h
 )
 
 set(CONFIG_FILES

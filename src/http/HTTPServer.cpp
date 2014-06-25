@@ -1,4 +1,5 @@
 #include "HTTPServer.h"
+#include "frozenweb.h"
 
 using boost::asio::ip::tcp;
 using namespace std;
@@ -8,6 +9,8 @@ static string s_webPath;
 HTTPServer::HTTPServer(string str_ip, string str_port, string web_path)
 {    
     s_webPath = web_path;
+    
+    if(s_webPath == "FROZEN") initFrozen();
     
     tcp::resolver resolver(io_service);
     tcp::resolver::query query(str_ip, str_port);
@@ -122,15 +125,8 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
         return serveFile("text/html", "<script>alert('Stop hacking');</script>"); // TODO: log IP
     }
     
-    if(s_webPath == "FROZEN")
-    {
-        return serve404("Frozen website not supported yet! Sorry!");
-    }
-    
     string mimeType = "text/plain";
-    
-    // split file extension from rest of URL
-    
+        
     std::vector<std::string> fileParts;
     boost::split(fileParts, url, boost::is_any_of(".")) ;
     
@@ -139,6 +135,10 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
         mimeType = mimeFromExt(fileParts[1]);
     }
     
+    if(s_webPath == "FROZEN")
+    {
+        return serveFrozenPage(url, mimeType);
+    }
     
     stringstream pathStream;
     pathStream << s_webPath << url;
@@ -164,6 +164,16 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
     return serveFile(mimeType, s.str());
 }
 
+errorMimeResponse_t HTTPServer::serveFrozenPage(std::string url, std::string mimeType)
+{    
+    if(!g_frozenWeb.count(url))
+    {
+        return serve404();
+    }
+    
+    return serveFile(mimeType, g_frozenWeb[url]);
+}
+
 errorMimeResponse_t HTTPServer::serve404(std::string info)
 {
     stringstream message;
@@ -187,7 +197,7 @@ errorMimeResponse_t HTTPServer::serveFile(std::string mimeType, std::string cont
     return std::make_tuple(200, mimeType, content);
 }
 
-string HTTPServer::mimeFromExt(std::string ext)
+std::string HTTPServer::mimeFromExt(std::string ext)
 {
     if(ext == "html") return "text/html";
     if(ext == "css") return "text/css";
