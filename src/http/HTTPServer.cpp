@@ -74,13 +74,13 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
         boost::split(dataParts, urlVsData[1], boost::is_any_of("&"));
     }
     
-    string mimeType = "text/plain";
-    errorResponse_t resp = std::make_tuple(404, "Malformed request");
+    errorMimeResponse_t resp = HTTPServer::serve404("Malformed request");
     
     if(urlParts[1] == "admin") {
         resp = HTTPServer::handleAppPage(url);
-        mimeType = "text/html";
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
+        // create a map from URL parameters of form ?a=b&c=d&e=f 
+        
         map <string, string> parameters;
         
         for(int i = 0; i < (int) dataParts.size(); ++i) {
@@ -90,13 +90,16 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
         }
         
         resp = HTTPServer::handleRequest(urlParts[2], parameters, requestType);
-        mimeType = "text/plain";
     }
     
     stringstream s;
-    s << "HTTP/1.1 " << std::get<0>(resp) << " OK\nServer: Astron Web Administration\nContent-Type: " << mimeType << "\nContent-Length: "
-         << std::get<1>(resp).length() << "\nConnection: close\n\n" 
-         << std::get<1>(resp) << "\n";
+    s << "HTTP/1.1 " << std::get<0>(resp) << " OK\n"
+        << "Server: Astron Web Administration\n"
+        << "Content-Type: " << std::get<1>(resp) << "\n"
+        << "Content-Length: " << std::get<2>(resp).length() << "\n"
+        << "Connection: close\n\n" 
+            
+        << std::get<2>(resp) << "\n";
     
     boost::asio::async_write(m_socket, boost::asio::buffer(s.str()), 
         boost::bind(&HTTPConnection::handle_write, shared_from_this(),
@@ -104,35 +107,90 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     boost::asio::placeholders::bytes_transferred));
 }
 
-errorResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
+errorMimeResponse_t HTTPServer::serve404(std::string info) {
+    stringstream message;
+    
+    message << "<h1>404 File Not Found</h1>";
+    
+    if(info.length()) {
+        message << "<h2>Additional Info</h2>" << info;
+    }
+    
+    return std::make_tuple(404, "text/html", message.str());
+}
+
+errorMimeResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
                                                                  
     cout << "Request " << requestName << " made: password " << params["password"] << "\n";
     
-    return std::make_tuple(200, "{\"success\" : \"1\"}");
+    return serveRequest(200, "{\"success\" : \"1\"}");
 }
 
-errorResponse_t HTTPServer::handleAppPage(std::string url) {
+errorMimeResponse_t HTTPServer::serveRequest(int error, std::string request) {
+    return std::make_tuple(error, "text/plain", request);
+}
+
+errorMimeResponse_t HTTPServer::serveFile(std::string mimeType, std::string content) {
+    return std::make_tuple(200, mimeType, content);
+}
+
+errorMimeResponse_t HTTPServer::handleAppPage(std::string url) {
     cout << "Serve page " << url << "\n";
     
     if(boost::find_first(url, "..") || boost::find_first(url, "~")) {
         cout << "LIKELY HACKING ATTEMPT" << "\n";
-        return std::make_tuple(200, "<script>alert('Stop hacking');</script>"); // TODO: log IP
+        return serveFile("text/html", "<script>alert('Stop hacking');</script>"); // TODO: log IP
     }
+    
+    if(s_webPath == "FROZEN") {
+        return serve404("Frozen website not supported yet! Sorry!");
+    }
+    
+    string mimeType = "text/plain";
+    
+    // split file extension from rest of URL
+    
+    std::vector<std::string> fileParts;
+    boost::split(fileParts, url, boost::is_any_of(".")) ;
+    
+    if(fileParts.size() > 1) {
+        // determine mime type by extension
+        // switch statements can't use strings, unfortunately
+        
+        if(fileParts[1] == "html") mimeType = "text/html";
+        if(fileParts[1] == "css") mimeType = "text/css";
+        
+        if(fileParts[1] == "js") mimeType = "application/x-javascript";
+        
+        if(fileParts[1] == "bmp") mimeType = "image/bmp";
+        if(fileParts[1] == "jpg") mimeType = "image/jpeg";
+        if(fileParts[1] == "png") mimeType = "image/png";
+        
+        if(fileParts[1] == "wav") mimeType = "audio/x-wav";
+        if(fileParts[1] == "mp3") mimeType = "audio/mpeg";
+    }
+    
     
     stringstream pathStream;
     pathStream << s_webPath << url;
     
     string path = pathStream.str();
     
-    if(!boost::filesystem::exists(path)) return std::make_tuple(404, "404 File Not Found");
+    if(!boost::filesystem::exists(path))
+    {
+        return serve404();
+    } 
     
     std::ifstream stream;
     stream.open(path, std::ios::in);
     
-    if(!stream) return std::make_tuple(404, "404 File Not Found (stream null)");
+    if(!stream)
+    {
+        return serve404("Stream null");
+    } 
     
     stringstream s;
     s << stream.rdbuf();
     
-    return std::make_tuple(200, s.str());
+    return serveFile(mimeType, s.str());
 }

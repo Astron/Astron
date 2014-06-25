@@ -34,11 +34,8 @@ static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 
 static ConfigGroup web_config("web");
-static ConfigVariable<std::string> web_addr("address", "localhost:8080", web_config);
-static ConfigVariable<bool> webEnabled("enabled", false, web_config);
-static ConfigVariable<std::string> web_path("path", ".", web_config);
-
-
+static ConfigVariable<std::string> web_addr("address", "", web_config);
+static ConfigVariable<std::string> web_path("path", "FROZEN", web_config);
 
 static void printHelp(ostream &s);
 
@@ -236,7 +233,7 @@ int main(int argc, char *argv[])
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
     
-    if(webEnabled.get_val())
+    if(web_addr.get_val().length())
     {
         std::string web_addr_str = web_addr.get_val();
     

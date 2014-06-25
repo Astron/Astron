@@ -11,7 +11,7 @@
 
 #define MAX_HTTP_DATA_LENGTH 4096
 
-typedef std::tuple <int, std::string> errorResponse_t;
+typedef std::tuple <int, std::string, std::string> errorMimeResponse_t;
 
 class HTTPConnection 
     : public boost::enable_shared_from_this<HTTPConnection>
@@ -66,8 +66,12 @@ class HTTPServer
                             const boost::system::error_code &ec);
                             
                             
-        static errorResponse_t handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method);
-        static errorResponse_t handleAppPage(std::string url);
+        static errorMimeResponse_t handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method);
+        static errorMimeResponse_t handleAppPage(std::string url);
+        
+        static errorMimeResponse_t serve404(std::string info = "");
+        static errorMimeResponse_t serveFile(std::string mimeType, std::string content);    
+        static errorMimeResponse_t serveRequest(int error, std::string request);   
                             
         static std::string m_webPath;
                             
