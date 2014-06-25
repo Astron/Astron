@@ -51,6 +51,10 @@ roles:
       #     with the parser used by Astron. (Panda3D users will currently need to enable this).
       #manual_dc_hash: 0xABCD1234
       version: "FooGame v7.0"
+      tls:
+        certificate: FooGame.crt
+        key_file: hidden/FooSecret.key
+        chain_file: CertProvider.crt
       client:
         # Type declares which client this client agent should generate when it receives a new
         # connection.  By default, it is a "libastron" client which accepts connections from a
