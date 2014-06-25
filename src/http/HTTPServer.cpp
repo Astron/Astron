@@ -80,7 +80,9 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     std::string content = "Default";
     std::string mimeType = "text/plain";
     
-    if(urlParts[1] == "app") {
+    m_errorCode = 404;
+    
+    if(urlParts[1] == "admin") {
         content = handleAppPage(url);
         mimeType = "text/html";
     } else if(urlParts[1] == "request" && urlVsData.size() > 1) {
@@ -97,7 +99,7 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     }
     
     stringstream s;
-    s << "HTTP/1.1 200 OK\nServer: Astron Web Administration\nContent-Type: " << mimeType << "\nContent-Length: "
+    s << "HTTP/1.1 " << m_errorCode << " OK\nServer: Astron Web Administration\nContent-Type: " << mimeType << "\nContent-Length: "
          << content.length() << "\nConnection: close\n\n" 
          << content << "\n";
     
@@ -116,11 +118,31 @@ std::string HTTPConnection::handleRequest(std::string requestName, std::map <std
 std::string HTTPConnection::handleAppPage(std::string url) {
     cout << "Serve page " << url << "\n";
     
+    if(boost::find_first(url, "..") || boost::find_first(url, "~")) {
+        cout << "LIKELY HACKING ATTEMPT" << "\n";
+        return "<script>alert('Stop hacking');</script>"; // TODO: log IP
+    }
+    
+    stringstream pathStream;
+    pathStream << "." << url;
+    
+    string path = pathStream.str();
+    
+    if(!boost::filesystem::exists(path)) {
+        m_errorCode = 404;
+        return "404 File Not Found.";
+    }
+    
+    std::ifstream stream;
+    stream.open(path, std::ios::in);
+    
+    if(!stream) {
+        m_errorCode = 404;
+        return "404 File Not Found. (stream null)";
+    }
+    
     stringstream s;
-    s << "<h1><i>We're sorry, but Astron Web Administration is currently under construction. Nothing to see here!</i></h1><br/>"
-                            << "This is an app page <br/>"
-                            << "In the future, this will point to: "
-                            << url;
+    s << stream.rdbuf();
     
     return s.str();
 }

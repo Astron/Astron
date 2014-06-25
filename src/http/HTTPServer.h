@@ -7,6 +7,7 @@
 #include <boost/asio.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 #define MAX_HTTP_DATA_LENGTH 4096
 
@@ -49,6 +50,8 @@ class HTTPConnection
         
         boost::asio::ip::tcp::socket m_socket;
         char m_request[MAX_HTTP_DATA_LENGTH];
+        
+        int m_errorCode;
 };
 
 class HTTPServer
