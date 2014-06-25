@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include "util/Datagram.h"
 
 class NetworkClient
@@ -16,8 +17,10 @@ class NetworkClient
 	protected:
 		NetworkClient();
 		NetworkClient(boost::asio::ip::tcp::socket *socket);
+		NetworkClient(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream, bool as_server);
 		virtual ~NetworkClient();
 		void set_socket(boost::asio::ip::tcp::socket *socket);
+		void set_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream, bool as_server);
 
 
 		/** Pure virtual methods **/
@@ -35,19 +38,33 @@ class NetworkClient
 		// start_receive is called by the constructor or set_socket
 		//     after m_socket is set to a provided socket.
 		virtual void start_receive();
-		// async_receive is called by receive_start to begin receiving data, then by receive_size
+
+		// start_ssl is called by the constructor or set_socket when
+		//     an ssl context is provided, and does an SSL handshake.
+		virtual void start_ssl(bool as_server);
+
+		// async_receive is called by start_receive to begin receiving data, then by receive_size
 		//     or receive_data to wait for the next set of data.
 		virtual void async_receive();
-		// receive_size is called by _async_receive when receiving the datagram size
+
+		// receive_ssl is called by start_ssl to handle the result of the SSL handshake.
+		virtual void receive_ssl(const boost::system::error_code &ec);
+		// receive_size is called by async_receive when receiving the datagram size
 		virtual void receive_size(const boost::system::error_code &ec, size_t bytes_transferred);
-		// receive_data is called by _async_receive when receiving the datagram data
+		// receive_data is called by async_receive when receiving the datagram data
 		virtual void receive_data(const boost::system::error_code &ec, size_t bytes_transferred);
 
 
 		boost::asio::ip::tcp::socket *m_socket;
+		boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
 
 	private:
+		typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
 
+		void socket_read(uint8_t* buf, size_t length, receive_handler_t callback);
+		//void socket_write(const boost::asio::buffer&, int callback);
+
+		bool m_ssl_enabled;
 		uint8_t m_size_buf[sizeof(dgsize_t)];
 		uint8_t* m_data_buf;
 		dgsize_t m_data_size;
