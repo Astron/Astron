@@ -70,7 +70,8 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     
     std::vector<std::string> dataParts;
     
-    if(urlVsData.size() > 1) {
+    if(urlVsData.size() > 1)
+    {
         boost::split(dataParts, urlVsData[1], boost::is_any_of("&"));
     }
     
@@ -83,7 +84,8 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
         
         map <string, string> parameters;
         
-        for(int i = 0; i < (int) dataParts.size(); ++i) {
+        for(int i = 0; i < (int) dataParts.size(); ++i)
+        {
             std::vector<std::string> dparts;
             boost::split(dparts, dataParts[i], boost::is_any_of("="));
             parameters[dparts[0]] = dparts[1];
@@ -93,7 +95,8 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
     }
     
     stringstream s;
-    s << "HTTP/1.1 " << std::get<0>(resp) << " OK\n"
+    
+    s   << "HTTP/1.1 " << std::get<0>(resp) << " OK\n"
         << "Server: Astron Web Administration\n"
         << "Content-Type: " << std::get<1>(resp) << "\n"
         << "Content-Length: " << std::get<2>(resp).length() << "\n"
@@ -107,42 +110,20 @@ void HTTPConnection::handle_read(const boost::system::error_code& /* ec */,
                     boost::asio::placeholders::bytes_transferred));
 }
 
-errorMimeResponse_t HTTPServer::serve404(std::string info) {
-    stringstream message;
-    
-    message << "<h1>404 File Not Found</h1>";
-    
-    if(info.length()) {
-        message << "<h2>Additional Info</h2>" << info;
-    }
-    
-    return std::make_tuple(404, "text/html", message.str());
-}
-
-errorMimeResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method) {
-                                                                 
-    cout << "Request " << requestName << " made: password " << params["password"] << "\n";
-    
+errorMimeResponse_t HTTPServer::handleRequest(std::string requestName, std::map <std::string, std::string> params, std::string method)
+{                                                             
     return serveRequest(200, "{\"success\" : \"1\"}");
 }
 
-errorMimeResponse_t HTTPServer::serveRequest(int error, std::string request) {
-    return std::make_tuple(error, "text/plain", request);
-}
-
-errorMimeResponse_t HTTPServer::serveFile(std::string mimeType, std::string content) {
-    return std::make_tuple(200, mimeType, content);
-}
-
-errorMimeResponse_t HTTPServer::handleAppPage(std::string url) {
-    cout << "Serve page " << url << "\n";
-    
-    if(boost::find_first(url, "..") || boost::find_first(url, "~")) {
-        cout << "LIKELY HACKING ATTEMPT" << "\n";
+errorMimeResponse_t HTTPServer::handleAppPage(std::string url)
+{
+    if(boost::find_first(url, "..") || boost::find_first(url, "~"))
+    {
         return serveFile("text/html", "<script>alert('Stop hacking');</script>"); // TODO: log IP
     }
     
-    if(s_webPath == "FROZEN") {
+    if(s_webPath == "FROZEN")
+    {
         return serve404("Frozen website not supported yet! Sorry!");
     }
     
@@ -153,21 +134,9 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url) {
     std::vector<std::string> fileParts;
     boost::split(fileParts, url, boost::is_any_of(".")) ;
     
-    if(fileParts.size() > 1) {
-        // determine mime type by extension
-        // switch statements can't use strings, unfortunately
-        
-        if(fileParts[1] == "html") mimeType = "text/html";
-        if(fileParts[1] == "css") mimeType = "text/css";
-        
-        if(fileParts[1] == "js") mimeType = "application/x-javascript";
-        
-        if(fileParts[1] == "bmp") mimeType = "image/bmp";
-        if(fileParts[1] == "jpg") mimeType = "image/jpeg";
-        if(fileParts[1] == "png") mimeType = "image/png";
-        
-        if(fileParts[1] == "wav") mimeType = "audio/x-wav";
-        if(fileParts[1] == "mp3") mimeType = "audio/mpeg";
+    if(fileParts.size() > 1)
+    {
+        mimeType = mimeFromExt(fileParts[1]);
     }
     
     
@@ -193,4 +162,44 @@ errorMimeResponse_t HTTPServer::handleAppPage(std::string url) {
     s << stream.rdbuf();
     
     return serveFile(mimeType, s.str());
+}
+
+errorMimeResponse_t HTTPServer::serve404(std::string info)
+{
+    stringstream message;
+    
+    message << "<h1>404 File Not Found</h1>";
+    
+    if(info.length()) {
+        message << "<h2>Additional Info</h2>" << info;
+    }
+    
+    return std::make_tuple(404, "text/html", message.str());
+}
+
+errorMimeResponse_t HTTPServer::serveRequest(int error, std::string request)
+{
+    return std::make_tuple(error, "text/plain", request);
+}
+
+errorMimeResponse_t HTTPServer::serveFile(std::string mimeType, std::string content)
+{
+    return std::make_tuple(200, mimeType, content);
+}
+
+string HTTPServer::mimeFromExt(std::string ext)
+{
+    if(ext == "html") return "text/html";
+    if(ext == "css") return "text/css";
+    
+    if(ext == "js") return "application/x-javascript";
+    
+    if(ext == "bmp") return "image/bmp";
+    if(ext == "jpg") return "image/jpeg";
+    if(ext == "png") return "image/png";
+    
+    if(ext == "wav") return "audio/x-wav";
+    if(ext == "mp3") return "audio/mpeg";
+    
+    return "text/plain";   
 }
