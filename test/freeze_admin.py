@@ -5,9 +5,9 @@
 import os
 import sys
 
-frozen =  "#include \"frozenweb.h\"\n"
-frozen += "std::map<std::string,std::string> g_frozenWeb;\n"
-frozen += "void initFrozen(){\n"
+frozen =  '#include "frozenweb.h"\n'
+frozen += 'std::map<std::string,std::string> g_frozenWeb;\n'
+frozen += 'void initFrozen(){\n'
 
 files = os.listdir(sys.argv[1])
 
@@ -19,7 +19,7 @@ for filename in files:
     contents = contents.replace("\n", "\\n")
     contents = contents.replace("\"", "\\\"")
     
-    frozen += "    g_frozenWeb[\"/" + sys.argv[1] + filename + "\"] = \"" + contents + "\";\n"
+    frozen += '    g_frozenWeb["/' + sys.argv[1] + filename + '"] = "' + contents + '";\n'
     
     
 frozen += "}"
