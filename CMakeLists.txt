@@ -330,11 +330,6 @@ set(CORE_FILES
 	src/core/RoleFactory.cpp
 	src/core/types.h
 	src/core/msgtypes.h
-    
-    src/http/HTTPServer.cpp
-    src/http/HTTPServer.h
-    src/http/frozenweb.cpp
-    src/http/frozenweb.h
 )
 
 set(CONFIG_FILES
@@ -372,6 +367,13 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 )
 
+set(HTTP_FILES
+    src/http/HTTPServer.cpp
+    src/http/HTTPServer.h
+    src/http/frozenweb.cpp
+    src/http/frozenweb.h
+)
+
 include_directories(src)
 add_test(validate_config_core "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config.py")
 add_test(messagedirector "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_messagedirector.py")
@@ -387,6 +389,7 @@ add_executable(astrond
 	${CLIENTAGENT_FILES}
 	${TEST_FILES}
 	${DBSERVER_FILES}
+    ${HTTP_FILES}
 )
 
 ### Setup source groups ###
@@ -394,6 +397,7 @@ source_group("Core" FILES ${CORE_FILES})
 source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
+source_group("HTTP" FILES ${HTTP_FILES})
 if(STATESERVER_FILES)
 	source_group("StateServer" FILES ${STATESERVER_FILES})
 endif()
