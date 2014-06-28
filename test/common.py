@@ -594,13 +594,9 @@ class DatagramIterator(object):
         return self._offset
 
 class MDConnection(object):
-    def __init__(self, sock, tls_opts = None):
+    def __init__(self, sock):
         self.s = sock
-        if tls_opts is not None:
-            self.s.settimeout(0.2)
-            self.s = ssl.wrap_socket(self.s, **tls_opts)
-        else:
-            self.s.settimeout(0.1)
+        self.s.settimeout(0.1)
 
     def send(self, datagram):
         data = datagram.get_data()
@@ -648,10 +644,10 @@ class MDConnection(object):
         return result
 
 class ChannelConnection(MDConnection):
-    def __init__(self, connAddr, connPort, MDChannel=None, tls_opts=None):
+    def __init__(self, connAddr, connPort, MDChannel=None):
         c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         c.connect((connAddr, connPort))
-        MDConnection.__init__(self, c, tls_opts = tls_opts)
+        MDConnection.__init__(self, c)
 
         if MDChannel is not None:
             self.channels = [MDChannel]
