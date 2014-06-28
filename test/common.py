@@ -4,6 +4,7 @@ import tempfile
 import struct
 import socket
 import time
+import ssl
 import os
 
 __all__ = ['Daemon', 'ProtocolTest',
@@ -593,9 +594,13 @@ class DatagramIterator(object):
         return self._offset
 
 class MDConnection(object):
-    def __init__(self, sock):
+    def __init__(self, sock, tls_opts = None):
         self.s = sock
-        self.s.settimeout(0.1)
+        if tls_opts is not None:
+            self.s.settimeout(0.2)
+            self.s = ssl.wrap_socket(self.s, **tls_opts)
+        else:
+            self.s.settimeout(0.1)
 
     def send(self, datagram):
         data = datagram.get_data()
@@ -643,10 +648,10 @@ class MDConnection(object):
         return result
 
 class ChannelConnection(MDConnection):
-    def __init__(self, connAddr, connPort, MDChannel=None):
+    def __init__(self, connAddr, connPort, MDChannel=None, tls_opts=None):
         c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         c.connect((connAddr, connPort))
-        MDConnection.__init__(self, c)
+        MDConnection.__init__(self, c, tls_opts = tls_opts)
 
         if MDChannel is not None:
             self.channels = [MDChannel]
