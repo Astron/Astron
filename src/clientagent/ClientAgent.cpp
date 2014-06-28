@@ -43,6 +43,8 @@ static InvalidChannelConstraint max_not_invalid(max_channel);
 static ReservedChannelConstraint min_not_reserved(min_channel);
 static ReservedChannelConstraint max_not_reserved(max_channel);
 
+static bool have_warned_ca_insecure = false;
+
 ConfigGroup ca_client_config("client", clientagent_config);
 ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
 bool have_client_type(const string& backend)
@@ -53,7 +55,7 @@ ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
 		"No Client handler exists for the given client type.");
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
-	m_server_version(server_version.get_rval(roleconfig))
+	m_server_version(server_version.get_rval(roleconfig)), m_ssl_ctx(ssl::context::sslv23)
 {
 	stringstream ss;
 	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
@@ -82,17 +84,27 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 	}
 
 	// Load SSL data from Config vars
-	string certificate = tls_cert.get_rval(roleconfig);
-	string key_file = tls_key.get_rval(roleconfig);
+	ConfigNode tls_settings = clientagent_config.get_child_node(tls_config, roleconfig);
+
+	string certificate = tls_cert.get_rval(tls_settings);
+	string key_file = tls_key.get_rval(tls_settings);
 
 	// Handle no SSL
 	if(certificate.empty() && key_file.empty())
 	{
+		m_log->debug() << "Not using SSL/TLS.\n";
 		TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
 		                                         this, std::placeholders::_1);
 		m_net_acceptor = new TcpAcceptor(io_service, callback);
 
-		// TODO: Yell loudly at the user that this shouldn't be used in production
+		if(!have_warned_ca_insecure)
+		{
+			have_warned_ca_insecure = true;
+			m_log->warning() << "\n==============================================\n"
+			                 << "      CA not configured to use SSL!!!!!!\n"
+			                 << " --- Do not use this config in production ---\n"
+			                 << "==============================================\n";
+		}
 	}
 
 	// Handle SSL requested, but some information missing
@@ -105,56 +117,57 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 	// Handle SSL
 	else
 	{
+		m_log->debug() << "Configured with SSL/TLS.\n";
+
 		// Get the enabled SSL/TLS protocols
 		long int options = ssl::context::default_workarounds;
-		if(!sslv2_enabled.get_rval(roleconfig))
+		if(!sslv2_enabled.get_rval(tls_settings))
 		{
 			options |= ssl::context::no_sslv2;
 		}
-		if(!sslv3_enabled.get_rval(roleconfig))
+		if(!sslv3_enabled.get_rval(tls_settings))
 		{
 			options |= ssl::context::no_sslv3;
 		}
-		if(!tlsv1_enabled.get_rval(roleconfig))
+		if(!tlsv1_enabled.get_rval(tls_settings))
 		{
 			options |= ssl::context::no_tlsv1;
 		}
 
 		// Create the context with enabled protocols
-		ssl::context ctx(ssl::context::sslv23);
-		ctx.set_options(options);
+		m_ssl_ctx.set_options(options);
 
 		// Set the chain file
-		string chain_file = tls_chain.get_rval(roleconfig);
+		string chain_file = tls_chain.get_rval(tls_settings);
 		if(!chain_file.empty())
 		{
-			ctx.use_certificate_chain_file(chain_file);
+			m_ssl_ctx.use_certificate_chain_file(chain_file);
 		}
 
 		// Set the server certificate
-		ctx.use_certificate_file(certificate, ssl::context::file_format::pem);
-		ctx.use_private_key_file(tls_key.get_rval(roleconfig), ssl::context::file_format::pem);
+		m_ssl_ctx.use_certificate_file(certificate, ssl::context::file_format::pem);
+		m_ssl_ctx.use_private_key_file(tls_key.get_rval(tls_settings), ssl::context::file_format::pem);
 
 		// Set the certificate authority
-		string auth_file = tls_auth.get_rval(roleconfig);
+		string auth_file = tls_auth.get_rval(tls_settings);
 		if(!auth_file.empty())
 		{
 			if(filesystem::is_directory(auth_file))
 			{
-				ctx.add_verify_path(auth_file);
+				m_ssl_ctx.add_verify_path(auth_file);
 			}
 			else
 			{
-				ctx.load_verify_file(auth_file);
+				m_ssl_ctx.load_verify_file(auth_file);
 			}
 
-			ctx.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
-			ctx.set_verify_depth(tls_verify_depth.get_rval(roleconfig));
+			m_ssl_ctx.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
+			m_ssl_ctx.set_verify_depth(tls_verify_depth.get_rval(tls_settings));
 		}
 
 		SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
 		                                         this, std::placeholders::_1);
-		m_net_acceptor = new SslAcceptor(io_service, ctx, callback);
+		m_net_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
 	}
 
 	// Begin listening for new Clients

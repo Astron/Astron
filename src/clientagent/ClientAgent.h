@@ -63,4 +63,6 @@ class ClientAgent : public Role
 		ConfigNode m_clientconfig;
 		LogCategory *m_log;
 		uint32_t m_hash;
+
+		boost::asio::ssl::context m_ssl_ctx;
 };

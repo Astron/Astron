@@ -54,7 +54,4 @@ void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket, const boost
 
 	// Inform the callback:
 	m_callback(socket);
-
-	// Start accepting again:
-	start_accept();
 }
