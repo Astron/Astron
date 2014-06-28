@@ -364,6 +364,7 @@ class TestClientAgent(ProtocolTest):
         dg = Datagram.create([id], 1, CLIENTAGENT_SET_CLIENT_ID)
         dg.add_channel(555566667777)
         self.server.send(dg)
+        self.server.flush()
 
         # Reidentify the client, make sure the sender has changed.
         self.assertEquals(self.identify(client, ignore_id = True), 555566667777)
