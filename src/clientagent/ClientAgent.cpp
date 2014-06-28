@@ -1,6 +1,7 @@
 #include "ClientAgent.h"
 #include "ClientFactory.h"
 
+#include <boost/filesystem.hpp>
 #include "core/global.h"
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
@@ -9,6 +10,7 @@
 #include "net/SslAcceptor.h"
 using namespace std;
 namespace ssl = boost::asio::ssl;
+namespace filesystem = boost::filesystem;
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
@@ -20,12 +22,15 @@ static ConfigGroup tls_config("tls", clientagent_config);
 static ConfigVariable<string> tls_cert("certificate", "", tls_config);
 static ConfigVariable<string> tls_key("key_file", "", tls_config);
 static ConfigVariable<string> tls_chain("chain_file", "", tls_config);
+static ConfigVariable<string> tls_auth("cert_authority", "", tls_config);
+static ConfigVariable<unsigned int> tls_verify_depth("max_verify_depth", 6, tls_config);
 static ConfigVariable<bool> sslv2_enabled("sslv2", false, tls_config);
 static ConfigVariable<bool> sslv3_enabled("sslv3", false, tls_config);
 static ConfigVariable<bool> tlsv1_enabled("tlsv1", true, tls_config);
 static FileAvailableConstraint tls_cert_exists(tls_cert);
 static FileAvailableConstraint tls_key_exists(tls_key);
 static FileAvailableConstraint tls_chain_exists(tls_chain);
+static FileAvailableConstraint tls_auth_exists(tls_auth);
 static BooleanValueConstraint sslv2_is_boolean(sslv2_enabled);
 static BooleanValueConstraint sslv3_is_boolean(sslv3_enabled);
 static BooleanValueConstraint tlsv1_is_boolean(tlsv1_enabled);
@@ -115,15 +120,36 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 			options |= ssl::context::no_tlsv1;
 		}
 
-		// Prepare the context
+		// Create the context with enabled protocols
 		ssl::context ctx(ssl::context::sslv23);
 		ctx.set_options(options);
+
+		// Set the chain file
+		string chain_file = tls_chain.get_rval(roleconfig);
+		if(!chain_file.empty())
+		{
+			ctx.use_certificate_chain_file(chain_file);
+		}
+
+		// Set the server certificate
 		ctx.use_certificate_file(certificate, ssl::context::file_format::pem);
 		ctx.use_private_key_file(tls_key.get_rval(roleconfig), ssl::context::file_format::pem);
 
-		string chain_file = tls_chain.get_rval(roleconfig);
-		if(!chain_file.empty()) {
-			ctx.use_certificate_chain_file(chain_file);
+		// Set the certificate authority
+		string auth_file = tls_auth.get_rval(roleconfig);
+		if(!auth_file.empty())
+		{
+			if(filesystem::is_directory(auth_file))
+			{
+				ctx.add_verify_path(auth_file);
+			}
+			else
+			{
+				ctx.load_verify_file(auth_file);
+			}
+
+			ctx.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
+			ctx.set_verify_depth(tls_verify_depth.get_rval(roleconfig));
 		}
 
 		SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
