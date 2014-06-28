@@ -19,4 +19,5 @@ class SslAcceptor : public NetworkAcceptor
 
 		virtual void start_accept();
 		void handle_accept(ssl::stream<tcp::socket> *socket, const boost::system::error_code &ec);
+		void handle_handshake(ssl::stream<tcp::socket> *socket, const boost::system::error_code &ec);
 };
