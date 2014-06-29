@@ -145,7 +145,10 @@ The database server handles long term persistance of "db" fields. It stores thes
 This is a specialized State Server for tracking the short-term state of objects that exist in the database. A DB-SS behaves exactly the same as a State Server, however, it also listens for updates to "db"-keyworded fields and informs the database of the change.  
 In addition, a DB-SS listens on the entire range of object IDs that it manages. If it sees a location update for an object in its range, it will automatically fetch the object out of the database and convert it into a state-server-object.
 
+## Administration ##
+Astron ships bundled with a configurable HTTP server designed for game administration in production. See doc/example-config.yml for details on its usage, under the web section. In production, you **must** freeze in the administration directory.
 
+See https://github.com/Astron/Astron/wiki/Astron-Web-Server for more information.
 
 ## Building ##
 See the build instructions at https://github.com/Astron/Astron/blob/master/doc/building/.

@@ -1,6 +1,9 @@
 #include "global.h"
 #include "RoleFactory.h"
 #include "config/constraints.h"
+
+#include "http/HTTPServer.h"
+
 #include "dclass/file/read.h"
 #include "dclass/dc/Class.h"
 using dclass::Class;
@@ -10,6 +13,9 @@ using dclass::Class;
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
+
+#include <boost/algorithm/string.hpp>
+
 using namespace std;
 
 static LogCategory mainlog("main", "Main");
@@ -26,6 +32,10 @@ static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
 static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
+
+static ConfigGroup web_config("web");
+static ConfigVariable<std::string> web_addr("address", "", web_config);
+static ConfigVariable<std::string> web_path("path", "FROZEN", web_config);
 
 static void printHelp(ostream &s);
 
@@ -222,7 +232,24 @@ int main(int argc, char *argv[])
 	{
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
-
+    
+    if(web_addr.get_val().length())
+    {
+        std::string web_addr_str = web_addr.get_val();
+    
+        std::vector<std::string> webAddressPort;
+        boost::split(webAddressPort, web_addr_str, boost::is_any_of(":"));
+    
+        string webPort = "80";
+        
+        if(webAddressPort.size() > 1) 
+        {
+            webPort = webAddressPort[1];
+        }
+    
+        HTTPServer httpServer (webAddressPort[0], webPort, web_path.get_val());    
+    }
+    
 	try
 	{
 		io_service.run();

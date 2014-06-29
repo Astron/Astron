@@ -29,7 +29,23 @@ uberdogs:
 
 # The Web section enables a status and debugging webpage on this daemon.
 web:
-    bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.
+    address: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.    
+					 # Note: ports below 1024 require sudo or administrator password under some systems
+					 # For development, use port 8080 to avoid this
+					 # (you may want to use an obscure port in production, as well)
+    
+    # IN PRODUCTION COMMENT THIS PATH LINE OUT! WEB SERVER FILES MUST BE FROZEN INTO ASTROND!
+    
+    # FOR DEVELOPMENT ONLY! For testing, you can take the admin directory, let it go, 
+    #and use this path for storing the HTML5 admin app
+    
+    # Admin files are located at this path, relative to this file
+    # e.g.: if this file is at /myastronconfig/astrond.yml
+    # end the path is .
+    # the admin files will be at /myastronconfig/admin/
+        
+    path: .
+    
     # Authentication enables a BASIC authentication mechanism for the website
     #authentication:
     #    username: foo
