@@ -29,7 +29,7 @@ uberdogs:
 
 # The Web section enables a status and debugging webpage on this daemon.
 web:
-    bind: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.    
+    address: 0.0.0.0:80 # The webserver should listen on port 80, binding to all interfaces.    
 					 # Note: ports below 1024 require sudo or administrator password under some systems
 					 # For development, use port 8080 to avoid this
 					 # (you may want to use an obscure port in production, as well)
