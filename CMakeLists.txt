@@ -297,6 +297,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
+	add_test(eventlogger "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_eventlogger.py")
 	add_test(validate_config_eventlogger "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py")
 endif()
 
