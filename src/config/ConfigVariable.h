@@ -198,7 +198,7 @@ class ConfigVariable
 		}
 
 		// Get raw gets the raw text of the config variable from the global config scope.
-		std::string get_raw(ConfigNode node)
+		std::string get_raw()
 		{
 			return get_raw_by_path(g_config->m_node, m_group->get_path() + m_name);
 		}

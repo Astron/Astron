@@ -145,6 +145,12 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
+### SSL Dependency -- required by Boost::ASIO's SSL library
+find_package(OpenSSL REQUIRED)
+if(NOT OPENSSL_FOUND)
+	message(FATAL_ERROR "You need OpenSSL to build this.")
+endif()
+
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
@@ -365,6 +371,10 @@ set(NET_FILES
 	src/net/NetworkClient.h
 	src/net/NetworkConnector.cpp
 	src/net/NetworkConnector.h
+	src/net/TcpAcceptor.cpp
+	src/net/TcpAcceptor.h
+	src/net/SslAcceptor.cpp
+	src/net/SslAcceptor.h
 )
 
 include_directories(src)
@@ -416,7 +426,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

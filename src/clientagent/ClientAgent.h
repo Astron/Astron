@@ -3,6 +3,7 @@
 #include "Client.h"
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 extern RoleConfigGroup clientagent_config;
 extern ConfigGroup ca_client_config;
@@ -33,11 +34,11 @@ class ClientAgent : public Role
 		ClientAgent(RoleConfig rolconfig);
 		~ClientAgent();
 
-		// start_accept waits for a new client connection and calls handle_accept when received.
-		void start_accept();
+		// handle_tcp generates a new Client object from a raw tcp connection.
+		void handle_tcp(boost::asio::ip::tcp::socket *socket);
 
-		// handle_accepts generates a new Client object from a connection, then calls start_accept.
-		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
+		// handle_ssl generates a new Client object from an ssl stream.
+		void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
 
 		// handle_datagram handles Datagrams received from the message director.
 		// Currently the ClientAgent does not handle any datagrams,
@@ -55,11 +56,13 @@ class ClientAgent : public Role
 		}
 
 	private:
-		boost::asio::ip::tcp::acceptor *m_acceptor;
+		NetworkAcceptor *m_net_acceptor;
 		std::string m_client_type;
 		std::string m_server_version;
 		ChannelTracker m_ct;
 		ConfigNode m_clientconfig;
 		LogCategory *m_log;
 		uint32_t m_hash;
+
+		boost::asio::ssl::context m_ssl_ctx;
 };

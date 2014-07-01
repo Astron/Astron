@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
-import unittest, time
+import unittest, time, ssl
 from socket import *
 
 from common import *
 from testdc import *
+from testtls import *
 
 CONFIG = """\
 messagedirector:
@@ -51,7 +52,17 @@ roles:
       channels:
           min: 220600
           max: 220699
-""" % (USE_THREADING, test_dc)
+
+    - type: clientagent
+      bind: 127.0.0.1:57214
+      version: "Sword Art Online v5.1"
+      channels:
+          min: 330600
+          max: 330699
+      tls:
+          certificate: %r
+          key_file: %r
+""" % (USE_THREADING, test_dc, server_crt, server_key)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):
@@ -85,8 +96,10 @@ class TestClientAgent(ProtocolTest):
                 s.close()
                 return
 
-    def connect(self, do_hello=True, port=57128):
+    def connect(self, do_hello=True, port=57128, tls_opts=None):
         s = socket(AF_INET, SOCK_STREAM)
+        if tls_opts is not None:
+            s = ssl.wrap_socket(s,**tls_opts)
         s.connect(('127.0.0.1', port))
         client = ClientConnection(s)
 
@@ -2492,6 +2505,14 @@ class TestClientAgent(ProtocolTest):
         ### Cleanup after all the tests
         self.server.send(Datagram.create_remove_channel(10052))
         self.server.send(Datagram.create_remove_channel(10053))
+
+    def test_ssl_tls(self):
+        self.server.flush()
+
+        # Declare a client
+        tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
+        client = self.connect(port = 57214, tls_opts = tls_context)
+        id = self.identify(client, min = 330600, max = 330699)
 
 if __name__ == '__main__':
     unittest.main()

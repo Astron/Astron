@@ -1,7 +1,9 @@
 #include "constraints.h"
 #include <algorithm>
 #include <boost/asio/ip/address.hpp>
+#include <boost/filesystem.hpp>
 using namespace std;
+namespace filesystem = boost::filesystem;
 
 bool is_not_invalid_doid(const doid_t& c)
 {
@@ -56,4 +58,11 @@ bool is_valid_ip_address(const string& host)
 	{
 		return true;
 	}
+}
+
+bool is_existing_and_readable_file(const std::string& file)
+{
+	return filesystem::exists(file);
+
+	// TODO: Check whether readable
 }
