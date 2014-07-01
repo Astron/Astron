@@ -22,6 +22,8 @@ roles:
       output: %s
 """ % (DESTINATION[1] , OUTPUTFILE)
 
+NETWORKWAIT = 0.5 #seconds
+
 class TestEventLogger(unittest.TestCase):
     @classmethod
     def setUpClass(cl):
@@ -44,7 +46,7 @@ class TestEventLogger(unittest.TestCase):
         numLines1 = self.numLinesLog()
         
         self.socket.sendto(msgpack.packb({"type":"blank"}), DESTINATION)
-        time.sleep(.5) # allow network time    
+        time.sleep(NETWORKWAIT) # allow network time    
             
         self.assertEqual(self.numLinesLog(), numLines1 + 1) # exactly one line is added
         
@@ -52,7 +54,7 @@ class TestEventLogger(unittest.TestCase):
         numLines1 = self.numLinesLog()
     
         self.socket.sendto(msgpack.packb(123), DESTINATION)     
-        time.sleep(.5) # allow network time    
+        time.sleep(NETWORKWAIT) # allow network time    
             
         self.assertEqual(self.numLinesLog(), numLines1) # log is unchanged
         
@@ -60,7 +62,7 @@ class TestEventLogger(unittest.TestCase):
         numLines1 = self.numLinesLog()
         
         self.socket.sendto("123", DESTINATION)
-        time.sleep(.5) # allow network time    
+        time.sleep(NETWORKWAIT) # allow network time    
             
         self.assertEqual(self.numLinesLog(), numLines1) # log is unchanged
     
