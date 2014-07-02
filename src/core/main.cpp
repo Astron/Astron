@@ -5,6 +5,8 @@
 #include "dclass/dc/Class.h"
 using dclass::Class;
 
+#include "http/HTTPServer.h"
+
 #include <boost/filesystem.hpp>
 #include <cstring>
 #include <string>  // std::string
@@ -26,6 +28,10 @@ static ConfigVariable<bool> uberdog_anon("anonymous", false, uberdogs_config);
 static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
+
+static ConfigGroup web_config("web");
+static ConfigVariable<string> web_addr("address", "", web_config);
+static ConfigVariable<string> web_path("path", "FROZEN", web_config);
 
 static void printHelp(ostream &s);
 static void printCompiledOptions(ostream &s);
@@ -238,6 +244,11 @@ int main(int argc, char *argv[])
 	{
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
+    
+    if(web_addr.get_val().length())
+    {
+        HTTPServer httpServer (web_addr.get_val(), web_path.get_val());
+    }
 
 	try
 	{
