@@ -147,7 +147,9 @@ add_definitions(
 
 ### SSL Dependency -- required by Boost::ASIO's SSL library
 find_package(OpenSSL REQUIRED)
-if(NOT OPENSSL_FOUND)
+if(OPENSSL_FOUND)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+else()
 	message(FATAL_ERROR "You need OpenSSL to build this.")
 endif()
 
