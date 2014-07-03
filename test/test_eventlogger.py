@@ -6,7 +6,6 @@ import os
 from common import *
 from testdc import *
 
-import msgpack
 import json
 
 DESTINATION = ("localhost", 9090)
@@ -23,6 +22,10 @@ roles:
 """ % (DESTINATION[1] , OUTPUTFILE)
 
 NETWORKWAIT = 0.1 #seconds
+
+STANDARD_EVENT = '\x82\xa3bar\xa3baz\xa4type\xa3foo' #contact @shadowcoder or @bobbybee on github for information on generating these
+NONSTANDARD_MSGPACK = '{'
+
 
 class TestEventLogger(unittest.TestCase):
     @classmethod
@@ -45,7 +48,7 @@ class TestEventLogger(unittest.TestCase):
     def test_writesToLog(self):
         numLines1 = self.numLinesLog()
         
-        self.socket.sendto(msgpack.packb({"type":"blank"}), DESTINATION)
+        self.socket.sendto(STANDARD_EVENT, DESTINATION)
         time.sleep(NETWORKWAIT) # allow network time    
             
         self.assertEqual(self.numLinesLog(), numLines1 + 1) # exactly one line is added
@@ -53,7 +56,7 @@ class TestEventLogger(unittest.TestCase):
     def test_ignoresNonJSON(self):
         numLines1 = self.numLinesLog()
     
-        self.socket.sendto(msgpack.packb(123), DESTINATION)     
+        self.socket.sendto(NONSTANDARD_MSGPACK, DESTINATION)     
         time.sleep(NETWORKWAIT) # allow network time    
             
         self.assertEqual(self.numLinesLog(), numLines1) # log is unchanged
@@ -67,8 +70,8 @@ class TestEventLogger(unittest.TestCase):
         self.assertEqual(self.numLinesLog(), numLines1) # log is unchanged
     
     def test_logMessageFormatted(self):
-        self.socket.sendto(msgpack.packb({"type":"foo", "bar": "baz"}), DESTINATION)
-        time.sleep(.5) # allow network time    
+        self.socket.sendto(STANDARD_EVENT, DESTINATION)
+        time.sleep(NETWORKWAIT) # allow network time    
         
         log = open(OUTPUTFILE, "r")
         contents = log.read().split("\n")
