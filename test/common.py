@@ -4,6 +4,7 @@ import tempfile
 import struct
 import socket
 import time
+import ssl
 import os
 
 __all__ = ['Daemon', 'ProtocolTest',

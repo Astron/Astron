@@ -4,6 +4,7 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
+#include "net/TcpAcceptor.h"
 #include <algorithm>
 #include <functional>
 #include <boost/icl/interval_bounds.hpp>
@@ -42,9 +43,9 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
 
-			AcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
-			                                      this, std::placeholders::_1);
-			m_net_acceptor = new NetworkAcceptor(io_service, callback);
+			TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
+			                                         this, std::placeholders::_1);
+			m_net_acceptor = new TcpAcceptor(io_service, callback);
 			boost::system::error_code ec;
 			ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
 			if(ec.value() != 0)

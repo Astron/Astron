@@ -4,13 +4,22 @@
 #include <stdexcept>
 
 using boost::asio::ip::tcp;
+namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(NULL), m_data_buf(NULL), m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false),
+	m_data_buf(nullptr), m_data_size(0), m_is_data(false)
 {
 }
 
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
-	m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
+	m_ssl_enabled(false), m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+{
+	start_receive();
+}
+
+NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
+	m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true),
+	m_data_buf(nullptr), m_data_size(0), m_is_data(false)
 {
 	start_receive();
 }
@@ -44,6 +53,20 @@ void NetworkClient::set_socket(tcp::socket *socket)
 	start_receive();
 }
 
+void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
+{
+	std::lock_guard<std::recursive_mutex> lock(m_lock);
+	if(m_socket)
+	{
+		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+	}
+
+	m_ssl_enabled = true;
+	m_secure_socket = stream;
+
+	set_socket(&stream->next_layer());
+}
+
 void NetworkClient::start_receive()
 {
 	async_receive();
@@ -56,17 +79,11 @@ void NetworkClient::async_receive()
 	{
 		if(m_is_data) // Read data
 		{
-			async_read(*m_socket, boost::asio::buffer(m_data_buf, m_data_size),
-			           boost::bind(&NetworkClient::receive_data, this,
-			           boost::asio::placeholders::error,
-			           boost::asio::placeholders::bytes_transferred));
+			socket_read(m_data_buf, m_data_size, &NetworkClient::receive_data);
 		}
 		else // Read length
 		{
-			async_read(*m_socket, boost::asio::buffer(m_size_buf, sizeof(dgsize_t)),
-			           boost::bind(&NetworkClient::receive_size, this,
-			           boost::asio::placeholders::error,
-			           boost::asio::placeholders::bytes_transferred));
+			socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size);
 		}
 	}
 	catch(std::exception&)
@@ -89,7 +106,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 		std::list<boost::asio::const_buffer> gather;
 		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
 		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
-		m_socket->send(gather);
+		socket_write(gather);
 	}
 	catch(std::exception&)
 	{
@@ -148,4 +165,34 @@ bool NetworkClient::is_connected()
 {
 	std::lock_guard<std::recursive_mutex> lock(m_lock);
 	return m_socket->is_open();
+}
+
+void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback)
+{
+	if(m_ssl_enabled)
+	{
+		async_read(*m_secure_socket, boost::asio::buffer(buf, length),
+		           boost::bind(callback, this,
+		           boost::asio::placeholders::error,
+		           boost::asio::placeholders::bytes_transferred));
+	}
+	else
+	{
+		async_read(*m_socket, boost::asio::buffer(buf, length),
+		           boost::bind(callback, this,
+		           boost::asio::placeholders::error,
+		           boost::asio::placeholders::bytes_transferred));
+	}
+}
+
+void NetworkClient::socket_write(std::list<boost::asio::const_buffer>& buffers)
+{
+	if(m_ssl_enabled)
+	{
+		write(*m_secure_socket, buffers);
+	}
+	else
+	{
+		write(*m_socket, buffers);
+	}
 }
