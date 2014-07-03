@@ -22,7 +22,7 @@ roles:
       output: %s
 """ % (DESTINATION[1] , OUTPUTFILE)
 
-NETWORKWAIT = 0.5 #seconds
+NETWORKWAIT = 0.1 #seconds
 
 class TestEventLogger(unittest.TestCase):
     @classmethod
