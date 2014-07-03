@@ -175,6 +175,7 @@ endif()
 
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
+	add_definitions(-DBUILD_DBSERVER)
 	set(DBSERVER_FILES
 		src/database/DatabaseServer.h
 		src/database/DatabaseServer.cpp
@@ -186,6 +187,7 @@ if(BUILD_DBSERVER)
 
 	set(BUILD_DB_YAML ON CACHE BOOL "If on, will support a YAML-based database (for development)")
 	if(BUILD_DB_YAML)
+		add_definitions(-DBUILD_DB_YAML)
 		set(DBSERVER_FILES
 			${DBSERVER_FILES}
 			src/database/YAMLDatabase.cpp
@@ -240,6 +242,7 @@ if(BUILD_DBSERVER)
 
 		### Add files to compiler and linker ###
 		if(BUILD_DB_SQLITE OR BUILD_DB_MYSQL OR BUILD_DB_POSTGRESQL)
+			add_definitions(-DBUILD_DB_SQL)
 			include_directories(${SOCI_INCLUDE_DIRS})
 			link_directories(${SOCI_LIBRARY_DIR})
 			set(DBSERVER_FILES
@@ -379,6 +382,13 @@ set(NET_FILES
 	src/net/SslAcceptor.h
 )
 
+set(HTTP_FILES
+    src/http/HTTPServer.cpp
+    src/http/HTTPServer.h
+    src/http/frozenweb.cpp
+    src/http/frozenweb.h
+)
+
 include_directories(src)
 add_test(validate_config_core "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config.py")
 add_test(messagedirector "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_messagedirector.py")
@@ -394,23 +404,29 @@ add_executable(astrond
 	${CLIENTAGENT_FILES}
 	${TEST_FILES}
 	${DBSERVER_FILES}
+	${HTTP_FILES}    
 )
 
-### Setup source groups ###
+### Setup source groups and defines for configurables ###
 source_group("Core" FILES ${CORE_FILES})
 source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
+source_group("HTTP" FILES ${HTTP_FILES})
 if(STATESERVER_FILES)
+	add_definitions(-DBUILD_STATESERVER)
 	source_group("StateServer" FILES ${STATESERVER_FILES})
 endif()
 if(EVENTLOGGER_FILES)
+	add_definitions(-DBUILD_EVENTLOGGER)
 	source_group("EventLogger" FILES ${EVENTLOGGER_FILES})
 endif()
 if(CLIENTAGENT_FILES)
+	add_definitions(-DBUILD_CLIENTAGENT)
 	source_group("ClientAgent" FILES ${CLIENTAGENT_FILES})
 endif()
 if(DBSERVER_FILES)
+	add_definitions(-DBUILD_STATESERVER_DBSS)
 	source_group("DatabaseServer" FILES ${DBSERVER_FILES})
 endif()
 if(TEST_FILES)

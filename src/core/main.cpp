@@ -5,6 +5,8 @@
 #include "dclass/dc/Class.h"
 using dclass::Class;
 
+#include "http/HTTPServer.h"
+
 #include <boost/filesystem.hpp>
 #include <cstring>
 #include <string>  // std::string
@@ -27,8 +29,12 @@ static InvalidDoidConstraint id_not_invalid(uberdog_id);
 static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 
-static void printHelp(ostream &s);
+static ConfigGroup web_config("web");
+static ConfigVariable<string> web_addr("address", "", web_config);
+static ConfigVariable<string> web_path("path", "FROZEN", web_config);
 
+static void printHelp(ostream &s);
+static void printCompiledOptions(ostream &s);
 
 int main(int argc, char *argv[])
 {
@@ -89,6 +95,22 @@ int main(int argc, char *argv[])
 			printHelp(cout);
 			exit(0);
 		}
+        else if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0)
+        {
+             cout << "A Server Technology for Realtime Object Networking (Astron)\n"
+                     "http://github.com/astron/astron\n"
+            
+#ifdef GIT_SHA1
+            "Revision: " << GIT_SHA1 << "\n"
+#else
+            "Revision: NOT-IN-GIT\n"
+#endif
+            "Compiled at " << __TIME__ << " on " << __DATE__ << endl;
+            
+            printCompiledOptions(cout);
+            
+            exit(0);
+        }
 		else if(argv[i][0] == '-')
 		{
 			cerr << "Unrecognized option \"" << string(argv[i]) << "\".\n";
@@ -222,6 +244,11 @@ int main(int argc, char *argv[])
 	{
 		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 	}
+    
+    if(web_addr.get_val().length())
+    {
+        HTTPServer httpServer (web_addr.get_val(), web_path.get_val());
+    }
 
 	try
 	{
@@ -247,6 +274,7 @@ void printHelp(ostream &s)
 	     "can be specified as a positional argument.\n"
 	     "\n"
 	     "-h, --help      Print this help dialog.\n"
+         "-v, --version   Print Version, Module and Compilation Information\n"
 	     "-L, --log       Specify a file to write log messages to.\n"
 	     "-l, --loglevel  Specify the minimum log level that should be logged;\n"
 	     "                  Security, Error, and Fatal will always be logged;\n"
@@ -262,4 +290,59 @@ void printHelp(ostream &s)
          "    astrond /tmp/my_config_file.yaml\n"
          "\n";
 	s.flush();
+}
+
+void printCompiledOptions(ostream &s)
+{
+    s << "Compilation options: "
+    
+//If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.
+#ifdef ASTRON_32BIT_DATAGRAMS
+    "32-bit length tag Datagrams, "
+#else
+    "16-bit length tag Datagrams, "
+#endif
+    
+//If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).
+#ifdef ASTRON_128BIT_CHANNELS
+    "128-bit channel space, 64-bit distributed object id's, 64-bit zones"
+#else
+    "64-bit channel space, 32-bit distributed object id's, 32-bit zones"
+#endif
+    <<"\n";
+    
+    //Now print what parts are compiled in.
+    s << "Components: "
+#ifdef BUILD_STATESERVER
+    "State Server "
+    #ifdef BUILD_STATESERVER_DBSS
+        "(With DBSS capablities)"
+    #endif //End DBSS
+    ","
+#endif //End SS
+    
+#ifdef BUILD_EVENTLOGGER
+    "Event Logger,"
+#endif
+    
+#ifdef BUILD_CLIENTAGENT
+    "Client Agent,"
+#endif
+    
+#ifdef BUILD_DBSERVER
+    "Database "
+    
+    #ifdef BUILD_DB_YAML
+        "(With YAML Support) "
+    #endif //End DB_YAML
+    
+    #ifdef BUILD_DB_SQL
+        "(With SQL DB Support) "
+    #endif //End DB_SQL
+    
+#endif //End DBSERVER
+    "\n";
+    
+
+    
 }
