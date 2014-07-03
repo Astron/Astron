@@ -307,15 +307,15 @@ void printCompiledOptions(ostream &s)
     #ifdef BUILD_STATESERVER_DBSS
         "(With DBSS capablities)"
     #endif //End DBSS
-    ","
+    ", "
 #endif //End SS
     
 #ifdef BUILD_EVENTLOGGER
-    "Event Logger,"
+    "Event Logger, "
 #endif
     
 #ifdef BUILD_CLIENTAGENT
-    "Client Agent,"
+    "Client Agent, "
 #endif
     
 #ifdef BUILD_DBSERVER
