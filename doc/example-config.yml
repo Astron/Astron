@@ -106,5 +106,9 @@ roles:
     # separate UDP socket to listen for log events.
     - type: eventlogger
       bind: 0.0.0.0:9090 # REMEMBER: UDP
+      
       output: /var/log/astron/eventlogger/el-%Y-%m-%d-%H-%M-%S.log # This is a time format.
+     
+      #output can be prefixed with a ~ to pipe to a script
+      #output: ~./astron_log.py
       rotate_interval: 1d # Rotate the logs daily.

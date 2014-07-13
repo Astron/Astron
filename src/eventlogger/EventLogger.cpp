@@ -1,5 +1,8 @@
+#include <string>
+
 #include <ctime>
 #include <cctype>
+#include <cstdio>
 
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
@@ -20,7 +23,11 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 	bind(bind_addr.get_rval(roleconfig));
 
 	m_file_format = output_format.get_rval(roleconfig);
-	open_log();
+	if(m_file_format[0] == '~') {
+	    open_pipe_log();
+    } else {
+        open_log();
+	}
 
 	LoggedEvent event("log-opened", "EventLogger");
 	event.add("msg", "Log opened upon Event Logger startup.");
@@ -60,9 +67,19 @@ void EventLogger::open_log()
 	m_log.info() << "Opened new log." << std::endl;
 }
 
+void EventLogger::open_pipe_log()
+{
+    m_pipe = popen(m_file_format.substr(1).c_str(), "w");
+}
+
 void EventLogger::cycle_log()
 {
-	open_log();
+	
+    if(m_pipe) {
+        m_log.trace() << "Pipes cannot have cycled logs" << std::endl;
+        return;
+    }
+    open_log();
 
 	LoggedEvent event("log-opened", "EventLogger");
 	event.add("msg", "Log cycled.");
@@ -114,7 +131,16 @@ void EventLogger::process_packet(const DatagramHandle dg)
 	char timestamp[64];
 	strftime(timestamp, 64, "{\"_time\": \"%Y-%m-%d %H:%M:%S%z\", ", localtime(&rawtime));
 
-	*m_file << timestamp << data.substr(1) << std::endl;
+	if(m_pipe) {
+	   std::stringstream ss;
+       ss << timestamp << data.substr(1) << std::endl;
+    
+       fprintf(m_pipe, "%s", ss.str().c_str());
+       fflush(m_pipe);
+	} else {
+	   *m_file << timestamp << data.substr(1) << std::endl;
+    }
+	
 }
 
 void EventLogger::start_receive()
