@@ -24,9 +24,9 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 
 	m_file_format = output_format.get_rval(roleconfig);
 	if(m_file_format[0] == '~') {
-	    open_pipe_log();
-    } else {
-        open_log();
+		open_pipe_log();
+	} else {
+		open_log();
 	}
 
 	LoggedEvent event("log-opened", "EventLogger");
@@ -69,17 +69,16 @@ void EventLogger::open_log()
 
 void EventLogger::open_pipe_log()
 {
-    m_pipe = popen(m_file_format.substr(1).c_str(), "w");
+	m_pipe = popen(m_file_format.substr(1).c_str(), "w");
 }
 
 void EventLogger::cycle_log()
 {
-	
-    if(m_pipe) {
-        m_log.trace() << "Pipes cannot have cycled logs" << std::endl;
-        return;
-    }
-    open_log();
+    	if(m_pipe) {
+        	m_log.trace() << "Pipes cannot have cycled logs" << std::endl;
+      		return;
+    	}
+   	 open_log();
 
 	LoggedEvent event("log-opened", "EventLogger");
 	event.add("msg", "Log cycled.");

@@ -30,11 +30,11 @@ class EventLogger : public Role
 		std::ofstream *m_file;
 		uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
-        FILE* m_pipe;
+	        FILE* m_pipe;
 
 		void bind(const std::string &addr);
 		void open_log();
-        void open_pipe_log();
+        	void open_pipe_log();
 		void cycle_log();
 		void start_receive();
 		void handle_receive(const boost::system::error_code &error, std::size_t bytes);
