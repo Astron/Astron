@@ -138,7 +138,7 @@ void EventLogger::process_packet(const DatagramHandle dg)
        fflush(m_pipe);
 	} else {
 	   *m_file << timestamp << data.substr(1) << std::endl;
-    }
+	}
 	
 }
 
