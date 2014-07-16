@@ -731,6 +731,33 @@ class SociSQLDatabase : public OldDatabaseBackend
 				}
 			}
 		}
+		void get_all_from_table(doid_t id, const Class* dcc, unordered_map<const Field*, vector<uint8_t> > &fields)
+		{
+			string value;
+			indicator ind;
+			for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
+			{
+				const Field* field = dcc->get_field(i);
+				if(field->has_keyword("db"))
+				{
+					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
+					      << " WHERE object_id=" << id << ";", into(value, ind);
+
+					if(ind == i_ok)
+					{
+						bool parse_err;
+						string packed_data = parse_value(field->get_type(), value, parse_err);
+						if(parse_err)
+						{
+							m_log->error() << "Failed parsing value for field '" << field->get_name()
+							               << "' of object " << id << "' from database.\n";
+							continue;
+						}
+						fields[field] = vector<uint8_t>(packed_data.begin(), packed_data.end());
+					}
+				}
+			}
+		}
 
 		void get_fields_from_table(doid_t id, const Class* dcc, const vector<const Field*> &fields,
 		                           map<const Field*, vector<uint8_t> > &values)
@@ -763,6 +790,21 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 		void set_fields_in_table(doid_t id, const Class* dcc,
 		                         const map<const Field*, vector<uint8_t> > &fields)
+		{
+			string name, value;
+			for(auto it = fields.begin(); it != fields.end(); ++it)
+			{
+				if(it->first->has_keyword("db"))
+				{
+					name = it->first->get_name();
+					value = format_value(it->first->get_type(), it->second);
+					m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << name << "='" << value
+					      << "' WHERE object_id=" << id << ";";
+				}
+			}
+		}
+		void set_fields_in_table(doid_t id, const Class* dcc,
+		                         const unordered_map<const Field*, vector<uint8_t> > &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
