@@ -23,12 +23,15 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 	  /opt/local/include/mongo
     )
 
-  find_library(MONGO_LIBRARIES NAMES mongoclient  libmongoclient 
+  find_library(MONGO_LIBRARIES NAMES mongoclient  libmongoclient
     PATHS
     /usr/lib
     /usr/local/lib
     /opt/local/lib
     )
+
+  GET_FILENAME_COMPONENT(MONGO_LIBRARY_DIR ${MONGO_LIBRARIES} PATH)
+  MARK_AS_ADVANCED(MONGO_LIBRARY_DIR)
 
   if(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
     set(MONGO_FOUND TRUE)
@@ -38,7 +41,7 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
     set(MONGO_FOUND FALSE)
     message(STATUS "MongoDB not found.")
   endif(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
-  
+
 mark_as_advanced(MONGO_INCLUDE_DIR MONGO_LIBRARIES)
   mark_as_advanced(MONGO_VERSION_CHECK)
 

@@ -123,7 +123,7 @@ endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-find_package(Boost COMPONENTS system filesystem)
+find_package(Boost COMPONENTS system filesystem thread regex)
 if(NOT Boost_FOUND)
 	unset(Boost_USE_STATIC_LIBS CACHE)
 	set (Boost_USE_STATIC_LIBS OFF CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
@@ -216,7 +216,8 @@ if(BUILD_DBSERVER)
 		list(APPEND DBSERVER_FILES
 		     src/database/MongoDatabase.cpp)
 		include_directories("${MONGO_INCLUDE_DIR}")
-		list(APPEND DB_LIBRARY_NAMES ${MONGO_LIBRARIES})
+		link_directories(${MONGO_LIBRARY_DIR})
+		list(APPEND DB_LIBRARY_NAMES mongoclient)
 
 		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
 		# TODO: Config validation test
@@ -462,7 +463,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${DB_LIBRARY_NAMES})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
