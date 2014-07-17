@@ -97,7 +97,7 @@ else()											### Set Yaml libary name for Unix, Linux, OS X, etc
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
-	set(CMAKE_CXX_FLAGS "-pthread")
+	set(CMAKE_CXX_FLAGS "-pthread -lrt")
 endif()
 
 ### YAML Depedency -- required by config, used by yaml database ###
