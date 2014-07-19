@@ -18,9 +18,11 @@ using namespace dclass;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
-static ConfigVariable<string> database_name("database", "null", db_backend_config);
-static ConfigVariable<string> session_user("username", "null", db_backend_config);
-static ConfigVariable<string> session_passwd("password", "null", db_backend_config);
+static ConfigVariable<string> database_name("database", "", db_backend_config);
+static ConfigVariable<string> database_host("host", "", db_backend_config);
+static ConfigVariable<uint16_t> database_port("port", 0, db_backend_config);
+static ConfigVariable<string> session_user("username", "", db_backend_config);
+static ConfigVariable<string> session_passwd("password", "", db_backend_config);
 
 class SociSQLDatabase : public OldDatabaseBackend
 {
@@ -29,6 +31,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 			OldDatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
 			m_backend(db_backend_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),
+			m_db_host(database_host.get_rval(dbeconfig)),
+			m_db_port(database_port.get_rval(dbeconfig)),
 			m_sess_user(session_user.get_rval(dbeconfig)),
 			m_sess_passwd(session_passwd.get_rval(dbeconfig))
 		{
@@ -508,6 +512,22 @@ class SociSQLDatabase : public OldDatabaseBackend
 			if(m_backend == "postgresql")
 			{
 				connstring << "dbname=" << m_db_name;
+				if(!m_sess_user.empty())
+				{
+					connstring << " user=" << m_sess_user;
+				}
+				if(!m_sess_passwd.empty())
+				{
+					connstring << " password='" << m_sess_passwd << "'";
+				}
+				if(!m_db_host.empty())
+				{
+					connstring << " host=" << m_db_host;
+				}
+				if(m_db_port != 0)
+				{
+					connstring << " port=" << m_db_port;
+				}
 			}
 			else if(m_backend == "mysql")
 			{
@@ -631,7 +651,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 		}
 	private:
 		doid_t m_min_id, m_max_id;
-		string m_backend, m_db_name;
+		string m_backend, m_db_name, m_db_host;
+		uint16_t m_db_port;
 		string m_sess_user, m_sess_passwd;
 		session m_sql;
 		set_t m_free_ids;
