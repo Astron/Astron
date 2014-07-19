@@ -1,10 +1,13 @@
 #pragma once
 #include "net/NetworkClient.h"
 #include "messagedirector/MessageDirector.h"
+#include "util/EventSender.h"
 
 #include <queue>
 #include <unordered_set>
 #include <unordered_map>
+
+#include <mutex>
 
 class ClientAgent; // Forward declaration
 
@@ -73,6 +76,7 @@ class Client : public MDParticipantInterface
 		// handle_datagram is the handler for datagrams received from the server
 		void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
 	protected:
+		std::recursive_mutex m_client_lock; // THE lock guarding the client.
 		ClientAgent* m_client_agent; // The client_agent handling this client
 		ClientState m_state; // current state of the Client state machine
 		channel_t m_channel; // current channel client is listening on
@@ -106,7 +110,7 @@ class Client : public MDParticipantInterface
 		Client(ClientAgent* client_agent);
 
 		// log_event sends an event to the EventLogger
-		void log_event(const std::list<std::string> &event);
+		void log_event(LoggedEvent &event);
 
 		// lookup_object returns the class of the object with a do_id.
 		// If that object is not visible to the client, NULL will be returned instead.

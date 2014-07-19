@@ -8,6 +8,7 @@ bool is_not_invalid_channel(const channel_t& c);
 bool is_not_reserved_channel(const channel_t& c);
 bool is_boolean_keyword(const std::string& str);
 bool is_valid_ip_address(const std::string& addr);
+bool is_existing_and_readable_file(const std::string& file);
 
 class BooleanValueConstraint : public RawConfigConstraint<bool>
 {
@@ -18,7 +19,6 @@ class BooleanValueConstraint : public RawConfigConstraint<bool>
 		{
 		}
 };
-
 class InvalidDoidConstraint : public ConfigConstraint<doid_t>
 {
 	public:
@@ -61,6 +61,15 @@ class ValidAddressConstraint : public ConfigConstraint<std::string>
 		ValidAddressConstraint(ConfigVariable<std::string>& var) :
 			ConfigConstraint(is_valid_ip_address, var,
 				"String is not valid ipv4 or ipv6 address.")
+		{
+		}
+};
+class FileAvailableConstraint : public ConfigConstraint<std::string>
+{
+	public:
+		FileAvailableConstraint(ConfigVariable<std::string>& var) :
+			ConfigConstraint(is_existing_and_readable_file, var,
+				"File could not be found/opened.")
 		{
 		}
 };

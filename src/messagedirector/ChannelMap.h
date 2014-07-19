@@ -2,6 +2,7 @@
 #include <list>
 #include <set>
 #include <unordered_map>
+#include <mutex>
 #include "core/types.h"
 #include <boost/icl/interval_map.hpp>
 
@@ -77,4 +78,7 @@ class ChannelMap
 
 		// Range channel subscriptions
 		boost::icl::interval_map<channel_t, std::set<ChannelSubscriber *> > m_range_subscriptions;
+
+		// In order to make this object thread-safe...
+		std::recursive_mutex m_lock;
 };

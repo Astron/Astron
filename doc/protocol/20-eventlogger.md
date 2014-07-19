@@ -10,14 +10,19 @@ The Event Logger's messages are unique in that they do not pass through the
 normal Message Director infrastructure. Instead, the Event Logger sits on a UDP
 socket waiting for incoming UDP packets. Each packet contains one log message.
 
-The formatting is incredibly simple:
+The formatting uses MessagePack, and is incredibly simple. Event UDP packets are
+to contain one MessagePack-formatted map, arranged as:
 
-    string sender_name
-    string event_type
-    [string param1
-     [...]]
+    {"type": "type_of_event",
+     "sender": "identity_of_sender",
+     ...}
 
-Note that the implementation itself does not *require* the sender name, event type,
-and event parameters in that order. It simply writes each string to its
-CSV-formatted log file. However, by convention, the sender name is to be sent
-first, followed by the event type, and then all interesting details on that event.
+Note that the implementation itself does not *require* the event type, sender name,
+and event parameters in that order. It simply writes whatever is received to its
+JSON-formatted log file. However, by convention, the event type is to be sent
+first, followed by the sender name, and then all interesting details on that event.
+
+Also note: While the TCP-based protocol is little-endian, MessagePack is
+big-endian. If you are using a MessagePack library, this will be handled for you.
+However, you should keep this fact in mind if you are writing your own MessagePack
+implementation or inspecting raw packets.

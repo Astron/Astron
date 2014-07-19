@@ -4,6 +4,7 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
+#include "net/TcpAcceptor.h"
 #include <algorithm>
 #include <functional>
 #include <boost/icl/interval_bounds.hpp>
@@ -14,6 +15,7 @@ static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 static ValidAddressConstraint valid_connect_addr(connect_addr);
+static ConfigVariable<bool> threaded_mode("threaded", true, md_config);
 
 static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
@@ -22,13 +24,15 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() : m_net_acceptor(NULL), m_upstream(NULL), m_initialized(false),
-	m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL), m_upstream(NULL),
+	m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
 }
 
 MessageDirector::~MessageDirector()
 {
+	shutdown_threading();
+
 	for(auto it = m_participants.begin(); it != m_participants.end(); ++it) {
 		delete *it;
 	}
@@ -44,9 +48,9 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
 
-			AcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
-			                                      this, std::placeholders::_1);
-			m_net_acceptor = new NetworkAcceptor(io_service, callback);
+			TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
+			                                         this, std::placeholders::_1);
+			m_net_acceptor = new TcpAcceptor(io_service, callback);
 			boost::system::error_code ec;
 			ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
 			if(ec.value() != 0)
@@ -82,10 +86,89 @@ void MessageDirector::init_network()
 
 			m_upstream = upstream;
 		}
+
+		if(threaded_mode.get_val())
+		{
+			m_thread = new std::thread(std::bind(&MessageDirector::routing_thread, this));
+		}
+
+		m_initialized = true;
 	}
 }
 
+void MessageDirector::shutdown_threading()
+{
+	if(!m_thread)
+	{
+		return;
+	}
+
+	// Signal routing thread to shut down:
+	{
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+		m_shutdown = true;
+		m_cv.notify_one();
+	}
+
+	// Wait for it to do so:
+	m_thread->join();
+	delete m_thread;
+}
+
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
+{
+	if(m_thread)
+	{
+		// Threaded mode! First, we have to get the lock to our queue:
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+
+		// Now, we put the message into our queue and ring the bell:
+		m_messages.push(std::make_pair(p, dg));
+		m_cv.notify_one();
+	}
+	else if(std::this_thread::get_id() != m_main_thread)
+	{
+		// We aren't working in threaded mode, but we aren't in the main thread
+		// either. For safety, we should post this down to the main thread.
+		io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+	}
+	else
+	{
+		// Main thread; we can just process it here.
+		process_datagram(p, dg);
+	}
+}
+
+// This function runs in a thread; it loops until it's told to shut down:
+void MessageDirector::routing_thread()
+{
+	std::unique_lock<std::mutex> lock(m_messages_lock);
+
+	while(true)
+	{
+		// Wait for something interesting to handle...
+		while(m_messages.empty() && !m_shutdown)
+		{
+			m_cv.wait(lock);
+		}
+
+		if(m_shutdown)
+		{
+			// Ehh, we've been told to shut off:
+			return;
+		}
+
+		// Get and process the message:
+		auto msg = m_messages.front();
+		m_messages.pop();
+
+		lock.unlock();
+		process_datagram(msg.first, msg.second);
+		lock.lock();
+	}
+}
+
+void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
 	m_log.trace() << "Processing datagram...." << std::endl;
 
@@ -97,7 +180,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		uint8_t channel_count = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &receive_log = m_log.trace();
+		auto receive_log = m_log.trace();
 		receive_log << "Receivers: ";
 		for(uint8_t i = 0; i < channel_count; ++i)
 		{

@@ -9,6 +9,7 @@ from dbserver_base_tests import DatabaseBaseTests
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -34,7 +35,7 @@ class TestDatabaseServerYAML(ProtocolTest, DatabaseBaseTests):
             os.makedirs(tmppath);
         dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)
 
-        cls.daemon = Daemon(CONFIG % (test_dc, dbpath))
+        cls.daemon = Daemon(CONFIG % (USE_THREADING, test_dc, dbpath))
         cls.daemon.start()
 
         sock = socket(AF_INET, SOCK_STREAM)
