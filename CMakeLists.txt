@@ -368,6 +368,8 @@ set(UTIL_FILES
 	src/util/DatagramIterator.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
+	src/util/password_prompt.cpp
+	src/util/password_prompt.h
 )
 
 set(NET_FILES
