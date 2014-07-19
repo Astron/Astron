@@ -1,4 +1,4 @@
-import os, time, tempfile, subprocess, shutil, time
+import os, time, tempfile, subprocess, shutil
 from socket import socket, AF_INET, SOCK_STREAM
 
 POSTGRESQL_SETUP_ERROR = """\

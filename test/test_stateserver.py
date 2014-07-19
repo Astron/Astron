@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 import unittest, time
-from socket import *
-
+from helpers.tests import ProtocolTest
 from common import *
 from testdc import *
 
@@ -186,7 +185,7 @@ class TestStateServer(ProtocolTest):
         deleteObject(ai, 5, 101000005)
         self.disconnect(ai)
 
-    # Tests stateserver handling of 'airecv' keyword 
+    # Tests stateserver handling of 'airecv' keyword
     def test_airecv(self):
         self.flush_failed()
         conn = self.connect(5)

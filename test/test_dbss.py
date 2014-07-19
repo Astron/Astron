@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 import unittest
-from socket import *
-
+from helpers.tests import ProtocolTest
 from common import *
 from testdc import *
 
@@ -39,15 +38,11 @@ class TestDBStateServer(ProtocolTest):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
 
-        shard = socket(AF_INET, SOCK_STREAM)
-        shard.connect(('127.0.0.1', 57123))
-        cls.shard = MDConnection(shard)
+        cls.shard = cls.connectToServer()
         cls.shard.send(Datagram.create_set_con_name("Shard"))
         cls.shard.send(Datagram.create_add_channel(5))
 
-        database = socket(AF_INET, SOCK_STREAM)
-        database.connect(('127.0.0.1', 57123))
-        cls.database = MDConnection(database)
+        cls.database = cls.connectToServer()
         cls.database.send(Datagram.create_set_con_name("Database"))
         cls.database.send(Datagram.create_add_channel(1200))
 

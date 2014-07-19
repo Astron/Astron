@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 import unittest
-from socket import *
-from testdc import *
+from helpers.tests import ProtocolTest
+from helpers.dbserver import DatabaseTests
+from helpers.postgres import setup_postgres, teardown_postgres
 from common import *
-from dbserver_helper import DatabaseTests
-from postgres_helper import setup_postgres, teardown_postgres
+from testdc import *
 
 CONFIG = """\
 messagedirector:
@@ -33,17 +33,10 @@ class TestDatabaseServerPostgres(ProtocolTest, DatabaseTests):
     @classmethod
     def setUpClass(cls):
         setup_postgres(cls)
-
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.objects = MDConnection(sock)
+        cls.conn = cls.connectToServer()
+        cls.objects = cls.connectToServer()
         cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
                                                    DATABASE_PREFIX|1000010))
 
@@ -54,7 +47,6 @@ class TestDatabaseServerPostgres(ProtocolTest, DatabaseTests):
         cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
-
         teardown_postgres(cls)
 
 if __name__ == '__main__':

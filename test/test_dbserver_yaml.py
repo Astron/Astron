@@ -1,10 +1,11 @@
 #!/usr/bin/env python2
-import unittest, os, time, tempfile, shutil
-from socket import *
-
-from testdc import *
+import unittest, tempfile, shutil
+from helpers.tests import ProtocolTest
+from helpers.dbserver import DatabaseTests
+from helpers.yamldb import setup_yamldb, teardown_yamldb
 from common import *
-from dbserver_helper import DatabaseTests
+from testdc import *
+
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -28,35 +29,22 @@ roles:
 class TestDatabaseServerYAML(ProtocolTest, DatabaseTests):
     @classmethod
     def setUpClass(cls):
-        cls.yamldb_path = tempfile.mkdtemp(prefix = 'astron-', suffix = '.yamldb')
-
+        setup_yamldb(cls)
         cls.daemon = Daemon(CONFIG % (test_dc, cls.yamldb_path))
         cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.objects = MDConnection(sock)
+        cls.conn = cls.connectToServer()
+        cls.objects = cls.connectToServer()
         cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
                                                    DATABASE_PREFIX|1000010))
 
     @classmethod
     def tearDownClass(cls):
-        time.sleep(0.25) # Wait for yaml db to finish writing to file
         cls.objects.send(Datagram.create_remove_range(DATABASE_PREFIX|1000000,
                                                       DATABASE_PREFIX|1000010))
         cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
-
-        # Remove temp files
-        try:
-            shutil.rmtree(cls.yamldb_path)
-        except:
-            pass
+        teardown_yamldb(cls)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import unittest, time
-from socket import *
-
+from socket import socket, AF_INET, SOCK_STREAM
+from helpers.tests import ProtocolTest
 from common import *
 from testdc import *
 
@@ -58,11 +58,7 @@ class TestClientAgent(ProtocolTest):
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
-
-        s = socket(AF_INET, SOCK_STREAM)
-        s.connect(('127.0.0.1', 57123))
-        cls.server = MDConnection(s)
-
+        cls.server = cls.connectToServer()
         cls.server.send(Datagram.create_add_channel(1234))
         cls.server.send(Datagram.create_add_channel(1235))
 
@@ -1296,7 +1292,7 @@ class TestClientAgent(ProtocolTest):
         # Now, open a second, overlapping interest:
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint32(8) # context 
+        dg.add_uint32(8) # context
         dg.add_uint16(7) # interest id
         dg.add_doid(1235) # parent
         dg.add_zone(2222) # Zone 2 from interest above.
