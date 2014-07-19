@@ -18,21 +18,19 @@ def setup_postgres(unittest):
         unittest.fail(POSTGRESQL_SETUP_ERROR)
 
     # Create temp folder to house database
-    database_path = tempfile.gettempdir() + '/astron.postgresql'
-    if not os.path.exists(database_path):
-        os.makedirs(database_path);
+    postgres_path = tempfile.mkdtemp(prefix = 'astron-', suffix = '.postgresql')
 
     # Setup a postgresql instance owned by the local user
-    os.system('initdb -D %s' % database_path)
-    os.system('echo "unix_socket_directories = \'/tmp\'" >> %s/postgresql.conf' % database_path)
+    os.system('initdb -D %s' % postgres_path)
+    os.system('echo "unix_socket_directories = \'/tmp\'" >> %s/postgresql.conf' % postgres_path)
 
     # Start Postgres Server
     postgresd = subprocess.Popen(['postgres',
-                                  '-D', database_path,
+                                  '-D', postgres_path,
                                   '-h', '127.0.0.1', # bind address
                                   '-p', '57023'],    # bind port
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
+                                  stdout = subprocess.PIPE,
+                                  stderr = subprocess.PIPE)
 
     # Wait for postgres to start up:
     timeout = time.time() + 2.0
@@ -41,12 +39,12 @@ def setup_postgres(unittest):
             break
 
         try:
-            pg_sock = socket(AF_INET, SOCK_STREAM)
-            pg_sock.connect(('127.0.0.1', 57023))
+            postgres_sock = socket(AF_INET, SOCK_STREAM)
+            postgres_sock.connect(('127.0.0.1', 57023))
         except:
             time.sleep(0.2)
         else:
-            pg_sock.close()
+            postgres_sock.close()
             break
 
     # Create a user and database in the instance
@@ -54,7 +52,7 @@ def setup_postgres(unittest):
     os.system('createdb -p 57023 -h 127.0.0.1 -U astron astron')
 
     # Set variables
-    unittest.postgres_path = database_path
+    unittest.postgres_path = postgres_path
     unittest.postgresd = postgresd
 
 def teardown_postgres(unittest):

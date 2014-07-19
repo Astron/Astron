@@ -28,12 +28,9 @@ roles:
 class TestDatabaseServerYAML(ProtocolTest, DatabaseTests):
     @classmethod
     def setUpClass(cls):
-        tmppath = tempfile.gettempdir() + '/astron';
-        if not os.path.exists(tmppath):
-            os.makedirs(tmppath);
-        dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)
+        cls.yamldb_path = tempfile.mkdtemp(prefix = 'astron-', suffix = '.yamldb')
 
-        cls.daemon = Daemon(CONFIG % (test_dc, dbpath))
+        cls.daemon = Daemon(CONFIG % (test_dc, cls.yamldb_path))
         cls.daemon.start()
 
         sock = socket(AF_INET, SOCK_STREAM)
@@ -54,6 +51,12 @@ class TestDatabaseServerYAML(ProtocolTest, DatabaseTests):
         cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
+
+        # Remove temp files
+        try:
+            shutil.rmtree(cls.yamldb_path)
+        except:
+            pass
 
 if __name__ == '__main__':
     unittest.main()
