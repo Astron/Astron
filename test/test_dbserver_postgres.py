@@ -3,7 +3,7 @@ import unittest
 from socket import *
 from testdc import *
 from common import *
-from dbserver_base_tests import DatabaseBaseTests
+from dbserver_helper import DatabaseTests
 from postgres_helper import setup_postgres, teardown_postgres
 
 CONFIG = """\
@@ -29,7 +29,7 @@ roles:
         database: astron
 """ % test_dc
 
-class TestDatabaseServerPostgres(ProtocolTest, DatabaseBaseTests):
+class TestDatabaseServerPostgres(ProtocolTest, DatabaseTests):
     @classmethod
     def setUpClass(cls):
         setup_postgres(cls)

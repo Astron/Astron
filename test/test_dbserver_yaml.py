@@ -4,8 +4,7 @@ from socket import *
 
 from testdc import *
 from common import *
-from dbserver_base_tests import DatabaseBaseTests
-
+from dbserver_helper import DatabaseTests
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
@@ -26,7 +25,7 @@ roles:
         foldername: %r
 """
 
-class TestDatabaseServerYAML(ProtocolTest, DatabaseBaseTests):
+class TestDatabaseServerYAML(ProtocolTest, DatabaseTests):
     @classmethod
     def setUpClass(cls):
         tmppath = tempfile.gettempdir() + '/astron';

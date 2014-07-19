@@ -6,7 +6,7 @@ CREATE_DOID_OFFSET = 1 + (CHANNEL_SIZE_BYTES * 2) + 2 + 4
 VERIFY_DELETE_OBJECT = 0x21656944
 VERIFY_DELETE_QUERY = 0x6c6c694b
 
-class DatabaseBaseTests(object):
+class DatabaseTests(object):
     def createTypeGetId(self, sender, context, type):
         # Create object of type
         dg = Datagram.create([75757], sender, DBSERVER_CREATE_OBJECT)
@@ -226,7 +226,7 @@ class DatabaseBaseTests(object):
     def test_create_collisions(self):
         self.objects.flush()
         self.conn.flush()
- 
+
         self.conn.send(Datagram.create_add_channel(40))
 
         doids = []

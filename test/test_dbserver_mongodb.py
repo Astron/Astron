@@ -23,7 +23,7 @@ roles:
         database: astron_test
 """ % test_dc
 
-class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
+class TestDatabaseServerMongo(ProtocolTest, DatabaseTest):
     @classmethod
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
