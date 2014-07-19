@@ -7,6 +7,7 @@ import os
 import shutil
 
 from testdc import *
+from postgres_helper import setup_postgres, teardown_postgres
 
 DAEMON_PATH = './astrond'
 TERMINATED = -15
@@ -35,6 +36,8 @@ class ConfigTest(object):
 class TestConfigDBPostgres(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        setup_postgres(cls)
+
         cfg, cls.config_file = tempfile.mkstemp()
         os.close(cfg)
 
@@ -48,7 +51,7 @@ class TestConfigDBPostgres(unittest.TestCase):
             os.remove(cls.config_file)
         if cls.yaml_dir is not None:
             shutil.rmtree(cls.yaml_dir)
-
+        teardown_postgres(cls)
 
     @classmethod
     def write_config(cls, config):
@@ -79,7 +82,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
@@ -98,7 +104,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
@@ -117,7 +126,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
@@ -135,7 +147,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 0
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
@@ -154,7 +169,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
@@ -172,7 +190,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 555
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
@@ -194,7 +215,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
@@ -215,7 +239,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), TERMINATED)
 
@@ -236,7 +263,10 @@ class TestConfigDBPostgres(unittest.TestCase):
                     max: 1000010
                   backend:
                     type: postgresql
-                    database: astron_test
+                    host: 127.0.0.1
+                    port: 57023
+                    username: astron
+                    database: astron
             """ % test_dc
         self.assertEquals(self.run_test(config), EXITED)
 
