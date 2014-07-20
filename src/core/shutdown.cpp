@@ -23,7 +23,7 @@ static mutex ctrlc_mtx;
 
 
 #ifdef WIN32 /* Handle Windows signals */
-static BOOL handle_interrupt(DWORD fdwCtrlType)
+static BOOL handle_interrupt(DWORD)
 {
 	interrupts += 1;
 	if(interrupts >= MAX_INTERRUPTS)
@@ -45,7 +45,7 @@ void astron_handle_signals()
 }
 
 #else /* Handle POSIX signals */
-static void handle_interrupt(int s)
+static void handle_interrupt(int)
 {
 	interrupts += 1;
 	if(interrupts >= MAX_INTERRUPTS)

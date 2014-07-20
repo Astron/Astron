@@ -96,6 +96,7 @@ class AstronClient : public Client, public NetworkClient
 				// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 				// is_open() == true, so we just catch the exception on remote_endpoint
 				// instead.
+				delete m_socket;
 				return;
 			}
 			ss << "Client (" << remote.address().to_string()

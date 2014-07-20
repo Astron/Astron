@@ -206,6 +206,7 @@ void ClientAgent::handle_tcp(tcp::socket *socket)
 		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 		// is_open() == true, so we just catch the exception on remote_endpoint
 		// instead.
+		delete socket;
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "
@@ -229,6 +230,7 @@ void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
 		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 		// is_open() == true, so we just catch the exception on remote_endpoint
 		// instead.
+		delete stream;
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "
