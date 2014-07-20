@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 import unittest, time
 from socket import socket, AF_INET, SOCK_STREAM
-from helpers.tests import ProtocolTest
-from common import *
-from testdc import *
+from common.unittests import ProtocolTest
+from common.astron import *
+from common.dcfile import *
 
 CONFIG = """\
 messagedirector:

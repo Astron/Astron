@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import unittest
-from testdc import *
-from helpers.tests import ConfigTest
+from common.unittests import ConfigTest
+from common.dcfile import *
 
 class TestConfigStateServer(ConfigTest):
     def test_stateserver_good(self):

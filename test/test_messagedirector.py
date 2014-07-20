@@ -2,8 +2,8 @@
 import unittest
 from socket import *
 
-from helpers.tests import ProtocolTest
-from common import *
+from common.unittests import ProtocolTest
+from common.astron import *
 
 CONFIG = """\
 messagedirector:

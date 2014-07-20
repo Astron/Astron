@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 import unittest
-from helpers.tests import ConfigTest
-from helpers.yamldb import setup_yamldb, teardown_yamldb
-from testdc import *
+from common.unittests import ConfigTest
+from common.dcfile import *
+from database.yamldb import setup_yamldb, teardown_yamldb
 
 class TestConfigDBYaml(ConfigTest):
     @classmethod

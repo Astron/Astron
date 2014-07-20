@@ -1,6 +1,6 @@
 import unittest, subprocess, tempfile, os, threading
 from socket import socket, AF_INET, SOCK_STREAM
-from common import *
+from astron import *
 
 class ConfigTest(unittest.TestCase):
     class ConfigRunner(object):

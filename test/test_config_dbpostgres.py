@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 import unittest
-from helpers.tests import ConfigTest
-from helpers.postgres import setup_postgres, teardown_postgres
-from testdc import *
+from common.unittests import ConfigTest
+from common.dcfile import *
+from database.postgres import setup_postgres, teardown_postgres
 
 class TestConfigDBPostgres(ConfigTest):
     @classmethod

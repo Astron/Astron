@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 import unittest
-from helpers.tests import ProtocolTest
-from helpers.dbserver import DatabaseTests
-from helpers.postgres import setup_postgres, teardown_postgres
-from common import *
-from testdc import *
+from common.unittests import ProtocolTest
+from common.dbserver import DBServerTestsuite
+from common.astron import *
+from common.dcfile import *
+from database.postgres import setup_postgres, teardown_postgres
 
 CONFIG = """\
 messagedirector:
@@ -29,7 +29,7 @@ roles:
         database: astron
 """ % test_dc
 
-class TestDatabaseServerPostgres(ProtocolTest, DatabaseTests):
+class TestDatabaseServerPostgres(ProtocolTest, DBServerTestsuite):
     @classmethod
     def setUpClass(cls):
         setup_postgres(cls)

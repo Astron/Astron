@@ -1,12 +1,12 @@
 #!/usr/bin/env python2
-from common import *
-from testdc import *
+from astron import *
+from dcfile import *
 
 CREATE_DOID_OFFSET = 1 + (CHANNEL_SIZE_BYTES * 2) + 2 + 4
 VERIFY_DELETE_OBJECT = 0x21656944
 VERIFY_DELETE_QUERY = 0x6c6c694b
 
-class DatabaseTests(object):
+class DBServerTestsuite(object):
     def createTypeGetId(self, sender, context, type):
         # Create object of type
         dg = Datagram.create([75757], sender, DBSERVER_CREATE_OBJECT)

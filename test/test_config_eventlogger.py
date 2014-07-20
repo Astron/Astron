@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import unittest
-from testdc import *
-from helpers.tests import ConfigTest
+from common.unittests import ConfigTest
+from common.dcfile import *
 
 class TestConfigEventLogger(ConfigTest):
     def test_eventlogger_good(self):

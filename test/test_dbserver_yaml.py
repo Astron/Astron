@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 import unittest, tempfile, shutil
-from helpers.tests import ProtocolTest
-from helpers.dbserver import DatabaseTests
-from helpers.yamldb import setup_yamldb, teardown_yamldb
-from common import *
-from testdc import *
+from common.unittests import ProtocolTest
+from common.dbserver import DBServerTestsuite
+from common.astron import *
+from common.dcfile import *
+from database.yamldb import setup_yamldb, teardown_yamldb
 
 CONFIG = """\
 messagedirector:
@@ -26,7 +26,7 @@ roles:
         foldername: %r
 """
 
-class TestDatabaseServerYAML(ProtocolTest, DatabaseTests):
+class TestDatabaseServerYAML(ProtocolTest, DBServerTestsuite):
     @classmethod
     def setUpClass(cls):
         setup_yamldb(cls)

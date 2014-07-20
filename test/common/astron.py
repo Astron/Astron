@@ -1,10 +1,4 @@
-import unittest
-import subprocess
-import tempfile
-import struct
-import socket
-import time
-import os
+import os, time, socket, struct, tempfile, subprocess
 
 __all__ = ['Daemon', 'Datagram', 'DatagramIterator',
            'MDConnection', 'ChannelConnection', 'ClientConnection']
