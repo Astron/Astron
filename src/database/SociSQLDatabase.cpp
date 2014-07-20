@@ -646,7 +646,7 @@ class SociSQLDatabase : public DatabaseBackend
 				m_log->fatal() << "Class name '" << dcc->get_name() << "' from File does not match"
 				               " name '" << name << "' in database, for dc_id " << id << endl;
 				m_log->fatal() << "Database must be rebuilt." << endl;
-				exit(1);
+				astron_shutdown(1);
 			}
 
 			// TODO: Check class_fields table exists

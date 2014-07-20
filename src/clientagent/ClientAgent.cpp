@@ -3,6 +3,7 @@
 
 #include <boost/filesystem.hpp>
 #include "core/global.h"
+#include "core/shutdown.h"
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
 #include "dclass/file/hash.h"
@@ -111,7 +112,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 	else if(certificate.empty() != key_file.empty())
 	{
 		m_log->fatal() << "TLS requested but either certificate or key is missing.\n";
-		exit(1);
+		astron_shutdown(1);
 	}
 
 	// Handle SSL
@@ -180,7 +181,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 		m_log->fatal() << "Error code: " << ec.value()
 		               << "(" << ec.category().message(ec.value()) << ")"
 		               << std::endl;
-		exit(1);
+		astron_shutdown(1);
 	}
 	m_net_acceptor->start();
 }
