@@ -113,17 +113,18 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
 	if(m_colorEnable)
 	{
-		out << ANSI_DARK_GREY;
-		out << "[" << timetext << "] ";
-		out << get_severity_color(sev);
-		out << sevtext;
-		out << ": ";
-		out << ANSI_RESET;
+		out << ANSI_DARK_GREY
+		    << "[" << timetext << "] "
+		    << get_severity_color(sev)
+		    << sevtext
+		    << ": "
+		    << ANSI_RESET;
 	}
 	else
 	{
-		out << "[" << timetext << "] ";
-		out << sevtext;
+		out << "[" << timetext << "] "
+		    << sevtext
+		    << ": ";
 	}
 
 
