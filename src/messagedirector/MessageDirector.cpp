@@ -292,11 +292,15 @@ void MessageDirector::handle_connection(tcp::socket *socket)
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	m_participants.insert(m_participants.end(), p);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	unsubscribe_all(p);
 
 	// Stop tracking participant

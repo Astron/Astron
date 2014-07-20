@@ -45,6 +45,9 @@ class ClientAgent : public Role
 		// and delegates everything to the Client objects.
 		void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
+		// ssl_password_callback prompts for password on stdin if the cert/key has a password
+		std::string ssl_password_callback();
+
 		const std::string& get_version() const
 		{
 			return m_server_version;
@@ -65,4 +68,6 @@ class ClientAgent : public Role
 		uint32_t m_hash;
 
 		boost::asio::ssl::context m_ssl_ctx;
+		std::string m_ssl_cert;
+		std::string m_ssl_key;
 };
