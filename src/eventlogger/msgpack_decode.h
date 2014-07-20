@@ -14,7 +14,7 @@ static inline T msgpack_swap(T value)
 		uint16_t y;
 		y = (*x&0x00ff) << 8 |
 		    (*x&0xff00) >> 8;
-		return *((T*)&y);
+		return ((T)y);
 	}
 	else if(sizeof(value) == 4)
 	{
@@ -24,7 +24,7 @@ static inline T msgpack_swap(T value)
 		    (*x&0x0000ff00) <<  8 |
 		    (*x&0x00ff0000) >>  8 |
 		    (*x&0xff000000) >> 24;
-		return *((T*)&y);
+		return ((T)y);
 	}
 	else if(sizeof(value) == 8)
 	{
@@ -38,7 +38,7 @@ static inline T msgpack_swap(T value)
 		    (*x&0x0000ff0000000000) >> 24 |
 		    (*x&0x00ff000000000000) >> 40 |
 		    (*x&0xff00000000000000) >> 56;
-		return *((T*)&y);
+		return ((T)y);
 	}
 }
 
