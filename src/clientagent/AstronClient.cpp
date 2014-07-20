@@ -57,7 +57,8 @@ class AstronClient : public Client, public NetworkClient
 			initialize();
 		}
 
-		AstronClient(ConfigNode config, ClientAgent* client_agent, ssl::stream<tcp::socket> *stream) :
+		AstronClient(ConfigNode config, ClientAgent* client_agent,
+			         ssl::stream<tcp::socket> *stream) :
 			Client(client_agent), NetworkClient(stream), m_config(config),
 			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
 			m_send_hash(send_hash_to_client.get_rval(config)),
@@ -84,23 +85,8 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			stringstream ss;
-			tcp::endpoint remote;
-			try
-			{
-				remote = m_socket->remote_endpoint();
-			}
-			catch (const boost::system::system_error&)
-			{
-				// A client might disconnect immediately after connecting.
-				// If this happens, do nothing. Resolves #122.
-				// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-				// is_open() == true, so we just catch the exception on remote_endpoint
-				// instead.
-				delete m_socket;
-				return;
-			}
-			ss << "Client (" << remote.address().to_string()
-			   << ":" << remote.port() << ", " << m_channel << ")";
+			ss << "Client (" << m_remote.address().to_string()
+			   << ":" << m_remote.port() << ", " << m_channel << ")";
 			m_log->set_name(ss.str());
 			set_con_name(ss.str());
 
@@ -109,8 +95,8 @@ class AstronClient : public Client, public NetworkClient
 
 			// Add remote endpoint to log
 			ss.str(""); // empty the stream
-			ss << remote.address().to_string()
-			   << ":" << remote.port();
+			ss << m_remote.address().to_string()
+			   << ":" << m_remote.port();
 			event.add("remote_address", ss.str());
 
 			// Add local endpoint to log

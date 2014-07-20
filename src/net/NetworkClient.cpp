@@ -69,6 +69,17 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 
 void NetworkClient::start_receive()
 {
+	try
+	{
+		m_remote = m_socket->remote_endpoint();
+	}
+	catch (const boost::system::system_error&)
+	{
+		// A client might disconnect immediately after connecting.
+		// Since we are in the constructor, ignore it. Resolves #122.
+		// When the owner of the NetworkClient attempts to send or receive,
+		// the error will occur and we'll cleanup then;
+	}
 	async_receive();
 }
 
