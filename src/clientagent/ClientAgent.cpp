@@ -270,8 +270,7 @@ string ClientAgent::ssl_password_callback()
 {
 	stringstream prompt;
 	prompt << "Enter password for " << m_ssl_key << ": ";
-	string password = getpass(prompt.str().c_str());
-	return password;
+	return password_prompt(prompt.str());
 }
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");
