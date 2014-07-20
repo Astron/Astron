@@ -18,7 +18,7 @@ char *getpass(const char *prompt)
 
     string password;
     getline(cin, password);
-    return password;
+    return password.c_str();
 }
 
 
