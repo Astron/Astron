@@ -7,7 +7,7 @@
 #include <string>
 #include <windows.h>
 using namespace std;
-char *getpass(const char *prompt)
+const char *getpass(const char *prompt)
 {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     DWORD mode = 0;

@@ -2,5 +2,5 @@
 
 extern "C"
 {
-	char *getpass(const char *prompt);
+	const char *getpass(const char *prompt);
 }
