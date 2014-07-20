@@ -86,7 +86,7 @@ void NetworkClient::async_receive()
 			socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size);
 		}
 	}
-	catch(std::exception&)
+	catch(const boost::system::system_error&)
 	{
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection. Therefore:
@@ -108,7 +108,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
 		socket_write(gather);
 	}
-	catch(std::exception&)
+	catch(const boost::system::system_error&)
 	{
 		// We assume that the message just got dropped if the remote end died
 		// before we could send it.

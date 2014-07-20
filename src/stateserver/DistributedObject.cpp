@@ -388,7 +388,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	{
 		dgi.unpack_field(field, data);
 	}
-	catch(std::exception&)
+	catch(const DatagramIteratorEOF&)
 	{
 		m_log->error() << "Received truncated update for "
 		               << field->get_name() << std::endl;

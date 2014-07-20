@@ -89,7 +89,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				remote = m_socket->remote_endpoint();
 			}
-			catch (exception&)
+			catch (const boost::system::system_error&)
 			{
 				// A client might disconnect immediately after connecting.
 				// If this happens, do nothing. Resolves #122.
@@ -166,14 +166,14 @@ class AstronClient : public Client, public NetworkClient
 						break;
 				}
 			}
-			catch(DatagramIteratorEOF&)
+			catch(const DatagramIteratorEOF&)
 			{
 				// Occurs when a handler attempts to read past end of datagram
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM,
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
-			catch(DatagramOverflow&)
+			catch(const DatagramOverflow&)
 			{
 				// Occurs when a handler attempts to prepare or forward a datagram to be sent
 				// internally and, the resulting datagram is larger than the max datagram size.

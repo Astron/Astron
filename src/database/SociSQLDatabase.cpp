@@ -71,7 +71,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 				m_sql.commit(); // End transaction
 			}
-			catch(const exception &e)
+			catch(const soci::exception &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				return 0;
@@ -130,7 +130,7 @@ class SociSQLDatabase : public DatabaseBackend
 			{
 				m_sql << "SELECT class_id FROM objects WHERE id=" << do_id << ";", into(dc_id, ind);
 			}
-			catch(const exception &e)
+			catch(const soci::exception &e)
 			{
 				return NULL;
 			}
@@ -179,7 +179,7 @@ class SociSQLDatabase : public DatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const exception &e)
+				catch(const soci::exception &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -198,7 +198,7 @@ class SociSQLDatabase : public DatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const exception &e)
+				catch(const soci::exception &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -310,7 +310,7 @@ class SociSQLDatabase : public DatabaseBackend
 					m_sql.commit(); // End transaction
 				}
 			}
-			catch(const exception &e)
+			catch(const soci::exception &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();
@@ -440,7 +440,7 @@ class SociSQLDatabase : public DatabaseBackend
 					return true;
 				}
 			}
-			catch(const exception &e)
+			catch(const soci::exception &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();

@@ -108,9 +108,9 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
-				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
+				m_log->error() << "Error while unpacking fields, message may be truncated. e.what(): "
 				               << e.what() << endl;
 
 				resp->add_doid(INVALID_DO_ID);
@@ -276,7 +276,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 				               << e.what() << endl;
@@ -480,7 +480,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated."
 				               << " e.what(): " << e.what() << endl;

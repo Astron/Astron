@@ -62,7 +62,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 	{
 		obj = new DistributedObject(this, do_id, parent_id, zone_id, dc_class, dgi, has_other);
 	}
-	catch(std::exception&)
+	catch(const DatagramIteratorEOF&)
 	{
 		m_log->error() << "Received truncated generate for "
 		               << dc_class->get_name() << "(" << do_id << ")" << std::endl;

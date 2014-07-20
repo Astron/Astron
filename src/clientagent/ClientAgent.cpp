@@ -198,7 +198,7 @@ void ClientAgent::handle_tcp(tcp::socket *socket)
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (exception&)
+	catch (const boost::system::system_error&)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
@@ -221,7 +221,7 @@ void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
 	{
 		remote = stream->next_layer().remote_endpoint();
 	}
-	catch (exception&)
+	catch (const boost::system::system_error&)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
