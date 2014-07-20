@@ -1,3 +1,4 @@
+#pragma once
 #include <exception>
 
 // astron_handle_signals sets up signal handlers for the native OS
