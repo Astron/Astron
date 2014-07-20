@@ -60,6 +60,10 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 	m_log->trace() << "Replaying datagrams received while loading...\n";
 	for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it)
 	{
+		if(m_dbss->m_objs.find(m_do_id) == m_dbss->m_objs.end()) {
+			m_log->trace() << "... deleted while replaying, aborted.\n";
+			return;
+		}
 		try
 		{
 			DatagramIterator dgi(*it);
