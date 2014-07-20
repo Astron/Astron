@@ -1,6 +1,4 @@
 // File: password_prompt.h
+#include <string>
 
-extern "C"
-{
-	char *getpass(const char *prompt);
-}
+std::string password_prompt(const std::string& prompt);

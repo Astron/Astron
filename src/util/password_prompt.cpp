@@ -1,4 +1,5 @@
 #include "password_prompt.h"
+using namespace std;
 
 #ifdef WIN32
 
@@ -7,8 +8,7 @@
 #include <string>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-using namespace std;
-char *getpass(const char *prompt)
+string password_prompt(const string& prompt)
 {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     DWORD mode = 0;
@@ -26,4 +26,13 @@ char *getpass(const char *prompt)
 #else
 // Defined in unistd.h
 #include <unistd.h>
+string password_prompt(const string& prompt)
+{
+	string password;
+	char *raw = getpass(prompt.c_str());
+	password = raw;
+	free(raw);
+
+	return password;
+}
 #endif
