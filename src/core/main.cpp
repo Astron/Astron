@@ -34,7 +34,12 @@ int main(int argc, char *argv[])
 {
 	string cfg_file;
 
+#ifdef WIN32
+	bool prettyPrint = false;
+#else
 	bool prettyPrint = true;
+#endif
+
 	int config_arg_index = -1;
 	cfg_file = "astrond.yml";
 	LogSeverity sev = g_logger->get_min_severity();
