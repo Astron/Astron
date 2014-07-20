@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 {
 	string cfg_file;
 
+	bool prettyPrint = true;
+	
 	int config_arg_index = -1;
 	cfg_file = "astrond.yml";
 	LogSeverity sev = g_logger->get_min_severity();
@@ -84,6 +86,15 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		}
+		else if(strcmp(argv[i], "--pretty") == 0 || strcmp(argv[i], "-p") == 0)
+		{
+			if( strcmp(argv[++i], "off") == 0)
+			{
+				prettyPrint = false;
+			} else {
+				prettyPrint = true;
+			}
+		}
 		else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
 			printHelp(cout);
@@ -126,6 +137,8 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	
+	g_logger->m_colorEnable = prettyPrint;
 
 	if(config_arg_index != -1)
 	{
@@ -265,6 +278,7 @@ void printHelp(ostream &s)
 	     "-h, --help      Print this help dialog.\n"
          "-v, --version   Print Version, Module and Compilation Information\n"
 	     "-L, --log       Specify a file to write log messages to.\n"
+		 "-p, --pretty    Enable/disable colored pretty printing (use on or off). \n"
 	     "-l, --loglevel  Specify the minimum log level that should be logged;\n"
 	     "                  Security, Error, and Fatal will always be logged;\n"
 #ifdef ASTRON_DEBUG_MESSAGES

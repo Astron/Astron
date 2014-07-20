@@ -13,11 +13,41 @@ Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output
 }
 
 #ifdef ASTRON_DEBUG_MESSAGES
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_colorEnable(true)
 #else
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colorEnable(true)
 #endif
 {
+}
+
+static const char* ANSI_GREY = "\x1b[37m";
+static const char* ANSI_RED = "\x1b[31;1m";
+static const char* ANSI_YELLOW = "\x1b[33;1m";
+static const char* ANSI_GREEN = "\x1b[32;1m";
+static const char* ANSI_CYAN = "\x1b[36m";
+static const char* ANSI_DARK_RED = "\x1b[31";
+
+static const char* ANSI_RESET = "\x1b[0m";
+
+const char* Logger::get_severity_color(LogSeverity sev) {
+	switch(sev)
+	{
+		case LSEVERITY_FATAL:
+		case LSEVERITY_ERROR:
+			return ANSI_RED;
+		case LSEVERITY_SECURITY:
+			return ANSI_DARK_RED;
+		case LSEVERITY_WARNING:
+			return ANSI_YELLOW;
+		case LSEVERITY_DEBUG:
+		case LSEVERITY_PACKET:
+		case LSEVERITY_TRACE:
+			return ANSI_CYAN;
+		case LSEVERITY_INFO:
+			return ANSI_GREEN;
+	}
+	
+	return ANSI_GREY;
 }
 
 // log returns an output stream for C++ style stream operations.
@@ -65,7 +95,15 @@ LockedLogOutput Logger::log(LogSeverity sev)
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
 	LockedLogOutput out(&m_output, &m_lock);
-	out << "[" << timetext << "] " << sevtext << ": ";
+	
+	out << "[" << timetext << "] ";
+		
+	if(m_colorEnable) out << get_severity_color(sev);
+	
+	out << sevtext;
+	
+	if(m_colorEnable) out << ANSI_RESET;
+	out << ": ";
 	return out;
 }
 
