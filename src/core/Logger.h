@@ -145,8 +145,12 @@ class Logger
 
 		// get_min_severity returns the current minimum severity that will be logged by the logger.
 		LogSeverity get_min_severity();
+	
+		bool m_colorEnable;
 
 	private:
+		const char* get_severity_color(LogSeverity sev);
+	
 		LoggerBuf m_buf;
 		LogSeverity m_severity;
 		std::ostream m_output;
