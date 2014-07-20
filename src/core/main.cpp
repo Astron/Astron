@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 		{
 			prettyPrint = true;
 		}
-		else if(strcmp(argv[i], "--boring") == 0 | strcmp(argv[i], "-b") == 0)
+		else if(strcmp(argv[i], "--boring") == 0 || strcmp(argv[i], "-b") == 0)
 		{
 			prettyPrint = false;
 		}
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	g_logger->m_colorEnable = prettyPrint;
+	g_logger->set_color_enabled(prettyPrint);
 
 	if(config_arg_index != -1)
 	{
@@ -281,7 +281,8 @@ void printHelp(ostream &s)
 	     "-h, --help      Print this help dialog.\n"
          "-v, --version   Print Version, Module and Compilation Information\n"
 	     "-L, --log       Specify a file to write log messages to.\n"
-		 "-p, --pretty    Enable/disable colored pretty printing (use on or off). \n"
+		 "-p, --pretty    Enables colored pretty printing. \n"
+		 "-b, --boring    Disables colored pretty printing. \n"
 	     "-l, --loglevel  Specify the minimum log level that should be logged;\n"
 	     "                  Security, Error, and Fatal will always be logged;\n"
 #ifdef ASTRON_DEBUG_MESSAGES

@@ -13,9 +13,9 @@ Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output
 }
 
 #ifdef ASTRON_DEBUG_MESSAGES
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_colorEnable(true)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_color_enabled(true)
 #else
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colorEnable(true)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_color_enabled(true)
 #endif
 {
 }
@@ -111,7 +111,7 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
 	LockedLogOutput out(&m_output, &m_lock);
 
-	if(m_colorEnable)
+	if(m_color_enabled)
 	{
 		out << ANSI_DARK_GREY
 		    << "[" << timetext << "] "
@@ -129,6 +129,13 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
 
 	return out;
+}
+
+
+// set_color_enabled turns ANSI colorized output on or off.
+void Logger::set_color_enabled(bool enabled)
+{
+	m_color_enabled = enabled;
 }
 
 // set_min_serverity sets the lowest severity that will be output to the log.

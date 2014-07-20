@@ -139,22 +139,24 @@ class Logger
 		// log returns an output stream for C++ style stream operations.
 		LockedLogOutput log(LogSeverity sev);
 
+		// set_color_enabled turns ANSI colorized output on or off.
+		void set_color_enabled(bool enabled);
+
 		// set_min_serverity sets the lowest severity that will be output to the log.
 		// Messages with lower severity levels will be discarded.
 		void set_min_severity(LogSeverity sev);
 
 		// get_min_severity returns the current minimum severity that will be logged by the logger.
 		LogSeverity get_min_severity();
-	
-		bool m_colorEnable;
 
 	private:
 		const char* get_severity_color(LogSeverity sev);
-	
+
 		LoggerBuf m_buf;
 		LogSeverity m_severity;
 		std::ostream m_output;
 		std::recursive_mutex m_lock;
+		bool m_color_enabled;
 };
 
 // A LogCategory is a wrapper for a Logger object that specially formats the output
