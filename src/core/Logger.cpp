@@ -9,7 +9,7 @@ NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messag
 
 Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output) :
 	m_buf(log_file, console_output), m_severity(sev), m_output(&m_buf)
-{	
+{
 }
 
 #ifdef ASTRON_DEBUG_MESSAGES
@@ -25,7 +25,7 @@ static const char* ANSI_RED = "\x1b[31;1m";
 static const char* ANSI_YELLOW = "\x1b[33;1m";
 static const char* ANSI_GREEN = "\x1b[32;1m";
 static const char* ANSI_CYAN = "\x1b[36m";
-static const char* ANSI_DARK_RED = "\x1b[31";
+static const char* ANSI_DARK_RED = "\x1b[31m";
 
 static const char* ANSI_RESET = "\x1b[0m";
 
@@ -46,7 +46,7 @@ const char* Logger::get_severity_color(LogSeverity sev) {
 		case LSEVERITY_INFO:
 			return ANSI_GREEN;
 	}
-	
+
 	return ANSI_GREY;
 }
 
@@ -95,13 +95,13 @@ LockedLogOutput Logger::log(LogSeverity sev)
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
 	LockedLogOutput out(&m_output, &m_lock);
-	
+
 	out << "[" << timetext << "] ";
-		
+
 	if(m_colorEnable) out << get_severity_color(sev);
-	
+
 	out << sevtext;
-	
+
 	if(m_colorEnable) out << ANSI_RESET;
 	out << ": ";
 	return out;
