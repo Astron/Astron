@@ -26,6 +26,33 @@ class TestConfigCore(ConfigTest):
 
             messagedirector:
                 bind: 127.0.0.1:57123
+                threaded: true
+            """ % test_dc
+        self.assertEquals(self.run_test(config), TERMINATED)
+
+    def test_without_threading(self):
+        config = """\
+            daemon:
+                name: Core Message Director
+                url: http://123.45.67.89/coremd/
+
+            general:
+                eventlogger: 127.0.0.1:9090
+                dc_files:
+                    - %r
+
+            uberdogs:
+                - id: 1234
+                  class: UberDog1
+                  anonymous: true
+
+                - id: 1235
+                  class: UberDog2
+                  anonymous: false
+
+            messagedirector:
+                bind: 127.0.0.1:57123
+                threaded: false
             """ % test_dc
         self.assertEquals(self.checkConfig(config), 'Valid')
 

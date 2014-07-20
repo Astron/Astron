@@ -9,6 +9,7 @@ from database.yamldb import setup_yamldb, teardown_yamldb
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -30,7 +31,7 @@ class TestDatabaseServerYAML(ProtocolTest, DBServerTestsuite):
     @classmethod
     def setUpClass(cls):
         setup_yamldb(cls)
-        cls.daemon = Daemon(CONFIG % (test_dc, cls.yamldb_path))
+        cls.daemon = Daemon(CONFIG % (USE_THREADING, test_dc, cls.yamldb_path))
         cls.daemon.start()
         cls.conn = cls.connectToServer()
         cls.objects = cls.connectToServer()

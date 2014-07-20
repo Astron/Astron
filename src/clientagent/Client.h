@@ -1,6 +1,7 @@
 #pragma once
 #include "net/NetworkClient.h"
 #include "messagedirector/MessageDirector.h"
+#include "util/EventSender.h"
 
 #include <queue>
 #include <unordered_set>
@@ -109,7 +110,7 @@ class Client : public MDParticipantInterface
 		Client(ClientAgent* client_agent);
 
 		// log_event sends an event to the EventLogger
-		void log_event(const std::list<std::string> &event);
+		void log_event(LoggedEvent &event);
 
 		// lookup_object returns the class of the object with a do_id.
 		// If that object is not visible to the client, NULL will be returned instead.

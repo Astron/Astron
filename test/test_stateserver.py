@@ -7,6 +7,7 @@ from common.dcfile import *
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -15,7 +16,7 @@ general:
 roles:
     - type: stateserver
       control: 100100
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 
 def appendMeta(datagram, doid=None, parent=None, zone=None, dclass=None):
     if doid is not None:

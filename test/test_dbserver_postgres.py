@@ -9,6 +9,7 @@ from database.postgres import setup_postgres, teardown_postgres
 CONFIG = """\
 messagedirector:
     bind: 127.0.0.1:57123
+    threaded: %s
 
 general:
     dc_files:
@@ -27,7 +28,7 @@ roles:
         port: 57023
         username: astron
         database: astron
-""" % test_dc
+""" % (USE_THREADING, test_dc)
 
 class TestDatabaseServerPostgres(ProtocolTest, DBServerTestsuite):
     @classmethod

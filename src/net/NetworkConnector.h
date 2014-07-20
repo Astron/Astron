@@ -1,7 +1,9 @@
 #pragma once
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 using boost::asio::ip::tcp;
+namespace ssl = boost::asio::ssl;
 
 class NetworkConnector
 {
@@ -15,7 +17,8 @@ class NetworkConnector
 		// the reason that the connect failed.
 		tcp::socket *connect(const std::string &address, unsigned int default_port,
 		                     boost::system::error_code &ec);
-
+		ssl::stream<tcp::socket> *connect(const std::string &address, unsigned int default_port,
+		                                  ssl::context *ctx, boost::system::error_code &ec);
 	private:
 		boost::asio::io_service &m_io_service;
 };

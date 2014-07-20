@@ -1,4 +1,4 @@
-import os, time, socket, struct, tempfile, subprocess
+import os, time, socket, struct, tempfile, subprocess, ssl
 
 __all__ = ['Daemon', 'Datagram', 'DatagramIterator',
            'MDConnection', 'ChannelConnection', 'ClientConnection']
@@ -258,6 +258,7 @@ else:
     CONSTANTS['ZONE_SIZE_BYTES'] = 4
     CONSTANTS['ZONE_SIZE_BITS'] = 32
 
+CONSTANTS['USE_THREADING'] = 'DISABLE_THREADING' not in os.environ
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())

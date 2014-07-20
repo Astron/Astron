@@ -4,6 +4,7 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
+#include "net/TcpAcceptor.h"
 #include <algorithm>
 #include <functional>
 #include <boost/icl/interval_bounds.hpp>
@@ -42,9 +43,9 @@ void MessageDirector::init_network()
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
 
-			AcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
-			                                      this, std::placeholders::_1);
-			m_net_acceptor = new NetworkAcceptor(io_service, callback);
+			TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
+			                                         this, std::placeholders::_1);
+			m_net_acceptor = new TcpAcceptor(io_service, callback);
 			boost::system::error_code ec;
 			ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
 			if(ec.value() != 0)
@@ -286,11 +287,15 @@ void MessageDirector::handle_connection(tcp::socket *socket)
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	m_participants.insert(m_participants.end(), p);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	unsubscribe_all(p);
 
 	// Stop tracking participant

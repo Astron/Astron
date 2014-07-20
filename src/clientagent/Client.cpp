@@ -47,20 +47,13 @@ Client::~Client()
 }
 
 // log_event sends an event to the EventLogger
-void Client::log_event(const std::list<std::string> &event)
+void Client::log_event(LoggedEvent &event)
 {
-	DatagramPtr dg = Datagram::create();
-
 	std::stringstream ss;
 	ss << "Client:" << m_allocated_channel;
-	dg->add_string(ss.str());
+	event.add("sender", ss.str());
 
-	for(auto it = event.begin(); it != event.end(); ++it)
-	{
-		dg->add_string(*it);
-	}
-
-	g_eventsender.send(dg);
+	g_eventsender.send(event);
 }
 
 // lookup_object returns the class of the object with a do_id.
@@ -306,10 +299,9 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 	        << "Ejecting client (" << reason << "): "
 	        << error_string << std::endl;
 
-	std::list<std::string> event;
-	event.push_back(security ? "client-ejected-security" : "client-ejected");
-	event.push_back(std::to_string((unsigned long long)reason));
-	event.push_back(error_string);
+	LoggedEvent event(security ? "client-ejected-security" : "client-ejected");
+	event.add("reason_code", std::to_string((unsigned long long)reason));
+	event.add("reason_msg", error_string);
 	log_event(event);
 }
 
@@ -439,6 +431,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			m_declared_objects.erase(do_id);
 		}
+		break;
 		case CLIENTAGENT_SET_FIELDS_SENDABLE:
 		{
 			doid_t do_id = dgi.read_doid();

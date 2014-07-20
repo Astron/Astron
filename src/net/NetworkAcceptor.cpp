@@ -1,10 +1,8 @@
 #include "NetworkAcceptor.h"
 #include <boost/bind.hpp>
 
-NetworkAcceptor::NetworkAcceptor(boost::asio::io_service &io_service,
-                                 AcceptorCallback &callback) :
+NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
 	m_io_service(io_service),
-	m_callback(callback),
 	m_acceptor(io_service),
 	m_started(false)
 {
@@ -70,41 +68,4 @@ void NetworkAcceptor::stop()
 	m_started = false;
 
 	m_acceptor.cancel();
-}
-
-void NetworkAcceptor::start_accept()
-{
-	if(!m_started)
-	{
-		return;
-	}
-
-	tcp::socket *socket = new tcp::socket(m_io_service);
-	m_acceptor.async_accept(*socket,
-	                        boost::bind(&NetworkAcceptor::handle_accept, this,
-	                                    socket, boost::asio::placeholders::error));
-}
-
-void NetworkAcceptor::handle_accept(tcp::socket *socket, const boost::system::error_code &ec)
-{
-	if(!m_started)
-	{
-		// We were turned off sometime before this operation completed; ignore.
-		delete socket;
-		return;
-	}
-
-	if(ec.value() != 0)
-	{
-		// The accept failed for some reason. Free the socket and try again:
-		delete socket;
-		start_accept();
-		return;
-	}
-
-	// Inform the callback:
-	m_callback(socket);
-
-	// Start accepting again:
-	start_accept();
 }
