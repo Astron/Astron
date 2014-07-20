@@ -3,9 +3,12 @@
 #include <unordered_map>
 
 #include "core/types.h"
-
+#include "util/DatagramIterator.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
+
+// Foward declarations
+class DatabaseServer;
 
 // This represents a "snapshot" of a particular object. It is essentially just a
 // dclass and a map of fields.
@@ -24,6 +27,10 @@ class DBObjectSnapshot
 class DBOperation
 {
 	public:
+		DBOperation(DatabaseServer *db) : m_dbserver(db) { }
+		virtual ~DBOperation() { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi) = 0;
+
 		enum OperationType
 		{
 			// CREATE_OBJECT operations create a new object on the database.
@@ -125,4 +132,61 @@ class DBOperation
 		// This variant is used for GET_* -- N.B. the ownership of the pointer
 		// transfers to the frontend.
 		virtual void on_complete(DBObjectSnapshot *) { }
+
+
+	protected:
+		DatabaseServer *m_dbserver;
+		channel_t m_sender;
+
+		void cleanup();
+		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count,
+			                     bool deletes = false, bool values = false);
+		bool populate_get_fields(DatagramIterator &dgi, uint16_t field_count);
+};
+
+class DBOperationCreate : public DBOperation
+{
+	public:
+		DBOperationCreate(DatabaseServer *db) : DBOperation(db) { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
+		virtual void on_complete(doid_t doid);
+		virtual void on_failure();
+
+	private:
+		uint32_t m_context;
+};
+class DBOperationDelete : public DBOperation
+{
+	public:
+		DBOperationDelete(DatabaseServer *db) : DBOperation(db) { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
+		virtual void on_complete();
+		virtual void on_failure();
+};
+class DBOperationGet : public DBOperation
+{
+	public:
+		DBOperationGet(DatabaseServer *db) : DBOperation(db) { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
+		virtual bool verify_class(const dclass::Class *dclass);
+		virtual void on_complete(DBObjectSnapshot *snapshot);
+		virtual void on_failure();
+
+	private:
+		uint32_t m_context;
+		uint16_t m_resp_msgtype;
+};
+class DBOperationModify : public DBOperation
+{
+	public:
+		DBOperationModify(DatabaseServer *db) : DBOperation(db) { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
+		virtual bool verify_class(const dclass::Class *dclass);
+		virtual void on_complete();
+		virtual void on_failure();
+		virtual void on_criteria_mismatch(DBObjectSnapshot *);
+
+	private:
+		uint32_t m_context;
+		uint16_t m_resp_msgtype;
 };
