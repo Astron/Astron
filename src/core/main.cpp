@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
 	string cfg_file;
 
 	bool prettyPrint = true;
-	
 	int config_arg_index = -1;
 	cfg_file = "astrond.yml";
 	LogSeverity sev = g_logger->get_min_severity();
@@ -88,12 +87,11 @@ int main(int argc, char *argv[])
 		}
 		else if(strcmp(argv[i], "--pretty") == 0 || strcmp(argv[i], "-p") == 0)
 		{
-			if( strcmp(argv[++i], "off") == 0)
-			{
-				prettyPrint = false;
-			} else {
-				prettyPrint = true;
-			}
+			prettyPrint = true;
+		}
+		else if(strcmp(argv[i], "--boring") == 0 | strcmp(argv[i], "-b") == 0)
+		{
+			prettyPrint = false;
 		}
 		else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
@@ -104,16 +102,16 @@ int main(int argc, char *argv[])
         {
              cout << "A Server Technology for Realtime Object Networking (Astron)\n"
                      "http://github.com/astron/astron\n"
-            
+
 #ifdef GIT_SHA1
             "Revision: " << GIT_SHA1 << "\n"
 #else
             "Revision: NOT-IN-GIT\n"
 #endif
             "Compiled at " << __TIME__ << " on " << __DATE__ << endl;
-            
+
             printCompiledOptions(cout);
-            
+
             exit(0);
         }
 		else if(argv[i][0] == '-')
@@ -137,7 +135,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	
+
 	g_logger->m_colorEnable = prettyPrint;
 
 	if(config_arg_index != -1)
@@ -165,7 +163,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		cfg_file = filename; 	
+		cfg_file = filename;
 	}
 
 	mainlog.info() << "Loading configuration file...\n";
@@ -298,14 +296,14 @@ void printHelp(ostream &s)
 void printCompiledOptions(ostream &s)
 {
     s << "Compilation options: "
-    
+
 //If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.
 #ifdef ASTRON_32BIT_DATAGRAMS
     "32-bit length tag Datagrams, "
 #else
     "16-bit length tag Datagrams, "
 #endif
-    
+
 //If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).
 #ifdef ASTRON_128BIT_CHANNELS
     "128-bit channel space, 64-bit distributed object id's, 64-bit zones"
@@ -313,7 +311,7 @@ void printCompiledOptions(ostream &s)
     "64-bit channel space, 32-bit distributed object id's, 32-bit zones"
 #endif
     <<"\n";
-    
+
     //Now print what parts are compiled in.
     s << "Components: "
 #ifdef BUILD_STATESERVER
@@ -323,29 +321,29 @@ void printCompiledOptions(ostream &s)
     #endif //End DBSS
     ", "
 #endif //End SS
-    
+
 #ifdef BUILD_EVENTLOGGER
     "Event Logger, "
 #endif
-    
+
 #ifdef BUILD_CLIENTAGENT
     "Client Agent, "
 #endif
-    
+
 #ifdef BUILD_DBSERVER
     "Database "
-    
+
     #ifdef BUILD_DB_YAML
         "(With YAML Support) "
     #endif //End DB_YAML
-    
+
     #ifdef BUILD_DB_SQL
         "(With SQL DB Support) "
     #endif //End DB_SQL
-    
+
 #endif //End DBSERVER
     "\n";
-    
 
-    
+
+
 }
