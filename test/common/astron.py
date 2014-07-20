@@ -23,9 +23,9 @@ class Daemon(object):
 
             return # Because the start happened manually.
 
-        cfg, self.config_file = tempfile.mkstemp()
-        os.write(cfg, self.config)
-        os.close(cfg)
+        configHandle, self.config_file = tempfile.mkstemp(prefix = 'astron', suffix = 'cfg.yaml')
+        os.write(configHandle, self.config)
+        os.close(configHandle)
 
         args = [self.DAEMON_PATH]
         if 'USE_LOGLEVEL' in os.environ:

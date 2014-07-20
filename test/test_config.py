@@ -28,7 +28,7 @@ class TestConfigCore(ConfigTest):
                 bind: 127.0.0.1:57123
                 threaded: true
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_without_threading(self):
         config = """\
