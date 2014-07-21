@@ -9,15 +9,60 @@ NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messag
 
 Logger::Logger(const std::string &log_file, LogSeverity sev, bool console_output) :
 	m_buf(log_file, console_output), m_severity(sev), m_output(&m_buf)
-{	
+{
 }
 
 #ifdef ASTRON_DEBUG_MESSAGES
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_DEBUG), m_output(&m_buf), m_color_enabled(true)
 #else
-Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf)
+Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_color_enabled(true)
 #endif
 {
+}
+
+/* Reset code */
+static const char* ANSI_RESET = "\x1b[0m";
+
+/* Normal Colors */
+static const char* ANSI_RED = "\x1b[31m";
+static const char* ANSI_GREEN = "\x1b[32m";
+static const char* ANSI_ORANGE = "\x1b[33m";
+static const char* ANSI_YELLOW = "\x1b[33;2m";
+//static const char* ANSI_BLUE = "\x1b[34m";
+//static const char* ANSI_CYAN = "\x1b[36m";
+static const char* ANSI_GREY = "\x1b[37m";
+
+/* Bold Colors */
+//static const char* ANSI_BOLD_RED = "\x1b[31;1m";
+//static const char* ANSI_BOLD_GREEN = "\x1b[32:1m";
+//static const char* ANSI_BOLD_YELLOW = "\x1b[33:1m";
+//static const char* ANSI_BOLD_WHITE = "\x1b[37;1m";
+
+/* Dark Colors */
+//static const char* ANSI_DARK_RED = "\x1b[31;2m";
+//static const char* ANSI_DARK_GREEN = "\x1b[32;2m";
+static const char* ANSI_DARK_CYAN = "\x1b[36;2m";
+static const char* ANSI_DARK_GREY = "\x1b[37;2m";
+
+const char* Logger::get_severity_color(LogSeverity sev) {
+	switch(sev)
+	{
+		case LSEVERITY_FATAL:
+		case LSEVERITY_ERROR:
+			return ANSI_RED;
+		case LSEVERITY_SECURITY:
+			return ANSI_ORANGE;
+		case LSEVERITY_WARNING:
+			return ANSI_YELLOW;
+		case LSEVERITY_DEBUG:
+		case LSEVERITY_PACKET:
+		case LSEVERITY_TRACE:
+			return ANSI_DARK_CYAN;
+		case LSEVERITY_INFO:
+			return ANSI_GREEN;
+		default:
+			return ANSI_GREY;
+	}
 }
 
 // log returns an output stream for C++ style stream operations.
@@ -65,8 +110,32 @@ LockedLogOutput Logger::log(LogSeverity sev)
 	strftime(timetext, 1024, "%Y-%m-%d %H:%M:%S", localtime(&rawtime));
 
 	LockedLogOutput out(&m_output, &m_lock);
-	out << "[" << timetext << "] " << sevtext << ": ";
+
+	if(m_color_enabled)
+	{
+		out << ANSI_DARK_GREY
+		    << "[" << timetext << "] "
+		    << get_severity_color(sev)
+		    << sevtext
+		    << ": "
+		    << ANSI_RESET;
+	}
+	else
+	{
+		out << "[" << timetext << "] "
+		    << sevtext
+		    << ": ";
+	}
+
+
 	return out;
+}
+
+
+// set_color_enabled turns ANSI colorized output on or off.
+void Logger::set_color_enabled(bool enabled)
+{
+	m_color_enabled = enabled;
 }
 
 // set_min_serverity sets the lowest severity that will be output to the log.
