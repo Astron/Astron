@@ -1,4 +1,5 @@
 #include "global.h"
+#include "shutdown.h"
 #include "RoleFactory.h"
 #include "config/constraints.h"
 #include "dclass/file/read.h"
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
 			{
 				cerr << "Unknown log-level \"" << llstr << "\"." << endl;
 				printHelp(cerr);
-				exit(1);
+				return 1;
 			}
 		}
 		else if(strcmp(argv[i], "--pretty") == 0 || strcmp(argv[i], "-p") == 0)
@@ -101,7 +102,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
 			printHelp(cout);
-			exit(0);
+			return 0;
 		}
         else if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0)
         {
@@ -117,13 +118,13 @@ int main(int argc, char *argv[])
 
             printCompiledOptions(cout);
 
-            exit(0);
+            return 0;
         }
 		else if(argv[i][0] == '-')
 		{
 			cerr << "Unrecognized option \"" << string(argv[i]) << "\".\n";
 			printHelp(cerr);
-			exit(1);
+			return 1;
 		}
 		else
 		{
@@ -162,10 +163,10 @@ int main(int argc, char *argv[])
 				boost::filesystem::current_path(dir_str);
 			}
 		}
-		catch(const exception&)
+		catch(const boost::filesystem::filesystem_error&)
 		{
 			mainlog.fatal() << "Could not change working directory to config directory.\n";
-			exit(1);
+			return 1;
 		}
 
 		cfg_file = filename;
@@ -216,56 +217,78 @@ int main(int argc, char *argv[])
 	}
 	g_dcf = dcf;
 
-	// Initialize configured MessageDirector
-	MessageDirector::singleton.init_network();
-	g_eventsender.init(eventlogger_addr.get_val());
+	// Now hook up our speciailize signal handler
+	astron_handle_signals();
 
-	// Load uberdog metadata from configuration
-	ConfigNode udnodes = g_config->copy_node()["uberdogs"];
-	if(!udnodes.IsNull())
+	try
 	{
-		for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
+		// Initialize configured MessageDirector
+		MessageDirector::singleton.init_network();
+		g_eventsender.init(eventlogger_addr.get_val());
+
+		// Load uberdog metadata from configuration
+		ConfigNode udnodes = g_config->copy_node()["uberdogs"];
+		if(!udnodes.IsNull())
 		{
-			ConfigNode udnode = *it;
-			Uberdog ud;
-
-			// Get the uberdog's class
-			const Class* dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
-			if(!dcc)
+			for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
 			{
-				// Make sure it exists
-				mainlog.fatal() << "For uberdog " << udnode["id"].as<doid_t>()
-								<< " Distributed class " << udnode["class"].as<std::string>()
-				                << " does not exist!" << std::endl;
-				exit(1);
-			}
+				ConfigNode udnode = *it;
+				Uberdog ud;
 
-			// Setup uberdog
-			ud.dcc = dcc;
-			ud.anonymous = udnode["anonymous"].as<bool>();
-			g_uberdogs[udnode["id"].as<doid_t>()] = ud;
+				// Get the uberdog's class
+				const Class* dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
+				if(!dcc)
+				{
+					// Make sure it exists
+					mainlog.fatal() << "For uberdog " << udnode["id"].as<doid_t>()
+									<< " Distributed class " << udnode["class"].as<std::string>()
+					                << " does not exist!" << std::endl;
+					return 1;
+				}
+
+				// Setup uberdog
+				ud.dcc = dcc;
+				ud.anonymous = udnode["anonymous"].as<bool>();
+				g_uberdogs[udnode["id"].as<doid_t>()] = ud;
+			}
+		}
+
+		// Initialize configured roles
+		ConfigNode node = g_config->copy_node();
+		node = node["roles"];
+		for(auto it = node.begin(); it != node.end(); ++it)
+		{
+			RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 		}
 	}
-
-	// Initialize configured roles
-	ConfigNode node = g_config->copy_node();
-	node = node["roles"];
-	for(auto it = node.begin(); it != node.end(); ++it)
+	// This exception is propogated if astron_shutdown is called
+	catch(const ShutdownException& e)
 	{
-		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
+		return e.exit_code();
 	}
 
+	// Run the main event loop
+	int exit_code = 0;
 	try
 	{
 		io_service.run();
 	}
-	catch(exception &e)
+
+	// This exception is propogated if astron_shutdown is called
+	catch(const ShutdownException& e)
 	{
-		mainlog.fatal() << "Exception from the network io service: "
-		                << e.what() << endl;
+		exit_code = e.exit_code();
 	}
 
-	return 0;
+	// Catch any other exception that propogates
+	catch(const exception &e)
+	{
+		mainlog.fatal() << "Uncaught exception from the main event loop: "
+		                << e.what() << endl;
+		return 1;
+	}
+
+	return exit_code;
 }
 
 // printHelp outputs the cli help-text to the given stream.

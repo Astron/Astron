@@ -340,6 +340,8 @@ set(CORE_FILES
 	src/core/Role.cpp
 	src/core/RoleFactory.h
 	src/core/RoleFactory.cpp
+	src/core/shutdown.h
+	src/core/shutdown.cpp
 	src/core/types.h
 	src/core/msgtypes.h
 )

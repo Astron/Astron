@@ -69,6 +69,17 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 
 void NetworkClient::start_receive()
 {
+	try
+	{
+		m_remote = m_socket->remote_endpoint();
+	}
+	catch (const boost::system::system_error&)
+	{
+		// A client might disconnect immediately after connecting.
+		// Since we are in the constructor, ignore it. Resolves #122.
+		// When the owner of the NetworkClient attempts to send or receive,
+		// the error will occur and we'll cleanup then;
+	}
 	async_receive();
 }
 
@@ -86,7 +97,7 @@ void NetworkClient::async_receive()
 			socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size);
 		}
 	}
-	catch(std::exception&)
+	catch(const boost::system::system_error&)
 	{
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection. Therefore:
@@ -108,7 +119,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
 		socket_write(gather);
 	}
-	catch(std::exception&)
+	catch(const boost::system::system_error&)
 	{
 		// We assume that the message just got dropped if the remote end died
 		// before we could send it.

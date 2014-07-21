@@ -52,6 +52,7 @@ class NetworkClient
 
 		boost::asio::ip::tcp::socket *m_socket;
 		boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
+		boost::asio::ip::tcp::endpoint m_remote;
 
 	private:
 		typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
