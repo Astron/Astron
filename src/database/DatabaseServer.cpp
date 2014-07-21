@@ -2,6 +2,7 @@
 
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "core/shutdown.h"
 #include "config/constraints.h"
 #include "DatabaseBackend.h"
 #include "DBBackendFactory.h"
@@ -48,7 +49,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	{
 		m_log->fatal() << "No database backend of type '"
 		               << db_backend_type.get_rval(backend) << "' exists." << endl;
-		exit(1);
+		astron_shutdown(1);
 	}
 
 	// Listen on control channel

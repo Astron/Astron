@@ -42,7 +42,6 @@ void ConfigGroup::add_variable(const string& varname, rtest r)
 		                   << m_name << ".'\n\tPlease submit a bug/issue to Astron with your"
 		                   << " CMakeCache and this ouput.\n";
 		exit(1);
-		// TODO: Produce a warning for the developer or something...
 	}
 }
 

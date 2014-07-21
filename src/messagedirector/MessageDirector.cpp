@@ -32,6 +32,11 @@ MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL)
 MessageDirector::~MessageDirector()
 {
 	shutdown_threading();
+
+	for(auto it = m_participants.begin(); it != m_participants.end(); ++it) {
+		delete *it;
+	}
+	m_participants.clear();
 }
 
 void MessageDirector::init_network()

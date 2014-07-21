@@ -3,6 +3,7 @@
 
 #include <boost/filesystem.hpp>
 #include "core/global.h"
+#include "core/shutdown.h"
 #include "core/RoleFactory.h"
 #include "config/constraints.h"
 #include "dclass/file/hash.h"
@@ -112,7 +113,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 	else if(m_ssl_cert.empty() != m_ssl_key.empty())
 	{
 		m_log->fatal() << "TLS requested but either certificate or key is missing.\n";
-		exit(1);
+		astron_shutdown(1);
 	}
 
 	// Handle SSL
@@ -203,7 +204,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 		               << bind_addr.get_val() << std::endl;
 		m_log->fatal() << "Error code: " << ec.value()
 		               << "(" << ec.category().message(ec.value()) << ")\n";
-		exit(1);
+		astron_shutdown(1);
 	}
 	m_net_acceptor->start();
 }
@@ -221,13 +222,14 @@ void ClientAgent::handle_tcp(tcp::socket *socket)
 	{
 		remote = socket->remote_endpoint();
 	}
-	catch (exception&)
+	catch (const boost::system::system_error&)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
 		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 		// is_open() == true, so we just catch the exception on remote_endpoint
 		// instead.
+		delete socket;
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "
@@ -244,13 +246,14 @@ void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
 	{
 		remote = stream->next_layer().remote_endpoint();
 	}
-	catch (exception&)
+	catch (const boost::system::system_error&)
 	{
 		// A client might disconnect immediately after connecting.
 		// If this happens, do nothing. Resolves #122.
 		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
 		// is_open() == true, so we just catch the exception on remote_endpoint
 		// instead.
+		delete stream;
 		return;
 	}
 	m_log->debug() << "Got an incoming connection from "

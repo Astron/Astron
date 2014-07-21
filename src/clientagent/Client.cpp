@@ -44,6 +44,8 @@ Client::~Client()
 		dg->add_doid(do_id);
 		route_datagram(dg);
 	}
+
+	delete m_log;
 }
 
 // log_event sends an event to the EventLogger
@@ -186,10 +188,11 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 		return;
 	}
 
-	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones, caller);
-
+	// TODO: In the future, it might be better to use emplace on the map to save
+	// the extra copy here.
+	InterestOperation iop(i.id, context, i.parent, new_zones, caller);
 	uint32_t request_context = m_next_context++;
-	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
+	m_pending_interests.insert(std::pair<uint32_t, InterestOperation>(request_context, iop));
 
 	DatagramPtr resp = Datagram::create();
 	resp->add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
@@ -605,10 +608,10 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			std::list<uint32_t> deferred_deletes;
 			for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it)
 			{
-				if(it->second->is_ready(m_visible_objects))
+				if(it->second.is_ready(m_visible_objects))
 				{
-					notify_interest_done(it->second);
-					handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
+					notify_interest_done(&it->second);
+					handle_interest_done(it->second.m_interest_id, it->second.m_client_context);
 					deferred_deletes.push_back(it->first);
 				}
 			}
@@ -624,20 +627,21 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			// using doid_t because <max_objects_in_zones> == <max_total_objects>
 			doid_t count = dgi.read_doid();
 
-			if(m_pending_interests.find(context) == m_pending_interests.end())
+			auto it = m_pending_interests.find(context);
+			if(it == m_pending_interests.end())
 			{
 				m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
 				               << context << ".\n";
 				return;
 			}
 
-			m_pending_interests[context]->store_total(count);
+			it->second.store_total(count);
 
-			if(m_pending_interests[context]->is_ready(m_visible_objects))
+			if(it->second.is_ready(m_visible_objects))
 			{
-				notify_interest_done(m_pending_interests[context]);
-				handle_interest_done(m_pending_interests[context]->m_interest_id,
-				                     m_pending_interests[context]->m_client_context);
+				notify_interest_done(&it->second);
+				handle_interest_done(it->second.m_interest_id,
+				                     it->second.m_client_context);
 				m_pending_interests.erase(context);
 			}
 		}
