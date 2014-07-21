@@ -157,9 +157,9 @@ See the build instructions at https://github.com/Astron/Astron/blob/master/doc/b
 ### The Team ###
 * **Kestred** is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
 * **CFSworks** is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
+* **AlJaMa** is a bouncing board for architectural design and problem solving.  He works with OS X support, feature brainstorming, and some libastron design and implementation.
 
 ### Major Contributors ###
-* **AlJaMa** -- architectural design, OS X support, feature brainstorming
 * **MMavipc** -- wrote a lot of code to help get Astron out of its infancy
 * **bobbybee/shadowcoder** -- solves outstanding issues, bug fixes, feature implementation
 * **jjkoletar** -- early project inspiration/design, bug fixes
