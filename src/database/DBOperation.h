@@ -70,29 +70,29 @@ class DBOperation
 			UPDATE_FIELDS
 		};
 
-		// What the frontend is requesting from the backend. See enum above for
-		// explanation.
-		OperationType m_type;
+		// === ATTRIBUTE ACCESSORS ===
 
-		// MUST be present for all operations except CREATE_OBJECT.
-		doid_t m_doid;
+		// type returns the OperationType for this operation. See enum above for explanation.
+		OperationType type() const { return m_type; }
 
-		// MUST be present for CREATE_OBJECT.
-		const dclass::Class *m_dclass;
+		// doid returns the id of the object being manipulated [except: CREATE_OBJECT]
+		doid_t doid() const { return m_doid; }
 
-		// The fields that the frontend is requesting. Only meaningful in the
-		// case of GET_FIELDS operations.
-		FieldSet m_get_fields;
+		// dclass returns the class for a create object operation [only: CREATE_OBJECT]
+		const dclass::Class *dclass() const { return m_dclass; }
 
-		// The fields that the frontend wants us to change.
+		// get_fields returns the fields that the frontend is requesting [only: GET_FIELDS]
+		const FieldSet& get_fields() const { return m_get_fields; }
+
+		// set_fields returns the fields that the frontend wants us to change.
 		// Used with CREATE_OBJECT, SET_FIELDS, UPDATE_FIELDS
-		FieldValues m_set_fields;
+		const FieldValues& set_fields() const { return m_set_fields; }
 
-		// The fields that must be equal (or absent) for the change to complete atomically.
+		// criteria_fields must be equal (or absent) for the change to complete atomically.
 		// Only meaningful in the case of UPDATE_FIELDS.
-		FieldValues m_criteria_fields;
+		const FieldValues& criteria_fields() const { return m_criteria_fields; }
 
-		// ***CONVENIENCE FUNCTIONS***
+		// === CONVENIENCE FUNCTIONS ===
 
 		// Because many operations that operate on existing objects are created
 		// without foreknowledge of the object's dclass, the frontend cannot
@@ -110,7 +110,7 @@ class DBOperation
 		// false is returned.
 		virtual bool verify_class(const dclass::Class *) { return true; }
 
-		// ***CALLBACK FUNCTIONS***
+		// === CALLBACK FUNCTION ===
 		// The database backend invokes these when the operation completes.
 		// N.B. when this happens, the DBOperation regains control of its own
 		// pointer (therefore the backend should not perform any more operations
@@ -143,8 +143,23 @@ class DBOperation
 
 
 	protected:
+		// The DBServer the operation is acting om.
 		DatabaseServer *m_dbserver;
+		// The sender of the operation.
 		channel_t m_sender;
+
+		// m_type sets what the frontend is requesting from the backend. See OperationType enum.
+		OperationType m_type;
+		// m_doid MUST be present for all operations except CREATE_OBJECT.
+		doid_t m_doid;
+		// m_dclass MUST be present for CREATE_OBJECT.
+		const dclass::Class *m_dclass;
+		// The fields that the frontend is requesting. Only used in GET_FIELDS operations.
+		FieldSet m_get_fields;
+		// The fields that the frontend wants us to change.
+		FieldValues m_set_fields;
+		// The fields that must be equal (or absent) for the change to complete atomically.
+		FieldValues m_criteria_fields;
 
 		void cleanup();
 		bool verify_fields(const dclass::Class *dclass, const FieldSet& fields);

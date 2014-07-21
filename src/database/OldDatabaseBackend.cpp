@@ -4,12 +4,12 @@
 void OldDatabaseBackend::submit(DBOperation *operation)
 {
 	std::lock_guard<std::mutex> lock(m_submit_lock);
-	switch(operation->m_type)
+	switch(operation->type())
 	{
 		case DBOperation::OperationType::CREATE_OBJECT:
 		{
-			ObjectData dbo(operation->m_dclass->get_id());
-			dbo.fields = operation->m_set_fields;
+			ObjectData dbo(operation->dclass()->get_id());
+			dbo.fields = operation->set_fields();
 
 			doid_t doid = create_object(dbo);
 			if(doid == INVALID_DO_ID || doid < m_min_id || doid > m_max_id)
@@ -25,7 +25,7 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		break;
 		case DBOperation::OperationType::DELETE_OBJECT:
 		{
-			delete_object(operation->m_doid);
+			delete_object(operation->doid());
 			operation->on_complete();
 			return;
 		}
@@ -34,7 +34,7 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		case DBOperation::OperationType::GET_FIELDS:
 		{
 			ObjectData dbo;
-			if(!get_object(operation->m_doid, dbo))
+			if(!get_object(operation->doid(), dbo))
 			{
 				operation->on_failure();
 				return;
@@ -58,7 +58,7 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		case DBOperation::OperationType::SET_FIELDS:
 		{
 			// Check the object's class and fields
-			const dclass::Class *dclass = get_class(operation->m_doid);
+			const dclass::Class *dclass = get_class(operation->doid());
 			if(!dclass || !operation->verify_class(dclass))
 			{
 				operation->on_failure();
@@ -66,15 +66,15 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 			}
 
 			// If everthing checks out, update our fields
-			for(auto it = operation->m_set_fields.begin(); it != operation->m_set_fields.end(); ++it)
+			for(auto it = operation->set_fields().begin(); it != operation->set_fields().end(); ++it)
 			{
 				if(!it->second.empty())
 				{
-					set_field(operation->m_doid, it->first, it->second);
+					set_field(operation->doid(), it->first, it->second);
 				}
 				else
 				{
-					del_field(operation->m_doid, it->first);
+					del_field(operation->doid(), it->first);
 				}
 			}
 
@@ -86,7 +86,7 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 		{
 			// TODO: This can be implemented *much* more efficiently, but for now:
 			ObjectData dbo;
-			if(!get_object(operation->m_doid, dbo))
+			if(!get_object(operation->doid(), dbo))
 			{
 				operation->on_failure();
 				return;
@@ -101,7 +101,7 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 			}
 
 			// Check to make sure the update is valid
-			for(auto it = operation->m_criteria_fields.begin(); it != operation->m_criteria_fields.end(); ++it)
+			for(auto it = operation->criteria_fields().begin(); it != operation->criteria_fields().end(); ++it)
 			{
 				if(dbo.fields[it->first] != it->second)
 				{
@@ -113,15 +113,15 @@ void OldDatabaseBackend::submit(DBOperation *operation)
 			}
 
 			// Everything checks out, so update the fields
-			for(auto it = operation->m_set_fields.begin(); it != operation->m_set_fields.end(); ++it)
+			for(auto it = operation->set_fields().begin(); it != operation->set_fields().end(); ++it)
 			{
 				if(!it->second.empty())
 				{
-					set_field(operation->m_doid, it->first, it->second);
+					set_field(operation->doid(), it->first, it->second);
 				}
 				else
 				{
-					del_field(operation->m_doid, it->first);
+					del_field(operation->doid(), it->first);
 				}
 			}
 
