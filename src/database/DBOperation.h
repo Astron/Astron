@@ -58,14 +58,16 @@ class DBOperation
 			// These require a doid and m_get_fields.
 			GET_FIELDS,
 
-			// MODIFY_FIELDS operations are for changing fields on an object.
-			// This includes adding fields, deleting fields, changing fields,
-			// and operations that require "if equals".
-			// The changes are stored in the m_set_fields map, where NULL
-			// represents a field deletion.
+			// SET_FIELDS operations are for setting (replaces existiing) fields on an object.
+			// This includes adding unset fields, deleting set fields, and changing existing fields.
+			// The changes are in the m_set_fields map, where NULL represents a field deletion.
+			SET_FIELDS,
+
+			// UPDATE_FIELDS operations are like set fields operations, but with conditions
+			// typically to verify that the object is in a sane state before applying updates.
 			// The m_criteria_fields map can be used to specify the state of
-			// the "if empty" or "if equal" fields. Again, NULL represents absent.
-			MODIFY_FIELDS
+			// the "if empty" or "if equal" fields where NULL represents empty/absent.
+			UPDATE_FIELDS
 		};
 
 		// What the frontend is requesting from the backend. See enum above for
@@ -83,11 +85,11 @@ class DBOperation
 		FieldSet m_get_fields;
 
 		// The fields that the frontend wants us to change.
-		// Used with CREATE_OBJECT, MODIFY_FIELDS
+		// Used with CREATE_OBJECT, SET_FIELDS, UPDATE_FIELDS
 		FieldValues m_set_fields;
 
 		// The fields that must be equal (or absent) for the change to complete atomically.
-		// Only meaningful in the case of MODIFY_FIELDS.
+		// Only meaningful in the case of UPDATE_FIELDS.
 		FieldValues m_criteria_fields;
 
 		// ***CONVENIENCE FUNCTIONS***
@@ -121,7 +123,7 @@ class DBOperation
 		//   for the class.
 		virtual void on_failure() { }
 
-		// This is used in the case of MODIFY_FIELDS operations where the fields
+		// This is used in the case of UPDATE_FIELDS operations where the fields
 		// in m_criteria_fields were NOT satisfied. The backend provides a snapshot
 		// of the current values to be sent back to the client.
 		// (Or it may include a *complete* snapshot and the frontend will filter.)

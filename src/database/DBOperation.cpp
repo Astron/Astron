@@ -422,7 +422,7 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
 bool DBOperationSet::initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
 {
 	m_sender = sender;
-	m_type = MODIFY_FIELDS;
+	m_type = SET_FIELDS;
 	m_doid = dgi.read_doid();
 
 	uint16_t field_count;
@@ -487,7 +487,7 @@ void DBOperationSet::on_failure()
 bool DBOperationUpdate::initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
 {
 	m_sender = sender;
-	m_type = MODIFY_FIELDS;
+	m_type = UPDATE_FIELDS;
 	m_context = dgi.read_uint32();
 	m_doid = dgi.read_doid();
 
