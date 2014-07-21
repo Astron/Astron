@@ -155,10 +155,14 @@ See the build instructions at https://github.com/Astron/Astron/blob/master/doc/b
 ## Development ##
 
 ### The Team ###
-* **CFSworks** is the main architect of the project. His responsibilities include writing documentation and unit tests, as well as providing guidance on the organization of the code and system architecture.  
-* **Kestred** is our vice-architect. He does a lot of Astron development, and also writes a lot of documentation. Responsibilities include Astron maintenance, design revisions, and new feature planning & implementation.
-* **AlJaMa** is our Mac-compatibility focused developer, and continously attempts to build things with Astron to figure out where Astron does crazy things, and where Astron could use features that would be commonly requested.
-* **MMavipc** is our incredibly awesome Windows codemonkey.  He gets down and dirty to get things working and get work done. He is also responsible for ensuring Astron will work well with Panda3D games and MMOGs.
+* **Kestred** is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
+* **CFSworks** is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
+
+### Major Contributors ###
+* **AlJaMa** -- architectural design, OS X support, feature brainstorming
+* **MMavipc** -- wrote a lot of code to help get Astron out of its infancy
+* **bobbybee/shadowcoder** -- solves outstanding issues, bug fixes, feature implementation
+* **jjkoletar** -- early project inspiration/design, bug fixes
 
 ### License ###
 The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
