@@ -10,6 +10,10 @@
 // Foward declarations
 class DatabaseServer;
 
+// Convenience typedes
+typedef std::unordered_set<const dclass::Field*> FieldSet;
+typedef std::unordered_map<const dclass::Field*, std::vector<uint8_t> > FieldValues;
+
 // This represents a "snapshot" of a particular object. It is essentially just a
 // dclass and a map of fields.
 class DBObjectSnapshot
@@ -19,7 +23,7 @@ class DBObjectSnapshot
 
 		// Absense from this map indicates that the field is either not present
 		// on the object, or was not requested by the corresponding DBOperation.
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_fields;
+		FieldValues m_fields;
 };
 
 // DBOperation represents any single operation that can be asynchronously
@@ -76,13 +80,15 @@ class DBOperation
 
 		// The fields that the frontend is requesting. Only meaningful in the
 		// case of GET_FIELDS operations.
-		std::unordered_set<const dclass::Field *> m_get_fields;
+		FieldSet m_get_fields;
 
-		// The fields that the frontend wants us to change, and the fields that
-		// must be equal (or absent) for the change to complete atomically.
+		// The fields that the frontend wants us to change.
+		// Used with CREATE_OBJECT, MODIFY_FIELDS
+		FieldValues m_set_fields;
+
+		// The fields that must be equal (or absent) for the change to complete atomically.
 		// Only meaningful in the case of MODIFY_FIELDS.
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_set_fields;
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_criteria_fields;
+		FieldValues m_criteria_fields;
 
 		// ***CONVENIENCE FUNCTIONS***
 
@@ -139,6 +145,9 @@ class DBOperation
 		channel_t m_sender;
 
 		void cleanup();
+		bool verify_fields(const dclass::Class *dclass, const FieldSet& fields);
+		bool verify_fields(const dclass::Class *dclass, const FieldValues& fields);
+		void announce_fields(const FieldValues& fields);
 		bool populate_set_fields(DatagramIterator &dgi, uint16_t field_count,
 			                     bool deletes = false, bool values = false);
 		bool populate_get_fields(DatagramIterator &dgi, uint16_t field_count);
@@ -176,10 +185,19 @@ class DBOperationGet : public DBOperation
 		uint32_t m_context;
 		uint16_t m_resp_msgtype;
 };
-class DBOperationModify : public DBOperation
+class DBOperationSet : public DBOperation
 {
 	public:
-		DBOperationModify(DatabaseServer *db) : DBOperation(db) { }
+		DBOperationSet(DatabaseServer *db) : DBOperation(db) { }
+		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
+		virtual bool verify_class(const dclass::Class *dclass);
+		virtual void on_complete();
+		virtual void on_failure();
+};
+class DBOperationUpdate : public DBOperation
+{
+	public:
+		DBOperationUpdate(DatabaseServer *db) : DBOperation(db) { }
 		virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
 		virtual bool verify_class(const dclass::Class *dclass);
 		virtual void on_complete();

@@ -27,5 +27,6 @@ class DatabaseServer : public Role
 		friend class DBOperationCreate;
 		friend class DBOperationDelete;
 		friend class DBOperationGet;
-		friend class DBOperationModify;
+		friend class DBOperationSet;
+		friend class DBOperationUpdate;
 };

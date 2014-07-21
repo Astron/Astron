@@ -83,13 +83,17 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		break;
 		case DBSERVER_OBJECT_SET_FIELD:
 		case DBSERVER_OBJECT_SET_FIELDS:
-		case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
-		case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
-		case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
 		case DBSERVER_OBJECT_DELETE_FIELD:
 		case DBSERVER_OBJECT_DELETE_FIELDS:
 		{
-			op = new DBOperationModify(this);
+			op = new DBOperationSet(this);
+		}
+		break;
+		case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
+		case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
+		case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
+		{
+			op = new DBOperationUpdate(this);
 		}
 		break;
 		default:

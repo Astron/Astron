@@ -13,6 +13,96 @@ void DBOperation::cleanup()
 	delete this;
 }
 
+void DBOperation::announce_fields(const FieldValues& fields)
+{
+	// Calculate the fields that we are sending in our response:
+	FieldValues changed_fields;
+	FieldSet deleted_fields;
+
+	for(auto it = fields.begin(); it != fields.end(); ++it)
+	{
+		if(it->second.empty())
+		{
+			deleted_fields.insert(it->first);
+		}
+		else
+		{
+			changed_fields[it->first] = it->second;
+		}
+	}
+
+	if(!deleted_fields.empty())
+	{
+		bool multi = (deleted_fields.size() > 1);
+		DatagramPtr update = Datagram::create();
+		update->add_server_header(database_to_object(m_doid), m_sender,
+		                          multi ? DBSERVER_OBJECT_DELETE_FIELDS :
+		                                  DBSERVER_OBJECT_DELETE_FIELD);
+		update->add_doid(m_doid);
+		if(multi)
+		{
+			update->add_uint16(deleted_fields.size());
+		}
+		for(auto it = deleted_fields.begin(); it != deleted_fields.end(); ++it)
+		{
+			update->add_uint16((*it)->get_id());
+		}
+		m_dbserver->route_datagram(update);
+	}
+
+	if(!changed_fields.empty())
+	{
+		bool multi = (changed_fields.size() > 1);
+		DatagramPtr update = Datagram::create();
+		update->add_server_header(database_to_object(m_doid), m_sender,
+		                          multi ? DBSERVER_OBJECT_SET_FIELDS :
+		                                  DBSERVER_OBJECT_SET_FIELD);
+		update->add_doid(m_doid);
+		if(multi)
+		{
+			update->add_uint16(changed_fields.size());
+		}
+		for(auto it = changed_fields.begin(); it != changed_fields.end(); ++it)
+		{
+			update->add_uint16(it->first->get_id());
+			update->add_data(it->second);
+		}
+		m_dbserver->route_datagram(update);
+	}
+}
+bool DBOperation::verify_fields(const dclass::Class *dclass, const FieldSet& fields)
+{
+	bool valid = true;
+	for(auto it = fields.begin(); it != fields.end(); ++it)
+	{
+		const dclass::Field *field = *it;
+		if(!dclass->get_field_by_id(field->get_id()))
+		{
+			m_dbserver->m_log->warning() << "Field " << field->get_name()
+			                             << " does not belong to object " << m_doid
+			                             << "(" << dclass->get_name() << ")\n";
+			valid = false;
+		}
+	}
+	return valid;
+}
+
+bool DBOperation::verify_fields(const dclass::Class *dclass, const FieldValues& fields)
+{
+	bool valid = true;
+	for(auto it = fields.begin(); it != fields.end(); ++it)
+	{
+		if(!dclass->get_field_by_id(it->first->get_id()))
+		{
+			m_dbserver->m_log->warning() << "Field " << it->first->get_name()
+			                             << " does not belong to object " << m_doid
+			                             << "(" << dclass->get_name() << ")\n";
+			valid = false;
+		}
+	}
+	return valid;
+}
+
 bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_count,
 	                                  bool deletes, bool values)
 {
@@ -39,7 +129,7 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
 			}
 			else if(field->has_default_value())
 			{
-				std::string val = field->get_default_value();
+				string val = field->get_default_value();
 				m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
 			}
 			else
@@ -240,14 +330,10 @@ bool DBOperationGet::verify_class(const dclass::Class *dclass)
 		return true;
 	}
 
-	for(auto it = m_get_fields.begin(); it != m_get_fields.end(); ++it)
+	if(!verify_fields(dclass, m_get_fields))
 	{
-		if(!dclass->get_field_by_id((*it)->get_id()))
-		{
-			m_dbserver->m_log->warning() << "Requested field " << (*it)->get_name()
-			                             << " does not belong to object " << m_doid
-			                             << "(" << dclass->get_name() << ")\n";
-		}
+		m_dbserver->m_log->warning() << "Request invalid field for " << m_doid
+		                             << "(" << dclass->get_name() << ")\n";
 	}
 
 	// Though we may have encountered problems above, they aren't strictly
@@ -276,7 +362,7 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
 	resp->add_uint8(SUCCESS);
 
 	// Calculate the fields that we are sending in our response:
-	std::unordered_map<const dclass::Field*, std::vector<uint8_t> > response_fields;
+	FieldValues response_fields;
 	if(m_resp_msgtype == DBSERVER_OBJECT_GET_ALL_RESP)
 	{
 		// Send everything:
@@ -333,24 +419,14 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
 	cleanup();
 }
 
-bool DBOperationModify::initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+bool DBOperationSet::initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
 {
 	m_sender = sender;
-
 	m_type = MODIFY_FIELDS;
-
-	if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS ||
-	   msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS ||
-	   msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
-	{
-		m_context = dgi.read_uint32();
-	}
-
 	m_doid = dgi.read_doid();
 
 	uint16_t field_count;
 	if(msg_type == DBSERVER_OBJECT_SET_FIELDS ||
-	   msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS ||
 	   msg_type == DBSERVER_OBJECT_DELETE_FIELDS)
 	{
 		field_count = dgi.read_uint16();
@@ -361,38 +437,88 @@ bool DBOperationModify::initialize(channel_t sender, uint16_t msg_type, Datagram
 	}
 
 	bool deletes;
-	bool values;
 	if(msg_type == DBSERVER_OBJECT_SET_FIELD ||
 	   msg_type == DBSERVER_OBJECT_SET_FIELDS)
 	{
-		m_resp_msgtype = 0;
 		deletes = false;
-		values = false;
 	}
-	else if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS ||
-	        msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
+	else if(msg_type == DBSERVER_OBJECT_DELETE_FIELD ||
+	        msg_type == DBSERVER_OBJECT_DELETE_FIELDS)
 	{
-		m_resp_msgtype = (msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS) ?
-		                 DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP :
-		                 DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP;
-		deletes = false;
+		deletes = true;
+	}
+
+	if(!populate_set_fields(dgi, field_count, deletes, false))
+	{
+		on_failure();
+		return false;
+	}
+
+	return true;
+}
+
+bool DBOperationSet::verify_class(const dclass::Class *dclass)
+{
+	if(!verify_fields(dclass, m_set_fields))
+	{
+		m_dbserver->m_log->warning() << "Attempted to modify invalid field for " << m_doid
+		                             << "(" << dclass->get_name() << ")\n";
+		return false;
+	}
+	return true;
+}
+
+void DBOperationSet::on_complete()
+{
+	// Broadcast update to object's channel
+	if(m_dbserver->m_broadcast)
+	{
+		announce_fields(m_set_fields);
+	}
+
+	cleanup();
+}
+
+void DBOperationSet::on_failure()
+{
+	cleanup();
+}
+
+bool DBOperationUpdate::initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi)
+{
+	m_sender = sender;
+	m_type = MODIFY_FIELDS;
+	m_context = dgi.read_uint32();
+	m_doid = dgi.read_doid();
+
+	uint16_t field_count;
+	if(msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
+	{
+		field_count = dgi.read_uint16();
+	}
+	else
+	{
+		field_count = 1;
+	}
+
+	bool values;
+	if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
+	{
+		m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP;
+		values = true;
+	}
+	else if(msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
+	{
+		m_resp_msgtype = DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP;
 		values = true;
 	}
 	else if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY)
 	{
 		m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP;
-		deletes = false;
-		values = false;
-	}
-	else if(msg_type == DBSERVER_OBJECT_DELETE_FIELD ||
-	        msg_type == DBSERVER_OBJECT_DELETE_FIELDS)
-	{
-		m_resp_msgtype = 0;
-		deletes = true;
 		values = false;
 	}
 
-	if(!populate_set_fields(dgi, field_count, deletes, values))
+	if(!populate_set_fields(dgi, field_count, false, values))
 	{
 		on_failure();
 		return false;
@@ -408,45 +534,45 @@ bool DBOperationModify::initialize(channel_t sender, uint16_t msg_type, Datagram
 	return true;
 }
 
-bool DBOperationModify::verify_class(const dclass::Class *dclass)
+bool DBOperationUpdate::verify_class(const dclass::Class *dclass)
 {
 	bool errors = false;
-
-	for(auto it = m_set_fields.begin(); it != m_set_fields.end(); ++it)
+	if(!verify_fields(dclass, m_set_fields))
 	{
-		if(!dclass->get_field_by_id(it->first->get_id()))
-		{
-			m_dbserver->m_log->warning() << "Attempted to modify field "
-			                             << it->first->get_name()
-			                             << " which does not belong to object " << m_doid
-			                             << "(" << dclass->get_name() << ")\n";
-			errors = true;
-		}
+		m_dbserver->m_log->warning() << "Attempted to modify invalid field for " << m_doid
+		                             << "(" << dclass->get_name() << ")\n";
+		errors = true;
 	}
-
-	for(auto it = m_criteria_fields.begin(); it != m_criteria_fields.end(); ++it)
+	if(!verify_fields(dclass, m_criteria_fields))
 	{
-		if(!dclass->get_field_by_id(it->first->get_id()))
-		{
-			m_dbserver->m_log->warning() << "Criterion field " << it->first->get_name()
-			                             << " not belong to object " << m_doid
-			                             << "(" << dclass->get_name() << ")\n";
-			errors = true;
-		}
+		m_dbserver->m_log->warning() << "Received invalid criterion field for " << m_doid
+		                             << "(" << dclass->get_name() << ")\n";
+		errors = true;
 	}
-
 	return !errors;
 }
 
-void DBOperationModify::on_failure()
+void DBOperationUpdate::on_complete()
 {
-	if(!m_resp_msgtype)
+	// Broadcast update to object's channel
+	if(m_dbserver->m_broadcast)
 	{
-		// The request msgtype doesn't have a response.
-		cleanup();
-		return;
+		announce_fields(m_set_fields);
 	}
 
+	// Send update response
+	DatagramPtr resp = Datagram::create();
+	resp->add_server_header(m_sender, m_dbserver->m_control_channel,
+	                        m_resp_msgtype);
+	resp->add_uint32(m_context);
+	resp->add_uint8(SUCCESS);
+	m_dbserver->route_datagram(resp);
+
+	cleanup();
+}
+
+void DBOperationUpdate::on_failure()
+{
 	DatagramPtr resp = Datagram::create();
 	resp->add_server_header(m_sender, m_dbserver->m_control_channel,
 	                        m_resp_msgtype);
@@ -457,7 +583,7 @@ void DBOperationModify::on_failure()
 	cleanup();
 }
 
-void DBOperationModify::on_criteria_mismatch(DBObjectSnapshot *snapshot)
+void DBOperationUpdate::on_criteria_mismatch(DBObjectSnapshot *snapshot)
 {
 	DatagramPtr resp = Datagram::create();
 	resp->add_server_header(m_sender, m_dbserver->m_control_channel,
@@ -466,7 +592,7 @@ void DBOperationModify::on_criteria_mismatch(DBObjectSnapshot *snapshot)
 	resp->add_uint8(FAILURE);
 
 	// Calculate the fields that we are sending in our response:
-	std::unordered_map<const dclass::Field*, std::vector<uint8_t> > mismatched_fields;
+	FieldValues mismatched_fields;
 
 	for(auto it = m_criteria_fields.begin(); it != m_criteria_fields.end(); ++it)
 	{
@@ -491,79 +617,5 @@ void DBOperationModify::on_criteria_mismatch(DBObjectSnapshot *snapshot)
 	m_dbserver->route_datagram(resp);
 
 	delete snapshot;
-	cleanup();
-}
-
-void DBOperationModify::on_complete()
-{
-	// Broadcast update to object's channel
-	if(m_dbserver->m_broadcast)
-	{
-		// Calculate the fields that we are sending in our response:
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > changed_fields;
-		std::unordered_set<const dclass::Field*> deleted_fields;
-
-		for(auto it = m_set_fields.begin(); it != m_set_fields.end(); ++it)
-		{
-			if(it->second.empty())
-			{
-				deleted_fields.insert(it->first);
-			}
-			else
-			{
-				changed_fields[it->first] = it->second;
-			}
-		}
-
-		if(!deleted_fields.empty())
-		{
-			bool multi = (deleted_fields.size() > 1);
-			DatagramPtr update = Datagram::create();
-			update->add_server_header(database_to_object(m_doid), m_sender,
-			                          multi ? DBSERVER_OBJECT_DELETE_FIELDS :
-			                                  DBSERVER_OBJECT_DELETE_FIELD);
-			update->add_doid(m_doid);
-			if(multi)
-			{
-				update->add_uint16(deleted_fields.size());
-			}
-			for(auto it = deleted_fields.begin(); it != deleted_fields.end(); ++it)
-			{
-				update->add_uint16((*it)->get_id());
-			}
-			m_dbserver->route_datagram(update);
-		}
-
-		if(!changed_fields.empty())
-		{
-			bool multi = (changed_fields.size() > 1);
-			DatagramPtr update = Datagram::create();
-			update->add_server_header(database_to_object(m_doid), m_sender,
-			                          multi ? DBSERVER_OBJECT_SET_FIELDS :
-			                                  DBSERVER_OBJECT_SET_FIELD);
-			update->add_doid(m_doid);
-			if(multi)
-			{
-				update->add_uint16(changed_fields.size());
-			}
-			for(auto it = changed_fields.begin(); it != changed_fields.end(); ++it)
-			{
-				update->add_uint16(it->first->get_id());
-				update->add_data(it->second);
-			}
-			m_dbserver->route_datagram(update);
-		}
-	}
-
-	if(m_resp_msgtype)
-	{
-		DatagramPtr resp = Datagram::create();
-		resp->add_server_header(m_sender, m_dbserver->m_control_channel,
-		                        m_resp_msgtype);
-		resp->add_uint32(m_context);
-		resp->add_uint8(SUCCESS);
-		m_dbserver->route_datagram(resp);
-	}
-
 	cleanup();
 }
