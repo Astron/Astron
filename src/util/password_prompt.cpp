@@ -25,6 +25,7 @@ string password_prompt(const string& prompt)
 
 #else
 // Defined in unistd.h
+#include <stdlib.h>
 #include <unistd.h>
 string password_prompt(const string& prompt)
 {
