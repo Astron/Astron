@@ -34,7 +34,7 @@ class NetworkWriteOperation
 				this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 		}
 
-		NetworkWriteOperation::~NetworkWriteOperation()
+		~NetworkWriteOperation()
 		{
 			delete [] m_sending_handles;
 			delete [] m_dg_sizes;
@@ -60,13 +60,13 @@ class NetworkWriteOperation
 		NetworkClient *m_network_client;
 };
 
-NetworkClient::NetworkClient() : m_socket(NULL), 
+NetworkClient::NetworkClient() : m_socket(NULL),
 	m_data_buf(NULL), m_data_size(0), m_is_data(false), m_async_timer(io_service)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_data_buf(NULL),
-	m_data_size(0), m_is_data(false), m_send_in_progress(false), m_send_queue(), 
+	m_data_size(0), m_is_data(false), m_send_in_progress(false), m_send_queue(),
 	m_netwriteop(NULL), m_send_queue_size(0), m_async_timer(io_service)
 {
 	start_receive();
@@ -147,7 +147,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 	if(!m_send_in_progress)
 	{
 		m_async_timer.expires_from_now(boost::posix_time::seconds(write_send_timeout.get_val()));
-		m_async_timer.async_wait(boost::bind(&NetworkClient::async_time_expired, this, 
+		m_async_timer.async_wait(boost::bind(&NetworkClient::async_time_expired, this,
 			boost::asio::placeholders::error));
 		make_network_write_op();
 	}
