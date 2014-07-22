@@ -46,7 +46,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			check_ids();
 		}
 
-		doid_t create_object(const ObjectData& dbo)
+		virtual doid_t create_object(const ObjectData& dbo)
 		{
 			string field_name;
 			vector<uint8_t> field_value;
@@ -83,7 +83,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 			return do_id;
 		}
-		void delete_object(doid_t do_id)
+		virtual void delete_object(doid_t do_id)
 		{
 			bool storable = false;
 			const Class* dcc = get_class(do_id);
@@ -105,7 +105,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 			push_id(do_id);
 		}
-		bool get_object(doid_t do_id, ObjectData& dbo)
+		virtual bool get_object(doid_t do_id, ObjectData& dbo)
 		{
 			m_log->trace() << "Getting object with id" << do_id << endl;
 
@@ -125,7 +125,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 			return true;
 		}
-		const Class* get_class(doid_t do_id)
+		virtual const Class* get_class(doid_t do_id)
 		{
 			int dc_id = -1;
 			indicator ind;
@@ -146,19 +146,19 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 			return g_dcf->get_class_by_id(dc_id);
 		}
-		void del_field(doid_t do_id, const Field* field)
+		virtual void del_field(doid_t do_id, const Field* field)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
 
 			if(storable)
 			{
-				vector<const Field*> fields;
+				FieldList fields;
 				fields.push_back(field);
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void del_fields(doid_t do_id, const vector<const Field*> &fields)
+		virtual void del_fields(doid_t do_id, const FieldList &fields)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
@@ -168,14 +168,14 @@ class SociSQLDatabase : public OldDatabaseBackend
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void set_field(doid_t do_id, const Field* field, const vector<uint8_t> &value)
+		virtual void set_field(doid_t do_id, const Field* field, const vector<uint8_t> &value)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
 
 			if(storable)
 			{
-				map<const Field*, vector<uint8_t> > fields;
+				FieldValues fields;
 				fields[field] = value;
 				try
 				{
@@ -189,7 +189,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 				}
 			}
 		}
-		void set_fields(doid_t do_id, const map<const Field*, vector<uint8_t> > &fields)
+		virtual void set_fields(doid_t do_id, const FieldValues &fields)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
@@ -208,7 +208,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 				}
 			}
 		}
-		bool set_field_if_empty(doid_t do_id, const Field* field, vector<uint8_t> &value)
+		virtual bool set_field_if_empty(doid_t do_id, const Field* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -254,7 +254,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_empty(doid_t do_id, map<const Field*, vector<uint8_t> > &values)
+		virtual bool set_fields_if_empty(doid_t do_id, FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -321,8 +321,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 				return false;
 			}
 		}
-		bool set_field_if_equals(doid_t do_id, const Field* field, const vector<uint8_t> &equal,
-		                         vector<uint8_t> &value)
+		virtual bool set_field_if_equals(doid_t do_id, const Field* field,
+		                                 const vector<uint8_t> &equal, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -372,8 +372,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_equals(doid_t do_id, const map<const Field*, vector<uint8_t> > &equals,
-		                          map<const Field*, vector<uint8_t> > &values)
+		virtual bool set_fields_if_equals(doid_t do_id, const FieldValues &equals,
+		                                  FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -391,7 +391,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			bool failed = false;
 			string value;
 			indicator ind;
-			map<const Field*, vector<uint8_t> > stored_values;
+			FieldValues stored_values;
 			try
 			{
 				m_sql.begin(); // Start transaction
@@ -451,8 +451,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 				return false;
 			}
 		}
-
-		bool get_field(doid_t do_id, const Field* field, vector<uint8_t> &value)
+		virtual bool get_field(doid_t do_id, const Field* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -467,9 +466,9 @@ class SociSQLDatabase : public OldDatabaseBackend
 				return false; // Class has no database fields
 			}
 
-			vector<const Field*> fields;
+			FieldList fields;
 			fields.push_back(field);
-			map<const Field*, vector<uint8_t> > values;
+			FieldValues values;
 
 			get_fields_from_table(do_id, dcc, fields, values);
 
@@ -483,8 +482,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 			return true;
 		}
-		bool get_fields(doid_t do_id, const vector<const Field*> &fields,
-		                map<const Field*, vector<uint8_t> > &values)
+		virtual bool get_fields(doid_t do_id, const FieldList &fields,
+		                FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -725,7 +724,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			return storable;
 		}
 
-		void get_all_from_table(doid_t id, const Class* dcc, map<const Field*, vector<uint8_t> > &fields)
+		void get_all_from_table(doid_t id, const Class* dcc, FieldValues &fields)
 		{
 			string value;
 			indicator ind;
@@ -752,7 +751,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 				}
 			}
 		}
-		void get_all_from_table(doid_t id, const Class* dcc, unordered_map<const Field*, vector<uint8_t> > &fields)
+		void get_all_from_table(doid_t id, const Class* dcc, unordered_FieldValues &fields)
 		{
 			string value;
 			indicator ind;
@@ -780,8 +779,8 @@ class SociSQLDatabase : public OldDatabaseBackend
 			}
 		}
 
-		void get_fields_from_table(doid_t id, const Class* dcc, const vector<const Field*> &fields,
-		                           map<const Field*, vector<uint8_t> > &values)
+		void get_fields_from_table(doid_t id, const Class* dcc, const FieldList &fields,
+		                           FieldValues &values)
 		{
 			string value;
 			indicator ind;
@@ -810,7 +809,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 		}
 
 		void set_fields_in_table(doid_t id, const Class* dcc,
-		                         const map<const Field*, vector<uint8_t> > &fields)
+		                         const FieldValues &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
@@ -825,7 +824,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			}
 		}
 		void set_fields_in_table(doid_t id, const Class* dcc,
-		                         const unordered_map<const Field*, vector<uint8_t> > &fields)
+		                         const unordered_FieldValues &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
@@ -840,7 +839,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			}
 		}
 
-		void del_fields_in_table(doid_t id, const Class* dcc, const vector<const Field*> &fields)
+		void del_fields_in_table(doid_t id, const Class* dcc, const FieldList &fields)
 		{
 			string name;
 			for(auto it = fields.begin(); it != fields.end(); ++it)

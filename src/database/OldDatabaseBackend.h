@@ -45,16 +45,20 @@ class OldDatabaseBackend : public DatabaseBackend
 		virtual void del_field(doid_t do_id, const dclass::Field* field) = 0;
 		virtual void del_fields(doid_t do_id, const FieldList &fields) = 0;
 
-		virtual void set_field(doid_t do_id, const dclass::Field* field, const FieldValue &value) = 0;
+		virtual void set_field(doid_t do_id, const dclass::Field* field,
+		                       const std::vector<uint8_t> &value) = 0;
 		virtual void set_fields(doid_t do_id, const FieldValues &fields) = 0;
 
 		// If not-equals/-empty, current are returned using value(s)
-		virtual bool set_field_if_empty(doid_t do_id, const dclass::Field* field, FieldValue &value) = 0;
+		virtual bool set_field_if_empty(doid_t do_id, const dclass::Field* field,
+		                                std::vector<uint8_t> &value) = 0;
 		virtual bool set_field_if_equals(doid_t do_id, const dclass::Field* field,
-		                                 const FieldValue &equal, FieldValue &value) = 0;
+		                                 const std::vector<uint8_t> &equal,
+		                                 std::vector<uint8_t> &value) = 0;
 		virtual bool set_fields_if_equals(doid_t do_id,const FieldValues &equals,
 		                                  FieldValues &values) = 0;
-		virtual bool get_field(doid_t do_id, const dclass::Field* field, FieldValue &value) = 0;
+		virtual bool get_field(doid_t do_id, const dclass::Field* field,
+		                       std::vector<uint8_t> &value) = 0;
 		virtual bool get_fields(doid_t do_id, const FieldList &fields,
 		                        FieldValues &values) = 0;
 
