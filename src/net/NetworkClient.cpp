@@ -8,8 +8,8 @@ using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 static ConfigGroup nc_configgroup("networkclient");
-static ConfigVariable<unsigned int> max_queue_size("max_write_queue_size", 256*1024, nc_configgroup);
-static ConfigVariable<unsigned int> write_send_timeout("write_send_timeout", 5000, nc_configgroup);
+static ConfigVariable<unsigned int> write_buffer_size("write_buffer_size", 256*1024, nc_configgroup);
+static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, nc_configgroup);
 
 NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_remote(),
 	m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false), m_is_receiving(false),
@@ -84,7 +84,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 	{
 		m_send_queue.push(dg);
 		m_total_queue_size += dg->size();
-		if(m_total_queue_size > max_queue_size.get_val())
+		if(m_total_queue_size > write_buffer_size.get_val())
 		{
 			send_disconnect();
 			return;
@@ -306,9 +306,9 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 void NetworkClient::socket_write(list<boost::asio::const_buffer>& buffers)
 {
 	// Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
-	if(write_send_timeout.get_val() > 0)
+	if(write_timeout_ms.get_val() > 0)
 	{
-		m_async_timer.expires_from_now(boost::posix_time::milliseconds(write_send_timeout.get_val()));
+		m_async_timer.expires_from_now(boost::posix_time::milliseconds(write_timeout_ms.get_val()));
 		m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, this,
 		                                     boost::asio::placeholders::error));
 	}
