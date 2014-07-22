@@ -35,11 +35,6 @@ NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
 
 NetworkClient::~NetworkClient()
 {
-	if(m_socket)
-	{
-		lock_guard<recursive_mutex> lock(m_lock);
-		m_socket->close();
-	}
 	delete m_socket;
 	delete [] m_data_buf;
 }
