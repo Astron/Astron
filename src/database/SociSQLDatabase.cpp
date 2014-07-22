@@ -3,6 +3,7 @@
 #include "DatabaseServer.h"
 
 #include "core/global.h"
+#include "core/shutdown.h"
 #include "dclass/value/parse.h"
 #include "dclass/value/format.h"
 #include "dclass/dc/Class.h"
