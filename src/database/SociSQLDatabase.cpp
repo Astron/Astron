@@ -76,7 +76,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 				m_sql.commit(); // End transaction
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				return 0;
@@ -135,7 +135,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 			{
 				m_sql << "SELECT class_id FROM objects WHERE id=" << do_id << ";", into(dc_id, ind);
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				return NULL;
 			}
@@ -184,7 +184,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const soci::exception &e)
+				catch(const soci_error &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -203,7 +203,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const soci::exception &e)
+				catch(const soci_error &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
@@ -315,12 +315,13 @@ class SociSQLDatabase : public OldDatabaseBackend
 					m_sql.commit(); // End transaction
 				}
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();
 				return false;
 			}
+			return true;
 		}
 		virtual bool set_field_if_equals(doid_t do_id, const Field* field,
 		                                 const vector<uint8_t> &equal, vector<uint8_t> &value)
@@ -445,7 +446,7 @@ class SociSQLDatabase : public OldDatabaseBackend
 					return true;
 				}
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();
@@ -752,33 +753,6 @@ class SociSQLDatabase : public OldDatabaseBackend
 				}
 			}
 		}
-		void get_all_from_table(doid_t id, const Class* dcc, unordered_FieldValues &fields)
-		{
-			string value;
-			indicator ind;
-			for(unsigned int i = 0; i < dcc->get_num_fields(); ++i)
-			{
-				const Field* field = dcc->get_field(i);
-				if(field->has_keyword("db"))
-				{
-					m_sql << "SELECT " << field->get_name() << " FROM fields_" << dcc->get_name()
-					      << " WHERE object_id=" << id << ";", into(value, ind);
-
-					if(ind == i_ok)
-					{
-						bool parse_err;
-						string packed_data = parse_value(field->get_type(), value, parse_err);
-						if(parse_err)
-						{
-							m_log->error() << "Failed parsing value for field '" << field->get_name()
-							               << "' of object " << id << "' from database.\n";
-							continue;
-						}
-						fields[field] = vector<uint8_t>(packed_data.begin(), packed_data.end());
-					}
-				}
-			}
-		}
 
 		void get_fields_from_table(doid_t id, const Class* dcc, const FieldList &fields,
 		                           FieldValues &values)
@@ -811,21 +785,6 @@ class SociSQLDatabase : public OldDatabaseBackend
 
 		void set_fields_in_table(doid_t id, const Class* dcc,
 		                         const FieldValues &fields)
-		{
-			string name, value;
-			for(auto it = fields.begin(); it != fields.end(); ++it)
-			{
-				if(it->first->has_keyword("db"))
-				{
-					name = it->first->get_name();
-					value = format_value(it->first->get_type(), it->second);
-					m_sql << "UPDATE fields_" << dcc->get_name() << " SET " << name << "='" << value
-					      << "' WHERE object_id=" << id << ";";
-				}
-			}
-		}
-		void set_fields_in_table(doid_t id, const Class* dcc,
-		                         const unordered_FieldValues &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
