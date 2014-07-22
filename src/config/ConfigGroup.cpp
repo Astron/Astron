@@ -42,7 +42,6 @@ void ConfigGroup::add_variable(const string& varname, rtest r)
 		                   << m_name << ".'\n\tPlease submit a bug/issue to Astron with your"
 		                   << " CMakeCache and this ouput.\n";
 		exit(1);
-		// TODO: Produce a warning for the developer or something...
 	}
 }
 
@@ -198,7 +197,7 @@ bool KeyedConfigList::validate(ConfigNode node)
 
 void KeyedConfigList::print_keys()
 {
-	ostream& out = config_log.info();
+	auto out = config_log.info();
 	out << "Expected value in '" << m_name << "',\n"
 	    << "    Candidates for attribute '" << m_key << "' are:\n";
 	for(auto it = m_children.begin(); it != m_children.end(); ++it)

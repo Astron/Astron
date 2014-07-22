@@ -60,13 +60,17 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 	m_log->trace() << "Replaying datagrams received while loading...\n";
 	for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it)
 	{
+		if(m_dbss->m_objs.find(m_do_id) == m_dbss->m_objs.end()) {
+			m_log->trace() << "... deleted while replaying, aborted.\n";
+			return;
+		}
 		try
 		{
 			DatagramIterator dgi(*it);
 			dgi.seek_payload();
 			obj->handle_datagram(*it, dgi);
 		}
-		catch(DatagramIteratorEOF&)
+		catch(const DatagramIteratorEOF&)
 		{
 			m_log->error() << "Detected truncated datagram while replaying"
 			               " datagrams to object, from loaded object. Skipped.\n";
@@ -88,13 +92,20 @@ void LoadingObject::forward_datagrams()
 			dgi.seek_payload();
 			m_dbss->handle_datagram(*it, dgi);
 		}
-		catch(DatagramIteratorEOF&)
+		catch(const DatagramIteratorEOF&)
 		{
 			m_log->error() << "Detected truncated datagram while replaying"
 			               " datagrams to dbss, from failed loading object. Skipped.\n";
 		}
 	}
 	m_log->trace() << "... forwarding finished.\n";
+}
+
+void LoadingObject::finalize()
+{
+	m_dbss->discard_loader(m_do_id);
+	forward_datagrams();
+	delete this;
 }
 
 void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
@@ -125,8 +136,7 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 			if(dgi.read_bool() != true)
 			{
 				m_log->debug() << "Object not found in database.\n";
-				m_dbss->discard_loader(m_do_id);
-				forward_datagrams();
+				finalize();
 				break;
 			}
 
@@ -136,8 +146,7 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 			{
 				m_log->error() << "Received object from database with unknown dclass"
 				               << " - id:" << dc_id << std::endl;
-				m_dbss->discard_loader(m_do_id);
-				forward_datagrams();
+				finalize();
 				break;
 			}
 
@@ -145,8 +154,7 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 			{
 				m_log->error() << "Requested object of class '" << m_dclass->get_id()
 				               << "', but received class " << dc_id << std::endl;
-				m_dbss->discard_loader(m_do_id);
-				forward_datagrams();
+				finalize();
 				break;
 			}
 
@@ -154,8 +162,7 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 			if(!unpack_db_fields(dgi, r_dclass, m_required_fields, m_ram_fields))
 			{
 				m_log->error() << "Error while unpacking fields from database.\n";
-				m_dbss->discard_loader(m_do_id);
-				forward_datagrams();
+				finalize();
 				break;
 			}
 
@@ -198,8 +205,7 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 			replay_datagrams(obj);
 
 			// Cleanup this loader
-			m_dbss->discard_loader(m_do_id);
-			forward_datagrams();
+			finalize();
 			break;
 		}
 		case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS:

@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <mutex>
 
 // The LogSeverity represents the importance and usage of a log message.
 // LogSeverities advance numerically such that a more important serverity is
@@ -65,6 +66,68 @@ class LoggerBuf : public std::streambuf
 		bool m_output_to_console;
 };
 
+class LockedLogOutput
+{
+	public:
+		LockedLogOutput(std::ostream *stream, std::recursive_mutex *lock) : m_stream(stream), m_lock(lock)
+		{
+			if(m_lock)
+			{
+				m_lock->lock();
+			}
+		}
+
+		LockedLogOutput( const LockedLogOutput& other ) : m_stream(other.m_stream), m_lock(other.m_lock)
+		{
+			if(m_lock)
+			{
+				m_lock->lock();
+			}
+		}
+
+		LockedLogOutput& operator=( const LockedLogOutput& ) = delete; // non copyable
+
+		~LockedLogOutput()
+		{
+			if(m_lock)
+			{
+				m_lock->unlock();
+			}
+		}
+
+		template <typename T>
+		LockedLogOutput &operator<<(const T &x)
+		{
+			if(m_stream)
+			{
+				*m_stream << x;
+			}
+			return *this;
+		}
+
+		LockedLogOutput& operator<<( std::ostream& (*pf)( std::ostream& ) )
+		{
+			if(m_stream)
+			{
+				*m_stream << pf;
+			}
+			return *this;
+		}
+
+		LockedLogOutput& operator<<( std::basic_ios<char>& (*pf)( std::basic_ios<char>& ) )
+		{
+			if(m_stream)
+			{
+				*m_stream << pf;
+			}
+			return *this;
+		}
+
+	private:
+		std::ostream *m_stream;
+		std::recursive_mutex *m_lock;
+};
+
 // A Logger is an object that allows configuration of the output destination of log messages.
 // It provides a stream as an output mechanism.
 class Logger
@@ -74,7 +137,10 @@ class Logger
 		Logger();
 
 		// log returns an output stream for C++ style stream operations.
-		std::ostream &log(LogSeverity sev);
+		LockedLogOutput log(LogSeverity sev);
+
+		// set_color_enabled turns ANSI colorized output on or off.
+		void set_color_enabled(bool enabled);
 
 		// set_min_serverity sets the lowest severity that will be output to the log.
 		// Messages with lower severity levels will be discarded.
@@ -84,10 +150,13 @@ class Logger
 		LogSeverity get_min_severity();
 
 	private:
+		const char* get_severity_color(LogSeverity sev);
+
 		LoggerBuf m_buf;
 		LogSeverity m_severity;
 		std::ostream m_output;
-		std::ostream m_null;
+		std::recursive_mutex m_lock;
+		bool m_color_enabled;
 };
 
 // A LogCategory is a wrapper for a Logger object that specially formats the output
@@ -113,9 +182,9 @@ class LogCategory
 		}
 
 #define F(level, severity) \
-	std::ostream &level() \
+	LockedLogOutput level() \
 	{ \
-		std::ostream &out = g_logger->log(severity); \
+		LockedLogOutput out = g_logger->log(severity); \
 		out << m_name << ": "; \
 		return out; \
 	}

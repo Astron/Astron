@@ -2,33 +2,29 @@
 #include <list>
 #include <set>
 #include <string>
-#include <unordered_map>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include "ChannelMap.h"
 #include "core/Logger.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "util/NetworkClient.h"
+#include "net/NetworkAcceptor.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 
-// A ChannelList represents a single channel, or range of channels
-//     that a MDParticipant can be subscribed to.
-struct ChannelList
-{
-	channel_t a;
-	channel_t b;
-	bool is_range;
-	bool qualifies(channel_t channel);
-	bool operator==(const ChannelList &rhs);
-};
-
 class MDParticipantInterface;
+class MDUpstream;
 
 // A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector : public NetworkClient
+class MessageDirector : public ChannelMap
 {
 	public:
+		~MessageDirector();
+
 		// init_network causes the MessageDirector to start listening for
 		//     messages if it hasn't already been initialized.
 		void init_network();
@@ -39,62 +35,56 @@ class MessageDirector : public NetworkClient
 		// Message on the CONTROL_MESSAGE channel are processed internally by the MessageDirector.
 		void route_datagram(MDParticipantInterface *p, DatagramHandle dg);
 
-		// subscribe_channel handles a CONTROL_ADD_CHANNEL control message.
-		// (Args) "c": the channel to be added.
-		void subscribe_channel(MDParticipantInterface* p, channel_t c);
-
-		// unsubscribe_channel handles a CONTROL_REMOVE_CHANNEL control message.
-		// (Args) "c": the channel to be removed.
-		void unsubscribe_channel(MDParticipantInterface* p, channel_t c);
-
-		// subscribe_range handles a CONTROL_ADD_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
-
-		// unsubscribe_range handles a CONTROL_REMOVE_RANGE control message.
-		// (Args) "lo": the lowest channel to be removed.
-		//        "hi": the highest channel to be removed.
-		// The range is inclusive.
-		void unsubscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi);
-
-		// unsubscribe_all removes all channel and range subscriptions from a participant.
-		void unsubscribe_all(MDParticipantInterface*p);
-
 		// logger returns the MessageDirector log category.
 		inline LogCategory& logger()
 		{
 			return m_log;
 		}
+
+		// For MDUpstream (and subclasses) to call.
+		void receive_datagram(DatagramHandle dg);
+		void receive_disconnect();
+
+	protected:
+		virtual void on_add_channel(channel_t c);
+
+		virtual void on_remove_channel(channel_t c);
+
+		virtual void on_add_range(channel_t lo, channel_t hi);
+
+		virtual void on_remove_range(channel_t lo, channel_t hi);
+
 	private:
 		MessageDirector();
-		boost::asio::ip::tcp::acceptor *m_acceptor;
+
 		bool m_initialized;
-		bool is_client;
-		LogCategory m_log;
+
+		NetworkAcceptor *m_net_acceptor;
+		MDUpstream *m_upstream;
 
 		// Connected participants
 		std::list<MDParticipantInterface*> m_participants;
 
-		// Single channel subscriptions
-		std::unordered_map<channel_t, std::set<MDParticipantInterface*> > m_channel_subscriptions;
+		// Threading stuff:
+		bool m_shutdown;
+		std::thread *m_thread;
+		std::mutex m_participants_lock;
+		std::mutex m_messages_lock;
+		std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
+		std::condition_variable m_cv;
+        std::thread::id m_main_thread;
+		void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
+		void routing_thread();
+		void shutdown_threading();
 
-		// Range channel subscriptions
-		boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> > m_range_subscriptions;
-
+		LogCategory m_log;
 
 		friend class MDParticipantInterface;
 		void add_participant(MDParticipantInterface* participant);
 		void remove_participant(MDParticipantInterface* participant);
 
 		// I/O OPERATIONS
-		void start_accept(); // Accept new connections from downstream
-		void handle_accept(boost::asio::ip::tcp::socket *socket, const boost::system::error_code &ec);
-		virtual void receive_datagram(DatagramHandle dg);
-		virtual void receive_disconnect();
-
-
+		void handle_connection(boost::asio::ip::tcp::socket *socket);
 };
 
 
@@ -105,7 +95,7 @@ class MessageDirector : public NetworkClient
 //     DB-server, or etc. which are on the node and will be transferred
 //     internally.  Another server with its own MessageDirector also would
 //     be an MDParticipant.
-class MDParticipantInterface
+class MDParticipantInterface : public ChannelSubscriber
 {
 		friend class MessageDirector;
 
@@ -131,15 +121,6 @@ class MDParticipantInterface
 			{
 				route_datagram(*it);
 			}
-		}
-
-		inline std::set<channel_t> &channels()
-		{
-			return m_channels;
-		}
-		inline boost::icl::interval_set<channel_t> &ranges()
-		{
-			return m_ranges;
 		}
 
 	protected:
@@ -198,10 +179,21 @@ class MDParticipantInterface
 		}
 
 	private:
-		std::set<channel_t> m_channels; // The set of all individually subscribed channels.
-		boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 		std::vector<DatagramHandle> m_post_removes; // The messages to be distributed on unexpected disconnect.
 		std::string m_name;
 		std::string m_url;
 
+};
+
+// This class abstractly represents an "upstream" link on the Message Director.
+// All messages routed on the Message Director will be sent to the upstream link,
+// except for messages that originated on the link to begin with.
+class MDUpstream
+{
+	public:
+		virtual void subscribe_channel(channel_t c) = 0;
+		virtual void unsubscribe_channel(channel_t c) = 0;
+		virtual void subscribe_range(channel_t lo, channel_t hi) = 0;
+		virtual void unsubscribe_range(channel_t lo, channel_t hi) = 0;
+		virtual void handle_datagram(DatagramHandle dg) = 0;
 };

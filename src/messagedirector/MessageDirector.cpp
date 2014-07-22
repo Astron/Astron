@@ -1,11 +1,12 @@
 #include "MessageDirector.h"
 #include "MDNetworkParticipant.h"
+#include "MDNetworkUpstream.h"
 #include "core/global.h"
-#include "core/msgtypes.h"
 #include "config/ConfigVariable.h"
 #include "config/constraints.h"
+#include "net/TcpAcceptor.h"
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <functional>
 #include <boost/icl/interval_bounds.hpp>
 using boost::asio::ip::tcp;
 
@@ -14,49 +15,24 @@ static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 static ValidAddressConstraint valid_connect_addr(connect_addr);
+static ConfigVariable<bool> threaded_mode("threaded", true, md_config);
 
 static ConfigGroup daemon_config("daemon");
 static ConfigVariable<std::string> daemon_name("name", "<unnamed>", daemon_config);
 static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 
-// Define convenience type
-typedef boost::icl::discrete_interval<channel_t> interval_t;
-
-bool ChannelList::qualifies(channel_t channel)
-{
-	if(is_range)
-	{
-		return (channel >= a && channel <= b);
-	}
-	else
-	{
-		return channel == a;
-	}
-}
-
-bool ChannelList::operator==(const ChannelList &rhs)
-{
-	if(is_range && rhs.is_range)
-	{
-		return (a == rhs.a && b == rhs.b);
-	}
-	else if(!is_range && !rhs.is_range)
-	{
-		return a == rhs.a;
-	}
-	return false;
-}
-
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() : m_acceptor(NULL), m_initialized(false), is_client(false),
-	m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL), m_upstream(NULL),
+	m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
-	// Initialize m_range_susbcriptions with empty range
-	auto empty_set = std::set<MDParticipantInterface*>();
-	m_range_subscriptions = boost::icl::interval_map<channel_t, std::set<MDParticipantInterface*> >();
-	m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
+}
+
+MessageDirector::~MessageDirector()
+{
+	shutdown_threading();
+	m_participants.clear();
 }
 
 void MessageDirector::init_network()
@@ -67,29 +43,33 @@ void MessageDirector::init_network()
 		if(bind_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Opening listening socket..." << std::endl;
-			std::string str_ip = bind_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-			str_ip = str_ip.substr(0, str_ip.find(':', 0));
-			tcp::resolver resolver(io_service);
-			tcp::resolver::query query(str_ip, str_port);
-			tcp::resolver::iterator it = resolver.resolve(query);
-			m_acceptor = new tcp::acceptor(io_service, *it, true);
-			start_accept();
+
+			TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
+			                                         this, std::placeholders::_1);
+			m_net_acceptor = new TcpAcceptor(io_service, callback);
+			boost::system::error_code ec;
+			ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
+			if(ec.value() != 0)
+			{
+				m_log.fatal() << "Could not bind listening port: "
+				              << bind_addr.get_val() << std::endl;
+				m_log.fatal() << "Error code: " << ec.value()
+				              << "(" << ec.category().message(ec.value()) << ")"
+				              << std::endl;
+				exit(1);
+			}
+			m_net_acceptor->start();
 		}
 
 		// Connect to upstream server and start handling received messages
 		if(connect_addr.get_val() != "unspecified")
 		{
 			m_log.info() << "Connecting upstream..." << std::endl;
-			std::string str_ip = connect_addr.get_val();
-			std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-			str_ip = str_ip.substr(0, str_ip.find(':', 0));
-			tcp::resolver resolver(io_service);
-			tcp::resolver::query query(str_ip, str_port);
-			tcp::resolver::iterator it = resolver.resolve(query);
-			tcp::socket* remote_md = new tcp::socket(io_service);
+
+			MDNetworkUpstream *upstream = new MDNetworkUpstream(this);
+
 			boost::system::error_code ec;
-			remote_md->connect(*it, ec);
+			upstream->connect(connect_addr.get_val());
 			if(ec.value() != 0)
 			{
 				m_log.fatal() << "Could not connect to remote MD at IP: "
@@ -99,41 +79,110 @@ void MessageDirector::init_network()
 				              << std::endl;
 				exit(1);
 			}
-			set_socket(remote_md);
-			is_client = true;
+
+			m_upstream = upstream;
 		}
+
+		if(threaded_mode.get_val())
+		{
+			m_thread = new std::thread(std::bind(&MessageDirector::routing_thread, this));
+		}
+
+		m_initialized = true;
 	}
+}
+
+void MessageDirector::shutdown_threading()
+{
+	if(!m_thread)
+	{
+		return;
+	}
+
+	// Signal routing thread to shut down:
+	{
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+		m_shutdown = true;
+		m_cv.notify_one();
+	}
+
+	// Wait for it to do so:
+	m_thread->join();
+	delete m_thread;
 }
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
+	if(m_thread)
+	{
+		// Threaded mode! First, we have to get the lock to our queue:
+		std::lock_guard<std::mutex> lock(m_messages_lock);
+
+		// Now, we put the message into our queue and ring the bell:
+		m_messages.push(std::make_pair(p, dg));
+		m_cv.notify_one();
+	}
+	else if(std::this_thread::get_id() != m_main_thread)
+	{
+		// We aren't working in threaded mode, but we aren't in the main thread
+		// either. For safety, we should post this down to the main thread.
+		io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+	}
+	else
+	{
+		// Main thread; we can just process it here.
+		process_datagram(p, dg);
+	}
+}
+
+// This function runs in a thread; it loops until it's told to shut down:
+void MessageDirector::routing_thread()
+{
+	std::unique_lock<std::mutex> lock(m_messages_lock);
+
+	while(true)
+	{
+		// Wait for something interesting to handle...
+		while(m_messages.empty() && !m_shutdown)
+		{
+			m_cv.wait(lock);
+		}
+
+		if(m_shutdown)
+		{
+			// Ehh, we've been told to shut off:
+			return;
+		}
+
+		// Get and process the message:
+		auto msg = m_messages.front();
+		m_messages.pop();
+
+		lock.unlock();
+		process_datagram(msg.first, msg.second);
+		lock.lock();
+	}
+}
+
+void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle dg)
+{
 	m_log.trace() << "Processing datagram...." << std::endl;
 
-	uint8_t channels = 0;
+	std::list<channel_t> channels;
 	DatagramIterator dgi(dg);
-	std::set<MDParticipantInterface*> receiving_participants;
+	std::set<ChannelSubscriber*> receiving_participants;
 	try
 	{
-		channels = dgi.read_uint8();
+		uint8_t channel_count = dgi.read_uint8();
 
 		// Route messages to participants
-		auto &receive_log = m_log.trace();
+		auto receive_log = m_log.trace();
 		receive_log << "Receivers: ";
-		for(uint8_t i = 0; i < channels; ++i)
+		for(uint8_t i = 0; i < channel_count; ++i)
 		{
 			channel_t channel = dgi.read_channel();
 			receive_log << channel << ", ";
-			auto &subscriptions = m_channel_subscriptions[channel];
-			for(auto it = subscriptions.begin(); it != subscriptions.end(); ++it)
-			{
-				receiving_participants.insert(receiving_participants.end(), *it);
-			}
-
-			auto range = boost::icl::find(m_range_subscriptions, channel);
-			if(range != m_range_subscriptions.end())
-			{
-				receiving_participants.insert(range->second.begin(), range->second.end());
-			}
+			channels.push_back(channel);
 		}
 		receive_log << std::endl;
 	}
@@ -153,6 +202,8 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 		return;
 	}
 
+	lookup_channels(channels, receiving_participants);
+
 	if(p)
 	{
 		receiving_participants.erase(p);
@@ -160,23 +211,24 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 
 	for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it)
 	{
-		DatagramIterator msg_dgi(dg, 1 + channels * sizeof(channel_t));
+		auto participant = static_cast<MDParticipantInterface*>(*it);
+		DatagramIterator msg_dgi(dg, dgi.tell());
 		try
 		{
-			(*it)->handle_datagram(dg, msg_dgi);
+			participant->handle_datagram(dg, msg_dgi);
 		}
 		catch(DatagramIteratorEOF &)
 		{
 			// Log error with receivers output
-			m_log.error() << "Detected truncated datagram in handle_datagram for '" << (*it)->m_name << "'"
+			m_log.error() << "Detected truncated datagram in handle_datagram for '" << participant->m_name << "'"
 			              " from participant '" << p->m_name << "'." << std::endl;
 			return;
 		}
 	}
 
-	if(p && is_client)  // Send message upstream
+	if(p && m_upstream)  // Send message upstream
 	{
-		send_datagram(dg);
+		m_upstream->handle_datagram(dg);
 		m_log.trace() << "...routing upstream." << std::endl;
 	}
 	else if(!p) // If there is no participant, then it came from the upstream
@@ -189,285 +241,62 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
 	}
 }
 
-void MessageDirector::subscribe_channel(MDParticipantInterface* p, channel_t c)
+void MessageDirector::on_add_channel(channel_t c)
 {
-	// Check if participant is already subscribed in a range
-	if(boost::icl::find(p->ranges(), c) == p->ranges().end())
+	if(m_upstream)
 	{
-		// If not, subscribe participant to channel
-		p->channels().insert(p->channels().end(), c);
-		m_channel_subscriptions[c].insert(m_channel_subscriptions[c].end(), p);
-	}
-	// Check if should subscribe upstream...
-	if(is_client)
-	{
-		// Check if there was a previous subscription on that channel
-		if(m_channel_subscriptions[c].size() > 1)
-		{
-			return;
-		}
-
-		// Check if we are already subscribing to that channel upstream via a range
-		auto range_it = boost::icl::find(m_range_subscriptions, c);
-		if(range_it != m_range_subscriptions.end()  && !range_it->second.empty())
-		{
-			return;
-		}
-
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
-		dg->add_channel(c);
-		send_datagram(dg);
+		m_upstream->subscribe_channel(c);
 	}
 }
 
-void MessageDirector::unsubscribe_channel(MDParticipantInterface* p, channel_t c)
+void MessageDirector::on_remove_channel(channel_t c)
 {
-	// Unsubscribe participant from channel
-	p->channels().erase(c);
-	m_channel_subscriptions[c].erase(p);
-
-	// Check if unsubscribed channel in the middle of a range
-	auto range_it = boost::icl::find(m_range_subscriptions, c); // O(log n)
-	if(range_it != m_range_subscriptions.end())
+	if(m_upstream)
 	{
-		auto p_it = range_it->second.find(p);
-		if(p_it != range_it->second.end())
-		{
-			// Prepare participant and range
-			std::set<MDParticipantInterface*> participant_set;
-			participant_set.insert(p);
-
-			interval_t interval = interval_t::closed(c, c);
-
-			// Split range around channel split([a,b], n) -> [a,n) (n, b]
-			m_range_subscriptions -= std::make_pair(interval, participant_set); // O(n)
-		}
-	}
-
-	// Check if should unsubscribe upstream...
-	if(is_client)
-	{
-		// Check if there are any remaining single channel subscriptions
-		if(m_channel_subscriptions[c].size() > 0)
-		{
-			return; // Don't unsubscribe upstream
-		}
-
-		// Check if the range containing the unsubscribed channel has subscribers
-		auto range = boost::icl::find(m_range_subscriptions, c);
-		if(range != m_range_subscriptions.end()  && !range->second.empty())
-		{
-			return; // Don't unsubscribe upstream
-		}
-
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
-		dg->add_channel(c);
-		send_datagram(dg);
+		m_upstream->unsubscribe_channel(c);
 	}
 }
 
-void MessageDirector::subscribe_range(MDParticipantInterface* p, channel_t lo, channel_t hi)
+void MessageDirector::on_add_range(channel_t lo, channel_t hi)
 {
-	// Prepare participant and range
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	interval_t interval = interval_t::closed(lo, hi);
-
-	// Subscribe participant to range
-	p->ranges() += interval;
-	m_range_subscriptions += std::make_pair(interval, participant_set);
-
-	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for(auto it = p->channels().begin(); it != p->channels().end();)
+	if(m_upstream)
 	{
-		auto prev = it++;
-		channel_t c = *prev;
-
-		if(lo <= c && c <= hi)
-		{
-			m_channel_subscriptions[c].erase(p);
-			p->channels().erase(prev);
-		}
-	}
-
-	// Check if should subscribe upstream...
-	if(is_client)
-	{
-		// Check how many intervals along that range are already subscribed
-		channel_t new_intervals = 0, premade_intervals = 0; // use channel_t to match max_channels
-		auto interval_range = m_range_subscriptions.equal_range(interval_t::closed(lo, hi));
-		for(auto it = interval_range.first; it != interval_range.second; ++it)
-		{
-			++new_intervals;
-			if(it->second.size() > 1)
-			{
-				++premade_intervals;
-			}
-		}
-
-		// If all existing intervals are already subscribed, don't upstream
-		if(new_intervals == premade_intervals)
-		{
-			return;
-		}
-
 		// Send upstream control message
-		DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
-		dg->add_channel(lo);
-		dg->add_channel(hi);
-		send_datagram(dg);
+		m_upstream->subscribe_range(lo, hi);
 	}
 }
 
-void MessageDirector::unsubscribe_range(MDParticipantInterface *p, channel_t lo, channel_t hi)
+void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
 {
-	m_log.debug() << "A participant has unsubscribed from range [" << lo << ", " << hi << "].\n";
-
-	// Stash these for later
-	const interval_t first = m_range_subscriptions.begin()->first;
-	const interval_t last = m_range_subscriptions.rbegin()->first;
-
-	// Prepare participant and range
-	std::set<MDParticipantInterface*> participant_set;
-	participant_set.insert(p);
-
-	interval_t interval = interval_t::closed(lo, hi);
-
-	// Unsubscribe participant from range
-	p->ranges() -= interval;
-	m_range_subscriptions -= std::make_pair(interval, participant_set);
-
-	// Remove old subscriptions from participants where: [ range.low <= old_channel <= range.high ]
-	for(auto it = p->channels().begin(); it != p->channels().end();)
+	if(m_upstream)
 	{
-		auto prev = it++;
-		channel_t c = *prev;
-
-		if(lo <= c && c <= hi)
-		{
-			m_channel_subscriptions[c].erase(p);
-			p->channels().erase(prev);
-		}
-	}
-
-	// Check if should unsubscribe upstream...
-	if(is_client)
-	{
-		// Declare list of intervals that are no longer subscribed too
-		boost::icl::interval_set<channel_t> silent_intervals;
-
-		// If that was the last interval in m_range_subscriptions, remove it upstream
-		if(boost::icl::interval_count(m_range_subscriptions) == 0)
-		{
-			silent_intervals += first;
-		}
-		else
-		{
-			// Start with the entire range (bounded by what could exist)
-			channel_t rmin = std::max(first.lower(), lo);
-			channel_t rmax = std::min(last.upper(), hi);
-			interval_t bounded = interval_t::closed(rmin, rmax);
-			silent_intervals += bounded;
-
-			// If a range remains that intersects, don't unsubscribe from that range
-			for(auto it = m_range_subscriptions.begin(); it != m_range_subscriptions.end(); ++it)
-			{
-				if(boost::icl::intersects(it->first, bounded))
-				{
-					silent_intervals -= it->first;
-				}
-			}
-		}
-
-		// Send unsubscribe messages
-		for(auto it = silent_intervals.begin(); it != silent_intervals.end(); ++it)
-		{
-			m_log.debug() << "Unsubscribing from upstream range: "
-			              << int(it->bounds().bits() & BOOST_BINARY(10) ? '[' : '(')
-			              << it->lower() << ", " << it->upper()
-			              << int(it->bounds().bits() & BOOST_BINARY(01) ? ']' : ')') << "\n";
-
-
-			channel_t lo = it->lower();
-			channel_t hi = it->upper();
-			if(!(it->bounds().bits() & BOOST_BINARY(10)))
-			{
-				lo += 1;
-			}
-			if(!(it->bounds().bits() & BOOST_BINARY(01)))
-			{
-				hi -= 1;
-			}
-
-			DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
-			dg->add_channel(lo);
-			dg->add_channel(hi);
-			send_datagram(dg);
-		}
+		// Send upstream control message
+		m_upstream->unsubscribe_range(lo, hi);
 	}
 }
 
-void MessageDirector::unsubscribe_all(MDParticipantInterface* p)
+void MessageDirector::handle_connection(tcp::socket *socket)
 {
-	// Send out unsubscribe messages for indivually subscribed channels
-	auto channels = std::set<channel_t>(p->channels());
-	for(auto it = channels.begin(); it != channels.end(); ++it)
-	{
-		channel_t channel = *it;
-		unsubscribe_channel(p, channel);
-	}
-
-	// Send out unsubscribe messages for subscribed channel ranges
-	auto ranges = boost::icl::interval_set<channel_t>(p->ranges());
-	for(auto it = ranges.begin(); it != ranges.end(); ++it)
-	{
-		unsubscribe_range(p, it->lower(), it->upper());
-	}
-}
-
-void MessageDirector::start_accept()
-{
-	tcp::socket *socket = new tcp::socket(io_service);
-	tcp::endpoint peerEndpoint;
-	m_acceptor->async_accept(*socket, boost::bind(&MessageDirector::handle_accept,
-	                         this, socket, boost::asio::placeholders::error));
-}
-
-void MessageDirector::handle_accept(tcp::socket *socket, const boost::system::error_code& /*ec*/)
-{
-	// TODO: We should probably accept the error code and maybe do something about it
-
 	boost::asio::ip::tcp::endpoint remote;
-	try
-	{
-		remote = socket->remote_endpoint();
-	}
-	catch (std::exception &)
-	{
-		// A client might disconnect immediately after connecting.
-		// If this happens, do nothing. Resolves #122.
-		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-		// is_open() == true, so we just catch the exception on remote_endpoint
-		// instead.
-		start_accept();
-		return;
-	}
+	remote = socket->remote_endpoint();
 	m_log.info() << "Got an incoming connection from "
 	             << remote.address() << ":" << remote.port() << std::endl;
 	new MDNetworkParticipant(socket); // It deletes itself when connection is lost
-	start_accept();
 }
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	m_participants.insert(m_participants.end(), p);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
+	std::lock_guard<std::mutex> lock(m_participants_lock);
+
 	unsubscribe_all(p);
 
 	// Stop tracking participant

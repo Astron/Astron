@@ -2,24 +2,32 @@
 #include "ClientMessages.h"
 #include "ClientFactory.h"
 #include "ClientAgent.h"
-#include "util/NetworkClient.h"
+#include "net/NetworkClient.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 
+using namespace std;
 using dclass::Class;
 using dclass::Field;
+using boost::asio::ip::tcp;
+namespace ssl = boost::asio::ssl;
 
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
-static ConfigVariable<std::string> interest_permissions("add_interest", "visible", ca_client_config);
+static ConfigVariable<string> interest_permissions("add_interest", "visible", ca_client_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
-static bool is_permission_level(const std::string& str)
+
+//set default to true
+static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
+static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+
+static bool is_permission_level(const string& str)
 {
 	return (str == "visible" || str == "disabled" || str == "enabled");
 }
-static ConfigConstraint<std::string> valid_permission_level(is_permission_level, interest_permissions,
+static ConfigConstraint<string> valid_permission_level(is_permission_level, interest_permissions,
 	"Permissions for add_interest must be one of 'visible', 'enabled', 'disabled'.");
 
 enum InterestPermission
@@ -35,16 +43,34 @@ class AstronClient : public Client, public NetworkClient
 		ConfigNode m_config;
 		bool m_clean_disconnect;
 		bool m_relocate_owned;
+		bool m_send_hash;
+		bool m_send_version;
 		InterestPermission m_interests_allowed;
 
 	public:
-		AstronClient(ConfigNode config, ClientAgent* client_agent,
-			         boost::asio::ip::tcp::socket *socket) :
+		AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
 			Client(client_agent), NetworkClient(socket), m_config(config),
-			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config))
+			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
+			m_send_hash(send_hash_to_client.get_rval(config)),
+			m_send_version(send_version_to_client.get_rval(config))
+		{
+			initialize();
+		}
+
+		AstronClient(ConfigNode config, ClientAgent* client_agent,
+			         ssl::stream<tcp::socket> *stream) :
+			Client(client_agent), NetworkClient(stream), m_config(config),
+			m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
+			m_send_hash(send_hash_to_client.get_rval(config)),
+			m_send_version(send_version_to_client.get_rval(config))
+		{
+			initialize();
+		}
+
+		void initialize()
 		{
 			// Set interest permissions
-			std::string permission_level = interest_permissions.get_rval(config);
+			string permission_level = interest_permissions.get_rval(m_config);
 			if(permission_level == "enabled")
 			{
 				m_interests_allowed = INTERESTS_ENABLED;
@@ -58,41 +84,26 @@ class AstronClient : public Client, public NetworkClient
 				m_interests_allowed = INTERESTS_DISABLED;
 			}
 
-			std::stringstream ss;
-			boost::asio::ip::tcp::endpoint remote;
-			try
-			{
-				remote = socket->remote_endpoint();
-			}
-			catch (std::exception&)
-			{
-				// A client might disconnect immediately after connecting.
-				// If this happens, do nothing. Resolves #122.
-				// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-				// is_open() == true, so we just catch the exception on remote_endpoint
-				// instead.
-				return;
-			}
-			ss << "Client (" << remote.address().to_string()
-			   << ":" << remote.port() << ", " << m_channel << ")";
+			stringstream ss;
+			ss << "Client (" << m_remote.address().to_string()
+			   << ":" << m_remote.port() << ", " << m_channel << ")";
 			m_log->set_name(ss.str());
 			set_con_name(ss.str());
 
 			// Create event for EventLogger
-			std::list<std::string> event;
-			event.push_back("client-connected");
+			LoggedEvent event("client-connected");
 
 			// Add remote endpoint to log
 			ss.str(""); // empty the stream
-			ss << remote.address().to_string()
-			   << ":" << remote.port();
-			event.push_back(ss.str());
+			ss << m_remote.address().to_string()
+			   << ":" << m_remote.port();
+			event.add("remote_address", ss.str());
 
 			// Add local endpoint to log
 			ss.str(""); // empty the stream
-			ss << socket->local_endpoint().address().to_string()
-			   << ":" << socket->local_endpoint().port();
-			event.push_back(ss.str());
+			ss << m_socket->local_endpoint().address().to_string()
+			   << ":" << m_socket->local_endpoint().port();
+			event.add("local_address", ss.str());
 
 			// Log created event
 			log_event(event);
@@ -101,7 +112,7 @@ class AstronClient : public Client, public NetworkClient
 		// send_disconnect must close any connections with a connected client; the given reason and
 		// error should be forwarded to the client. Additionaly, it is recommend to log the event.
 		// Handler for CLIENTAGENT_EJECT.
-    void send_disconnect(uint16_t reason, const std::string &error_string, bool security = false)
+		void send_disconnect(uint16_t reason, const string &error_string, bool security = false)
 		{
 			if(is_connected())
 			{
@@ -121,6 +132,7 @@ class AstronClient : public Client, public NetworkClient
 		// receive_datagram is the handler for datagrams received over the network from a Client.
 		void receive_datagram(DatagramHandle dg)
 		{
+			lock_guard<recursive_mutex> lock(m_client_lock);
 			DatagramIterator dgi(dg);
 			try
 			{
@@ -141,14 +153,14 @@ class AstronClient : public Client, public NetworkClient
 						break;
 				}
 			}
-			catch(DatagramIteratorEOF&)
+			catch(const DatagramIteratorEOF&)
 			{
 				// Occurs when a handler attempts to read past end of datagram
 				send_disconnect(CLIENT_DISCONNECT_TRUNCATED_DATAGRAM,
 				                "Datagram unexpectedly ended while iterating.");
 				return;
 			}
-			catch(DatagramOverflow&)
+			catch(const DatagramOverflow&)
 			{
 				// Occurs when a handler attempts to prepare or forward a datagram to be sent
 				// internally and, the resulting datagram is larger than the max datagram size.
@@ -175,8 +187,7 @@ class AstronClient : public Client, public NetworkClient
 		{
 			if(!m_clean_disconnect)
 			{
-				std::list<std::string> event;
-				event.push_back("client-lost");
+				LoggedEvent event("client-lost");
 				log_event(event);
 			}
 			delete this;
@@ -336,21 +347,29 @@ class AstronClient : public Client, public NetworkClient
 			}
 
 			uint32_t dc_hash = dgi.read_uint32();
-			std::string version = dgi.read_string();
+			string version = dgi.read_string();
 
 			if(version != m_client_agent->get_version())
 			{
-				std::stringstream ss;
-				ss << "Client version mismatch: server=" << m_client_agent->get_version() << ", client=" << version;
+				stringstream ss;
+				ss << "Client version mismatch: client=" << version;
+				if (m_send_version) {
+					ss << ", server=" << m_client_agent->get_version();
+				}
+
 				send_disconnect(CLIENT_DISCONNECT_BAD_VERSION, ss.str());
+
 				return;
 			}
 
 			const static uint32_t expected_hash = m_client_agent->get_hash();
 			if(dc_hash != expected_hash)
 			{
-				std::stringstream ss;
-				ss << "Client DC hash mismatch: server=0x" << std::hex << expected_hash << ", client=0x" << dc_hash;
+				stringstream ss;
+				ss << "Client DC hash mismatch: client=0x" << hex << dc_hash;
+				if (m_send_hash) {
+					ss << ", server=0x" << expected_hash;
+				}
 				send_disconnect(CLIENT_DISCONNECT_BAD_DCHASH, ss.str());
 				return;
 			}
@@ -370,8 +389,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				case CLIENT_DISCONNECT:
 				{
-					std::list<std::string> event;
-					event.push_back("client-disconnected");
+					LoggedEvent event("client-disconnected");
 					log_event(event);
 
 					m_clean_disconnect = true;
@@ -384,7 +402,7 @@ class AstronClient : public Client, public NetworkClient
 				}
 				break;
 				default:
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Message type " << msg_type << " not allowed prior to authentication.";
 					send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
 					return;
@@ -400,8 +418,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				case CLIENT_DISCONNECT:
 				{
-					std::list<std::string> event;
-					event.push_back("client-disconnected");
+					LoggedEvent event("client-disconnected");
 					log_event(event);
 
 					m_clean_disconnect = true;
@@ -424,7 +441,7 @@ class AstronClient : public Client, public NetworkClient
 					handle_client_remove_interest(dgi);
 					break;
 				default:
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Message type " << msg_type << " not valid.";
 					send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
 					return;
@@ -454,7 +471,7 @@ class AstronClient : public Client, public NetworkClient
 				}
 				else
 				{
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Client tried to send update to nonexistent object " << do_id;
 					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
 				}
@@ -467,7 +484,7 @@ class AstronClient : public Client, public NetworkClient
 			{
 				if(g_uberdogs.find(do_id) == g_uberdogs.end() || !g_uberdogs[do_id].anonymous)
 				{
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Client tried to send update to non-anonymous object "
 					   << dcc->get_name() << "(" << do_id << ")";
 					send_disconnect(CLIENT_DISCONNECT_ANONYMOUS_VIOLATION, ss.str(), true);
@@ -479,7 +496,7 @@ class AstronClient : public Client, public NetworkClient
 			const Field *field = dcc->get_field_by_id(field_id);
 			if(!field)
 			{
-				std::stringstream ss;
+				stringstream ss;
 				ss << "Client tried to send update for nonexistent field " << field_id << " to object "
 				   << dcc->get_name() << "(" << do_id << ")";
 				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
@@ -494,7 +511,7 @@ class AstronClient : public Client, public NetworkClient
 				if(send_it == m_fields_sendable.end() ||
 				   send_it->second.find(field_id) == send_it->second.end())
 				{
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Client tried to send update for non-sendable field: "
 					   << dcc->get_name() << "(" << do_id << ")." << field->get_name();
 					send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_FIELD, ss.str(), true);
@@ -504,7 +521,7 @@ class AstronClient : public Client, public NetworkClient
 
 			// If an exception occurs while unpacking data it will be handled by
 			// receive_datagram and the client will be dc'd with "truncated datagram".
-			std::vector<uint8_t> data;
+			vector<uint8_t> data;
 			dgi.unpack_field(field, data);
 
 			// If an exception occurs while packing data it will be handled by
@@ -543,7 +560,7 @@ class AstronClient : public Client, public NetworkClient
 				}
 				else
 				{
-					std::stringstream ss;
+					stringstream ss;
 					ss << "Client tried to manipulate unknown object " << do_id;
 					send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
 				}
@@ -582,7 +599,7 @@ class AstronClient : public Client, public NetworkClient
 			build_interest(dgi, multiple, i);
 			if(m_interests_allowed == INTERESTS_VISIBLE && !lookup_object(i.parent))
 			{
-				std::stringstream ss;
+				stringstream ss;
 				ss << "Cannot add interest to parent with id " << i.parent
 				   << " because parent is not visible to client.";
 				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST, ss.str(), true);
@@ -614,7 +631,7 @@ class AstronClient : public Client, public NetworkClient
 			Interest &i = m_interests[id];
 			if(m_interests_allowed == INTERESTS_VISIBLE && !lookup_object(i.parent))
 			{
-				std::stringstream ss;
+				stringstream ss;
 				ss << "Cannot remove interest for parent with id " << i.parent
 				   << " because parent is not visible to client.";
 				send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_INTEREST, ss.str(), true);

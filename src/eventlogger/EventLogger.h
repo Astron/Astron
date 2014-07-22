@@ -33,7 +33,6 @@ class EventLogger : public Role
 		void bind(const std::string &addr);
 		void open_log();
 		void cycle_log();
-		void write_log(const std::vector<std::string> &msg);
 		void start_receive();
 		void handle_receive(const boost::system::error_code &error, std::size_t bytes);
 		void process_packet(const DatagramHandle dg);

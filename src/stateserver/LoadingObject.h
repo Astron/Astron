@@ -43,4 +43,6 @@ class LoadingObject : public MDParticipantInterface
 		void inline replay_datagrams(DistributedObject* obj);
 		// forward_datagrams will replay the datagrams to the dbss for a failed load
 		void inline forward_datagrams();
+		// finalize will clean up the loader, replaying whatever is necessary
+		void inline finalize();
 };

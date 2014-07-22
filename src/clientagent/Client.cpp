@@ -44,23 +44,18 @@ Client::~Client()
 		dg->add_doid(do_id);
 		route_datagram(dg);
 	}
+
+	delete m_log;
 }
 
 // log_event sends an event to the EventLogger
-void Client::log_event(const std::list<std::string> &event)
+void Client::log_event(LoggedEvent &event)
 {
-	DatagramPtr dg = Datagram::create();
-
 	std::stringstream ss;
 	ss << "Client:" << m_allocated_channel;
-	dg->add_string(ss.str());
+	event.add("sender", ss.str());
 
-	for(auto it = event.begin(); it != event.end(); ++it)
-	{
-		dg->add_string(*it);
-	}
-
-	g_eventsender.send(dg);
+	g_eventsender.send(event);
 }
 
 // lookup_object returns the class of the object with a do_id.
@@ -193,10 +188,11 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 		return;
 	}
 
-	InterestOperation *iop = new InterestOperation(i.id, context, i.parent, new_zones, caller);
-
+	// TODO: In the future, it might be better to use emplace on the map to save
+	// the extra copy here.
+	InterestOperation iop(i.id, context, i.parent, new_zones, caller);
 	uint32_t request_context = m_next_context++;
-	m_pending_interests.insert(std::pair<uint32_t, InterestOperation*>(request_context, iop));
+	m_pending_interests.insert(std::pair<uint32_t, InterestOperation>(request_context, iop));
 
 	DatagramPtr resp = Datagram::create();
 	resp->add_server_header(i.parent, m_channel, STATESERVER_OBJECT_GET_ZONES_OBJECTS);
@@ -306,16 +302,16 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 	        << "Ejecting client (" << reason << "): "
 	        << error_string << std::endl;
 
-	std::list<std::string> event;
-	event.push_back(security ? "client-ejected-security" : "client-ejected");
-	event.push_back(std::to_string((unsigned long long)reason));
-	event.push_back(error_string);
+	LoggedEvent event(security ? "client-ejected-security" : "client-ejected");
+	event.add("reason_code", std::to_string((unsigned long long)reason));
+	event.add("reason_msg", error_string);
 	log_event(event);
 }
 
 // handle_datagram is the handler for datagrams received from the Astron cluster
 void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
+	std::lock_guard<std::recursive_mutex> lock(m_client_lock);
 	channel_t sender = dgi.read_channel();
 	uint16_t msgtype = dgi.read_uint16();
 	switch(msgtype)
@@ -438,6 +434,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			m_declared_objects.erase(do_id);
 		}
+		break;
 		case CLIENTAGENT_SET_FIELDS_SENDABLE:
 		{
 			doid_t do_id = dgi.read_doid();
@@ -611,10 +608,10 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			std::list<uint32_t> deferred_deletes;
 			for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it)
 			{
-				if(it->second->is_ready(m_visible_objects))
+				if(it->second.is_ready(m_visible_objects))
 				{
-					notify_interest_done(it->second);
-					handle_interest_done(it->second->m_interest_id, it->second->m_client_context);
+					notify_interest_done(&it->second);
+					handle_interest_done(it->second.m_interest_id, it->second.m_client_context);
 					deferred_deletes.push_back(it->first);
 				}
 			}
@@ -630,20 +627,21 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			// using doid_t because <max_objects_in_zones> == <max_total_objects>
 			doid_t count = dgi.read_doid();
 
-			if(m_pending_interests.find(context) == m_pending_interests.end())
+			auto it = m_pending_interests.find(context);
+			if(it == m_pending_interests.end())
 			{
 				m_log->error() << "Received GET_ZONES_COUNT_RESP for unknown context "
 				               << context << ".\n";
 				return;
 			}
 
-			m_pending_interests[context]->store_total(count);
+			it->second.store_total(count);
 
-			if(m_pending_interests[context]->is_ready(m_visible_objects))
+			if(it->second.is_ready(m_visible_objects))
 			{
-				notify_interest_done(m_pending_interests[context]);
-				handle_interest_done(m_pending_interests[context]->m_interest_id,
-				                     m_pending_interests[context]->m_client_context);
+				notify_interest_done(&it->second);
+				handle_interest_done(it->second.m_interest_id,
+				                     it->second.m_client_context);
 				m_pending_interests.erase(context);
 			}
 		}

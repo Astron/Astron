@@ -145,6 +145,14 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
+### SSL Dependency -- required by Boost::ASIO's SSL library
+find_package(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "You need OpenSSL to build this.")
+endif()
+
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
@@ -167,6 +175,7 @@ endif()
 
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
+	add_definitions(-DBUILD_DBSERVER)
 	set(DBSERVER_FILES
 		src/database/DatabaseServer.h
 		src/database/DatabaseServer.cpp
@@ -178,6 +187,7 @@ if(BUILD_DBSERVER)
 
 	set(BUILD_DB_YAML ON CACHE BOOL "If on, will support a YAML-based database (for development)")
 	if(BUILD_DB_YAML)
+		add_definitions(-DBUILD_DB_YAML)
 		set(DBSERVER_FILES
 			${DBSERVER_FILES}
 			src/database/YAMLDatabase.cpp
@@ -232,6 +242,7 @@ if(BUILD_DBSERVER)
 
 		### Add files to compiler and linker ###
 		if(BUILD_DB_SQLITE OR BUILD_DB_MYSQL OR BUILD_DB_POSTGRESQL)
+			add_definitions(-DBUILD_DB_SQL)
 			include_directories(${SOCI_INCLUDE_DIRS})
 			link_directories(${SOCI_LIBRARY_DIR})
 			set(DBSERVER_FILES
@@ -297,6 +308,7 @@ if(BUILD_EVENTLOGGER)
 		src/eventlogger/EventLogger.cpp
 		src/eventlogger/EventLogger.h
 	)
+	add_test(eventlogger "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_eventlogger.py")
 	add_test(validate_config_eventlogger "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_eventlogger.py")
 endif()
 
@@ -328,6 +340,8 @@ set(CORE_FILES
 	src/core/Role.cpp
 	src/core/RoleFactory.h
 	src/core/RoleFactory.cpp
+	src/core/shutdown.h
+	src/core/shutdown.cpp
 	src/core/types.h
 	src/core/msgtypes.h
 )
@@ -341,19 +355,36 @@ set(CONFIG_FILES
 )
 
 set(MESSAGEDIRECTOR_FILES
+	src/messagedirector/ChannelMap.cpp
+	src/messagedirector/ChannelMap.h
 	src/messagedirector/MessageDirector.cpp
 	src/messagedirector/MessageDirector.h
 	src/messagedirector/MDNetworkParticipant.cpp
 	src/messagedirector/MDNetworkParticipant.h
+	src/messagedirector/MDNetworkUpstream.cpp
+	src/messagedirector/MDNetworkUpstream.h
 )
 
 set(UTIL_FILES
 	src/util/Datagram.h
 	src/util/DatagramIterator.h
-	src/util/NetworkClient.cpp
-	src/util/NetworkClient.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
+	src/util/password_prompt.cpp
+	src/util/password_prompt.h
+)
+
+set(NET_FILES
+	src/net/NetworkAcceptor.cpp
+	src/net/NetworkAcceptor.h
+	src/net/NetworkClient.cpp
+	src/net/NetworkClient.h
+	src/net/NetworkConnector.cpp
+	src/net/NetworkConnector.h
+	src/net/TcpAcceptor.cpp
+	src/net/TcpAcceptor.h
+	src/net/SslAcceptor.cpp
+	src/net/SslAcceptor.h
 )
 
 include_directories(src)
@@ -365,6 +396,7 @@ add_executable(astrond
 	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
+  ${NET_FILES}
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${CLIENTAGENT_FILES}
@@ -372,21 +404,25 @@ add_executable(astrond
 	${DBSERVER_FILES}
 )
 
-### Setup source groups ###
+### Setup source groups and defines for configurables ###
 source_group("Core" FILES ${CORE_FILES})
 source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
 if(STATESERVER_FILES)
+	add_definitions(-DBUILD_STATESERVER)
 	source_group("StateServer" FILES ${STATESERVER_FILES})
 endif()
 if(EVENTLOGGER_FILES)
+	add_definitions(-DBUILD_EVENTLOGGER)
 	source_group("EventLogger" FILES ${EVENTLOGGER_FILES})
 endif()
 if(CLIENTAGENT_FILES)
+	add_definitions(-DBUILD_CLIENTAGENT)
 	source_group("ClientAgent" FILES ${CLIENTAGENT_FILES})
 endif()
 if(DBSERVER_FILES)
+	add_definitions(-DBUILD_STATESERVER_DBSS)
 	source_group("DatabaseServer" FILES ${DBSERVER_FILES})
 endif()
 if(TEST_FILES)
@@ -404,7 +440,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

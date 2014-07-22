@@ -54,8 +54,7 @@ class DistributedObject : public MDParticipantInterface
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;
 		uint32_t m_next_context;
-		doid_t m_child_count;
-		std::unordered_map<zone_t, doid_t> m_zone_count;
+		std::unordered_map<zone_t, std::unordered_set<doid_t>> m_zone_objects;
 		LogCategory *m_log;
 
 		void append_required_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);

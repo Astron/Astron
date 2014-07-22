@@ -1,4 +1,5 @@
 #include "global.h"
+#include "shutdown.h"
 #include "RoleFactory.h"
 #include "config/constraints.h"
 #include "dclass/file/read.h"
@@ -28,11 +29,17 @@ static ReservedDoidConstraint id_not_reserved(uberdog_id);
 static BooleanValueConstraint anonymous_is_boolean(uberdog_anon);
 
 static void printHelp(ostream &s);
-
+static void printCompiledOptions(ostream &s);
 
 int main(int argc, char *argv[])
 {
 	string cfg_file;
+
+#ifdef WIN32
+	bool prettyPrint = false;
+#else
+	bool prettyPrint = true;
+#endif
 
 	int config_arg_index = -1;
 	cfg_file = "astrond.yml";
@@ -81,19 +88,43 @@ int main(int argc, char *argv[])
 			{
 				cerr << "Unknown log-level \"" << llstr << "\"." << endl;
 				printHelp(cerr);
-				exit(1);
+				return 1;
 			}
+		}
+		else if(strcmp(argv[i], "--pretty") == 0 || strcmp(argv[i], "-p") == 0)
+		{
+			prettyPrint = true;
+		}
+		else if(strcmp(argv[i], "--boring") == 0 || strcmp(argv[i], "-b") == 0)
+		{
+			prettyPrint = false;
 		}
 		else if(strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
 		{
 			printHelp(cout);
-			exit(0);
+			return 0;
 		}
+        else if(strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0)
+        {
+             cout << "A Server Technology for Realtime Object Networking (Astron)\n"
+                     "http://github.com/astron/astron\n"
+
+#ifdef GIT_SHA1
+            "Revision: " << GIT_SHA1 << "\n"
+#else
+            "Revision: NOT-IN-GIT\n"
+#endif
+            "Compiled at " << __TIME__ << " on " << __DATE__ << endl;
+
+            printCompiledOptions(cout);
+
+            return 0;
+        }
 		else if(argv[i][0] == '-')
 		{
 			cerr << "Unrecognized option \"" << string(argv[i]) << "\".\n";
 			printHelp(cerr);
-			exit(1);
+			return 1;
 		}
 		else
 		{
@@ -110,6 +141,8 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+
+	g_logger->set_color_enabled(prettyPrint);
 
 	if(config_arg_index != -1)
 	{
@@ -130,13 +163,13 @@ int main(int argc, char *argv[])
 				boost::filesystem::current_path(dir_str);
 			}
 		}
-		catch(const exception&)
+		catch(const boost::filesystem::filesystem_error&)
 		{
 			mainlog.fatal() << "Could not change working directory to config directory.\n";
-			exit(1);
+			return 1;
 		}
 
-		cfg_file = filename; 	
+		cfg_file = filename;
 	}
 
 	mainlog.info() << "Loading configuration file...\n";
@@ -184,56 +217,78 @@ int main(int argc, char *argv[])
 	}
 	g_dcf = dcf;
 
-	// Initialize configured MessageDirector
-	MessageDirector::singleton.init_network();
-	g_eventsender.init(eventlogger_addr.get_val());
+	// Now hook up our speciailize signal handler
+	astron_handle_signals();
 
-	// Load uberdog metadata from configuration
-	ConfigNode udnodes = g_config->copy_node()["uberdogs"];
-	if(!udnodes.IsNull())
+	try
 	{
-		for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
+		// Initialize configured MessageDirector
+		MessageDirector::singleton.init_network();
+		g_eventsender.init(eventlogger_addr.get_val());
+
+		// Load uberdog metadata from configuration
+		ConfigNode udnodes = g_config->copy_node()["uberdogs"];
+		if(!udnodes.IsNull())
 		{
-			ConfigNode udnode = *it;
-			Uberdog ud;
-
-			// Get the uberdog's class
-			const Class* dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
-			if(!dcc)
+			for(auto it = udnodes.begin(); it != udnodes.end(); ++it)
 			{
-				// Make sure it exists
-				mainlog.fatal() << "For uberdog " << udnode["id"].as<doid_t>()
-								<< " Distributed class " << udnode["class"].as<std::string>()
-				                << " does not exist!" << std::endl;
-				exit(1);
-			}
+				ConfigNode udnode = *it;
+				Uberdog ud;
 
-			// Setup uberdog
-			ud.dcc = dcc;
-			ud.anonymous = udnode["anonymous"].as<bool>();
-			g_uberdogs[udnode["id"].as<doid_t>()] = ud;
+				// Get the uberdog's class
+				const Class* dcc = g_dcf->get_class_by_name(udnode["class"].as<std::string>());
+				if(!dcc)
+				{
+					// Make sure it exists
+					mainlog.fatal() << "For uberdog " << udnode["id"].as<doid_t>()
+									<< " Distributed class " << udnode["class"].as<std::string>()
+					                << " does not exist!" << std::endl;
+					return 1;
+				}
+
+				// Setup uberdog
+				ud.dcc = dcc;
+				ud.anonymous = udnode["anonymous"].as<bool>();
+				g_uberdogs[udnode["id"].as<doid_t>()] = ud;
+			}
+		}
+
+		// Initialize configured roles
+		ConfigNode node = g_config->copy_node();
+		node = node["roles"];
+		for(auto it = node.begin(); it != node.end(); ++it)
+		{
+			RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
 		}
 	}
-
-	// Initialize configured roles
-	ConfigNode node = g_config->copy_node();
-	node = node["roles"];
-	for(auto it = node.begin(); it != node.end(); ++it)
+	// This exception is propogated if astron_shutdown is called
+	catch(const ShutdownException& e)
 	{
-		RoleFactory::singleton().instantiate_role((*it)["type"].as<std::string>(), *it);
+		return e.exit_code();
 	}
 
+	// Run the main event loop
+	int exit_code = 0;
 	try
 	{
 		io_service.run();
 	}
-	catch(exception &e)
+
+	// This exception is propogated if astron_shutdown is called
+	catch(const ShutdownException& e)
 	{
-		mainlog.fatal() << "Exception from the network io service: "
-		                << e.what() << endl;
+		exit_code = e.exit_code();
 	}
 
-	return 0;
+	// Catch any other exception that propogates
+	catch(const exception &e)
+	{
+		mainlog.fatal() << "Uncaught exception from the main event loop: "
+		                << e.what() << endl;
+		return 1;
+	}
+
+	return exit_code;
 }
 
 // printHelp outputs the cli help-text to the given stream.
@@ -247,7 +302,10 @@ void printHelp(ostream &s)
 	     "can be specified as a positional argument.\n"
 	     "\n"
 	     "-h, --help      Print this help dialog.\n"
+         "-v, --version   Print Version, Module and Compilation Information\n"
 	     "-L, --log       Specify a file to write log messages to.\n"
+		 "-p, --pretty    Enables colored pretty printing. \n"
+		 "-b, --boring    Disables colored pretty printing. \n"
 	     "-l, --loglevel  Specify the minimum log level that should be logged;\n"
 	     "                  Security, Error, and Fatal will always be logged;\n"
 #ifdef ASTRON_DEBUG_MESSAGES
@@ -262,4 +320,59 @@ void printHelp(ostream &s)
          "    astrond /tmp/my_config_file.yaml\n"
          "\n";
 	s.flush();
+}
+
+void printCompiledOptions(ostream &s)
+{
+    s << "Compilation options: "
+
+//If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.
+#ifdef ASTRON_32BIT_DATAGRAMS
+    "32-bit length tag Datagrams, "
+#else
+    "16-bit length tag Datagrams, "
+#endif
+
+//If on, channels will be 128-bit and doids and zones will be 64-bit (instead of 64/32).
+#ifdef ASTRON_128BIT_CHANNELS
+    "128-bit channel space, 64-bit distributed object id's, 64-bit zones"
+#else
+    "64-bit channel space, 32-bit distributed object id's, 32-bit zones"
+#endif
+    <<"\n";
+
+    //Now print what parts are compiled in.
+    s << "Components: "
+#ifdef BUILD_STATESERVER
+    "State Server "
+    #ifdef BUILD_STATESERVER_DBSS
+        "(With DBSS capablities)"
+    #endif //End DBSS
+    ", "
+#endif //End SS
+
+#ifdef BUILD_EVENTLOGGER
+    "Event Logger, "
+#endif
+
+#ifdef BUILD_CLIENTAGENT
+    "Client Agent, "
+#endif
+
+#ifdef BUILD_DBSERVER
+    "Database "
+
+    #ifdef BUILD_DB_YAML
+        "(With YAML Support) "
+    #endif //End DB_YAML
+
+    #ifdef BUILD_DB_SQL
+        "(With SQL DB Support) "
+    #endif //End DB_SQL
+
+#endif //End DBSERVER
+    "\n";
+
+
+
 }

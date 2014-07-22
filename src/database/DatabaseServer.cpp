@@ -2,6 +2,7 @@
 
 #include "core/global.h"
 #include "core/msgtypes.h"
+#include "core/shutdown.h"
 #include "config/constraints.h"
 #include "DBBackendFactory.h"
 #include "DatabaseBackend.h"
@@ -50,7 +51,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 	{
 		m_log->fatal() << "No database backend of type '"
 		               << db_backend_type.get_rval(backend) << "' exists." << endl;
-		exit(1);
+		astron_shutdown(1);
 	}
 
 	// Listen on control channel
@@ -108,9 +109,9 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
-				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
+				m_log->error() << "Error while unpacking fields, message may be truncated. e.what(): "
 				               << e.what() << endl;
 
 				resp->add_doid(INVALID_DO_ID);
@@ -276,7 +277,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated. e.what(): "
 				               << e.what() << endl;
@@ -480,7 +481,7 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 					}
 				}
 			}
-			catch(exception &e)
+			catch(const DatagramIteratorEOF &e)
 			{
 				m_log->error() << "Error while unpacking fields, msg may be truncated."
 				               << " e.what(): " << e.what() << endl;
