@@ -1,4 +1,4 @@
-#include "DatabaseBackend.h"
+#include "OldDatabaseBackend.h"
 #include "DBBackendFactory.h"
 #include "DatabaseServer.h"
 
@@ -17,7 +17,7 @@ using namespace std;
 
 static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
 
-class YAMLDatabase : public DatabaseBackend
+class YAMLDatabase : public OldDatabaseBackend
 {
 	private:
 		doid_t m_next_id;
@@ -170,7 +170,7 @@ class YAMLDatabase : public DatabaseBackend
 		}
 	public:
 		YAMLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-			DatabaseBackend(dbeconfig, min_id, max_id),
+			OldDatabaseBackend(dbeconfig, min_id, max_id),
 			m_next_id(min_id),
 			m_free_ids(),
 			m_foldername(foldername.get_rval(m_config))
@@ -287,9 +287,6 @@ class YAMLDatabase : public DatabaseBackend
 			return g_dcf->get_class_by_name(document["class"].as<string>());
 		}
 
-
-#define val_t vector<uint8_t>
-#define map_t map<const Field*, vector<uint8_t> >
 		void del_field(doid_t do_id, const Field* field)
 		{
 			m_log->trace() << "Deleting field on obj-" << do_id << endl;
@@ -328,7 +325,7 @@ class YAMLDatabase : public DatabaseBackend
 			// Write out new object to file
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void del_fields(doid_t do_id, const vector<const Field*> &fields)
+		void del_fields(doid_t do_id, const FieldList &fields)
 		{
 			m_log->trace() << "Deleting fields on obj-" << do_id << endl;
 
@@ -365,7 +362,8 @@ class YAMLDatabase : public DatabaseBackend
 			}
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		void set_field(doid_t do_id, const Field* field, const val_t &value)
+
+		void set_field(doid_t do_id, const Field* field, const FieldValue &value)
 		{
 			m_log->trace() << "Setting field on obj-" << do_id << endl;
 
@@ -400,7 +398,7 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 		}
 
-		void set_fields(doid_t do_id, const map_t &fields)
+		void set_fields(doid_t do_id, const FieldValues &fields)
 		{
 			m_log->trace() << "Setting fields on obj-" << do_id << endl;
 
@@ -444,7 +442,8 @@ class YAMLDatabase : public DatabaseBackend
 
 			write_yaml_object(do_id, dcc, dbo);
 		}
-		bool set_field_if_empty(doid_t do_id, const Field* field, val_t &value)
+
+		bool set_field_if_empty(doid_t do_id, const Field* field, FieldValue &value)
 		{
 			m_log->trace() << "Setting field if empty on obj-" << do_id << endl;
 
@@ -487,7 +486,9 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool set_field_if_equals(doid_t do_id, const Field* field, const val_t &equal, val_t &value)
+
+		bool set_field_if_equals(doid_t do_id, const Field* field,
+			                     const FieldValue &equal, FieldValue &value)
 		{
 			m_log->trace() << "Setting field if equal on obj-" << do_id << endl;
 
@@ -530,7 +531,7 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool set_fields_if_equals(doid_t do_id, const map_t &equals, map_t &values)
+		bool set_fields_if_equals(doid_t do_id, const FieldValues &equals, FieldValues &values)
 		{
 			m_log->trace() << "Setting fields if equals on obj-" << do_id << endl;
 
@@ -597,7 +598,7 @@ class YAMLDatabase : public DatabaseBackend
 			write_yaml_object(do_id, dcc, dbo);
 			return true;
 		}
-		bool get_field(doid_t do_id, const Field* field, val_t &value)
+		bool get_field(doid_t do_id, const Field* field, FieldValue &value)
 		{
 			m_log->trace() << "Getting field on obj-" << do_id << endl;
 
@@ -624,7 +625,7 @@ class YAMLDatabase : public DatabaseBackend
 
 			return false;
 		}
-		bool get_fields(doid_t do_id, const vector<const Field*> &fields, map_t &values)
+		bool get_fields(doid_t do_id, const FieldList &fields, FieldValues &values)
 		{
 			m_log->trace() << "Getting fields on obj-" << do_id << endl;
 
@@ -656,8 +657,6 @@ class YAMLDatabase : public DatabaseBackend
 			}
 			return true;
 		}
-#undef map_t
-#undef val_t
 };
 
 DBBackendFactoryItem<YAMLDatabase> yamldb_factory("yaml");

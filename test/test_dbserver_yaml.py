@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
-import unittest, os, time, tempfile, shutil
-from socket import *
-
-from testdc import *
-from common import *
-from dbserver_base_tests import DatabaseBaseTests
+import unittest, tempfile, shutil
+from common.unittests import ProtocolTest
+from common.dbserver import DBServerTestsuite
+from common.astron import *
+from common.dcfile import *
+from database.yamldb import setup_yamldb, teardown_yamldb
 
 CONFIG = """\
 messagedirector:
@@ -27,35 +27,25 @@ roles:
         foldername: %r
 """
 
-class TestDatabaseServerYAML(ProtocolTest, DatabaseBaseTests):
+class TestDatabaseServerYAML(ProtocolTest, DBServerTestsuite):
     @classmethod
     def setUpClass(cls):
-        tmppath = tempfile.gettempdir() + '/astron';
-        if not os.path.exists(tmppath):
-            os.makedirs(tmppath);
-        dbpath = tempfile.mkdtemp(prefix='unittest.db-', dir=tmppath)
-
-        cls.daemon = Daemon(CONFIG % (USE_THREADING, test_dc, dbpath))
+        setup_yamldb(cls)
+        cls.daemon = Daemon(CONFIG % (USE_THREADING, test_dc, cls.yamldb_path))
         cls.daemon.start()
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.conn = MDConnection(sock)
-
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect(('127.0.0.1', 57123))
-        cls.objects = MDConnection(sock)
+        cls.conn = cls.connectToServer()
+        cls.objects = cls.connectToServer()
         cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
                                                    DATABASE_PREFIX|1000010))
 
     @classmethod
     def tearDownClass(cls):
-        time.sleep(0.25) # Wait for yaml db to finish writing to file
         cls.objects.send(Datagram.create_remove_range(DATABASE_PREFIX|1000000,
                                                       DATABASE_PREFIX|1000010))
         cls.objects.close()
         cls.conn.close()
         cls.daemon.stop()
+        teardown_yamldb(cls)
 
 if __name__ == '__main__':
     unittest.main()

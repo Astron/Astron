@@ -1,60 +1,9 @@
 #!/usr/bin/env python2
 import unittest
-import subprocess
-import threading
-import tempfile
-import os
+from common.unittests import ConfigTest
+from common.dcfile import *
 
-from testdc import *
-
-DAEMON_PATH = './astrond'
-TERMINATED = -15
-EXITED = 1
-
-class ConfigTest(object):
-    def __init__(self, config):
-        self.config = config
-        self.process = None
-
-    def run(self, timeout):
-        def target():
-            self.process = subprocess.Popen([DAEMON_PATH, self.config])
-            self.process.communicate()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        thread.join(timeout)
-        if thread.is_alive():
-            self.process.terminate()
-            thread.join()
-            return TERMINATED
-        return EXITED
-
-class TestConfigStateServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cfg, cls.config_file = tempfile.mkstemp()
-        os.close(cfg)
-
-        cls.test_command = ConfigTest(cls.config_file)
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls.config_file is not None:
-            os.remove(cls.config_file)
-
-    @classmethod
-    def write_config(cls, config):
-        f = open(cls.config_file, "w")
-        f.write(config)
-        f.close()
-
-    @classmethod
-    def run_test(cls, config, timeout = 2):
-        cls.write_config(config)
-        return cls.test_command.run(timeout)
-
+class TestConfigStateServer(ConfigTest):
     def test_stateserver_good(self):
         config = """\
             messagedirector:
@@ -66,7 +15,7 @@ class TestConfigStateServer(unittest.TestCase):
                 - type: stateserver
                   control: 100100
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_ss_invalid_attr(self):
         config = """\
@@ -77,7 +26,7 @@ class TestConfigStateServer(unittest.TestCase):
                 - type: stateserver
                   queque: "pu-pu"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ss_invalid_control(self):
         config = """\
@@ -88,7 +37,7 @@ class TestConfigStateServer(unittest.TestCase):
                 - type: stateserver
                   control: 0
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ss_reserved_control(self):
         config = """\
@@ -99,7 +48,7 @@ class TestConfigStateServer(unittest.TestCase):
                 - type: stateserver
                   control: 100
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
 if __name__ == '__main__':
     unittest.main()

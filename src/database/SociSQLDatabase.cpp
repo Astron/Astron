@@ -1,8 +1,9 @@
-#include "DatabaseBackend.h"
+#include "OldDatabaseBackend.h"
 #include "DBBackendFactory.h"
 #include "DatabaseServer.h"
 
 #include "core/global.h"
+#include "core/shutdown.h"
 #include "dclass/value/parse.h"
 #include "dclass/value/format.h"
 #include "dclass/dc/Class.h"
@@ -18,17 +19,21 @@ using namespace dclass;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
-static ConfigVariable<string> database_name("database", "null", db_backend_config);
-static ConfigVariable<string> session_user("username", "null", db_backend_config);
-static ConfigVariable<string> session_passwd("password", "null", db_backend_config);
+static ConfigVariable<string> database_name("database", "", db_backend_config);
+static ConfigVariable<string> database_host("host", "", db_backend_config);
+static ConfigVariable<uint16_t> database_port("port", 0, db_backend_config);
+static ConfigVariable<string> session_user("username", "", db_backend_config);
+static ConfigVariable<string> session_passwd("password", "", db_backend_config);
 
-class SociSQLDatabase : public DatabaseBackend
+class SociSQLDatabase : public OldDatabaseBackend
 {
 	public:
 		SociSQLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-			DatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
+			OldDatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
 			m_backend(db_backend_type.get_rval(dbeconfig)),
 			m_db_name(database_name.get_rval(dbeconfig)),
+			m_db_host(database_host.get_rval(dbeconfig)),
+			m_db_port(database_port.get_rval(dbeconfig)),
 			m_sess_user(session_user.get_rval(dbeconfig)),
 			m_sess_passwd(session_passwd.get_rval(dbeconfig))
 		{
@@ -42,7 +47,7 @@ class SociSQLDatabase : public DatabaseBackend
 			check_ids();
 		}
 
-		doid_t create_object(const ObjectData& dbo)
+		virtual doid_t create_object(const ObjectData& dbo)
 		{
 			string field_name;
 			vector<uint8_t> field_value;
@@ -71,7 +76,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 				m_sql.commit(); // End transaction
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				return 0;
@@ -79,7 +84,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 			return do_id;
 		}
-		void delete_object(doid_t do_id)
+		virtual void delete_object(doid_t do_id)
 		{
 			bool storable = false;
 			const Class* dcc = get_class(do_id);
@@ -101,7 +106,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 			push_id(do_id);
 		}
-		bool get_object(doid_t do_id, ObjectData& dbo)
+		virtual bool get_object(doid_t do_id, ObjectData& dbo)
 		{
 			m_log->trace() << "Getting object with id" << do_id << endl;
 
@@ -121,7 +126,7 @@ class SociSQLDatabase : public DatabaseBackend
 
 			return true;
 		}
-		const Class* get_class(doid_t do_id)
+		virtual const Class* get_class(doid_t do_id)
 		{
 			int dc_id = -1;
 			indicator ind;
@@ -130,7 +135,7 @@ class SociSQLDatabase : public DatabaseBackend
 			{
 				m_sql << "SELECT class_id FROM objects WHERE id=" << do_id << ";", into(dc_id, ind);
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				return NULL;
 			}
@@ -142,19 +147,19 @@ class SociSQLDatabase : public DatabaseBackend
 
 			return g_dcf->get_class_by_id(dc_id);
 		}
-		void del_field(doid_t do_id, const Field* field)
+		virtual void del_field(doid_t do_id, const Field* field)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
 
 			if(storable)
 			{
-				vector<const Field*> fields;
+				FieldList fields;
 				fields.push_back(field);
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void del_fields(doid_t do_id, const vector<const Field*> &fields)
+		virtual void del_fields(doid_t do_id, const FieldList &fields)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
@@ -164,14 +169,14 @@ class SociSQLDatabase : public DatabaseBackend
 				del_fields_in_table(do_id, dcc, fields);
 			}
 		}
-		void set_field(doid_t do_id, const Field* field, const vector<uint8_t> &value)
+		virtual void set_field(doid_t do_id, const Field* field, const vector<uint8_t> &value)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
 
 			if(storable)
 			{
-				map<const Field*, vector<uint8_t> > fields;
+				FieldValues fields;
 				fields[field] = value;
 				try
 				{
@@ -179,13 +184,13 @@ class SociSQLDatabase : public DatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const soci::exception &e)
+				catch(const soci_error &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
 			}
 		}
-		void set_fields(doid_t do_id, const map<const Field*, vector<uint8_t> > &fields)
+		virtual void set_fields(doid_t do_id, const FieldValues &fields)
 		{
 			const Class *dcc = get_class(do_id);
 			bool storable = is_storable(dcc->get_id());
@@ -198,13 +203,13 @@ class SociSQLDatabase : public DatabaseBackend
 					set_fields_in_table(do_id, dcc, fields);
 					m_sql.commit(); // End transaction
 				}
-				catch(const soci::exception &e)
+				catch(const soci_error &e)
 				{
 					m_sql.rollback(); // Revert transaction
 				}
 			}
 		}
-		bool set_field_if_empty(doid_t do_id, const Field* field, vector<uint8_t> &value)
+		virtual bool set_field_if_empty(doid_t do_id, const Field* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -250,7 +255,7 @@ class SociSQLDatabase : public DatabaseBackend
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_empty(doid_t do_id, map<const Field*, vector<uint8_t> > &values)
+		virtual bool set_fields_if_empty(doid_t do_id, FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -310,15 +315,16 @@ class SociSQLDatabase : public DatabaseBackend
 					m_sql.commit(); // End transaction
 				}
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();
 				return false;
 			}
+			return true;
 		}
-		bool set_field_if_equals(doid_t do_id, const Field* field, const vector<uint8_t> &equal,
-		                         vector<uint8_t> &value)
+		virtual bool set_field_if_equals(doid_t do_id, const Field* field,
+		                                 const vector<uint8_t> &equal, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -368,8 +374,8 @@ class SociSQLDatabase : public DatabaseBackend
 			      << "='" << val << "' WHERE object_id=" << do_id << ";";
 			return true;
 		}
-		bool set_fields_if_equals(doid_t do_id, const map<const Field*, vector<uint8_t> > &equals,
-		                          map<const Field*, vector<uint8_t> > &values)
+		virtual bool set_fields_if_equals(doid_t do_id, const FieldValues &equals,
+		                                  FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -387,7 +393,7 @@ class SociSQLDatabase : public DatabaseBackend
 			bool failed = false;
 			string value;
 			indicator ind;
-			map<const Field*, vector<uint8_t> > stored_values;
+			FieldValues stored_values;
 			try
 			{
 				m_sql.begin(); // Start transaction
@@ -440,15 +446,14 @@ class SociSQLDatabase : public DatabaseBackend
 					return true;
 				}
 			}
-			catch(const soci::exception &e)
+			catch(const soci_error &e)
 			{
 				m_sql.rollback(); // Revert transaction
 				values.clear();
 				return false;
 			}
 		}
-
-		bool get_field(doid_t do_id, const Field* field, vector<uint8_t> &value)
+		virtual bool get_field(doid_t do_id, const Field* field, vector<uint8_t> &value)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -463,9 +468,9 @@ class SociSQLDatabase : public DatabaseBackend
 				return false; // Class has no database fields
 			}
 
-			vector<const Field*> fields;
+			FieldList fields;
 			fields.push_back(field);
-			map<const Field*, vector<uint8_t> > values;
+			FieldValues values;
 
 			get_fields_from_table(do_id, dcc, fields, values);
 
@@ -479,8 +484,8 @@ class SociSQLDatabase : public DatabaseBackend
 
 			return true;
 		}
-		bool get_fields(doid_t do_id, const vector<const Field*> &fields,
-		                map<const Field*, vector<uint8_t> > &values)
+		virtual bool get_fields(doid_t do_id, const FieldList &fields,
+		                FieldValues &values)
 		{
 			// Get class from the objects table
 			const Class* dcc = get_class(do_id);
@@ -508,6 +513,22 @@ class SociSQLDatabase : public DatabaseBackend
 			if(m_backend == "postgresql")
 			{
 				connstring << "dbname=" << m_db_name;
+				if(!m_sess_user.empty())
+				{
+					connstring << " user=" << m_sess_user;
+				}
+				if(!m_sess_passwd.empty())
+				{
+					connstring << " password='" << m_sess_passwd << "'";
+				}
+				if(!m_db_host.empty())
+				{
+					connstring << " host=" << m_db_host;
+				}
+				if(m_db_port != 0)
+				{
+					connstring << " port=" << m_db_port;
+				}
 			}
 			else if(m_backend == "mysql")
 			{
@@ -631,7 +652,8 @@ class SociSQLDatabase : public DatabaseBackend
 		}
 	private:
 		doid_t m_min_id, m_max_id;
-		string m_backend, m_db_name;
+		string m_backend, m_db_name, m_db_host;
+		uint16_t m_db_port;
 		string m_sess_user, m_sess_passwd;
 		session m_sql;
 		set_t m_free_ids;
@@ -704,7 +726,7 @@ class SociSQLDatabase : public DatabaseBackend
 			return storable;
 		}
 
-		void get_all_from_table(doid_t id, const Class* dcc, map<const Field*, vector<uint8_t> > &fields)
+		void get_all_from_table(doid_t id, const Class* dcc, FieldValues &fields)
 		{
 			string value;
 			indicator ind;
@@ -732,8 +754,8 @@ class SociSQLDatabase : public DatabaseBackend
 			}
 		}
 
-		void get_fields_from_table(doid_t id, const Class* dcc, const vector<const Field*> &fields,
-		                           map<const Field*, vector<uint8_t> > &values)
+		void get_fields_from_table(doid_t id, const Class* dcc, const FieldList &fields,
+		                           FieldValues &values)
 		{
 			string value;
 			indicator ind;
@@ -762,7 +784,7 @@ class SociSQLDatabase : public DatabaseBackend
 		}
 
 		void set_fields_in_table(doid_t id, const Class* dcc,
-		                         const map<const Field*, vector<uint8_t> > &fields)
+		                         const FieldValues &fields)
 		{
 			string name, value;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
@@ -777,7 +799,7 @@ class SociSQLDatabase : public DatabaseBackend
 			}
 		}
 
-		void del_fields_in_table(doid_t id, const Class* dcc, const vector<const Field*> &fields)
+		void del_fields_in_table(doid_t id, const Class* dcc, const FieldList &fields)
 		{
 			string name;
 			for(auto it = fields.begin(); it != fields.end(); ++it)
