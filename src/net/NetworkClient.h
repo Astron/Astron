@@ -24,6 +24,8 @@ class NetworkClient
 		virtual ~NetworkClient();
 		void set_socket(boost::asio::ip::tcp::socket *socket);
 		void set_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+		void set_write_timeout(unsigned int timeout);
+		void set_write_buffer(uint64_t max_bytes);
 
 
 		/** Pure virtual methods **/
@@ -82,6 +84,8 @@ class NetworkClient
 		dgsize_t m_data_size;
 
 		uint64_t m_total_queue_size;
+		uint64_t m_max_queue_size;
+		unsigned int m_write_timeout;
 		std::queue<DatagramHandle> m_send_queue;
 
 		std::recursive_mutex m_lock;

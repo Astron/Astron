@@ -7,28 +7,26 @@ using namespace std;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-static ConfigGroup nc_configgroup("networkclient");
-static ConfigVariable<unsigned int> write_buffer_size("write_buffer_size", 256*1024, nc_configgroup);
-static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, nc_configgroup);
-
 NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_remote(),
 	m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false), m_is_receiving(false),
-	m_is_data(false), m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0), m_send_queue()
+	m_is_data(false), m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0),
+	m_max_queue_size(0), m_write_timeout(0), m_send_queue()
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
 	m_remote(), m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false),
 	m_is_receiving(false), m_is_data(false), m_data_buf(nullptr), m_data_size(0),
-	m_total_queue_size(0), m_send_queue()
+	m_total_queue_size(0), m_max_queue_size(0), m_write_timeout(0), m_send_queue()
 {
 	start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream), m_remote(), m_async_timer(io_service),
-    m_ssl_enabled(true), m_is_sending(false), m_is_receiving(false), m_is_data(false),
-    m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0), m_send_queue()
+	m_socket(&stream->next_layer()), m_secure_socket(stream), m_remote(), m_async_timer(io_service),
+	m_ssl_enabled(true), m_is_sending(false), m_is_receiving(false), m_is_data(false),
+	m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0), m_max_queue_size(0),
+	m_write_timeout(0), m_send_queue()
 {
 	start_receive();
 }
@@ -71,6 +69,16 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 	set_socket(&stream->next_layer());
 }
 
+void NetworkClient::set_write_timeout(unsigned int timeout)
+{
+	m_write_timeout = timeout;
+}
+
+void NetworkClient::set_write_buffer(uint64_t max_bytes)
+{
+	m_max_queue_size = max_bytes;
+}
+
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
 	lock_guard<recursive_mutex> lock(m_lock);
@@ -79,7 +87,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 	{
 		m_send_queue.push(dg);
 		m_total_queue_size += dg->size();
-		if(m_total_queue_size > write_buffer_size.get_val())
+		if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
 		{
 			send_disconnect();
 			return;
@@ -301,9 +309,9 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 void NetworkClient::socket_write(list<boost::asio::const_buffer>& buffers)
 {
 	// Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
-	if(write_timeout_ms.get_val() > 0)
+	if(m_write_timeout > 0)
 	{
-		m_async_timer.expires_from_now(boost::posix_time::milliseconds(write_timeout_ms.get_val()));
+		m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
 		m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, this,
 		                                     boost::asio::placeholders::error));
 	}
