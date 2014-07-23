@@ -46,11 +46,17 @@ SET(SOCI_INCLUDE_DIRS ${SOCI_INCLUDE_DIR})
 #
 ### SECOND STEP: Find the soci core library. Respect LIB_SUFFIX
 #
+if(DEFINED LIB_SUFFIX)
+    set(LIB_SUFFIXES lib${LIB_SUFFIX})
+else()
+    set(LIB_SUFFIXES lib lib32 lib64)
+endif()
+
 FIND_LIBRARY(
     SOCI_LIBRARY
     NAMES soci_core
     HINTS ${SOCI_INCLUDE_DIR}/..
-    PATH_SUFFIXES lib${LIB_SUFFIX} lib lib32 lib64)
+    PATH_SUFFIXES ${LIB_SUFFIXES})
 MARK_AS_ADVANCED(SOCI_LIBRARY)
 
 GET_FILENAME_COMPONENT(SOCI_LIBRARY_DIR ${SOCI_LIBRARY} PATH)
@@ -63,11 +69,12 @@ IF(SOCI_INCLUDE_DIR AND SOCI_LIBRARY)
 
     FOREACH(plugin IN LISTS _SOCI_ALL_PLUGINS)
 
+        message("looking for ${plugin}")
         FIND_LIBRARY(
             SOCI_${plugin}_PLUGIN
             NAMES soci_${plugin}
             HINTS ${SOCI_INCLUDE_DIR}/..
-            PATH_SUFFIXES lib${LIB_SUFFIX})
+            PATH_SUFFIXES ${LIB_SUFFIXES})
         MARK_AS_ADVANCED(SOCI_${plugin}_PLUGIN)
 
         IF(SOCI_${plugin}_PLUGIN)

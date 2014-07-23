@@ -1,60 +1,9 @@
 #!/usr/bin/env python2
 import unittest
-import subprocess
-import threading
-import tempfile
-import os
+from common.unittests import ConfigTest
+from common.dcfile import *
 
-from testdc import *
-
-DAEMON_PATH = './astrond'
-TERMINATED = -15
-EXITED = 1
-
-class ConfigTest(object):
-    def __init__(self, config):
-        self.config = config
-        self.process = None
-
-    def run(self, timeout):
-        def target():
-            self.process = subprocess.Popen([DAEMON_PATH, self.config])
-            self.process.communicate()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        thread.join(timeout)
-        if thread.is_alive():
-            self.process.terminate()
-            thread.join()
-            return TERMINATED
-        return EXITED
-
-class TestConfigClientAgent(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cfg, cls.config_file = tempfile.mkstemp()
-        os.close(cfg)
-
-        cls.test_command = ConfigTest(cls.config_file)
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls.config_file is not None:
-            os.remove(cls.config_file)
-
-    @classmethod
-    def write_config(cls, config):
-        f = open(cls.config_file, "w")
-        f.write(config)
-        f.close()
-
-    @classmethod
-    def run_test(cls, config, timeout = 2):
-        cls.write_config(config)
-        return cls.test_command.run(timeout)
-
+class TestConfigClientAgent(ConfigTest):
     def test_clientagent_good(self):
         config = """\
             messagedirector:
@@ -108,7 +57,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 220600
                       max: 220699
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_ca_invalid_attr(self):
         config = """\
@@ -124,7 +73,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       max: 3999
                   weeuuweeeuu: sirens!
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ca_invalid_channels(self):
         config = """\
@@ -139,7 +88,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 0
                       max: 3999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -153,7 +102,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 3100
                       max: 0
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ca_reserved_channels(self):
         config = """\
@@ -168,7 +117,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 100
                       max: 3999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -182,7 +131,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 3100
                       max: 999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ca_client_type_typo(self):
         config = """\
@@ -199,7 +148,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 3100
                       max: 3999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_ca_bind_address(self):
         config = """\
@@ -214,7 +163,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 3100
                       max: 3999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         # ipv6 test disabled because client agent can't accept them yet, and causes a crash
         config = """\
@@ -229,7 +178,7 @@ class TestConfigClientAgent(unittest.TestCase):
                       min: 3100
                       max: 3999
             """
-        #self.assertEquals(self.run_test(config), TERMINATED)
+        #self.assertEquals(self.checkConfig(config), 'Valid')
 
 if __name__ == '__main__':
     unittest.main()

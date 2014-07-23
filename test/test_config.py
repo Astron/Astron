@@ -1,60 +1,9 @@
 #!/usr/bin/env python2
 import unittest
-import subprocess
-import threading
-import tempfile
-import os
+from common.unittests import ConfigTest
+from common.dcfile import *
 
-from testdc import *
-
-DAEMON_PATH = './astrond'
-TERMINATED = -15
-EXITED = 1
-
-class ConfigTest(object):
-    def __init__(self, config):
-        self.config = config
-        self.process = None
-
-    def run(self, timeout):
-        def target():
-            self.process = subprocess.Popen([DAEMON_PATH, self.config])
-            self.process.communicate()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        thread.join(timeout)
-        if thread.is_alive():
-            self.process.terminate()
-            thread.join()
-            return TERMINATED
-        return EXITED
-
-class TestConfigCore(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cfg, cls.config_file = tempfile.mkstemp()
-        os.close(cfg)
-
-        cls.test_command = ConfigTest(cls.config_file)
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls.config_file is not None:
-            os.remove(cls.config_file)
-
-    @classmethod
-    def write_config(cls, config):
-        f = open(cls.config_file, "w")
-        f.write(config)
-        f.close()
-
-    @classmethod
-    def run_test(cls, config, timeout = 2):
-        cls.write_config(config)
-        return cls.test_command.run(timeout)
-
+class TestConfigCore(ConfigTest):
     def test_core_good(self):
         config = """\
             daemon:
@@ -79,7 +28,7 @@ class TestConfigCore(unittest.TestCase):
                 bind: 127.0.0.1:57123
                 threaded: true
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_without_threading(self):
         config = """\
@@ -105,7 +54,7 @@ class TestConfigCore(unittest.TestCase):
                 bind: 127.0.0.1:57123
                 threaded: false
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_roles_missing_type(self):
         config = """\
@@ -114,7 +63,7 @@ class TestConfigCore(unittest.TestCase):
             roles:
                 - qux: bar
                 - bleem: baz"""
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_roles_invalid_type(self):
         config = """\
@@ -123,7 +72,7 @@ class TestConfigCore(unittest.TestCase):
             roles:
                 - type: foo
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_root_is_not_map(self):
         config = """\
@@ -132,7 +81,7 @@ class TestConfigCore(unittest.TestCase):
             - roles:
                   - type: foo
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_general_is_not_map(self):
         config = """\
@@ -143,7 +92,7 @@ class TestConfigCore(unittest.TestCase):
                 - dc_files:
                       - %r
             """ % test_dc
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_uberdogs_is_not_list(self):
         config = """\
@@ -158,7 +107,7 @@ class TestConfigCore(unittest.TestCase):
                 class: UberDog2
                 anonymous: false
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_uberdogs_invalid_id(self):
         config = """\
@@ -169,7 +118,7 @@ class TestConfigCore(unittest.TestCase):
                 - id: 0
                   class: UberDog1
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_uberdogs_reserved_id(self):
         config = """\
@@ -180,7 +129,7 @@ class TestConfigCore(unittest.TestCase):
                 - id: 165
                   class: UberDog2
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_core_address_hosts(self):
         config = """\
@@ -189,7 +138,7 @@ class TestConfigCore(unittest.TestCase):
             general:
                 eventlogger: 127.0.0.1:9090
             """
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
         # ipv6 test disabled because message director can't accept them yet, and causes a crash
         #config = """\
@@ -198,13 +147,13 @@ class TestConfigCore(unittest.TestCase):
         #    general:
         #        eventlogger: "::1:9090"
         #    """
-        #self.assertEquals(self.run_test(config), TERMINATED)
+        #self.assertEquals(self.checkConfig(config), 'Valid')
 
         config = """\
             messagedirector:
                 bind: 127.0.0:20
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -212,13 +161,13 @@ class TestConfigCore(unittest.TestCase):
             general:
                 eventlogger: 0.0.1:9090
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: foobar:20
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -226,49 +175,49 @@ class TestConfigCore(unittest.TestCase):
             general:
                 eventlogger: ble3.3.3.3:20
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: 10.0.0.0foobar
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: 10.0.blam.20
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: pizza-pie
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: "127:0:0:1:57123"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: "127-0-0-1:57123"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: "99-0-0-1:57123"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: "99.1:57123"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
 if __name__ == '__main__':
     unittest.main()

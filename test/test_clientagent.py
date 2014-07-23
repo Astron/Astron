@@ -1,10 +1,10 @@
 #!/usr/bin/env python2
 import unittest, time, ssl
-from socket import *
-
-from common import *
-from testdc import *
-from testtls import *
+from socket import socket, AF_INET, SOCK_STREAM
+from common.unittests import ProtocolTest
+from common.astron import *
+from common.dcfile import *
+from common.tls import *
 
 CONFIG = """\
 messagedirector:
@@ -76,11 +76,7 @@ class TestClientAgent(ProtocolTest):
     def setUpClass(cls):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
-
-        s = socket(AF_INET, SOCK_STREAM)
-        s.connect(('127.0.0.1', 57123))
-        cls.server = MDConnection(s)
-
+        cls.server = cls.connectToServer()
         cls.server.send(Datagram.create_add_channel(1234))
         cls.server.send(Datagram.create_add_channel(1235))
 

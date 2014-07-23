@@ -2,7 +2,8 @@
 import unittest
 from socket import *
 
-from common import *
+from common.unittests import ProtocolTest
+from common.astron import *
 
 CONFIG = """\
 messagedirector:
@@ -11,12 +12,6 @@ messagedirector:
 """
 
 class TestMessageDirector(ProtocolTest):
-    @classmethod
-    def new_connection(cls):
-        c = socket(AF_INET, SOCK_STREAM)
-        c.connect(('127.0.0.1', 57123))
-        return MDConnection(c)
-
     @classmethod
     def setUpClass(cls):
         listener = socket(AF_INET, SOCK_STREAM)
@@ -32,8 +27,8 @@ class TestMessageDirector(ProtocolTest):
         listener.close()
         cls.l1 = MDConnection(l)
 
-        cls.c1 = cls.new_connection()
-        cls.c2 = cls.new_connection()
+        cls.c1 = cls.connectToServer()
+        cls.c2 = cls.connectToServer()
 
     @classmethod
     def tearDownClass(cls):
@@ -107,7 +102,7 @@ class TestMessageDirector(ProtocolTest):
 
         # Abandon the second connection, which should auto-unsubscribe it.
         self.c2.close()
-        self.__class__.c2 = self.new_connection()
+        self.__class__.c2 = self.connectToServer()
         self.expectNone(self.c1)
         # MD should unsubscribe from parent.
         self.expect(self.l1, Datagram.create_remove_channel(12345654321))
@@ -197,12 +192,12 @@ class TestMessageDirector(ProtocolTest):
 
         # Reconnect c1 and see if dg gets sent.
         self.c1.close()
-        self.__class__.c1 = self.new_connection()
+        self.__class__.c1 = self.connectToServer()
         self.expect(self.l1, dg)
 
         # Reconnect c1, the message shouldn't be sent again
         self.c1.close()
-        self.__class__.c1 = self.new_connection()
+        self.__class__.c1 = self.connectToServer()
         self.expectNone(self.l1)
 
         # Hang dg as a post-remove for c2...
@@ -213,7 +208,7 @@ class TestMessageDirector(ProtocolTest):
 
         # Did the cancellation work?
         self.c2.close()
-        self.__class__.c2 = self.new_connection()
+        self.__class__.c2 = self.connectToServer()
         self.expectNone(self.l1)
 
         # Try hanging multiple post-removes on c1
@@ -230,7 +225,7 @@ class TestMessageDirector(ProtocolTest):
 
         # Reconnect c1 and see if both datagrams gets sent.
         self.c1.close()
-        self.__class__.c1 = self.new_connection()
+        self.__class__.c1 = self.connectToServer()
         self.expectMany(self.l1, [dg, dg_pr])
 
     def test_ranges(self):
@@ -367,7 +362,7 @@ class TestMessageDirector(ProtocolTest):
 
         # Grand finale: Cut c1 and see if the remaining range dies.
         self.c1.close()
-        self.c1 = self.new_connection()
+        self.c1 = self.connectToServer()
         self.expect(self.l1, Datagram.create_remove_range(2000, 2100))
         self.expectNone(self.l1)
 
@@ -587,7 +582,7 @@ class TestMessageDirector(ProtocolTest):
 
         # Cut c2 and watch the part die that is not in c1
         self.c2.close()
-        self.c2 = self.new_connection()
+        self.c2 = self.connectToServer()
         self.expect(self.l1, Datagram.create_remove_range(3500, 3525))
         self.expectNone(self.l1)
 
@@ -609,8 +604,8 @@ class TestMessageDirector(ProtocolTest):
         # Cleanup
         self.c1.close()
         self.c2.close()
-        self.__class__.c1 = self.new_connection()
-        self.__class__.c2 = self.new_connection()
+        self.__class__.c1 = self.connectToServer()
+        self.__class__.c2 = self.connectToServer()
         self.l1.flush()
 
 if __name__ == '__main__':

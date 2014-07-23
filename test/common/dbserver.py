@@ -1,12 +1,12 @@
 #!/usr/bin/env python2
-from common import *
-from testdc import *
+from astron import *
+from dcfile import *
 
 CREATE_DOID_OFFSET = 1 + (CHANNEL_SIZE_BYTES * 2) + 2 + 4
 VERIFY_DELETE_OBJECT = 0x21656944
 VERIFY_DELETE_QUERY = 0x6c6c694b
 
-class DatabaseBaseTests(object):
+class DBServerTestsuite(object):
     def createTypeGetId(self, sender, context, type):
         # Create object of type
         dg = Datagram.create([75757], sender, DBSERVER_CREATE_OBJECT)
@@ -135,6 +135,41 @@ class DatabaseBaseTests(object):
         dg.add_uint8(FAILURE)
         self.expect(self.conn, dg)
 
+        ### Test for CreateObject and GetAll with default field values ###
+        # Create a stored DistributedTestObject1 with no initial values...
+        dg = Datagram.create([75757], 20, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(7) # Context
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(0) # Field count
+        self.conn.send(dg)
+
+        # The Database should return the context and do_id...
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([20], 75757, DBSERVER_CREATE_OBJECT_RESP,
+                                            remaining = 4 + DOID_SIZE_BYTES))
+        self.assertEquals(dgi.read_uint32(), 7) # Check context
+        doids.append(dgi.read_doid())
+        self.assertGreaterEqual(doids[-1], 1000000) # do_id in valid range
+        self.assertLessEqual(doids[-1], 1000010) # do_id in valid range
+
+        # Select all fields from the stored object
+        dg = Datagram.create([75757], 20, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(8) # Context
+        dg.add_doid(doids[-1])
+        self.conn.send(dg)
+
+        # Retrieve object from the database, we stored no DB values, so get none back
+        dg = Datagram.create([20], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(8) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDbD5)
+        dg.add_uint8(setRDbD5DefaultValue)
+        self.expect(self.conn, dg)
+
         # Cleanup
         for doid in doids:
             self.deleteObject(20, doid)
@@ -191,7 +226,7 @@ class DatabaseBaseTests(object):
     def test_create_collisions(self):
         self.objects.flush()
         self.conn.flush()
- 
+
         self.conn.send(Datagram.create_add_channel(40))
 
         doids = []
@@ -1052,9 +1087,8 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidB], 90, DBSERVER_OBJECT_SET_FIELD)
         dg.add_doid(doidB)
-        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
@@ -1104,9 +1138,8 @@ class DatabaseBaseTests(object):
         dg.add_uint16(setFoo)
         expected.append(dg)
         # ... and SET_FIELDS broadcasts.
-        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELDS)
+        dg = Datagram.create([DATABASE_PREFIX|doidC], 90, DBSERVER_OBJECT_SET_FIELD)
         dg.add_doid(doidC)
-        dg.add_uint16(1) # Field count
         dg.add_uint16(setRDbD5)
         dg.add_uint8(setRDbD5DefaultValue)
         expected.append(dg)
@@ -1135,3 +1168,108 @@ class DatabaseBaseTests(object):
         self.deleteObject(90, doidB)
         self.deleteObject(90, doidC)
         self.conn.send(Datagram.create_remove_channel(90))
+
+    def test_wrong_fields(self):
+        # This test tests what happens when you try to put (otherwise valid)
+        # db fields on objects whose dclasses do not actually have those fields.
+        self.conn.flush()
+        self.conn.send(Datagram.create_add_channel(100))
+
+        # Create a (valid) object.
+        dg = Datagram.create([75757], 100, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        self.conn.send(dg)
+
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        doid = dgi.read_doid()
+
+        ### TEST SETTING NON-BELONGING FIELDS ###
+        # Set an invalid field on our object:
+        dg = Datagram.create([75757], 100, DBSERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(32112)
+        self.conn.send(dg)
+        self.objects.flush()
+
+        # Select the field
+        dg = Datagram.create([75757], 100, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(2) # Context
+        dg.add_doid(doid)
+        dg.add_uint16(setFoo)
+        self.conn.send(dg)
+
+        # Get value in reply
+        dg = Datagram.create([100], 75757, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint8(FAILURE)
+        self.expect(self.conn, dg)
+
+        ### TEST REQUESTING NON-BELONGING FIELDS ###
+        # Select two fields, one of which does not belong:
+        dg = Datagram.create([75757], 100, DBSERVER_OBJECT_GET_FIELDS)
+        dg.add_uint32(3) # Context
+        dg.add_doid(doid)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint16(setRDbD5)
+        self.conn.send(dg)
+
+        # Get value in reply
+        dg = Datagram.create([100], 75757, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(1) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        self.expect(self.conn, dg)
+
+        ### TEST DELETE ON NON-BELONGING FIELDS ###
+        # Delete a field that does not belong, but has a default:
+        dg = Datagram.create([75757], 100, DBSERVER_OBJECT_DELETE_FIELD)
+        dg.add_doid(doid)
+        dg.add_uint16(setRDbD5)
+        self.conn.send(dg)
+        self.objects.flush()
+
+        # Select the field
+        dg = Datagram.create([75757], 100, DBSERVER_OBJECT_GET_FIELD)
+        dg.add_uint32(4) # Context
+        dg.add_doid(doid)
+        dg.add_uint16(setRDbD5)
+        self.conn.send(dg)
+
+        # Get value in reply
+        dg = Datagram.create([100], 75757, DBSERVER_OBJECT_GET_FIELD_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(FAILURE)
+        self.expect(self.conn, dg)
+
+        ### TEST CREATING AN OBJECT WITH NON-BELONGING FIELDS ###
+        # Create a DTO3 with field setFoo (which doesn't belong):
+        dg = Datagram.create([75757], 100, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(5) # Context
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(32112)
+        self.conn.send(dg)
+
+        # The database must refuse to create our object:
+        dg = Datagram.create([100], 75757, DBSERVER_CREATE_OBJECT_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint32(INVALID_DO_ID)
+        self.expect(self.conn, dg)
+
+        # Cleanup
+        self.deleteObject(100, doid)
+        self.conn.send(Datagram.create_remove_channel(100))

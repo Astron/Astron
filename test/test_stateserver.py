@@ -1,9 +1,8 @@
 #!/usr/bin/env python2
 import unittest, time
-from socket import *
-
-from common import *
-from testdc import *
+from common.unittests import ProtocolTest
+from common.astron import *
+from common.dcfile import *
 
 CONFIG = """\
 messagedirector:
@@ -187,7 +186,7 @@ class TestStateServer(ProtocolTest):
         deleteObject(ai, 5, 101000005)
         self.disconnect(ai)
 
-    # Tests stateserver handling of 'airecv' keyword 
+    # Tests stateserver handling of 'airecv' keyword
     def test_airecv(self):
         self.flush_failed()
         conn = self.connect(5)

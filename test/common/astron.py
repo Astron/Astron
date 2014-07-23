@@ -1,14 +1,6 @@
-import unittest
-import subprocess
-import tempfile
-import struct
-import socket
-import time
-import ssl
-import os
+import os, time, socket, struct, tempfile, subprocess, ssl
 
-__all__ = ['Daemon', 'ProtocolTest',
-           'Datagram', 'DatagramIterator',
+__all__ = ['Daemon', 'Datagram', 'DatagramIterator',
            'MDConnection', 'ChannelConnection', 'ClientConnection']
 
 class Daemon(object):
@@ -31,9 +23,9 @@ class Daemon(object):
 
             return # Because the start happened manually.
 
-        cfg, self.config_file = tempfile.mkstemp()
-        os.write(cfg, self.config)
-        os.close(cfg)
+        configHandle, self.config_file = tempfile.mkstemp(prefix = 'astron', suffix = 'cfg.yaml')
+        os.write(configHandle, self.config)
+        os.close(configHandle)
 
         args = [self.DAEMON_PATH]
         if 'USE_LOGLEVEL' in os.environ:
@@ -270,121 +262,6 @@ CONSTANTS['USE_THREADING'] = 'DISABLE_THREADING' not in os.environ
 
 locals().update(CONSTANTS)
 __all__.extend(CONSTANTS.keys())
-
-class ProtocolTest(unittest.TestCase):
-    def writeUnexpectedAndFail(self, received):
-        testName = self.__class__.__name__
-        f = open("%s-received.bin" % testName, "wb")
-        f.write(received.get_data())
-        f.close()
-        self.fail("Received datagram when expecting none.\n" +
-                  "\tWritten to \"%s-received.bin\"." % testName)
-
-    def writeDatagramsAndFail(self, expected, received):
-        testName = self.__class__.__name__
-        f = open("%s-expected.bin" % testName, "wb")
-        f.write(expected.get_data())
-        f.close()
-        f = open("%s-received.bin" % testName, "wb")
-        f.write(received.get_data())
-        f.close()
-        self.fail("Received datagram doesn't match expected.\n" +
-                  "\tWritten to \"%s-{expected,received}.bin\"." % testName)
-
-    def assertDatagramsEqual(self, expected, received, isClient = False):
-        lhs = DatagramIterator(expected)
-        rhs = DatagramIterator(received)
-
-        if isClient:
-            expectedMsgtype = lhs.read_uint16()
-            receivedMsgtype = rhs.read_uint16()
-            self.assertEquals(expectedMsgtype, receivedMsgtype)
-
-            if not received.equals(expected):
-                self.writeDatagramsAndFail(expected, received)
-
-        else:
-            numChannelsExpected = lhs.read_uint8()
-            numChannelsReceived = rhs.read_uint8()
-            self.assertEquals(numChannelsExpected, numChannelsReceived)
-
-            expectedRecipients = expected.get_channels()
-            receivedRecipients = received.get_channels()
-            self.assertEquals(expectedRecipients, receivedRecipients)
-
-            lhs.seek(1 + CHANNEL_SIZE_BYTES * numChannelsExpected)
-            rhs.seek(1 + CHANNEL_SIZE_BYTES * numChannelsReceived)
-
-            if expectedRecipients != set([CONTROL_CHANNEL]):
-                # If we aren't a control datagram, check the sender
-                expectedSender = lhs.read_channel()
-                receivedSender = rhs.read_channel()
-                self.assertEquals(expectedSender, receivedSender)
-
-            expectedMsgtype = lhs.read_uint16()
-            receivedMsgtype = rhs.read_uint16()
-            self.assertEquals(expectedMsgtype, receivedMsgtype)
-
-            if not received.matches(expected):
-                self.writeDatagramsAndFail(expected, received)
-
-    def expect(self, conn, expected, isClient = False):
-        received = conn.recv_maybe()
-        if received is None:
-            self.fail("No datagram received.")
-        self.assertDatagramsEqual(expected, received, isClient)
-
-    def expectMany(self, conn, datagrams, ignoreExtra = False, isClient = False):
-        datagrams = list(datagrams) # We're going to be doing datagrams.remove()
-        recvs = []
-
-        numRecvd = 0
-        numMatch = 0
-        numExpct = len(datagrams)
-        while datagrams:
-            received = conn.recv_maybe()
-            if received is None:
-                if numMatch == 0:
-                    self.fail("Received %d datagrams, but expected %d." % (numRecvd, numExpct))
-                else:
-                    error = "Received %d datagrams, of which %d matched, but expected %d."
-                    error += "\n  Received msgtypes: ( "
-                    for dg in recvs:
-                        error += "%s " % dg.get_msgtype()
-                    error = error % (numRecvd, numMatch, numExpct)
-                    error += ")"
-                    self.fail(error)
-            numRecvd += 1
-
-            for datagram in datagrams:
-                if (isClient and received.equals(datagram)) or received.matches(datagram):
-                    recvs.append(datagram)
-                    datagrams.remove(datagram)
-                    numMatch += 1
-                    break
-            else:
-                if not ignoreExtra:
-                    best = None
-                    for datagram in datagrams:
-                        # Try to find the most similar datagram
-                        if datagram.get_channels() == received.get_channels():
-                            self.assertDatagramsEqual(datagram, received, isClient)
-                            break
-                        elif datagram.get_size() == received.get_size() and best is None:
-                            best = datagram
-                    else:
-                        if best is not None:
-                            self.assertDatagramsEqual(best, received, isClient)
-                        else:
-                            self.assertDatagramsEqual(datagrams[0], received, isClient)
-                    # This should always fail, but it produces more useful
-                    # debugging output.  Lets guarantee that it fails for fun.
-                    self.fail("Testsuite implementation error.")
-
-    def expectNone(self, conn):
-        received = conn.recv_maybe()
-        if received is not None:
-            self.writeUnexpectedAndFail(received)
 
 class Datagram(object):
     def __init__(self, data=b''):

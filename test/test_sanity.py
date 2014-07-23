@@ -1,5 +1,4 @@
 #!/usr/bin/env python2
-
 import unittest
 
 class TestSanity(unittest.TestCase):
