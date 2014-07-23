@@ -11,17 +11,8 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 
 void MDNetworkParticipant::handle_datagram(DatagramHandle dg, DatagramIterator&)
 {
-	logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
-	try
-	{
-		send_datagram(dg);
-	}
-	catch(const boost::system::system_error &e)
-	{
-		logger().warning() << "Received a system error while sending a datagram to a network "
-		                   "participant (the participant may have lost connection)." << std::endl;
-		return;
-	}
+	logger().trace() << "MDNetworkParticipant sending to downstream MessageDirector.\n";
+	send_datagram(dg);
 }
 
 void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
@@ -86,7 +77,8 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
 	route_datagram(dg);
 }
 
-void MDNetworkParticipant::receive_disconnect()
+void MDNetworkParticipant::receive_disconnect(NetworkClient::Error)
 {
+	logger().warning() << "Lost connection to network participant.\n";
 	delete this;
 }

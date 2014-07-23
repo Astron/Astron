@@ -41,10 +41,6 @@ class MessageDirector : public ChannelMap
 			return m_log;
 		}
 
-		// For MDUpstream (and subclasses) to call.
-		void receive_datagram(DatagramHandle dg);
-		void receive_disconnect();
-
 	protected:
 		virtual void on_add_channel(channel_t c);
 

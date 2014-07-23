@@ -2,6 +2,7 @@
 #include "MessageDirector.h"
 #include "net/NetworkConnector.h"
 #include "core/global.h"
+#include "core/shutdown.h"
 #include "core/msgtypes.h"
 
 using boost::asio::ip::tcp;
@@ -63,10 +64,11 @@ void MDNetworkUpstream::handle_datagram(DatagramHandle dg)
 
 void MDNetworkUpstream::receive_datagram(DatagramHandle dg)
 {
-	m_message_director->receive_datagram(dg);
+	m_message_director->route_datagram(NULL, dg);
 }
 
-void MDNetworkUpstream::receive_disconnect()
+void MDNetworkUpstream::receive_disconnect(NetworkClient::Error)
 {
-	m_message_director->receive_disconnect();
+	m_message_director->logger().fatal() << "Lost connection to upstream MessageDirector.\n";
+	astron_shutdown(1);
 }

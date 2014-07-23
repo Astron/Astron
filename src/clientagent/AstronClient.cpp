@@ -191,12 +191,27 @@ class AstronClient : public Client, public NetworkClient
 		//     connection or otherwise when the tcp connection is lost.
 		// Note: In the Astron client protocol, the server is normally
 		//       responsible for terminating the connection.
-		void receive_disconnect()
+		void receive_disconnect(NetworkClient::Error error)
 		{
 			if(!m_clean_disconnect)
 			{
-				LoggedEvent event("client-lost");
-				log_event(event);
+				if(error == NetworkClient::Error::LOST_CONNECTION)
+				{
+					LoggedEvent event("client-lost");
+					log_event(event);
+				}
+				else if(error == NetworkClient::Error::WRITE_TIMED_OUT)
+				{
+					LoggedEvent event("client-dropped");
+					event.add("reason_msg", "Write timed out.");
+					log_event(event);
+				}
+				else if(error == NetworkClient::Error::WRITE_BUFFER_EXCEEDED)
+				{
+					LoggedEvent event("client-dropped");
+					event.add("reason_msg", "Write buffer exceeded max size.");
+					log_event(event);
+				}
 			}
 			delete this;
 		}

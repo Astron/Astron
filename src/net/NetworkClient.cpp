@@ -10,7 +10,8 @@ namespace ssl = boost::asio::ssl;
 NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_remote(),
 	m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false), m_is_receiving(false),
 	m_is_data(false), m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0),
-	m_max_queue_size(0), m_write_timeout(0), m_send_queue()
+	m_max_queue_size(0), m_write_timeout(0), m_send_queue(),
+	m_error(NetworkClient::Error::NONE)
 {
 }
 
@@ -89,6 +90,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 		m_total_queue_size += dg->size();
 		if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
 		{
+			m_error = Error::WRITE_BUFFER_EXCEEDED;
 			send_disconnect();
 			return;
 		}
@@ -152,6 +154,7 @@ void NetworkClient::async_receive()
 
 		// An exception happening when trying to initiate a read is a clear
 		// indicator that something happened to the connection, therefore:
+		m_error = Error::LOST_CONNECTION;
 		send_disconnect();
 	}
 }
@@ -167,7 +170,7 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
 		// If waiting for asio send callback, let send handle the disconnect.
 		if(!m_is_sending)
 		{
-			receive_disconnect();
+			receive_disconnect(m_error);
 		}
 
 		return;
@@ -197,7 +200,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 		// If waiting for asio send callback, let send handle the disconnect.
 		if(!m_is_sending)
 		{
-			receive_disconnect();
+			receive_disconnect(m_error);
 		}
 
 		return;
@@ -224,6 +227,7 @@ void NetworkClient::async_send(DatagramHandle dg)
 	{
 		// An exception happening when trying to initiate a send is a clear
 		// indicator that something happened to the connection, therefore:
+		m_error = Error::LOST_CONNECTION;
 		send_disconnect();
 	}
 }
@@ -243,7 +247,7 @@ void NetworkClient::send_finished(const boost::system::error_code &ec, size_t /*
 		// If waiting for asio receive callback, let receive handle the disconnect.
 		if(!m_is_receiving)
 		{
-			receive_disconnect();
+			receive_disconnect(m_error);
 		}
 
 		return;
@@ -270,6 +274,7 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
 	//     ie. if the send completed before it expires, so don't do anything
 	if(ec != boost::asio::error::operation_aborted)
 	{
+		m_error = Error::WRITE_TIMED_OUT;
 		send_disconnect();
 	}
 }

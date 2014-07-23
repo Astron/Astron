@@ -17,6 +17,14 @@ class NetworkClient
 		// is_connected returns true if the TCP connection is active, or false otherwise
 		bool is_connected();
 
+		enum Error
+		{
+			NONE,
+			LOST_CONNECTION,
+			WRITE_TIMED_OUT,
+			WRITE_BUFFER_EXCEEDED
+		};
+
 	protected:
 		NetworkClient();
 		NetworkClient(boost::asio::ip::tcp::socket *socket);
@@ -35,7 +43,7 @@ class NetworkClient
 		virtual void receive_datagram(DatagramHandle dg) = 0;
 		// receive_disconnect is called when the remote host closes the
 		//     connection or otherwise when the tcp connection is lost.
-		virtual void receive_disconnect() = 0;
+		virtual void receive_disconnect(Error) = 0;
 
 
 		/* Asynchronous call loop */
@@ -88,5 +96,6 @@ class NetworkClient
 		unsigned int m_write_timeout;
 		std::queue<DatagramHandle> m_send_queue;
 
+		Error m_error;
 		std::recursive_mutex m_lock;
 };

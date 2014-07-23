@@ -309,14 +309,3 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	// during that time.
 	p->post_remove();
 }
-
-void MessageDirector::receive_datagram(DatagramHandle dg)
-{
-	route_datagram(NULL, dg);
-}
-
-void MessageDirector::receive_disconnect()
-{
-	m_log.fatal() << "Lost connection to upstream md" << std::endl;
-	exit(1);
-}
