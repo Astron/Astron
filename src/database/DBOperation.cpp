@@ -305,7 +305,7 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 	}
 
 	m_type = GET_FIELDS;
-	uint16_t field_count;
+	uint16_t field_count = 1;
 
 	if(msg_type == DBSERVER_OBJECT_GET_FIELD)
 	{
@@ -436,7 +436,7 @@ bool DBOperationSet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 		field_count = 1;
 	}
 
-	bool deletes;
+	bool deletes = false;
 	if(msg_type == DBSERVER_OBJECT_SET_FIELD ||
 	   msg_type == DBSERVER_OBJECT_SET_FIELDS)
 	{
