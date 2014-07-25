@@ -12,8 +12,14 @@ Could not find 'postgres' executable on path.
 """
 
 def setup_postgres(unittest):
+
     # Check for server command (for Ubuntu/Debian mostly)
-    status = os.system('postgres --version')
+    status = 0
+    try:
+        status = os.system('postgres --version')
+    except:
+        pass
+
     if status == 127:
         unittest.fail(POSTGRESQL_SETUP_ERROR)
 
@@ -48,8 +54,8 @@ def setup_postgres(unittest):
             break
 
     # Create a user and database in the instance
-    os.system('createuser -p 57023 -h 127.0.0.1 --createdb astron')
-    os.system('createdb -p 57023 -h 127.0.0.1 -U astron astron')
+    os.system('createuser -p 57023 -h 127.0.0.1 --superuser --createdb astron')
+    os.system('createdb -p 57023 -h 127.0.0.1 --username=astron astron')
 
     # Set variables
     unittest.postgres_path = postgres_path
