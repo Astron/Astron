@@ -1,10 +1,7 @@
-#!/usr/bin/env python2
 from astron import *
 from dcfile import *
 
 CREATE_DOID_OFFSET = 1 + (CHANNEL_SIZE_BYTES * 2) + 2 + 4
-VERIFY_DELETE_OBJECT = 0x21656944
-VERIFY_DELETE_QUERY = 0x6c6c694b
 
 class DBServerTestsuite(object):
     def createTypeGetId(self, sender, context, type):
