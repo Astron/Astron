@@ -73,6 +73,14 @@ class Field : public KeywordList
 		std::string m_default_value; // the binary data of the default value encoded in a string
 };
 
+// Field comparison operators for sorting
+inline bool operator==(const Field& lhs, const Field& rhs) { lhs.get_id() == rhs.get_id(); }
+inline bool operator!=(const Field& lhs, const Field& rhs) { return !operator==(lhs,rhs); }
+inline bool operator< (const Field& lhs, const Field& rhs) { lhs.get_id() < rhs.get_id(); }
+inline bool operator> (const Field& lhs, const Field& rhs) { return  operator< (rhs,lhs); }
+inline bool operator<=(const Field& lhs, const Field& rhs) { return !operator> (lhs,rhs); }
+inline bool operator>=(const Field& lhs, const Field& rhs) { return !operator< (lhs,rhs); }
+
 
 } // close namespace dclass
 #include "Field.ipp"
