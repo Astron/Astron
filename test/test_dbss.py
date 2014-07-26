@@ -580,22 +580,14 @@ class TestDBStateServer(ProtocolTest):
         self.shard.send(dg)
 
         # Expect database fields to be sent to database
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None) # Expecting DBSetFields
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([1200], 9030, DBSERVER_OBJECT_SET_FIELDS))
-        self.assertEquals(dgi.read_doid(), 9030) # Id
-        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
-        hasFoo, hasRDB3 = False, False
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field is setFoo:
-                hasFoo = True
-                self.assertEquals(dgi.read_uint16(), 4096)
-            elif field is setRDB3:
-                hasRDB3 = True
-                self.assertEquals(dgi.read_uint32(), 8192)
-        self.assertTrue(hasFoo and hasRDB3)
+        dg = Datagram.create([1200], 9030, DBSERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(9030) # Id
+        dg.add_uint16(2) # Field count: 2
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(8192)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(4096)
+        self.expect(self.database, dg)
 
 
         ### Test for SetField with non-db field on unloaded object ###
@@ -636,22 +628,14 @@ class TestDBStateServer(ProtocolTest):
         self.shard.send(dg)
 
         # Expect database fields to be sent to database
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None) # Expecting DBSetFields
-        dgi = DatagramIterator(dg)
-        self.assertTrue(dgi.matches_header([1200], 9030, DBSERVER_OBJECT_SET_FIELDS))
-        self.assertEquals(dgi.read_doid(), 9030) # Id
-        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
-        hasFoo, hasRDB3 = False, False
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field is setFoo:
-                hasFoo = True
-                self.assertEquals(dgi.read_uint16(), 1337)
-            elif field is setRDB3:
-                hasRDB3 = True
-                self.assertEquals(dgi.read_uint32(), 4080)
-        self.assertTrue(hasFoo and hasRDB3)
+        dg = Datagram.create([1200], 9030, DBSERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(9030) # Id
+        dg.add_uint16(2) # Field count: 2
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(4080)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(1337)
+        self.expect(self.database, dg)
 
         ### Test for SetField with db field on loaded object ###
         # Activate object with defaults
@@ -714,24 +698,14 @@ class TestDBStateServer(ProtocolTest):
         self.shard.send(dg)
 
         # Expect database fields to be sent to database
-        dg = self.database.recv_maybe()
-        self.assertTrue(dg is not None) # Expecting DBSetFields
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([1200], 9031, DBSERVER_OBJECT_SET_FIELDS))
-        self.assertEquals(dgi.read_doid(), 9031) # Id
-        self.assertEquals(dgi.read_uint16(), 2) # Field count: 2
-        hasFoo, hasRDB3 = False, False
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field is setFoo:
-                hasFoo = True
-                self.assertEquals(dgi.read_uint16(), 7722)
-            elif field is setRDB3:
-                hasRDB3 = True
-                self.assertEquals(dgi.read_uint32(), 18811881)
-        self.assertTrue(hasFoo and hasRDB3)
-
-
+        dg = Datagram.create([1200], 9031, DBSERVER_OBJECT_SET_FIELDS)
+        dg.add_doid(9031) # Id
+        dg.add_uint16(2) # Field count: 2
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(18811881)
+        dg.add_uint16(setFoo)
+        dg.add_uint16(7722)
+        self.expect(self.database, dg)
 
         ### Test for SetField with non-db field on loaded object
         ### (continues from previous)
