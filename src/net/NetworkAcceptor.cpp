@@ -9,10 +9,11 @@ NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
 }
 
 boost::system::error_code NetworkAcceptor::bind(const std::string &address,
-                                                unsigned int default_port)
+                                                unsigned int /*default_port*/)
 {
 	std::string str_ip = address;
 	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
+	// TODO: Use default port of str_port is empty.
 	str_ip = str_ip.substr(0, str_ip.find(':', 0));
 
 	tcp::resolver resolver(m_io_service);

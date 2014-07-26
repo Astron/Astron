@@ -5,7 +5,7 @@ NetworkConnector::NetworkConnector(boost::asio::io_service &io_service) : m_io_s
 }
 
 tcp::socket *NetworkConnector::connect(const std::string &address,
-                                       unsigned int default_port,
+                                       unsigned int /*default_port*/,
                                        boost::system::error_code &ec)
 {
 	std::string str_ip = address;
@@ -28,8 +28,8 @@ tcp::socket *NetworkConnector::connect(const std::string &address,
 	return socket;
 }
 
-ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address, unsigned int default_port,
-                                  ssl::context *ctx, boost::system::error_code &ec)
+ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address,
+	unsigned int /*default_port*/, ssl::context *ctx, boost::system::error_code &ec)
 {
 	std::string str_ip = address;
 	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
