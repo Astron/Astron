@@ -1,8 +1,7 @@
 #pragma once
-#include <unordered_map>
 #include <unordered_set>
-
 #include "StateServer.h"
+#include "core/objtypes.h"
 
 /* Helper Functions */
 // unpack_db_fields reads the field_count and following fields into a required map and ram map
@@ -10,7 +9,7 @@
 // Returns false if unpacking failed for some reason.
 bool unpack_db_fields(DatagramIterator &dg, const dclass::Class* dclass,
                       std::unordered_map<const dclass::Field*, std::vector<uint8_t> > &required,
-                      std::map<const dclass::Field*, std::vector<uint8_t> > &ram);
+                      FieldValues &ram);
 
 class LoadingObject;
 

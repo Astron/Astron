@@ -617,8 +617,8 @@ void DBStateServer::handle_get_all_resp(DatagramIterator& dgi)
 	const Class* r_class = g_dcf->get_class_by_id(dc_id);
 
 	// Get fields from database
-	std::unordered_map<const Field*, std::vector<uint8_t> > required_fields;
-	std::map<const Field*, std::vector<uint8_t> > ram_fields;
+	UnorderedFieldValues required_fields;
+	FieldValues ram_fields;
 	if(!unpack_db_fields(dgi, r_class, required_fields, ram_fields))
 	{
 		m_log->error() << "Error while unpacking fields from database." << std::endl;
@@ -681,8 +681,7 @@ bool DBStateServer::is_activated_object(doid_t do_id)
 
 
 bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
-                      std::unordered_map<const Field*, std::vector<uint8_t> > &required,
-                      std::map<const Field*, std::vector<uint8_t> > &ram)
+                      UnorderedFieldValues &required, FieldValues &ram)
 {
 	// Unload ram and required fields from database resp
 	uint16_t db_field_count = dgi.read_uint16();

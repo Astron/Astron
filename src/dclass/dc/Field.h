@@ -80,7 +80,10 @@ inline bool operator< (const Field& lhs, const Field& rhs) { lhs.get_id() < rhs.
 inline bool operator> (const Field& lhs, const Field& rhs) { return  operator< (rhs,lhs); }
 inline bool operator<=(const Field& lhs, const Field& rhs) { return !operator> (lhs,rhs); }
 inline bool operator>=(const Field& lhs, const Field& rhs) { return !operator< (lhs,rhs); }
-
+struct FieldPtrComp
+{
+    inline bool operator()(const Field* lhs, const Field* rhs) const;
+};
 
 } // close namespace dclass
 #include "Field.ipp"

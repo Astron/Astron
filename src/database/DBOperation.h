@@ -3,16 +3,11 @@
 #include <map>
 
 #include "core/types.h"
+#include "core/objtypes.h"
 #include "util/DatagramIterator.h"
-#include "dclass/dc/Class.h"
-#include "dclass/dc/Field.h"
 
 // Foward declarations
 class DatabaseServer;
-
-// Convenience typedes
-typedef std::set<const dclass::Field*> FieldSet;
-typedef std::map<const dclass::Field*, std::vector<uint8_t> > FieldValues;
 
 // This represents a "snapshot" of a particular object. It is essentially just a
 // dclass and a map of fields.
