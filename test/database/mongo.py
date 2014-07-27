@@ -20,7 +20,7 @@ def setup_mongo(unittest):
         try:
             mongo_sock = socket(AF_INET, SOCK_STREAM)
             mongo_sock.connect(('127.0.0.1', 57023))
-        except error:
+        except:
             time.sleep(0.5)
         else:
             mongo_sock.close()
