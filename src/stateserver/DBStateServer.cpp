@@ -269,15 +269,14 @@ void DBStateServer::handle_set_fields(DatagramIterator &dgi)
 
 	uint16_t field_count = dgi.read_uint16();
 
-	std::unordered_map<const Field*, std::vector<uint8_t> > db_fields;
+	FieldValues db_fields;
 	for(uint16_t i = 0; i < field_count; ++i)
 	{
 		uint16_t field_id = dgi.read_uint16();
 		const Field* field = g_dcf->get_field_by_id(field_id);
 		if(!field)
 		{
-			m_log->warning() << "Received invalid field in SetFields"
-			                 " with id " << field_id << "\n";
+			m_log->warning() << "Received invalid field with id " << field_id << " in SetFields.\n";
 			return;
 		}
 		if(field->has_keyword("db"))
