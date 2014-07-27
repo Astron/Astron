@@ -24,8 +24,7 @@ roles:
         max: 1000010
       backend:
         type: postgresql
-        host: 127.0.0.1
-        port: 57023
+        server: 127.0.0.1:57023
         username: astron
         database: astron
 """ % (USE_THREADING, test_dc)

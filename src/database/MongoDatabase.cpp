@@ -17,11 +17,6 @@
 using namespace std;
 using namespace mongo;
 
-static ConfigVariable<string> server("server", "localhost", db_backend_config);
-static ConfigVariable<string> database("database", "test", db_backend_config);
-static ConfigVariable<string> username("username", "", db_backend_config);
-static ConfigVariable<string> password("password", "", db_backend_config);
-
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
 
@@ -362,19 +357,19 @@ class MongoDatabase : public DatabaseBackend
 
 			// TODO: This only creates a single connection. When this class is
 			// made multithreaded, we will need a connection pool instead.
-			if(!m_conn.connect(server.get_rval(m_config), error))
+			if(!m_conn.connect(database_address.get_rval(m_config), error))
 			{
 				m_log->fatal() << "Connection failure: " << error << endl;
 				exit(1);
 			}
 
-			m_db = database.get_rval(m_config);
+			m_db = database_name.get_rval(m_config);
 
-			string u = username.get_rval(m_config);
-			string p = password.get_rval(m_config);
-			if(!u.empty() && !p.empty())
+			string username = database_username.get_rval(m_config);
+			string password = database_password.get_rval(m_config);
+			if(!username.empty() && !password.empty())
 			{
-				if(!m_conn.auth(m_db, u, p, error))
+				if(!m_conn.auth(m_db, username, password, error))
 				{
 					m_log->fatal() << "Authentication failure: " << error << endl;
 					exit(1);
