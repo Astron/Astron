@@ -18,7 +18,6 @@ void DBOperation::announce_fields(const FieldValues& fields)
 	// Calculate the fields that we are sending in our response:
 	FieldValues changed_fields;
 	FieldSet deleted_fields;
-
 	for(auto it = fields.begin(); it != fields.end(); ++it)
 	{
 		if(it->second.empty())
@@ -31,6 +30,7 @@ void DBOperation::announce_fields(const FieldValues& fields)
 		}
 	}
 
+	// Send delete fields broadcast
 	if(!deleted_fields.empty())
 	{
 		bool multi = (deleted_fields.size() > 1);
@@ -50,6 +50,7 @@ void DBOperation::announce_fields(const FieldValues& fields)
 		m_dbserver->route_datagram(update);
 	}
 
+	// Send update fields broadcast
 	if(!changed_fields.empty())
 	{
 		bool multi = (changed_fields.size() > 1);
@@ -305,7 +306,7 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 	}
 
 	m_type = GET_FIELDS;
-	uint16_t field_count;
+	uint16_t field_count = 1;
 
 	if(msg_type == DBSERVER_OBJECT_GET_FIELD)
 	{
@@ -436,7 +437,7 @@ bool DBOperationSet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 		field_count = 1;
 	}
 
-	bool deletes;
+	bool deletes = false;
 	if(msg_type == DBSERVER_OBJECT_SET_FIELD ||
 	   msg_type == DBSERVER_OBJECT_SET_FIELDS)
 	{

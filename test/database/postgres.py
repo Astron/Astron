@@ -12,8 +12,14 @@ Could not find 'postgres' executable on path.
 """
 
 def setup_postgres(unittest):
+
     # Check for server command (for Ubuntu/Debian mostly)
-    status = os.system('postgres --version')
+    status = 0
+    try:
+        status = os.system('postgres --version')
+    except:
+        pass
+
     if status == 127:
         unittest.fail(POSTGRESQL_SETUP_ERROR)
 
@@ -32,24 +38,13 @@ def setup_postgres(unittest):
                                   stdout = subprocess.PIPE,
                                   stderr = subprocess.PIPE)
 
-    # Wait for postgres to start up:
-    timeout = time.time() + 2.0
-    while True:
-        if time.time() > timeout:
-            break
-
-        try:
-            postgres_sock = socket(AF_INET, SOCK_STREAM)
-            postgres_sock.connect(('127.0.0.1', 57023))
-        except:
-            time.sleep(0.2)
-        else:
-            postgres_sock.close()
-            break
+    # Postgresql is rude and happily accepts connections before its ready to
+    #     deal with them. So we'll sleep a little just to make sure its ready.
+    time.sleep(0.5)
 
     # Create a user and database in the instance
-    os.system('createuser -p 57023 -h 127.0.0.1 --createdb astron')
-    os.system('createdb -p 57023 -h 127.0.0.1 -U astron astron')
+    os.system('createuser -p 57023 -h 127.0.0.1 --superuser --createdb astron')
+    os.system('createdb -p 57023 -h 127.0.0.1 --username=astron astron')
 
     # Set variables
     unittest.postgres_path = postgres_path

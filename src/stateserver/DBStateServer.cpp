@@ -269,15 +269,14 @@ void DBStateServer::handle_set_fields(DatagramIterator &dgi)
 
 	uint16_t field_count = dgi.read_uint16();
 
-	std::unordered_map<const Field*, std::vector<uint8_t> > db_fields;
+	FieldValues db_fields;
 	for(uint16_t i = 0; i < field_count; ++i)
 	{
 		uint16_t field_id = dgi.read_uint16();
 		const Field* field = g_dcf->get_field_by_id(field_id);
 		if(!field)
 		{
-			m_log->warning() << "Received invalid field in SetFields"
-			                 " with id " << field_id << "\n";
+			m_log->warning() << "Received invalid field with id " << field_id << " in SetFields.\n";
 			return;
 		}
 		if(field->has_keyword("db"))
@@ -617,8 +616,8 @@ void DBStateServer::handle_get_all_resp(DatagramIterator& dgi)
 	const Class* r_class = g_dcf->get_class_by_id(dc_id);
 
 	// Get fields from database
-	std::unordered_map<const Field*, std::vector<uint8_t> > required_fields;
-	std::map<const Field*, std::vector<uint8_t> > ram_fields;
+	UnorderedFieldValues required_fields;
+	FieldValues ram_fields;
 	if(!unpack_db_fields(dgi, r_class, required_fields, ram_fields))
 	{
 		m_log->error() << "Error while unpacking fields from database." << std::endl;
@@ -681,8 +680,7 @@ bool DBStateServer::is_activated_object(doid_t do_id)
 
 
 bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
-                      std::unordered_map<const Field*, std::vector<uint8_t> > &required,
-                      std::map<const Field*, std::vector<uint8_t> > &ram)
+                      UnorderedFieldValues &required, FieldValues &ram)
 {
 	// Unload ram and required fields from database resp
 	uint16_t db_field_count = dgi.read_uint16();
