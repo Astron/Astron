@@ -17,10 +17,11 @@ if(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 
 else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 
-	find_path(MONGO_INCLUDE_DIR client/dbclient.h
-	  /usr/include/mongo
-	  /usr/local/include/mongo
-	  /opt/local/include/mongo
+	find_path(MONGO_INCLUDE_DIR mongo/client/dbclient.h
+	  /usr/include
+	  /usr/local/include
+	  /opt/local/include
+	  ${PROJECT_SOURCE_DIR}/dependencies/mongo-cxx-driver/include
     )
 
   find_library(MONGO_LIBRARIES NAMES mongoclient  libmongoclient
@@ -28,6 +29,7 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
     /usr/lib
     /usr/local/lib
     /opt/local/lib
+    ${PROJECT_SOURCE_DIR}/dependencies/mongo-cxx-driver/lib
     )
 
   GET_FILENAME_COMPONENT(MONGO_LIBRARY_DIR ${MONGO_LIBRARIES} PATH)
