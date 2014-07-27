@@ -40,7 +40,7 @@ def setup_postgres(unittest):
 
     # Postgresql is rude and happily accepts connections before its ready to
     #     deal with them. So we'll sleep a little just to make sure its ready.
-    time.sleep(0.2)
+    time.sleep(0.5)
 
     # Create a user and database in the instance
     os.system('createuser -p 57023 -h 127.0.0.1 --superuser --createdb astron')
