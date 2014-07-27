@@ -222,6 +222,7 @@ if(BUILD_DBSERVER)
 		list(APPEND DB_LIBRARY_NAMES mongoclient)
 
 		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
+		add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
 		# TODO: Config validation test
 		list(APPEND PYTHON_TESTS db_mongo)
 	endif()
