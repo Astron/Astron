@@ -1,6 +1,6 @@
 #pragma once
-
 #include "StateServer.h"
+#include "core/objtypes.h"
 
 class DistributedObject : public MDParticipantInterface
 {
@@ -11,8 +11,7 @@ class DistributedObject : public MDParticipantInterface
 		                  const dclass::Class *dclass, DatagramIterator &dgi, bool has_other);
 		DistributedObject(StateServer *stateserver, channel_t sender, doid_t do_id,
 		                  doid_t parent_id, zone_t zone_id, const dclass::Class *dclass,
-		                  std::unordered_map<const dclass::Field*, std::vector<uint8_t> > req_fields,
-		                  std::map<const dclass::Field*, std::vector<uint8_t> > ram_fields);
+		                  UnorderedFieldValues& req_fields, FieldValues& ram_fields);
 		~DistributedObject();
 
 		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
@@ -48,8 +47,8 @@ class DistributedObject : public MDParticipantInterface
 		doid_t m_parent_id;
 		zone_t m_zone_id;
 		const dclass::Class *m_dclass;
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_required_fields;
-		std::map<const dclass::Field*, std::vector<uint8_t> > m_ram_fields;
+		UnorderedFieldValues m_required_fields;
+		FieldValues m_ram_fields;
 		channel_t m_ai_channel;
 		channel_t m_owner_channel;
 		bool m_ai_explicitly_set;

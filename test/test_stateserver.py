@@ -1260,26 +1260,15 @@ class TestStateServer(ProtocolTest):
         conn.send(dg)
 
         # Expect both fields in response
-        dg = conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive a GetFieldsResp")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertEquals(dgi.read_uint32(), 0x600D533D) # Context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), 2) # Field count
-        hasRequired1 = False
-        hasBR1 = False
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field is setRequired1:
-                hasRequired1 = True
-                self.assertEquals(dgi.read_uint32(), 0)
-            elif field is setBR1:
-                hasBR1 = True
-                self.assertEquals(dgi.read_string(), "MY HAT IS AWESOME!!!")
-            else:
-                self.fail("Unexpected field type")
-        self.assertTrue(hasRequired1 and hasBR1)
+        dg = Datagram.create([890], 15000, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0x600D533D) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0)
+        dg.add_uint16(setBR1)
+        dg.add_string("MY HAT IS AWESOME!!!")
+        self.expect(conn, dg)
 
 
         ### Test for GetFields with mixed set and unset fields ### (continues from previous)
@@ -1537,29 +1526,18 @@ class TestStateServer(ProtocolTest):
         conn.send(dg)
 
         # ... and see if it enters the owner with only broadcast and/or ownrecv fields.
-        dg = owner1.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive a datagram when expecting EnterOwner")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([owner1chan], doid2,
-                STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER))
-        self.assertEquals(dgi.read_doid(), doid2) # Id
-        self.assertEquals(dgi.read_channel(), 0) # Location (parent<<ZONE_SIZE_BITS|zone)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint32(), 0) # setRequired1
-        self.assertEquals(dgi.read_uint32(), 0) # setRDB3
-        self.assertEquals(dgi.read_uint16(), 2) # Optional fields: 2
-        hasBR1, hasBRO1 = False, False
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field is setBR1:
-                hasBR1 = True
-                self.assertEquals(dgi.read_string(), "I feel radder, faster... more adequate!")
-            elif field is setBRO1:
-                hasBRO1 = True
-                self.assertEquals(dgi.read_uint32(), 0x1337)
-            else:
-                self.fail("Received unexpected field: " + str(field))
-        self.assertTrue(hasBR1 and hasBRO1) # setBR1 and setBRO1 in ENTER_OWNER_WITH_REQUIRED_OTHER
+        dg = Datagram.create([owner1chan], doid2, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_doid(doid2) # Id
+        dg.add_channel(0) # Location
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint32(0) # setRequired1
+        dg.add_uint32(0) # setRDB3
+        dg.add_uint16(2) # Optional fields: 2
+        dg.add_uint16(setBR1)
+        dg.add_string("I feel radder, faster... more adequate!")
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0x1337)
+        self.expect(owner1, dg)
 
         ### Cleanup ###
         deleteObject(conn, 5, doid1)
@@ -1660,34 +1638,24 @@ class TestStateServer(ProtocolTest):
         dg.add_doid(73317331) # ID
         conn.send(dg)
 
-        dg = conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive datagram when expecting GetAllResp")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 1) # Context
-        self.assertEquals(dgi.read_doid(), 73317331) # Id
-        self.assertEquals(dgi.read_doid(), 88) # Parent
-        self.assertEquals(dgi.read_zone(), 99) # Zone
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject4)
-        self.assertEquals(dgi.read_uint32(), 55) # SetX
-        self.assertEquals(dgi.read_uint32(), 66) # SetY
-        self.assertEquals(dgi.read_uint32(), 999999) # SetUnrelated
-        self.assertEquals(dgi.read_uint32(), 77) # SetZ
-        self.assertEquals(dgi.read_uint16(), 3) # Optional fields: 3
-        hasOne, hasTwo, hasThree = False, False, False
-        for x in xrange(3):
-            field = dgi.read_uint16()
-            if field is setOne:
-                hasOne = True
-                self.assertEquals(dgi.read_uint8(), 1)
-            elif field is setTwo:
-                hasTwo = True
-                self.assertEquals(dgi.read_uint8(), 2)
-            elif field is setThree:
-                hasThree = True
-                self.assertEquals(dgi.read_uint8(), 3)
-        self.assertTrue(hasOne and hasTwo and hasThree)
-
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_doid(73317331) # Id
+        dg.add_doid(88) # Parent
+        dg.add_doid(99) # Zone
+        dg.add_uint16(DistributedTestObject4)
+        dg.add_uint32(55) # setX
+        dg.add_uint32(66) # setY
+        dg.add_uint32(999999) # setUnrelated
+        dg.add_uint32(77) # setZ
+        dg.add_uint16(3) # Optional fields: 3
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(setTwo)
+        dg.add_uint8(2)
+        dg.add_uint16(setThree)
+        dg.add_uint8(3)
+        self.expect(conn, dg)
 
 
         ### Test for GetFields on mixed molecular and atomic fields ### (continues from previous)
@@ -1703,32 +1671,25 @@ class TestStateServer(ProtocolTest):
         dg.add_uint16(setX)
         conn.send(dg)
 
-        dg = conn.recv_maybe()
-        self.assertTrue(dg is not None,  "Did not receive datagram when expecting GetAllResp")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertEquals(dgi.read_uint32(), 0xBAB55EED) # Context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), 5) # Field count: 5
-        for x in xrange(5):
-            field = dgi.read_uint16()
-            if field is setXyz:
-                self.assertEquals(dgi.read_uint32(), 55)
-                self.assertEquals(dgi.read_uint32(), 66)
-                self.assertEquals(dgi.read_uint32(), 77)
-            elif field is setOne:
-                self.assertEquals(dgi.read_uint8(), 1)
-            elif field is setUnrelated:
-                self.assertEquals(dgi.read_uint32(), 999999)
-            elif field is set123:
-                self.assertEquals(dgi.read_uint8(), 1)
-                self.assertEquals(dgi.read_uint8(), 2)
-                self.assertEquals(dgi.read_uint8(), 3)
-            elif field is setX:
-                self.assertEquals(dgi.read_uint32(), 55)
-            else:
-                self.fail("Received unexpected field ("+str(field)+") in GET_FIELDS_RESP.")
-
+        dg = Datagram.create([13371337], 73317331, STATESERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(0xBAB55EED) # Context
+        dg.add_uint8(SUCCESS) # Resp status
+        dg.add_uint16(5) # Field count: 5
+        dg.add_uint16(setX)
+        dg.add_uint32(55)
+        dg.add_uint16(setUnrelated)
+        dg.add_uint32(999999)
+        dg.add_uint16(setXyz)
+        dg.add_uint32(55)
+        dg.add_uint32(66)
+        dg.add_uint32(77)
+        dg.add_uint16(setOne)
+        dg.add_uint8(1)
+        dg.add_uint16(set123)
+        dg.add_uint8(1)
+        dg.add_uint8(2)
+        dg.add_uint8(3)
+        self.expect(conn, dg)
 
         ### Cleanup ###
         deleteObject(conn, 5, 73317331)

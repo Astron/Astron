@@ -58,7 +58,8 @@ the serialized data of all of the required fields of the object.
 The required is followed by a uint16 which specifices how many
 optional fields exist. If any optional fields exist, this is
 followed by <uint16 field_id, [DATA]> pairs for each optional
-field. The fields may be in any order.
+field. It is RECOMMENDED that they be in low to high order of
+field_id.  Astron will always broadcast fields in that order.
 
 Example DC Class:
 

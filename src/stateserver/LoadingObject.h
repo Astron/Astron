@@ -28,9 +28,9 @@ class LoadingObject : public MDParticipantInterface
 
 		// Upstream object data
 		const dclass::Class *m_dclass;
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_field_updates;
-		std::unordered_map<const dclass::Field*, std::vector<uint8_t> > m_required_fields;
-		std::map<const dclass::Field*, std::vector<uint8_t> > m_ram_fields;
+		UnorderedFieldValues m_field_updates;
+		UnorderedFieldValues m_required_fields;
+		FieldValues m_ram_fields;
 		std::unordered_set<uint32_t> m_valid_contexts;
 
 		// Received datagrams while waiting for reply
