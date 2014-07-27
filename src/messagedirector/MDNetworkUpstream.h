@@ -22,7 +22,7 @@ class MDNetworkUpstream : public NetworkClient, public MDUpstream
 
 		// Interfaces that NetworkClient needs us to implement:
 		virtual void receive_datagram(DatagramHandle dg);
-		virtual void receive_disconnect();
+		virtual void receive_disconnect(NetworkClient::Error);
 
 	private:
 		MessageDirector *m_message_director;

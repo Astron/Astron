@@ -32,10 +32,6 @@ MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL)
 MessageDirector::~MessageDirector()
 {
 	shutdown_threading();
-
-	for(auto it = m_participants.begin(); it != m_participants.end(); ++it) {
-		delete *it;
-	}
 	m_participants.clear();
 }
 
@@ -312,15 +308,4 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 	// certain data structures may not have their invariants satisfied
 	// during that time.
 	p->post_remove();
-}
-
-void MessageDirector::receive_datagram(DatagramHandle dg)
-{
-	route_datagram(NULL, dg);
-}
-
-void MessageDirector::receive_disconnect()
-{
-	m_log.fatal() << "Lost connection to upstream md" << std::endl;
-	exit(1);
 }

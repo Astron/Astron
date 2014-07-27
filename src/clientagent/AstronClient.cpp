@@ -15,13 +15,16 @@ using dclass::Field;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
+
 static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
 static ConfigVariable<string> interest_permissions("add_interest", "visible", ca_client_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 
-//set default to true
 static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
 static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+
+static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256*1024, ca_client_config);
+static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, ca_client_config);
 
 static bool is_permission_level(const string& str)
 {
@@ -84,6 +87,11 @@ class AstronClient : public Client, public NetworkClient
 				m_interests_allowed = INTERESTS_DISABLED;
 			}
 
+			// Set NetworkClient config
+			set_write_timeout(write_timeout_ms.get_rval(m_config));
+			set_write_buffer(write_buffer_size.get_rval(m_config));
+
+			// Log connected client
 			stringstream ss;
 			ss << "Client (" << m_remote.address().to_string()
 			   << ":" << m_remote.port() << ", " << m_channel << ")";
@@ -183,12 +191,27 @@ class AstronClient : public Client, public NetworkClient
 		//     connection or otherwise when the tcp connection is lost.
 		// Note: In the Astron client protocol, the server is normally
 		//       responsible for terminating the connection.
-		void receive_disconnect()
+		void receive_disconnect(NetworkClient::Error error)
 		{
 			if(!m_clean_disconnect)
 			{
-				LoggedEvent event("client-lost");
-				log_event(event);
+				if(error == NetworkClient::Error::LOST_CONNECTION)
+				{
+					LoggedEvent event("client-lost");
+					log_event(event);
+				}
+				else if(error == NetworkClient::Error::WRITE_TIMED_OUT)
+				{
+					LoggedEvent event("client-dropped");
+					event.add("reason_msg", "Write timed out.");
+					log_event(event);
+				}
+				else if(error == NetworkClient::Error::WRITE_BUFFER_EXCEEDED)
+				{
+					LoggedEvent event("client-dropped");
+					event.add("reason_msg", "Write buffer exceeded max size.");
+					log_event(event);
+				}
 			}
 			delete this;
 		}

@@ -1,46 +1,49 @@
-#include "core/global.h"
 #include "NetworkClient.h"
-#include <boost/bind.hpp>
 #include <stdexcept>
-
+#include <boost/bind.hpp>
+#include "core/global.h"
+#include "config/ConfigVariable.h"
+using namespace std;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false),
-	m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_remote(),
+	m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false), m_is_receiving(false),
+	m_is_data(false), m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0),
+	m_max_queue_size(0), m_write_timeout(0), m_send_queue(),
+	m_error(NetworkClient::Error::NONE)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-	m_ssl_enabled(false), m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+	m_remote(), m_async_timer(io_service), m_ssl_enabled(false), m_is_sending(false),
+	m_is_receiving(false), m_is_data(false), m_data_buf(nullptr), m_data_size(0),
+	m_total_queue_size(0), m_max_queue_size(0), m_write_timeout(0), m_send_queue()
 {
 	start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-	m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true),
-	m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+	m_socket(&stream->next_layer()), m_secure_socket(stream), m_remote(), m_async_timer(io_service),
+	m_ssl_enabled(true), m_is_sending(false), m_is_receiving(false), m_is_data(false),
+	m_data_buf(nullptr), m_data_size(0), m_total_queue_size(0), m_max_queue_size(0),
+	m_write_timeout(0), m_send_queue()
 {
 	start_receive();
 }
 
 NetworkClient::~NetworkClient()
 {
-	if(m_socket)
-	{
-		std::lock_guard<std::recursive_mutex> lock(m_lock);
-		m_socket->close();
-	}
 	delete m_socket;
 	delete [] m_data_buf;
 }
 
 void NetworkClient::set_socket(tcp::socket *socket)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
+	lock_guard<recursive_mutex> lock(m_lock);
 	if(m_socket)
 	{
-		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+		throw logic_error("Trying to set a socket of a network client whose socket was already set.");
 	}
 	m_socket = socket;
 
@@ -55,16 +58,63 @@ void NetworkClient::set_socket(tcp::socket *socket)
 
 void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
+	lock_guard<recursive_mutex> lock(m_lock);
 	if(m_socket)
 	{
-		throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+		throw logic_error("Trying to set a socket of a network client whose socket was already set.");
 	}
 
 	m_ssl_enabled = true;
 	m_secure_socket = stream;
 
 	set_socket(&stream->next_layer());
+}
+
+void NetworkClient::set_write_timeout(unsigned int timeout)
+{
+	m_write_timeout = timeout;
+}
+
+void NetworkClient::set_write_buffer(uint64_t max_bytes)
+{
+	m_max_queue_size = max_bytes;
+}
+
+void NetworkClient::send_datagram(DatagramHandle dg)
+{
+	lock_guard<recursive_mutex> lock(m_lock);
+
+	if(m_is_sending)
+	{
+		m_send_queue.push(dg);
+		m_total_queue_size += dg->size();
+		if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
+		{
+			m_error = Error::WRITE_BUFFER_EXCEEDED;
+			send_disconnect();
+			return;
+		}
+	}
+	else
+	{
+		m_is_sending = true;
+		async_send(dg);
+	}
+}
+
+void NetworkClient::send_disconnect()
+{
+	lock_guard<recursive_mutex> lock(m_lock);
+	if(m_socket->is_open())
+	{
+		m_socket->close();
+	}
+}
+
+bool NetworkClient::is_connected()
+{
+	lock_guard<recursive_mutex> lock(m_lock);
+	return m_socket->is_open();
 }
 
 void NetworkClient::start_receive()
@@ -85,9 +135,10 @@ void NetworkClient::start_receive()
 
 void NetworkClient::async_receive()
 {
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
+	lock_guard<recursive_mutex> lock(m_lock);
 	try
 	{
+		m_is_receiving = true;
 		if(m_is_data) // Read data
 		{
 			socket_read(m_data_buf, m_data_size, &NetworkClient::receive_data);
@@ -97,49 +148,31 @@ void NetworkClient::async_receive()
 			socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size);
 		}
 	}
-	catch(const boost::system::system_error&)
+	catch(const boost::system::system_error& err)
 	{
+		m_is_receiving = false;
+
 		// An exception happening when trying to initiate a read is a clear
-		// indicator that something happened to the connection. Therefore:
+		// indicator that something happened to the connection, therefore:
+		m_error = Error::LOST_CONNECTION;
 		send_disconnect();
 	}
-}
-
-void NetworkClient::send_datagram(DatagramHandle dg)
-{
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
-	//TODO: make this asynch if necessary
-	dgsize_t len = swap_le(dg->size());
-	try
-	{
-		m_socket->non_blocking(true);
-		m_socket->native_non_blocking(true);
-		std::list<boost::asio::const_buffer> gather;
-		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
-		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
-		socket_write(gather);
-	}
-	catch(const boost::system::system_error&)
-	{
-		// We assume that the message just got dropped if the remote end died
-		// before we could send it.
-		send_disconnect();
-	}
-}
-
-void NetworkClient::send_disconnect()
-{
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
-	m_socket->close();
 }
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
-	// TODO: We might want to actually check here that bytes_transferred is the expected value
+	m_is_receiving = false;
 
 	if(ec.value() != 0)
 	{
-		receive_disconnect();
+		lock_guard<recursive_mutex> lock(m_lock);
+
+		// If waiting for asio send callback, let send handle the disconnect.
+		if(!m_is_sending)
+		{
+			receive_disconnect(m_error);
+		}
+
 		return;
 	}
 
@@ -158,11 +191,18 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
 
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
-	// TODO: We might want to actually check here that bytes_transferred is the expected value
+	m_is_receiving = false;
 
 	if(ec.value() != 0)
 	{
-		receive_disconnect();
+		lock_guard<recursive_mutex> lock(m_lock);
+
+		// If waiting for asio send callback, let send handle the disconnect.
+		if(!m_is_sending)
+		{
+			receive_disconnect(m_error);
+		}
+
 		return;
 	}
 
@@ -172,10 +212,85 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*b
 	async_receive();
 }
 
-bool NetworkClient::is_connected()
+void NetworkClient::async_send(DatagramHandle dg)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_lock);
-	return m_socket->is_open();
+	lock_guard<recursive_mutex> lock(m_lock);
+	try
+	{
+		dgsize_t len = swap_le(dg->size());
+		list<boost::asio::const_buffer> gather;
+		gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
+		gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
+		socket_write(gather);
+	}
+	catch(const boost::system::system_error& err)
+	{
+		// An exception happening when trying to initiate a send is a clear
+		// indicator that something happened to the connection, therefore:
+		m_error = Error::LOST_CONNECTION;
+		send_disconnect();
+	}
+}
+
+void NetworkClient::send_finished(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+{
+	lock_guard<recursive_mutex> lock(m_lock);
+
+	// Cancel the outstanding timeout
+	m_async_timer.cancel();
+
+	// Check if the write had errors
+	if(ec.value() != 0)
+	{
+		m_is_sending = false;
+
+		// If waiting for asio receive callback, let receive handle the disconnect.
+		if(!m_is_receiving)
+		{
+			receive_disconnect(m_error);
+		}
+
+		return;
+	}
+
+	// Check if we have more items in the queue
+	if(m_send_queue.size() > 0)
+	{
+		// Send the next item in the queue
+		DatagramHandle dg = m_send_queue.front();
+		m_total_queue_size -= dg->size();
+		m_send_queue.pop();
+		async_send(dg);
+		return;
+	}
+
+	// Nothing left in the queue to send, lets open up for another write
+	m_is_sending = false;
+}
+
+void NetworkClient::send_expired(const boost::system::error_code& ec)
+{
+	// operation_aborted is received if the the timer is cancelled,
+	//     ie. if the send completed before it expires, so don't do anything
+	if(ec != boost::asio::error::operation_aborted)
+	{
+		m_error = Error::WRITE_TIMED_OUT;
+		send_disconnect();
+	}
+}
+
+void NetworkClient::async_cancel()
+{
+	lock_guard<recursive_mutex> lock(m_lock);
+	try
+	{
+		m_async_timer.cancel();
+		m_socket->cancel();
+	}
+	catch(const boost::system::system_error&)
+	{
+		// Ignore errors attempting to cleanup
+	}
 }
 
 void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback)
@@ -196,14 +311,29 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 	}
 }
 
-void NetworkClient::socket_write(std::list<boost::asio::const_buffer>& buffers)
+void NetworkClient::socket_write(list<boost::asio::const_buffer>& buffers)
 {
+	// Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
+	if(m_write_timeout > 0)
+	{
+		m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
+		m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, this,
+		                                     boost::asio::placeholders::error));
+	}
+
+	// Start async write
 	if(m_ssl_enabled)
 	{
-		write(*m_secure_socket, buffers);
+		async_write(*m_secure_socket, buffers,
+		            boost::bind(&NetworkClient::send_finished, this,
+		            boost::asio::placeholders::error,
+		            boost::asio::placeholders::bytes_transferred));
 	}
 	else
 	{
-		write(*m_socket, buffers);
+		async_write(*m_socket, buffers,
+		            boost::bind(&NetworkClient::send_finished, this,
+		            boost::asio::placeholders::error,
+		            boost::asio::placeholders::bytes_transferred));
 	}
 }

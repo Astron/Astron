@@ -34,6 +34,8 @@ roles:
       client:
           relocate: true
           add_interest: enabled
+          write_buffer_size: 0
+          write_timeout_ms: 0
 
     - type: clientagent
       bind: 127.0.0.1:57135
@@ -43,12 +45,16 @@ roles:
           max: 110699
       client:
           add_interest: disabled
+          write_buffer_size: 0
+          write_timeout_ms: 0
 
     - type: clientagent
       bind: 127.0.0.1:57144
       version: "Sword Art Online v5.1"
       client:
           add_interest: visible
+          write_buffer_size: 0
+          write_timeout_ms: 0
       channels:
           min: 220600
           max: 220699
