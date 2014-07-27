@@ -38,20 +38,9 @@ def setup_postgres(unittest):
                                   stdout = subprocess.PIPE,
                                   stderr = subprocess.PIPE)
 
-    # Wait for postgres to start up:
-    timeout = time.time() + 2.0
-    while True:
-        if time.time() > timeout:
-            break
-
-        try:
-            postgres_sock = socket(AF_INET, SOCK_STREAM)
-            postgres_sock.connect(('127.0.0.1', 57023))
-        except:
-            time.sleep(0.2)
-        else:
-            postgres_sock.close()
-            break
+    # Postgresql is rude and happily accepts connections before its ready to
+    #     deal with them. So we'll sleep a little just to make sure its ready.
+    time.sleep(0.2)
 
     # Create a user and database in the instance
     os.system('createuser -p 57023 -h 127.0.0.1 --superuser --createdb astron')
