@@ -155,13 +155,16 @@ class TestConfigCore(ConfigTest):
             """
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
-        config = """\
-            messagedirector:
-                bind: 127.0.0.1:57123
-            general:
-                eventlogger: 0.0.1:9090
-            """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        # Windows actually supports incomplete addresses like this,
+        #    since its system specific, we'll just let the OS decide whether
+        #    it can resolve this type of address and not assert that it is invalid.
+        #config = """\
+        #    messagedirector:
+        #        bind: 127.0.0.1:57123
+        #    general:
+        #        eventlogger: 0.0.1:9090
+        #    """
+        #self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:

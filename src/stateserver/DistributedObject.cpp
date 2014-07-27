@@ -1,11 +1,11 @@
+#include "DistributedObject.h"
+#include <set>
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
 #include "dclass/dc/MolecularField.h"
-
-#include "DistributedObject.h"
-
+using namespace std;
 using dclass::Class;
 using dclass::Field;
 using dclass::MolecularField;
@@ -17,7 +17,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0)
 {
-	std::stringstream name;
+	stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
 	m_log = new LogCategory("object", name.str());
 	set_con_name(name.str());
@@ -45,14 +45,14 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 			else
 			{
 				m_log->error() << "Received non-RAM field " << field->get_name()
-				               << " within an OTHER section" << std::endl;
+				               << " within an OTHER section.\n";
 			}
 		}
 	}
 
 	MessageDirector::singleton.subscribe_channel(this, do_id);
 
-	m_log->debug() << "Object created..." << std::endl;
+	m_log->debug() << "Object created..." << endl;
 
 	dgi.seek_payload(); // Seek back to front of payload, to read sender
 	handle_location_change(parent_id, zone_id, dgi.read_channel());
@@ -61,13 +61,12 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 
 DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender, doid_t do_id,
                                      doid_t parent_id, zone_t zone_id, const Class *dclass,
-                                     std::unordered_map<const Field*, std::vector<uint8_t> > required,
-                                     std::map<const Field*, std::vector<uint8_t> > ram) :
+                                     UnorderedFieldValues& required, FieldValues& ram) :
 	m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
 	m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
 	m_ai_explicitly_set(false), m_next_context(0)
 {
-	std::stringstream name;
+	stringstream name;
 	name << dclass->get_name() << "(" << do_id << ")";
 	m_log = new LogCategory("object", name.str());
 
@@ -106,7 +105,7 @@ void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool
 {
 	if(client_only)
 	{
-		std::list<const Field*> broadcast_fields;
+		list<const Field*> broadcast_fields;
 		for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it)
 		{
 			if(it->first->has_keyword("broadcast") || it->first->has_keyword("clrecv")
@@ -181,7 +180,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 	zone_t old_zone = m_zone_id;
 
 	// Set of channels that must be notified about location_change
-	std::set<channel_t> targets;
+	set<channel_t> targets;
 
 	// Notify AI of changing location
 	if(m_ai_channel)
@@ -197,7 +196,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 
 	if(new_parent == m_do_id)
 	{
-		m_log->warning() << "Object cannot be parented to itself." << std::endl;
+		m_log->warning() << "Object cannot be parented to itself.\n";
 		return;
 	}
 
@@ -272,7 +271,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 	}
 
 	// Set of channels that must be notified about ai_change
-	std::set<channel_t> targets;
+	set<channel_t> targets;
 
 	if(old_ai)
 	{
@@ -295,8 +294,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 
 	if(new_ai)
 	{
-		m_log->trace() << "Sending AI entry to "
-		              << new_ai << std::endl;
+		m_log->trace() << "Sending AI entry to " << new_ai << ".\n";
 		send_ai_entry(new_ai);
 	}
 
@@ -304,7 +302,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 
 void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 {
-	std::set<channel_t> targets;
+	set<channel_t> targets;
 	if(m_parent_id)
 	{
 		targets.insert(location_as_channel(m_parent_id, m_zone_id));
@@ -333,7 +331,7 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 	delete_children(sender);
 
 	m_stateserver->m_objs.erase(m_do_id);
-	m_log->debug() << "Deleted." << std::endl;
+	m_log->debug() << "Deleted.\n";
 	delete this;
 }
 
@@ -356,7 +354,7 @@ void DistributedObject::wake_children()
 	route_datagram(dg);
 }
 
-void DistributedObject::save_field(const Field *field, const std::vector<uint8_t> &data)
+void DistributedObject::save_field(const Field *field, const vector<uint8_t> &data)
 {
 	if(field->has_keyword("required"))
 	{
@@ -370,17 +368,17 @@ void DistributedObject::save_field(const Field *field, const std::vector<uint8_t
 
 bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sender)
 {
-	std::vector<uint8_t> data;
+	vector<uint8_t> data;
 	uint16_t field_id = dgi.read_uint16();
 	const Field *field = m_dclass->get_field_by_id(field_id);
 	if(!field)
 	{
-		m_log->error() << "Received update for missing field ID="
-		               << field_id << std::endl;
+		m_log->error() << "Received set_field for field: " << field_id
+		               << ", not valid for class: " << m_dclass->get_name() << ".\n";
 		return false;
 	}
 
-	m_log->trace() << "Handling update for '" << field->get_name() << "'." << std::endl;
+	m_log->trace() << "Handling update for '" << field->get_name() << "'.\n";
 
 	dgsize_t field_start = dgi.tell();
 
@@ -390,8 +388,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 	}
 	catch(const DatagramIteratorEOF&)
 	{
-		m_log->error() << "Received truncated update for "
-		               << field->get_name() << std::endl;
+		m_log->error() << "Received truncated update for " << field->get_name() << ".\n";
 		return false;
 	}
 
@@ -402,7 +399,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		int n = molecular->get_num_fields();
 		for(int i = 0; i < n; ++i)
 		{
-			std::vector<uint8_t> field_data;
+			vector<uint8_t> field_data;
 			const Field *atomic = molecular->get_field(i);
 			dgi.unpack_field(atomic, field_data);
 			save_field(atomic, field_data);
@@ -413,7 +410,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
 		save_field(field, data);
 	}
 
-	std::set <channel_t> targets;
+	set<channel_t> targets;
 	if(field->has_keyword("broadcast"))
 	{
 		targets.insert(location_as_channel(m_parent_id, m_zone_id));
@@ -444,10 +441,10 @@ bool DistributedObject::handle_one_get(DatagramPtr out, uint16_t field_id,
 	if(!field)
 	{
 		m_log->error() << "Received get_field for field: " << field_id
-		               << ", not valid for class: " << m_dclass->get_name() << std::endl;
+		               << ", not valid for class: " << m_dclass->get_name() << ".\n";
 		return false;
 	}
-	m_log->trace() << "Handling query for '" << field->get_name() << "'." << std::endl;
+	m_log->trace() << "Handling query for '" << field->get_name() << "'.\n";
 
 	const MolecularField *molecular = field->as_molecular();
 	if(molecular)
@@ -498,7 +495,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		{
 			if(m_ai_channel != dgi.read_channel())
 			{
-				m_log->warning() << " received reset for wrong AI channel" << std::endl;
+				m_log->warning() << " received reset for wrong AI channel.\n";
 				break; // Not my AI!
 			}
 			annihilate(sender);
@@ -560,11 +557,11 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		{
 			doid_t r_parent_id = dgi.read_doid();
 			channel_t new_channel = dgi.read_channel();
-			m_log->trace() << "Received ChangingAI notification from " << r_parent_id << std::endl;
+			m_log->trace() << "Received ChangingAI notification from " << r_parent_id << ".\n";
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
-				                 << " but my parent_id is " << m_parent_id << std::endl;
+				                 << " but my parent_id is " << m_parent_id << ".\n";
 				break;
 			}
 			if(m_ai_explicitly_set)
@@ -578,14 +575,14 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_AI:
 		{
 			channel_t new_channel = dgi.read_channel();
-			m_log->trace() << "Updating AI to " << new_channel << std::endl;
+			m_log->trace() << "Updating AI to " << new_channel << ".\n";
 			handle_ai_change(new_channel, sender, true);
 
 			break;
 		}
 		case STATESERVER_OBJECT_GET_AI:
 		{
-			m_log->trace() << "Received AI query from " << sender << std::endl;
+			m_log->trace() << "Received AI query from " << sender << ".\n";
 			DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_AI_RESP);
 			dg->add_uint32(dgi.read_uint32()); // Get context
 			dg->add_doid(m_do_id);
@@ -598,11 +595,11 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		{
 			dgi.read_uint32(); // Discard context
 			doid_t r_parent_id = dgi.read_doid();
-			m_log->trace() << "Received AI query response from " << r_parent_id << std::endl;
+			m_log->trace() << "Received AI query response from " << r_parent_id << ".\n";
 			if(r_parent_id != m_parent_id)
 			{
 				m_log->warning() << "Received AI channel from " << r_parent_id
-				                 << " but my parent_id is " << m_parent_id << std::endl;
+				                 << " but my parent_id is " << m_parent_id << ".\n";
 				break;
 			}
 
@@ -653,7 +650,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			else
 			{
 				m_log->warning() << "Received changing location from " << child_id
-				                 << " for " << r_do_id << ", but my id is " << m_do_id << std::endl;
+				                 << " for " << r_do_id << ", but my id is " << m_do_id << ".\n";
 			}
 
 			break;
@@ -663,7 +660,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			doid_t new_parent = dgi.read_doid();
 			zone_t new_zone = dgi.read_zone();
 			m_log->trace() << "Updating location to Parent: " << new_parent
-			              << ", Zone: " << new_zone << std::endl;
+			               << ", Zone: " << new_zone << ".\n";
 
 			handle_location_change(new_parent, new_zone, sender);
 
@@ -690,7 +687,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			if(dgi.read_uint32() != STATESERVER_CONTEXT_WAKE_CHILDREN)
 			{
 				m_log->warning() << "Received unexpected GetLocationResp from "
-				                 << dgi.read_uint32() << "." << std::endl;
+				                 << dgi.read_uint32() << ".\n";
                 break;
 			}
 
@@ -755,12 +752,30 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			}
 			uint16_t field_count = dgi.read_uint16();
 
-			DatagramPtr raw_fields = Datagram::create();
-			bool success = true;
-			uint16_t fields_found = 0;
+			// Read our requested fields into a sorted set
+			set<uint16_t> requested_fields;
 			for(int i = 0; i < field_count; ++i)
 			{
 				uint16_t field_id = dgi.read_uint16();
+				if(!requested_fields.insert(field_id).second)
+				{
+					const dclass::Field* field = m_dclass->get_field_by_id(field_id);
+					if(field != nullptr)
+					{
+						// If it is null, handle_one_get will produce a warning for us later
+						m_log->warning() << "Received duplicate field '"
+						                 << field->get_name() << "'' in get_fields.\n";
+					}
+				}
+			}
+
+			// Try to get the values for all the fields
+			bool success = true;
+			uint16_t fields_found = 0;
+			DatagramPtr raw_fields = Datagram::create();
+			for(auto it = requested_fields.begin(); it != requested_fields.end(); ++it)
+			{
+				uint16_t field_id = *it;
 				uint16_t length = raw_fields->size();
 				if(!handle_one_get(raw_fields, field_id, true))
 				{
@@ -773,6 +788,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 				}
 			}
 
+			// Send get fields response
 			DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_OBJECT_GET_FIELDS_RESP);
 			dg->add_uint32(context);
 			dg->add_bool(success);
@@ -788,16 +804,16 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		case STATESERVER_OBJECT_SET_OWNER:
 		{
 			channel_t new_owner = dgi.read_channel();
-			m_log->trace() << "Updating owner to " << new_owner << "..." << std::endl;
+			m_log->trace() << "Updating owner to " << new_owner << "...\n";
 			if(new_owner == m_owner_channel)
 			{
-				m_log->trace() << "... owner is the same, do nothing." << std::endl;
+				m_log->trace() << "... owner is the same, do nothing.\n";
 				return;
 			}
 
 			if(m_owner_channel)
 			{
-				m_log->trace() << "... broadcasting changing owner..." << std::endl;
+				m_log->trace() << "... broadcasting changing owner...\n";
 				DatagramPtr dg = Datagram::create(m_owner_channel, sender, STATESERVER_OBJECT_CHANGING_OWNER);
 				dg->add_doid(m_do_id);
 				dg->add_channel(new_owner);
@@ -809,11 +825,11 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 			if(new_owner)
 			{
-				m_log->trace() << "... sending owner entry..." << std::endl;
+				m_log->trace() << "... sending owner entry...\n";
 				send_owner_entry(new_owner);
 			}
 
-			m_log->trace() << "... updated owner." << std::endl;
+			m_log->trace() << "... updated owner.\n";
 			break;
 		}
 		case STATESERVER_OBJECT_GET_ZONES_OBJECTS:
@@ -823,8 +839,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
 
 			m_log->trace() << "Handling get_zones_objects with parent '" << queried_parent << "'"
-			              << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
-			              << "." << std::endl;
+			               << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
+			               << ".\n";
 
 			if(queried_parent == m_parent_id)
 			{
@@ -885,11 +901,11 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		default:
 			if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX)
 			{
-				m_log->warning() << "Received unknown message of type " << msgtype << std::endl;
+				m_log->warning() << "Received unknown message of type " << msgtype << ".\n";
 			}
 			else
 			{
-				m_log->trace() << "Ignoring stateserver message of type " << msgtype << std::endl;
+				m_log->trace() << "Ignoring stateserver message of type " << msgtype << ".\n";
 			}
 	}
 }

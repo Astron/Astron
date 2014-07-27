@@ -1,10 +1,7 @@
-#!/usr/bin/env python2
 from astron import *
 from dcfile import *
 
 CREATE_DOID_OFFSET = 1 + (CHANNEL_SIZE_BYTES * 2) + 2 + 4
-VERIFY_DELETE_OBJECT = 0x21656944
-VERIFY_DELETE_QUERY = 0x6c6c694b
 
 class DBServerTestsuite(object):
     def createTypeGetId(self, sender, context, type):
@@ -106,22 +103,16 @@ class DBServerTestsuite(object):
         self.conn.send(dg)
 
         # Get values back from server
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive GetAllResp from server.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([20], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 5) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 91849)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "You monster...")
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([20], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(5) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("You monster...")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(91849)
+        self.expect(self.conn, dg)
 
         # Try selecting an ID that doesn't exist
         dg = Datagram.create([75757], 20, DBSERVER_OBJECT_GET_ALL)
@@ -304,22 +295,16 @@ class DBServerTestsuite(object):
             self.conn.send(dg)
 
             # Get values back from server
-            dg = self.conn.recv_maybe()
-            self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
-            dgi = DatagramIterator(dg)
-            self.assertTrue(*dgi.matches_header([50], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-            self.assertEquals(dgi.read_uint32(), context) # Check context
-            self.assertEquals(dgi.read_uint8(), SUCCESS)
-            self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-            self.assertEquals(dgi.read_uint16(), 2) # Check field count
-            for x in xrange(2):
-                field = dgi.read_uint16()
-                if field == setRDB3:
-                    self.assertEquals(dgi.read_uint32(), 91849)
-                elif field == setDb3:
-                    self.assertEquals(dgi.read_string(), "You monster...")
-                else:
-                    self.fail("Bad field type")
+            dg = Datagram.create([50], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+            dg.add_uint32(context) # Context
+            dg.add_uint8(SUCCESS)
+            dg.add_uint16(DistributedTestObject3)
+            dg.add_uint16(2) # Field count
+            dg.add_uint16(setDb3)
+            dg.add_string("You monster...")
+            dg.add_uint16(setRDB3)
+            dg.add_uint32(91849)
+            self.expect(self.conn, dg)
 
         # Create shouldn't store ram fields
         assert_no_change(2)
@@ -460,22 +445,16 @@ class DBServerTestsuite(object):
 
         # Retrieve object from the database
         # The values should be updated
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([60], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 3) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 54231)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "Oh my gosh! Oh my gosh!! OMG! OMG!!!")
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([60], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("Oh my gosh! Oh my gosh!! OMG! OMG!!!")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(54231)
+        self.expect(self.conn, dg)
 
         # Update multiple values
         dg = Datagram.create([75757], 60, DBSERVER_OBJECT_SET_FIELDS)
@@ -493,10 +472,10 @@ class DBServerTestsuite(object):
         dg = Datagram.create([DATABASE_PREFIX|doid], 60, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_doid(doid)
         dg.add_uint16(3) # Field count
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(9999)
         dg.add_uint16(setDb3)
         dg.add_string("... can you make me a sandwich?")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(9999)
         dg.add_uint16(setADb3)
         dg.add_string("sudo make me a sandwich")
         self.expect(self.objects, dg)
@@ -509,24 +488,18 @@ class DBServerTestsuite(object):
 
         # Retrieve object from the database
         # The values should be updated
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([60], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 4) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 3) # Check field count
-        for x in xrange(3):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 9999)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "... can you make me a sandwich?")
-            elif field == setADb3:
-                self.assertEquals(dgi.read_string(), "sudo make me a sandwich")
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([60], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(4) # Context
+        dg.add_uint8(SUCCESS) # Status
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(3) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("... can you make me a sandwich?")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(9999)
+        dg.add_uint16(setADb3)
+        dg.add_string("sudo make me a sandwich")
+        self.expect(self.conn, dg)
 
         # Cleanup
         self.deleteObject(60, doid)
@@ -763,23 +736,17 @@ class DBServerTestsuite(object):
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([70], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 10) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 787878)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "Daddy... why did you eat my fries? I bought them... and they were mine.")
-            else:
-                self.fail("Bad field type")
 
+        dg = Datagram.create([70], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(10) # Context
+        dg.add_uint8(SUCCESS) # Status
+        dg.add_uint16(DistributedTestObject3)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("Daddy... why did you eat my fries? I bought them... and they were mine.")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(787878)
+        self.expect(self.conn, dg)
 
         # Update multiple with correct old values
         dg = Datagram.create([75757], 70, DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS)
@@ -804,10 +771,10 @@ class DBServerTestsuite(object):
         dg = Datagram.create([DATABASE_PREFIX|doid], 70, DBSERVER_OBJECT_SET_FIELDS)
         dg.add_doid(doid)
         dg.add_uint16(2) # Field count
-        dg.add_uint16(setRDB3)
-        dg.add_uint32(919191)
         dg.add_uint16(setDb3)
         dg.add_string("Mind if I... take a look inside the barn?!")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(919191)
         self.expect(self.objects, dg)
 
         # Select object with new value
@@ -817,22 +784,16 @@ class DBServerTestsuite(object):
         self.conn.send(dg)
 
         # Recieve updated value
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive ObjectGetAllResp.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([70], 75757, DBSERVER_OBJECT_GET_ALL_RESP))
-        self.assertEquals(dgi.read_uint32(), 10) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), DistributedTestObject3)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 919191)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "Mind if I... take a look inside the barn?!")
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([70], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(10) # Context
+        dg.add_uint8(SUCCESS) # Resp status
+        dg.add_uint16(DistributedTestObject3) # dclass
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("Mind if I... take a look inside the barn?!")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(919191)
+        self.expect(self.conn, dg)
 
         # Cleanup
         self.deleteObject(70, doid)
@@ -884,21 +845,15 @@ class DBServerTestsuite(object):
         self.conn.send(dg)
 
         # Get values in reply
-        dg = self.conn.recv_maybe()
-        self.assertTrue(dg is not None, "Did not receive ObjectGetFieldsResp.")
-        dgi = DatagramIterator(dg)
-        self.assertTrue(*dgi.matches_header([80], 75757, DBSERVER_OBJECT_GET_FIELDS_RESP))
-        self.assertEquals(dgi.read_uint32(), 3) # Check context
-        self.assertEquals(dgi.read_uint8(), SUCCESS)
-        self.assertEquals(dgi.read_uint16(), 2) # Check field count
-        for x in xrange(2):
-            field = dgi.read_uint16()
-            if field == setRDB3:
-                self.assertEquals(dgi.read_uint32(), 1337)
-            elif field == setDb3:
-                self.assertEquals(dgi.read_string(), "Uppercut! Downercut! Fireball! Bowl of Punch!")
-            else:
-                self.fail("Bad field type")
+        dg = Datagram.create([80], 75757, DBSERVER_OBJECT_GET_FIELDS_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint8(SUCCESS) # Resp status
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setDb3)
+        dg.add_string("Uppercut! Downercut! Fireball! Bowl of Punch!")
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(1337)
+        self.expect(self.conn, dg)
 
         # Select invalid object
         dg = Datagram.create([75757], 80, DBSERVER_OBJECT_GET_FIELD)
