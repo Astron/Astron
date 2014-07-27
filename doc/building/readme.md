@@ -22,7 +22,7 @@ In some environments, you may have to set the BOOST_ROOT or BOOSTROOT environmen
 
 You can download the libyaml-cpp dependency directly from https://yaml-cpp.googlecode.com/files/yaml-cpp-0.5.1.tar.gz.  This dependency should typically be compiled and placed directly underneath the Astron/dependencies folder.
 
-Now that you have the depencies you can build!
+Now that you have the dependencies you can build!
 
 We use CMAKE to handle cross-platform compiling.
 See the individual guides for the compiler you intend on using:
