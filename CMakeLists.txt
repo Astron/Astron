@@ -184,6 +184,8 @@ if(BUILD_DBSERVER)
 		src/database/DatabaseServer.cpp
 		src/database/DatabaseBackend.h
 		src/database/DatabaseBackend.cpp
+		src/database/DBOperation.h
+		src/database/DBOperation.cpp
 		src/database/OldDatabaseBackend.h
 		src/database/OldDatabaseBackend.cpp
 		src/database/DBBackendFactory.h
@@ -368,6 +370,8 @@ set(CORE_FILES
 	src/core/Role.cpp
 	src/core/RoleFactory.h
 	src/core/RoleFactory.cpp
+	src/core/shutdown.h
+	src/core/shutdown.cpp
 	src/core/types.h
 	src/core/msgtypes.h
 )

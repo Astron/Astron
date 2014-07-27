@@ -6,9 +6,10 @@ import tempfile
 import subprocess
 from socket import *
 
-from testdc import *
-from common import *
-from dbserver_base_tests import DatabaseBaseTests
+from common.unittests import ProtocolTest
+from common.dbserver import DBServerTestsuite
+from common.astron import *
+from common.dcfile import *
 
 CONFIG = """\
 messagedirector:
@@ -31,7 +32,7 @@ roles:
         database: test
 """ % test_dc
 
-class TestDatabaseServerMongo(ProtocolTest, DatabaseBaseTests):
+class TestDatabaseServerMongo(ProtocolTest, DBServerTestsuite):
     @classmethod
     def setUpClass(cls):
         tmppath = tempfile.gettempdir() + '/astron';

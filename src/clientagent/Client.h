@@ -102,7 +102,7 @@ class Client : public MDParticipantInterface
 		// m_interests is a map of interest ids to interests.
 		std::unordered_map<uint16_t, Interest> m_interests;
 		// m_pending_interests is a map of contexts to in-progress interests.
-		std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
+		std::unordered_map<uint32_t, InterestOperation> m_pending_interests;
 		// m_fields_sendable is a map of DoIds to sendable field sets.
 		std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
 		LogCategory *m_log;

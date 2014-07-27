@@ -428,22 +428,30 @@ class MongoDatabase : public DatabaseBackend
 		void handle_operation(DBOperation *operation)
 		{
 			// First, figure out what kind of operation it is, and dispatch:
-			if(operation->m_type == DBOperation::OperationType::CREATE_OBJECT)
+			switch(operation->type())
 			{
-				handle_create(operation);
-			}
-			else if(operation->m_type == DBOperation::OperationType::DELETE_OBJECT)
-			{
-				handle_delete(operation);
-			}
-			else if(operation->m_type == DBOperation::OperationType::GET_OBJECT ||
-			        operation->m_type == DBOperation::OperationType::GET_FIELDS)
-			{
-				handle_get(operation);
-			}
-			else if(operation->m_type == DBOperation::OperationType::MODIFY_FIELDS)
-			{
-				handle_modify(operation);
+				case DBOperation::OperationType::CREATE_OBJECT:
+				{
+					handle_create(operation);
+				}
+				break;
+				case DBOperation::OperationType::DELETE_OBJECT:
+				{
+					handle_delete(operation);
+				}
+				break;
+				case DBOperation::OperationType::GET_OBJECT:
+				case DBOperation::OperationType::GET_FIELDS:
+				{
+					handle_get(operation);
+				}
+				break;
+				case DBOperation::OperationType::SET_FIELDS:
+				case DBOperation::OperationType::UPDATE_FIELDS:
+				{
+					handle_modify(operation);
+				}
+				break;
 			}
 		}
 
@@ -455,8 +463,8 @@ class MongoDatabase : public DatabaseBackend
 
 			try
 			{
-				for(auto it = operation->m_set_fields.begin();
-				    it != operation->m_set_fields.end();
+				for(auto it = operation->set_fields().begin();
+				    it != operation->set_fields().end();
 				    ++it)
 				{
 					DatagramPtr dg = Datagram::create();
@@ -469,7 +477,7 @@ class MongoDatabase : public DatabaseBackend
 			catch(mongo::DBException &e)
 			{
 				m_log->error() << "While formatting "
-				               << operation->m_dclass->get_name()
+				               << operation->dclass()->get_name()
 				               << " for insertion: " << e.what() << endl;
 				operation->on_failure();
 				return;
@@ -485,10 +493,10 @@ class MongoDatabase : public DatabaseBackend
 			}
 
 			BSONObj b = BSON("_id" << doid <<
-			                 "dclass" << operation->m_dclass->get_name() <<
+			                 "dclass" << operation->dclass()->get_name() <<
 			                 "fields" << fields.obj());
 
-			m_log->trace() << "Inserting new " << operation->m_dclass->get_name()
+			m_log->trace() << "Inserting new " << operation->dclass()->get_name()
 				           << "(" << doid << "): " << b << endl;
 
 			try
@@ -498,7 +506,7 @@ class MongoDatabase : public DatabaseBackend
 			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Cannot insert new "
-				               << operation->m_dclass->get_name()
+				               << operation->dclass()->get_name()
 				               << "(" << doid << "): " << e.what() << endl;
 				operation->on_failure();
 				return;
@@ -518,14 +526,14 @@ class MongoDatabase : public DatabaseBackend
 					m_db,
 					BSON("findandmodify" << "astron.objects" <<
 					     "query" << BSON(
-						     "_id" << operation->m_doid) <<
+						     "_id" << operation->doid()) <<
 					     "remove" << true),
 					result);
 			}
 			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error while deleting "
-				               << operation->m_doid << ": " << e.what() << endl;
+				               << operation->doid() << ": " << e.what() << endl;
 				operation->on_failure();
 				return;
 			}
@@ -538,12 +546,12 @@ class MongoDatabase : public DatabaseBackend
 			if(!success || result["value"].isNull())
 			{
 				m_log->error() << "Tried to delete non-existent doid "
-				               << operation->m_doid << endl;
+				               << operation->doid() << endl;
 				operation->on_failure();
 				return;
 			}
 
-			free_doid(operation->m_doid);
+			free_doid(operation->doid());
 			operation->on_complete();
 		}
 
@@ -553,13 +561,13 @@ class MongoDatabase : public DatabaseBackend
 			try
 			{
 				obj = m_conn.findOne(m_obj_collection,
-				                     BSON("_id" << operation->m_doid));
+				                     BSON("_id" << operation->doid()));
 			}
 			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error occurred while trying to"
 				                  " retrieve object with DOID "
-				               << operation->m_doid << ": " << e.what() << endl;
+				               << operation->doid() << ": " << e.what() << endl;
 				operation->on_failure();
 				return;
 			}
@@ -567,12 +575,12 @@ class MongoDatabase : public DatabaseBackend
 			if(obj.isEmpty())
 			{
 				m_log->warning() << "Got queried for non-existent object with DOID "
-				                 << operation->m_doid << endl;
+				                 << operation->doid() << endl;
 				operation->on_failure();
 				return;
 			}
 
-			DBObjectSnapshot *snap = format_snapshot(operation->m_doid, obj);
+			DBObjectSnapshot *snap = format_snapshot(operation->doid(), obj);
 			if(!snap || !operation->verify_class(snap->m_dclass))
 			{
 				operation->on_failure();
@@ -590,8 +598,8 @@ class MongoDatabase : public DatabaseBackend
 			bool has_sets = false;
 			BSONObjBuilder unsets;
 			bool has_unsets = false;
-			for(auto it  = operation->m_set_fields.begin();
-			         it != operation->m_set_fields.end(); ++it)
+			for(auto it  = operation->set_fields().begin();
+			         it != operation->set_fields().end(); ++it)
 			{
 				stringstream fieldname;
 				fieldname << "fields." << it->first->get_name();
@@ -623,9 +631,9 @@ class MongoDatabase : public DatabaseBackend
 
 			// Also format any criteria for the change:
 			BSONObjBuilder query_b;
-			query_b << "_id" << operation->m_doid;
-			for(auto it  = operation->m_criteria_fields.begin();
-			         it != operation->m_criteria_fields.end(); ++it)
+			query_b << "_id" << operation->doid();
+			for(auto it  = operation->criteria_fields().begin();
+			         it != operation->criteria_fields().end(); ++it)
 			{
 				stringstream fieldname;
 				fieldname << "fields." << it->first->get_name();
@@ -643,7 +651,7 @@ class MongoDatabase : public DatabaseBackend
 			}
 			BSONObj query = query_b.obj();
 
-			m_log->trace() << "Performing updates to " << operation->m_doid
+			m_log->trace() << "Performing updates to " << operation->doid()
 			               << ": " << updates << endl;
 			m_log->trace() << "Query is: " << query << endl;
 
@@ -661,7 +669,7 @@ class MongoDatabase : public DatabaseBackend
 			catch(mongo::DBException &e)
 			{
 				m_log->error() << "Unexpected error while modifying "
-				               << operation->m_doid << ": " << e.what() << endl;
+				               << operation->doid() << ": " << e.what() << endl;
 				operation->on_failure();
 				return;
 			}
@@ -674,24 +682,24 @@ class MongoDatabase : public DatabaseBackend
 				// Okay, something didn't work right. If we had criteria, let's
 				// try to fetch the object without the criteria to see if it's a
 				// criteria mismatch or a missing DOID.
-				if(!operation->m_criteria_fields.empty())
+				if(!operation->criteria_fields().empty())
 				{
 					try
 					{
 						obj = m_conn.findOne(m_obj_collection,
-						                     BSON("_id" << operation->m_doid));
+						                     BSON("_id" << operation->doid()));
 					}
 					catch(mongo::DBException &e)
 					{
 						m_log->error() << "Unexpected error while modifying "
-						               << operation->m_doid << ": " << e.what() << endl;
+						               << operation->doid() << ": " << e.what() << endl;
 						operation->on_failure();
 						return;
 					}
 					if(!obj.isEmpty())
 					{
 						// There's the problem. Now we can send back a snapshot:
-						DBObjectSnapshot *snap = format_snapshot(operation->m_doid, obj);
+						DBObjectSnapshot *snap = format_snapshot(operation->doid(), obj);
 						if(snap && operation->verify_class(snap->m_dclass))
 						{
 							operation->on_criteria_mismatch(snap);
@@ -711,7 +719,7 @@ class MongoDatabase : public DatabaseBackend
 
 				// Nope, not that. We're missing the DOID.
 				m_log->error() << "Attempted to modify unknown DOID: "
-				               << operation->m_doid << endl;
+				               << operation->doid() << endl;
 				operation->on_failure();
 				return;
 			}
@@ -729,7 +737,7 @@ class MongoDatabase : public DatabaseBackend
 				if(!dclass)
 				{
 					m_log->error() << "Encountered unknown database object: "
-					               << dclass_name << "(" << operation->m_doid << ")" << endl;
+					               << dclass_name << "(" << operation->doid() << ")" << endl;
 				}
 				else if(operation->verify_class(dclass))
 				{
@@ -753,19 +761,19 @@ class MongoDatabase : public DatabaseBackend
 			// between the findandmodify and now. In dev environments, (which we
 			// are probably in right now, if other components are making
 			// outlandish requests like this) this shouldn't be a huge issue.
-			m_log->trace() << "Reverting changes made to " << operation->m_doid << endl;
+			m_log->trace() << "Reverting changes made to " << operation->doid() << endl;
 			try
 			{
 				m_conn.update(
 						m_obj_collection,
-						BSON("_id" << operation->m_doid),
+						BSON("_id" << operation->doid()),
 						obj);
 			}
 			catch(mongo::DBException &e)
 			{
 				// Wow, we REALLY fail at life.
 				m_log->error() << "Could not revert corrupting changes to "
-				               << operation->m_doid << ": " << e.what() << endl;
+				               << operation->doid() << ": " << e.what() << endl;
 			}
 			operation->on_failure();
 		}

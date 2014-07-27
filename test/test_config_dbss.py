@@ -1,60 +1,9 @@
 #!/usr/bin/env python2
 import unittest
-import subprocess
-import threading
-import tempfile
-import os
+from common.unittests import ConfigTest
+from common.dcfile import *
 
-from testdc import *
-
-DAEMON_PATH = './astrond'
-TERMINATED = -15
-EXITED = 1
-
-class ConfigTest(object):
-    def __init__(self, config):
-        self.config = config
-        self.process = None
-
-    def run(self, timeout):
-        def target():
-            self.process = subprocess.Popen([DAEMON_PATH, self.config])
-            self.process.communicate()
-
-        thread = threading.Thread(target=target)
-        thread.start()
-
-        thread.join(timeout)
-        if thread.is_alive():
-            self.process.terminate()
-            thread.join()
-            return TERMINATED
-        return EXITED
-
-class TestConfigDBSS(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cfg, cls.config_file = tempfile.mkstemp()
-        os.close(cfg)
-
-        cls.test_command = ConfigTest(cls.config_file)
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls.config_file is not None:
-            os.remove(cls.config_file)
-
-    @classmethod
-    def write_config(cls, config):
-        f = open(cls.config_file, "w")
-        f.write(config)
-        f.close()
-
-    @classmethod
-    def run_test(cls, config, timeout = 2):
-        cls.write_config(config)
-        return cls.test_command.run(timeout)
-
+class TestConfigDBSS(ConfigTest):
     def test_dbss_good(self):
         config = """\
             messagedirector:
@@ -71,7 +20,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 9000
                         max: 9999
             """ % test_dc
-        self.assertEquals(self.run_test(config), TERMINATED)
+        self.assertEquals(self.checkConfig(config), 'Valid')
 
     def test_dbss_invalid_attr(self):
         config = """\
@@ -82,7 +31,7 @@ class TestConfigDBSS(unittest.TestCase):
                 - type: dbss
                   pewpew: "q.q"
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_dbss_invalid_database(self):
         config = """\
@@ -96,7 +45,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 9000
                         max: 9999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_dbss_reserved_database(self):
         config = """\
@@ -110,7 +59,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 9000
                         max: 9999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_dbss_invalid_range(self):
         config = """\
@@ -124,7 +73,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 0
                         max: 9999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -137,7 +86,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 9000
                         max: 0
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
     def test_dbss_reserved_range(self):
         config = """\
@@ -151,7 +100,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 201
                         max: 9999
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -164,7 +113,7 @@ class TestConfigDBSS(unittest.TestCase):
                       - min: 9000
                         max: 206
             """
-        self.assertEquals(self.run_test(config), EXITED)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
 if __name__ == '__main__':
     unittest.main()

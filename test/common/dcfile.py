@@ -3,7 +3,7 @@
 
 import os.path
 
-test_dc = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test.dc'))
+test_dc = os.path.abspath(os.path.join(os.path.dirname(__file__), '../files/test.dc'))
 
 ### Class and struct ids ###
 CLASSES = [
