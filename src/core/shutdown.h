@@ -11,6 +11,7 @@ void astron_shutdown(int exit_code, bool throw_exception = true);
 // the current thread from continuing execution.
 class ShutdownException : public std::exception
 {
+    using exception::what;
 	private:
 		int m_exit_code;
 
