@@ -39,6 +39,9 @@ enum InterestPermission
 
 class AstronClient : public Client, public NetworkClient
 {
+    using Client::send_disconnect;
+    using NetworkClient::send_disconnect;
+    
 	private:
 		ConfigNode m_config;
 		bool m_clean_disconnect;
