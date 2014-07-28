@@ -97,7 +97,7 @@ bool Struct::add_field(Field* field)
 
 	// Struct fields are accessible by id.
 	m_file->add_field(field);
-	m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field)).second;
+	m_fields_by_id.insert(unordered_map<int, Field*>::value_type(field->get_id(), field));
 
 	m_fields.push_back(field);
 	if(has_fixed_size() || m_fields.size() == 1)
