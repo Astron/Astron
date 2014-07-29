@@ -36,7 +36,7 @@ Case statements should be at the same indentation as their switch, with indented
 ### Braces
 Braces for control statements should be attached.  
 Class and function braces should be on their own line (unless its for an empty block).  
-Conditionals should always use braces.  
+Control statements should use consistent braces (ie. if the `if` uses braces so should the `else`.)
 
 ### Whitespace
 There should be no space between a conditional and its condition (`if(foo)`).  
