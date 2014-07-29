@@ -32,7 +32,7 @@ class YAMLDatabase : public OldDatabaseBackend
 			return filename.str();
 		}
 
-		inline bool load(doid_t do_id, YAML::Node &document)
+		bool load(doid_t do_id, YAML::Node &document)
 		{
 			ifstream stream(filename(do_id));
 			document = YAML::Load(stream);
