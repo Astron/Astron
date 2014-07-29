@@ -4,7 +4,6 @@ Astron C++ Style Guide
 Pull requests will not be merged until styling issues have been fixed.  
 Pull requests with bad style are less likely to be accepted.
 
-- - -
 
 ## Formatting
 
