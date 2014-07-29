@@ -1,9 +1,8 @@
 Astron C++ Style Guide
 ======================
 
-Failing to adhere to this guide will result in a paddling** and your
-pull-request being mocked** -- but really we'll just tell you to fix the
-styling issues before we accept the request.
+Pull requests will not be merged until styling issues have been fixed.  
+Pull requests with bad style are less likely to be accepted.
 
 - - -
 
