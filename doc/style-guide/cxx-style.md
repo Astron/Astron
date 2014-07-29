@@ -49,6 +49,7 @@ Prefer no spaces inside parentheses (`while(true)` vs `while( true )`).
 Source files should end with a newline.  
 Short conditional statements may be written on one line if this enhances readability.  
 When declaring nested namespaces, put each namespace on its own line.  
+If statements should be broken before the logical operator.  
 
 
 ## Naming
