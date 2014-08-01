@@ -12,50 +12,50 @@ namespace dclass   // open namespace dclass
 //     A divisor scales up any range or modulus to constrain up to (constraint * divisor).
 class NumericType : public DistributedType
 {
-	public:
-		// Type constructor
-		NumericType(Type type);
+  public:
+    // Type constructor
+    NumericType(Type type);
 
-		// as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
-		virtual NumericType* as_numeric();
-		virtual const NumericType* as_numeric() const;
+    // as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
+    virtual NumericType* as_numeric();
+    virtual const NumericType* as_numeric() const;
 
-		// get_divisor returns the divisor of the numeric, with a default value of one.
-		inline unsigned int get_divisor() const;
+    // get_divisor returns the divisor of the numeric, with a default value of one.
+    inline unsigned int get_divisor() const;
 
-		// has_modulus returns true if the numeric is constrained by a modulus.
-		inline bool has_modulus() const;
-		// get_modulus returns a double representation of the modulus value.
-		inline double get_modulus() const;
+    // has_modulus returns true if the numeric is constrained by a modulus.
+    inline bool has_modulus() const;
+    // get_modulus returns a double representation of the modulus value.
+    inline double get_modulus() const;
 
-		// has_range returns true if the numeric is constrained by a range.
-		inline bool has_range() const;
-		// get_range returns the NumericRange that constrains the type's values.
-		inline NumericRange get_range() const;
+    // has_range returns true if the numeric is constrained by a range.
+    inline bool has_range() const;
+    // get_range returns the NumericRange that constrains the type's values.
+    inline NumericRange get_range() const;
 
-		// set_divisor sets a divisor for the numeric type, typically to represent fixed-point.
-		//     Returns false if the divisor is not valid for this type.
-		bool set_divisor(unsigned int divisor);
-		// set_modulus sets a modulus value of the numeric type.
-		//     Returns false if the modulus is not valid for this type.
-		bool set_modulus(double modulus);
-		// set_range sets a valid range of the numeric type.
-		//     Returns false if the range is not valid for this type.
-		bool set_range(const NumericRange &range);
+    // set_divisor sets a divisor for the numeric type, typically to represent fixed-point.
+    //     Returns false if the divisor is not valid for this type.
+    bool set_divisor(unsigned int divisor);
+    // set_modulus sets a modulus value of the numeric type.
+    //     Returns false if the modulus is not valid for this type.
+    bool set_modulus(double modulus);
+    // set_range sets a valid range of the numeric type.
+    //     Returns false if the range is not valid for this type.
+    bool set_range(const NumericRange &range);
 
-		// generate_hash accumulates the properties of this type into the hash.
-		virtual void generate_hash(HashGenerator &hashgen) const;
+    // generate_hash accumulates the properties of this type into the hash.
+    virtual void generate_hash(HashGenerator &hashgen) const;
 
-	private:
-		unsigned int m_divisor;
+  private:
+    unsigned int m_divisor;
 
-		// These are the original range and modulus values from the file, unscaled by the divisor.
-		double m_orig_modulus;
-		NumericRange m_orig_range;
+    // These are the original range and modulus values from the file, unscaled by the divisor.
+    double m_orig_modulus;
+    NumericRange m_orig_range;
 
-		// These are the range and modulus values after scaling by the divisor.
-		Number m_modulus;
-		NumericRange m_range;
+    // These are the range and modulus values after scaling by the divisor.
+    Number m_modulus;
+    NumericRange m_range;
 };
 
 

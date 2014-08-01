@@ -33,39 +33,37 @@ void parser_warning(const std::string &msg);
 class TokenType
 {
 
-	public:
+  public:
 
-		union U
-		{
-			int8_t int8;
-			int16_t int16;
-			int32_t int32;
-			int64_t int64;
-			uint8_t uint8;
-			uint16_t uint16;
-			uint32_t uint32;
-			uint64_t uint64;
-			double real;
-			bool flag;
-			Type type;
+    union U {
+        int8_t int8;
+        int16_t int16;
+        int32_t int32;
+        int64_t int64;
+        uint8_t uint8;
+        uint16_t uint16;
+        uint32_t uint32;
+        uint64_t uint64;
+        double real;
+        bool flag;
+        Type type;
 
-			Class *dclass;
-			Struct *dstruct;
-			Field *dfield;
-			MolecularField *dmolecule;
-			Method *dmethod;
-			Parameter *dparam;
-			DistributedType* dtype;
-			NumericType* dnumeric;
-		} u;
-		std::string str;
-		std::vector<std::string> strings;
-		NumericRange range;
-		struct NameType
-		{
-			std::string name;
-			DistributedType* type;
-		} nametype;
+        Class *dclass;
+        Struct *dstruct;
+        Field *dfield;
+        MolecularField *dmolecule;
+        Method *dmethod;
+        Parameter *dparam;
+        DistributedType* dtype;
+        NumericType* dnumeric;
+    } u;
+    std::string str;
+    std::vector<std::string> strings;
+    NumericRange range;
+    struct NameType {
+        std::string name;
+        DistributedType* type;
+    } nametype;
 };
 
 // The bison-generated code expects to use the symbol 'YYSTYPE' to refer to the above class.

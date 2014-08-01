@@ -27,83 +27,75 @@ static ReservedDoidConstraint min_not_reserved(min_id);
 static ReservedDoidConstraint max_not_reserved(max_id);
 
 DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
-	m_control_channel(control_channel.get_rval(roleconfig)),
-	m_min_id(min_id.get_rval(roleconfig)),
-	m_max_id(max_id.get_rval(roleconfig)),
-	m_broadcast(broadcast_updates.get_rval(roleconfig))
+    m_control_channel(control_channel.get_rval(roleconfig)),
+    m_min_id(min_id.get_rval(roleconfig)),
+    m_max_id(max_id.get_rval(roleconfig)),
+    m_broadcast(broadcast_updates.get_rval(roleconfig))
 {
-	ConfigNode generate = dbserver_config.get_child_node(generate_config, roleconfig);
-	ConfigNode backend = dbserver_config.get_child_node(db_backend_config, roleconfig);
-	m_db_backend = DBBackendFactory::singleton().instantiate_backend(
-		db_backend_type.get_rval(backend), backend,
-		min_id.get_rval(generate), max_id.get_rval(generate));
+    ConfigNode generate = dbserver_config.get_child_node(generate_config, roleconfig);
+    ConfigNode backend = dbserver_config.get_child_node(db_backend_config, roleconfig);
+    m_db_backend = DBBackendFactory::singleton().instantiate_backend(
+                       db_backend_type.get_rval(backend), backend,
+                       min_id.get_rval(generate), max_id.get_rval(generate));
 
-	// Initialize DatabaseServer log
-	stringstream log_title;
-	log_title << "Database(" << m_control_channel << ")";
-	m_log = new LogCategory("db", log_title.str());
-	set_con_name(log_title.str());
+    // Initialize DatabaseServer log
+    stringstream log_title;
+    log_title << "Database(" << m_control_channel << ")";
+    m_log = new LogCategory("db", log_title.str());
+    set_con_name(log_title.str());
 
-	// Check to see the backend was instantiated
-	if(!m_db_backend)
-	{
-		m_log->fatal() << "No database backend of type '"
-		               << db_backend_type.get_rval(backend) << "' exists." << endl;
-		astron_shutdown(1);
-	}
+    // Check to see the backend was instantiated
+    if(!m_db_backend) {
+        m_log->fatal() << "No database backend of type '"
+                       << db_backend_type.get_rval(backend) << "' exists." << endl;
+        astron_shutdown(1);
+    }
 
-	// Listen on control channel
-	subscribe_channel(m_control_channel);
+    // Listen on control channel
+    subscribe_channel(m_control_channel);
 }
 
 void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
-	channel_t sender = dgi.read_channel();
-	uint16_t msg_type = dgi.read_uint16();
+    channel_t sender = dgi.read_channel();
+    uint16_t msg_type = dgi.read_uint16();
 
-	DBOperation *op;
+    DBOperation *op;
 
-	switch(msg_type)
-	{
-		case DBSERVER_CREATE_OBJECT:
-		{
-			op = new DBOperationCreate(this);
-		}
-		break;
-		case DBSERVER_OBJECT_DELETE:
-		{
-			op = new DBOperationDelete(this);
-		}
-		break;
-		case DBSERVER_OBJECT_GET_ALL:
-		case DBSERVER_OBJECT_GET_FIELD:
-		case DBSERVER_OBJECT_GET_FIELDS:
-		{
-			op = new DBOperationGet(this);
-		}
-		break;
-		case DBSERVER_OBJECT_SET_FIELD:
-		case DBSERVER_OBJECT_SET_FIELDS:
-		case DBSERVER_OBJECT_DELETE_FIELD:
-		case DBSERVER_OBJECT_DELETE_FIELDS:
-		{
-			op = new DBOperationSet(this);
-		}
-		break;
-		case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
-		case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
-		case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS:
-		{
-			op = new DBOperationUpdate(this);
-		}
-		break;
-		default:
-			m_log->error() << "Recieved unknown MsgType: " << msg_type << endl;
-			return;
-	};
+    switch(msg_type) {
+    case DBSERVER_CREATE_OBJECT: {
+        op = new DBOperationCreate(this);
+    }
+    break;
+    case DBSERVER_OBJECT_DELETE: {
+        op = new DBOperationDelete(this);
+    }
+    break;
+    case DBSERVER_OBJECT_GET_ALL:
+    case DBSERVER_OBJECT_GET_FIELD:
+    case DBSERVER_OBJECT_GET_FIELDS: {
+        op = new DBOperationGet(this);
+    }
+    break;
+    case DBSERVER_OBJECT_SET_FIELD:
+    case DBSERVER_OBJECT_SET_FIELDS:
+    case DBSERVER_OBJECT_DELETE_FIELD:
+    case DBSERVER_OBJECT_DELETE_FIELDS: {
+        op = new DBOperationSet(this);
+    }
+    break;
+    case DBSERVER_OBJECT_SET_FIELD_IF_EMPTY:
+    case DBSERVER_OBJECT_SET_FIELD_IF_EQUALS:
+    case DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS: {
+        op = new DBOperationUpdate(this);
+    }
+    break;
+    default:
+        m_log->error() << "Recieved unknown MsgType: " << msg_type << endl;
+        return;
+    };
 
-	if(op->initialize(sender, msg_type, dgi))
-	{
-		m_db_backend->submit(op);
-	}
+    if(op->initialize(sender, msg_type, dgi)) {
+        m_db_backend->submit(op);
+    }
 }
