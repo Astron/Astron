@@ -101,7 +101,7 @@ int ShutdownException::exit_code() const
 	return m_exit_code;
 }
 
-const char* ShutdownException::what()
+const char* ShutdownException::what() const throw()
 {
 	return "Astron is shutting down.";
 }
