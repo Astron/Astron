@@ -13,6 +13,7 @@
 #include "net/NetworkAcceptor.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
+#include "core/global.h"
 
 class MDParticipantInterface;
 class MDUpstream;
@@ -174,8 +175,8 @@ class MDParticipantInterface : public ChannelSubscriber
 			m_url = url;
 		}
 		inline void log_message(std::vector<uint8_t> message)
-		{
-			logger().trace() << "Message logging request received. Eventlogger not integrated. Contact @shadowcoder for more info" << std::endl;
+		{			
+			g_eventsender.send(Datagram::create(message));
 		}
 		inline LogCategory logger()
 		{
