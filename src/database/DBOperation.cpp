@@ -502,7 +502,7 @@ bool DBOperationUpdate::initialize(channel_t sender, uint16_t msg_type, Datagram
 		field_count = 1;
 	}
 
-	bool values;
+	bool values = false;
 	if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS)
 	{
 		m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP;
