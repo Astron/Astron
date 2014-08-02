@@ -83,6 +83,7 @@ CONSTANTS = {
     'CONTROL_CLEAR_POST_REMOVE':    9011,
     'CONTROL_SET_CON_NAME':         9012,
     'CONTROL_SET_CON_URL':          9013,
+    'CONTROL_LOG_MESSAGE':          9014,
 
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,

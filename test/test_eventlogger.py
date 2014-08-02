@@ -5,6 +5,7 @@ from common.dcfile import *
 
 NETWORK_WAIT = 0.1 # seconds
 NETWORK_ADDR = ('127.0.0.1', 19090)
+MD_ADDR = ('127.0.0.1',  57123)
 
 CONFIG = """\
 messagedirector:
@@ -19,7 +20,6 @@ roles:
 STANDARD_EVENT = '\x82\xa3bar\xa3baz\xa4type\xa3foo' # MessagePack formatted event
 NONSTANDARD_MSGPACK = '{'
 
-
 class TestEventLogger(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -28,11 +28,16 @@ class TestEventLogger(unittest.TestCase):
 
         cls.daemon = Daemon(CONFIG % cls.log_file)
         cls.daemon.start()
+        
         cls.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
+        cls.mdsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.mdsocket.connect(MD_ADDR)
 
     @classmethod
     def tearDownClass(cls):
         cls.socket.close()
+        cls.mdsocket.close()
         cls.daemon.stop()
         if cls.log_file is not None:
             os.remove(cls.log_file)
@@ -66,10 +71,7 @@ class TestEventLogger(unittest.TestCase):
 
         self.assertEqual(self.numLinesLog(), numLines1) # log is unchanged
 
-    def test_logMessageFormatted(self):
-        self.socket.sendto(STANDARD_EVENT, NETWORK_ADDR)
-        time.sleep(NETWORK_WAIT) # allow network time
-
+    def lastLineCheck(self):
         log = open(self.log_file, "r")
         contents = log.read().split("\n")
         lastLine = contents[len(contents) - 2]
@@ -79,6 +81,23 @@ class TestEventLogger(unittest.TestCase):
         self.assertEqual(decodedJSON["type"], "foo")
         self.assertEqual(decodedJSON["bar"], "baz")
         self.assertIn("_time", decodedJSON)
+
+    def test_logMessageFormatted(self):
+        self.socket.sendto(STANDARD_EVENT, NETWORK_ADDR)
+        time.sleep(NETWORK_WAIT) # allow network time
+
+        self.lastLineCheck()
+        
+    def test_messageDirectorLogging(self):
+        dg = Datagram.create_control()
+        dg.add_uint16(CONTROL_LOG_MESSAGE)
+        dg.add_string(STANDARD_EVENT)
+        
+        self.mdsocket.send(dg.get_data())
+        time.sleep(NETWORK_WAIT)
+        
+        self.lastLineCheck()
+        
 
 if __name__ == '__main__':
     unittest.main()
