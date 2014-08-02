@@ -19,7 +19,6 @@ roles:
 
 STANDARD_EVENT = '\x82\xa3bar\xa3baz\xa4type\xa3foo' # MessagePack formatted event
 NONSTANDARD_MSGPACK = '{'
-MD_EVENT = '\x1d\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x36\x23' + STANDARD_EVENT
 
 class TestEventLogger(unittest.TestCase):
     @classmethod
@@ -90,7 +89,11 @@ class TestEventLogger(unittest.TestCase):
         self.lastLineCheck()
         
     def test_messageDirectorLogging(self):
-        self.mdsocket.send(MD_EVENT)
+        dg = Datagram.create_control()
+        dg.add_uint16(CONTROL_LOG_MESSAGE)
+        dg.add_string(STANDARD_EVENT)
+        
+        self.mdsocket.send(dg.get_data())
         time.sleep(NETWORK_WAIT)
         
         self.lastLineCheck()
