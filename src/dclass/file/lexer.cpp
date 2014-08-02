@@ -1,3 +1,4 @@
+
 #line 2 "lexer.cpp"
 
 #line 4 "lexer.cpp"
@@ -1099,9 +1100,9 @@ extern int yylex(void);
 /** The main scanner function which does all the work.
  */
 YY_DECL {
-    register yy_state_type yy_current_state;
-    register char *yy_cp, *yy_bp;
-    register int yy_act;
+    yy_state_type yy_current_state;
+    char *yy_cp, *yy_bp;
+    int yy_act;
 
     if(!(yy_init))
     {
@@ -1162,16 +1163,15 @@ YY_DECL {
             yy_current_state = (yy_start);
 yy_match:
             do {
-                register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
+                YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
                 if(yy_accept[yy_current_state]) {
                     (yy_last_accepting_state) = yy_current_state;
                     (yy_last_accepting_cpos) = yy_cp;
                 }
                 while(yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state) {
                     yy_current_state = (int) yy_def[yy_current_state];
-                    if(yy_current_state >= 104) {
+                    if(yy_current_state >= 104)
                         yy_c = yy_meta[(unsigned int) yy_c];
-                    }
                 }
                 yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
                 ++yy_cp;
@@ -1650,9 +1650,9 @@ do_action:  /* This label is used only to access EOF actions. */
  */
 static int yy_get_next_buffer(void)
 {
-    register char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
-    register char *source = (yytext_ptr);
-    register int number_to_move, i;
+    char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
+    char *source = (yytext_ptr);
+    int number_to_move, i;
     int ret_val;
 
     if((yy_c_buf_p) > &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[(yy_n_chars) + 1])
@@ -1681,17 +1681,14 @@ static int yy_get_next_buffer(void)
     /* First move last chars to start of buffer. */
     number_to_move = (int)((yy_c_buf_p) - (yytext_ptr)) - 1;
 
-    for(i = 0; i < number_to_move; ++i) {
+    for(i = 0; i < number_to_move; ++i)
         *(dest++) = *(source++);
-    }
 
     if(YY_CURRENT_BUFFER_LVALUE->yy_buffer_status == YY_BUFFER_EOF_PENDING)
         /* don't do the read, it's not guaranteed to return an EOF,
          * just force an EOF
          */
-    {
         YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars) = 0;
-    }
 
     else {
         yy_size_t num_to_read =
@@ -1709,20 +1706,17 @@ static int yy_get_next_buffer(void)
             if(b->yy_is_our_buffer) {
                 yy_size_t new_size = b->yy_buf_size * 2;
 
-                if(new_size <= 0) {
+                if(new_size <= 0)
                     b->yy_buf_size += b->yy_buf_size / 8;
-                } else {
+                else
                     b->yy_buf_size *= 2;
-                }
 
                 b->yy_ch_buf = (char *)
                                /* Include room in for 2 EOB chars. */
                                yyrealloc((void *) b->yy_ch_buf, b->yy_buf_size + 2);
             } else
                 /* Can't grow it, we don't own it. */
-            {
                 b->yy_ch_buf = 0;
-            }
 
             if(! b->yy_ch_buf)
                 YY_FATAL_ERROR(
@@ -1735,9 +1729,8 @@ static int yy_get_next_buffer(void)
 
         }
 
-        if(num_to_read > YY_READ_BUF_SIZE) {
+        if(num_to_read > YY_READ_BUF_SIZE)
             num_to_read = YY_READ_BUF_SIZE;
-        }
 
         /* Read in more data. */
         YY_INPUT((&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
@@ -1759,49 +1752,87 @@ static int yy_get_next_buffer(void)
         }
     }
 
-    else {
+    else
         ret_val = EOB_ACT_CONTINUE_SCAN;
-    }
 
     if((yy_size_t)((yy_n_chars) + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
         /* Extend the array by 50%, plus the number we really need. */
         yy_size_t new_size = (yy_n_chars) + number_to_move + ((yy_n_chars) >> 1);
         YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc((void *)
                                               YY_CURRENT_BUFFER_LVALUE->yy_ch_buf, new_size);
-        if(! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf) {
+        if(! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf)
             YY_FATAL_ERROR("out of dynamic memory in yy_get_next_buffer()");
-        }
     }
 
-    (yy_n_chars) += number_to_move;
-    YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[(yy_n_chars)] = YY_END_OF_BUFFER_CHAR;
-    YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[(yy_n_chars) + 1] = YY_END_OF_BUFFER_CHAR;
+    if(num_to_read > YY_READ_BUF_SIZE) {
+        num_to_read = YY_READ_BUF_SIZE;
+    }
 
-    (yytext_ptr) = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[0];
+    /* Read in more data. */
+    YY_INPUT((&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
+             (yy_n_chars), num_to_read);
 
-    return ret_val;
+    YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
+}
+
+if((yy_n_chars) == 0)
+{
+    if(number_to_move == YY_MORE_ADJ) {
+        ret_val = EOB_ACT_END_OF_FILE;
+        yyrestart(yyin);
+    }
+
+    else {
+        ret_val = EOB_ACT_LAST_MATCH;
+        YY_CURRENT_BUFFER_LVALUE->yy_buffer_status =
+            YY_BUFFER_EOF_PENDING;
+    }
+}
+
+else
+{
+    ret_val = EOB_ACT_CONTINUE_SCAN;
+}
+
+if((yy_size_t)((yy_n_chars) + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size)
+{
+    /* Extend the array by 50%, plus the number we really need. */
+    yy_size_t new_size = (yy_n_chars) + number_to_move + ((yy_n_chars) >> 1);
+    YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc((void *)
+                                          YY_CURRENT_BUFFER_LVALUE->yy_ch_buf, new_size);
+    if(! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf) {
+        YY_FATAL_ERROR("out of dynamic memory in yy_get_next_buffer()");
+    }
+}
+
+(yy_n_chars) += number_to_move;
+YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[(yy_n_chars)] = YY_END_OF_BUFFER_CHAR;
+YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[(yy_n_chars) + 1] = YY_END_OF_BUFFER_CHAR;
+
+(yytext_ptr) = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[0];
+
+return ret_val;
 }
 
 /* yy_get_previous_state - get the state just before the EOB char was reached */
 
 static yy_state_type yy_get_previous_state(void)
 {
-    register yy_state_type yy_current_state;
-    register char *yy_cp;
+    yy_state_type yy_current_state;
+    char *yy_cp;
 
     yy_current_state = (yy_start);
 
     for(yy_cp = (yytext_ptr) + YY_MORE_ADJ; yy_cp < (yy_c_buf_p); ++yy_cp) {
-        register YY_CHAR yy_c = (*yy_cp ? yy_ec[YY_SC_TO_UI(*yy_cp)] : 1);
+        YY_CHAR yy_c = (*yy_cp ? yy_ec[YY_SC_TO_UI(*yy_cp)] : 1);
         if(yy_accept[yy_current_state]) {
             (yy_last_accepting_state) = yy_current_state;
             (yy_last_accepting_cpos) = yy_cp;
         }
         while(yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state) {
             yy_current_state = (int) yy_def[yy_current_state];
-            if(yy_current_state >= 104) {
+            if(yy_current_state >= 104)
                 yy_c = yy_meta[(unsigned int) yy_c];
-            }
         }
         yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
     }
@@ -1816,19 +1847,18 @@ static yy_state_type yy_get_previous_state(void)
  */
 static yy_state_type yy_try_NUL_trans(yy_state_type yy_current_state)
 {
-    register int yy_is_jam;
-    register char *yy_cp = (yy_c_buf_p);
+    int yy_is_jam;
+    char *yy_cp = (yy_c_buf_p);
 
-    register YY_CHAR yy_c = 1;
+    YY_CHAR yy_c = 1;
     if(yy_accept[yy_current_state]) {
         (yy_last_accepting_state) = yy_current_state;
         (yy_last_accepting_cpos) = yy_cp;
     }
     while(yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state) {
         yy_current_state = (int) yy_def[yy_current_state];
-        if(yy_current_state >= 104) {
+        if(yy_current_state >= 104)
             yy_c = yy_meta[(unsigned int) yy_c];
-        }
     }
     yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
     yy_is_jam = (yy_current_state == 103);

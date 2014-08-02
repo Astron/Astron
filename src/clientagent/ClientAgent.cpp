@@ -59,6 +59,7 @@ ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
     m_server_version(server_version.get_rval(roleconfig)), m_ssl_ctx(ssl::context::sslv23)
 {
+
     stringstream ss;
     ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
     m_log = new LogCategory("clientagent", ss.str());
@@ -142,7 +143,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
         m_ssl_ctx.set_password_callback(boost::bind(&ClientAgent::ssl_password_callback, this));
 
         // Set the private key
-        bool key_error;
+        bool key_error = false;
         for(int attempts = 0; attempts < 3; ++attempts) {
             try {
                 m_ssl_ctx.use_private_key_file(m_ssl_key, ssl::context::file_format::pem);
