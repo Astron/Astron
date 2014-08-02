@@ -14,7 +14,7 @@ ConfigVariable<string> database_directory("directory", "astron_db", db_backend_c
 
 bool have_backend(const string& backend)
 {
-	return DBBackendFactory::singleton().has_backend(backend);
+    return DBBackendFactory::singleton().has_backend(backend);
 }
 ConfigConstraint<string> db_backend_exists(have_backend, db_backend_type,
-		"No database backend exists for the given backend type.");
+        "No database backend exists for the given backend type.");

@@ -51,229 +51,203 @@ ConfigGroup ca_client_config("client", clientagent_config);
 ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
 bool have_client_type(const string& backend)
 {
-	return ClientFactory::singleton().has_client_type(backend);
+    return ClientFactory::singleton().has_client_type(backend);
 }
 ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
-		"No Client handler exists for the given client type.");
+        "No Client handler exists for the given client type.");
 
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
-	m_server_version(server_version.get_rval(roleconfig)), m_ssl_ctx(ssl::context::sslv23)
+    m_server_version(server_version.get_rval(roleconfig)), m_ssl_ctx(ssl::context::sslv23)
 {
-	stringstream ss;
-	ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
-	m_log = new LogCategory("clientagent", ss.str());
 
-	// We need to get the client type...
-	ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
-	m_client_type = ca_client_type.get_rval(client);
+    stringstream ss;
+    ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
+    m_log = new LogCategory("clientagent", ss.str());
 
-	// ... and also the channel range ...
-	ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
-	m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
+    // We need to get the client type...
+    ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
+    m_client_type = ca_client_type.get_rval(client);
 
-	// ... then store a copy of the client config.
-	m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
+    // ... and also the channel range ...
+    ConfigNode channels = clientagent_config.get_child_node(channels_config, roleconfig);
+    m_ct = ChannelTracker(min_channel.get_rval(channels), max_channel.get_rval(channels));
 
-	// Calculate the DC hash
-	const uint32_t config_hash = override_hash.get_rval(roleconfig);
-	if(config_hash > 0x0)
-	{
-		m_hash = config_hash;
-	}
-	else
-	{
-		m_hash = dclass::legacy_hash(g_dcf);
-	}
+    // ... then store a copy of the client config.
+    m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
 
-	// Load SSL data from Config vars
-	ConfigNode tls_settings = clientagent_config.get_child_node(tls_config, roleconfig);
+    // Calculate the DC hash
+    const uint32_t config_hash = override_hash.get_rval(roleconfig);
+    if(config_hash > 0x0) {
+        m_hash = config_hash;
+    } else {
+        m_hash = dclass::legacy_hash(g_dcf);
+    }
 
-	m_ssl_cert = tls_cert.get_rval(tls_settings);
-	m_ssl_key = tls_key.get_rval(tls_settings);
+    // Load SSL data from Config vars
+    ConfigNode tls_settings = clientagent_config.get_child_node(tls_config, roleconfig);
 
-	// Handle no SSL
-	if(m_ssl_cert.empty() && m_ssl_key.empty())
-	{
-		m_log->debug() << "Not using SSL/TLS.\n";
-		TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
-		                                         this, std::placeholders::_1);
-		m_net_acceptor = new TcpAcceptor(io_service, callback);
+    m_ssl_cert = tls_cert.get_rval(tls_settings);
+    m_ssl_key = tls_key.get_rval(tls_settings);
 
-		if(!have_warned_ca_insecure)
-		{
-			have_warned_ca_insecure = true;
-			m_log->warning() << "\n==============================================\n"
-			                 << "      CA not configured to use SSL!!!!!!\n"
-			                 << " --- Do not use this config in production ---\n"
-			                 << "==============================================\n";
-		}
-	}
+    // Handle no SSL
+    if(m_ssl_cert.empty() && m_ssl_key.empty()) {
+        m_log->debug() << "Not using SSL/TLS.\n";
+        TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
+                                       this, std::placeholders::_1);
+        m_net_acceptor = new TcpAcceptor(io_service, callback);
 
-	// Handle SSL requested, but some information missing
-	else if(m_ssl_cert.empty() != m_ssl_key.empty())
-	{
-		m_log->fatal() << "TLS requested but either certificate or key is missing.\n";
-		astron_shutdown(1);
-	}
+        if(!have_warned_ca_insecure) {
+            have_warned_ca_insecure = true;
+            m_log->warning() << "\n==============================================\n"
+                             << "      CA not configured to use SSL!!!!!!\n"
+                             << " --- Do not use this config in production ---\n"
+                             << "==============================================\n";
+        }
+    }
 
-	// Handle SSL
-	else
-	{
-		m_log->debug() << "Configured with SSL/TLS.\n";
+    // Handle SSL requested, but some information missing
+    else if(m_ssl_cert.empty() != m_ssl_key.empty()) {
+        m_log->fatal() << "TLS requested but either certificate or key is missing.\n";
+        astron_shutdown(1);
+    }
 
-		// Get the enabled SSL/TLS protocols
-		long int options = ssl::context::default_workarounds;
-		if(!sslv2_enabled.get_rval(tls_settings))
-		{
-			options |= ssl::context::no_sslv2;
-		}
-		if(!sslv3_enabled.get_rval(tls_settings))
-		{
-			options |= ssl::context::no_sslv3;
-		}
-		if(!tlsv1_enabled.get_rval(tls_settings))
-		{
-			options |= ssl::context::no_tlsv1;
-		}
+    // Handle SSL
+    else {
+        m_log->debug() << "Configured with SSL/TLS.\n";
 
-		// Create the context with enabled protocols
-		m_ssl_ctx.set_options(options);
+        // Get the enabled SSL/TLS protocols
+        long int options = ssl::context::default_workarounds;
+        if(!sslv2_enabled.get_rval(tls_settings)) {
+            options |= ssl::context::no_sslv2;
+        }
+        if(!sslv3_enabled.get_rval(tls_settings)) {
+            options |= ssl::context::no_sslv3;
+        }
+        if(!tlsv1_enabled.get_rval(tls_settings)) {
+            options |= ssl::context::no_tlsv1;
+        }
 
-		// Set the chain file
-		string chain_file = tls_chain.get_rval(tls_settings);
-		if(!chain_file.empty())
-		{
-			m_ssl_ctx.use_certificate_chain_file(chain_file);
-		}
+        // Create the context with enabled protocols
+        m_ssl_ctx.set_options(options);
 
-		// Set the server certificate
-		m_ssl_ctx.use_certificate_file(m_ssl_cert, ssl::context::file_format::pem);
+        // Set the chain file
+        string chain_file = tls_chain.get_rval(tls_settings);
+        if(!chain_file.empty()) {
+            m_ssl_ctx.use_certificate_chain_file(chain_file);
+        }
 
-		// Set the password callback
-		m_ssl_ctx.set_password_callback(boost::bind(&ClientAgent::ssl_password_callback, this));
+        // Set the server certificate
+        m_ssl_ctx.use_certificate_file(m_ssl_cert, ssl::context::file_format::pem);
 
-		// Set the private key
-		bool key_error = false;
-		for(int attempts = 0; attempts < 3; ++attempts)
-		{
-			try
-			{
-				m_ssl_ctx.use_private_key_file(m_ssl_key, ssl::context::file_format::pem);
-				key_error = false;
-				break;
-			}
-			catch(const boost::system::system_error& e)
-			{
-				key_error = true;
-			}
-		}
-		if(key_error)
-		{
-			m_log->fatal() << "Could not open SSL key file (" << m_ssl_key << ").\n";
-			exit(1);
-		}
+        // Set the password callback
+        m_ssl_ctx.set_password_callback(boost::bind(&ClientAgent::ssl_password_callback, this));
 
-		// Set the certificate authority
-		string auth_file = tls_auth.get_rval(tls_settings);
-		if(!auth_file.empty())
-		{
-			if(filesystem::is_directory(auth_file))
-			{
-				m_ssl_ctx.add_verify_path(auth_file);
-			}
-			else
-			{
-				m_ssl_ctx.load_verify_file(auth_file);
-			}
+        // Set the private key
+        bool key_error = false;
+        for(int attempts = 0; attempts < 3; ++attempts) {
+            try {
+                m_ssl_ctx.use_private_key_file(m_ssl_key, ssl::context::file_format::pem);
+                key_error = false;
+                break;
+            } catch(const boost::system::system_error& e) {
+                key_error = true;
+            }
+        }
+        if(key_error) {
+            m_log->fatal() << "Could not open SSL key file (" << m_ssl_key << ").\n";
+            exit(1);
+        }
 
-			m_ssl_ctx.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
-			m_ssl_ctx.set_verify_depth(tls_verify_depth.get_rval(tls_settings));
-		}
+        // Set the certificate authority
+        string auth_file = tls_auth.get_rval(tls_settings);
+        if(!auth_file.empty()) {
+            if(filesystem::is_directory(auth_file)) {
+                m_ssl_ctx.add_verify_path(auth_file);
+            } else {
+                m_ssl_ctx.load_verify_file(auth_file);
+            }
 
-		SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
-		                                         this, std::placeholders::_1);
-		m_net_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
-	}
+            m_ssl_ctx.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
+            m_ssl_ctx.set_verify_depth(tls_verify_depth.get_rval(tls_settings));
+        }
 
-	// Begin listening for new Clients
-	boost::system::error_code ec;
-	ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
-	if(ec.value() != 0)
-	{
-		m_log->fatal() << "Could not bind listening port: "
-		               << bind_addr.get_val() << std::endl;
-		m_log->fatal() << "Error code: " << ec.value()
-		               << "(" << ec.category().message(ec.value()) << ")\n";
-		astron_shutdown(1);
-	}
-	m_net_acceptor->start();
+        SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
+                                       this, std::placeholders::_1);
+        m_net_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
+    }
+
+    // Begin listening for new Clients
+    boost::system::error_code ec;
+    ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
+    if(ec.value() != 0) {
+        m_log->fatal() << "Could not bind listening port: "
+                       << bind_addr.get_val() << std::endl;
+        m_log->fatal() << "Error code: " << ec.value()
+                       << "(" << ec.category().message(ec.value()) << ")\n";
+        astron_shutdown(1);
+    }
+    m_net_acceptor->start();
 }
 
 ClientAgent::~ClientAgent()
 {
-	delete m_log;
+    delete m_log;
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
 void ClientAgent::handle_tcp(tcp::socket *socket)
 {
-	tcp::endpoint remote;
-	try
-	{
-		remote = socket->remote_endpoint();
-	}
-	catch (const boost::system::system_error&)
-	{
-		// A client might disconnect immediately after connecting.
-		// If this happens, do nothing. Resolves #122.
-		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-		// is_open() == true, so we just catch the exception on remote_endpoint
-		// instead.
-		delete socket;
-		return;
-	}
-	m_log->debug() << "Got an incoming connection from "
-	               << remote.address() << ":" << remote.port() << "\n";
+    tcp::endpoint remote;
+    try {
+        remote = socket->remote_endpoint();
+    } catch(const boost::system::system_error&) {
+        // A client might disconnect immediately after connecting.
+        // If this happens, do nothing. Resolves #122.
+        // N.B. due to a Boost.Asio bug, the socket will (may?) still have
+        // is_open() == true, so we just catch the exception on remote_endpoint
+        // instead.
+        delete socket;
+        return;
+    }
+    m_log->debug() << "Got an incoming connection from "
+                   << remote.address() << ":" << remote.port() << "\n";
 
-	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
 }
 
 // handle_ssl generates a new Client object from an ssl stream.
 void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
 {
-	tcp::endpoint remote;
-	try
-	{
-		remote = stream->next_layer().remote_endpoint();
-	}
-	catch (const boost::system::system_error&)
-	{
-		// A client might disconnect immediately after connecting.
-		// If this happens, do nothing. Resolves #122.
-		// N.B. due to a Boost.Asio bug, the socket will (may?) still have
-		// is_open() == true, so we just catch the exception on remote_endpoint
-		// instead.
-		delete stream;
-		return;
-	}
-	m_log->debug() << "Got an incoming connection from "
-	               << remote.address() << ":" << remote.port() << "\n";
+    tcp::endpoint remote;
+    try {
+        remote = stream->next_layer().remote_endpoint();
+    } catch(const boost::system::system_error&) {
+        // A client might disconnect immediately after connecting.
+        // If this happens, do nothing. Resolves #122.
+        // N.B. due to a Boost.Asio bug, the socket will (may?) still have
+        // is_open() == true, so we just catch the exception on remote_endpoint
+        // instead.
+        delete stream;
+        return;
+    }
+    m_log->debug() << "Got an incoming connection from "
+                   << remote.address() << ":" << remote.port() << "\n";
 
-	ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream);
 }
 
 
 // handle_datagram handles Datagrams received from the message director.
 void ClientAgent::handle_datagram(DatagramHandle, DatagramIterator&)
 {
-	// At the moment, the client agent doesn't actually handle any datagrams
+    // At the moment, the client agent doesn't actually handle any datagrams
 }
 
 string ClientAgent::ssl_password_callback()
 {
-	stringstream prompt;
-	prompt << "Enter password for " << m_ssl_key << ": ";
-	return password_prompt(prompt.str());
+    stringstream prompt;
+    prompt << "Enter password for " << m_ssl_key << ": ";
+    return password_prompt(prompt.str());
 }
 
 static RoleFactoryItem<ClientAgent> ca_fact("clientagent");
@@ -284,29 +258,25 @@ static RoleFactoryItem<ClientAgent> ca_fact("clientagent");
  *       HELPER CLASSES       *
  * ========================== */
 ChannelTracker::ChannelTracker(channel_t min, channel_t max) : m_next(min), m_max(max),
-	m_unused_channels()
+    m_unused_channels()
 {
 }
 
 channel_t ChannelTracker::alloc_channel()
 {
-	if(m_next <= m_max)
-	{
-		return m_next++;
-	}
-	else
-	{
-		if(!m_unused_channels.empty())
-		{
-			channel_t c = m_unused_channels.front();
-			m_unused_channels.pop();
-			return c;
-		}
-	}
-	return 0;
+    if(m_next <= m_max) {
+        return m_next++;
+    } else {
+        if(!m_unused_channels.empty()) {
+            channel_t c = m_unused_channels.front();
+            m_unused_channels.pop();
+            return c;
+        }
+    }
+    return 0;
 }
 
 void ChannelTracker::free_channel(channel_t channel)
 {
-	m_unused_channels.push(channel);
+    m_unused_channels.push(channel);
 }
