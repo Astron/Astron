@@ -14,33 +14,29 @@ namespace dclass   // open namespace dclass
 //     If an error occurs, the error reason is returned instead of the parsed value.
 string parse_value(const DistributedType* dtype, const string &formatted, bool &err)
 {
-	istringstream strm(formatted);
-	return parse_value(dtype, strm, err);
+    istringstream strm(formatted);
+    return parse_value(dtype, strm, err);
 
 }
 string parse_value(const DistributedType* dtype, istream &in, bool &err)
 {
-	string value;
-	try
-	{
-		init_value_parser(in, "parse_value()", dtype, value);
-		run_parser();
-		cleanup_parser();
-	}
-	catch(const exception& e)
-	{
-		err = true;
-		return string("parse_value() error: ") + e.what();
-	}
+    string value;
+    try {
+        init_value_parser(in, "parse_value()", dtype, value);
+        run_parser();
+        cleanup_parser();
+    } catch(const exception& e) {
+        err = true;
+        return string("parse_value() error: ") + e.what();
+    }
 
-	if(parser_error_count() > 0)
-	{
-		err = true;
-		return string("parse value(): unknown error");
-	}
+    if(parser_error_count() > 0) {
+        err = true;
+        return string("parse value(): unknown error");
+    }
 
-	err = false;
-	return value;
+    err = false;
+    return value;
 }
 
 

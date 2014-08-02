@@ -29,11 +29,11 @@ string password_prompt(const string& prompt)
 #include <unistd.h>
 string password_prompt(const string& prompt)
 {
-	string password;
-	char *raw = getpass(prompt.c_str());
-	password = raw;
-	free(raw);
+    string password;
+    char *raw = getpass(prompt.c_str());
+    password = raw;
+    free(raw);
 
-	return password;
+    return password;
 }
 #endif

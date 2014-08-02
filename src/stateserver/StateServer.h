@@ -7,19 +7,19 @@ class DistributedObject;
 
 class StateServer : public Role
 {
-		friend class DistributedObject;
+    friend class DistributedObject;
 
-	public:
-		StateServer(RoleConfig roleconfig);
-		~StateServer();
+  public:
+    StateServer(RoleConfig roleconfig);
+    ~StateServer();
 
-		virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
+    virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
-	protected:
-		LogCategory *m_log;
-		std::unordered_map<doid_t, DistributedObject*> m_objs;
+  protected:
+    LogCategory *m_log;
+    std::unordered_map<doid_t, DistributedObject*> m_objs;
 
-	private:
-		void handle_generate(DatagramIterator &dgi, bool has_other);
-		void handle_delete_ai(DatagramIterator &dgi, channel_t sender);
+  private:
+    void handle_generate(DatagramIterator &dgi, bool has_other);
+    void handle_delete_ai(DatagramIterator &dgi, channel_t sender);
 };
