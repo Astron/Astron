@@ -17,5 +17,5 @@ class ShutdownException : public std::exception
 	public:
 		ShutdownException(int exit_code);
 		int exit_code() const;
-		const char* what();
+		virtual const char* what() const throw();
 };
