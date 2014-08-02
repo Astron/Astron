@@ -60,3 +60,10 @@ The following control messages exist, with their respective formats:
 > downstream MD may be configured with a specific name, and it may wish to
 > inform the upstream MD what its name and webserver URL are. These control
 > messages allow the downstream MD to communicate this information.
+
+**CONTROL_LOG_MESSAGE(9014)** `args(blob message)`
+> In production layouts, it may be useful for AIs to log messages
+> to the eventlogger infrastructure (preferably a fluentd instance) without
+> needing to have redundant configuration on the AI servers, which could come
+> out of sync. Using this message, the MD will simply route the message argument
+> to the configured eventlogger.
