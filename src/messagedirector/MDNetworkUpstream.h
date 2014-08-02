@@ -8,22 +8,22 @@
 // of NetworkClient (which are themselves thread-safe)
 class MDNetworkUpstream : public NetworkClient, public MDUpstream
 {
-	public:
-		MDNetworkUpstream(MessageDirector *md);
+  public:
+    MDNetworkUpstream(MessageDirector *md);
 
-		boost::system::error_code connect(const std::string &address);
+    boost::system::error_code connect(const std::string &address);
 
-		// Interfaces that MDUpstream needs us to implement:
-		virtual void subscribe_channel(channel_t c);
-		virtual void unsubscribe_channel(channel_t c);
-		virtual void subscribe_range(channel_t lo, channel_t hi);
-		virtual void unsubscribe_range(channel_t lo, channel_t hi);
-		virtual void handle_datagram(DatagramHandle dg);
+    // Interfaces that MDUpstream needs us to implement:
+    virtual void subscribe_channel(channel_t c);
+    virtual void unsubscribe_channel(channel_t c);
+    virtual void subscribe_range(channel_t lo, channel_t hi);
+    virtual void unsubscribe_range(channel_t lo, channel_t hi);
+    virtual void handle_datagram(DatagramHandle dg);
 
-		// Interfaces that NetworkClient needs us to implement:
-		virtual void receive_datagram(DatagramHandle dg);
-		virtual void receive_disconnect();
+    // Interfaces that NetworkClient needs us to implement:
+    virtual void receive_datagram(DatagramHandle dg);
+    virtual void receive_disconnect();
 
-	private:
-		MessageDirector *m_message_director;
+  private:
+    MessageDirector *m_message_director;
 };

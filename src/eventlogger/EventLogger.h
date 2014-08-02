@@ -17,23 +17,23 @@ using boost::asio::ip::udp;
 // that socket.  Received UDP packets will be logged as configured by the daemon config file.
 class EventLogger : public Role
 {
-	public:
-		EventLogger(RoleConfig roleconfig);
+  public:
+    EventLogger(RoleConfig roleconfig);
 
-		void handle_datagram(DatagramHandle, DatagramIterator&) { } // Doesn't take DGs.
+    void handle_datagram(DatagramHandle, DatagramIterator&) { } // Doesn't take DGs.
 
-	private:
-		LogCategory m_log;
-		udp::socket *m_socket;
-		udp::endpoint m_remote;
-		std::string m_file_format;
-		std::ofstream *m_file;
-		uint8_t m_buffer[EVENTLOG_BUFSIZE];
+  private:
+    LogCategory m_log;
+    udp::socket *m_socket;
+    udp::endpoint m_remote;
+    std::string m_file_format;
+    std::ofstream *m_file;
+    uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
-		void bind(const std::string &addr);
-		void open_log();
-		void cycle_log();
-		void start_receive();
-		void handle_receive(const boost::system::error_code &error, std::size_t bytes);
-		void process_packet(const DatagramHandle dg);
+    void bind(const std::string &addr);
+    void open_log();
+    void cycle_log();
+    void start_receive();
+    void handle_receive(const boost::system::error_code &error, std::size_t bytes);
+    void process_packet(const DatagramHandle dg);
 };

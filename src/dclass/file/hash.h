@@ -14,7 +14,7 @@ uint32_t property_hash(const File*);
 
 // structural_hash generates a hash which is guaranteed not to change if all of
 //     the distributed classes and their fields have the same data arrangement.
-//     This hash ignores keywords, typedefs, parameter names, and imports. 
+//     This hash ignores keywords, typedefs, parameter names, and imports.
 uint32_t structural_hash(const File*);
 
 // legacy_hash produces a hash which matches that of the old dcparser.
