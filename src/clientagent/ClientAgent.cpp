@@ -153,7 +153,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 		m_ssl_ctx.set_password_callback(boost::bind(&ClientAgent::ssl_password_callback, this));
 
 		// Set the private key
-		bool key_error;
+		bool key_error = false;
 		for(int attempts = 0; attempts < 3; ++attempts)
 		{
 			try
