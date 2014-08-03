@@ -284,6 +284,10 @@ class Datagram(object):
         self.add_size(len(string))
         self.add_raw(string)
 
+    def add_blob(self, blob):
+        self.add_size(len(blob))
+        self.add_raw(blob)
+
     def add_channel(self, channel):
         if 'USE_128BIT_CHANNELS' in os.environ:
             max_int64 = 0xFFFFFFFFFFFFFFFF

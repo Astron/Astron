@@ -28,9 +28,9 @@ class TestEventLogger(unittest.TestCase):
 
         cls.daemon = Daemon(CONFIG % cls.log_file)
         cls.daemon.start()
-        
+
         cls.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        
+
         cls.mdsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cls.mdsocket.connect(MD_ADDR)
 
@@ -87,17 +87,17 @@ class TestEventLogger(unittest.TestCase):
         time.sleep(NETWORK_WAIT) # allow network time
 
         self.lastLineCheck()
-        
+
     def test_messageDirectorLogging(self):
         dg = Datagram.create_control()
         dg.add_uint16(CONTROL_LOG_MESSAGE)
-        dg.add_string(STANDARD_EVENT)
-        
+        dg.add_blob(STANDARD_EVENT)
+
         self.mdsocket.send(dg.get_data())
         time.sleep(NETWORK_WAIT)
-        
+
         self.lastLineCheck()
-        
+
 
 if __name__ == '__main__':
     unittest.main()
