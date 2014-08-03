@@ -39,6 +39,7 @@ class TestEventLogger(unittest.TestCase):
         cls.socket.close()
         cls.mdsocket.close()
         cls.daemon.stop()
+        time.sleep(1) # give time for the daemon to close so windows can delete the log
         if cls.log_file is not None:
             os.remove(cls.log_file)
 
