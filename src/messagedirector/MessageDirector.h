@@ -13,6 +13,7 @@
 #include "net/NetworkAcceptor.h"
 #include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
+#include "core/global.h"
 
 class MDParticipantInterface;
 class MDUpstream;
@@ -171,6 +172,10 @@ class MDParticipantInterface : public ChannelSubscriber
     inline void set_con_url(const std::string &url)
     {
         m_url = url;
+    }
+    inline void log_message(std::vector<uint8_t> message)
+    {
+        g_eventsender.send(Datagram::create(message));
     }
     inline LogCategory logger()
     {

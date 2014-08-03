@@ -64,6 +64,10 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
             set_con_url(dgi.read_string());
             break;
         }
+        case CONTROL_LOG_MESSAGE: {
+            log_message(dgi.read_blob());
+            break;
+        }
         default:
             logger().error() << "MDNetworkParticipant got unknown control message, type : "
                              << msg_type << std::endl;
