@@ -177,15 +177,17 @@ class TestMessageDirector(ProtocolTest):
         self.c2.flush()
 
         # Create a datagram to be sent post-remove...
-        dg = Datagram()
-        dg = Datagram.create([555444333], 0, 4321)
-        dg.add_string('Testing...')
+        dg_pr = Datagram.create([555444333], 0, 4321)
+        dg_pr.add_string('Testing...')
 
         # Hang it on c1...
-        dg2 = Datagram.create_add_post_remove(dg)
-        self.c1.send(dg2)
+        dg_add_pr = Datagram.create_add_post_remove(171717, dg_pr)
+        self.c1.send(dg_add_pr)
 
-        # Verify nothing's happening yet...
+        # Expect post remove to be pre-routed upstream
+        self.expect(self.l1, dg_add_pr)
+
+        # Verify nothing else is happening yet...
         self.expectNone(self.l1)
         self.expectNone(self.c1)
         self.expectNone(self.c2)
@@ -193,7 +195,10 @@ class TestMessageDirector(ProtocolTest):
         # Reconnect c1 and see if dg gets sent.
         self.c1.close()
         self.__class__.c1 = self.connectToServer()
-        self.expect(self.l1, dg)
+
+        # The upstream should receive the post remove and also receive a clear_post_removes
+        dg_clear_prs = Datagram.create_clear_post_removes(171717)
+        self.expectMany(self.l1, [dg_pr, dg_clear_prs])
 
         # Reconnect c1, the message shouldn't be sent again
         self.c1.close()
@@ -201,10 +206,14 @@ class TestMessageDirector(ProtocolTest):
         self.expectNone(self.l1)
 
         # Hang dg as a post-remove for c2...
-        self.c2.send(dg2)
+        dg_add_pr = Datagram.create_add_post_remove(181818, dg_pr)
+        self.c2.send(dg_add_pr)
+        self.expect(self.l1, dg_add_pr)
 
         # Wait, nevermind...
-        self.c2.send(Datagram.create_clear_post_remove())
+        dg_clear_prs = Datagram.create_clear_post_removes(181818)
+        self.c2.send(dg_clear_prs)
+        self.expect(self.l1, dg_clear_prs)
 
         # Did the cancellation work?
         self.c2.close()
@@ -212,21 +221,37 @@ class TestMessageDirector(ProtocolTest):
         self.expectNone(self.l1)
 
         # Try hanging multiple post-removes on c1
-        dg2 = Datagram.create_add_post_remove(dg)
-        dg_pr = Datagram.create([987987987], 0, 6959)
-        dg3 = Datagram.create_add_post_remove(dg_pr)
-        self.c1.send(dg2)
-        self.c1.send(dg3)
+        dg_add_pr = Datagram.create_add_post_remove(191919, dg_pr)
+        dg_pr2 = Datagram.create([987987987], 0, 6959)
+        dg_add_pr2 = Datagram.create_add_post_remove(191919, dg_pr2)
+        dg_pr3 = Datagram.create([986666687], 0, 1252)
+        dg_add_pr3 = Datagram.create_add_post_remove(202020, dg_pr3)
+        self.c1.send(dg_add_pr)
+        self.c1.send(dg_add_pr2)
+        self.c1.send(dg_add_pr3)
 
-        # After adding two, we don't want to see anything "pushed" or the like
+        # Expect post removes to be pre-routed upstream
+        self.expectMany(self.l1, [dg_add_pr, dg_add_pr2, dg_add_pr3])
+
+        # After adding three, we don't want to see anything "pushed" or the like
         self.expectNone(self.l1)
         self.expectNone(self.c1)
         self.expectNone(self.c2)
 
-        # Reconnect c1 and see if both datagrams gets sent.
+        # Reconnect c1 and see if both datagrams gets sent ...
         self.c1.close()
         self.__class__.c1 = self.connectToServer()
-        self.expectMany(self.l1, [dg, dg_pr])
+
+        # ... expecting the post removes ...
+        expected = [dg_pr, dg_pr2, dg_pr3]
+        # ... and a clear for each channel ...
+        dg_clear_prs = Datagram.create_clear_post_removes(191919)
+        dg_clear_prs2 = Datagram.create_clear_post_removes(202020)
+        expected += [dg_clear_prs, dg_clear_prs2]
+        # ... exactly 2 Post Removes, and 3 Clears ...
+        self.expectMany(self.l1, expected)
+        # ... and no more messages (duplicates or otherwise)
+        self.expectNone(self.l1)
 
     def test_ranges(self):
         self.l1.flush()

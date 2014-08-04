@@ -68,7 +68,7 @@ void EventLogger::cycle_log()
     process_packet(event.make_datagram());
 }
 
-void EventLogger::process_packet(const DatagramHandle dg)
+void EventLogger::process_packet(DatagramHandle dg)
 {
     DatagramIterator dgi(dg);
     std::stringstream stream;

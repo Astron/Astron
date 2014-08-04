@@ -32,7 +32,7 @@ class EventSender
     EventSender();
 
     void init(const std::string &target);
-    void send(const DatagramHandle dg);
+    void send(DatagramHandle dg);
     inline void send(const LoggedEvent &event)
     {
         send(event.make_datagram());

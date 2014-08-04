@@ -38,14 +38,20 @@ The following control messages exist, with their respective formats:
 > upper channel of the range. The ranges are inclusive.
 
 
-**CONTROL_ADD_POST_REMOVE(9010)** `args(blob datagram)`  
-**CONTROL_CLEAR_POST_REMOVES(9011)** `args()`  
+**CONTROL_ADD_POST_REMOVE(9010)** `args(uint64 sender, blob datagram)`  
+**CONTROL_CLEAR_POST_REMOVES(9011)** `args(uint64 sender)`  
 > Often, Message Directors may be unexpectedly disconnected from one another, or
 > a Message Director may crash while under normal operation without the chance
 > to clean up. These control messages allow a downstream MD to schedule messages
 > on the upstream MD to be sent in the event of an unexpected disconnect.
 >
-> The argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
+> The sender is the channel (typically representing the participant who sends the message)
+> that the post removes should be tied to.  This field is only used to be able to clear a
+> bundle of post removes for a particular sender.  Unlike other messages, post removes
+> MUST NOT be sent by Roles or AIs with a feigned sender -- the post remove is only sent
+> when the participant that sent it disconnects.
+>
+> The second argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
 > message, minus the length tag (since the blob already includes a length tag
 > of its own, this would be redundant information).
 > CONTROL_CLEAR_POST_REMOVE is used to reset all of the on-disconnect messages.
