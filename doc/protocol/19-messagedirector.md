@@ -47,9 +47,9 @@ The following control messages exist, with their respective formats:
 >
 > The sender is the channel (typically representing the participant who sends the message)
 > that the post removes should be tied to.  This field is only used to be able to clear a
-> bundle of post removes for a particular sender.  Unlike other messages, post removes should
-> not be sent by Roles or AIs with a feigned sender -- the post remove is only sent when the
-> participant that sent it disconnects.
+> bundle of post removes for a particular sender.  Unlike other messages, post removes
+> MUST NOT be sent by Roles or AIs with a feigned sender -- the post remove is only sent
+> when the participant that sent it disconnects.
 >
 > The second argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
 > message, minus the length tag (since the blob already includes a length tag
