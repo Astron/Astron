@@ -1222,7 +1222,7 @@ class DBServerTestsuite(object):
         # The database must refuse to create our object:
         dg = Datagram.create([100], 75757, DBSERVER_CREATE_OBJECT_RESP)
         dg.add_uint32(5) # Context
-        dg.add_uint32(INVALID_DO_ID)
+        dg.add_doid(INVALID_DO_ID)
         self.expect(self.conn, dg)
 
         # Cleanup
