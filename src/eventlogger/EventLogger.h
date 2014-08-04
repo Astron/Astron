@@ -35,5 +35,5 @@ class EventLogger : public Role
     void cycle_log();
     void start_receive();
     void handle_receive(const boost::system::error_code &error, std::size_t bytes);
-    void process_packet(const DatagramHandle dg);
+    void process_packet(DatagramHandle dg);
 };

@@ -1,13 +1,16 @@
 #include "MessageDirector.h"
-#include "MDNetworkParticipant.h"
-#include "MDNetworkUpstream.h"
-#include "core/global.h"
-#include "config/ConfigVariable.h"
-#include "config/constraints.h"
-#include "net/TcpAcceptor.h"
 #include <algorithm>
 #include <functional>
 #include <boost/icl/interval_bounds.hpp>
+
+#include "core/global.h"
+#include "core/msgtypes.h"
+#include "config/ConfigVariable.h"
+#include "config/constraints.h"
+#include "net/TcpAcceptor.h"
+#include "MDNetworkParticipant.h"
+#include "MDNetworkUpstream.h"
+
 using boost::asio::ip::tcp;
 
 static ConfigGroup md_config("messagedirector");
@@ -277,6 +280,27 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
     // certain data structures may not have their invariants satisfied
     // during that time.
     p->post_remove();
+}
+
+void MessageDirector::preroute_post_remove(channel_t sender, DatagramHandle post_remove)
+{
+    // Add post remove upstream
+    if(m_upstream != nullptr) {
+        DatagramPtr dg = Datagram::create(CONTROL_ADD_POST_REMOVE);
+        dg->add_channel(sender);
+        dg->add_blob(post_remove);
+        m_upstream->handle_datagram(dg);
+    }
+}
+
+void MessageDirector::recall_post_removes(channel_t sender)
+{
+    // Clear post removes upstream
+    if(m_upstream != nullptr) {
+        DatagramPtr dg = Datagram::create(CONTROL_CLEAR_POST_REMOVES);
+        dg->add_channel(sender);
+        m_upstream->handle_datagram(dg);
+    }
 }
 
 void MessageDirector::receive_datagram(DatagramHandle dg)

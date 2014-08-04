@@ -354,11 +354,11 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     }
     break;
     case CLIENTAGENT_ADD_POST_REMOVE: {
-        add_post_remove(dgi.read_datagram());
+        add_post_remove(m_allocated_channel, dgi.read_datagram());
     }
     break;
     case CLIENTAGENT_CLEAR_POST_REMOVES: {
-        clear_post_removes();
+        clear_post_removes(m_allocated_channel);
     }
     break;
     case CLIENTAGENT_DECLARE_OBJECT: {
