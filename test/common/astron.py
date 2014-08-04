@@ -378,16 +378,18 @@ class Datagram(object):
         return dg
 
     @classmethod
-    def create_add_post_remove(cls, datagram):
+    def create_add_post_remove(cls, sender, datagram):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_ADD_POST_REMOVE)
-        dg.add_string(datagram.get_data())
+        dg.add_channel(sender)
+        dg.add_blob(datagram.get_data())
         return dg
 
     @classmethod
-    def create_clear_post_remove(cls):
+    def create_clear_post_removes(cls, sender):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        dg.add_channel(sender)
         return dg
 
     @classmethod
