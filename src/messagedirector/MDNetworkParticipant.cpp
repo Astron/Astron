@@ -49,11 +49,12 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
             break;
         }
         case CONTROL_ADD_POST_REMOVE: {
-            add_post_remove(dgi.read_datagram());
+            channel_t sender = dgi.read_channel();
+            add_post_remove(sender, dgi.read_datagram());
             break;
         }
-        case CONTROL_CLEAR_POST_REMOVE: {
-            clear_post_removes();
+        case CONTROL_CLEAR_POST_REMOVES: {
+            clear_post_removes(dgi.read_channel());
             break;
         }
         case CONTROL_SET_CON_NAME: {
@@ -62,6 +63,10 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
         }
         case CONTROL_SET_CON_URL: {
             set_con_url(dgi.read_string());
+            break;
+        }
+        case CONTROL_LOG_MESSAGE: {
+            log_message(dgi.read_blob());
             break;
         }
         default:

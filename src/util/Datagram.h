@@ -147,7 +147,7 @@ class Datagram
         return dg_ptr;
     }
 
-    static DatagramPtr create(const DatagramHandle dg)
+    static DatagramPtr create(DatagramHandle dg)
     {
         DatagramPtr dg_ptr(new Datagram(*dg.get()));
         return dg_ptr;
@@ -370,7 +370,7 @@ class Datagram
             buf_offset += length;
         }
     }
-    void add_data(const DatagramHandle dg)
+    void add_data(DatagramHandle dg)
     {
         if(dg->buf_offset) {
             check_add_length(dg->buf_offset);
@@ -412,12 +412,12 @@ class Datagram
         memcpy(buf + buf_offset, data, length);
         buf_offset += length;
     }
-    void add_blob(const Datagram &dg)
+    void add_blob(DatagramHandle dg)
     {
-        add_size(dg.buf_offset);
-        check_add_length(dg.buf_offset);
-        memcpy(buf + buf_offset, dg.buf, dg.buf_offset);
-        buf_offset += dg.buf_offset;
+        add_size(dg->buf_offset);
+        check_add_length(dg->buf_offset);
+        memcpy(buf + buf_offset, dg->buf, dg->buf_offset);
+        buf_offset += dg->buf_offset;
     }
 
     // add_buffer reserves a buffer of size "length" at the end of the datagram

@@ -83,6 +83,7 @@ CONSTANTS = {
     'CONTROL_CLEAR_POST_REMOVE':    9011,
     'CONTROL_SET_CON_NAME':         9012,
     'CONTROL_SET_CON_URL':          9013,
+    'CONTROL_LOG_MESSAGE':          9014,
 
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
@@ -283,6 +284,10 @@ class Datagram(object):
         self.add_size(len(string))
         self.add_raw(string)
 
+    def add_blob(self, blob):
+        self.add_size(len(blob))
+        self.add_raw(blob)
+
     def add_channel(self, channel):
         if 'USE_128BIT_CHANNELS' in os.environ:
             max_int64 = 0xFFFFFFFFFFFFFFFF
@@ -373,16 +378,18 @@ class Datagram(object):
         return dg
 
     @classmethod
-    def create_add_post_remove(cls, datagram):
+    def create_add_post_remove(cls, sender, datagram):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_ADD_POST_REMOVE)
-        dg.add_string(datagram.get_data())
+        dg.add_channel(sender)
+        dg.add_blob(datagram.get_data())
         return dg
 
     @classmethod
-    def create_clear_post_remove(cls):
+    def create_clear_post_removes(cls, sender):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        dg.add_channel(sender)
         return dg
 
     @classmethod
