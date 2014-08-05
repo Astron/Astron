@@ -162,7 +162,6 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
     std::list<channel_t> channels;
     DatagramIterator dgi(dg);
-    std::set<ChannelSubscriber*> receiving_participants;
     try {
         uint8_t channel_count = dgi.read_uint8();
 
@@ -187,23 +186,31 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
         return;
     }
 
-    lookup_channels(channels, receiving_participants);
 
-    if(p) {
-        receiving_participants.erase(p);
-    }
+    // Lock the participants while we're using values from ChannelMap,
+    // we don't want to delete the participants while we're iterating through them.
+    {
+        std::unique_lock<std::mutex> lock(m_participants_lock);
 
-    for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
-        auto participant = static_cast<MDParticipantInterface*>(*it);
-        DatagramIterator msg_dgi(dg, dgi.tell());
-        try {
-            participant->handle_datagram(dg, msg_dgi);
-        } catch(DatagramIteratorEOF &) {
-            // Log error with receivers output
-            m_log.error() << "Detected truncated datagram in handle_datagram for '" << participant->m_name <<
-                          "'"
-                          " from participant '" << p->m_name << "'." << std::endl;
-            return;
+        std::set<ChannelSubscriber*> receiving_participants;
+        lookup_channels(channels, receiving_participants);
+
+        // Participants never send to themselves
+        if(p) { receiving_participants.erase(p); }
+
+        // Dispatch the datagram to each participant
+        for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
+            auto participant = static_cast<MDParticipantInterface*>(*it);
+            DatagramIterator msg_dgi(dg, dgi.tell());
+            try {
+                participant->handle_datagram(dg, msg_dgi);
+            } catch(DatagramIteratorEOF &) {
+                // Log error with receivers output
+                m_log.error() << "Detected truncated datagram in handle_datagram for '"
+                              << participant->m_name << "' from participant '"
+                              << p->m_name << "'.\n";
+                return;
+            }
         }
     }
 
