@@ -176,7 +176,7 @@ class AstronClient : public Client, public NetworkClient
             log_event(event);
         }
 
-        terminate();
+        annihilate();
     }
 
     // forward_datagram should foward the datagram to the client, or where appopriate parse

@@ -106,6 +106,9 @@ class Client : public MDParticipantInterface
 
     Client(ClientAgent* client_agent);
 
+    // annihilate should be called to delete the client after the client has-left/disconnected.
+    void annihilate();
+
     // log_event sends an event to the EventLogger
     void log_event(LoggedEvent &event);
 
