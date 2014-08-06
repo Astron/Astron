@@ -291,7 +291,8 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 
     m_stateserver->m_objs.erase(m_do_id);
     m_log->debug() << "Deleted.\n";
-    delete this;
+
+    terminate();
 }
 
 void DistributedObject::delete_children(channel_t sender)

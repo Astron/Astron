@@ -96,7 +96,7 @@ void LoadingObject::finalize()
 {
     m_dbss->discard_loader(m_do_id);
     forward_datagrams();
-    delete this;
+    terminate();
 }
 
 void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
