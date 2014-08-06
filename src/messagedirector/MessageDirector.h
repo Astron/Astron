@@ -133,9 +133,13 @@ class MDParticipantInterface : public ChannelSubscriber
     //     the message director that the object is ready for deletion.
     inline void terminate()
     {
-        if(!m_is_terminated.test_and_set()) {
+        if(!m_is_terminated.exchange(true)) {
             MessageDirector::singleton.remove_participant(this);
         }
+    }
+    inline bool is_terminated()
+    {
+        return m_is_terminated;
     }
 
   protected:
@@ -202,7 +206,7 @@ class MDParticipantInterface : public ChannelSubscriber
   private:
     // The messages to be distributed on unexpected disconnect.
     std::map<channel_t, std::vector<DatagramHandle> > m_post_removes;
-    std::atomic_flag m_is_terminated = ATOMIC_FLAG_INIT;
+    std::atomic<bool> m_is_terminated{false};
     std::string m_name;
     std::string m_url;
 };

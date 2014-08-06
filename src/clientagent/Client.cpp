@@ -284,6 +284,8 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
     std::lock_guard<std::recursive_mutex> lock(m_client_lock);
+    if(participant->is_terminated()) { return; }
+
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {

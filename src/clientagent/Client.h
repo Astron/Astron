@@ -71,6 +71,7 @@ class Client : public MDParticipantInterface
 
     // handle_datagram is the handler for datagrams received from the server
     void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
+
   protected:
     std::recursive_mutex m_client_lock; // THE lock guarding the client.
     ClientAgent* m_client_agent; // The client_agent handling this client
