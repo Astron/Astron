@@ -196,9 +196,8 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
     for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
         auto participant = static_cast<MDParticipantInterface*>(*it);
         DatagramIterator msg_dgi(dg, dgi.tell());
-        try {
-            participant->handle_datagram(dg, msg_dgi);
-        } catch(DatagramIteratorEOF &) {
+        try { participant->handle_datagram(dg, msg_dgi); }
+        catch(DatagramIteratorEOF &) {
             // Log error with receivers output
             m_log.error() << "Detected truncated datagram in handle_datagram for '"
                           << participant->m_name << "' from participant '" << p->m_name << "'.\n";
