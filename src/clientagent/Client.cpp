@@ -30,6 +30,15 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_stat
 
 Client::~Client()
 {
+    delete m_log;
+}
+
+void Client::annihilate()
+{
+    std::lock_guard<std::recursive_mutex> lock(m_client_lock);
+    if(is_terminated()) { return; }
+
+    // Unsubscribe from all channels first so the DELETE messages aren't sent back to us.
     unsubscribe_all();
     m_client_agent->m_ct.free_channel(m_allocated_channel);
 
@@ -43,7 +52,8 @@ Client::~Client()
         route_datagram(dg);
     }
 
-    delete m_log;
+    // Tell the MD this client is gone
+    terminate();
 }
 
 // log_event sends an event to the EventLogger
@@ -284,6 +294,8 @@ void Client::send_disconnect(uint16_t reason, const std::string &error_string, b
 void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
     std::lock_guard<std::recursive_mutex> lock(m_client_lock);
+    if(is_terminated()) { return; }
+
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {

@@ -4,6 +4,7 @@
 #include <string>
 #include <queue>
 #include <thread>
+#include <atomic>
 #include <mutex>
 #include <condition_variable>
 #include <boost/asio.hpp>
@@ -61,16 +62,19 @@ class MessageDirector : public ChannelMap
 
     // Connected participants
     std::list<MDParticipantInterface*> m_participants;
+    std::list<MDParticipantInterface*> m_terminated_participants;
 
     // Threading stuff:
     bool m_shutdown;
     std::thread *m_thread;
     std::mutex m_participants_lock;
+    std::mutex m_terminated_lock;
     std::mutex m_messages_lock;
     std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
     std::condition_variable m_cv;
     std::thread::id m_main_thread;
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
+    void process_terminates();
     void routing_thread();
     void shutdown_threading();
 
@@ -103,10 +107,7 @@ class MDParticipantInterface : public ChannelSubscriber
     {
         MessageDirector::singleton.add_participant(this);
     }
-    virtual ~MDParticipantInterface()
-    {
-        MessageDirector::singleton.remove_participant(this);
-    }
+    virtual ~MDParticipantInterface() {}
 
     // handle_datagram should handle a message received from the MessageDirector.
     // Implementations of handle_datagram should be non-blocking operations.
@@ -126,6 +127,19 @@ class MDParticipantInterface : public ChannelSubscriber
             // Clear the post removes from pre-routed tables
             MessageDirector::singleton.recall_post_removes(sender_it->first);
         }
+    }
+
+    // terminate cleans up the participant's subscriptions and signals
+    //     the message director that the object is ready for deletion.
+    inline void terminate()
+    {
+        if(!m_is_terminated.exchange(true)) {
+            MessageDirector::singleton.remove_participant(this);
+        }
+    }
+    inline bool is_terminated()
+    {
+        return m_is_terminated;
     }
 
   protected:
@@ -192,9 +206,9 @@ class MDParticipantInterface : public ChannelSubscriber
   private:
     // The messages to be distributed on unexpected disconnect.
     std::map<channel_t, std::vector<DatagramHandle> > m_post_removes;
+    std::atomic<bool> m_is_terminated{false};
     std::string m_name;
     std::string m_url;
-
 };
 
 // This class abstractly represents an "upstream" link on the Message Director.

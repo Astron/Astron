@@ -36,10 +36,12 @@ MessageDirector::~MessageDirector()
 {
     shutdown_threading();
 
-    for(auto it = m_participants.begin(); it != m_participants.end(); ++it) {
-        delete *it;
+    while(!m_participants.empty()) {
+        m_terminated_participants.push_back(m_participants.front());
+        m_participants.pop_front();
     }
-    m_participants.clear();
+
+    process_terminates();
 }
 
 void MessageDirector::init_network()
@@ -162,11 +164,9 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
     std::list<channel_t> channels;
     DatagramIterator dgi(dg);
-    std::set<ChannelSubscriber*> receiving_participants;
     try {
+        // Unpack channels to send messages to
         uint8_t channel_count = dgi.read_uint8();
-
-        // Route messages to participants
         auto receive_log = m_log.trace();
         receive_log << "Receivers: ";
         for(uint8_t i = 0; i < channel_count; ++i) {
@@ -174,46 +174,63 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
             receive_log << channel << ", ";
             channels.push_back(channel);
         }
-        receive_log << std::endl;
+        receive_log << "\n";
     } catch(DatagramIteratorEOF &) {
+        // Log error with receivers output
         if(p) {
-            // Log error with receivers output
             m_log.error() << "Detected truncated datagram reading header from '"
                           << p->m_name << "'.\n";
         } else {
-            // Log error with receivers output
-            m_log.error() << "Detected truncated datagram reading header from unknown participant.\n";
+            m_log.error() << "Detected truncated datagram reading header from "
+                          "unknown participant.\n";
         }
         return;
     }
 
+    // Find the participants that need to receive the message
+    std::set<ChannelSubscriber*> receiving_participants;
     lookup_channels(channels, receiving_participants);
+    if(p) { receiving_participants.erase(p); }
 
-    if(p) {
-        receiving_participants.erase(p);
-    }
-
+    // Send the datagram to each participant
     for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
         auto participant = static_cast<MDParticipantInterface*>(*it);
         DatagramIterator msg_dgi(dg, dgi.tell());
-        try {
-            participant->handle_datagram(dg, msg_dgi);
-        } catch(DatagramIteratorEOF &) {
+
+        try { participant->handle_datagram(dg, msg_dgi); }
+        catch(DatagramIteratorEOF &) {
             // Log error with receivers output
-            m_log.error() << "Detected truncated datagram in handle_datagram for '" << participant->m_name <<
-                          "'"
-                          " from participant '" << p->m_name << "'." << std::endl;
+            m_log.error() << "Detected truncated datagram in handle_datagram for '"
+                          << participant->m_name << "' from participant '" << p->m_name << "'.\n";
             return;
         }
     }
 
-    if(p && m_upstream) { // Send message upstream
+    // Send message upstream, if necessary
+    if(p && m_upstream) {
         m_upstream->handle_datagram(dg);
         m_log.trace() << "...routing upstream." << std::endl;
-    } else if(!p) { // If there is no participant, then it came from the upstream
+    } else if(!p) {
+        // If there is no participant, then it came from the upstream
         m_log.trace() << "...not routing upstream: It came from there." << std::endl;
-    } else { // Otherwise is root node
+    } else {
+        // Otherwise this is the root MessageDirector.
         m_log.trace() << "...not routing upstream: There is none." << std::endl;
+    }
+
+    // N.B. Participants may reach end-of-life after receiving a datagram, or may
+    // be terminated in another thread (for example if a network socket closes);
+    // either way, process any received terminates after processing a datagram.
+    process_terminates();
+}
+
+
+void MessageDirector::process_terminates()
+{
+    std::lock_guard<std::mutex> lock(m_terminated_lock);
+    while(!m_terminated_participants.empty()) {
+        delete m_terminated_participants.front();
+        m_terminated_participants.pop_front();
     }
 }
 
@@ -261,18 +278,19 @@ void MessageDirector::handle_connection(tcp::socket *socket)
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
     std::lock_guard<std::mutex> lock(m_participants_lock);
-
-    m_participants.insert(m_participants.end(), p);
+    m_participants.push_back(p);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
 {
-    std::lock_guard<std::mutex> lock(m_participants_lock);
-
+    // Unsubscribe the participant from any remaining channels
     unsubscribe_all(p);
 
     // Stop tracking participant
-    m_participants.remove(p);
+    {
+        std::lock_guard<std::mutex> lock(m_participants_lock);
+        m_participants.remove(p);
+    }
 
     // Send out any post-remove messages the participant may have added.
     // N.B. this is done last, because we don't want to send messages
@@ -280,6 +298,12 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
     // certain data structures may not have their invariants satisfied
     // during that time.
     p->post_remove();
+
+    // Mark the participant for deletion
+    {
+        std::lock_guard<std::mutex> lock(m_terminated_lock);
+        m_terminated_participants.push_back(p);
+    }
 }
 
 void MessageDirector::preroute_post_remove(channel_t sender, DatagramHandle post_remove)

@@ -71,6 +71,7 @@ class Client : public MDParticipantInterface
 
     // handle_datagram is the handler for datagrams received from the server
     void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
+
   protected:
     std::recursive_mutex m_client_lock; // THE lock guarding the client.
     ClientAgent* m_client_agent; // The client_agent handling this client
@@ -104,6 +105,9 @@ class Client : public MDParticipantInterface
     LogCategory *m_log;
 
     Client(ClientAgent* client_agent);
+
+    // annihilate should be called to delete the client after the client has-left/disconnected.
+    void annihilate();
 
     // log_event sends an event to the EventLogger
     void log_event(LoggedEvent &event);
