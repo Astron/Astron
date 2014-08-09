@@ -80,5 +80,5 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
 
 void MDNetworkParticipant::receive_disconnect()
 {
-    delete this;
+   terminate();
 }

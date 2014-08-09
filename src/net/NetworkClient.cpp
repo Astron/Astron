@@ -120,8 +120,6 @@ void NetworkClient::send_disconnect()
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
-    // TODO: We might want to actually check here that bytes_transferred is the expected value
-
     if(ec.value() != 0) {
         receive_disconnect();
         return;
@@ -141,8 +139,6 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
 
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
 {
-    // TODO: We might want to actually check here that bytes_transferred is the expected value
-
     if(ec.value() != 0) {
         receive_disconnect();
         return;
