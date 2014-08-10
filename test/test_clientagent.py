@@ -1890,6 +1890,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(DistributedClientTestObject) # dclass
         self.server.send(dg)
 
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
         # Twiddle with the object, and get disconnected because we're not authenticate
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
