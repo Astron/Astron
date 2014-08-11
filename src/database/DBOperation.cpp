@@ -283,7 +283,7 @@ bool DBOperationGet::verify_class(const dclass::Class *dclass)
     if(m_type == GET_OBJECT) { return true; }
 
     // Otherwise verify the fields and spawn a warning for developers if its not valid
-    else(!verify_fields(dclass, m_get_fields)) {
+    else if(!verify_fields(dclass, m_get_fields)) {
         m_dbserver->m_log->warning() << "Request invalid field for " << m_doid
                                      << "(" << dclass->get_name() << ")\n";
     }
