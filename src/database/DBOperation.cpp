@@ -19,11 +19,10 @@ void DBOperation::announce_fields(const FieldValues& fields)
     FieldValues changed_fields;
     FieldSet deleted_fields;
     for(auto it = fields.begin(); it != fields.end(); ++it) {
-        if(it->second.empty()) {
+        if(it->second.empty())
             deleted_fields.insert(it->first);
-        } else {
+        else
             changed_fields[it->first] = it->second;
-        }
     }
 
     // Send delete fields broadcast
@@ -91,7 +90,7 @@ bool DBOperation::verify_fields(const dclass::Class *dclass, const FieldValues& 
 }
 
 bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_count,
-                                      bool deletes, bool values)
+                                      bool delete_values, bool check_values)
 {
     for(uint16_t i = 0; i < field_count; ++i) {
         uint16_t field_id = dgi.read_uint16();
@@ -103,10 +102,11 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
         }
 
         if(field->has_keyword("db")) {
-            if(values) {
-                dgi.unpack_field(field, m_criteria_fields[field]);
-            }
-            if(!deletes) {
+            // Get criteria value
+            if(check_values) { dgi.unpack_field(field, m_criteria_fields[field]); }
+
+            // Get update value
+            if(!delete_values) {
                 dgi.unpack_field(field, m_set_fields[field]);
             } else if(field->has_default_value()) {
                 string val = field->get_default_value();
@@ -117,13 +117,12 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
         } else {
             m_dbserver->m_log->warning() << "Create/modify field request included non-DB field "
                                          << field->get_name() << "\n";
-            if(!deletes) {
-                dgi.skip_field(field);
-            }
-            if(values) {
-                // It is not proper to expect a non-db field in criteria.
-                return false;
-            }
+
+            // Don't read in a non-db field
+            if(!delete_values) { dgi.skip_field(field); }
+
+            // It is not proper to expect a non-db field in criteria.
+            if(check_values) { return false; }
         }
     }
 
@@ -135,6 +134,7 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
 bool DBOperation::populate_get_fields(DatagramIterator &dgi, uint16_t field_count)
 {
     for(uint16_t i = 0; i < field_count; ++i) {
+        // Read the field from the datagram
         uint16_t field_id = dgi.read_uint16();
         const Field *field = g_dcf->get_field_by_id(field_id);
         if(!field) {
@@ -142,16 +142,16 @@ bool DBOperation::populate_get_fields(DatagramIterator &dgi, uint16_t field_coun
                                        << field_id << "\n";
             return false;
         }
-        if(field->has_keyword("db")) {
+
+        // Add the field to the fields we want to get from the database
+        if(field->has_keyword("db"))
             m_get_fields.insert(field);
-        } else {
+        else
             m_dbserver->m_log->error() << "Get field request included non-DB field "
                                        << field->get_name() << "\n";
-        }
     }
 
-    // A GET_FIELDS request is only really valid if we're actually requesting
-    // fields.
+    // A GET_FIELDS request is only really valid if we're actually requesting fields.
     return !m_get_fields.empty();
 }
 
@@ -265,10 +265,9 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
     }
 
     m_type = GET_FIELDS;
-    uint16_t field_count = 1;
 
+    uint16_t field_count = 1;
     if(msg_type == DBSERVER_OBJECT_GET_FIELD) {
-        field_count = 1;
         m_resp_msgtype = DBSERVER_OBJECT_GET_FIELD_RESP;
     } else if(msg_type == DBSERVER_OBJECT_GET_FIELDS) {
         field_count = dgi.read_uint16();
@@ -280,13 +279,11 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 
 bool DBOperationGet::verify_class(const dclass::Class *dclass)
 {
-    if(m_type == GET_OBJECT) {
-        // GET_OBJECT requests do not expect any class, so this is never
-        // invalid:
-        return true;
-    }
+    // If request is GET_OBJECT don't expect a class, so don't need to verify it.
+    if(m_type == GET_OBJECT) { return true; }
 
-    if(!verify_fields(dclass, m_get_fields)) {
+    // Otherwise verify the fields and spawn a warning for developers if its not valid
+    else(!verify_fields(dclass, m_get_fields)) {
         m_dbserver->m_log->warning() << "Request invalid field for " << m_doid
                                      << "(" << dclass->get_name() << ")\n";
     }
@@ -379,16 +376,13 @@ bool DBOperationSet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
         field_count = 1;
     }
 
-    bool deletes = false;
-    if(msg_type == DBSERVER_OBJECT_SET_FIELD ||
-       msg_type == DBSERVER_OBJECT_SET_FIELDS) {
-        deletes = false;
-    } else if(msg_type == DBSERVER_OBJECT_DELETE_FIELD ||
-              msg_type == DBSERVER_OBJECT_DELETE_FIELDS) {
-        deletes = true;
+    bool delete_values = false;
+    if(msg_type == DBSERVER_OBJECT_DELETE_FIELD ||
+       msg_type == DBSERVER_OBJECT_DELETE_FIELDS) {
+        delete_values = true;
     }
 
-    if(!populate_set_fields(dgi, field_count, deletes, false)) {
+    if(!populate_set_fields(dgi, field_count, delete_values, false)) {
         on_failure();
         return false;
     }
@@ -435,19 +429,17 @@ bool DBOperationUpdate::initialize(channel_t sender, uint16_t msg_type, Datagram
         field_count = 1;
     }
 
-    bool values = false;
+    bool check_values = true;
     if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EQUALS) {
         m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP;
-        values = true;
     } else if(msg_type == DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS) {
         m_resp_msgtype = DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP;
-        values = true;
     } else if(msg_type == DBSERVER_OBJECT_SET_FIELD_IF_EMPTY) {
         m_resp_msgtype = DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP;
-        values = false;
+        check_values = false;
     }
 
-    if(!populate_set_fields(dgi, field_count, false, values)) {
+    if(!populate_set_fields(dgi, field_count, false, check_values)) {
         on_failure();
         return false;
     }
