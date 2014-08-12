@@ -9,6 +9,7 @@
 | CONTROL_CLEAR_POST_REMOVES |    9011 |                             |
 | CONTROL_SET_CON_NAME       |    9012 | `string name`               |
 | CONTROL_SET_CON_URL        |    9013 | `string url`                |
+| CONTROL_LOG_MESSAGE        |    9014 | `blob message`              |
 
 ### Client Messages ###
 | Message                                  | Type Id | Format                                                                                                         |

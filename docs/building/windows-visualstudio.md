@@ -4,7 +4,7 @@ Building with _Visual Studio_ on Windows
 ### Dependencies ###
 You will need to, of-course, clone the repository.
 After you have the repository you will need to download and build Astron's
-dependencies.  See the [building readme](https://github.com/Astron/Astron/blob/master/doc/building/readme.md) for instructions.
+dependencies.  See the [building readme](build-readme.md) for instructions.
 
 
 ### Preparing the VS Project ###

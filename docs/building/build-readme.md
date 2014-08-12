@@ -27,5 +27,5 @@ Now that you have the dependencies you can build!
 We use CMAKE to handle cross-platform compiling.
 See the individual guides for the compiler you intend on using:
 
- - Linux/Make : [instructions](https://github.com/Astron/Astron/blob/master/doc/building/linux-gnu-make.md)
- - Windows/VisualStudio : [instructions](https://github.com/Astron/Astron/blob/master/doc/building/windows-visualstudio.md)
+ - Linux/Make : [instructions](linux-gnu-make.md)
+ - Windows/VisualStudio : [instructions](windows-visualstudio.md)
