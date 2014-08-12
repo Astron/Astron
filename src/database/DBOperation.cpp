@@ -279,7 +279,7 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 
 bool DBOperationGet::verify_class(const dclass::Class *dclass)
 {
-    // If request is GET_OBJECT don't expect a class, so don't need to verify it.
+    // If request is of type GET_OBJECT don't expect a class, so no need to verify it.
     if(m_type == GET_OBJECT) { return true; }
 
     // Otherwise verify the fields and spawn a warning for developers if its not valid
