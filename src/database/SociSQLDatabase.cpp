@@ -507,7 +507,14 @@ class SociSQLDatabase : public DatabaseBackend
 			stringstream connstring;
 			if(m_backend == "postgresql")
 			{
-				connstring << "dbname=" << m_db_name;
+				if(m_sess_user != "null" && m_sess_passwd != "null") {
+					connstring  <<  "dbname=" << m_db_name
+							 	<< " user=" << m_sess_user
+								<< " passwd=" << m_sess_passwd
+				} else {
+					connstring << "dbname=" << m_db_name;
+				} 
+				
 			}
 			else if(m_backend == "mysql")
 			{
