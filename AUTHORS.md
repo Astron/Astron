@@ -1,5 +1,5 @@
 # This is the official list of Astron authors for copyright purposes.
-# This file is distinct from the CONTRIBUTORS files.
+# This file is distinct from the CONTRIBUTORS file.
 # See the latter for an explanation.
 #
 # Please keep the list sorted.
