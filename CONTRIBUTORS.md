@@ -5,7 +5,9 @@
 # permission from every copyright holder. Contributors' contributions are always
 # freely available under the terms of the license at the time of their contribution.
 #
-# New contributors may either add themselves to the AUTHORS file as part of their original
+# Contributors will always be added to the CONTRIBUTORS file.
+#
+# New contributors may either also add themselves to the AUTHORS file as part of their original
 # contribution; or may choose to assign their copyright to the Astron project, project maintainers,
 # or another legal entity (in the case of code contributed by invididuals working on behalf of an
 # organization) as part of their original contributions.
