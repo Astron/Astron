@@ -454,10 +454,10 @@ class AstronClient : public Client, public NetworkClient
                 // is not sent.
                 // TODO: Allow configuration to limit how long historical objects remain,
                 //       for example with a timeout or bad-message limit.
-	            dgi.skip(dgi.get_remaining());
+				dgi.skip(dgi.get_remaining());
             } else {
-                stringstream ss;
-                ss << "Client tried to send update to nonexistent object " << do_id;
+				stringstream ss;
+				ss << "Client tried to send update to nonexistent object " << do_id;
 				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
             }
             return;
