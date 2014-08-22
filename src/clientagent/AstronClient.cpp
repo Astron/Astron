@@ -237,6 +237,9 @@ class AstronClient : public Client, public NetworkClient
         resp->add_uint16(dc_id);
         resp->add_data(dgi.read_remainder());
         send_datagram(resp);
+		
+		printf("DO %d (%d, %d)\n", do_id, parent_id, zone_id);
+		
     }
 
     // handle_add_ownership should inform the client it has control of a new object. The datagram
@@ -258,6 +261,8 @@ class AstronClient : public Client, public NetworkClient
     // handle_set_field should inform the client that the field has been updated.
     virtual void handle_set_field(doid_t do_id, uint16_t field_id, DatagramIterator &dgi)
     {
+		printf("DO %d: field %d\n", do_id, field_id);
+		
         DatagramPtr resp = Datagram::create();
         resp->add_uint16(CLIENT_OBJECT_SET_FIELD);
         resp->add_doid(do_id);
@@ -324,6 +329,13 @@ class AstronClient : public Client, public NetworkClient
     virtual void handle_pre_hello(DatagramIterator &dgi)
     {
         uint16_t msg_type = dgi.read_uint16();
+		if(msg_type == CLIENT_HEARTBEAT) {
+			// do something intelligent here
+			// this is required to prevent a race condition in unity-astron
+			
+			return;
+		}
+		
         if(msg_type != CLIENT_HELLO) {
             send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "First packet is not CLIENT_HELLO");
             return;
@@ -379,6 +391,11 @@ class AstronClient : public Client, public NetworkClient
             handle_client_object_update_field(dgi);
         }
         break;
+		case CLIENT_HEARTBEAT: {
+			// do something intelligent here
+			// this is required to prevent a race condition in unity-astron
+		}
+		break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not allowed prior to authentication.";
@@ -435,17 +452,18 @@ class AstronClient : public Client, public NetworkClient
 
         // If the class couldn't be found, error out:
         if(!dcc) {
+            dgi.skip(dgi.get_remaining());
+			
             if(is_historical_object(do_id)) {
                 // The client isn't disconnected in this case because it could be a delayed
                 // message, we also have to skip to the end so a disconnect overside_datagram
                 // is not sent.
                 // TODO: Allow configuration to limit how long historical objects remain,
                 //       for example with a timeout or bad-message limit.
-                dgi.skip(dgi.get_remaining());
             } else {
-                stringstream ss;
-                ss << "Client tried to send update to nonexistent object " << do_id;
-                send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+                //stringstream ss;
+                //ss << "Client tried to send update to nonexistent object " << do_id;
+               // send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
             }
             return;
         }
