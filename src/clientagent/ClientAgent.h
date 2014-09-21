@@ -58,6 +58,11 @@ class ClientAgent : public Role
         return m_hash;
     }
 
+    LogCategory *log()
+    {
+        return m_log;
+    }
+
   private:
     NetworkAcceptor *m_net_acceptor;
     std::string m_client_type;

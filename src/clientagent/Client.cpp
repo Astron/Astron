@@ -11,8 +11,10 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_stat
     m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
     m_visible_objects(), m_declared_objects(), m_interests(), m_pending_interests()
 {
+
     m_channel = m_client_agent->m_ct.alloc_channel();
     if(!m_channel) {
+        m_log = m_client_agent->log();
         send_disconnect(CLIENT_DISCONNECT_GENERIC, "Client capacity reached");
         return;
     }
