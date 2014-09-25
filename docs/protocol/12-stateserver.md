@@ -298,7 +298,7 @@ These messages are sent to a single parent object to interact with its children.
 
 **STATESERVER_GET_ACTIVE_ZONES(2125)**  
     `args(uint32 context)`  
-**STATESERVER_GET_ACTIVE_ZONES_RESP(2125)**  
+**STATESERVER_GET_ACTIVE_ZONES_RESP(2126)**  
     `args(uint32 context, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > Gets the list of zones that contain objects
 
