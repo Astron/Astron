@@ -295,6 +295,7 @@ These messages are sent to a single parent object to interact with its children.
 > Children behave as if they had received a DELETE_RAM.
 > Children who receive a DELETE_{ZONE,ZONES,CHILDREN} should not send a
 > CHANGING_LOCATION message back to the parent.
+
 **STATESERVER_GET_ACTIVE_ZONES(2125)** `args()`
 **STATESERVER_GET_ACTIVE_ZONES_RESP(2125)** `args(uint16 zone_count, [uint32 zone_id]*zone_count)`
 > Gets the list of zones that contain objects
