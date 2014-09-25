@@ -778,10 +778,15 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 			keys.insert(kv.first);
 		}
 		
+		DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_GET_ACTIVE_ZONES_RESP);
+		dg->add_uint16(keys.size());
+		
 		std::set<zone_t>::iterator it;
 		for(it = keys.begin(); it != keys.end(); ++it) {
-			std::cout << *it << "\n";
+			dg->add_zone(*it);
 		}
+		
+		route_datagram(dg);
 		break;
 	}
     default:
