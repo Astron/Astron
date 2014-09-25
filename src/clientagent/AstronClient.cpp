@@ -324,13 +324,6 @@ class AstronClient : public Client, public NetworkClient
     virtual void handle_pre_hello(DatagramIterator &dgi)
     {
         uint16_t msg_type = dgi.read_uint16();
-		if(msg_type == CLIENT_HEARTBEAT) {
-			// do something intelligent here
-			// this is required to prevent a race condition in unity-astron
-			
-			return;
-		}
-		
         if(msg_type != CLIENT_HELLO) {
             send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "First packet is not CLIENT_HELLO");
             return;
@@ -386,11 +379,6 @@ class AstronClient : public Client, public NetworkClient
             handle_client_object_update_field(dgi);
         }
         break;
-		case CLIENT_HEARTBEAT: {
-			// do something intelligent here
-			// this is required to prevent a race condition in unity-astron
-		}
-		break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not allowed prior to authentication.";
@@ -447,18 +435,17 @@ class AstronClient : public Client, public NetworkClient
 
         // If the class couldn't be found, error out:
         if(!dcc) {
-			
             if(is_historical_object(do_id)) {
                 // The client isn't disconnected in this case because it could be a delayed
                 // message, we also have to skip to the end so a disconnect overside_datagram
                 // is not sent.
                 // TODO: Allow configuration to limit how long historical objects remain,
                 //       for example with a timeout or bad-message limit.
-				dgi.skip(dgi.get_remaining());
+                dgi.skip(dgi.get_remaining());
             } else {
-				stringstream ss;
-				ss << "Client tried to send update to nonexistent object " << do_id;
-				send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
+                stringstream ss;
+                ss << "Client tried to send update to nonexistent object " << do_id;
+                send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
             }
             return;
         }
