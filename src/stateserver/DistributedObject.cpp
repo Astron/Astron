@@ -769,6 +769,21 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
         break;
     }
+	case STATESERVER_GET_ACTIVE_ZONES: {
+		m_log->trace() << "Get active zones request";
+		
+		std::set<zone_t> keys;
+		
+		for(auto kv : m_zone_objects) {
+			keys.insert(kv.first);
+		}
+		
+		std::set<zone_t>::iterator it;
+		for(it = keys.begin(); it != keys.end(); ++it) {
+			std::cout << *it << "\n";
+		}
+		break;
+	}
     default:
         if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX) {
             m_log->warning() << "Received unknown message of type " << msgtype << ".\n";
