@@ -770,7 +770,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         break;
     }
 	case STATESERVER_GET_ACTIVE_ZONES: {
-		uint32 context = dgi.read_uint32();
+		uint32_t context = dgi.read_uint32();
 		
 		std::set<zone_t> keys;
 		
