@@ -775,6 +775,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 	// instead, a zone is said to be active if it has at least one object in it
 	// to get the active zones, get the keys from m_zone_objects and dump them into a std::set<zone_t>
 	// using an std::set ensures that no duplicate zones are sent
+	// TODO: evaluate efficiency on large games with many DistributedObjects
 	
 	case STATESERVER_GET_ACTIVE_ZONES: {
 		uint32_t context = dgi.read_uint32();
