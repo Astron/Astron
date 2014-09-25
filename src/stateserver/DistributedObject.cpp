@@ -770,6 +770,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         break;
     }
 	case STATESERVER_GET_ACTIVE_ZONES: {
+		uint32 context = dgi.read_uint32();
+		
 		std::set<zone_t> keys;
 		
 		for(auto kv : m_zone_objects) {
@@ -777,6 +779,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 		}
 		
 		DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_GET_ACTIVE_ZONES_RESP);
+		
+		dg->add_uint32(context);
 		dg->add_uint16(keys.size());
 		
 		std::set<zone_t>::iterator it;
