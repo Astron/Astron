@@ -770,8 +770,6 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         break;
     }
 	case STATESERVER_GET_ACTIVE_ZONES: {
-		m_log->trace() << "Get active zones request";
-		
 		std::set<zone_t> keys;
 		
 		for(auto kv : m_zone_objects) {
