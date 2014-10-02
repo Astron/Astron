@@ -1855,32 +1855,38 @@ class TestStateServer(ProtocolTest):
         ### Cleanup ###
         for mdconn in [conn, children0, location1, location20, location21]:
             self.disconnect(mdconn)
-            
+
     def test_active_zones(self):
         self.flush_failed()
         conn = self.connect(5)
-        
+
         doid0 = 1000 # root
         doid1 = 2000
         doid2 = 2001
-        
+
         # create a tree
         createEmptyDTO1(conn, 5, doid0)
         createEmptyDTO1(conn, 5, doid1, doid0, 1234)
         createEmptyDTO1(conn, 5, doid2, doid0, 1337)
-                
-        time.sleep(0.3)        
-                
+
+        time.sleep(0.3)
+
         dg = Datagram.create([doid0], 5, STATESERVER_GET_ACTIVE_ZONES)
         dg.add_uint32(0)
         conn.send(dg)
-        
+
         dg = Datagram.create([5], doid0, STATESERVER_GET_ACTIVE_ZONES_RESP)
         dg.add_uint32(0)
         dg.add_uint16(2)
         dg.add_zone(1234)
         dg.add_zone(1337)
-        self.expect(conn, dg)   
+        self.expect(conn, dg)
+
+        ### Cleanup ###
+        deleteObject(conn, 5, doid0)
+        deleteObject(conn, 5, doid1)
+        deleteObject(conn, 5, doid2)
+        self.disconnect(conn)
 
     # Tests the keyword clrecv
     def test_clrecv(self):
