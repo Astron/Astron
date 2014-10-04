@@ -9,6 +9,11 @@
 #include "dc/Parameter.h"
 #include "util/byteorder.h"
 
+#if defined(WIN32) && defined(_MSC_VER) && _MSC_VER <= 1800
+#define snprintf sprintf_s
+#endif
+
+
 #include "format.h"
 using namespace std;
 namespace dclass   // open namespace dclass
@@ -88,7 +93,7 @@ struct Formatter {
             if(!remaining(sizeof(int64_t))) {
                 return false;
             }
-            int v = swap_le(*(int64_t*)(in + offset));
+            int64_t v = swap_le(*(int64_t*)(in + offset));
             offset += sizeof(int64_t);
             out << v;
             break;
@@ -124,7 +129,7 @@ struct Formatter {
             if(!remaining(sizeof(uint64_t))) {
                 return false;
             }
-            unsigned int v = swap_le(*(uint64_t*)(in + offset));
+            uint64_t v = swap_le(*(uint64_t*)(in + offset));
             offset += sizeof(uint64_t);
             out << v;
             break;
@@ -514,7 +519,7 @@ void format_hex(const string &str, ostream &out)
     out << '<';
     for(auto it = str.begin(); it != str.end(); ++it) {
         char infer[10];
-        sprintf(infer, "%02x", (unsigned char)(*it));
+        snprintf(infer, 10, "%02x", (unsigned char)(*it));
         out << infer;
     }
     out << '>';
@@ -541,7 +546,7 @@ void format_quoted(char quote_mark, const string &str, ostream &out)
         } else if(!isprint(c)) { // character is not a printable ascii character
             // print the character as an escaped hexidecimal character constant
             char infer[10];
-            sprintf(infer, "%02x", (unsigned char)c);
+            snprintf(infer, 10, "%02x", (unsigned char)c);
             out << "\\x" << infer;
         } else {
             out << c;

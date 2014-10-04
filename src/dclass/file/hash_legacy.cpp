@@ -368,7 +368,7 @@ void hash_int_type(HashGenerator& hashgen, const NumericType* numeric)
 {
     hashgen.add_int(numeric->get_divisor());
     if(numeric->has_modulus()) {
-        unsigned int modulus = floor(numeric->get_modulus() * numeric->get_divisor() + 0.5);
+        unsigned int modulus = (unsigned int)floor(numeric->get_modulus() * numeric->get_divisor() + 0.5);
         hashgen.add_int(int(modulus));
     }
     if(numeric->has_range()) {

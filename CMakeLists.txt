@@ -20,6 +20,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 ### Define extra windows defines ###
 if(WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 endif()
 
 ### Set build type to Release with Debug Info by default ###
@@ -413,6 +415,7 @@ source_group("Core" FILES ${CORE_FILES})
 source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
+source_group("Net" FILES ${NET_FILES})
 if(STATESERVER_FILES)
 	add_definitions(-DBUILD_STATESERVER)
 	source_group("StateServer" FILES ${STATESERVER_FILES})

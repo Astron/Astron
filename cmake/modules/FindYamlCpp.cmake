@@ -7,7 +7,7 @@
 #  YAMLCPP_LIBRARY_DIR, the directory containing YAML_LIBRARY
 #
 # By default, the dynamic libraries of yaml-cpp will be found. To find the static ones instead,
-# you must set the YAMLCPP_USE_STATIC_LIBS variable to TRUE before calling find_package(YamlCpp ...).
+# you must set the YAMLCPP_USE_STATIC_LIBS variable to TRUE before calling find_package(YamlCpp ...)
 
 # attempt to find static library first if this is set
 if(YAMLCPP_USE_STATIC_LIBS)
@@ -31,7 +31,7 @@ find_path(YAMLCPP_INCLUDE_DIR yaml-cpp/yaml.h
 # find the yaml-cpp library
 find_library(YAMLCPP_LIBRARY
              NAMES ${YAMLCPP_STATIC} yaml-cpp libyaml-cppmd.lib
-             PATH_SUFFIXES lib64 lib
+             PATH_SUFFIXES lib64 lib ${CMAKE_BUILD_TYPE}
              PATHS ~/Library/Frameworks
                     /Library/Frameworks
                     /usr/local

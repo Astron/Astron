@@ -14,7 +14,7 @@ void MDNetworkParticipant::handle_datagram(DatagramHandle dg, DatagramIterator&)
     logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
     try {
         send_datagram(dg);
-    } catch(const boost::system::system_error &e) {
+    } catch(const boost::system::system_error &) {
         logger().warning() << "Received a system error while sending a datagram to a network "
                            "participant (the participant may have lost connection)." << std::endl;
         return;
