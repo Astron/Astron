@@ -15,7 +15,10 @@ On your machine clone with:
 
 
 ### Dependencies ###
-Astron has two dependencies: libyaml-cpp and boost.
+
+ * libyaml-cpp 0.5+
+ * boost 1.55+
+ * openssl 1.0.1+
 
 Get the boost library from http://www.boost.org/users/download/, or install from a package on linux.  Very old versions of the boost library may not work as there are dependencies on some features of boost::asio and boost::icl.
 In some environments, you may have to set the BOOST_ROOT or BOOSTROOT environment variable to the root of your compiled boost libraries.

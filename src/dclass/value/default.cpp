@@ -77,7 +77,7 @@ string create_default_value(const DistributedType* dtype, bool& is_implicit)
     case T_STRING: {
         const ArrayType* array = dtype->as_array();
         uint64_t min_array_elements = array->get_range().min.uinteger;
-        return string(min_array_elements, '\0');
+        return string((unsigned int)min_array_elements, '\0');
     }
     case T_VARARRAY:
     case T_VARBLOB:
