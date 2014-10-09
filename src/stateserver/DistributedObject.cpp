@@ -119,6 +119,19 @@ void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool
 
 
 
+void DistributedObject::send_interest_entry(channel_t location, uint32_t context)
+{
+    DatagramPtr dg = Datagram::create(location, m_do_id, m_ram_fields.size() ?
+                                      STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER :
+                                      STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED);
+    dg->add_uint32(context);
+    append_required_data(dg, true);
+    if(m_ram_fields.size()) {
+        append_other_data(dg, true);
+    }
+    route_datagram(dg);
+}
+
 void DistributedObject::send_location_entry(channel_t location)
 {
     DatagramPtr dg = Datagram::create(location, m_do_id, m_ram_fields.size() ?
@@ -725,7 +738,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             uint16_t zone_count = dgi.read_uint16();
             for(uint16_t i = 0; i < zone_count; ++i) {
                 if(dgi.read_doid() == m_zone_id) {
-                    send_location_entry(sender);
+                    send_interest_entry(sender, context);
                     break;
                 }
             }

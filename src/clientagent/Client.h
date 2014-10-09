@@ -32,6 +32,7 @@ struct DeclaredObject {
 struct VisibleObject : DeclaredObject {
     doid_t parent;
     zone_t zone;
+    uint32_t request_context;
 };
 
 // An Interest represents a Client's interest opened with a
@@ -50,6 +51,7 @@ class InterestOperation
   public:
     uint16_t m_interest_id;
     uint32_t m_client_context;
+    uint32_t m_request_context;
     doid_t m_parent;
     std::unordered_set<zone_t> m_zones;
     std::set<channel_t> m_callers;
@@ -60,7 +62,8 @@ class InterestOperation
     InterestOperation(uint16_t interest_id, uint32_t client_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
-    bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects);
+    bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects,
+                  uint32_t request_context);
     void store_total(doid_t total);
 };
 

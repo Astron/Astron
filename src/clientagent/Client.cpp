@@ -8,7 +8,7 @@
 using dclass::Class;
 
 Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent), m_state(CLIENT_STATE_NEW),
-    m_channel(0), m_allocated_channel(0), m_next_context(0), m_owned_objects(), m_seen_objects(),
+    m_channel(0), m_allocated_channel(0), m_next_context(1), m_owned_objects(), m_seen_objects(),
     m_visible_objects(), m_declared_objects(), m_interests(), m_pending_interests()
 {
 
@@ -526,7 +526,14 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     }
     break;
     case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED:
-    case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER: {
+    case STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER:
+    case STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED:
+    case STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER: {
+        uint32_t request_context = 0;
+        if(msgtype == STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED ||
+           msgtype == STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER) {
+           request_context = dgi.read_uint32();
+        }
         doid_t do_id = dgi.read_doid();
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
@@ -541,19 +548,26 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             obj.dcc = g_dcf->get_class_by_id(dc_id);
             obj.parent = parent;
             obj.zone = zone;
+            obj.request_context = request_context;
             m_visible_objects[do_id] = obj;
         }
         m_seen_objects.insert(do_id);
 
         handle_add_object(do_id, parent, zone, dc_id, dgi,
-                          msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER);
+                          msgtype == STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER ||
+                          msgtype == STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER);
+
+        // Don't check this entrance against pending interests unless it was an ENTER_INTEREST message
+        if(!request_context) {
+            break;
+        }
 
         // TODO: This is a tad inefficient as it checks every pending interest.
         // In practice, there shouldn't be many add-interest operations active
         // at once, however.
         std::list<uint32_t> deferred_deletes;
         for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second.is_ready(m_visible_objects)) {
+            if(it->second.is_ready(m_visible_objects, it->first)) {
                 notify_interest_done(&it->second);
                 handle_interest_done(it->second.m_interest_id, it->second.m_client_context);
                 deferred_deletes.push_back(it->first);
@@ -578,7 +592,7 @@ void Client::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
         it->second.store_total(count);
 
-        if(it->second.is_ready(m_visible_objects)) {
+        if(it->second.is_ready(m_visible_objects, context)) {
             notify_interest_done(&it->second);
             handle_interest_done(it->second.m_interest_id,
                                  it->second.m_client_context);
@@ -702,7 +716,8 @@ InterestOperation::InterestOperation(uint16_t interest_id, uint32_t client_conte
     m_callers.insert(m_callers.end(), caller);
 }
 
-bool InterestOperation::is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects)
+bool InterestOperation::is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects,
+                                 uint32_t request_context)
 {
     if(!m_has_total) {
         return false;
@@ -712,7 +727,8 @@ bool InterestOperation::is_ready(const std::unordered_map<doid_t, VisibleObject>
     for(auto it = visible_objects.begin(); it != visible_objects.end(); ++it) {
         const VisibleObject &obj = it->second;
         if(obj.parent == m_parent &&
-           (m_zones.find(obj.zone) != m_zones.end())) {
+           (m_zones.find(obj.zone) != m_zones.end()) &&
+           obj.request_context == request_context) {
             count++;
         }
     }
