@@ -1733,7 +1733,8 @@ class TestStateServer(ProtocolTest):
 
             # 3. Expect objects:
             for id, zone in objects:
-                dg = Datagram.create([5], id, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+                dg = Datagram.create([5], id, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+                dg.add_uint32(0xF337)
                 appendMeta(dg, id, doid0, zone, DistributedTestObject1)
                 dg.add_uint32(0) # setRequired1
                 expected.append(dg)

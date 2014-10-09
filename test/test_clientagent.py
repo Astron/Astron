@@ -830,7 +830,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # We'll throw a couple objects its way:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context) # request_context
         dg.add_doid(8888) # do_id
         dg.add_doid(1234) # parent_id
         dg.add_zone(5555) # zone_id
@@ -849,7 +850,8 @@ class TestClientAgent(ProtocolTest):
         self.expect(client, dg, isClient = True)
 
         # Now the CA discovers the second object...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER)
+        dg.add_uint32(context) # request_context
         dg.add_doid(7777) # do_id
         dg.add_doid(1234) # parent_id
         dg.add_zone(4444) # zone_id
@@ -1159,7 +1161,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # We'll give them the object:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER)
+        dg.add_uint32(context)
         dg.add_doid(777711) # do_id
         dg.add_doid(1235) # parent_id
         dg.add_zone(111111) # zone_id
@@ -1279,7 +1282,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # Let's give 'em one...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context)
         dg.add_doid(54321) # do_id
         dg.add_doid(1235) # parent_id
         dg.add_zone(2222) # zone_id
@@ -1403,7 +1407,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # Let's give 'em one...
-        dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 54321, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context)
         dg.add_doid(54321) # do_id
         dg.add_doid(1235) # parent_id
         dg.add_zone(2222) # zone_id
@@ -1491,7 +1496,8 @@ class TestClientAgent(ProtocolTest):
         dg.add_doid(1) # Object count, uses an integer with same width as doid
         self.server.send(dg)
 
-        dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 23239, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context)
         dg.add_doid(23239) # do_id
         dg.add_doid(1235) # parent_id
         dg.add_zone(8888) # zone_id
@@ -1621,7 +1627,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # We'll throw a couple objects its way:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(ss_context)
         dg.add_doid(8888) # do_id
         dg.add_doid(1234) # parent_id
         dg.add_zone(5555) # zone_id
@@ -1640,7 +1647,8 @@ class TestClientAgent(ProtocolTest):
         self.expect(client, dg, isClient = True)
 
         # Now the CA discovers the second object...
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER)
+        dg.add_uint32(ss_context)
         dg.add_doid(7777) # do_id
         dg.add_doid(1234) # parent_id
         dg.add_zone(4444) # zone_id
@@ -1837,7 +1845,8 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # We'll throw an object its way:
-        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(ss_context)
         dg.add_doid(343536) # do_id
         dg.add_doid(1235) # parent_id
         dg.add_zone(8888) # zone_id
