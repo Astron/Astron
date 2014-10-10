@@ -767,7 +767,7 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # The client shouldn't have heard anything back yet
-        #self.expectNone(isClient=True)
+        self.expectNone(client)
 
         # Now begins actual object entry into the interest's zone. Start with a contextually linked object.
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
@@ -877,7 +877,7 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
 
         # The client shouldn't have heard anything back yet
-        #self.expectNone(isClient=True)
+        self.expectNone(client)
 
         # Now begins actual object entry into the interest's zone. Start with a contextually linked object.
         dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
