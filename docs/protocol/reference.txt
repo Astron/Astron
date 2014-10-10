@@ -96,6 +96,8 @@
 | STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER    |    2063 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
 | STATESERVER_OBJECT_GET_OWNER                          |    2064 | `uint32 context`                                                                                  |
 | STATESERVER_OBJECT_GET_OWNER_RESP                     |    2065 | `uint32 context`, `uint32 do_id`, `uint64 owner_chanenl`                                          |
+| STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED       |    2066 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |
+| STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER |    2067 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
 
 ### Parent Object Methods ###
 | Message                                      | Type Id | Format                                                               |
