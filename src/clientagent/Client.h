@@ -32,7 +32,6 @@ struct DeclaredObject {
 struct VisibleObject : DeclaredObject {
     doid_t parent;
     zone_t zone;
-    uint32_t request_context;
 };
 
 // An Interest represents a Client's interest opened with a
@@ -43,11 +42,14 @@ struct Interest {
     std::unordered_set<zone_t> zones;
 };
 
+
+class Client; // forward declaration
 // An InterestOperation represents the process of receiving the entirety of the interest
 // within a client.  The InterestOperation stays around until all new visible obterjects from a
 // newly created or updated interest have been received and forwarded to the Client.
 class InterestOperation
 {
+  friend class Client;
   public:
     uint16_t m_interest_id;
     uint32_t m_client_context;
@@ -62,13 +64,25 @@ class InterestOperation
     InterestOperation(uint16_t interest_id, uint32_t client_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
-    bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects,
-                  uint32_t request_context);
+    // is_ready doesn't need any parameters because each pending
+    // generate represents one of our expected objects
+    bool is_ready();
     void store_total(doid_t total);
+    void queue_generate(DatagramHandle dgh);
+    void queue_datagram(DatagramHandle dgh);
+    // we got stood up! decrement the expected object count. it's like freshman year all over again :(
+    void object_left();
+    // we're ready to be done here
+    void conclude_operation(Client *client);
+
+  private:
+    std::list<DatagramHandle> m_pending_generates;
+    std::list<DatagramHandle> m_pending_datagrams;
 };
 
 class Client : public MDParticipantInterface
 {
+  friend class InterestOperation;
   public:
     virtual ~Client();
 
@@ -98,6 +112,8 @@ class Client : public MDParticipantInterface
     std::unordered_map<doid_t, VisibleObject> m_visible_objects;
     // m_declared_objects is a map of declared objects to their metadata.
     std::unordered_map<doid_t, DeclaredObject> m_declared_objects;
+    // m_pending_objects is a map of doids for objects that we need to buffer dg's for
+    std::unordered_map<doid_t, uint32_t> m_pending_objects;
 
     // m_interests is a map of interest ids to interests.
     std::unordered_map<uint16_t, Interest> m_interests;
@@ -144,6 +160,15 @@ class Client : public MDParticipantInterface
     // is_historical_object returns true if the object was once visible to the client, but has
     // since been deleted.  The return is still true even if the object has become visible again.
     bool is_historical_object(doid_t do_id);
+
+
+    // handle_object_entrance is a common handler for object entrance. the DGI should be positioned
+    // at the start of the do_id parameter
+    void handle_object_entrance(DatagramIterator &dgi, bool other);
+
+    // object_pending_interest checks the object against m_pending_objects, and if the objects is
+    // involved in a pending iop, queues the datagram for later sending, and returns true
+    inline bool object_pending_interest(doid_t do_id, DatagramHandle dgh);
 
     /* Client Interface */
     // send_disconnect must close any connections with a connected client; the given reason and
