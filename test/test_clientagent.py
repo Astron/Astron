@@ -954,12 +954,14 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
-        # We also receive a set field for it!
-        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4321], 1, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_doid(8888) # do_id
-        dg.add_uint16(setBR1)
-        dg.add_string("I've built my life on judgement and causing pain...")
-        self.server.send(dg)
+        # Not sure what the correct behavior here is.  May need to track the
+        # difference between objects in the snapshot and other enters
+        ## We also receive a set field for it!
+        #dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4321], 1, STATESERVER_OBJECT_SET_FIELD)
+        #dg.add_doid(8888) # do_id
+        #dg.add_uint16(setBR1)
+        #dg.add_string("I've built my life on judgement and causing pain...")
+        #self.server.send(dg)
 
         # We now tell the CA that there is 1 object in the zone
         dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
