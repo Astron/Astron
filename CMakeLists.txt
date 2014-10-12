@@ -20,6 +20,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 ### Define extra windows defines ###
 if(WIN32)
 	add_definitions(-D_WIN32_WINDOWS)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 endif()
 
 ### Set build type to Release with Debug Info by default ###
@@ -88,14 +90,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 
 ### OS Specific Settings ###
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")		### Set Yaml libary name for Windows
-	set(YAMLCPP_LIBNAME "libyaml-cppmd" CACHE STRING "Name of YAML library")
-	set(YAMLCPP_LIBNAME optimized ${YAMLCPP_LIBNAME} debug ${YAMLCPP_LIBNAME}d)
-
-else()											### Set Yaml libary name for Unix, Linux, OS X, etc
-	set(YAMLCPP_LIBNAME "yaml-cpp" CACHE STRING "Name of YAML library")
-endif()
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	set(CMAKE_CXX_FLAGS "-pthread -lrt")
 endif()
@@ -440,6 +434,7 @@ source_group("Core" FILES ${CORE_FILES})
 source_group("Config" FILES ${CONFIG_FILES})
 source_group("Util" FILES ${UTIL_FILES})
 source_group("MessageDirector" FILES ${MESSAGEDIRECTOR_FILES})
+source_group("Net" FILES ${NET_FILES})
 if(STATESERVER_FILES)
 	add_definitions(-DBUILD_STATESERVER)
 	source_group("StateServer" FILES ${STATESERVER_FILES})

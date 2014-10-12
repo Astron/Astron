@@ -119,6 +119,19 @@ void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool
 
 
 
+void DistributedObject::send_interest_entry(channel_t location, uint32_t context)
+{
+    DatagramPtr dg = Datagram::create(location, m_do_id, m_ram_fields.size() ?
+                                      STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER :
+                                      STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED);
+    dg->add_uint32(context);
+    append_required_data(dg, true);
+    if(m_ram_fields.size()) {
+        append_other_data(dg, true);
+    }
+    route_datagram(dg);
+}
+
 void DistributedObject::send_location_entry(channel_t location)
 {
     DatagramPtr dg = Datagram::create(location, m_do_id, m_ram_fields.size() ?
@@ -724,8 +737,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             // and if so, reply:
             uint16_t zone_count = dgi.read_uint16();
             for(uint16_t i = 0; i < zone_count; ++i) {
-                if(dgi.read_doid() == m_zone_id) {
-                    send_location_entry(sender);
+                if(dgi.read_zone() == m_zone_id) {
+                    send_interest_entry(sender, context);
                     break;
                 }
             }
@@ -769,6 +782,36 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
         break;
     }
+
+	// zones in Astron don't have meaning to the cluster itself
+	// as such, there is no table of zones to query in the network
+	// instead, a zone is said to be active if it has at least one object in it
+	// to get the active zones, get the keys from m_zone_objects and dump them into a std::set<zone_t>
+	// using an std::set ensures that no duplicate zones are sent
+	// TODO: evaluate efficiency on large games with many DistributedObjects
+
+	case STATESERVER_GET_ACTIVE_ZONES: {
+		uint32_t context = dgi.read_uint32();
+
+		std::set<zone_t> keys;
+
+		for(auto kv : m_zone_objects) {
+			keys.insert(kv.first);
+		}
+
+		DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_GET_ACTIVE_ZONES_RESP);
+
+		dg->add_uint32(context);
+		dg->add_uint16(keys.size());
+
+		std::set<zone_t>::iterator it;
+		for(it = keys.begin(); it != keys.end(); ++it) {
+			dg->add_zone(*it);
+		}
+
+		route_datagram(dg);
+		break;
+	}
     default:
         if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX) {
             m_log->warning() << "Received unknown message of type " << msgtype << ".\n";
