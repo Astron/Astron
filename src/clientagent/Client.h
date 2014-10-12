@@ -45,7 +45,7 @@ struct Interest {
 
 class Client; // forward declaration
 // An InterestOperation represents the process of receiving the entirety of the interest
-// within a client.  The InterestOperation stays around until all new visible obterjects from a
+// within a client.  The InterestOperation stays around until all new visible objects from a
 // newly created or updated interest have been received and forwarded to the Client.
 class InterestOperation
 {
