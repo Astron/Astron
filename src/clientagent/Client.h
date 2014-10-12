@@ -49,7 +49,6 @@ class Client; // forward declaration
 // newly created or updated interest have been received and forwarded to the Client.
 class InterestOperation
 {
-  friend class Client;
   public:
     uint16_t m_interest_id;
     uint32_t m_client_context;
@@ -58,26 +57,21 @@ class InterestOperation
     std::unordered_set<zone_t> m_zones;
     std::set<channel_t> m_callers;
 
-    bool m_has_total;
-    doid_t m_total; // as doid_t because <max_objs_in_zones> == <max_total_objs>
+    bool m_has_total = false;
+    doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
-    InterestOperation(uint16_t interest_id, uint32_t client_context,
-                      doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
-
-    // is_ready doesn't need any parameters because each pending
-    // generate represents one of our expected objects
-    bool is_ready();
-    void store_total(doid_t total);
-    void queue_generate(DatagramHandle dgh);
-    void queue_datagram(DatagramHandle dgh);
-    // we got stood up! decrement the expected object count. it's like freshman year all over again :(
-    void object_left();
-    // we're ready to be done here
-    void conclude_operation(Client *client);
-
-  private:
     std::list<DatagramHandle> m_pending_generates;
     std::list<DatagramHandle> m_pending_datagrams;
+
+    InterestOperation(uint16_t interest_id, uint32_t client_context, uint32_t request_context,
+                      doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
+
+    bool is_ready();
+    void set_expected(doid_t total);
+    void decrement_expected();
+    void queue_expected(DatagramHandle dg);
+    void queue_datagram(DatagramHandle dg);
+    void finish(Client *client);
 };
 
 class Client : public MDParticipantInterface
@@ -90,12 +84,12 @@ class Client : public MDParticipantInterface
     void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
 
   protected:
-    std::recursive_mutex m_client_lock; // THE lock guarding the client.
-    ClientAgent* m_client_agent; // The client_agent handling this client
-    ClientState m_state; // current state of the Client state machine
-    channel_t m_channel; // current channel client is listening on
-    channel_t m_allocated_channel; // channel assigned to client at creation time
-    uint32_t m_next_context;
+    std::recursive_mutex m_client_lock;     // The lock guarding the client.
+    ClientAgent* m_client_agent;            // The ClientAgent handling this client
+    ClientState m_state = CLIENT_STATE_NEW; // Current state of the Client state machine
+    channel_t m_channel = 0;                // Current channel client is listening on
+    channel_t m_allocated_channel = 0;      // Channel assigned to client at creation time
+    uint32_t m_next_context = 1;
 
     // m_owned_objects is a list of all objects visible through ownership
     std::unordered_set<doid_t> m_owned_objects;
@@ -166,9 +160,9 @@ class Client : public MDParticipantInterface
     // at the start of the do_id parameter
     void handle_object_entrance(DatagramIterator &dgi, bool other);
 
-    // object_pending_interest checks the object against m_pending_objects, and if the objects is
+    // try_queue_pending checks the object against m_pending_objects, and if the objects is
     // involved in a pending iop, queues the datagram for later sending, and returns true
-    inline bool object_pending_interest(doid_t do_id, DatagramHandle dgh);
+    inline bool try_queue_pending(doid_t do_id, DatagramHandle dg);
 
     /* Client Interface */
     // send_disconnect must close any connections with a connected client; the given reason and
