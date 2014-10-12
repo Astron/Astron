@@ -42,30 +42,41 @@ struct Interest {
     std::unordered_set<zone_t> zones;
 };
 
+
+class Client; // forward declaration
 // An InterestOperation represents the process of receiving the entirety of the interest
-// within a client.  The InterestOperation stays around until all new visible obterjects from a
+// within a client.  The InterestOperation stays around until all new visible objects from a
 // newly created or updated interest have been received and forwarded to the Client.
 class InterestOperation
 {
   public:
     uint16_t m_interest_id;
     uint32_t m_client_context;
+    uint32_t m_request_context;
     doid_t m_parent;
     std::unordered_set<zone_t> m_zones;
     std::set<channel_t> m_callers;
 
-    bool m_has_total;
-    doid_t m_total; // as doid_t because <max_objs_in_zones> == <max_total_objs>
+    bool m_has_total = false;
+    doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
-    InterestOperation(uint16_t interest_id, uint32_t client_context,
+    std::list<DatagramHandle> m_pending_generates;
+    std::list<DatagramHandle> m_pending_datagrams;
+
+    InterestOperation(uint16_t interest_id, uint32_t client_context, uint32_t request_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
-    bool is_ready(const std::unordered_map<doid_t, VisibleObject> &visible_objects);
-    void store_total(doid_t total);
+    bool is_ready();
+    void set_expected(doid_t total);
+    void decrement_expected();
+    void queue_expected(DatagramHandle dg);
+    void queue_datagram(DatagramHandle dg);
+    void finish(Client *client);
 };
 
 class Client : public MDParticipantInterface
 {
+  friend class InterestOperation;
   public:
     virtual ~Client();
 
@@ -73,12 +84,12 @@ class Client : public MDParticipantInterface
     void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
 
   protected:
-    std::recursive_mutex m_client_lock; // THE lock guarding the client.
-    ClientAgent* m_client_agent; // The client_agent handling this client
-    ClientState m_state; // current state of the Client state machine
-    channel_t m_channel; // current channel client is listening on
-    channel_t m_allocated_channel; // channel assigned to client at creation time
-    uint32_t m_next_context;
+    std::recursive_mutex m_client_lock;     // The lock guarding the client.
+    ClientAgent* m_client_agent;            // The ClientAgent handling this client
+    ClientState m_state = CLIENT_STATE_NEW; // Current state of the Client state machine
+    channel_t m_channel = 0;                // Current channel client is listening on
+    channel_t m_allocated_channel = 0;      // Channel assigned to client at creation time
+    uint32_t m_next_context = 1;
 
     // m_owned_objects is a list of all objects visible through ownership
     std::unordered_set<doid_t> m_owned_objects;
@@ -95,6 +106,8 @@ class Client : public MDParticipantInterface
     std::unordered_map<doid_t, VisibleObject> m_visible_objects;
     // m_declared_objects is a map of declared objects to their metadata.
     std::unordered_map<doid_t, DeclaredObject> m_declared_objects;
+    // m_pending_objects is a map of doids for objects that we need to buffer dg's for
+    std::unordered_map<doid_t, uint32_t> m_pending_objects;
 
     // m_interests is a map of interest ids to interests.
     std::unordered_map<uint16_t, Interest> m_interests;
@@ -141,6 +154,15 @@ class Client : public MDParticipantInterface
     // is_historical_object returns true if the object was once visible to the client, but has
     // since been deleted.  The return is still true even if the object has become visible again.
     bool is_historical_object(doid_t do_id);
+
+
+    // handle_object_entrance is a common handler for object entrance. the DGI should be positioned
+    // at the start of the do_id parameter
+    void handle_object_entrance(DatagramIterator &dgi, bool other);
+
+    // try_queue_pending checks the object against m_pending_objects, and if the objects is
+    // involved in a pending iop, queues the datagram for later sending, and returns true
+    inline bool try_queue_pending(doid_t do_id, DatagramHandle dg);
 
     /* Client Interface */
     // send_disconnect must close any connections with a connected client; the given reason and

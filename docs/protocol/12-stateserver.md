@@ -3,6 +3,7 @@ State-Server Behavior
 **Authors**  
 Sam "CFSworks" Edwards (08-30-2013)  
 Kevin "Kestred" Stenerson (09-04-2013)
+Jeremy "jjkoletar" Koletar (10-09-2014)
 
 
 ### Section 0: Abstract ###
@@ -174,6 +175,17 @@ to one object at a time.
 > fields are not included in the object serialization.  Broadcast fields are the
 > only public fields on an object.  Non-broadcast fields are not sent, because
 > clients with interest in the object may not be privy to those fields.
+
+
+**STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED(2066)**
+    `args(uint32 context, uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BCAST>)`
+**STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER(2067)**
+    `args(uint32 context, uint32 do_id, uint32 parent_id, uint32 zone_id,
+          uint16 dclass_id, <REQUIRED_BCAST>, <OTHER_BCAST>)`
+> Identical to OBJECT_ENTER_LOCATION except for the context at the beginning,
+> this message exists to differentiate object entry initiated by a GET_ZONES_OBJECT-type
+> query from normal object entry.
 
 
 **STATESERVER_OBJECT_GET_LOCATION(2044)** `args(uint32 context)`  
