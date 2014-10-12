@@ -140,7 +140,7 @@ in order to accomplish various normal game tasks.
 
 **CLIENT_OBJECT_SET_FIELDS(121)**  
     `args(uint32 do_id, uint16 num_fields, [uint16 field_id, <VALUE>]*num_fields)`  
-> This is sent by the Client Agentto issue a field update on a given object.
+> This is sent by the Client Agent to issue a field update on a given object.
 > The format of this message is analogous to `STATESERVER_OBJECT_SET_FIELDS`
 > in the internal protocol.
 
@@ -169,7 +169,8 @@ in order to accomplish various normal game tasks.
     `args(uint32 context, uint16 interest_id, uint32 parent_id, uint32 zone_id)`  
 > The client sends this to open an interest in a single zone within a parent.
 > The server will respond by sending a CREATE for every object in the new zone,
-> followed by a `CLIENT_DONE_INTEREST_RESP`.
+> followed by a `CLIENT_DONE_INTEREST_RESP`, then followed by any datagrams
+> for the location that happened in the mean time.
 >
 > When the server sends this, it is informing the client of an interest added
 > to the client by the server with `CLIENTAGENT_ADD_INTEREST`.
