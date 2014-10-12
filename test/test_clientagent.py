@@ -791,9 +791,7 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint32(999999) # setRequired1
         self.server.send(dg)
 
-        # The client should hear about the object entry,
-        # but the client should NOT be told that the interest is done
-
+        # The client shouldn't hear about anything yet
         self.expectNone(client)
 
         # Alright, now send the last object entry
