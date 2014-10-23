@@ -287,6 +287,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
     if(is_terminated()) { return; }
 
     channel_t sender = dgi.read_channel();
+    if(sender == m_channel) { return; } // ignore messages from ourselves
+
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {
     case CLIENTAGENT_EJECT: {
