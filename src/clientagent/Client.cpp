@@ -686,12 +686,14 @@ void Client::handle_object_entrance(DatagramIterator &dgi, bool other)
     doid_t parent = dgi.read_doid();
     zone_t zone = dgi.read_zone();
     uint16_t dc_id = dgi.read_uint16();
+
+    // this object is no longer pending
+    m_pending_objects.erase(do_id);
+
     if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
        m_seen_objects.find(do_id) != m_seen_objects.end()) {
         return;
     }
-    // this object is no longer pending
-    m_pending_objects.erase(do_id);
 
     if(m_visible_objects.find(do_id) == m_visible_objects.end()) {
         VisibleObject obj;
