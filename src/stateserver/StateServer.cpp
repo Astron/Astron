@@ -26,6 +26,7 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
         m_log = new LogCategory("stateserver", name.str());
         set_con_name(name.str());
     }
+    MessageDirector::singleton.subscribe_channel(this, BCHAN_STATESERVERS);
 }
 
 StateServer::~StateServer()
