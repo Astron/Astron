@@ -27,7 +27,10 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent)
 
 Client::~Client()
 {
-    delete m_log;
+    if(m_log) {
+        delete m_log;
+        m_log = nullptr;
+    }
 }
 
 void Client::annihilate()

@@ -30,7 +30,10 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 
 StateServer::~StateServer()
 {
-    delete m_log;
+    if(m_log) {
+        delete m_log;
+        m_log = nullptr;
+    }
 }
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
