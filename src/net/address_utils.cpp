@@ -33,12 +33,12 @@ static bool split_port(std::string &ip, uint16_t &port)
     return true;
 }
 
-static address parse_address(const std::string &ip)
+static address parse_address(const std::string &ip, boost::system::error_code &ec)
 {
     if(ip[0] == '[' && ip[ip.length() - 1] == ']') {
-        return address::from_string(ip.substr(1, ip.length() - 2));
+        return address::from_string(ip.substr(1, ip.length() - 2), ec);
     } else {
-        return address::from_string(ip);
+        return address::from_string(ip, ec);
     }
 }
 
@@ -87,10 +87,12 @@ bool is_valid_address(const std::string &hostspec)
         return false;
     }
 
-    try {
-        parse_address(host);
+    boost::system::error_code ec;
+    parse_address(host, ec);
+
+    if(ec.value() == 0) {
         return true;
-    } catch(boost::system::system_error) {
+    } else {
         return validate_hostname(host);
     }
 }
@@ -107,11 +109,11 @@ std::vector<tcp::endpoint> resolve_address(
         return ret;
     }
 
-    try {
-        address addr = parse_address(host);
+    address addr = parse_address(host, ec);
+    if(ec.value() == 0) {
         tcp::endpoint ep(addr, port);
         ret.push_back(ep);
-    } catch(boost::system::system_error) {
+    } else {
         tcp::resolver resolver(io_service);
         tcp::resolver::query query(host, std::to_string(port));
 
