@@ -74,7 +74,7 @@ void MessageDirector::init_network()
             MDNetworkUpstream *upstream = new MDNetworkUpstream(this);
 
             boost::system::error_code ec;
-            upstream->connect(connect_addr.get_val());
+            ec = upstream->connect(connect_addr.get_val());
             if(ec.value() != 0) {
                 m_log.fatal() << "Could not connect to remote MD at IP: "
                               << connect_addr.get_val() << std::endl;
