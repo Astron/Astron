@@ -1,4 +1,5 @@
 #include "NetworkAcceptor.h"
+#include "AddressUtils.h"
 #include <boost/bind.hpp>
 
 NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
@@ -9,35 +10,35 @@ NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
 }
 
 boost::system::error_code NetworkAcceptor::bind(const std::string &address,
-        unsigned int /*default_port*/)
+        unsigned int default_port)
 {
-    std::string str_ip = address;
-    std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-    // TODO: Use default port of str_port is empty.
-    str_ip = str_ip.substr(0, str_ip.find(':', 0));
-
-    tcp::resolver resolver(m_io_service);
-    tcp::resolver::query query(str_ip, str_port);
-
     boost::system::error_code ec;
-    tcp::resolver::iterator it = resolver.resolve(query, ec);
+
+    auto addresses = resolve_address(address, default_port, m_io_service, ec);
     if(ec.value() != 0) {
         return ec;
     }
 
-    tcp::endpoint ep = *it;
+    for(auto it = addresses.begin(); it != addresses.end(); ++it) {
+        if(m_acceptor.is_open()) {
+            m_acceptor.close();
+        }
 
-    m_acceptor.open(ep.protocol(), ec);
-    if(ec.value() != 0) {
-        return ec;
+        m_acceptor.open(it->protocol(), ec);
+        if(ec.value() != 0) {
+            continue;
+        }
+
+        m_acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
+        if(ec.value() != 0) {
+            continue;
+        }
+
+        m_acceptor.bind(*it, ec);
+        if(ec.value() == 0) {
+            break;
+        }
     }
-
-    m_acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    m_acceptor.bind(ep, ec);
     if(ec.value() != 0) {
         return ec;
     }

@@ -373,6 +373,8 @@ set(UTIL_FILES
 )
 
 set(NET_FILES
+	src/net/AddressUtils.cpp
+	src/net/AddressUtils.h
 	src/net/NetworkAcceptor.cpp
 	src/net/NetworkAcceptor.h
 	src/net/NetworkClient.cpp

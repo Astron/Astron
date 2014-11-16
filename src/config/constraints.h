@@ -1,5 +1,6 @@
 #pragma once
 #include "ConfigVariable.h"
+#include "net/AddressUtils.h"
 #include "core/types.h"
 
 bool is_not_invalid_doid(const doid_t& id);
@@ -7,7 +8,6 @@ bool is_not_reserved_doid(const doid_t& id);
 bool is_not_invalid_channel(const channel_t& c);
 bool is_not_reserved_channel(const channel_t& c);
 bool is_boolean_keyword(const std::string& str);
-bool is_valid_ip_address(const std::string& addr);
 bool is_existing_and_readable_file(const std::string& file);
 
 class BooleanValueConstraint : public RawConfigConstraint<bool>
@@ -59,8 +59,8 @@ class ValidAddressConstraint : public ConfigConstraint<std::string>
 {
   public:
     ValidAddressConstraint(ConfigVariable<std::string>& var) :
-        ConfigConstraint(is_valid_ip_address, var,
-                         "String is not valid ipv4 or ipv6 address.")
+        ConfigConstraint(is_valid_address, var,
+                         "String is not a valid IPv4/IPv6 address or hostname.")
     {
     }
 };
