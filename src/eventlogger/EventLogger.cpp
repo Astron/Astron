@@ -32,13 +32,15 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 void EventLogger::bind(const std::string &addr)
 {
     m_log.info() << "Opening UDP socket..." << std::endl;
-    std::string str_ip = addr;
-    std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-    str_ip = str_ip.substr(0, str_ip.find(':', 0));
-    udp::resolver resolver(io_service);
-    udp::resolver::query query(str_ip, str_port);
-    udp::resolver::iterator it = resolver.resolve(query);
-    m_socket = new udp::socket(io_service, *it);
+    boost::system::error_code ec;
+    auto addresses = resolve_address(addr, 7197, io_service, ec);
+    if(ec.value() != 0) {
+        m_log.fatal() << "Couldn't resolve " << addr << std::endl;
+        exit(1);
+    }
+
+    m_socket = new udp::socket(io_service,
+                               udp::endpoint(addresses[0].address(), addresses[0].port()));
 }
 
 void EventLogger::open_log()
