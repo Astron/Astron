@@ -1,6 +1,6 @@
 #pragma once
 #include "ConfigVariable.h"
-#include "net/AddressUtils.h"
+#include "net/address_utils.h"
 #include "core/types.h"
 
 bool is_not_invalid_doid(const doid_t& id);

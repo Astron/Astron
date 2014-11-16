@@ -1,7 +1,7 @@
 #include "core/global.h"
 
 #include "EventSender.h"
-#include "net/AddressUtils.h"
+#include "net/address_utils.h"
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
     m_socket(io_service, udp::v4()), m_enabled(false)
