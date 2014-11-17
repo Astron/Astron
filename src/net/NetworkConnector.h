@@ -21,4 +21,7 @@ class NetworkConnector
                                       ssl::context *ctx, boost::system::error_code &ec);
   private:
     boost::asio::io_service &m_io_service;
+
+    void do_connect(tcp::socket &socket, const std::string &address,
+                    uint16_t port, boost::system::error_code &ec);
 };
