@@ -119,5 +119,6 @@ Each component of the Astron daemon is given its own message-type range:
 
  ### Section 6: Reserved Ranges ###
 
- - **Parent Messages:**     1 << 32
- - _Reserved Ranges:_    <999 << 32
+ - **Parent To Children:**        1 << 32
+ - **Single Object Interest:**    2 << 32
+ - _Reserved Ranges:_          <999 << 32

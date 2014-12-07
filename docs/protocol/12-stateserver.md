@@ -99,6 +99,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
+> - A broadcast field will be sent to the interest-channel (2<<32|object_id).
 > The broadcast's "sender" is set to the original message's sender.
 >
 > In SET_FIELDS, there are multiple field updates in one message, which will be
@@ -118,6 +119,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
+> - A broadcast field will be sent to the interest-channel (2<<32|object_id).
 > The broadcast's "sender" is set to the original message's sender.
 >
 > In DELETE_FIELDS, there are multiple field deletes in one message, which will
@@ -129,6 +131,7 @@ to one object at a time.
 > affected, if one exists.
 >
 > The message is also used to inform others of the delete.
+>  - It is always sent to the object-specific interest channel.
 >  - If it has a parent, it is broadcast to the object's location.
 >  - If it has a managing AI, it is broadcast to the object' AI.
 >  - If it has an owner, it is broadcast to the object's owner.
@@ -154,6 +157,7 @@ to one object at a time.
 > A set location message moves receiving objects to a new location.
 >
 > A changing location message is sent to notify others of the change:
+>  - It is always sent to the object-specific interest channel.
 >  - If an object had an old parent, it is broadcast to the object's location and the old parent.
 >  - If an object a new parent, it is broadcast to the new parent.
 >  - If an object has an AI, it is broadcast to the AI.

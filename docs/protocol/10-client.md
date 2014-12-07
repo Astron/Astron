@@ -168,9 +168,9 @@ in order to accomplish various normal game tasks.
 **CLIENT_ADD_INTEREST(200)**  
     `args(uint32 context, uint16 interest_id, uint32 parent_id, uint32 zone_id)`  
 > The client sends this to open an interest in a single zone within a parent.
-> The server will respond by sending a CREATE for every object in the new zone,
-> followed by a `CLIENT_DONE_INTEREST_RESP`, then followed by any datagrams
-> for the location that happened in the mean time.
+> The server will respond by sending a CREATE for the parent and every object
+> in the new zone, followed by a `CLIENT_DONE_INTEREST_RESP`, then followed by
+> any datagrams for the location that happened in the mean time.
 >
 > When the server sends this, it is informing the client of an interest added
 > to the client by the server with `CLIENTAGENT_ADD_INTEREST`.
@@ -179,11 +179,17 @@ in order to accomplish various normal game tasks.
     `args(uint32 context, uint16 interest_id, uint32 parent_id,
      uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > The client sends this to open an interest cotaining multiple zones within a
-> single parent. The server will respond with a single DONE response after every
-> object from every zone replies.
+> single parent. The server will respond with a single DONE response after the
+> parent and every object from each zone replies.
 >
 > When the server sends this, it is informing the client of an interest added
 > to the client by the server with `CLIENTAGENT_ADD_INTEREST_MULTIPLE`.
+
+**CLIENT_ADD_INTEREST_OBJECT(202)**  
+    `args(uint16 interest_id, uint32 object_id)`  
+> The client sends this to open an interest in a single object directly without
+> adding interest to any zones/location associated with that object.
+> The server will respond with a single DONE response after the object replies.
 
 **CLIENT_REMOVE_INTEREST(203)**  
     `args(uint32 context, uint16 interest_id)`  
