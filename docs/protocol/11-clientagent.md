@@ -86,6 +86,12 @@ session channel.
 > Similar to above, but causes the CA to silently close the client connection,
 > providing no explanation whatsoever to the client.
 
+**CLIENTAGENT_GET_REMOTE_ADDRESS(1006)** `args(uint32 context)`
+> Requests the remote IP of the client.
+
+**CLIENTAGENT_GET_REMOTE_ADDRESS_RESP(1007)** `args(uint32 context, string ip)`
+> Returns the remote IP of the client.
+
 
 **CLIENTAGENT_DECLARE_OBJECT(1010)**  
     `args(uint32 do_id, uint16 dclass_id)`  
@@ -123,13 +129,6 @@ session channel.
 > are made sendable by the client regardless of ownsend/clsend. To undo the security
 > override, send this message again without any field IDs, to clear the list of
 > security-overridden fields for that object.
-
-
-**CLIENTAGENT_GET_REMOTE_ADDRESS(1015)** `args(uint32 context)`
-> Requests the remote IP of the client.
-
-**CLIENTAGENT_GET_REMOTE_ADDRESS_RESP(1016)** `args(uint32 context, string ip)`
-> Returns the remote IP of the client.
 
 
 #### Section 3.1: Client Agent Control Messages ####
