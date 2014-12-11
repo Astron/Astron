@@ -595,6 +595,11 @@ class AstronClient : public Client, public NetworkClient
         }
         remove_interest(i, context);
     }
+    
+    virtual std::string get_remote_address()
+    {
+        return m_remote.address().to_string();
+    };
 };
 
 static ClientType<AstronClient> astron_client_fact("libastron");

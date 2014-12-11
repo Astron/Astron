@@ -220,6 +220,10 @@ class Client : public MDParticipantInterface
     // handle_interest_done is called when all of the objects from an opened interest have been
     // received. Typically, informs the client that a particular group of objects is loaded.
     virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
+    
+    // get_remote_address is set by AstronClient, because we have no access to m_remote
+    // from Client
+    virtual std::string get_remote_address() = 0;
 
   private:
     // notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
