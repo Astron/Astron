@@ -128,7 +128,7 @@ session channel.
 **CLIENTAGENT_GET_REMOTE_ADDRESS(1015)** `args(uint32 context)`
 > Requests the remote IP of the client.
 
-**CLIENTAGENT_GET_REMOTE_ADDRESS_RESP(1016)** `args(uint32 context)`
+**CLIENTAGENT_GET_REMOTE_ADDRESS_RESP(1016)** `args(uint32 context, string ip)`
 > Returns the remote IP of the client.
 
 
