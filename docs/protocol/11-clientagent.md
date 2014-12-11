@@ -165,3 +165,11 @@ session channel.
 **CLIENTAGENT_DONE_INTEREST_RESP(1204)** `args(uint64 client_id, uint16 interest_id)`
 > Sent by the ClientAgent to the caller of CLIENTAGENT_ADD_INTEREST to inform
 > them that the interest operation has completed.
+
+**CLIENTAGENT_GET_REMOTE_ADDRESS(1205)** `args(uint32 context)`
+> Requests the remote IP of the client.
+
+**CLIENTAGENT_GET_REMOTE_ADDRESS_RESP(1206)** `args(uint32 context)`
+> Returns the remote IP of the client.
+
+
