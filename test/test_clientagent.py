@@ -3195,6 +3195,24 @@ class TestClientAgent(ProtocolTest):
         tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
         client = self.connect(port = 57214, tls_opts = tls_context)
         id = self.identify(client, min = 330600, max = 330699)
+        
+    def test_get_remote_address(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10052))
+        
+        client = self.connect()
+        id = self.identify(client)
+        
+        dg = Datagram.create([id], 10052, CLIENTAGENT_GET_REMOTE_ADDRESS)
+        dg.add_uint32(1337)
+        self.server.send(dg)
+        
+        dg = Datagram.create([10052], id, CLIENTAGENT_GET_REMOTE_ADDRESS_RESP)
+        dg.add_uint32(1337)
+        dg.add_string("127.0.0.1")
+        self.expect(self.server, dg)
+        
+        self.server.send(Datagram.create_remove_channel(10052))
 
 if __name__ == '__main__':
     unittest.main()
