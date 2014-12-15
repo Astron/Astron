@@ -73,7 +73,10 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
 
 DistributedObject::~DistributedObject()
 {
-    delete m_log;
+    if(m_log) {
+        delete m_log;
+        m_log = nullptr;
+    }
 }
 
 void DistributedObject::append_required_data(DatagramPtr dg, bool client_only, bool also_owner)

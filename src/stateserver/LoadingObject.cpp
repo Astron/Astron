@@ -34,7 +34,10 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
 
 LoadingObject::~LoadingObject()
 {
-    delete m_log;
+    if(m_log) {
+        delete m_log;
+        m_log = nullptr;
+    }
 }
 
 void LoadingObject::begin()

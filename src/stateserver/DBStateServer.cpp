@@ -44,7 +44,10 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 
 DBStateServer::~DBStateServer()
 {
-    delete m_log;
+    if(m_log) {
+        delete m_log;
+        m_log = nullptr;
+    }
 }
 
 void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)

@@ -400,6 +400,8 @@ set(UTIL_FILES
 )
 
 set(NET_FILES
+	src/net/address_utils.cpp
+	src/net/address_utils.h
 	src/net/NetworkAcceptor.cpp
 	src/net/NetworkAcceptor.h
 	src/net/NetworkClient.cpp
