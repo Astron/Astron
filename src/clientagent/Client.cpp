@@ -434,6 +434,16 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_session_objects.erase(do_id);
     }
     break;
+    case CLIENTAGENT_GET_REMOTE_ADDRESS: {
+        DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_REMOTE_ADDRESS_RESP);
+        resp->add_uint32(dgi.read_uint32()); // Context
+        resp->add_string(get_remote_address());
+        resp->add_uint16(get_remote_port());
+        resp->add_string(get_socket()->local_endpoint().address().to_string());
+        resp->add_uint16(get_socket()->local_endpoint().port());
+        route_datagram(resp);
+    }
+    break;
     case STATESERVER_OBJECT_SET_FIELD: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
