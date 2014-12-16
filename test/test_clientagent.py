@@ -3207,10 +3207,19 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint32(1337)
         self.server.send(dg)
         
-        dg = Datagram.create([10052], id, CLIENTAGENT_GET_REMOTE_ADDRESS_RESP)
-        dg.add_uint32(1337)
-        dg.add_string("127.0.0.1")
-        self.expect(self.server, dg)
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_REMOTE_ADDRESS_RESP")
+        
+        dgi = DatagramIterator(dg)
+        self.assertEqual(dgi.read_uint8(), 1)
+        self.assertEqual(dgi.read_channel(), 10052)
+        self.assertEqual(dgi.read_channel(), id)
+        self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_REMOTE_ADDRESS_RESP)
+        self.assertEqual(dgi.read_uint32(), 1337)
+        self.assertEqual(dgi.read_string(), "127.0.0.1")
+        dgi.read_uint16() # Ignore remote port (can't really test this)
+        self.assertEqual(dgi.read_string(), "127.0.0.1")
+        dgi.read_uint16() # Ignore local port (can't really test this)
         
         self.server.send(Datagram.create_remove_channel(10052))
 
