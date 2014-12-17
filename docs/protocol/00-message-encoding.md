@@ -120,6 +120,6 @@ Each component of the Astron daemon is given its own message-type range:
  ### Section 6: Reserved Ranges ###
 
  - **Parent To Children:**    1 << 32
- - **Database Object:**       2 << 32
- - **Stateserver Object:**    3 << 32
+ - **Database To Object:**    2 << 32
+ - **Object Broadcast:**      3 << 32
  - _Reserved Ranges:_      <999 << 32

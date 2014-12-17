@@ -71,8 +71,11 @@ CONSTANTS = {
     # Reserved Channels
     'INVALID_CHANNEL': 0,
     'CONTROL_CHANNEL': 1,
-    'PARENT_PREFIX': 1 << 32,
-    'DATABASE_PREFIX': 2 << 32,
+
+    # Reserved Prefixes
+    'PARENT_PREFIX':    1 << 32,
+    'DATABASE_PREFIX':  2 << 32,
+    'BROADCAST_PREFIX': 3 << 32,
 
     # Control message-type constants
     'CONTROL_ADD_CHANNEL':          9000,
@@ -240,28 +243,32 @@ else:
     CONSTANTS['DGSIZE_SIZE_BYTES'] = 2
 
 if 'USE_128BIT_CHANNELS' in os.environ:
-    CONSTANTS['PARENT_PREFIX'] = 1 << 64;
+    CONSTANTS['PARENT_PREFIX'] = 1 << 64
+    CONSTANTS['DATABASE_PREFIX'] = 2 << 64
+    CONSTANTS['BROADCAST_PREFIX'] = 3 << 64
+
     CONSTANTS['CHANNEL_MAX'] = (1 << 128) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 16
-    DATATYPES['doid'] = '<Q'
     CONSTANTS['DOID_MAX'] = (1 << 64) - 1
     CONSTANTS['DOID_SIZE_BYTES'] = 8
-    DATATYPES['zone'] = '<Q'
     CONSTANTS['ZONE_MAX'] = (1 << 64) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 8
     CONSTANTS['ZONE_SIZE_BITS'] = 64
-    CONSTANTS['PARENT_PREFIX'] = 1 << 64
-    CONSTANTS['DATABASE_PREFIX'] = 2 << 64
+
+    DATATYPES['doid'] = '<Q'
+    DATATYPES['zone'] = '<Q'
+
 else:
     CONSTANTS['CHANNEL_MAX'] = (1 << 64) - 1
     CONSTANTS['CHANNEL_SIZE_BYTES'] = 8
-    DATATYPES['doid'] = '<I'
     CONSTANTS['DOID_MAX'] = (1 << 32) - 1
     CONSTANTS['DOID_SIZE_BYTES'] = 4
-    DATATYPES['zone'] = '<I'
     CONSTANTS['ZONE_MAX'] = (1 << 32) - 1
     CONSTANTS['ZONE_SIZE_BYTES'] = 4
     CONSTANTS['ZONE_SIZE_BITS'] = 32
+
+    DATATYPES['zone'] = '<I'
+    DATATYPES['doid'] = '<I'
 
 CONSTANTS['USE_THREADING'] = 'DISABLE_THREADING' not in os.environ
 

@@ -31,6 +31,7 @@ const channel_t BCHAN_STATESERVERS = 12;
 const channel_t BCHAN_DBSERVERS = 13;
 const channel_t PARENT_PREFIX = (channel_t(1) << ZONE_BITS);
 const channel_t DATABASE_PREFIX = (channel_t(2) << ZONE_BITS);
+const channel_t BROADCAST_PREFIX = (channel_t(3) << ZONE_BITS);
 
 /* Channel building methods */
 inline channel_t location_as_channel(doid_t parent, zone_t zone)
@@ -44,4 +45,8 @@ inline channel_t parent_to_children(doid_t parent)
 inline channel_t database_to_object(doid_t object)
 {
     return DATABASE_PREFIX | channel_t(object);
+}
+inline channel_t broadcast_channel(doid_t object)
+{
+    return BROADCAST_PREFIX | channel_t(object);
 }

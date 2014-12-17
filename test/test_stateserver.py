@@ -154,20 +154,24 @@ class TestStateServer(ProtocolTest):
     # Tests the handling of the broadcast keyword by the stateserver
     def test_broadcast(self):
         self.flush_failed()
+
+        doid = 101000005
+
         ai = self.connect(5000<<ZONE_SIZE_BITS|1500)
+        broadcast = self.connect(BROADCAST_PREFIX|doid)
 
         ### Test for Broadcast to location ###
         # Create a DistributedTestObject2...
         dg = Datagram.create([100100], 5, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
-        appendMeta(dg, 101000005, 5000, 1500, DistributedTestObject2)
+        appendMeta(dg, doid, 5000, 1500, DistributedTestObject2)
         ai.send(dg)
 
         # Ignore the entry message, we aren't testing that here.
         ai.flush()
 
         # Hit it with an update on setB2.
-        dg = Datagram.create([101000005], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_doid(101000005)
+        dg = Datagram.create([doid], 5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
         ai.send(dg)
@@ -175,15 +179,17 @@ class TestStateServer(ProtocolTest):
         # Object should broadcast that update
         # Note: Sender should be original sender (in this case 5). This is so AIs
         #       can see who the update ultimately comes from for e.g. an airecv/clsend.
-        dg = Datagram.create([5000<<ZONE_SIZE_BITS|1500], 5, STATESERVER_OBJECT_SET_FIELD)
-        dg.add_doid(101000005)
+        dg = Datagram.create([BROADCAST_PREFIX|doid, 5000<<ZONE_SIZE_BITS|1500],
+                             5, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
         dg.add_uint16(setB2)
         dg.add_uint32(0x31415927)
         self.expect(ai, dg)
+        self.expect(broadcast, dg)
 
         ### Cleanup ###
         # Delete object
-        deleteObject(ai, 5, 101000005)
+        deleteObject(ai, 5, doid)
         self.disconnect(ai)
 
     # Tests stateserver handling of 'airecv' keyword
