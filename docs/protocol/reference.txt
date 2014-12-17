@@ -51,6 +51,7 @@
 | CLIENTAGENT_CLEAR_POST_REMOVES    |    1111 |                                                                                              |
 | CLIENTAGENT_ADD_INTEREST          |    1200 | `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
 | CLIENTAGENT_ADD_INTEREST_MULTIPLE |    1201 | `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
+| CLIENTAGENT_ADD_INTEREST_OBJECT   |    1202 | `uint16 interest_id`, `uint32 object_id`                                                     |
 | CLIENTAGENT_REMOVE_INTEREST       |    1203 | `uint16 interest_id`                                                                         |
 
 ### State Server Messages ###
@@ -61,8 +62,8 @@
 | STATESERVER_DELETE_AI_OBJECTS                 |    2009 | `uint64 ai_channel`                                                                               |
 
 ### Distributed Object Accessor Messages ###
-| Message                            | Type Id | Format                                                                                                              |
-| ---------------------------------- |:-------:| ------------------------------------------------------------------------------------------------------------------- |
+| Message                              | Type Id | Format                                                                                                              |
+| ------------------------------------ |:-------:| ------------------------------------------------------------------------------------------------------------------- |
 | STATESERVER_OBJECT_GET_FIELD         |    2010 | `uint32 context`, `uint32 do_id`, `uint16 field_id`                                                                 |
 | STATESERVER_OBJECT_GET_FIELD_RESP    |    2011 | `uint32 context`, `uint8 success`, `[uint16 field_id, <VALUE>]`                                                     |
 | STATESERVER_OBJECT_GET_FIELDS        |    2012 | `uint32 context`, `uint32 do_id`, `uint16 field_count`, `[uint16 field_id]*field_count`                             |

@@ -99,7 +99,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
-> - A broadcast field will be sent to the interest-channel (2<<32|object_id).
+> - A broadcast field will be sent to the interest-channel (3<<32|object_id).
 > The broadcast's "sender" is set to the original message's sender.
 >
 > In SET_FIELDS, there are multiple field updates in one message, which will be
@@ -119,7 +119,7 @@ to one object at a time.
 > - An airecv field will be sent to the object's AI channel.
 > - An ownrecv field will be sent to the owning-client's channel.
 > - A broadcast field will be sent to the location-channel (parent_id<<32)|zone_id).
-> - A broadcast field will be sent to the interest-channel (2<<32|object_id).
+> - A broadcast field will be sent to the interest-channel (3<<32|object_id).
 > The broadcast's "sender" is set to the original message's sender.
 >
 > In DELETE_FIELDS, there are multiple field deletes in one message, which will
