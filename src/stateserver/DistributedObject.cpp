@@ -726,6 +726,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         m_log->trace() << "... updated owner.\n";
         break;
     }
+    case STATESERVER_OBJECT_GET_ZONE_OBJECTS:
     case STATESERVER_OBJECT_GET_ZONES_OBJECTS: {
         uint32_t context  = dgi.read_uint32();
         doid_t queried_parent = dgi.read_doid();
@@ -735,10 +736,14 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                        << ".  My id is " << m_do_id << " and my parent is " << m_parent_id
                        << ".\n";
 
+        uint16_t zone_count = 1;
+        if(msgtype == STATESERVER_OBJECT_GET_ZONES_OBJECTS) {
+            zone_count = dgi.read_uint16();
+        }
+
         if(queried_parent == m_parent_id) {
             // Query was relayed from parent! See if we match any of the zones
             // and if so, reply:
-            uint16_t zone_count = dgi.read_uint16();
             for(uint16_t i = 0; i < zone_count; ++i) {
                 if(dgi.read_zone() == m_zone_id) {
                     send_interest_entry(sender, context);
@@ -751,7 +756,6 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
         if(queried_parent == m_do_id) {
             doid_t child_count = 0;
-            uint16_t zone_count = dgi.read_uint16();
 
             // Start datagram to relay to children
             DatagramPtr child_dg = Datagram::create(parent_to_children(m_do_id), sender,
