@@ -339,6 +339,11 @@ class MongoDatabase : public DatabaseBackend
         m_conn.update(m_global_collection, query, globals, true);
     }
 
+    ~MongoDatabase()
+    {
+        delete m_log;
+    }
+
     virtual void submit(DBOperation *operation)
     {
         // TODO: This should run in a separate thread.
