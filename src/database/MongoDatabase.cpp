@@ -302,10 +302,11 @@ class MongoDatabase : public DatabaseBackend
 
         // Init connection.
         string error;
+        m_conn = new DBClientConnection;
 
         // TODO: This only creates a single connection. When this class is
         // made multithreaded, we will need a connection pool instead.
-        if(!m_conn.connect(database_address.get_rval(m_config), error)) {
+        if(!m_conn->connect(database_address.get_rval(m_config), error)) {
             m_log->fatal() << "Connection failure: " << error << endl;
             exit(1);
         }
@@ -315,7 +316,7 @@ class MongoDatabase : public DatabaseBackend
         string username = database_username.get_rval(m_config);
         string password = database_password.get_rval(m_config);
         if(!username.empty() && !password.empty()) {
-            if(!m_conn.auth(m_db, username, password, error)) {
+            if(!m_conn->auth(m_db, username, password, error)) {
                 m_log->fatal() << "Authentication failure: " << error << endl;
                 exit(1);
             }
@@ -336,12 +337,13 @@ class MongoDatabase : public DatabaseBackend
                                        "monotonic" << min_id <<
                                        "free" << BSONArray())
                                ));
-        m_conn.update(m_global_collection, query, globals, true);
+        m_conn->update(m_global_collection, query, globals, true);
     }
 
     ~MongoDatabase()
     {
         delete m_log;
+        delete m_conn;
     }
 
     virtual void submit(DBOperation *operation)
@@ -353,7 +355,7 @@ class MongoDatabase : public DatabaseBackend
   private:
     LogCategory *m_log;
 
-    DBClientConnection m_conn;
+    DBClientConnection *m_conn;
     string m_db;
     string m_obj_collection;
     string m_global_collection;
@@ -435,7 +437,7 @@ class MongoDatabase : public DatabaseBackend
                        << "(" << doid << "): " << b << endl;
 
         try {
-            m_conn.insert(m_obj_collection, b);
+            m_conn->insert(m_obj_collection, b);
         } catch(mongo::DBException &e) {
             m_log->error() << "Cannot insert new "
                            << operation->dclass()->get_name()
@@ -453,7 +455,7 @@ class MongoDatabase : public DatabaseBackend
 
         bool success;
         try {
-            success = m_conn.runCommand(
+            success = m_conn->runCommand(
                           m_db,
                           BSON("findandmodify" << "astron.objects" <<
                                "query" << BSON(
@@ -487,7 +489,7 @@ class MongoDatabase : public DatabaseBackend
     {
         BSONObj obj;
         try {
-            obj = m_conn.findOne(m_obj_collection,
+            obj = m_conn->findOne(m_obj_collection,
                                  BSON("_id" << operation->doid()));
         } catch(mongo::DBException &e) {
             m_log->error() << "Unexpected error occurred while trying to"
@@ -569,7 +571,7 @@ class MongoDatabase : public DatabaseBackend
         BSONObj result;
         bool success;
         try {
-            success = m_conn.runCommand(
+            success = m_conn->runCommand(
                           m_db,
                           BSON("findandmodify" << "astron.objects"
                                << "query" << query
@@ -591,7 +593,7 @@ class MongoDatabase : public DatabaseBackend
             // criteria mismatch or a missing DOID.
             if(!operation->criteria_fields().empty()) {
                 try {
-                    obj = m_conn.findOne(m_obj_collection,
+                    obj = m_conn->findOne(m_obj_collection,
                                          BSON("_id" << operation->doid()));
                 } catch(mongo::DBException &e) {
                     m_log->error() << "Unexpected error while modifying "
@@ -657,7 +659,7 @@ class MongoDatabase : public DatabaseBackend
         // outlandish requests like this) this shouldn't be a huge issue.
         m_log->trace() << "Reverting changes made to " << operation->doid() << endl;
         try {
-            m_conn.update(
+            m_conn->update(
                 m_obj_collection,
                 BSON("_id" << operation->doid()),
                 obj);
@@ -740,7 +742,7 @@ class MongoDatabase : public DatabaseBackend
     {
         BSONObj result;
 
-        bool success = m_conn.runCommand(
+        bool success = m_conn->runCommand(
                            m_db,
                            BSON("findandmodify" << "astron.globals" <<
                                 "query" << BSON(
@@ -776,7 +778,7 @@ class MongoDatabase : public DatabaseBackend
     {
         BSONObj result;
 
-        bool success = m_conn.runCommand(
+        bool success = m_conn->runCommand(
                            m_db,
                            BSON("findandmodify" << "astron.globals" <<
                                 "query" << BSON(
@@ -814,7 +816,7 @@ class MongoDatabase : public DatabaseBackend
         m_log->trace() << "Returning doid " << doid << " to the free pool..." << endl;
 
         try {
-            m_conn.update(
+            m_conn->update(
                 m_global_collection,
                 BSON("_id" << "GLOBALS"),
                 BSON("$push" << BSON("doid.free" << doid)));
