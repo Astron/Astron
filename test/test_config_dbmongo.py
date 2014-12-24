@@ -33,8 +33,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Valid')
 
@@ -53,8 +52,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -73,8 +71,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -92,8 +89,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 0
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -112,8 +108,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -131,8 +126,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 555
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -154,8 +148,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Valid')
 
@@ -176,8 +169,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongodb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -198,8 +190,7 @@ class TestConfigDBMongo(ConfigTest):
                     max: 1000010
                   backend:
                     type: mongdb
-                    server: 127.0.0.1:57023
-                    database: test
+                    server: mongodb://127.0.0.1:57023/test
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 

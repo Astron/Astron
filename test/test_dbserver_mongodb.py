@@ -23,8 +23,7 @@ roles:
         max: 1000010
       backend:
         type: mongodb
-        server: 127.0.0.1:57023
-        database: test
+        server: mongodb://127.0.0.1:57023/test
 """ % test_dc
 
 class TestDatabaseServerMongo(ProtocolTest, DBServerTestsuite):

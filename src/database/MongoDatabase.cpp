@@ -302,27 +302,17 @@ class MongoDatabase : public DatabaseBackend
 
         // Init connection.
         string error;
-        m_conn = new DBClientConnection;
+        ConnectionString cs = ConnectionString::parse(database_address.get_rval(m_config), error);
 
         // TODO: This only creates a single connection. When this class is
         // made multithreaded, we will need a connection pool instead.
-        if(!m_conn->connect(database_address.get_rval(m_config), error)) {
+        if(!cs.isValid() || !(m_conn = cs.connect(error))) {
             m_log->fatal() << "Connection failure: " << error << endl;
             exit(1);
         }
 
-        m_db = database_name.get_rval(m_config);
-
-        string username = database_username.get_rval(m_config);
-        string password = database_password.get_rval(m_config);
-        if(!username.empty() && !password.empty()) {
-            if(!m_conn->auth(m_db, username, password, error)) {
-                m_log->fatal() << "Authentication failure: " << error << endl;
-                exit(1);
-            }
-        }
-
-        // Init the collection names:
+        // Init the collection/database names:
+        m_db = cs.getDatabase(); // NOTE: If this line won't compile, install mongo-cxx-driver's 'legacy' branch.
         m_obj_collection = m_db + ".astron.objects";
         m_global_collection = m_db + ".astron.globals";
 
@@ -351,7 +341,7 @@ class MongoDatabase : public DatabaseBackend
   private:
     LogCategory *m_log;
 
-    DBClientConnection *m_conn;
+    DBClientBase *m_conn;
     string m_db;
     string m_obj_collection;
     string m_global_collection;
