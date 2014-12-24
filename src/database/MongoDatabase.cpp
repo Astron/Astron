@@ -323,12 +323,8 @@ class MongoDatabase : public DatabaseBackend
         }
 
         // Init the collection names:
-        stringstream obj_collection;
-        obj_collection << m_db << ".astron.objects";
-        m_obj_collection = obj_collection.str();
-        stringstream global_collection;
-        global_collection << m_db << ".astron.globals";
-        m_global_collection = global_collection.str();
+        m_obj_collection = m_db + ".astron.objects";
+        m_global_collection = m_db + ".astron.globals";
 
         // Init the globals collection/document:
         BSONObj query = BSON("_id" << "GLOBALS");
