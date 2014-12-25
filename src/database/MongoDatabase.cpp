@@ -335,7 +335,7 @@ class MongoDatabase : public DatabaseBackend
     virtual void submit(DBOperation *operation)
     {
         // TODO: This should run in a separate thread.
-        handle_operation(operation);
+        handle_operation(m_conn, operation);
     }
 
   private:
@@ -358,32 +358,32 @@ class MongoDatabase : public DatabaseBackend
     //    DOIDs list.
     bool m_monotonic_exhausted;
 
-    void handle_operation(DBOperation *operation)
+    void handle_operation(DBClientBase *client, DBOperation *operation)
     {
         // First, figure out what kind of operation it is, and dispatch:
         switch(operation->type()) {
         case DBOperation::OperationType::CREATE_OBJECT: {
-            handle_create(operation);
+            handle_create(client, operation);
         }
         break;
         case DBOperation::OperationType::DELETE_OBJECT: {
-            handle_delete(operation);
+            handle_delete(client, operation);
         }
         break;
         case DBOperation::OperationType::GET_OBJECT:
         case DBOperation::OperationType::GET_FIELDS: {
-            handle_get(operation);
+            handle_get(client, operation);
         }
         break;
         case DBOperation::OperationType::SET_FIELDS:
         case DBOperation::OperationType::UPDATE_FIELDS: {
-            handle_modify(operation);
+            handle_modify(client, operation);
         }
         break;
         }
     }
 
-    void handle_create(DBOperation *operation)
+    void handle_create(DBClientBase *client, DBOperation *operation)
     {
         // First, let's convert the requested object into BSON; this way, if
         // a failure happens, it happens before we waste a doid.
@@ -407,7 +407,7 @@ class MongoDatabase : public DatabaseBackend
             return;
         }
 
-        doid_t doid = assign_doid();
+        doid_t doid = assign_doid(client);
         if(doid == INVALID_DO_ID) {
             // The error will already have been emitted at this point, so
             // all that's left for us to do is fail silently:
@@ -423,7 +423,7 @@ class MongoDatabase : public DatabaseBackend
                        << "(" << doid << "): " << b << endl;
 
         try {
-            m_conn->insert(m_obj_collection, b);
+            client->insert(m_obj_collection, b);
         } catch(mongo::DBException &e) {
             m_log->error() << "Cannot insert new "
                            << operation->dclass()->get_name()
@@ -435,13 +435,13 @@ class MongoDatabase : public DatabaseBackend
         operation->on_complete(doid);
     }
 
-    void handle_delete(DBOperation *operation)
+    void handle_delete(DBClientBase *client, DBOperation *operation)
     {
         BSONObj result;
 
         bool success;
         try {
-            success = m_conn->runCommand(
+            success = client->runCommand(
                           m_db,
                           BSON("findandmodify" << "astron.objects" <<
                                "query" << BSON(
@@ -467,15 +467,15 @@ class MongoDatabase : public DatabaseBackend
             return;
         }
 
-        free_doid(operation->doid());
+        free_doid(client, operation->doid());
         operation->on_complete();
     }
 
-    void handle_get(DBOperation *operation)
+    void handle_get(DBClientBase *client, DBOperation *operation)
     {
         BSONObj obj;
         try {
-            obj = m_conn->findOne(m_obj_collection,
+            obj = client->findOne(m_obj_collection,
                                  BSON("_id" << operation->doid()));
         } catch(mongo::DBException &e) {
             m_log->error() << "Unexpected error occurred while trying to"
@@ -500,7 +500,7 @@ class MongoDatabase : public DatabaseBackend
         }
     }
 
-    void handle_modify(DBOperation *operation)
+    void handle_modify(DBClientBase *client, DBOperation *operation)
     {
         // First, we have to format our findandmodify.
         BSONObjBuilder sets;
@@ -557,7 +557,7 @@ class MongoDatabase : public DatabaseBackend
         BSONObj result;
         bool success;
         try {
-            success = m_conn->runCommand(
+            success = client->runCommand(
                           m_db,
                           BSON("findandmodify" << "astron.objects"
                                << "query" << query
@@ -579,7 +579,7 @@ class MongoDatabase : public DatabaseBackend
             // criteria mismatch or a missing DOID.
             if(!operation->criteria_fields().empty()) {
                 try {
-                    obj = m_conn->findOne(m_obj_collection,
+                    obj = client->findOne(m_obj_collection,
                                          BSON("_id" << operation->doid()));
                 } catch(mongo::DBException &e) {
                     m_log->error() << "Unexpected error while modifying "
@@ -645,7 +645,7 @@ class MongoDatabase : public DatabaseBackend
         // outlandish requests like this) this shouldn't be a huge issue.
         m_log->trace() << "Reverting changes made to " << operation->doid() << endl;
         try {
-            m_conn->update(
+            client->update(
                 m_obj_collection,
                 BSON("_id" << operation->doid()),
                 obj);
@@ -702,11 +702,11 @@ class MongoDatabase : public DatabaseBackend
     }
 
     // This function is used by handle_create to get a fresh DOID assignment.
-    doid_t assign_doid()
+    doid_t assign_doid(DBClientBase *client)
     {
         try {
             if(!m_monotonic_exhausted) {
-                doid_t doid = assign_doid_monotonic();
+                doid_t doid = assign_doid_monotonic(client);
                 if(doid == INVALID_DO_ID) {
                     m_monotonic_exhausted = true;
                 } else {
@@ -716,7 +716,7 @@ class MongoDatabase : public DatabaseBackend
 
             // We've exhausted our supply of doids from the monotonic counter.
             // We must now resort to pulling things out of the free list:
-            return assign_doid_reuse();
+            return assign_doid_reuse(client);
         } catch(mongo::DBException &e) {
             m_log->error() << "Unexpected error occurred while trying to"
                            " allocate a new DOID: " << e.what() << endl;
@@ -724,11 +724,11 @@ class MongoDatabase : public DatabaseBackend
         }
     }
 
-    doid_t assign_doid_monotonic()
+    doid_t assign_doid_monotonic(DBClientBase *client)
     {
         BSONObj result;
 
-        bool success = m_conn->runCommand(
+        bool success = client->runCommand(
                            m_db,
                            BSON("findandmodify" << "astron.globals" <<
                                 "query" << BSON(
@@ -760,11 +760,11 @@ class MongoDatabase : public DatabaseBackend
     }
 
     // This is used when the monotonic counter is exhausted:
-    doid_t assign_doid_reuse()
+    doid_t assign_doid_reuse(DBClientBase *client)
     {
         BSONObj result;
 
-        bool success = m_conn->runCommand(
+        bool success = client->runCommand(
                            m_db,
                            BSON("findandmodify" << "astron.globals" <<
                                 "query" << BSON(
@@ -797,12 +797,12 @@ class MongoDatabase : public DatabaseBackend
     }
 
     // This returns a DOID to the free list:
-    void free_doid(doid_t doid)
+    void free_doid(DBClientBase *client, doid_t doid)
     {
         m_log->trace() << "Returning doid " << doid << " to the free pool..." << endl;
 
         try {
-            m_conn->update(
+            client->update(
                 m_global_collection,
                 BSON("_id" << "GLOBALS"),
                 BSON("$push" << BSON("doid.free" << doid)));
