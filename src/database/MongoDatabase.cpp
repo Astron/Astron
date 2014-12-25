@@ -302,17 +302,17 @@ class MongoDatabase : public DatabaseBackend
 
         // Init connection.
         string error;
-        ConnectionString cs = ConnectionString::parse(database_address.get_rval(m_config), error);
+        m_connection_string = ConnectionString::parse(database_address.get_rval(m_config), error);
 
-        // TODO: This only creates a single connection. When this class is
-        // made multithreaded, we will need a connection pool instead.
-        if(!cs.isValid() || !(m_conn = cs.connect(error))) {
-            m_log->fatal() << "Connection failure: " << error << endl;
+        if(!m_connection_string.isValid()) {
+            m_log->fatal() << "Could not parse connection string: " << error << endl;
             exit(1);
         }
 
+        m_conn = new_connection();
+
         // Init the collection/database names:
-        m_db = cs.getDatabase(); // NOTE: If this line won't compile, install mongo-cxx-driver's 'legacy' branch.
+        m_db = m_connection_string.getDatabase(); // NOTE: If this line won't compile, install mongo-cxx-driver's 'legacy' branch.
         m_obj_collection = m_db + ".astron.objects";
         m_global_collection = m_db + ".astron.globals";
 
@@ -341,7 +341,9 @@ class MongoDatabase : public DatabaseBackend
   private:
     LogCategory *m_log;
 
+    ConnectionString m_connection_string;
     DBClientBase *m_conn;
+
     string m_db;
     string m_obj_collection;
     string m_global_collection;
@@ -357,6 +359,19 @@ class MongoDatabase : public DatabaseBackend
     //    the (exhausted) monotonic counter, before falling back on the free
     //    DOIDs list.
     bool m_monotonic_exhausted;
+
+    DBClientBase *new_connection()
+    {
+        string error;
+        DBClientBase *connection;
+
+        if(!(connection = m_connection_string.connect(error))) {
+            m_log->fatal() << "Connection failure: " << error << endl;
+            exit(1);
+        }
+
+        return connection;
+    }
 
     void handle_operation(DBClientBase *client, DBOperation *operation)
     {
