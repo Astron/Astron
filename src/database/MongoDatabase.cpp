@@ -341,9 +341,11 @@ class MongoDatabase : public DatabaseBackend
     ~MongoDatabase()
     {
         // Shutdown threads:
-        lock_guard<mutex> guard(m_lock);
-        m_shutdown = true;
-        m_cv.notify_all();
+        {
+            lock_guard<mutex> guard(m_lock);
+            m_shutdown = true;
+            m_cv.notify_all();
+        }
         for(auto it = m_threads.begin(); it != m_threads.end(); ++it) {
             (*it)->join();
             delete *it;
