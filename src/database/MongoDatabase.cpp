@@ -17,6 +17,11 @@
 using namespace std;
 using namespace mongo;
 
+// TODO: This eventually needs to be a config variable. However, it's
+// unique to this backend, so it doesn't belong in the DatabaseBackend.cpp
+// file.
+#define NUM_WORKERS 32
+
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
 
@@ -294,7 +299,9 @@ class MongoDatabase : public DatabaseBackend
 {
   public:
     MongoDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-        DatabaseBackend(dbeconfig, min_id, max_id), m_monotonic_exhausted(false)
+            DatabaseBackend(dbeconfig, min_id, max_id),
+            m_monotonic_exhausted(false),
+            m_shutdown(false)
     {
         stringstream log_name;
         log_name << "Database-MongoDB" << "(Range: [" << min_id << ", " << max_id << "])";
@@ -309,40 +316,60 @@ class MongoDatabase : public DatabaseBackend
             exit(1);
         }
 
-        m_conn = new_connection();
-
         // Init the collection/database names:
         m_db = m_connection_string.getDatabase(); // NOTE: If this line won't compile, install mongo-cxx-driver's 'legacy' branch.
         m_obj_collection = m_db + ".astron.objects";
         m_global_collection = m_db + ".astron.globals";
 
         // Init the globals collection/document:
+        DBClientBase *client = new_connection();
         BSONObj query = BSON("_id" << "GLOBALS");
         BSONObj globals = BSON("$setOnInsert" << BSON(
                                    "doid" << BSON(
                                        "monotonic" << min_id <<
                                        "free" << BSONArray())
                                ));
-        m_conn->update(m_global_collection, query, globals, true);
+        client->update(m_global_collection, query, globals, true);
+        delete client;
+
+        // Spawn worker threads:
+        for(int i = 0; i < NUM_WORKERS; ++i) {
+            m_threads.push_back(new thread(bind(&MongoDatabase::run_thread, this)));
+        }
     }
 
     ~MongoDatabase()
     {
+        // Shutdown threads:
+        lock_guard<mutex> guard(m_lock);
+        m_shutdown = true;
+        m_cv.notify_all();
+        for(auto it = m_threads.begin(); it != m_threads.end(); ++it) {
+            (*it)->join();
+            delete *it;
+        }
+
         delete m_log;
-        delete m_conn;
     }
 
     virtual void submit(DBOperation *operation)
     {
-        // TODO: This should run in a separate thread.
-        handle_operation(m_conn, operation);
+        lock_guard<mutex> guard(m_lock);
+        m_operation_queue.push(operation);
+        m_cv.notify_one();
     }
 
   private:
     LogCategory *m_log;
 
     ConnectionString m_connection_string;
-    DBClientBase *m_conn;
+
+    queue<DBOperation *> m_operation_queue;
+    condition_variable m_cv;
+
+    mutex m_lock;
+    vector<thread *> m_threads;
+    bool m_shutdown;
 
     string m_db;
     string m_obj_collection;
@@ -371,6 +398,36 @@ class MongoDatabase : public DatabaseBackend
         }
 
         return connection;
+    }
+
+    void run_thread()
+    {
+        unique_lock<mutex> guard(m_lock);
+
+        DBClientBase *client = new_connection();
+
+        while(true) {
+            if(!client->isStillConnected()) {
+                m_log->error() << "A thread lost its connection, reconnecting..." << endl;
+                delete client;
+                client = new_connection();
+            }
+
+            if(m_operation_queue.size() > 0) {
+                DBOperation *op = m_operation_queue.front();
+                m_operation_queue.pop();
+
+                guard.unlock();
+                handle_operation(client, op);
+                guard.lock();
+            } else if(m_shutdown) {
+                break;
+            } else {
+                m_cv.wait(guard);
+            }
+        }
+
+        delete client;
     }
 
     void handle_operation(DBClientBase *client, DBOperation *operation)
