@@ -20,7 +20,7 @@ using namespace mongo;
 // TODO: This eventually needs to be a config variable. However, it's
 // unique to this backend, so it doesn't belong in the DatabaseBackend.cpp
 // file.
-#define NUM_WORKERS 32
+#define NUM_WORKERS 8
 
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
