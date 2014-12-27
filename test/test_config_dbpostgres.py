@@ -33,8 +33,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -77,8 +76,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -98,8 +96,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 0
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -120,8 +117,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -141,8 +137,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 555
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -166,8 +161,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -190,8 +184,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -214,8 +207,7 @@ class TestConfigDBPostgres(ConfigTest):
                     max: 1000010
                   backend:
                     type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc

@@ -15,8 +15,6 @@ using dclass::Class;
 using dclass::Field;
 using namespace std;
 
-static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
-
 class YAMLDatabase : public OldDatabaseBackend
 {
   private:
@@ -32,7 +30,7 @@ class YAMLDatabase : public OldDatabaseBackend
         return filename.str();
     }
 
-    bool load(doid_t do_id, YAML::Node &document)
+    inline bool load(doid_t do_id, YAML::Node &document)
     {
         ifstream stream(filename(do_id));
         document = YAML::Load(stream);
@@ -157,7 +155,7 @@ class YAMLDatabase : public OldDatabaseBackend
         OldDatabaseBackend(dbeconfig, min_id, max_id),
         m_next_id(min_id),
         m_free_ids(),
-        m_foldername(foldername.get_rval(m_config))
+        m_foldername(database_directory.get_rval(m_config))
     {
         stringstream log_name;
         log_name << "Database-YAML" << "(Range: [" << min_id << ", " << max_id << "])";

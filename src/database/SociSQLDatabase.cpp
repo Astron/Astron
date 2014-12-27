@@ -19,12 +19,6 @@ using namespace dclass;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
-static ConfigVariable<string> database_name("database", "", db_backend_config);
-static ConfigVariable<string> database_host("host", "", db_backend_config);
-static ConfigVariable<uint16_t> database_port("port", 0, db_backend_config);
-static ConfigVariable<string> session_user("username", "", db_backend_config);
-static ConfigVariable<string> session_passwd("password", "", db_backend_config);
-
 class SociSQLDatabase : public OldDatabaseBackend
 {
   public:
@@ -32,14 +26,23 @@ class SociSQLDatabase : public OldDatabaseBackend
         OldDatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
         m_backend(db_backend_type.get_rval(dbeconfig)),
         m_db_name(database_name.get_rval(dbeconfig)),
-        m_db_host(database_host.get_rval(dbeconfig)),
-        m_db_port(database_port.get_rval(dbeconfig)),
-        m_sess_user(session_user.get_rval(dbeconfig)),
-        m_sess_passwd(session_passwd.get_rval(dbeconfig))
+        m_sess_user(database_username.get_rval(dbeconfig)),
+        m_sess_passwd(database_password.get_rval(dbeconfig))
     {
         stringstream log_name;
         log_name << "Database-" << m_backend << "(Range: [" << min_id << ", " << max_id << "])";
         m_log = new LogCategory(m_backend, log_name.str());
+
+        string server = database_address.get_rval(dbeconfig);
+        int col_index = server.find_last_of(":");
+        int sqr_index = server.find_last_of("]");
+        if(col_index != string::npos && col_index > sqr_index) {
+            m_db_host = server.substr(0, col_index);
+            m_db_port = stoi(server.substr(col_index + 1));
+        } else {
+            m_db_host = server;
+        }
+
 
         connect();
         check_tables();
