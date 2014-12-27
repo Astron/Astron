@@ -300,8 +300,8 @@ class MongoDatabase : public DatabaseBackend
   public:
     MongoDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
             DatabaseBackend(dbeconfig, min_id, max_id),
-            m_monotonic_exhausted(false),
-            m_shutdown(false)
+            m_shutdown(false),
+            m_monotonic_exhausted(false)
     {
         stringstream log_name;
         log_name << "Database-MongoDB" << "(Range: [" << min_id << ", " << max_id << "])";
