@@ -9,7 +9,7 @@ namespace dclass   // open namespace dclass
 
 // constructor
 MolecularField::MolecularField(Class* cls, const std::string &name) :
-    Field(cls, name), Struct(cls->get_file())
+    Field(NULL, name), Struct(cls->get_file())
 {
     Field::m_type = this;
 }
