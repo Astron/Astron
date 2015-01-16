@@ -20,6 +20,7 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
     channel_t channel = control_channel.get_rval(m_roleconfig);
     if(channel != INVALID_CHANNEL) {
         MessageDirector::singleton.subscribe_channel(this, channel);
+        MessageDirector::singleton.subscribe_channel(this, BCHAN_STATESERVERS);
 
         std::stringstream name;
         name << "StateServer(" << channel << ")";
