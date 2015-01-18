@@ -3196,5 +3196,32 @@ class TestClientAgent(ProtocolTest):
         client = self.connect(port = 57214, tls_opts = tls_context)
         id = self.identify(client, min = 330600, max = 330699)
 
+    def test_get_network_address(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10052))
+
+        client = self.connect()
+        id = self.identify(client)
+
+        dg = Datagram.create([id], 10052, CLIENTAGENT_GET_NETWORK_ADDRESS)
+        dg.add_uint32(1337)
+        self.server.send(dg)
+
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_NETWORK_ADDRESS_RESP")
+
+        dgi = DatagramIterator(dg)
+        self.assertEqual(dgi.read_uint8(), 1)
+        self.assertEqual(dgi.read_channel(), 10052)
+        self.assertEqual(dgi.read_channel(), id)
+        self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_NETWORK_ADDRESS_RESP)
+        self.assertEqual(dgi.read_uint32(), 1337)
+        self.assertEqual(dgi.read_string(), "127.0.0.1")
+        dgi.read_uint16() # Ignore remote port (can't really test this)
+        self.assertEqual(dgi.read_string(), "127.0.0.1")
+        dgi.read_uint16() # Ignore local port (can't really test this)
+
+        self.server.send(Datagram.create_remove_channel(10052))
+
 if __name__ == '__main__':
     unittest.main()
