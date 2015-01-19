@@ -784,35 +784,35 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         break;
     }
 
-	// zones in Astron don't have meaning to the cluster itself
-	// as such, there is no table of zones to query in the network
-	// instead, a zone is said to be active if it has at least one object in it
-	// to get the active zones, get the keys from m_zone_objects and dump them into a std::set<zone_t>
-	// using an std::set ensures that no duplicate zones are sent
-	// TODO: evaluate efficiency on large games with many DistributedObjects
+    // zones in Astron don't have meaning to the cluster itself
+    // as such, there is no table of zones to query in the network
+    // instead, a zone is said to be active if it has at least one object in it
+    // to get the active zones, get the keys from m_zone_objects and dump them into a std::set<zone_t>
+    // using an std::set ensures that no duplicate zones are sent
+    // TODO: evaluate efficiency on large games with many DistributedObjects
 
-	case STATESERVER_GET_ACTIVE_ZONES: {
-		uint32_t context = dgi.read_uint32();
+    case STATESERVER_GET_ACTIVE_ZONES: {
+        uint32_t context = dgi.read_uint32();
 
-		std::set<zone_t> keys;
+        std::set<zone_t> keys;
 
-		for(auto kv : m_zone_objects) {
-			keys.insert(kv.first);
-		}
+        for(auto kv : m_zone_objects) {
+            keys.insert(kv.first);
+        }
 
-		DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_GET_ACTIVE_ZONES_RESP);
+        DatagramPtr dg = Datagram::create(sender, m_do_id, STATESERVER_GET_ACTIVE_ZONES_RESP);
 
-		dg->add_uint32(context);
-		dg->add_uint16(keys.size());
+        dg->add_uint32(context);
+        dg->add_uint16(keys.size());
 
-		std::set<zone_t>::iterator it;
-		for(it = keys.begin(); it != keys.end(); ++it) {
-			dg->add_zone(*it);
-		}
+        std::set<zone_t>::iterator it;
+        for(it = keys.begin(); it != keys.end(); ++it) {
+            dg->add_zone(*it);
+        }
 
-		route_datagram(dg);
-		break;
-	}
+        route_datagram(dg);
+        break;
+    }
     default:
         if(msgtype < STATESERVER_MSGTYPE_MIN || msgtype > STATESERVER_MSGTYPE_MAX) {
             m_log->warning() << "Received unknown message of type " << msgtype << ".\n";
