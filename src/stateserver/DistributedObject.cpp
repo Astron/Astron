@@ -750,11 +750,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                     break;
                 }
             }
-
-            break;
-        }
-
-        if(queried_parent == m_do_id) {
+        } else if(queried_parent == m_do_id) {
             doid_t child_count = 0;
 
             // Start datagram to relay to children
@@ -783,8 +779,6 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             if(child_count > 0) {
                 route_datagram(child_dg);
             }
-
-            break;
         }
 
         break;
