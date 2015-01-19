@@ -625,6 +625,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
             m_visible_objects[do_id].parent = n_parent;
             m_visible_objects[do_id].zone = n_zone;
+        } else {
+            // We don't actually *see* this object, we're receiving this
+            // message as a fluke.
+            return;
         }
 
         if(disable && m_owned_objects.find(do_id) == m_owned_objects.end()) {
