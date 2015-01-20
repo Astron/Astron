@@ -50,6 +50,8 @@ class Client; // forward declaration
 class InterestOperation
 {
   public:
+    Client *m_client;
+
     uint16_t m_interest_id;
     uint32_t m_client_context;
     uint32_t m_request_context;
@@ -63,7 +65,8 @@ class InterestOperation
     std::list<DatagramHandle> m_pending_generates;
     std::list<DatagramHandle> m_pending_datagrams;
 
-    InterestOperation(uint16_t interest_id, uint32_t client_context, uint32_t request_context,
+    InterestOperation(Client *client,
+                      uint16_t interest_id, uint32_t client_context, uint32_t request_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
     bool is_ready();
@@ -71,7 +74,7 @@ class InterestOperation
     void decrement_expected();
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
-    void finish(Client *client);
+    void finish();
 };
 
 class Client : public MDParticipantInterface
