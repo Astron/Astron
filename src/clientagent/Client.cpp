@@ -6,7 +6,9 @@
 using namespace std;
 using dclass::Class;
 
-Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent)
+Client::Client(ConfigNode config, ClientAgent* client_agent) :
+    m_client_agent(client_agent),
+    m_interest_timeout(interest_timeout.get_rval(config))
 {
     m_channel = m_client_agent->m_ct.alloc_channel();
     if(!m_channel) {
@@ -768,7 +770,7 @@ InterestOperation::InterestOperation(
         m_client_context(client_context),
         m_request_context(request_context),
         m_parent(parent), m_zones(zones),
-        m_timeout(500, bind(&InterestOperation::timeout, this))
+        m_timeout(client->m_interest_timeout, bind(&InterestOperation::timeout, this))
 {
     m_callers.insert(m_callers.end(), caller);
 }

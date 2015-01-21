@@ -48,7 +48,7 @@ class AstronClient : public Client, public NetworkClient
 
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
-        Client(client_agent), NetworkClient(socket), m_config(config),
+        Client(config, client_agent), NetworkClient(socket), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config))
@@ -58,7 +58,7 @@ class AstronClient : public Client, public NetworkClient
 
     AstronClient(ConfigNode config, ClientAgent* client_agent,
                  ssl::stream<tcp::socket> *stream) :
-        Client(client_agent), NetworkClient(stream), m_config(config),
+        Client(config, client_agent), NetworkClient(stream), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config))

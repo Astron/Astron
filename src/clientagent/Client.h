@@ -122,9 +122,10 @@ class Client : public MDParticipantInterface
     std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
     // m_fields_sendable is a map of DoIds to sendable field sets.
     std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
+    unsigned long m_interest_timeout;
     LogCategory *m_log;
 
-    Client(ClientAgent* client_agent);
+    Client(ConfigNode config, ClientAgent* client_agent);
 
     // annihilate should be called to delete the client after the client has-left/disconnected.
     void annihilate();
