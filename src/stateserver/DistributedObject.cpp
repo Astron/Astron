@@ -15,7 +15,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
                                      bool has_other) :
     m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-    m_ai_explicitly_set(false), m_next_context(0)
+    m_ai_explicitly_set(false), m_parent_synchronized(false), m_next_context(0)
 {
     stringstream name;
     name << dclass->get_name() << "(" << do_id << ")";
@@ -237,6 +237,10 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
     dg->add_location(new_parent, new_zone);
     dg->add_location(old_parent, old_zone);
     route_datagram(dg);
+
+    // At this point, the new parent (which may or may not be the same as the
+    // old parent) is unaware of our existence in this zone.
+    m_parent_synchronized = false;
 
     // Send enter location message
     if(new_parent) {
@@ -559,6 +563,10 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             }
 
             m_zone_objects[new_zone].insert(child_id);
+
+            DatagramPtr dg = Datagram::create(child_id, m_do_id, STATESERVER_OBJECT_LOCATION_ACK);
+            dg->add_doid(m_do_id);
+            route_datagram(dg);
         } else if(r_do_id == m_do_id) {
             auto &children = m_zone_objects[r_zone];
             children.erase(child_id);
@@ -570,6 +578,17 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                              << " for " << r_do_id << ", but my id is " << m_do_id << ".\n";
         }
 
+        break;
+    }
+    case STATESERVER_OBJECT_LOCATION_ACK: {
+        doid_t r_parent_id = dgi.read_doid();
+        if(r_parent_id == m_parent_id) {
+            m_log->trace() << "Parent acknowledged my location change.\n";
+            m_parent_synchronized = true;
+        } else {
+            m_log->warning() << "Received location acknowledgement from " << r_parent_id
+                             << " but my parent_id is " << m_parent_id << ".\n";
+        }
         break;
     }
     case STATESERVER_OBJECT_SET_LOCATION: {
@@ -746,7 +765,18 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             // and if so, reply:
             for(uint16_t i = 0; i < zone_count; ++i) {
                 if(dgi.read_zone() == m_zone_id) {
-                    send_interest_entry(sender, context);
+                    // The parent forwarding this request down to us may or may
+                    // not yet know about our presence (and therefore have us
+                    // included in the count that it sent to the interested
+                    // peer). If we are included in this count, we reply with a
+                    // normal interest entry. If not, we reply with a standard
+                    // location entry and allow the interested peer to resolve
+                    // the difference itself.
+                    if(m_parent_synchronized) {
+                        send_interest_entry(sender, context);
+                    } else {
+                        send_location_entry(sender);
+                    }
                     break;
                 }
             }
