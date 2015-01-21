@@ -767,9 +767,17 @@ InterestOperation::InterestOperation(
         m_interest_id(interest_id),
         m_client_context(client_context),
         m_request_context(request_context),
-        m_parent(parent), m_zones(zones)
+        m_parent(parent), m_zones(zones),
+        m_timeout(500, bind(&InterestOperation::timeout, this))
 {
     m_callers.insert(m_callers.end(), caller);
+}
+
+void InterestOperation::timeout()
+{
+    lock_guard<recursive_mutex> lock(m_client->m_client_lock);
+    m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
+    finish();
 }
 
 void InterestOperation::finish()
