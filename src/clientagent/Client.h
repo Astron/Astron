@@ -74,7 +74,6 @@ class InterestOperation
 
     bool is_ready();
     void set_expected(doid_t total);
-    void decrement_expected();
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
     void finish();

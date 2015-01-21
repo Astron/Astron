@@ -605,19 +605,12 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             // we'll just store this dg under the m_pending_datagrams queue on the iop
             return;
         }
+
         doid_t n_parent = dgi.read_doid();
         zone_t n_zone = dgi.read_zone();
         doid_t old_parent = dgi.read_doid();
         zone_t old_zone = dgi.read_zone();
-        for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second->m_parent == old_parent &&
-               it->second->m_zones.find(old_zone) != it->second->m_zones.end()) {
 
-                it->second->decrement_expected();
-                if(it->second->is_ready()) { it->second->finish(); }
-                return;
-            }
-        }
         bool disable = true;
         for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
             Interest &i = it->second;
@@ -830,11 +823,6 @@ void InterestOperation::set_expected(doid_t total)
         m_total = total;
         m_has_total = true;
     }
-}
-
-void InterestOperation::decrement_expected()
-{
-    if(m_has_total) { --m_total; }
 }
 
 void InterestOperation::queue_expected(DatagramHandle dg)
