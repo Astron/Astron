@@ -27,6 +27,10 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent)
 
 Client::~Client()
 {
+    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
+        delete it->second;
+    }
+
     if(m_log) {
         delete m_log;
         m_log = nullptr;
@@ -180,7 +184,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     }
 
     uint32_t request_context = m_next_context++;
-    InterestOperation iop(this, i.id, context, request_context, i.parent, new_zones, caller);
+
+    InterestOperation *iop = new InterestOperation(this, i.id, context, request_context, i.parent, new_zones, caller);
     m_pending_interests.emplace(request_context, iop);
 
     DatagramPtr resp = Datagram::create();
@@ -537,10 +542,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
         for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second.m_parent == parent &&
-               it->second.m_zones.find(zone) != it->second.m_zones.end()) {
+            if(it->second->m_parent == parent &&
+               it->second->m_zones.find(zone) != it->second->m_zones.end()) {
 
-                it->second.queue_datagram(in_dg);
+                it->second->queue_datagram(in_dg);
 
                 // Add the DoId to m_pending_objects, because while it's not an object
                 // from opening the interest, we should begin queueing messages for it
@@ -570,8 +575,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         }
 
         m_pending_objects.emplace(dgi.read_doid(), request_context);
-        it->second.queue_expected(in_dg);
-        if(it->second.is_ready()) { it->second.finish(); }
+        it->second->queue_expected(in_dg);
+        if(it->second->is_ready()) { it->second->finish(); }
         return;
     }
     break;
@@ -587,8 +592,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             return;
         }
 
-        it->second.set_expected(count);
-        if(it->second.is_ready()) { it->second.finish(); }
+        it->second->set_expected(count);
+        if(it->second->is_ready()) { it->second->finish(); }
     }
     break;
     case STATESERVER_OBJECT_CHANGING_LOCATION: {
@@ -603,11 +608,11 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t old_parent = dgi.read_doid();
         zone_t old_zone = dgi.read_zone();
         for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second.m_parent == old_parent &&
-               it->second.m_zones.find(old_zone) != it->second.m_zones.end()) {
+            if(it->second->m_parent == old_parent &&
+               it->second->m_zones.find(old_zone) != it->second->m_zones.end()) {
 
-                it->second.decrement_expected();
-                if(it->second.is_ready()) { it->second.finish(); }
+                it->second->decrement_expected();
+                if(it->second->is_ready()) { it->second->finish(); }
                 return;
             }
         }
@@ -692,7 +697,7 @@ bool Client::try_queue_pending(doid_t do_id, DatagramHandle dg)
     auto it = m_pending_objects.find(do_id);
     if(it != m_pending_objects.end()) {
         // the dg should be queued under the appropriate iop
-        m_pending_interests.find(it->second)->second.queue_datagram(dg);
+        m_pending_interests.find(it->second)->second->queue_datagram(dg);
         return true;
     }
     // still no idea what do_id was being talked about
@@ -800,6 +805,8 @@ void InterestOperation::finish()
         dgi.seek_payload();
         m_client->handle_datagram(*it, dgi);
     }
+
+    delete this;
 }
 
 bool InterestOperation::is_ready()
