@@ -53,6 +53,7 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
 
     // Listen on control channel
     subscribe_channel(m_control_channel);
+    subscribe_channel(BCHAN_DBSERVERS);
 }
 
 void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)

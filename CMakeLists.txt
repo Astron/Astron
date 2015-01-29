@@ -397,6 +397,8 @@ set(UTIL_FILES
 	src/util/EventSender.h
 	src/util/password_prompt.cpp
 	src/util/password_prompt.h
+	src/util/Timeout.cpp
+	src/util/Timeout.h
 )
 
 set(NET_FILES

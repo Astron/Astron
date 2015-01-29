@@ -6,7 +6,9 @@
 using namespace std;
 using dclass::Class;
 
-Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent)
+Client::Client(ConfigNode config, ClientAgent* client_agent) :
+    m_client_agent(client_agent),
+    m_interest_timeout(interest_timeout.get_rval(config))
 {
     m_channel = m_client_agent->m_ct.alloc_channel();
     if(!m_channel) {
@@ -27,6 +29,10 @@ Client::Client(ClientAgent* client_agent) : m_client_agent(client_agent)
 
 Client::~Client()
 {
+    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
+        delete it->second;
+    }
+
     if(m_log) {
         delete m_log;
         m_log = nullptr;
@@ -180,7 +186,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     }
 
     uint32_t request_context = m_next_context++;
-    InterestOperation iop(i.id, context, request_context, i.parent, new_zones, caller);
+
+    InterestOperation *iop = new InterestOperation(this, i.id, context, request_context, i.parent, new_zones, caller);
     m_pending_interests.emplace(request_context, iop);
 
     DatagramPtr resp = Datagram::create();
@@ -434,6 +441,16 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_session_objects.erase(do_id);
     }
     break;
+    case CLIENTAGENT_GET_NETWORK_ADDRESS: {
+        DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_NETWORK_ADDRESS_RESP);
+        resp->add_uint32(dgi.read_uint32()); // Context
+        resp->add_string(get_remote_address());
+        resp->add_uint16(get_remote_port());
+        resp->add_string(get_socket()->local_endpoint().address().to_string());
+        resp->add_uint16(get_socket()->local_endpoint().port());
+        route_datagram(resp);
+    }
+    break;
     case STATESERVER_OBJECT_SET_FIELD: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
@@ -527,10 +544,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
         for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second.m_parent == parent &&
-               it->second.m_zones.find(zone) != it->second.m_zones.end()) {
+            if(it->second->m_parent == parent &&
+               it->second->m_zones.find(zone) != it->second->m_zones.end()) {
 
-                it->second.queue_datagram(in_dg);
+                it->second->queue_datagram(in_dg);
 
                 // Add the DoId to m_pending_objects, because while it's not an object
                 // from opening the interest, we should begin queueing messages for it
@@ -560,8 +577,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         }
 
         m_pending_objects.emplace(dgi.read_doid(), request_context);
-        it->second.queue_expected(in_dg);
-        if(it->second.is_ready()) { it->second.finish(this); }
+        it->second->queue_expected(in_dg);
+        if(it->second->is_ready()) { it->second->finish(); }
         return;
     }
     break;
@@ -577,8 +594,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             return;
         }
 
-        it->second.set_expected(count);
-        if(it->second.is_ready()) { it->second.finish(this); }
+        it->second->set_expected(count);
+        if(it->second->is_ready()) { it->second->finish(); }
     }
     break;
     case STATESERVER_OBJECT_CHANGING_LOCATION: {
@@ -588,19 +605,12 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             // we'll just store this dg under the m_pending_datagrams queue on the iop
             return;
         }
+
         doid_t n_parent = dgi.read_doid();
         zone_t n_zone = dgi.read_zone();
         doid_t old_parent = dgi.read_doid();
         zone_t old_zone = dgi.read_zone();
-        for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second.m_parent == old_parent &&
-               it->second.m_zones.find(old_zone) != it->second.m_zones.end()) {
 
-                it->second.decrement_expected();
-                if(it->second.is_ready()) { it->second.finish(this); }
-                return;
-            }
-        }
         bool disable = true;
         for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
             Interest &i = it->second;
@@ -615,6 +625,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
             m_visible_objects[do_id].parent = n_parent;
             m_visible_objects[do_id].zone = n_zone;
+        } else {
+            // We don't actually *see* this object, we're receiving this
+            // message as a fluke.
+            return;
         }
 
         if(disable && m_owned_objects.find(do_id) == m_owned_objects.end()) {
@@ -678,7 +692,7 @@ bool Client::try_queue_pending(doid_t do_id, DatagramHandle dg)
     auto it = m_pending_objects.find(do_id);
     if(it != m_pending_objects.end()) {
         // the dg should be queued under the appropriate iop
-        m_pending_interests.find(it->second)->second.queue_datagram(dg);
+        m_pending_interests.find(it->second)->second->queue_datagram(dg);
         return true;
     }
     // still no idea what do_id was being talked about
@@ -741,17 +755,27 @@ void Client::notify_interest_done(const InterestOperation* iop)
  *       HELPER CLASSES       *
  * ========================== */
 InterestOperation::InterestOperation(
+    Client *client,
     uint16_t interest_id, uint32_t client_context, uint32_t request_context,
     doid_t parent, unordered_set<zone_t> zones, channel_t caller) :
+        m_client(client),
         m_interest_id(interest_id),
         m_client_context(client_context),
         m_request_context(request_context),
-        m_parent(parent), m_zones(zones)
+        m_parent(parent), m_zones(zones),
+        m_timeout(client->m_interest_timeout, bind(&InterestOperation::timeout, this))
 {
     m_callers.insert(m_callers.end(), caller);
 }
 
-void InterestOperation::finish(Client *client)
+void InterestOperation::timeout()
+{
+    lock_guard<recursive_mutex> lock(m_client->m_client_lock);
+    m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
+    finish();
+}
+
+void InterestOperation::finish()
 {
     // Send objects in the initial snapshot
     for(auto it = m_pending_generates.begin(); it != m_pending_generates.end(); ++it) {
@@ -763,12 +787,12 @@ void InterestOperation::finish(Client *client)
         bool with_other = (msgtype == STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER);
 
         dgi.skip(sizeof(uint32_t)); // skip request_context
-        client->handle_object_entrance(dgi, with_other);
+        m_client->handle_object_entrance(dgi, with_other);
     }
 
     // Distribute the interest done message
-    client->notify_interest_done(this);
-    client->handle_interest_done(m_interest_id, m_client_context);
+    m_client->notify_interest_done(this);
+    m_client->handle_interest_done(m_interest_id, m_client_context);
 
     // N. B. We need to delete the pending interest before we send queued
     //       datagrams, so that they aren't just re-added to the queue.
@@ -776,14 +800,16 @@ void InterestOperation::finish(Client *client)
     list<DatagramHandle> dispatch = move(m_pending_datagrams);
 
     // Delete the Interest Operation
-    client->m_pending_interests.erase(m_request_context);
+    m_client->m_pending_interests.erase(m_request_context);
 
     // Dispatch other received and queued messages
     for(auto it = dispatch.begin(); it != dispatch.end(); ++it) {
         DatagramIterator dgi(*it);
         dgi.seek_payload();
-        client->handle_datagram(*it, dgi);
+        m_client->handle_datagram(*it, dgi);
     }
+
+    delete this;
 }
 
 bool InterestOperation::is_ready()
@@ -797,11 +823,6 @@ void InterestOperation::set_expected(doid_t total)
         m_total = total;
         m_has_total = true;
     }
-}
-
-void InterestOperation::decrement_expected()
-{
-    if(m_has_total) { --m_total; }
 }
 
 void InterestOperation::queue_expected(DatagramHandle dg)

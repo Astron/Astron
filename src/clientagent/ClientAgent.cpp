@@ -56,6 +56,8 @@ bool have_client_type(const string& backend)
 ConfigConstraint<string> client_type_exists(have_client_type, ca_client_type,
         "No Client handler exists for the given client type.");
 
+ConfigVariable<unsigned long> interest_timeout("interest_timeout", 500, ca_client_config);
+
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
     m_server_version(server_version.get_rval(roleconfig)), m_ssl_ctx(ssl::context::sslv23)
 {

@@ -8,6 +8,7 @@
 extern RoleConfigGroup clientagent_config;
 extern ConfigGroup ca_client_config;
 extern ConfigVariable<std::string> ca_client_type;
+extern ConfigVariable<unsigned long> interest_timeout;
 
 // A ChannelTracker is used to keep track of available and allocated channels that
 // the ClientAgent can use to assign to new Clients.

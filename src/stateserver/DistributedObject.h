@@ -52,6 +52,7 @@ class DistributedObject : public MDParticipantInterface
     channel_t m_ai_channel;
     channel_t m_owner_channel;
     bool m_ai_explicitly_set;
+    bool m_parent_synchronized;
     uint32_t m_next_context;
     std::unordered_map<zone_t, std::unordered_set<doid_t>> m_zone_objects;
     LogCategory *m_log;
