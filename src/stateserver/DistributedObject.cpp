@@ -685,7 +685,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                 if(field != nullptr) {
                     // If it is null, handle_one_get will produce a warning for us later
                     m_log->warning() << "Received duplicate field '"
-                                     << field->get_name() << "'' in get_fields.\n";
+                                     << field->get_name() << "' in get_fields.\n";
                 }
             }
         }
