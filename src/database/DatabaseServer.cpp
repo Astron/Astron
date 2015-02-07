@@ -109,6 +109,8 @@ void DatabaseServer::handle_operation(DBOperation *op)
         return;
     }
 
+    unique_lock<recursive_mutex> guard(m_lock);
+
     DBOperationQueue &queue = m_queues[op->doid()];
 
     if(queue.begin_operation(op)) {
@@ -122,6 +124,8 @@ void DatabaseServer::clear_operation(const DBOperation *op)
         // CREATEs do not operate on a specific doId and are therefore non-queued.
         return;
     }
+
+    unique_lock<recursive_mutex> guard(m_lock);
 
     DBOperationQueue &queue = m_queues[op->doid()];
 

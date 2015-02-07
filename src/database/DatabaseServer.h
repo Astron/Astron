@@ -20,6 +20,7 @@ class DatabaseServer : public Role
     void handle_operation(DBOperation *op);
     void clear_operation(const DBOperation *op);
     std::unordered_map<doid_t, DBOperationQueue> m_queues;
+    std::recursive_mutex m_lock;
 
     DatabaseBackend *m_db_backend;
     LogCategory *m_log;
