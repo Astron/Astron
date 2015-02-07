@@ -129,13 +129,15 @@ void DatabaseServer::clear_operation(const DBOperation *op)
 
     DBOperationQueue &queue = m_queues[op->doid()];
 
-    if(!queue.finalize_operation(op)) {
-        // The queue says there's no chance this would allow later operations to
-        // begin; let's avoid calling the (relatively-expensive) get_next_operation.
-        return;
+    if(queue.finalize_operation(op)) {
+        // The queue says there's a chance this would allow later operations to
+        // begin; let's submit all of the eligible operations.
+        while(DBOperation *next_op = queue.get_next_operation()) {
+            m_db_backend->submit(next_op);
+        }
     }
 
-    while(DBOperation *next_op = queue.get_next_operation()) {
-        m_db_backend->submit(next_op);
+    if(queue.is_empty()) {
+        m_queues.erase(op->doid());
     }
 }

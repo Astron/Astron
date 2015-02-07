@@ -41,6 +41,11 @@ bool DBOperationQueue::finalize_operation(const DBOperation *op)
     return true;
 }
 
+bool DBOperationQueue::is_empty() const
+{
+    return !m_queue.size() && !m_running_operations.size();
+}
+
 bool DBOperationQueue::can_operation_start(const DBOperation *op)
 {
     // TODO: Currently, this just waits until the running operations map is

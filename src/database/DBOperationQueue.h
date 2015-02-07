@@ -26,6 +26,9 @@ class DBOperationQueue
     // next queued operation to begin, this will return true.
     bool finalize_operation(const DBOperation *op);
 
+    // Is this queue empty (i.e. can it safely be deleted from the map)?
+    bool is_empty() const;
+
   private:
     std::queue<DBOperation *> m_queue;
     std::unordered_set<const DBOperation *> m_running_operations;
