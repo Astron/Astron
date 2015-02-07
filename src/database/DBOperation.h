@@ -232,6 +232,7 @@ class DBOperationGet : public DBOperation
     DBOperationGet(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete(DBObjectSnapshot *snapshot);
     virtual void on_failure();
 
@@ -245,6 +246,7 @@ class DBOperationSet : public DBOperation
     DBOperationSet(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete();
     virtual void on_failure();
 };
@@ -254,6 +256,7 @@ class DBOperationUpdate : public DBOperation
     DBOperationUpdate(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete();
     virtual void on_failure();
     virtual void on_criteria_mismatch(DBObjectSnapshot *);
