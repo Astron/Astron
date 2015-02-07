@@ -1,8 +1,11 @@
 #pragma once
+#include <unordered_map>
+
 #include "core/Role.h"
 #include "core/RoleFactory.h"
 #include "DatabaseBackend.h"
 #include "DBOperation.h"
+#include "DBOperationQueue.h"
 
 extern RoleConfigGroup dbserver_config;
 
@@ -15,6 +18,8 @@ class DatabaseServer : public Role
 
   private:
     void handle_operation(DBOperation *op);
+    void clear_operation(const DBOperation *op);
+    std::unordered_map<doid_t, DBOperationQueue> m_queues;
 
     DatabaseBackend *m_db_backend;
     LogCategory *m_log;
@@ -29,4 +34,6 @@ class DatabaseServer : public Role
     friend class DBOperationGet;
     friend class DBOperationSet;
     friend class DBOperationUpdate;
+
+    friend class DBOperationQueue;
 };

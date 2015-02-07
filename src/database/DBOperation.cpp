@@ -10,6 +10,8 @@ using dclass::Class;
 
 void DBOperation::cleanup()
 {
+    m_dbserver->clear_operation(this);
+
     delete this;
 }
 

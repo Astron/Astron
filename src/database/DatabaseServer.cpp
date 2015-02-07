@@ -97,6 +97,41 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     };
 
     if(op->initialize(sender, msg_type, dgi)) {
+        handle_operation(op);
+    }
+}
+
+void DatabaseServer::handle_operation(DBOperation *op)
+{
+    if(op->type() == DBOperation::OperationType::CREATE_OBJECT) {
+        // CREATEs do not operate on a specific doId and are therefore non-queued.
         m_db_backend->submit(op);
+        return;
+    }
+
+    DBOperationQueue &queue = m_queues[op->doid()];
+
+    if(queue.begin_operation(op)) {
+        m_db_backend->submit(op);
+    }
+}
+
+void DatabaseServer::clear_operation(const DBOperation *op)
+{
+    if(op->type() == DBOperation::OperationType::CREATE_OBJECT) {
+        // CREATEs do not operate on a specific doId and are therefore non-queued.
+        return;
+    }
+
+    DBOperationQueue &queue = m_queues[op->doid()];
+
+    if(!queue.finalize_operation(op)) {
+        // The queue says there's no chance this would allow later operations to
+        // begin; let's avoid calling the (relatively-expensive) get_next_operation.
+        return;
+    }
+
+    while(DBOperation *next_op = queue.get_next_operation()) {
+        m_db_backend->submit(next_op);
     }
 }
