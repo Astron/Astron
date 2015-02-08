@@ -17,10 +17,12 @@ class DBOperationQueue
     DBOperation *get_next_operation();
 
     // Inform the queue that we'd like to begin an operation. If the operation
-    // can start right away, this returns true, and it is recorded as a
-    // "running operation". If this cannot start, it will be enqueued and this
-    // function will return false.
-    bool begin_operation(DBOperation *op);
+    // can start right away, this returns false, If this cannot start, it will
+    // be enqueued and this function will return true.
+    bool enqueue_operation(DBOperation *op);
+
+    // Inform the queue that an operation is now running.
+    void begin_operation(DBOperation *op);
 
     // Inform the queue that an operation has completed. If this might allow the
     // next queued operation to begin, this will return true.

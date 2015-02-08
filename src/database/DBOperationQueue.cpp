@@ -20,17 +20,22 @@ DBOperation *DBOperationQueue::get_next_operation()
     }
 }
 
-bool DBOperationQueue::begin_operation(DBOperation *op)
+bool DBOperationQueue::enqueue_operation(DBOperation *op)
 {
-    if(can_operation_start(op)) {
-        m_running_operations.insert(op);
-
-        return true;
+    if(!m_queue.size() && can_operation_start(op)) {
+        // The queue is empty and this operation can go straight away! Let's
+        // refuse to enqueue it.
+        return false;
     } else {
         m_queue.push(op);
 
-        return false;
+        return true;
     }
+}
+
+void DBOperationQueue::begin_operation(DBOperation *op)
+{
+    m_running_operations.insert(op);
 }
 
 bool DBOperationQueue::finalize_operation(const DBOperation *op)

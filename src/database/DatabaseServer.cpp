@@ -113,7 +113,8 @@ void DatabaseServer::handle_operation(DBOperation *op)
 
     DBOperationQueue &queue = m_queues[op->doid()];
 
-    if(queue.begin_operation(op)) {
+    if(!queue.enqueue_operation(op)) {
+        queue.begin_operation(op);
         m_db_backend->submit(op);
     }
 }
