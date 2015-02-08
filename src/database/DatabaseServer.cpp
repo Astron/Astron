@@ -133,6 +133,7 @@ void DatabaseServer::clear_operation(const DBOperation *op)
         // The queue says there's a chance this would allow later operations to
         // begin; let's submit all of the eligible operations.
         while(DBOperation *next_op = queue.get_next_operation()) {
+            queue.begin_operation(next_op);
             m_db_backend->submit(next_op);
         }
     }

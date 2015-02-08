@@ -13,7 +13,6 @@ DBOperation *DBOperationQueue::get_next_operation()
     DBOperation *op = m_queue.front();
 
     if(can_operation_start(op)) {
-        m_running_operations.insert(op);
         m_queue.pop();
         return op;
     } else {
