@@ -7,8 +7,7 @@ using namespace std;
 using dclass::Class;
 
 Client::Client(ConfigNode config, ClientAgent* client_agent) :
-    m_client_agent(client_agent),
-    m_interest_timeout(interest_timeout.get_rval(config))
+    m_client_agent(client_agent)
 {
     m_channel = m_client_agent->m_ct.alloc_channel();
     if(!m_channel) {
@@ -187,7 +186,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 
     uint32_t request_context = m_next_context++;
 
-    InterestOperation *iop = new InterestOperation(this, i.id, context, request_context, i.parent, new_zones, caller);
+    InterestOperation *iop = new InterestOperation(this, m_client_agent->m_interest_timeout,
+                    i.id, context, request_context, i.parent, new_zones, caller);
     m_pending_interests.emplace(request_context, iop);
 
     DatagramPtr resp = Datagram::create();
@@ -755,7 +755,7 @@ void Client::notify_interest_done(const InterestOperation* iop)
  *       HELPER CLASSES       *
  * ========================== */
 InterestOperation::InterestOperation(
-    Client *client,
+    Client *client, unsigned long timeout,
     uint16_t interest_id, uint32_t client_context, uint32_t request_context,
     doid_t parent, unordered_set<zone_t> zones, channel_t caller) :
         m_client(client),
@@ -763,7 +763,7 @@ InterestOperation::InterestOperation(
         m_client_context(client_context),
         m_request_context(request_context),
         m_parent(parent), m_zones(zones),
-        m_timeout(client->m_interest_timeout, bind(&InterestOperation::timeout, this))
+        m_timeout(timeout, bind(&InterestOperation::timeout, this))
 {
     m_callers.insert(m_callers.end(), caller);
 }

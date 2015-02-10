@@ -1787,9 +1787,16 @@ class TestStateServer(ProtocolTest):
         appendMeta(dg, parent=parent, zone=1763)
         conn.send(dg)
 
-        # Next, as the parent, we'll acknowledge doid5, but not doid4
+        # Next, as the parent, we'll acknowledge doid5
         dg = Datagram.create([doid5], parent, STATESERVER_OBJECT_LOCATION_ACK)
         dg.add_doid(parent)
+        dg.add_zone(1763)
+        conn.send(dg)
+
+        # We'll acknowledge doid4, but with the old zone:
+        dg = Datagram.create([doid4], parent, STATESERVER_OBJECT_LOCATION_ACK)
+        dg.add_doid(parent)
+        dg.add_zone(930)
         conn.send(dg)
 
         # Now we fake a relayed parent->child query. There's no use sending a query to
