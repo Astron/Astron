@@ -10,6 +10,8 @@ using dclass::Class;
 
 void DBOperation::cleanup()
 {
+    m_dbserver->clear_operation(this);
+
     delete this;
 }
 
@@ -293,6 +295,42 @@ bool DBOperationGet::verify_class(const dclass::Class *dclass)
     return true;
 }
 
+bool DBOperationGet::is_independent_of(const DBOperation *other) const
+{
+    if(doid() != other->doid()) {
+        // Not even operating on the same doId; we're good.
+        return true;
+    }
+
+    switch(other->type()) {
+        case GET_OBJECT:
+        case GET_FIELDS:
+            return true;
+
+        case SET_FIELDS:
+        case UPDATE_FIELDS:
+            if(type() == GET_OBJECT) {
+                // A GET_OBJECT gets everything, and is therefore not
+                // independent of any changes to the object.
+                return false;
+            }
+
+            // Test if any of the fields we're getting is a field changed by
+            // the other operation...
+            for(auto it = get_fields().begin(); it != get_fields().end(); ++it) {
+                if(other->set_fields().find(*it) != other->set_fields().end()) {
+                    return false;
+                }
+            }
+
+            // No conflict.
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 void DBOperationGet::on_failure()
 {
     DatagramPtr resp = Datagram::create();
@@ -400,6 +438,51 @@ bool DBOperationSet::verify_class(const dclass::Class *dclass)
     return true;
 }
 
+bool DBOperationSet::is_independent_of(const DBOperation *other) const
+{
+    if(doid() != other->doid()) {
+        // Not even operating on the same doId; we're good.
+        return true;
+    }
+
+    switch(other->type()) {
+        case GET_OBJECT:
+        case GET_FIELDS:
+            // The logic for this is in DBOperationGet... Let's let that take
+            // care of it.
+            return other->is_independent_of(this);
+
+        case SET_FIELDS:
+            // The operations are independent as long as they're on different
+            // fields.
+
+            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+                if(other->set_fields().find(it->first) != other->set_fields().end()) {
+                    return false;
+                }
+            }
+
+            // No conflict.
+            return true;
+
+        case UPDATE_FIELDS:
+            // We must be independent of the other operation's fields *AND*
+            // their criteria.
+            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+                if(other->set_fields().find(it->first) != other->set_fields().end() ||
+                   other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
+                    return false;
+                }
+            }
+
+            // No conflict.
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 void DBOperationSet::on_complete()
 {
     // Broadcast update to object's channel
@@ -467,6 +550,50 @@ bool DBOperationUpdate::verify_class(const dclass::Class *dclass)
         errors = true;
     }
     return !errors;
+}
+
+bool DBOperationUpdate::is_independent_of(const DBOperation *other) const
+{
+    if(doid() != other->doid()) {
+        // Not even operating on the same doId; we're good.
+        return true;
+    }
+
+    switch(other->type()) {
+        case GET_OBJECT:
+        case GET_FIELDS:
+        case SET_FIELDS:
+            // The logic for handling these types is elsewhere.
+            return other->is_independent_of(this);
+
+        case UPDATE_FIELDS:
+            // This case gets really tricky. Not only may our set fields not
+            // conflict with their set fields/criteria, but our *criteria* may
+            // not overlap with their set fields. It *is* okay, however, to
+            // have a criteria overlap.
+            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+                if(other->set_fields().find(it->first) != other->set_fields().end() ||
+                   other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
+                    return false;
+                }
+            }
+
+            // Our set fields don't conflict, let's see if their set fields
+            // conflict.
+            for(auto it = other->set_fields().begin(); it != other->set_fields().end(); ++it) {
+                // We're only testing against our criteria_fields()... The
+                // set_fields()<->set_fields() intersection was already tested.
+                if(criteria_fields().find(it->first) != criteria_fields().end()) {
+                    return false;
+                }
+            }
+
+            // No conflict.
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 void DBOperationUpdate::on_complete()
