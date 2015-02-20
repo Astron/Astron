@@ -14,10 +14,13 @@ class Timeout
   public:
     Timeout(unsigned long ms, std::function<void()> f);
     virtual ~Timeout();
+    void reset();
+    
 
   private:
     boost::asio::deadline_timer m_timer;
     std::function<void()> m_callback;
-
+    long m_timeout_interval;
+    
     void timer_callback(const boost::system::error_code &ec);
 };
