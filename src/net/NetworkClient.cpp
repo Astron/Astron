@@ -30,6 +30,9 @@ NetworkClient::~NetworkClient()
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         m_socket->close();
     }
+    if(m_ssl_enabled) {
+        delete m_secure_socket;
+    }
     delete m_socket;
     delete [] m_data_buf;
 }
