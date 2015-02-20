@@ -31,9 +31,13 @@ NetworkClient::~NetworkClient()
         m_socket->close();
     }
     if(m_ssl_enabled) {
+        // This also deletes m_socket:
         delete m_secure_socket;
+    } else {
+        // ONLY delete m_socket if we must do so directly. If it's wrapped in
+        // an SSL stream, the stream "owns" the socket.
+        delete m_socket;
     }
-    delete m_socket;
     delete [] m_data_buf;
 }
 
