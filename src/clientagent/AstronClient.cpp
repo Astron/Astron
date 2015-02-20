@@ -460,7 +460,7 @@ class AstronClient : public Client, public NetworkClient
 
     // handle_client_heartbeat should ensure this client does not get reset for the current interval.
     // Handler for CLIENT_HEARTBEAT
-    vitual void handle_client_heartbeat()
+    virtual void handle_client_heartbeat()
     {
       if (m_heartbeat_timer != nullptr) {
         m_heartbeat_timer->reset();
