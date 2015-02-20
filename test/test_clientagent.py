@@ -63,6 +63,13 @@ roles:
       tls:
           certificate: %r
           key_file: %r
+
+    - type: clientagent
+      bind: 127.0.0.1:51201
+      version: "Sword Art Online v5.1"
+      client:
+          heartbeat_timeout: 1000
+
 """ % (USE_THREADING, test_dc, server_crt, server_key)
 VERSION = 'Sword Art Online v5.1'
 
@@ -3026,6 +3033,30 @@ class TestClientAgent(ProtocolTest):
         dgi.read_uint16() # Ignore local port (can't really test this)
 
         self.server.send(Datagram.create_remove_channel(10052))
+
+def test_heartbeat_timeout(self):
+    # Test the interest timeout
+    self.server.flush()
+    client = self.connect(port = 51201)
+    id = self.identify(client)
+
+    # Bring client out of the sandbox
+    self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+    # Send a heartbeat
+    dg = Datagram()
+    dg.add_uint16(CLIENT_HEARTBEAT)
+    client.send(dg)
+
+    # The client shouldn't hear anything back.
+    self.expectNone(client)
+
+    time.sleep(0.75)
+
+    # We should be disconnected now...
+    dg = Datagram()
+    dg.add_uint16(CLIENT_DISCONNECT_NO_HEARTBEAT)
+    self.expect(client, dg, isClient = True)
 
 if __name__ == '__main__':
     unittest.main()
