@@ -83,8 +83,20 @@ class AstronClient : public Client, public NetworkClient
       }
     }
 
+    void heartbeat_timeout()
+    {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
+                        "Server timed out while waiting for heartbeat.");
+    }
+
     void initialize()
     {
+        //If heartbeat, start the heartbeat timer now.
+        if (m_heartbeat_timeout != 0) {
+            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,this));
+        }
+
         // Set interest permissions
         string permission_level = interest_permissions.get_rval(m_config);
         if(permission_level == "enabled") {
@@ -396,6 +408,9 @@ class AstronClient : public Client, public NetworkClient
             handle_client_object_update_field(dgi);
         }
         break;
+        case CLIENT_HEARTBEAT:
+            handle_client_heartbeat();
+            break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not allowed prior to authentication.";
@@ -433,12 +448,24 @@ class AstronClient : public Client, public NetworkClient
         case CLIENT_REMOVE_INTEREST:
             handle_client_remove_interest(dgi);
             break;
+        case CLIENT_HEARTBEAT:
+            handle_client_heartbeat();
+            break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not valid.";
             send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
             return;
         }
+    }
+
+    // handle_client_heartbeat should ensure this client does not get reset for the current interval.
+    // Handler for CLIENT_HEARTBEAT
+    vitual void handle_client_heartbeat()
+    {
+      if (m_heartbeat_timer != nullptr) {
+        m_heartbeat_timer->reset();
+      }
     }
 
     // handle_client_object_update_field occurs when a client sends an OBJECT_SET_FIELD
