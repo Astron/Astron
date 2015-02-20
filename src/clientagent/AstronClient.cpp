@@ -8,6 +8,7 @@
 #include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
+#include "Util/Timeout.h"
 
 using namespace std;
 using dclass::Class;
@@ -22,6 +23,9 @@ static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 //set default to true
 static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
 static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+
+//by default, have heartbeat disabled.
+static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, ca_client_config);
 
 static bool is_permission_level(const string& str)
 {
@@ -46,12 +50,17 @@ class AstronClient : public Client, public NetworkClient
     bool m_send_version;
     InterestPermission m_interests_allowed;
 
+    //Heartbeat
+    long m_heartbeat_timeout;
+    Timeout *m_heartbeat_timer = nullptr;
+
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
         Client(config, client_agent), NetworkClient(socket), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
     }
@@ -61,9 +70,17 @@ class AstronClient : public Client, public NetworkClient
         Client(config, client_agent), NetworkClient(stream), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
+    }
+
+    ~AstronClient()
+    {
+      if (m_heartbeat_timer != nullptr) {
+        delete m_heartbeat_timer;
+      }
     }
 
     void initialize()
