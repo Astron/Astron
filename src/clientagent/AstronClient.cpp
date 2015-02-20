@@ -404,10 +404,9 @@ class AstronClient : public Client, public NetworkClient
             NetworkClient::send_disconnect();
         }
         break;
-        case CLIENT_OBJECT_SET_FIELD: {
+        case CLIENT_OBJECT_SET_FIELD:
             handle_client_object_update_field(dgi);
-        }
-        break;
+            break;
         case CLIENT_HEARTBEAT:
             handle_client_heartbeat();
             break;
