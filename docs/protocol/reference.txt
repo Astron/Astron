@@ -86,7 +86,7 @@
 | STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER |    2043 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
 | STATESERVER_OBJECT_GET_LOCATION                       |    2044 | `uint32 context`,                                                                                 |
 | STATESERVER_OBJECT_GET_LOCATION_RESP                  |    2045 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                            |
-| STATESERVER_OBJECT_LOCATION_ACK                       |    2046 | `uint32 parent_id`                                                                                |
+| STATESERVER_OBJECT_LOCATION_ACK                       |    2046 | `uint32 parent_id`, `uint32 zone_id`                                                              |
 | STATESERVER_OBJECT_SET_AI                             |    2050 | `uint64 ai_channel`                                                                               |
 | STATESERVER_OBJECT_CHANGING_AI                        |    2051 | `uint32 do_id`, `uint64 new_ai`, `uint64 old_ai`                                                  |
 | STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED             |    2052 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |

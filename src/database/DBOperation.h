@@ -125,6 +125,28 @@ class DBOperation
         return true;
     }
 
+    // This function determines whether two DBOperations are "independent" --
+    // in other words, the outcome of one operation does not affect the other,
+    // which makes their ordering unimportant. This is useful for concurrency -
+    // if two operations are independent, it's safe to execute them in
+    // parallel.
+    //
+    // This function MUST ONLY return true if the lack of ordering is safe,
+    // but may return false in cases of uncertainty (i.e. two operations that
+    // are actually independent may report that they are *not* independent
+    // because it still would not be safe to execute them out of order).
+    //
+    // Note that this relation must also be symmetric. In other words,
+    // a->is_independent_of(b) == b->is_independent_of(a)
+    virtual bool is_independent_of(const DBOperation *other) const
+    {
+        // By default, we only assume operations are independent if they
+        // operate on different doIds. CREATEs are assumed never independent -
+        // their ordering is very much important - but their doid() is invalid
+        // and invalid != invalid is false.
+        return doid() != other->doid();
+    }
+
     // === CALLBACK FUNCTION ===
     // The database backend invokes these when the operation completes.
     // N.B. when this happens, the DBOperation regains control of its own
@@ -158,7 +180,7 @@ class DBOperation
 
 
   protected:
-    // The DBServer the operation is acting om.
+    // The DBServer the operation is acting on.
     DatabaseServer *m_dbserver;
     // The sender of the operation.
     channel_t m_sender;
@@ -210,6 +232,7 @@ class DBOperationGet : public DBOperation
     DBOperationGet(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete(DBObjectSnapshot *snapshot);
     virtual void on_failure();
 
@@ -223,6 +246,7 @@ class DBOperationSet : public DBOperation
     DBOperationSet(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete();
     virtual void on_failure();
 };
@@ -232,6 +256,7 @@ class DBOperationUpdate : public DBOperation
     DBOperationUpdate(DatabaseServer *db) : DBOperation(db) { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi);
     virtual bool verify_class(const dclass::Class *dclass);
+    virtual bool is_independent_of(const DBOperation *other) const;
     virtual void on_complete();
     virtual void on_failure();
     virtual void on_criteria_mismatch(DBObjectSnapshot *);

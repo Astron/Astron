@@ -566,6 +566,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
             DatagramPtr dg = Datagram::create(child_id, m_do_id, STATESERVER_OBJECT_LOCATION_ACK);
             dg->add_doid(m_do_id);
+            dg->add_zone(new_zone);
             route_datagram(dg);
         } else if(r_do_id == m_do_id) {
             auto &children = m_zone_objects[r_zone];
@@ -582,12 +583,16 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     }
     case STATESERVER_OBJECT_LOCATION_ACK: {
         doid_t r_parent_id = dgi.read_doid();
-        if(r_parent_id == m_parent_id) {
-            m_log->trace() << "Parent acknowledged my location change.\n";
-            m_parent_synchronized = true;
-        } else {
+        zone_t r_zone_id = dgi.read_zone();
+        if(r_parent_id != m_parent_id) {
             m_log->warning() << "Received location acknowledgement from " << r_parent_id
                              << " but my parent_id is " << m_parent_id << ".\n";
+        } else if(r_zone_id != m_zone_id) {
+            m_log->warning() << "Received location acknowledgement for zone " << r_zone_id
+                             << " but my zone_id is " << m_zone_id << ".\n";
+        } else {
+            m_log->trace() << "Parent acknowledged my location change.\n";
+            m_parent_synchronized = true;
         }
         break;
     }
@@ -685,7 +690,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                 if(field != nullptr) {
                     // If it is null, handle_one_get will produce a warning for us later
                     m_log->warning() << "Received duplicate field '"
-                                     << field->get_name() << "'' in get_fields.\n";
+                                     << field->get_name() << "' in get_fields.\n";
                 }
             }
         }

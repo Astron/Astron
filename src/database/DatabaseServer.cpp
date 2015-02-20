@@ -97,6 +97,49 @@ void DatabaseServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     };
 
     if(op->initialize(sender, msg_type, dgi)) {
+        handle_operation(op);
+    }
+}
+
+void DatabaseServer::handle_operation(DBOperation *op)
+{
+    if(op->type() == DBOperation::OperationType::CREATE_OBJECT) {
+        // CREATEs do not operate on a specific doId and are therefore non-queued.
         m_db_backend->submit(op);
+        return;
+    }
+
+    unique_lock<recursive_mutex> guard(m_lock);
+
+    DBOperationQueue &queue = m_queues[op->doid()];
+
+    if(!queue.enqueue_operation(op)) {
+        queue.begin_operation(op);
+        m_db_backend->submit(op);
+    }
+}
+
+void DatabaseServer::clear_operation(const DBOperation *op)
+{
+    if(op->type() == DBOperation::OperationType::CREATE_OBJECT) {
+        // CREATEs do not operate on a specific doId and are therefore non-queued.
+        return;
+    }
+
+    unique_lock<recursive_mutex> guard(m_lock);
+
+    DBOperationQueue &queue = m_queues[op->doid()];
+
+    if(queue.finalize_operation(op)) {
+        // The queue says there's a chance this would allow later operations to
+        // begin; let's submit all of the eligible operations.
+        while(DBOperation *next_op = queue.get_next_operation()) {
+            queue.begin_operation(next_op);
+            m_db_backend->submit(next_op);
+        }
+    }
+
+    if(queue.is_empty()) {
+        m_queues.erase(op->doid());
     }
 }

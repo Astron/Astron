@@ -34,6 +34,7 @@ roles:
       client:
           relocate: true
           add_interest: enabled
+      tuning:
           interest_timeout: 500
 
     - type: clientagent

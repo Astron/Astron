@@ -68,7 +68,7 @@ class InterestOperation
     std::list<DatagramHandle> m_pending_generates;
     std::list<DatagramHandle> m_pending_datagrams;
 
-    InterestOperation(Client *client,
+    InterestOperation(Client *client, unsigned long timeout,
                       uint16_t interest_id, uint32_t client_context, uint32_t request_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
@@ -121,7 +121,6 @@ class Client : public MDParticipantInterface
     std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
     // m_fields_sendable is a map of DoIds to sendable field sets.
     std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
-    unsigned long m_interest_timeout;
     LogCategory *m_log;
 
     Client(ConfigNode config, ClientAgent* client_agent);

@@ -47,7 +47,6 @@ void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
     if(ec.value() != 0) {
         // The handshake failed for some reason. Free the socket and try again:
         delete socket;
-        start_accept();
         return;
     }
 
