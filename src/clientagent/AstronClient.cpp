@@ -89,7 +89,8 @@ class AstronClient : public Client, public NetworkClient
       if (m_state == CLIENT_STATE_ANONYMOUS || CLIENT_STATE_ESTABLISHED) {
         lock_guard<recursive_mutex> lock(m_client_lock);
         send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
-                        "Server timed out while waiting for heartbeat.");
+                        "Server timed out while waiting for heartbeat.",
+                        true);
       }else{
         handle_client_heartbeat();
       }
