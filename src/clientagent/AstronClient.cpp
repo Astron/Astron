@@ -84,15 +84,10 @@ class AstronClient : public Client, public NetworkClient
     }
 
     void heartbeat_timeout()
-    {
-      //If we are in a state to enforce heartbeats, do it... otherwise fake one.
-      if (m_state == CLIENT_STATE_ANONYMOUS || CLIENT_STATE_ESTABLISHED) {
-        lock_guard<recursive_mutex> lock(m_client_lock);
-        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
-                        "Server timed out while waiting for heartbeat.");
-      }else{
-        handle_client_heartbeat();
-      }
+    {  
+    lock_guard<recursive_mutex> lock(m_client_lock);
+    send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
+                    "Server timed out while waiting for heartbeat."); 
     }
 
     void initialize()
@@ -363,6 +358,9 @@ class AstronClient : public Client, public NetworkClient
             return;
         }
 
+        //Now that message type is confirmed, reset timeout watchdog.
+        handle_client_heartbeat();
+
         uint32_t dc_hash = dgi.read_uint32();
         string version = dgi.read_string();
 
@@ -464,7 +462,7 @@ class AstronClient : public Client, public NetworkClient
     }
 
     // handle_client_heartbeat should ensure this client does not get reset for the current interval.
-    // Handler for CLIENT_HEARTBEAT
+    // Handler for CLIENT_HEARTBEAT message
     virtual void handle_client_heartbeat()
     {
       if (m_heartbeat_timer != nullptr) {
