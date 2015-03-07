@@ -8,7 +8,7 @@
 #include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
-#include "Util/Timeout.h"
+#include "util/Timeout.h"
 
 using namespace std;
 using dclass::Class;
@@ -78,23 +78,24 @@ class AstronClient : public Client, public NetworkClient
 
     ~AstronClient()
     {
-      if (m_heartbeat_timer != nullptr) {
-        delete m_heartbeat_timer;
-      }
+        if(m_heartbeat_timer != nullptr) {
+            delete m_heartbeat_timer;
+        }
     }
 
     void heartbeat_timeout()
-    {  
-    lock_guard<recursive_mutex> lock(m_client_lock);
-    send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
-                    "Server timed out while waiting for heartbeat."); 
+    {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
+                        "Server timed out while waiting for heartbeat.");
     }
 
     void initialize()
     {
         //If heartbeat, start the heartbeat timer now.
-        if (m_heartbeat_timeout != 0) {
-            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,this));
+        if(m_heartbeat_timeout != 0) {
+            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
+                                            this));
         }
 
         // Set interest permissions
@@ -465,9 +466,9 @@ class AstronClient : public Client, public NetworkClient
     // Handler for CLIENT_HEARTBEAT message
     virtual void handle_client_heartbeat()
     {
-      if (m_heartbeat_timer != nullptr) {
-        m_heartbeat_timer->reset();
-      }
+        if(m_heartbeat_timer != nullptr) {
+            m_heartbeat_timer->reset();
+        }
     }
 
     // handle_client_object_update_field occurs when a client sends an OBJECT_SET_FIELD
