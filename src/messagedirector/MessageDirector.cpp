@@ -332,8 +332,8 @@ void MessageDirector::receive_datagram(DatagramHandle dg)
     route_datagram(NULL, dg);
 }
 
-void MessageDirector::receive_disconnect()
+void MessageDirector::receive_disconnect(const boost::system::error_code &ec)
 {
-    m_log.fatal() << "Lost connection to upstream md" << std::endl;
+    m_log.fatal() << "Lost connection to upstream md: " << ec.message() << std::endl;
     exit(1);
 }

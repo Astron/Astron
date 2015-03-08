@@ -169,10 +169,11 @@ class AstronClient : public Client, public NetworkClient
     //     connection or otherwise when the tcp connection is lost.
     // Note: In the Astron client protocol, the server is normally
     //       responsible for terminating the connection.
-    virtual void receive_disconnect()
+    virtual void receive_disconnect(const boost::system::error_code &ec)
     {
         if(!m_clean_disconnect) {
             LoggedEvent event("client-lost");
+	    event.add("reason", ec.message());
             log_event(event);
         }
 

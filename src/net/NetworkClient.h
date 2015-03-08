@@ -12,6 +12,7 @@ class NetworkClient
     virtual void send_datagram(DatagramHandle dg);
     // send_disconnect closes the TCP connection
     virtual void send_disconnect();
+    virtual void send_disconnect(const boost::system::error_code &ec);
     // is_connected returns true if the TCP connection is active, or false otherwise
     bool is_connected();
 
@@ -31,7 +32,7 @@ class NetworkClient
     virtual void receive_datagram(DatagramHandle dg) = 0;
     // receive_disconnect is called when the remote host closes the
     //     connection or otherwise when the tcp connection is lost.
-    virtual void receive_disconnect() = 0;
+    virtual void receive_disconnect(const boost::system::error_code &ec) = 0;
 
 
     /* Asynchronous call loop */
@@ -60,7 +61,10 @@ class NetworkClient
     void socket_read(uint8_t* buf, size_t length, receive_handler_t callback);
     void socket_write(std::list<boost::asio::const_buffer>&);
 
+    void handle_disconnect(const boost::system::error_code &ec);
+
     bool m_ssl_enabled;
+    bool m_disconnect_handled = false;
     uint8_t m_size_buf[sizeof(dgsize_t)];
     uint8_t* m_data_buf = nullptr;
     dgsize_t m_data_size = 0;

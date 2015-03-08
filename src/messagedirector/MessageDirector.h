@@ -44,7 +44,7 @@ class MessageDirector : public ChannelMap
 
     // For MDUpstream (and subclasses) to call.
     void receive_datagram(DatagramHandle dg);
-    void receive_disconnect();
+    void receive_disconnect(const boost::system::error_code &ec);
 
   protected:
     virtual void on_add_channel(channel_t c);

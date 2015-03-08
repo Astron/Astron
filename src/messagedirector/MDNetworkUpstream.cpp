@@ -65,7 +65,7 @@ void MDNetworkUpstream::receive_datagram(DatagramHandle dg)
     m_message_director->receive_datagram(dg);
 }
 
-void MDNetworkUpstream::receive_disconnect()
+void MDNetworkUpstream::receive_disconnect(const boost::system::error_code &ec)
 {
-    m_message_director->receive_disconnect();
+    m_message_director->receive_disconnect(ec);
 }

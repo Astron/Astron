@@ -119,19 +119,37 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 void NetworkClient::send_disconnect()
 {
+    boost::system::error_code ec;
+    send_disconnect(ec);
+}
+
+void NetworkClient::send_disconnect(const boost::system::error_code &ec)
+{
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+    handle_disconnect(ec);
     m_socket->close();
+}
+
+void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
+{
+    if(m_disconnect_handled) {
+        return;
+    }
+
+    m_disconnect_handled = true;
+    receive_disconnect(ec);
 }
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
     if(ec) {
-        receive_disconnect();
+        handle_disconnect(ec);
         return;
     }
 
     if(bytes_transferred != sizeof(m_size_buf)) {
-        receive_disconnect();
+        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+        handle_disconnect(epipe);
         return;
     }
 
@@ -150,12 +168,13 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
     if(ec) {
-        receive_disconnect();
+        handle_disconnect(ec);
         return;
     }
 
     if(bytes_transferred != m_data_size) {
-        receive_disconnect();
+        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+        handle_disconnect(epipe);
         return;
     }
 

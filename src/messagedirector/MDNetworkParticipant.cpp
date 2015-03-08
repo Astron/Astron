@@ -78,7 +78,7 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
     route_datagram(dg);
 }
 
-void MDNetworkParticipant::receive_disconnect()
+void MDNetworkParticipant::receive_disconnect(const boost::system::error_code &ec)
 {
    terminate();
 }
