@@ -62,9 +62,9 @@ class NetworkClient
 
     bool m_ssl_enabled;
     uint8_t m_size_buf[sizeof(dgsize_t)];
-    uint8_t* m_data_buf;
-    dgsize_t m_data_size;
-    bool m_is_data;
+    uint8_t* m_data_buf = nullptr;
+    dgsize_t m_data_size = 0;
+    bool m_is_data = false;
 
     std::recursive_mutex m_lock;
 };

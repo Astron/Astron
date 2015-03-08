@@ -6,20 +6,18 @@
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false),
-    m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_ssl_enabled(false), m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+    m_ssl_enabled(false)
 {
     start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true),
-    m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true)
 {
     start_receive();
 }
