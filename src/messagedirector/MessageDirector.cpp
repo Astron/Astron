@@ -182,7 +182,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
                           << p->m_name << "'.\n";
         } else {
             m_log.error() << "Detected truncated datagram reading header from "
-                          "unknown participant.\n";
+                             "unknown participant.\n";
         }
         return;
     }
