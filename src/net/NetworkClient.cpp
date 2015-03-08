@@ -125,9 +125,14 @@ void NetworkClient::send_disconnect()
     m_socket->close();
 }
 
-void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
-    if(ec.value() != 0) {
+    if(ec) {
+        receive_disconnect();
+        return;
+    }
+
+    if(bytes_transferred != sizeof(m_size_buf)) {
         receive_disconnect();
         return;
     }
@@ -144,9 +149,14 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
     async_receive();
 }
 
-void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
-    if(ec.value() != 0) {
+    if(ec) {
+        receive_disconnect();
+        return;
+    }
+
+    if(bytes_transferred != m_data_size) {
         receive_disconnect();
         return;
     }
