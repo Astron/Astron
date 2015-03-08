@@ -78,7 +78,10 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
     route_datagram(dg);
 }
 
-void MDNetworkParticipant::receive_disconnect()
+void MDNetworkParticipant::receive_disconnect(const boost::system::error_code &ec)
 {
-   terminate();
+    logger().info() << "Lost connection from "
+                    << m_remote.address() << ":" << m_remote.port() << ": "
+                    << ec.message() << std::endl;
+    terminate();
 }

@@ -180,6 +180,8 @@ if(BUILD_DBSERVER)
 		src/database/DatabaseBackend.cpp
 		src/database/DBOperation.h
 		src/database/DBOperation.cpp
+		src/database/DBOperationQueue.h
+		src/database/DBOperationQueue.cpp
 		src/database/OldDatabaseBackend.h
 		src/database/OldDatabaseBackend.cpp
 		src/database/DBBackendFactory.h

@@ -148,11 +148,16 @@ LogSeverity Logger::get_min_severity()
 
 LoggerBuf::LoggerBuf() : std::streambuf(), m_has_file(false), m_output_to_console(true)
 {
+    std::cout << std::unitbuf;
 }
 
 LoggerBuf::LoggerBuf(const std::string &file_name, bool output_to_console) :
     m_file(file_name), m_has_file(true), m_output_to_console(output_to_console)
 {
+    if(m_output_to_console) {
+        std::cout << std::unitbuf;
+    }
+
     if(!m_file.is_open()) {
         m_has_file = false;
     }

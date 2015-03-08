@@ -182,7 +182,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
                           << p->m_name << "'.\n";
         } else {
             m_log.error() << "Detected truncated datagram reading header from "
-                          "unknown participant.\n";
+                             "unknown participant.\n";
         }
         return;
     }
@@ -332,8 +332,8 @@ void MessageDirector::receive_datagram(DatagramHandle dg)
     route_datagram(NULL, dg);
 }
 
-void MessageDirector::receive_disconnect()
+void MessageDirector::receive_disconnect(const boost::system::error_code &ec)
 {
-    m_log.fatal() << "Lost connection to upstream md" << std::endl;
+    m_log.fatal() << "Lost connection to upstream md: " << ec.message() << std::endl;
     exit(1);
 }
