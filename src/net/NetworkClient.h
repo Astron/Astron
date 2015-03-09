@@ -65,6 +65,8 @@ class NetworkClient
 
     bool m_ssl_enabled;
     bool m_disconnect_handled = false;
+    bool m_local_disconnect = false;
+    boost::system::error_code m_disconnect_error;
     uint8_t m_size_buf[sizeof(dgsize_t)];
     uint8_t* m_data_buf = nullptr;
     dgsize_t m_data_size = 0;
