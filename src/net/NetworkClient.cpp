@@ -123,7 +123,8 @@ void NetworkClient::send_disconnect()
 void NetworkClient::send_disconnect(const boost::system::error_code &ec)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
-    handle_disconnect(ec);
+    m_local_disconnect = true;
+    m_disconnect_error = ec;
     m_socket->close();
 }
 
@@ -134,7 +135,12 @@ void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
     }
 
     m_disconnect_handled = true;
-    receive_disconnect(ec);
+
+    if(m_local_disconnect) {
+        receive_disconnect(m_disconnect_error);
+    } else {
+        receive_disconnect(ec);
+    }
 }
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
