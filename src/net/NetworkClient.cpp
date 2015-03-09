@@ -24,8 +24,8 @@ NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
 
 NetworkClient::~NetworkClient()
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
     if(m_socket) {
-        std::lock_guard<std::recursive_mutex> lock(m_lock);
         m_socket->close();
     }
     if(m_ssl_enabled) {
