@@ -231,7 +231,7 @@ void NetworkClient::async_send(DatagramHandle dg)
     }
 }
 
-void NetworkClient::send_finished(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+void NetworkClient::send_finished(const boost::system::error_code &ec)
 {
     lock_guard<recursive_mutex> lock(m_lock);
 
@@ -306,14 +306,12 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length)
     {
         async_write(*m_secure_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, this,
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+                    boost::asio::placeholders::error));
     }
     else
     {
         async_write(*m_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, this,
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+                    boost::asio::placeholders::error));
     }
 }

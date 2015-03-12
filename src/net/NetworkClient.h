@@ -43,7 +43,7 @@ class NetworkClient
     //     for writing to send the next datagram in the queue.
     virtual void async_send(DatagramHandle dg);
     // send_finished is called when an async_send has completed
-    virtual void send_finished(const boost::system::error_code &ec, size_t bytes_transferred);
+    virtual void send_finished(const boost::system::error_code &ec);
     // send_expired is called when an async_send has expired
     virtual void send_expired(const boost::system::error_code& error);
 
