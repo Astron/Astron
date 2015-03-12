@@ -239,13 +239,7 @@ void NetworkClient::send_finished(const boost::system::error_code &ec, size_t /*
     if(ec.value() != 0)
     {
         m_is_sending = false;
-
-        // If waiting for asio receive callback, let receive handle the disconnect.
-        if(!m_is_receiving)
-        {
-            receive_disconnect(ec);
-        }
-
+        send_disconnect(ec);
         return;
     }
 
