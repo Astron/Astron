@@ -37,6 +37,7 @@ NetworkClient::~NetworkClient()
         delete m_socket;
     }
     delete [] m_data_buf;
+    delete [] m_send_buf;
 }
 
 void NetworkClient::set_socket(tcp::socket *socket)
@@ -212,13 +213,15 @@ void NetworkClient::async_send(DatagramHandle dg)
 {
     lock_guard<recursive_mutex> lock(m_lock);
 
+    size_t buffer_size = sizeof(dgsize_t) + dg->size();
+    dgsize_t len = swap_le(dg->size());
+    m_send_buf = new uint8_t[buffer_size];
+    memcpy(m_send_buf, (uint8_t*)&len, sizeof(dgsize_t));
+    memcpy(m_send_buf+sizeof(dgsize_t), dg->get_data(), dg->size());
+
     try
     {
-        dgsize_t len = swap_le(dg->size());
-        list<boost::asio::const_buffer> gather;
-        gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
-        gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
-        socket_write(gather);
+        socket_write(m_send_buf, buffer_size);
     }
     catch(const boost::system::system_error& err)
     {
@@ -234,6 +237,10 @@ void NetworkClient::send_finished(const boost::system::error_code &ec, size_t /*
 
     // Cancel the outstanding timeout
     m_async_timer.cancel();
+
+    // Discard the buffer we just used:
+    delete [] m_send_buf;
+    m_send_buf = nullptr;
 
     // Check if the write had errors
     if(ec.value() != 0)
@@ -284,7 +291,7 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
     }
 }
 
-void NetworkClient::socket_write(list<boost::asio::const_buffer>& buffers)
+void NetworkClient::socket_write(const uint8_t* buf, size_t length)
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0)
@@ -297,14 +304,14 @@ void NetworkClient::socket_write(list<boost::asio::const_buffer>& buffers)
     // Start async write
     if(m_ssl_enabled)
     {
-        async_write(*m_secure_socket, buffers,
+        async_write(*m_secure_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, this,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
     }
     else
     {
-        async_write(*m_socket, buffers,
+        async_write(*m_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, this,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));

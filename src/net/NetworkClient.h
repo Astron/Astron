@@ -70,12 +70,13 @@ class NetworkClient
     typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
 
     void socket_read(uint8_t* buf, size_t length, receive_handler_t callback);
-    void socket_write(std::list<boost::asio::const_buffer>&);
+    void socket_write(const uint8_t* buf, size_t length);
 
     void handle_disconnect(const boost::system::error_code &ec);
 
     bool m_ssl_enabled;
     bool m_is_sending = false;
+    uint8_t *m_send_buf = nullptr;
 
     bool m_is_data = false;
     uint8_t m_size_buf[sizeof(dgsize_t)];
