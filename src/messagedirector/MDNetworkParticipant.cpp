@@ -4,81 +4,78 @@
 #include <boost/bind.hpp>
 
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
-	: MDParticipantInterface(), NetworkClient(socket)
+    : MDParticipantInterface(), NetworkClient(socket)
 {
-	set_con_name("Network Participant");
+    set_con_name("Network Participant");
 }
 
 void MDNetworkParticipant::handle_datagram(DatagramHandle dg, DatagramIterator&)
 {
-	logger().trace() << "MDNetworkParticipant sending to downstream MessageDirector.\n";
-	send_datagram(dg);
+    logger().trace() << "MDNetworkParticipant sending to downstream MessageDirector.\n";
+    send_datagram(dg);
 }
 
 void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
 {
-	DatagramIterator dgi(dg);
-	uint16_t channels = dgi.read_uint8();
-	if(channels == 1 && dgi.read_channel() == CONTROL_MESSAGE)
-	{
-		uint16_t msg_type = dgi.read_uint16();
-		switch(msg_type)
-		{
-			case CONTROL_ADD_CHANNEL:
-			{
-				subscribe_channel(dgi.read_channel());
-				break;
-			}
-			case CONTROL_REMOVE_CHANNEL:
-			{
-				unsubscribe_channel(dgi.read_channel());
-				break;
-			}
-			case CONTROL_ADD_RANGE:
-			{
-				channel_t lo = dgi.read_channel();
-				channel_t hi = dgi.read_channel();
-				subscribe_range(lo, hi);
-				break;
-			}
-			case CONTROL_REMOVE_RANGE:
-			{
-				channel_t lo = dgi.read_channel();
-				channel_t hi = dgi.read_channel();
-				unsubscribe_range(lo, hi);
-				break;
-			}
-			case CONTROL_ADD_POST_REMOVE:
-			{
-				add_post_remove(dgi.read_datagram());
-				break;
-			}
-			case CONTROL_CLEAR_POST_REMOVE:
-			{
-				clear_post_removes();
-				break;
-			}
-			case CONTROL_SET_CON_NAME:
-			{
-				set_con_name(dgi.read_string());
-				break;
-			}
-			case CONTROL_SET_CON_URL:
-			{
-				set_con_url(dgi.read_string());
-				break;
-			}
-			default:
-				logger().error() << "MDNetworkParticipant got unknown control message, type : "
-				                 << msg_type << std::endl;
-		}
-		return;
-	}
-	route_datagram(dg);
+    DatagramIterator dgi(dg);
+    uint16_t channels = dgi.read_uint8();
+    if(channels == 1 && dgi.read_channel() == CONTROL_MESSAGE) {
+        uint16_t msg_type = dgi.read_uint16();
+        switch(msg_type) {
+        case CONTROL_ADD_CHANNEL: {
+            subscribe_channel(dgi.read_channel());
+            break;
+        }
+        case CONTROL_REMOVE_CHANNEL: {
+            unsubscribe_channel(dgi.read_channel());
+            break;
+        }
+        case CONTROL_ADD_RANGE: {
+            channel_t lo = dgi.read_channel();
+            channel_t hi = dgi.read_channel();
+            subscribe_range(lo, hi);
+            break;
+        }
+        case CONTROL_REMOVE_RANGE: {
+            channel_t lo = dgi.read_channel();
+            channel_t hi = dgi.read_channel();
+            unsubscribe_range(lo, hi);
+            break;
+        }
+        case CONTROL_ADD_POST_REMOVE: {
+            channel_t sender = dgi.read_channel();
+            add_post_remove(sender, dgi.read_datagram());
+            break;
+        }
+        case CONTROL_CLEAR_POST_REMOVES: {
+            clear_post_removes(dgi.read_channel());
+            break;
+        }
+        case CONTROL_SET_CON_NAME: {
+            set_con_name(dgi.read_string());
+            break;
+        }
+        case CONTROL_SET_CON_URL: {
+            set_con_url(dgi.read_string());
+            break;
+        }
+        case CONTROL_LOG_MESSAGE: {
+            log_message(dgi.read_blob());
+            break;
+        }
+        default:
+            logger().error() << "MDNetworkParticipant got unknown control message, type : "
+                             << msg_type << std::endl;
+        }
+        return;
+    }
+    route_datagram(dg);
 }
 
-void MDNetworkParticipant::receive_disconnect(NetworkClient::Error)
+void MDNetworkParticipant::receive_disconnect(const boost::system::error_code &ec)
 {
-	logger().warning() << "Lost connection to network participant.\n";
-	delete this;
+    logger().info() << "Lost connection from "
+                    << m_remote.address() << ":" << m_remote.port() << ": "
+                    << ec.message() << std::endl;
+    terminate();
 }

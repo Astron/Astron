@@ -148,7 +148,7 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 ## Building ##
-See the build instructions at https://github.com/Astron/Astron/blob/master/doc/building/.
+See the [build instructions](doc/building/build-readme.md).
 
 
 
@@ -165,7 +165,7 @@ See the build instructions at https://github.com/Astron/Astron/blob/master/doc/b
 * **jjkoletar** -- early project inspiration/design, bug fixes
 
 ### License ###
-The Astron project is currently available under the MIT license. The terms of this license are available in the "LICENSE" file of this archive.
+The Astron project is currently available under the Modified BSD license (BSD 3-Clause). The terms of this license are available in the "LICENSE.md" file of this archive.
 
 ### Contributing ###
 We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.

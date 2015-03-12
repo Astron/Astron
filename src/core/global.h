@@ -10,11 +10,10 @@
 //     a StateServer or DatabaseServer.  Uberdogs are typically used for RPC calls, and typically
 //     have a single NetworkParticipant endpoint in the cluster that listens to the do_id channel;
 //     similar to how an AI server would be connected.
-struct Uberdog
-{
-	doid_t do_id;
-	const dclass::Class *dcc;
-	bool anonymous;
+struct Uberdog {
+    doid_t do_id;
+    const dclass::Class *dcc;
+    bool anonymous;
 };
 
 extern const dclass::File *g_dcf;

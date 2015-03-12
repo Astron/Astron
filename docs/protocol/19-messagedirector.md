@@ -38,14 +38,20 @@ The following control messages exist, with their respective formats:
 > upper channel of the range. The ranges are inclusive.
 
 
-**CONTROL_ADD_POST_REMOVE(9010)** `args(blob datagram)`  
-**CONTROL_CLEAR_POST_REMOVES(9011)** `args()`  
+**CONTROL_ADD_POST_REMOVE(9010)** `args(uint64 sender, blob datagram)`  
+**CONTROL_CLEAR_POST_REMOVES(9011)** `args(uint64 sender)`  
 > Often, Message Directors may be unexpectedly disconnected from one another, or
 > a Message Director may crash while under normal operation without the chance
 > to clean up. These control messages allow a downstream MD to schedule messages
 > on the upstream MD to be sent in the event of an unexpected disconnect.
 >
-> The argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
+> The sender is the channel (typically representing the participant who sends the message)
+> that the post removes should be tied to.  This field is only used to be able to clear a
+> bundle of post removes for a particular sender.  Unlike other messages, post removes
+> MUST NOT be sent by Roles or AIs with a feigned sender -- the post remove is only sent
+> when the participant that sent it disconnects.
+>
+> The second argument to CONTROL_ADD_POST_REMOVE is a blob; the blob contains a
 > message, minus the length tag (since the blob already includes a length tag
 > of its own, this would be redundant information).
 > CONTROL_CLEAR_POST_REMOVE is used to reset all of the on-disconnect messages.
@@ -60,3 +66,10 @@ The following control messages exist, with their respective formats:
 > downstream MD may be configured with a specific name, and it may wish to
 > inform the upstream MD what its name and webserver URL are. These control
 > messages allow the downstream MD to communicate this information.
+
+**CONTROL_LOG_MESSAGE(9014)** `args(blob message)`
+> In production layouts, it may be useful for AIs to log messages
+> to the eventlogger infrastructure (preferably a fluentd instance) without
+> needing to have redundant configuration on the AI servers, which could come
+> out of sync. Using this message, the MD will simply route the message argument
+> to the configured eventlogger.

@@ -15,20 +15,20 @@ namespace dclass   // open namespace dclass
 // A HashGenerator generates an arbitrary hash number from a sequence of ints.
 class HashGenerator
 {
-	public:
-		HashGenerator();
+  public:
+    HashGenerator();
 
-		// add_int adds another integer to the hash so far.
-		void add_int(int num);
+    // add_int adds another integer to the hash so far.
+    void add_int(int num);
 
-		// add_string adds a string to the hash, by breaking it down into a sequence of integers.
-		void add_string(const std::string& str);
+    // add_string adds a string to the hash, by breaking it down into a sequence of integers.
+    void add_string(const std::string& str);
 
-		uint32_t get_hash() const;
+    uint32_t get_hash() const;
 
-	private:
-		uint32_t m_hash;
-		unsigned int m_index;
+  private:
+    uint32_t m_hash;
+    unsigned int m_index;
 };
 
 

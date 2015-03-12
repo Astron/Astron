@@ -155,13 +155,16 @@ class TestConfigCore(ConfigTest):
             """
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
-        config = """\
-            messagedirector:
-                bind: 127.0.0.1:57123
-            general:
-                eventlogger: 0.0.1:9090
-            """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        # Windows actually supports incomplete addresses like this,
+        #    since its system specific, we'll just let the OS decide whether
+        #    it can resolve this type of address and not assert that it is invalid.
+        #config = """\
+        #    messagedirector:
+        #        bind: 127.0.0.1:57123
+        #    general:
+        #        eventlogger: 0.0.1:9090
+        #    """
+        #self.assertEquals(self.checkConfig(config), 'Invalid')
 
         config = """\
             messagedirector:
@@ -216,6 +219,80 @@ class TestConfigCore(ConfigTest):
         config = """\
             messagedirector:
                 bind: "99.1:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        # And now to test some hostname cases...
+        config = """\
+            messagedirector:
+                bind: "localhost:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Valid')
+
+        config = """\
+            messagedirector:
+                bind: "google.com:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        config = """\
+            messagedirector:
+                bind: "nxdomain.doesntexist.foo:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        config = """\
+            messagedirector:
+                bind: "bad~characters:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        config = """\
+            messagedirector:
+                bind: "more--bad.characters..-:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        # Some IPv6 cases...
+        config = """\
+            messagedirector:
+                bind: "::1"
+            """
+        self.assertEquals(self.checkConfig(config), 'Valid')
+
+        config = """\
+            messagedirector:
+                bind: "0:0:0:0:0:0:0:1"
+            """
+        self.assertEquals(self.checkConfig(config), 'Valid')
+
+        config = """\
+            messagedirector:
+                bind: "[0:0::1]"
+            """
+        self.assertEquals(self.checkConfig(config), 'Valid')
+
+        config = """\
+            messagedirector:
+                bind: "[0:0::1]:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Valid')
+
+        config = """\
+            messagedirector:
+                bind: "[0:0::1:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        config = """\
+            messagedirector:
+                bind: "0:0::1]:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
+        config = """\
+            messagedirector:
+                bind: "0:0::1:57123"
             """
         self.assertEquals(self.checkConfig(config), 'Invalid')
 

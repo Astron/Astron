@@ -43,8 +43,7 @@ extern int yydebug;
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-  enum yytokentype
-  {
+enum yytokentype {
     UNSIGNED_INTEGER = 258,
     REAL = 259,
     STRING = 260,
@@ -72,7 +71,7 @@ extern int yydebug;
     KW_STRING = 282,
     KW_BLOB = 283,
     KW_CHAR = 284
-  };
+};
 #endif
 
 /* Value type.  */
@@ -80,6 +79,6 @@ extern int yydebug;
 
 extern YYSTYPE yylval;
 
-int yyparse (void);
+int yyparse(void);
 
 #endif /* !YY_YY_PARSER_H_INCLUDED  */

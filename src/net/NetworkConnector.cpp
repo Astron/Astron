@@ -1,52 +1,53 @@
 #include "NetworkConnector.h"
+#include "address_utils.h"
 
 NetworkConnector::NetworkConnector(boost::asio::io_service &io_service) : m_io_service(io_service)
 {
+}
+
+void NetworkConnector::do_connect(tcp::socket &socket, const std::string &address,
+                                  uint16_t port, boost::system::error_code &ec)
+{
+    std::vector<tcp::endpoint> addresses = resolve_address(address, port, m_io_service, ec);
+
+    if(ec.value() != 0) {
+        return;
+    }
+
+    for(auto it = addresses.begin(); it != addresses.end(); ++it) {
+        socket.connect(*it, ec);
+
+        if(ec.value() == 0) {
+            return;
+        }
+    }
 }
 
 tcp::socket *NetworkConnector::connect(const std::string &address,
                                        unsigned int default_port,
                                        boost::system::error_code &ec)
 {
-	std::string str_ip = address;
-	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-	str_ip = str_ip.substr(0, str_ip.find(':', 0));
+    tcp::socket* socket = new tcp::socket(m_io_service);
+    do_connect(*socket, address, default_port, ec);
 
-	tcp::resolver resolver(m_io_service);
-	tcp::resolver::query query(str_ip, str_port);
-	tcp::resolver::iterator it = resolver.resolve(query);
+    if(ec.value() != 0) {
+        delete socket;
+        return nullptr;
+    }
 
-	tcp::socket* socket = new tcp::socket(m_io_service);
-	socket->connect(*it, ec);
-
-	if(ec.value() != 0)
-	{
-		delete socket;
-		return nullptr;
-	}
-
-	return socket;
+    return socket;
 }
 
-ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address, unsigned int default_port,
-                                  ssl::context *ctx, boost::system::error_code &ec)
+ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address,
+        unsigned int default_port, ssl::context *ctx, boost::system::error_code &ec)
 {
-	std::string str_ip = address;
-	std::string str_port = str_ip.substr(str_ip.find(':', 0) + 1, std::string::npos);
-	str_ip = str_ip.substr(0, str_ip.find(':', 0));
+    ssl::stream<tcp::socket> *socket = new ssl::stream<tcp::socket>(m_io_service, *ctx);
+    do_connect(socket->next_layer(), address, default_port, ec);
 
-	tcp::resolver resolver(m_io_service);
-	tcp::resolver::query query(str_ip, str_port);
-	tcp::resolver::iterator it = resolver.resolve(query);
+    if(ec.value() != 0) {
+        delete socket;
+        return nullptr;
+    }
 
-	ssl::stream<tcp::socket> *socket = new ssl::stream<tcp::socket>(m_io_service, *ctx);
-	socket->next_layer().connect(*it, ec);
-
-	if(ec.value() != 0)
-	{
-		delete socket;
-		return nullptr;
-	}
-
-	return socket;
+    return socket;
 }

@@ -48,5 +48,11 @@ inline const std::string& Field::get_default_value() const
 	return m_default_value;
 }
 
+// pointer comparison implementation for fields
+inline bool FieldPtrComp::operator()(const Field* lhs, const Field* rhs) const
+{
+	return lhs->get_id() < rhs->get_id();
+}
+
 
 } // close namespace dclass

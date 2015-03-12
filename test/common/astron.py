@@ -83,6 +83,7 @@ CONSTANTS = {
     'CONTROL_CLEAR_POST_REMOVE':    9011,
     'CONTROL_SET_CON_NAME':         9012,
     'CONTROL_SET_CON_URL':          9013,
+    'CONTROL_LOG_MESSAGE':          9014,
 
     # State Server control message-type constants
     'STATESERVER_CREATE_OBJECT_WITH_REQUIRED':          2000,
@@ -107,6 +108,7 @@ CONSTANTS = {
     'STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER':    2043,
     'STATESERVER_OBJECT_GET_LOCATION':                          2044,
     'STATESERVER_OBJECT_GET_LOCATION_RESP':                     2045,
+    'STATESERVER_OBJECT_LOCATION_ACK':                          2046,
     'STATESERVER_OBJECT_SET_AI':                                2050,
     'STATESERVER_OBJECT_CHANGING_AI':                           2051,
     'STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED':                2052,
@@ -119,6 +121,8 @@ CONSTANTS = {
     'STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER':       2063,
     'STATESERVER_OBJECT_GET_OWNER':                             2064,
     'STATESERVER_OBJECT_GET_OWNER_RESP':                        2065,
+    'STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED':          2066,
+    'STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER':    2067,
     # State Server parent methods message-type constants
     'STATESERVER_OBJECT_GET_ZONE_OBJECTS':      2100,
     'STATESERVER_OBJECT_GET_ZONES_OBJECTS':     2102,
@@ -132,6 +136,8 @@ CONSTANTS = {
     'STATESERVER_OBJECT_DELETE_ZONE':           2120,
     'STATESERVER_OBJECT_DELETE_ZONES':          2122,
     'STATESERVER_OBJECT_DELETE_CHILDREN':       2124,
+    'STATESERVER_GET_ACTIVE_ZONES':             2125,
+    'STATESERVER_GET_ACTIVE_ZONES_RESP':        2126,
     # DBSS object message-type constants
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS':        2200,
     'DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER':  2201,
@@ -170,6 +176,8 @@ CONSTANTS = {
     'CLIENTAGENT_SEND_DATAGRAM':                    1002,
     'CLIENTAGENT_EJECT':                            1004,
     'CLIENTAGENT_DROP':                             1005,
+    'CLIENTAGENT_GET_NETWORK_ADDRESS':              1006,
+    'CLIENTAGENT_GET_NETWORK_ADDRESS_RESP':         1007,
     'CLIENTAGENT_DECLARE_OBJECT':                   1010,
     'CLIENTAGENT_UNDECLARE_OBJECT':                 1011,
     'CLIENTAGENT_ADD_SESSION_OBJECT':               1012,
@@ -283,6 +291,10 @@ class Datagram(object):
         self.add_size(len(string))
         self.add_raw(string)
 
+    def add_blob(self, blob):
+        self.add_size(len(blob))
+        self.add_raw(blob)
+
     def add_channel(self, channel):
         if 'USE_128BIT_CHANNELS' in os.environ:
             max_int64 = 0xFFFFFFFFFFFFFFFF
@@ -373,16 +385,18 @@ class Datagram(object):
         return dg
 
     @classmethod
-    def create_add_post_remove(cls, datagram):
+    def create_add_post_remove(cls, sender, datagram):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_ADD_POST_REMOVE)
-        dg.add_string(datagram.get_data())
+        dg.add_channel(sender)
+        dg.add_blob(datagram.get_data())
         return dg
 
     @classmethod
-    def create_clear_post_remove(cls):
+    def create_clear_post_removes(cls, sender):
         dg = cls.create_control()
         dg.add_uint16(CONTROL_CLEAR_POST_REMOVE)
+        dg.add_channel(sender)
         return dg
 
     @classmethod
