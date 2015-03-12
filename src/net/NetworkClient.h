@@ -46,8 +46,6 @@ class NetworkClient
     virtual void send_finished(const boost::system::error_code &ec, size_t bytes_transferred);
     // send_expired is called when an async_send has expired
     virtual void send_expired(const boost::system::error_code& error);
-    // async_cancel is called to cleanup any outgoing writes if a socket operation fails
-    virtual void async_cancel();
 
     // start_receive is called by the constructor or set_socket
     //     after m_socket is set to a provided socket.

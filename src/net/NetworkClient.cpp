@@ -269,20 +269,6 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
     }
 }
 
-void NetworkClient::async_cancel()
-{
-    lock_guard<recursive_mutex> lock(m_lock);
-    try
-    {
-        m_async_timer.cancel();
-        m_socket->cancel();
-    }
-    catch(const boost::system::system_error&)
-    {
-        // Ignore errors attempting to cleanup
-    }
-}
-
 void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback)
 {
     if(m_ssl_enabled) {
