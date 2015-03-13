@@ -7,20 +7,20 @@ using namespace std;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false),
-    m_async_timer(io_service), m_send_queue()
+NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr),
+    m_async_timer(io_service), m_ssl_enabled(false), m_send_queue()
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_ssl_enabled(false), m_async_timer(io_service), m_send_queue()
+    m_async_timer(io_service), m_ssl_enabled(false), m_send_queue()
 {
     start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true),
-    m_async_timer(io_service), m_send_queue()
+    m_socket(&stream->next_layer()), m_secure_socket(stream),
+    m_async_timer(io_service), m_ssl_enabled(true), m_send_queue()
 {
     start_receive();
 }
