@@ -271,8 +271,8 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
     //     ie. if the send completed before it expires, so don't do anything
     if(ec != boost::asio::error::operation_aborted)
     {
-        // TODO: "Write operation timed out" error.
-        send_disconnect();
+        boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out, boost::system::system_category());
+        send_disconnect(etimeout);
     }
 }
 
