@@ -178,14 +178,10 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
         return;
     }
 
-    dgsize_t old_size = m_data_size;
     // required to disable strict-aliasing optimizations, which can break the code
     dgsize_t* new_size_p = (dgsize_t*)m_size_buf;
     m_data_size = swap_le(*new_size_p);
-    if(m_data_size > old_size) {
-        delete [] m_data_buf;
-        m_data_buf = new uint8_t[m_data_size];
-    }
+    m_data_buf = new uint8_t[m_data_size];
     m_is_data = true;
     async_receive();
 }
@@ -204,8 +200,12 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t byt
     }
 
     DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
-    m_is_data = false;
     receive_datagram(dg);
+
+    delete [] m_data_buf;
+    m_data_buf = nullptr;
+
+    m_is_data = false;
     async_receive();
 }
 
