@@ -90,8 +90,8 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         m_total_queue_size += dg->size();
         if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
         {
-            // TODO: "Write buffer exceeded" error.
-            send_disconnect();
+            boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space, boost::system::system_category());
+            send_disconnect(enobufs);
         }
     }
     else
