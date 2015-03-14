@@ -69,8 +69,8 @@ roles:
       bind: 127.0.0.1:51201
       version: "Sword Art Online v5.1"
       channels:
-          min: 330601
-          max: 330699
+          min: 3100
+          max: 3999
       client:
           heartbeat_timeout: 1000
 
@@ -3038,8 +3038,10 @@ class TestClientAgent(ProtocolTest):
 
         self.server.send(Datagram.create_remove_channel(10052))
 
+    # Test the interest timeout
+    # The heartbeat timeout is configured for 1000ms (1 second)
     def test_heartbeat_timeout(self):
-        # Test the interest timeout
+        #setup
         self.server.flush()
         client = self.connect(port = 51201)
         id = self.identify(client)
@@ -3047,20 +3049,39 @@ class TestClientAgent(ProtocolTest):
         # Bring client out of the sandbox
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
-        # Send a heartbeat
-        dg = Datagram()
-        dg.add_uint16(CLIENT_HEARTBEAT)
-        client.send(dg)
+        #setup our testing DG that will go test(server) -> MD -> CA -> Test(Client)
+        #A successful receival of this DG on the Test(client) side will denote an 
+        #active socket.
+        raw_dg = Datagram("Hello World")
+        dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
+        dg.add_string(raw_dg.get_data())
 
-        # The client shouldn't hear anything back.
-        self.expectNone(client)
+        #inital connection test
+        self.server.send(dg)
+        self.expect(client, raw_dg, isClient = True)
 
+
+        #sleep for 3/4 of a second, still should be connected after this.
         time.sleep(0.75)
 
+        #Check for connection and send heartbeat
+        self.server.send(dg)
+        self.expect(client, raw_dg, isClient = True)
+        self.send_heartbeat(client)
+
+        time.sleep(1.1)
+
         # We should be disconnected now...
-        dg = Datagram()
-        dg.add_uint16(CLIENT_DISCONNECT_NO_HEARTBEAT)
-        self.expect(client, dg)
+        self.assertDisconnect(client,CLIENT_DISCONNECT_NO_HEARTBEAT)
+
+        
+
+    def send_heartbeat(self, client):
+        # Construct heartbeat datagram
+        heartbeat_dg = Datagram()
+        heartbeat_dg.add_uint16(CLIENT_HEARTBEAT)
+        client.send(heartbeat_dg) #send
+
 
 if __name__ == '__main__':
     unittest.main()
