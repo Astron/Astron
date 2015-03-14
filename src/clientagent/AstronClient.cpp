@@ -173,7 +173,7 @@ class AstronClient : public Client, public NetworkClient
     {
         if(!m_clean_disconnect) {
             LoggedEvent event("client-lost");
-	    event.add("reason", ec.message());
+            event.add("reason", ec.message());
             log_event(event);
         }
 
