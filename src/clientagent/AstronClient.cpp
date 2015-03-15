@@ -171,6 +171,8 @@ class AstronClient : public Client, public NetworkClient
     //       responsible for terminating the connection.
     virtual void receive_disconnect(const boost::system::error_code &ec)
     {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+
         if(!m_clean_disconnect) {
             LoggedEvent event("client-lost");
             event.add("reason", ec.message());
