@@ -145,6 +145,12 @@ void NetworkClient::send_disconnect()
 void NetworkClient::send_disconnect(const boost::system::error_code &ec)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+    if(m_local_disconnect) {
+        // We've already set the error code and closed the socket; wait.
+        return;
+    }
+
     m_local_disconnect = true;
     m_disconnect_error = ec;
     m_socket->close();
