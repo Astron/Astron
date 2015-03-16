@@ -72,11 +72,13 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 
 void NetworkClient::set_write_timeout(unsigned int timeout)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
     m_write_timeout = timeout;
 }
 
 void NetworkClient::set_write_buffer(uint64_t max_bytes)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
     m_max_queue_size = max_bytes;
 }
 
@@ -109,6 +111,8 @@ bool NetworkClient::is_connected()
 
 void NetworkClient::start_receive()
 {
+    // Lock not needed: This is only called from the constructor.
+
     try {
         m_remote = m_socket->remote_endpoint();
     } catch(const boost::system::system_error&) {
@@ -158,6 +162,9 @@ void NetworkClient::send_disconnect(const boost::system::error_code &ec)
 
 void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
 {
+    // Lock not needed: This is only called internally, from a function that
+    // already holds the lock.
+
     if(m_disconnect_handled) {
         return;
     }
@@ -173,6 +180,8 @@ void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
 
 void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+
     if(ec) {
         handle_disconnect(ec);
         return;
@@ -194,6 +203,8 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
 
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+
     if(ec) {
         handle_disconnect(ec);
         return;
@@ -273,6 +284,8 @@ void NetworkClient::send_finished(const boost::system::error_code &ec)
 
 void NetworkClient::send_expired(const boost::system::error_code& ec)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+
     // operation_aborted is received if the the timer is cancelled,
     //     ie. if the send completed before it expires, so don't do anything
     if(ec != boost::asio::error::operation_aborted)
@@ -284,6 +297,9 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
 
 void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback)
 {
+    // Lock not needed: This is only called internally, from a function that
+    // already holds the lock.
+
     if(m_ssl_enabled) {
         async_read(*m_secure_socket, boost::asio::buffer(buf, length),
                    boost::bind(callback, this,
@@ -299,6 +315,9 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 
 void NetworkClient::socket_write(const uint8_t* buf, size_t length)
 {
+    // Lock not needed: This is only called internally, from a function that
+    // already holds the lock.
+
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0)
     {
