@@ -8,6 +8,7 @@
 #include "config/constraints.h"
 #include "dclass/dc/Class.h"
 #include "dclass/dc/Field.h"
+#include "util/Timeout.h"
 
 using namespace std;
 using dclass::Class;
@@ -25,6 +26,9 @@ static ConfigVariable<bool> send_version_to_client("send_version", true, ca_clie
 
 static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256*1024, ca_client_config);
 static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, ca_client_config);
+
+//by default, have heartbeat disabled.
+static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, ca_client_config);
 
 static bool is_permission_level(const string& str)
 {
@@ -49,12 +53,17 @@ class AstronClient : public Client, public NetworkClient
     bool m_send_version;
     InterestPermission m_interests_allowed;
 
+    //Heartbeat
+    long m_heartbeat_timeout;
+    Timeout *m_heartbeat_timer = nullptr;
+
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
         Client(config, client_agent), NetworkClient(socket), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
     }
@@ -64,13 +73,34 @@ class AstronClient : public Client, public NetworkClient
         Client(config, client_agent), NetworkClient(stream), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
     }
 
+    ~AstronClient()
+    {
+        if(m_heartbeat_timer != nullptr) {
+            delete m_heartbeat_timer;
+        }
+    }
+
+    void heartbeat_timeout()
+    {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
+                        "Server timed out while waiting for heartbeat.");
+    }
+
     void initialize()
     {
+        //If heartbeat, start the heartbeat timer now.
+        if(m_heartbeat_timeout != 0) {
+            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
+                                            this));
+        }
+
         // Set interest permissions
         string permission_level = interest_permissions.get_rval(m_config);
         if(permission_level == "enabled") {
@@ -178,9 +208,11 @@ class AstronClient : public Client, public NetworkClient
     //       responsible for terminating the connection.
     virtual void receive_disconnect(const boost::system::error_code &ec)
     {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+
         if(!m_clean_disconnect) {
             LoggedEvent event("client-lost");
-	    event.add("reason", ec.message());
+            event.add("reason", ec.message());
             log_event(event);
         }
 
@@ -337,6 +369,9 @@ class AstronClient : public Client, public NetworkClient
             return;
         }
 
+        //Now that message type is confirmed, reset timeout watchdog.
+        handle_client_heartbeat();
+
         uint32_t dc_hash = dgi.read_uint32();
         string version = dgi.read_string();
 
@@ -383,10 +418,12 @@ class AstronClient : public Client, public NetworkClient
             NetworkClient::send_disconnect();
         }
         break;
-        case CLIENT_OBJECT_SET_FIELD: {
+        case CLIENT_OBJECT_SET_FIELD:
             handle_client_object_update_field(dgi);
-        }
-        break;
+            break;
+        case CLIENT_HEARTBEAT:
+            handle_client_heartbeat();
+            break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not allowed prior to authentication.";
@@ -424,11 +461,23 @@ class AstronClient : public Client, public NetworkClient
         case CLIENT_REMOVE_INTEREST:
             handle_client_remove_interest(dgi);
             break;
+        case CLIENT_HEARTBEAT:
+            handle_client_heartbeat();
+            break;
         default:
             stringstream ss;
             ss << "Message type " << msg_type << " not valid.";
             send_disconnect(CLIENT_DISCONNECT_INVALID_MSGTYPE, ss.str(), true);
             return;
+        }
+    }
+
+    // handle_client_heartbeat should ensure this client does not get reset for the current interval.
+    // Handler for CLIENT_HEARTBEAT message
+    virtual void handle_client_heartbeat()
+    {
+        if(m_heartbeat_timer != nullptr) {
+            m_heartbeat_timer->reset();
         }
     }
 
@@ -603,17 +652,17 @@ class AstronClient : public Client, public NetworkClient
         }
         remove_interest(i, context);
     }
-    
+
     virtual const std::string get_remote_address()
     {
         return m_remote.address().to_string();
     }
-    
+
     virtual uint16_t get_remote_port()
     {
         return m_remote.port();
     }
-    
+
     virtual const tcp::socket* get_socket()
     {
         return m_socket;
