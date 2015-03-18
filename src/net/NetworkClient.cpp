@@ -8,19 +8,19 @@ using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr),
-    m_async_timer(io_service), m_ssl_enabled(false), m_send_queue()
+    m_async_timer(io_service), m_send_queue()
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_async_timer(io_service), m_ssl_enabled(false), m_send_queue()
+    m_async_timer(io_service), m_send_queue()
 {
     start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
     m_socket(&stream->next_layer()), m_secure_socket(stream),
-    m_async_timer(io_service), m_ssl_enabled(true), m_send_queue()
+    m_async_timer(io_service), m_send_queue()
 {
     start_receive();
 }
@@ -28,7 +28,7 @@ NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
-    if(m_ssl_enabled) {
+    if(m_secure_socket) {
         // This also deletes m_socket:
         delete m_secure_socket;
     } else {
@@ -64,7 +64,6 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
 
-    m_ssl_enabled = true;
     m_secure_socket = stream;
 
     set_socket(&stream->next_layer());
@@ -300,7 +299,7 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
     // Lock not needed: This is only called internally, from a function that
     // already holds the lock.
 
-    if(m_ssl_enabled) {
+    if(m_secure_socket) {
         async_read(*m_secure_socket, boost::asio::buffer(buf, length),
                    boost::bind(callback, this,
                                boost::asio::placeholders::error,
@@ -327,7 +326,7 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length)
     }
 
     // Start async write
-    if(m_ssl_enabled)
+    if(m_secure_socket)
     {
         async_write(*m_secure_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, this,

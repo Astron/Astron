@@ -74,7 +74,6 @@ class NetworkClient
 
     void handle_disconnect(const boost::system::error_code &ec);
 
-    bool m_ssl_enabled;
     bool m_is_sending = false;
     uint8_t *m_send_buf = nullptr;
 
