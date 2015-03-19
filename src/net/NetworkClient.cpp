@@ -28,6 +28,9 @@ NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+    send_disconnect();
+
     if(m_secure_socket) {
         // This also deletes m_socket:
         delete m_secure_socket;
@@ -36,6 +39,7 @@ NetworkClient::~NetworkClient()
         // an SSL stream, the stream "owns" the socket.
         delete m_socket;
     }
+
     delete [] m_data_buf;
     delete [] m_send_buf;
 }
@@ -156,6 +160,8 @@ void NetworkClient::send_disconnect(const boost::system::error_code &ec)
 
     m_local_disconnect = true;
     m_disconnect_error = ec;
+
+    m_socket->cancel();
     m_socket->close();
 }
 
