@@ -163,6 +163,8 @@ void NetworkClient::send_disconnect(const boost::system::error_code &ec)
 
     m_socket->cancel();
     m_socket->close();
+
+    m_async_timer.cancel();
 }
 
 void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
