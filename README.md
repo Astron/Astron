@@ -155,14 +155,14 @@ See the [build instructions](doc/building/build-readme.md).
 ## Development ##
 
 ### The Team ###
-* **Kestred** is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
-* **CFSworks** is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
-* **AlJaMa** is a bouncing board for architectural design and problem solving.  He works with OS X support, feature brainstorming, and some libastron design and implementation.
+* **@Kestred** Kevin Stenerson is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
+* **@CFSworks** Sam Edwards is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
+* **@AlJaMa** Alex Mault is a bouncing board for architectural design and problem solving.  He works with OS X support, feature brainstorming, and some libastron design and implementation.
 
 ### Major Contributors ###
-* **MMavipc** -- wrote a lot of code to help get Astron out of its infancy
-* **bobbybee/shadowcoder** -- solves outstanding issues, bug fixes, feature implementation
-* **jjkoletar** -- early project inspiration/design, bug fixes
+* **@MMavipc** Maverick Mosher wrote a great deal of code to help get Astron out of its infancy.
+* **@bobbybee** Alyssa Rosenzweig solves outstanding issues, bug fixes, and implements miscellaneous feature implementation.
+* **@jjkoletar** Jeremy Koletar was key in Astron's early inspiration and initial design; he also works on bug fixes.
 
 ### License ###
 The Astron project is currently available under the Modified BSD license (BSD 3-Clause). The terms of this license are available in the "LICENSE.md" file of this archive.
