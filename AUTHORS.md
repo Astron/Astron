@@ -7,8 +7,8 @@
 Astron Project <astron.maintainers@gmail.com>  
 Aidan Noll <aidan.noll@gmail.com>  
 Alex Mault <alex@mault.net>  
+Alyssa Rosenzweig <j104@rocketmail.com>, <alyssa.a.rosenzweig@gmail.com>  
 Anthony Castelli <neueanthony@me.com>  
-Bobbybee <j104@rocketmail.com>  
 Harvir <harvir14@gmail.com>  
 Jeremy Koletar <jjkoletar@gmail.com>  
 Kevin Stenerson <kestred@riotcave.com>  
