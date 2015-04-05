@@ -161,7 +161,7 @@ See the [build instructions](doc/building/build-readme.md).
 
 ### Major Contributors ###
 * **@MMavipc** Maverick Mosher wrote a great deal of code to help get Astron out of its infancy.
-* **@bobbybee** Alyssa Rosenzweig solves outstanding issues, bug fixes, and implements miscellaneous feature implementation.
+* **@bobbybee** Alyssa Rosenzweig solves outstanding issues, bug fixes, and implements miscellaneous features.
 * **@jjkoletar** Jeremy Koletar was key in Astron's early inspiration and initial design; he also works on bug fixes.
 
 ### License ###
