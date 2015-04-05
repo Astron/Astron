@@ -16,7 +16,7 @@
 
 Aidan Noll <aidan.noll@gmail.com>  
 Alex Mault <alex@mault.net>  
-Alyssa Rosenzweig <j104@rocketmail.com>, <alyssa.a.rosenzweig@gmail.com>  
+Alyssa Rosenzweig (@bobbybee) <j104@rocketmail.com>, <alyssa.a.rosenzweig@gmail.com>  
 Anthony Castelli <neueanthony@me.com>  
 Harvir <harvir14@gmail.com>  
 Jeremy Koletar <jjkoletar@gmail.com>  
