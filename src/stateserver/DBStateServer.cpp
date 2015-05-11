@@ -128,8 +128,7 @@ void DBStateServer::handle_activate(DatagramIterator &dgi, bool has_other)
 
         const Class *dcc = g_dcf->get_class_by_id(dc_id);
         if(!dcc) {
-            m_log->error() << "Tried to activate_other with non-class distributed_type '"
-                           << g_dcf->get_class_by_id(dc_id)->get_name() << "'\n";
+            m_log->error() << "Tried to activate_other with non-class distributed_type #" << dc_id << "\n";
         }
         auto load_it = m_inactive_loads.find(do_id);
         if(load_it == m_inactive_loads.end()) {
