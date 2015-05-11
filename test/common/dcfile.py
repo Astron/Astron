@@ -88,5 +88,3 @@ setRDbD5DefaultValue = 20
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
 DC_HASH = 0x7a9b0e3
-
-setRDbD5DefaultValue = 20
