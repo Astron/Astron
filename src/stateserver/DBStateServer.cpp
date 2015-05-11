@@ -608,10 +608,10 @@ bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
         if(!field) {
             return false;
         }
-        if(field->has_keyword("ram")) {
-            dgi.unpack_field(field, ram[field]);
-        } else if(field->has_keyword("required")) {
+        if(field->has_keyword("required")) {
             dgi.unpack_field(field, required[field]);
+        } else if(field->has_keyword("ram")) {
+            dgi.unpack_field(field, ram[field]);
         } else {
             dgi.skip_field(field);
         }
