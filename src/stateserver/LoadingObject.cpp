@@ -27,9 +27,33 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
                              zone_t zone_id, const Class *dclass, DatagramIterator &dgi,
                              const std::unordered_set<uint32_t> &contexts) :
     m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-    m_dclass(dclass), m_valid_contexts(contexts)
+    m_context(stateserver->m_next_context++), m_dclass(dclass), m_valid_contexts(contexts),
+    m_is_loaded(false)
 {
-    // TODO: Implement
+    std::stringstream name;
+    name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
+    m_log = new LogCategory("dbobject", name.str());
+    set_con_name(name.str());
+
+    MessageDirector::singleton.subscribe_channel(this, do_id);
+
+    uint16_t field_count = dgi.read_uint16();
+    for(int i = 0; i < field_count; ++i) {
+        uint16_t field_id = dgi.read_uint16();
+        const Field *field = m_dclass->get_field_by_id(field_id);
+
+        if(!field) {
+            m_log->error() << "Received invalid field index " << field_id << std::endl;
+            return;
+        }
+
+        if(field->has_keyword("ram") || field->has_keyword("required")) {
+            dgi.unpack_field(field, m_field_updates[field]);
+        } else {
+            m_log->error() << "Received non-RAM field " << field->get_name()
+                           << " within an OTHER section.\n";
+        }
+    }
 }
 
 LoadingObject::~LoadingObject()
