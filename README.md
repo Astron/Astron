@@ -148,7 +148,7 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 ## Building ##
-See the [build instructions](doc/building/build-readme.md).
+See the [build instructions](docs/building/build-readme.md).
 
 
 
