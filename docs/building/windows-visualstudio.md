@@ -1,5 +1,5 @@
-Building Astron on Windows
-==========================
+Building Astron with Visual Studio on Windows
+=============================================
 **Author(s)**
 
 Dean Aug ~ (1/3/2015)
