@@ -20,4 +20,13 @@ Downloadable here: http://www.boost.org/users/download/.
 Select 'Prebuilt windows binaries' under 'Other Downloads' to download the latest version of *Boost* binaries. From the resulting page, select the link for the latest version (1.57.0 at the time of this writing).
 
 
+Directory structure
+-------------------
+Directory structure should look like this.
+
+'Astron/dependencies/yaml-cpp'
+
+For building instructions, see [here](/docs/building/build-readme.md).
+
+
 All links working as of 6/15/2015. See a broken link? Report it to us at #Astron on irc.freenode.net.
