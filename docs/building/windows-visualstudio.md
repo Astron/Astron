@@ -8,7 +8,7 @@ Michael "mwass" Wass ~ (6/15/2015)
 
 1. Introduction
 ---------------
-This document describes all steps required to build the *Astron* server suite on a windows machine; from acquisition of the *Astron* code and all code components it depends on (referred to as "dependencies"), to building of those dependencies and *Astron* itself. These are general instructions that can be followed by anyone using *Astron*.
+This document describes all steps required to build the *Astron* cluster on a windows machine; from acquisition of the *Astron* code and all code components it depends on (referred to as "dependencies"), to building of those dependencies and *Astron* itself. These are general instructions that can be followed by anyone using *Astron*.
 
 This document covers building Astron in a Windows environment only.
 
@@ -238,3 +238,5 @@ To run *Astron*, navigate to the directory with the executable and supporting fi
 ![icon](http://i.imgur.com/NQscEUI.png)
 
 **NOTE:** The `astrond.exe` running in this picture was the `Debug` EXE. The `Release` EXE will produce slightly different messages.
+
+All links working as of 6/15/2015. See a broken link? Report it to us at #Astron on irc.freenode.net.
