@@ -225,7 +225,7 @@ This is the final step in the *Astron* build, all required libraries/executables
 
 In addition to the executable produced in the previous section, *Astron* needs 3 additional files to run. `astrond.yml`, `libeay32MDd.dll`, and `ssleay32MDd.dll`.
 
-An example `astrond.yml` can be found in the *Astron* repository under examples.
+An example `astrond.yml` can be found in the *Astron* repository [here](docs/config/astron.example.yml).
 
 `libeay32MDd.dll` and `ssleay32MDd.dll` can both be found in the *OpenSSL* folder.
 
