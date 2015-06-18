@@ -62,6 +62,16 @@ roles:
       tls:
           certificate: %r
           key_file: %r
+
+    - type: clientagent
+      bind: 127.0.0.1:57148
+      version: "Sword Art Online v5.1"
+      channels:
+        min: 3100
+        max: 3999
+      client:
+        global_zone: 4000
+
 """ % (USE_THREADING, test_dc, server_crt, server_key)
 VERSION = 'Sword Art Online v5.1'
 
