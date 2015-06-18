@@ -370,8 +370,11 @@ class AstronClient : public Client, public NetworkClient
 
         // the client now has access to (anonymous) global objects
         // subscribe the client to the global zone to begin the discovery process
+        // but only if the zone is valid (-1 indicates it's not)
         
-        std::cout << "BTW Alyssa, you should probably subscribe the client to zone " <<  m_global_zone << endl;
+        if(m_global_zone != -1) {
+            std::cout << "BTW Alyssa, you should probably subscribe the client to zone " <<  m_global_zone << endl;
+        }
     }
 
     // Client has sent "CLIENT_HELLO" and can now access anonymous uberdogs.

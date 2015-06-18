@@ -234,6 +234,15 @@ class TestClientAgent(ProtocolTest):
         # And the client should get booted.
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
 
+    def test_global_zone(self):
+        self.server.flush()
+
+        # Connect and hello to the global-zone configured client agent
+        
+        client = self.connect(port = 57148)
+
+
+
     def test_disconnect(self):
         self.server.flush()
         client = self.connect()
