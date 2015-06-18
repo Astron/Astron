@@ -374,6 +374,24 @@ class AstronClient : public Client, public NetworkClient
         
         if(m_global_zone != -1) {
             std::cout << "BTW Alyssa, you should probably subscribe the client to zone " <<  m_global_zone << endl;
+
+            // build an interest on behalf of the client
+            
+            // I hereby declare context 10 to be the global zone interest context
+            // and 10 to also be the initial global zone interest ID
+            
+            // CFS: is there a better convention for this I should know about?
+            
+            uint32_t context = 10;
+            uint32_t id = 10;
+
+            Interest i;
+
+            i.id = id; 
+            i.parent = 0;
+            i.zones.insert(m_global_zone);
+
+            add_interest(i, context);
         }
     }
 
