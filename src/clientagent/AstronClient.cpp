@@ -373,8 +373,6 @@ class AstronClient : public Client, public NetworkClient
         // but only if the zone is valid (-1 indicates it's not)
         
         if(m_global_zone != -1) {
-            std::cout << "BTW Alyssa, you should probably subscribe the client to zone " <<  m_global_zone << endl;
-
             // build an interest on behalf of the client
             
             // I hereby declare context 10 to be the global zone interest context

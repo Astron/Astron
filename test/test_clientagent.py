@@ -70,7 +70,7 @@ roles:
         min: 3100
         max: 3999
       client:
-        global_zone: 4000
+        global_zone: 9001
 
 """ % (USE_THREADING, test_dc, server_crt, server_key)
 VERSION = 'Sword Art Online v5.1'
@@ -240,7 +240,18 @@ class TestClientAgent(ProtocolTest):
         # Connect and hello to the global-zone configured client agent
         
         client = self.connect(port = 57148)
+   
+        # An interest on zone 9001 was just opened on our behalf
+        # thanks client agent <3
+        # we should be receiving a CLIENT_ADD_INTEREST from the CA to tell us this
 
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(10) # the context and interest ID for global zones is 10
+        dg.add_uint16(10) # above was context; this is interest ID
+        dg.add_uint32(0) # parent ID is always zero for global zone
+        dg.add_uint32(9001) # and the global zone zone ID is 9001, of course!
+        self.expect(client, dg, isClient = True)
 
 
     def test_disconnect(self):
