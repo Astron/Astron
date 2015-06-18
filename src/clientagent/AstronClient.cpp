@@ -23,6 +23,10 @@ static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
 static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
 
+// global zone = zone that is autosubcribed to when the client reaches ANONYMOUS state
+// formerly known as the uberzone
+static ConfigVariable<zone_t> global_zone("global_zone", -1, ca_client_config);
+
 static bool is_permission_level(const string& str)
 {
     return (str == "visible" || str == "disabled" || str == "enabled");
@@ -44,6 +48,7 @@ class AstronClient : public Client, public NetworkClient
     bool m_relocate_owned;
     bool m_send_hash;
     bool m_send_version;
+    zone_t m_global_zone;
     InterestPermission m_interests_allowed;
 
   public:
@@ -51,7 +56,8 @@ class AstronClient : public Client, public NetworkClient
         Client(client_agent), NetworkClient(socket), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_global_zone(global_zone.get_rval(config))
     {
         initialize();
     }
@@ -61,7 +67,8 @@ class AstronClient : public Client, public NetworkClient
         Client(client_agent), NetworkClient(stream), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config))
+        m_send_version(send_version_to_client.get_rval(config)),
+        m_global_zone(global_zone.get_rval(config))
     {
         initialize();
     }
@@ -360,6 +367,11 @@ class AstronClient : public Client, public NetworkClient
         send_datagram(resp);
 
         m_state = CLIENT_STATE_ANONYMOUS;
+
+        // the client now has access to (anonymous) global objects
+        // subscribe the client to the global zone to begin the discovery process
+        
+        std::cout << "BTW Alyssa, you should probably subscribe the client to zone " <<  m_global_zone << endl;
     }
 
     // Client has sent "CLIENT_HELLO" and can now access anonymous uberdogs.
