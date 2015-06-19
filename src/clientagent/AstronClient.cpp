@@ -391,6 +391,8 @@ class AstronClient : public Client, public NetworkClient
 
             handle_add_interest(i, context);
             add_interest(i, context);
+
+            printf("Done!\n");
         }
     }
 
