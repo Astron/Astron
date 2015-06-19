@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
     dcf->add_keyword("broadcast");
     dcf->add_keyword("clrecv");
     dcf->add_keyword("clsend");
+    dcf->add_keyword("anonsend");
     dcf->add_keyword("ownsend");
     dcf->add_keyword("ownrecv");
     dcf->add_keyword("airecv");
