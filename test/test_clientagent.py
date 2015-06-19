@@ -336,8 +336,9 @@ class TestClientAgent(ProtocolTest):
         dg.add_string('I wish to be an Oompa Loompa. Take me to them so the deed may be done.')
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_NO_HELLO)
-
+        
         # New client:
+        self.server.flush()
         client = self.connect()
         id = self.identify(client)
 
@@ -367,7 +368,6 @@ class TestClientAgent(ProtocolTest):
         self.assertEqual(dgi.read_uint8(), 0xBE)
         self.assertEqual(dgi.read_uint8(), 0xAD)
         self.assertEqual(dgi.read_uint8(), 0x06)
-
         # Now revert back to anonymous state:
         self.set_state(client, CLIENT_STATE_ANONYMOUS)
 
@@ -386,7 +386,6 @@ class TestClientAgent(ProtocolTest):
 
         # Client should get booted:
         self.assertDisconnect(client, CLIENT_DISCONNECT_ANONYMOUS_VIOLATION)
-
     def test_receive_update(self):
         self.server.flush()
         client = self.connect()

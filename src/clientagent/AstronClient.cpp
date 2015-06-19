@@ -502,10 +502,12 @@ class AstronClient : public Client, public NetworkClient
         }
 
         // Check that the client is actually allowed to send updates to this field
+        // TODO: ensure the m_state of clsend vs anonsend
+        
         bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
         if(    !field->has_keyword("clsend") 
             && !(is_owned && field->has_keyword("ownsend"))
-            && !(field->has_keyword("anonsend") && m_state == CLIENT_STATE_ANONYMOUS)) {
+            && !(field->has_keyword("anonsend")) ){
             auto send_it = m_fields_sendable.find(do_id);
             if(send_it == m_fields_sendable.end() ||
                send_it->second.find(field_id) == send_it->second.end()) {
