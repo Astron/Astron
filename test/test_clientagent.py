@@ -25,6 +25,9 @@ uberdogs:
       anonymous: false
 
 roles:
+    - type: stateserver
+      control: 402000
+
     - type: clientagent
       bind: 127.0.0.1:57128
       version: "Sword Art Online v5.1"
