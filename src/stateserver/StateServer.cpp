@@ -66,6 +66,8 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
         return;
     }
     m_objs[do_id] = obj;
+
+    m_log->info() << "Received generate for " << do_id << " at (" << parent_id << "," << zone_id << ")" << std::endl;
 }
 
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)

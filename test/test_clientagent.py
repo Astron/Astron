@@ -243,7 +243,7 @@ class TestClientAgent(ProtocolTest):
         # inject an object for the client to see
         dg = Datagram.create([402000], 1, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         dg.add_doid(9042) # doid
-        dg.add_doid(0)    # parent Id
+        dg.add_doid(4800)    # parent Id
         dg.add_zone(9001) # global zone id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(1234) # setRequired1
@@ -261,7 +261,7 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(CLIENT_ADD_INTEREST)
         dg.add_uint32(1) # the context is 1: first interest
         dg.add_uint16(10) # interest ID
-        dg.add_uint32(0) # parent ID is always zero for global zone
+        dg.add_uint32(4800) # parent ID is always zero for global zone
         dg.add_uint32(9001) # and the global zone zone ID is 9001, of course!
         self.expect(client, dg, isClient = True)
 
@@ -271,13 +271,13 @@ class TestClientAgent(ProtocolTest):
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
         dg.add_doid(9042) # doid
-        dg.add_doid(0) # parent id
+        dg.add_doid(4800) # parent id
         dg.add_zone(9001) # global zone id
         dg.add_uint16(DistributedTestObject1)
         dg.add_uint32(1234) # setRequired1
         self.expect(client, dg, isClient = True)
 
-        print "Done!!"
+
 
         """
         # the global interest should be done now

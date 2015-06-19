@@ -26,7 +26,7 @@ endif()
 
 ### Set build type to Release with Debug Info by default ###
 if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type.")
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type.")
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
 	RelWithDebInfo Release Debug)

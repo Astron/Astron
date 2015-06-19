@@ -386,7 +386,7 @@ class AstronClient : public Client, public NetworkClient
             Interest i;
 
             i.id = id; 
-            i.parent = 0;
+            i.parent = 4800;
             i.zones.insert(m_global_zone);
 
             handle_add_interest(i, context);
