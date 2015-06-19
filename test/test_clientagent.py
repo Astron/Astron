@@ -240,6 +240,15 @@ class TestClientAgent(ProtocolTest):
     def test_global_zone(self):
         self.server.flush()
 
+        # create a parent for the global zone
+        dg = Datagram.create([402000], 1, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg.add_doid(4800) # doid
+        dg.add_doid(0)    # parent Id
+        dg.add_zone(1) # global zone id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(1234) # setRequired1
+        self.server.send(dg)
+
         # inject an object for the client to see
         dg = Datagram.create([402000], 1, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
         dg.add_doid(9042) # doid
