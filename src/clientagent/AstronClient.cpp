@@ -374,11 +374,8 @@ class AstronClient : public Client, public NetworkClient
         
         if(m_global_zone != -1) {
             // build an interest on behalf of the client
-            
-            // I hereby declare context 10 to be the global zone interest context
-            // and 10 to also be the initial global zone interest ID
-            
-            // CFS: is there a better convention for this I should know about?
+            // interest ID 10 was arbitrary
+            // CFS: how should I assign interest IDs?            
 
             uint32_t context = m_next_context++;
             uint32_t id = 10;
@@ -386,13 +383,11 @@ class AstronClient : public Client, public NetworkClient
             Interest i;
 
             i.id = id; 
-            i.parent = 4800;
+            i.parent = 4800; // 4800 is the uberparent
             i.zones.insert(m_global_zone);
 
             handle_add_interest(i, context);
             add_interest(i, context);
-
-            printf("Done!\n");
         }
     }
 
@@ -508,7 +503,9 @@ class AstronClient : public Client, public NetworkClient
 
         // Check that the client is actually allowed to send updates to this field
         bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
-        if(!field->has_keyword("clsend") && !(is_owned && field->has_keyword("ownsend"))) {
+        if(    !field->has_keyword("clsend") 
+            && !(is_owned && field->has_keyword("ownsend"))
+            && !(field->has_keyword("anonsend") && m_state == CLIENT_STATE_ANONYMOUS)) {
             auto send_it = m_fields_sendable.find(do_id);
             if(send_it == m_fields_sendable.end() ||
                send_it->second.find(field_id) == send_it->second.end()) {
