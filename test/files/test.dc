@@ -39,7 +39,7 @@ dclass DistributedTestObject5 : DistributedTestObject3 {
 };
 
 dclass UberDog1 {
-	request(string what) clsend;
+	request(string what) anonsend;
 	response(string what);
 };
 

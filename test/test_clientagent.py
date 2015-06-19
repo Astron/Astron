@@ -254,8 +254,7 @@ class TestClientAgent(ProtocolTest):
         dg.add_doid(9042) # doid
         dg.add_doid(4800)    # parent Id
         dg.add_zone(9001) # global zone id
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(1234) # setRequired1
+        dg.add_uint16(UberDog1)
         self.server.send(dg)
 
         # Connect and hello to the global-zone configured client agent
@@ -274,28 +273,21 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint32(9001) # and the global zone zone ID is 9001, of course!
         self.expect(client, dg, isClient = True)
 
-        print "Interest done"
-
         # we should now receive the global object
         dg = Datagram()
         dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
         dg.add_doid(9042) # doid
         dg.add_doid(4800) # parent id
         dg.add_zone(9001) # global zone id
-        dg.add_uint16(DistributedTestObject1)
-        dg.add_uint32(1234) # setRequired1
+        dg.add_uint16(UberDog1)
         self.expect(client, dg, isClient = True)
 
-
-
-        """
         # the global interest should be done now
         dg = Datagram()
         dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
         dg.add_uint32(1) # context
         dg.add_uint16(10) # interest id
         self.expect(client, dg, isClient = True)
-        """
 
     def test_disconnect(self):
         self.server.flush()
