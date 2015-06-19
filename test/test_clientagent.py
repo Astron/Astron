@@ -240,6 +240,17 @@ class TestClientAgent(ProtocolTest):
     def test_global_zone(self):
         self.server.flush()
 
+        # inject an object for the client to see
+        """
+        dg = Datagram.create([402000], 1, STATESERVER_CREATE_OBJECT_WITH_REQUIRED)
+        dg.add_doid(9042) # doid
+        dg.add_doid(0)    # parent Id
+        dg.add_zone(9001) # global zone id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(1234) # setRequired1
+        self.server.send(dg)
+        """
+
         # Connect and hello to the global-zone configured client agent
         
         client = self.connect(port = 57148)
@@ -250,8 +261,8 @@ class TestClientAgent(ProtocolTest):
 
         dg = Datagram()
         dg.add_uint16(CLIENT_ADD_INTEREST)
-        dg.add_uint32(10) # the context and interest ID for global zones is 10
-        dg.add_uint16(10) # above was context; this is interest ID
+        dg.add_uint32(1) # the context is 1: first interest
+        dg.add_uint16(10) # interest ID
         dg.add_uint32(0) # parent ID is always zero for global zone
         dg.add_uint32(9001) # and the global zone zone ID is 9001, of course!
         self.expect(client, dg, isClient = True)

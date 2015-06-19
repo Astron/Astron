@@ -379,8 +379,8 @@ class AstronClient : public Client, public NetworkClient
             // and 10 to also be the initial global zone interest ID
             
             // CFS: is there a better convention for this I should know about?
-            
-            uint32_t context = 10;
+
+            uint32_t context = m_next_context++;
             uint32_t id = 10;
 
             Interest i;
@@ -389,6 +389,7 @@ class AstronClient : public Client, public NetworkClient
             i.parent = 0;
             i.zones.insert(m_global_zone);
 
+            handle_add_interest(i, context);
             add_interest(i, context);
         }
     }
