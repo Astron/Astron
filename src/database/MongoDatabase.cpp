@@ -17,13 +17,9 @@
 using namespace std;
 using namespace mongo;
 
-// TODO: This eventually needs to be a config variable. However, it's
-// unique to this backend, so it doesn't belong in the DatabaseBackend.cpp
-// file.
-#define NUM_WORKERS 8
-
 static ConfigGroup mongodb_backend_config("mongodb", db_backend_config);
 static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test", mongodb_backend_config);
+static ConfigVariable<int> num_workers("workers", 8, mongodb_backend_config);
 
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
@@ -336,7 +332,7 @@ class MongoDatabase : public DatabaseBackend
         delete client;
 
         // Spawn worker threads:
-        for(int i = 0; i < NUM_WORKERS; ++i) {
+        for(int i = 0; i < num_workers.get_rval(m_config); ++i) {
             m_threads.push_back(new thread(bind(&MongoDatabase::run_thread, this)));
         }
     }
