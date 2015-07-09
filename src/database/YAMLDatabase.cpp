@@ -15,16 +15,9 @@ using dclass::Class;
 using dclass::Field;
 using namespace std;
 
-#if NEW_BACKEND_CONFIG
-
-    static ConfigGroup yaml_backend_config("yaml", db_backend_config);
-    static ConfigVariable<string> foldername("foldername", "yaml_db", yaml_backend_config);
-
-#else
-
-    static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
-
-#endif
+static ConfigGroup yaml_backend_config("yaml", db_backend_config);
+static ConfigVariable<string> foldername("foldername", "yaml_db", yaml_backend_config);
+static ConfigVariable<string> type_yaml("type", "yaml", yaml_backend_config);
 
 class YAMLDatabase : public OldDatabaseBackend
 {

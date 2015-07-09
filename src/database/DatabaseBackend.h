@@ -2,30 +2,8 @@
 #include "DBOperation.h"
 #include "config/ConfigVariable.h"
 
-
-#if NEW_BACKEND_CONFIG
-
-    // Unbundled backend config
-
-    typedef ConfigNode BackendConfig;
-    class BackendConfigGroup : public ConfigGroup
-    {
-      public:
-        BackendConfigGroup(const std::string& type);
-
-      private:
-        // NOTE(Kevin): These are shared config variables for all BackendConfigGroups
-        BackendConfigVariable<std::string> m_type;
-    };
-
-#else
-
-    // Bundled backend config
-
-    extern ConfigGroup db_backend_config;
-    extern ConfigVariable<std::string> db_backend_type;
-
-#endif
+extern KeyedConfigGroup db_backend_config;
+extern ConfigVariable<std::string> db_backend_type;
 
 class DatabaseBackend
 {
