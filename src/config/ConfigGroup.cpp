@@ -135,7 +135,9 @@ bool KeyedConfigGroup::validate(ConfigNode node)
         return false;
     }
 
-    return found_grp->second->validate(node);
+    ConfigNode child_node = Clone(node);
+    child_node.remove(m_key);
+    return found_grp->second->validate(child_node);
 }
 
 void KeyedConfigGroup::print_keys()

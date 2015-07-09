@@ -17,7 +17,6 @@ using namespace std;
 
 static ConfigGroup yaml_backend_config("yaml", db_backend_config);
 static ConfigVariable<string> foldername("foldername", "yaml_db", yaml_backend_config);
-static ConfigVariable<string> type_yaml("type", "yaml", yaml_backend_config);
 
 class YAMLDatabase : public OldDatabaseBackend
 {
