@@ -2,13 +2,8 @@
 #include "DBOperation.h"
 #include "config/ConfigVariable.h"
 
-extern ConfigGroup db_backend_config;
+extern KeyedConfigGroup db_backend_config;
 extern ConfigVariable<std::string> db_backend_type;
-extern ConfigVariable<std::string> database_name;
-extern ConfigVariable<std::string> database_username;
-extern ConfigVariable<std::string> database_password;
-extern ConfigVariable<std::string> database_directory;
-extern ConfigVariable<std::string> database_address;
 
 class DatabaseBackend
 {

@@ -585,11 +585,11 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         doid_t r_parent_id = dgi.read_doid();
         zone_t r_zone_id = dgi.read_zone();
         if(r_parent_id != m_parent_id) {
-            m_log->warning() << "Received location acknowledgement from " << r_parent_id
-                             << " but my parent_id is " << m_parent_id << ".\n";
+            m_log->trace() << "Received location acknowledgement from " << r_parent_id
+                           << " but my parent_id is " << m_parent_id << ".\n";
         } else if(r_zone_id != m_zone_id) {
-            m_log->warning() << "Received location acknowledgement for zone " << r_zone_id
-                             << " but my zone_id is " << m_zone_id << ".\n";
+            m_log->trace() << "Received location acknowledgement for zone " << r_zone_id
+                           << " but my zone_id is " << m_zone_id << ".\n";
         } else {
             m_log->trace() << "Parent acknowledged my location change.\n";
             m_parent_synchronized = true;
