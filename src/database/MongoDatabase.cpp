@@ -22,6 +22,9 @@ using namespace mongo;
 // file.
 #define NUM_WORKERS 8
 
+static ConfigGroup mongodb_backend_config("mongodb", db_backend_config);
+static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test", mongodb_backend_config);
+
 // These are helper functions to convert between BSONElement and packed Bamboo
 // field values.
 
@@ -309,7 +312,7 @@ class MongoDatabase : public DatabaseBackend
 
         // Init connection.
         string error;
-        m_connection_string = ConnectionString::parse(database_address.get_rval(m_config), error);
+        m_connection_string = ConnectionString::parse(db_server.get_rval(m_config), error);
 
         if(!m_connection_string.isValid()) {
             m_log->fatal() << "Could not parse connection string: " << error << endl;
