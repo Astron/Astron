@@ -23,7 +23,8 @@ roles:
         min: 1000000
         max: 1000010
       backend:
-        type: postgresql
+        type: soci
+        driver: postgresql
         server: 127.0.0.1:57023
         username: astron
         database: astron

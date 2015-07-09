@@ -19,12 +19,19 @@ using namespace dclass;
 typedef boost::icl::discrete_interval<doid_t> interval_t;
 typedef boost::icl::interval_set<doid_t> set_t;
 
+static ConfigGroup soci_backend_config("soci", db_backend_config);
+static ConfigVariable<string> database_driver("driver", "mysql", soci_backend_config);
+static ConfigVariable<string> database_name("database", "", soci_backend_config);
+static ConfigVariable<string> database_address("address", "", soci_backend_config);
+static ConfigVariable<string> database_username("username", "", soci_backend_config);
+static ConfigVariable<string> database_password("password", "", soci_backend_config);
+
 class SociSQLDatabase : public OldDatabaseBackend
 {
   public:
     SociSQLDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
         OldDatabaseBackend(dbeconfig, min_id, max_id), m_min_id(min_id), m_max_id(max_id),
-        m_backend(db_backend_type.get_rval(dbeconfig)),
+        m_backend(database_driver.get_rval(dbeconfig)),
         m_db_name(database_name.get_rval(dbeconfig)),
         m_sess_user(database_username.get_rval(dbeconfig)),
         m_sess_passwd(database_password.get_rval(dbeconfig))
@@ -42,7 +49,6 @@ class SociSQLDatabase : public OldDatabaseBackend
         } else {
             m_db_host = server;
         }
-
 
         connect();
         check_tables();
@@ -712,6 +718,4 @@ class SociSQLDatabase : public OldDatabaseBackend
     }
 };
 
-DBBackendFactoryItem<SociSQLDatabase> mysql_factory("mysql");
-DBBackendFactoryItem<SociSQLDatabase> postgresql_factory("postgresql");
-DBBackendFactoryItem<SociSQLDatabase> sqlite_factory("sqlite3");
+DBBackendFactoryItem<SociSQLDatabase> soci_factory("soci");
