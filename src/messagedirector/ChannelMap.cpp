@@ -166,10 +166,15 @@ bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
 {
     std::lock_guard<std::recursive_mutex> guard(m_lock);
 
-    std::set<ChannelSubscriber *> pset;
-    lookup_channel(c, pset);
+    if(p->channels().find(c) != p->channels().end()) {
+        return true;
+    }
 
-    return pset.find(p) != pset.end();
+    if(p->ranges().find(c) != p->ranges().end()) {
+        return true;
+    }
+
+    return false;
 }
 
 void ChannelMap::lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps)
