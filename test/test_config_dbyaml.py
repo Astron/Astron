@@ -33,7 +33,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Valid')
 
@@ -52,7 +52,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -71,7 +71,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -89,7 +89,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 0
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -108,7 +108,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -126,7 +126,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 555
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -148,7 +148,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Valid')
 
@@ -169,7 +169,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yaml
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
@@ -190,7 +190,7 @@ class TestConfigDBYaml(ConfigTest):
                     max: 1000010
                   backend:
                     type: yam
-                    foldername: %r
+                    directory: %r
             """ % (test_dc, self.yamldb_path)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
