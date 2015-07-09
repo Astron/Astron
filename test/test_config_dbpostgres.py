@@ -32,9 +32,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -54,7 +54,8 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: postgresql
+                    type: soci
+                    driver: postgresql
                     host: 127.0.0.1
                     port: 57023
                     username: astron
@@ -76,9 +77,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 0
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -97,9 +98,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 0
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -119,9 +120,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 444
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -140,9 +141,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 555
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -165,9 +166,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -189,9 +190,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
@@ -213,9 +214,9 @@ class TestConfigDBPostgres(ConfigTest):
                     min: 1000000
                     max: 1000010
                   backend:
-                    type: postgresql
-                    host: 127.0.0.1
-                    port: 57023
+                    type: soci
+                    driver: postgresql
+                    server: 127.0.0.1:57023
                     username: astron
                     database: astron
             """ % test_dc
