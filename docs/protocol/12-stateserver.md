@@ -168,7 +168,7 @@ to one object at a time.
           uint16 dclass_id, <REQUIRED_BCAST>)`  
 **STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER(2043)**  
     `args(uint32 do_id, uint32 parent_id, uint32 zone_id,
-          uint16 dclass_id, <REQUIRED_BCAST>, <OTHER_BCAST>)` 
+          uint16 dclass_id, <REQUIRED_BCAST>, <OTHER_BCAST>)`
 > Used by the object to tell the new location about the object's entry.
 >
 > The message format is identical to OBJECT_CREATE except that non-broadcast
@@ -319,7 +319,11 @@ These messages are sent to a single parent object to interact with its children.
     `args(uint32 context, uint16 zone_count, [uint32 zone_id]*zone_count)`  
 > Gets the list of zones that contain objects
 
-
+**STATESERVER_OBJECT_MOVE(2127)**
+    `args(uint32 context, chanel_t target_stateserver)`  
+**STATESERVER_OBJECT_MOVE_RESP(2128)**
+    `args(uint32 context)`
+> Transfer object to new StateServer.
 
 #### Section 2.4: Database-State Objects ####
 The database-state server is a special subclass of the stateserver. Unlike a

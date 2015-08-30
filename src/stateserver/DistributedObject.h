@@ -56,6 +56,7 @@ class DistributedObject : public MDParticipantInterface
     uint32_t m_next_context;
     std::unordered_map<zone_t, std::unordered_set<doid_t>> m_zone_objects;
     LogCategory *m_log;
+    bool m_in_transfer;
 
     void append_required_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);
     void append_other_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);
@@ -77,4 +78,6 @@ class DistributedObject : public MDParticipantInterface
     bool handle_one_update(DatagramIterator &dgi, channel_t sender);
     bool handle_one_get(DatagramPtr out, uint16_t field_id,
                         bool succeed_if_unset = false, bool is_subfield = false);
+
+    void handle_tranfer(DatagramIterator *dgi, channel_t sender);
 };

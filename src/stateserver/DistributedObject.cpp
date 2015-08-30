@@ -15,7 +15,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
                                      bool has_other) :
     m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-    m_ai_explicitly_set(false), m_parent_synchronized(false), m_next_context(0)
+    m_ai_explicitly_set(false), m_parent_synchronized(false), m_next_context(0),m_in_transfer(false)
 {
     stringstream name;
     name << dclass->get_name() << "(" << do_id << ")";
@@ -57,7 +57,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
                                      UnorderedFieldValues& required, FieldValues& ram) :
     m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
-    m_ai_explicitly_set(false), m_next_context(0)
+    m_ai_explicitly_set(false), m_next_context(0),m_in_transfer(false)
 {
     stringstream name;
     name << dclass->get_name() << "(" << do_id << ")";
@@ -439,11 +439,31 @@ bool DistributedObject::handle_one_get(DatagramPtr out, uint16_t field_id,
     return true;
 }
 
+void DistributedObject::handle_transfer(DatagramIterator &dgi, channel_t sender)
+{
+  if (!m_in_transfer)
+    m_in_transfer = true;
+
+    DatagramPtr dg = Datagram::create(target_stateserver, m_do_id, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER);
+    dg->add_doid(m_do_id);
+    dg->add_location(m_parent_id,m_zone_id);
+    dg->add_uint16(m_dclass->get_id());
+    append_required_data(dg);
+    append_other_data(dg);
+    route_datagram(dg);
+    
+}
+
 void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {
+
+    case STATESERVER_OBJECT_MOVE: {
+      handle_transfer(dgi, sender);
+      break;
+    }
     case STATESERVER_DELETE_AI_OBJECTS: {
         if(m_ai_channel != dgi.read_channel()) {
             m_log->warning() << " received reset for wrong AI channel.\n";
