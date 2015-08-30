@@ -448,10 +448,10 @@ void DistributedObject::handle_transfer(DatagramIterator &dgi, channel_t sender)
     dg->add_doid(m_do_id);
     dg->add_location(m_parent_id,m_zone_id);
     dg->add_uint16(m_dclass->get_id());
-    append_required_data(dg);
-    append_other_data(dg);
+    append_required_data(dg, false, true);
+    append_other_data(dg, false, true);
     route_datagram(dg);
-    
+
 }
 
 void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
