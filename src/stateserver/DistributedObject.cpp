@@ -444,6 +444,9 @@ void DistributedObject::handle_transfer(DatagramIterator &dgi, channel_t sender)
   if (!m_in_transfer)
     m_in_transfer = true;
 
+    uint32_t context = dgi.read_uint32();
+    channel_t target_stateserver = dgi.read_channel();
+
     DatagramPtr dg = Datagram::create(target_stateserver, m_do_id, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER);
     dg->add_doid(m_do_id);
     dg->add_location(m_parent_id,m_zone_id);
