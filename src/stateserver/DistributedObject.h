@@ -79,5 +79,5 @@ class DistributedObject : public MDParticipantInterface
     bool handle_one_get(DatagramPtr out, uint16_t field_id,
                         bool succeed_if_unset = false, bool is_subfield = false);
 
-    void handle_transfer(DatagramIterator *dgi, channel_t sender);
+    void handle_transfer(DatagramIterator &dgi, channel_t sender);
 };
