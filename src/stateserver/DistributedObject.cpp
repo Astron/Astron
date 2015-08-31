@@ -50,7 +50,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
     m_log->debug() << "Object created..." << endl;
 
     dgi.seek_payload(); // Seek to front of payload, to read sender
-    if(transfer) {
+    if(is_transfer) {
       //If this is a transfer, there is no need to notify of changed location.
       m_parent_id = parent_id;
       m_zone_id = zone_id;
@@ -128,8 +128,6 @@ void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool
         }
     }
 }
-
-
 
 void DistributedObject::send_interest_entry(channel_t location, uint32_t context)
 {
