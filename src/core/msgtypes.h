@@ -65,6 +65,7 @@ enum MessageTypes {
     // StateServer control messages
     STATESERVER_CREATE_OBJECT_WITH_REQUIRED       = 2000,
     STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER = 2001,
+    STATESERVER_CREATE_MOVE_OBJECT                = 2129,
     STATESERVER_DELETE_AI_OBJECTS                 = 2009,
     // StateServer object messages
     STATESERVER_OBJECT_GET_FIELD         = 2010,

@@ -69,6 +69,38 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
     m_objs[do_id] = obj;
 }
 
+void StateServer::handle_move(DatagramIterator &dgi, channel_t sender) 
+{
+    doid_t do_id = dgi.read_doid();
+    doid_t parent_id = dgi.read_doid();
+    zone_t zone_id = dgi.read_zone();
+    uint16_t dc_id = dgi.read_uint16();
+
+    // Make sure the object id is unique
+    if(m_objs.find(do_id) != m_objs.end()) {
+        m_log->warning() << "Received generate for already-existing object ID=" << do_id << std::endl;
+        return;
+    }
+
+    // Make sure the class exists in the file
+    const Class *dc_class = g_dcf->get_class_by_id(dc_id);
+    if(!dc_class) {
+        m_log->error() << "Received create for unknown dclass with class id '" << dc_id << "'\n";
+        return;
+    }
+
+    // Create the object
+    DistributedObject *obj;
+    try {
+        obj = new DistributedObject(this, do_id, parent_id, zone_id, dc_class, dgi, has_other, true);
+    } catch(const DatagramIteratorEOF&) {
+        m_log->error() << "Received truncated generate for "
+                       << dc_class->get_name() << "(" << do_id << ")" << std::endl;
+        return;
+    }
+    m_objs[do_id] = obj;
+}
+
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 {
     channel_t ai_channel = dgi.read_channel();
@@ -93,6 +125,10 @@ void StateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     switch(msgtype) {
     case STATESERVER_CREATE_OBJECT_WITH_REQUIRED: {
         handle_generate(dgi, false);
+        break;
+    }
+    case STATESERVER_CREATE_MOVE_OBJECT: {
+        handle_move(dgi, sender);
         break;
     }
     case STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER: {
