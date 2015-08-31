@@ -4,6 +4,7 @@ State-Server Behavior
 Sam "CFSworks" Edwards (08-30-2013)  
 Kevin "Kestred" Stenerson (09-04-2013)
 Jeremy "jjkoletar" Koletar (10-09-2014)
+Alex "AlJaMa" Mault (8-30-15)
 
 
 ### Section 0: Abstract ###

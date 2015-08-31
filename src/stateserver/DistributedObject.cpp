@@ -12,7 +12,7 @@ using dclass::MolecularField;
 
 DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doid_t parent_id,
                                      zone_t zone_id, const Class *dclass, DatagramIterator &dgi,
-                                     bool has_other) :
+                                     bool has_other, bool is_transfer) :
     m_stateserver(stateserver), m_do_id(do_id), m_parent_id(INVALID_DO_ID), m_zone_id(0),
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
     m_ai_explicitly_set(false), m_parent_synchronized(false), m_next_context(0),m_in_transfer(false)
@@ -21,6 +21,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
     name << dclass->get_name() << "(" << do_id << ")";
     m_log = new LogCategory("object", name.str());
     set_con_name(name.str());
+    if (is_transfer)
+      m_log->debug() << "Receving transfer of object (" << name << ")\n";
 
     for(unsigned int i = 0; i < m_dclass->get_num_fields(); ++i) {
         const Field *field = m_dclass->get_field(i);
@@ -47,8 +49,15 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
 
     m_log->debug() << "Object created..." << endl;
 
-    dgi.seek_payload(); // Seek back to front of payload, to read sender
-    handle_location_change(parent_id, zone_id, dgi.read_channel());
+    dgi.seek_payload(); // Seek to front of payload, to read sender
+    if(transfer) {
+      //If this is a transfer, there is no need to notify of changed location.
+      m_parent_id = parent_id;
+      m_zone_id = zone_id;
+    }else{
+      handle_location_change(parent_id, zone_id, dgi.read_channel());
+    }
+
     wake_children();
 }
 
@@ -461,6 +470,14 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 {
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
+
+    if(m_in_transfer)
+    {
+      if (msgtype) {
+        /* code */
+      }
+    }
+
     switch(msgtype) {
 
     case STATESERVER_OBJECT_MOVE: {

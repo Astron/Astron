@@ -8,7 +8,7 @@ class DistributedObject : public MDParticipantInterface
 
   public:
     DistributedObject(StateServer *stateserver, doid_t do_id, doid_t parent_id, zone_t zone_id,
-                      const dclass::Class *dclass, DatagramIterator &dgi, bool has_other, bool is_transfer=false);
+                      const dclass::Class *dclass, DatagramIterator &dgi, bool has_other, bool is_transfer = false);
     DistributedObject(StateServer *stateserver, channel_t sender, doid_t do_id,
                       doid_t parent_id, zone_t zone_id, const dclass::Class *dclass,
                       UnorderedFieldValues& req_fields, FieldValues& ram_fields);
