@@ -9,5 +9,5 @@ class MDNetworkParticipant : public MDParticipantInterface, public NetworkClient
     virtual void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
   private:
     virtual void receive_datagram(DatagramHandle dg);
-    virtual void receive_disconnect();
+    virtual void receive_disconnect(const boost::system::error_code &ec);
 };

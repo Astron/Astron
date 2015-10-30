@@ -2,6 +2,7 @@
 #include "net/NetworkClient.h"
 #include "messagedirector/MessageDirector.h"
 #include "util/EventSender.h"
+#include "util/Timeout.h"
 
 #include <queue>
 #include <unordered_set>
@@ -50,6 +51,8 @@ class Client; // forward declaration
 class InterestOperation
 {
   public:
+    Client *m_client;
+
     uint16_t m_interest_id;
     uint32_t m_client_context;
     uint32_t m_request_context;
@@ -57,21 +60,24 @@ class InterestOperation
     std::unordered_set<zone_t> m_zones;
     std::set<channel_t> m_callers;
 
+    Timeout m_timeout;
+
     bool m_has_total = false;
     doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
     std::list<DatagramHandle> m_pending_generates;
     std::list<DatagramHandle> m_pending_datagrams;
 
-    InterestOperation(uint16_t interest_id, uint32_t client_context, uint32_t request_context,
+    InterestOperation(Client *client, unsigned long timeout,
+                      uint16_t interest_id, uint32_t client_context, uint32_t request_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
 
     bool is_ready();
     void set_expected(doid_t total);
-    void decrement_expected();
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
-    void finish(Client *client);
+    void finish();
+    void timeout();
 };
 
 class Client : public MDParticipantInterface
@@ -112,12 +118,12 @@ class Client : public MDParticipantInterface
     // m_interests is a map of interest ids to interests.
     std::unordered_map<uint16_t, Interest> m_interests;
     // m_pending_interests is a map of contexts to in-progress interests.
-    std::unordered_map<uint32_t, InterestOperation> m_pending_interests;
+    std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
     // m_fields_sendable is a map of DoIds to sendable field sets.
     std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
     LogCategory *m_log;
 
-    Client(ClientAgent* client_agent);
+    Client(ConfigNode config, ClientAgent* client_agent);
 
     // annihilate should be called to delete the client after the client has-left/disconnected.
     void annihilate();
@@ -220,6 +226,12 @@ class Client : public MDParticipantInterface
     // handle_interest_done is called when all of the objects from an opened interest have been
     // received. Typically, informs the client that a particular group of objects is loaded.
     virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
+    
+    // get_remote_address and friends are set by AstronClient, because we have no access
+    // to m_remote from Client
+    virtual const std::string get_remote_address() = 0;
+    virtual uint16_t get_remote_port() = 0;
+    virtual const tcp::socket* get_socket() = 0;
 
   private:
     // notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the

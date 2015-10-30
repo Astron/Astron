@@ -194,6 +194,11 @@ to one object at a time.
 > Get the location from one or more objects.
 
 
+**STATESERVER_OBJECT_LOCATION_ACK(2046)** `args(uint32 parent_id, uint32 zone_id)`  
+> Sent by the parent to the child to indicate when it has received the
+> CHANGING_LOCATION notice.
+
+
 **STATESERVER_OBJECT_SET_AI(2050)** `args(uint64 ai_channel)`  
 **STATESERVER_OBJECT_CHANGING_AI(2051)**  
     `args(uint32 doid_id, uint64 new_ai_channel, uint64 old_ai_channel)`  

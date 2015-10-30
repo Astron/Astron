@@ -118,6 +118,56 @@ class TestDBStateServer(ProtocolTest):
         self.shard.flush()
 
 
+        ### Test for Activate on Database object with other fields ###
+        # Enter an object into ram from the disk by Activating it; with
+        # overrides
+        dg = Datagram.create([doid1], 5, DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER)
+        appendMeta(dg, doid1, 80000, 100)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(2) # Two other fields:
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0x00a49de2)
+        dg.add_uint16(setBR1)
+        dg.add_string('V ybir Whar')
+        self.shard.send(dg)
+
+        # Expect values to be retrieved from database
+        dg = self.database.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1200], doid1, DBSERVER_OBJECT_GET_ALL,
+                                            remaining = 4 + DOID_SIZE_BYTES))
+        context = dgi.read_uint32() # Get context
+        self.assertEquals(dgi.read_doid(), doid1) # object Id
+
+        # Send back to the DBSS with some required values
+        dg = Datagram.create([doid1], 1200, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(context)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedTestObject5)
+        dg.add_uint16(2) # Field count
+        dg.add_uint16(setRequired1)
+        dg.add_uint32(0x12345678)
+        dg.add_uint16(setRDB3)
+        dg.add_uint32(3117)
+        self.database.send(dg)
+
+        # See if it announces its entry into 100.
+        dg = Datagram.create([80000<<ZONE_SIZE_BITS|100], doid1, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        appendMeta(dg, doid1, 80000, 100, DistributedTestObject5)
+        dg.add_uint32(0x00a49de2) # setRequired1
+        dg.add_uint32(3117) # setRDB3
+        dg.add_uint16(1) # One other field:
+        dg.add_uint16(setBR1)
+        dg.add_string('V ybir Whar')
+        self.expect(self.shard, dg)
+
+        # Remove object from ram
+        dg = Datagram.create([doid1], 5, STATESERVER_OBJECT_DELETE_RAM)
+        dg.add_doid(doid1)
+        self.shard.send(dg)
+        self.shard.flush()
+
 
         ### Test for Activate on non-existent Database object ###
         # Enter an object into ram with activate

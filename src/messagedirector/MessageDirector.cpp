@@ -36,10 +36,8 @@ MessageDirector::~MessageDirector()
 {
     shutdown_threading();
 
-    while(!m_participants.empty()) {
-        m_terminated_participants.push_back(m_participants.front());
-        m_participants.pop_front();
-    }
+    m_terminated_participants.insert(m_participants.begin(), m_participants.end());
+    m_participants.clear();
 
     process_terminates();
 }
@@ -182,7 +180,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
                           << p->m_name << "'.\n";
         } else {
             m_log.error() << "Detected truncated datagram reading header from "
-                          "unknown participant.\n";
+                             "unknown participant.\n";
         }
         return;
     }
@@ -228,10 +226,10 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 void MessageDirector::process_terminates()
 {
     std::lock_guard<std::mutex> lock(m_terminated_lock);
-    while(!m_terminated_participants.empty()) {
-        delete m_terminated_participants.front();
-        m_terminated_participants.pop_front();
+    for(auto it = m_terminated_participants.begin(); it != m_terminated_participants.end(); ++it) {
+        delete *it;
     }
+    m_terminated_participants.clear();
 }
 
 void MessageDirector::on_add_channel(channel_t c)
@@ -278,7 +276,7 @@ void MessageDirector::handle_connection(tcp::socket *socket)
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
     std::lock_guard<std::mutex> lock(m_participants_lock);
-    m_participants.push_back(p);
+    m_participants.insert(p);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
@@ -289,7 +287,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
     // Stop tracking participant
     {
         std::lock_guard<std::mutex> lock(m_participants_lock);
-        m_participants.remove(p);
+        m_participants.erase(p);
     }
 
     // Send out any post-remove messages the participant may have added.
@@ -302,7 +300,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
     // Mark the participant for deletion
     {
         std::lock_guard<std::mutex> lock(m_terminated_lock);
-        m_terminated_participants.push_back(p);
+        m_terminated_participants.insert(p);
     }
 }
 
@@ -332,8 +330,8 @@ void MessageDirector::receive_datagram(DatagramHandle dg)
     route_datagram(NULL, dg);
 }
 
-void MessageDirector::receive_disconnect()
+void MessageDirector::receive_disconnect(const boost::system::error_code &ec)
 {
-    m_log.fatal() << "Lost connection to upstream md" << std::endl;
+    m_log.fatal() << "Lost connection to upstream md: " << ec.message() << std::endl;
     exit(1);
 }

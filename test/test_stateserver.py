@@ -1776,6 +1776,58 @@ class TestStateServer(ProtocolTest):
         conn.send(dg)
         checkObjects([(doid1, 912), (doid4, 930)], [912, 930])
 
+        ### Test for proper OBJECT_LOCATION_ACK behavior ###
+
+        # This parent isn't active on any stateserver, which allows us to control the
+        # parent's acknowledgement of its own children.
+        parent = 1824
+
+        # Let's move doid4 and doid5 into some zone under our parent
+        dg = Datagram.create([doid4, doid5], 5, STATESERVER_OBJECT_SET_LOCATION)
+        appendMeta(dg, parent=parent, zone=1763)
+        conn.send(dg)
+
+        # Next, as the parent, we'll acknowledge doid5
+        dg = Datagram.create([doid5], parent, STATESERVER_OBJECT_LOCATION_ACK)
+        dg.add_doid(parent)
+        dg.add_zone(1763)
+        conn.send(dg)
+
+        # We'll acknowledge doid4, but with the old zone:
+        dg = Datagram.create([doid4], parent, STATESERVER_OBJECT_LOCATION_ACK)
+        dg.add_doid(parent)
+        dg.add_zone(930)
+        conn.send(dg)
+
+        # Now we fake a relayed parent->child query. There's no use sending a query to
+        # the parent object, because we essentially are the parent object.
+        dg = Datagram.create([PARENT_PREFIX | parent], 5, STATESERVER_OBJECT_GET_ZONE_OBJECTS)
+                                                          # Use the singular message so
+                                                          # that it's covered in a test
+        dg.add_uint32(0xBEEF) # Context
+        dg.add_doid(parent) # Parent Id
+        dg.add_zone(1763)
+        conn.send(dg)
+
+        expected = []
+        # doid5 should respond with a contextual entry
+        dg = Datagram.create([5], doid5, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(0xBEEF) # context
+        appendMeta(dg, doid5, parent, 1763, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+
+        # doid4 should just respond with an ENTER_LOCATION
+        dg = Datagram.create([5], doid4, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED)
+        appendMeta(dg, doid4, parent, 1763, DistributedTestObject1)
+        dg.add_uint32(0) # setRequired1
+        expected.append(dg)
+
+        # Now make sure the objects responded accordingly
+        self.expectMany(conn, expected)
+        # And make sure nobody else responded
+        self.expectNone(conn)
+
         ### Cleanup ###
         for doid in (doid0, doid1, doid2, doid3, doid4, doid5, doid6):
             deleteObject(conn, 5, doid)

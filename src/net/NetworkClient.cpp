@@ -6,31 +6,33 @@
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false),
-    m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false)
 {
 }
 
 NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_ssl_enabled(false), m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+    m_ssl_enabled(false)
 {
     start_receive();
 }
 
 NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true),
-    m_data_buf(nullptr), m_data_size(0), m_is_data(false)
+    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true)
 {
     start_receive();
 }
 
 NetworkClient::~NetworkClient()
 {
-    if(m_socket) {
-        std::lock_guard<std::recursive_mutex> lock(m_lock);
-        m_socket->close();
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    if(m_ssl_enabled) {
+        // This also deletes m_socket:
+        delete m_secure_socket;
+    } else {
+        // ONLY delete m_socket if we must do so directly. If it's wrapped in
+        // an SSL stream, the stream "owns" the socket.
+        delete m_socket;
     }
-    delete m_socket;
     delete [] m_data_buf;
 }
 
@@ -86,10 +88,10 @@ void NetworkClient::async_receive()
         } else { // Read length
             socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size);
         }
-    } catch(const boost::system::system_error&) {
+    } catch(const boost::system::system_error &err) {
         // An exception happening when trying to initiate a read is a clear
         // indicator that something happened to the connection. Therefore:
-        send_disconnect();
+        send_disconnect(err.code());
     }
 }
 
@@ -105,23 +107,52 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         gather.push_back(boost::asio::buffer((uint8_t*)&len, sizeof(dgsize_t)));
         gather.push_back(boost::asio::buffer(dg->get_data(), dg->size()));
         socket_write(gather);
-    } catch(const boost::system::system_error&) {
+    } catch(const boost::system::system_error &err) {
         // We assume that the message just got dropped if the remote end died
         // before we could send it.
-        send_disconnect();
+        send_disconnect(err.code());
     }
 }
 
 void NetworkClient::send_disconnect()
 {
+    boost::system::error_code ec;
+    send_disconnect(ec);
+}
+
+void NetworkClient::send_disconnect(const boost::system::error_code &ec)
+{
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+    m_local_disconnect = true;
+    m_disconnect_error = ec;
     m_socket->close();
 }
 
-void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
 {
-    if(ec.value() != 0) {
-        receive_disconnect();
+    if(m_disconnect_handled) {
+        return;
+    }
+
+    m_disconnect_handled = true;
+
+    if(m_local_disconnect) {
+        receive_disconnect(m_disconnect_error);
+    } else {
+        receive_disconnect(ec);
+    }
+}
+
+void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
+{
+    if(ec) {
+        handle_disconnect(ec);
+        return;
+    }
+
+    if(bytes_transferred != sizeof(m_size_buf)) {
+        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+        handle_disconnect(epipe);
         return;
     }
 
@@ -137,10 +168,16 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t /*b
     async_receive();
 }
 
-void NetworkClient::receive_data(const boost::system::error_code &ec, size_t /*bytes_transferred*/)
+void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
-    if(ec.value() != 0) {
-        receive_disconnect();
+    if(ec) {
+        handle_disconnect(ec);
+        return;
+    }
+
+    if(bytes_transferred != m_data_size) {
+        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+        handle_disconnect(epipe);
         return;
     }
 

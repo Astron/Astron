@@ -86,6 +86,13 @@ session channel.
 > Similar to above, but causes the CA to silently close the client connection,
 > providing no explanation whatsoever to the client.
 
+**CLIENTAGENT_GET_NETWORK_ADDRESS(1006)** `args(uint32 context)`
+> Requests the IP and port of local and remote.
+
+**CLIENTAGENT_GET_NETWORK_ADDRESS_RESP(1007)**
+    `args(uint32 context, string remote_ip, uint16 remote_port, string local_ip, uint16 local_port)`
+> Returns the IP and port of local and remote.
+
 
 **CLIENTAGENT_DECLARE_OBJECT(1010)**  
     `args(uint32 do_id, uint16 dclass_id)`  
@@ -165,3 +172,4 @@ session channel.
 **CLIENTAGENT_DONE_INTEREST_RESP(1204)** `args(uint64 client_id, uint16 interest_id)`
 > Sent by the ClientAgent to the caller of CLIENTAGENT_ADD_INTEREST to inform
 > them that the interest operation has completed.
+

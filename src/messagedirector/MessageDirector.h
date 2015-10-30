@@ -44,7 +44,7 @@ class MessageDirector : public ChannelMap
 
     // For MDUpstream (and subclasses) to call.
     void receive_datagram(DatagramHandle dg);
-    void receive_disconnect();
+    void receive_disconnect(const boost::system::error_code &ec);
 
   protected:
     virtual void on_add_channel(channel_t c);
@@ -61,8 +61,8 @@ class MessageDirector : public ChannelMap
     MDUpstream *m_upstream;
 
     // Connected participants
-    std::list<MDParticipantInterface*> m_participants;
-    std::list<MDParticipantInterface*> m_terminated_participants;
+    std::set<MDParticipantInterface*> m_participants;
+    std::set<MDParticipantInterface*> m_terminated_participants;
 
     // Threading stuff:
     bool m_shutdown;

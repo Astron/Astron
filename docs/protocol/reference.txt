@@ -33,25 +33,27 @@
 | CLIENT_DONE_INTEREST_RESP                |    0204 | `uint32 context`, `uint16 interest_id`                                                                         |
 
 ### Client Agent Messages ###
-| Message                           | Type Id | Format                                                                                       |
-| --------------------------------- |:-------:| -------------------------------------------------------------------------------------------- |
-| CLIENTAGENT_SET_STATE             |    1000 | `uint16 ca_state`                                                                            |
-| CLIENTAGENT_SET_CLIENT_ID         |    1001 | `uint64 channel`                                                                             |
-| CLIENTAGENT_SEND_DATAGRAM         |    1002 | `blob datagram`                                                                              |
-| CLIENTAGENT_EJECT                 |    1004 | `uint16 error_code`, `string reason`                                                         |
-| CLIENTAGENT_DROP                  |    1005 |                                                                                              |
-| CLIENTAGENT_DECLARE_OBJECT        |    1010 | `uint32 do_id`, `uint16 dclass_id`                                                           |
-| CLIENTAGENT_UNDECLARE_OBJECT      |    1011 | `uint32 do_id`                                                                               |
-| CLIENTAGENT_ADD_SESSION_OBJECT    |    1012 | `uint32 do_id`                                                                               |
-| CLIENTAGENT_REMOVE_SESSION_OBJECT |    1013 | `uint32 do_id`                                                                               |
-| CLIENTAGENT_SET_FIELDS_SENDABLE   |    1014 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                                                 |
-| CLIENTAGENT_OPEN_CHANNNEL         |    1100 | `uint64 channel`                                                                             |
-| CLIENTAGENT_CLOSE_CHANNEL         |    1101 | `uint64 channel`                                                                             |
-| CLIENTAGENT_ADD_POST_REMOVE       |    1110 | `blob datagram`                                                                              |
-| CLIENTAGENT_CLEAR_POST_REMOVES    |    1111 |                                                                                              |
-| CLIENTAGENT_ADD_INTEREST          |    1200 | `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                   |
-| CLIENTAGENT_ADD_INTEREST_MULTIPLE |    1201 | `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count` |
-| CLIENTAGENT_REMOVE_INTEREST       |    1203 | `uint16 interest_id`                                                                         |
+| Message                              | Type Id | Format                                                                                             |
+| ------------------------------------ |:-------:| ---------------------------------------------------------------------------------------------------|
+| CLIENTAGENT_SET_STATE                |    1000 | `uint16 ca_state`                                                                                  |
+| CLIENTAGENT_SET_CLIENT_ID            |    1001 | `uint64 channel`                                                                                   |
+| CLIENTAGENT_SEND_DATAGRAM            |    1002 | `blob datagram`                                                                                    |
+| CLIENTAGENT_EJECT                    |    1004 | `uint16 error_code`, `string reason`                                                               |
+| CLIENTAGENT_DROP                     |    1005 |                                                                                                    |
+| CLIENTAGENT_GET_NETWORK_ADDRESS      |    1006 | `uint32 context`                                                                                   |
+| CLIENTAGENT_GET_NETWORK_ADDRESS_RESP |    1007 | `uint32 context`, `string remote_ip`, `uint16 remote_port`, `string local_ip`, `uint16 local_port` |
+| CLIENTAGENT_DECLARE_OBJECT           |    1010 | `uint32 do_id`, `uint16 dclass_id`                                                                 |
+| CLIENTAGENT_UNDECLARE_OBJECT         |    1011 | `uint32 do_id`                                                                                     |
+| CLIENTAGENT_ADD_SESSION_OBJECT       |    1012 | `uint32 do_id`                                                                                     |
+| CLIENTAGENT_REMOVE_SESSION_OBJECT    |    1013 | `uint32 do_id`                                                                                     |
+| CLIENTAGENT_SET_FIELDS_SENDABLE      |    1014 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                                                       |
+| CLIENTAGENT_OPEN_CHANNNEL            |    1100 | `uint64 channel`                                                                                   |
+| CLIENTAGENT_CLOSE_CHANNEL            |    1101 | `uint64 channel`                                                                                   |
+| CLIENTAGENT_ADD_POST_REMOVE          |    1110 | `blob datagram`                                                                                    |
+| CLIENTAGENT_CLEAR_POST_REMOVES       |    1111 |                                                                                                    |
+| CLIENTAGENT_ADD_INTEREST             |    1200 | `uint16 interest_id`, `uint32 parent_id`, `uint32 zone_id`                                         |
+| CLIENTAGENT_ADD_INTEREST_MULTIPLE    |    1201 | `uint16 interest_id`, `uint32 parent_id`, `uint16 zone_count`, `[uint32 zone_id]*zone_count`       |
+| CLIENTAGENT_REMOVE_INTEREST          |    1203 | `uint16 interest_id`                                                                               |
 
 ### State Server Messages ###
 | Message                                       | Type Id | Format                                                                                            |
@@ -84,6 +86,7 @@
 | STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER |    2043 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`, `<OTHER>` |
 | STATESERVER_OBJECT_GET_LOCATION                       |    2044 | `uint32 context`,                                                                                 |
 | STATESERVER_OBJECT_GET_LOCATION_RESP                  |    2045 | `uint32 context`, `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`                            |
+| STATESERVER_OBJECT_LOCATION_ACK                       |    2046 | `uint32 parent_id`, `uint32 zone_id`                                                              |
 | STATESERVER_OBJECT_SET_AI                             |    2050 | `uint64 ai_channel`                                                                               |
 | STATESERVER_OBJECT_CHANGING_AI                        |    2051 | `uint32 do_id`, `uint64 new_ai`, `uint64 old_ai`                                                  |
 | STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED             |    2052 | `uint32 do_id`, `uint32 parent_id`, `uint32 zone_id`, `uint16 dclass_id`, `<REQUIRED>`            |

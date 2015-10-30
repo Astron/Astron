@@ -72,6 +72,8 @@ class ClientAgent : public Role
     LogCategory *m_log;
     uint32_t m_hash;
 
+    unsigned long m_interest_timeout;
+
     boost::asio::ssl::context m_ssl_ctx;
     std::string m_ssl_cert;
     std::string m_ssl_key;

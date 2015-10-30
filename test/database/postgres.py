@@ -53,6 +53,7 @@ def setup_postgres(unittest):
 def teardown_postgres(unittest):
     # Kill Server
     unittest.postgresd.terminate()
+    unittest.postgresd.wait()
 
     # Remove temp files
     try:

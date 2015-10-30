@@ -13,11 +13,14 @@ Field::Field(DistributedType* type, const std::string &name) :
     m_struct(NULL), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
 {
     bool implicit_value;
-    m_default_value = create_default_value(type, implicit_value);
-    m_has_default_value = !implicit_value;
 
     if(m_type == NULL) {
         m_type = DistributedType::invalid;
+    }
+    else
+    {
+        m_default_value = create_default_value(type, implicit_value);
+        m_has_default_value = !implicit_value;
     }
 }
 

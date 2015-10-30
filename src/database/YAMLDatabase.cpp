@@ -15,24 +15,25 @@ using dclass::Class;
 using dclass::Field;
 using namespace std;
 
-static ConfigVariable<string> foldername("foldername", "yaml_db", db_backend_config);
+static ConfigGroup yaml_backend_config("yaml", db_backend_config);
+static ConfigVariable<string> directory("directory", "yaml_db", yaml_backend_config);
 
 class YAMLDatabase : public OldDatabaseBackend
 {
   private:
     doid_t m_next_id;
     list<doid_t> m_free_ids;
-    string m_foldername;
+    string m_directory;
     LogCategory *m_log;
 
     inline string filename(doid_t do_id)
     {
         stringstream filename;
-        filename << m_foldername << "/" << do_id << ".yaml";
+        filename << m_directory << "/" << do_id << ".yaml";
         return filename.str();
     }
 
-    bool load(doid_t do_id, YAML::Node &document)
+    inline bool load(doid_t do_id, YAML::Node &document)
     {
         ifstream stream(filename(do_id));
         document = YAML::Load(stream);
@@ -77,7 +78,7 @@ class YAMLDatabase : public OldDatabaseBackend
         out << YAML::EndMap;
 
         fstream file;
-        file.open(m_foldername + "/info.yaml", ios_base::out);
+        file.open(m_directory + "/info.yaml", ios_base::out);
         if(file.is_open()) {
             file << out.c_str();
             file.close();
@@ -157,14 +158,14 @@ class YAMLDatabase : public OldDatabaseBackend
         OldDatabaseBackend(dbeconfig, min_id, max_id),
         m_next_id(min_id),
         m_free_ids(),
-        m_foldername(foldername.get_rval(m_config))
+        m_directory(directory.get_rval(m_config))
     {
         stringstream log_name;
         log_name << "Database-YAML" << "(Range: [" << min_id << ", " << max_id << "])";
         m_log = new LogCategory("yamldb", log_name.str());
 
         // Open database info file
-        ifstream infostream(m_foldername + "/info.yaml");
+        ifstream infostream(m_directory + "/info.yaml");
         YAML::Node document = YAML::Load(infostream);
 
         if(document.IsDefined() && !document.IsNull()) {
