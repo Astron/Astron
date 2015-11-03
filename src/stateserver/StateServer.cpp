@@ -69,7 +69,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
     m_objs[do_id] = obj;
 }
 
-void StateServer::handle_move(DatagramIterator &dgi, channel_t sender) 
+void StateServer::handle_move(DatagramIterator &dgi, channel_t sender)
 {
     doid_t do_id = dgi.read_doid();
     doid_t parent_id = dgi.read_doid();

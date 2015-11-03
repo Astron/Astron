@@ -57,6 +57,7 @@ class DistributedObject : public MDParticipantInterface
     std::unordered_map<zone_t, std::unordered_set<doid_t>> m_zone_objects;
     LogCategory *m_log;
     bool m_in_transfer;
+    std::list<DatagramHandle> m_datagram_queue;
 
     void append_required_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);
     void append_other_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);

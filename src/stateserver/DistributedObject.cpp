@@ -454,7 +454,7 @@ void DistributedObject::handle_transfer(DatagramIterator &dgi, channel_t sender)
     uint32_t context = dgi.read_uint32();
     channel_t target_stateserver = dgi.read_channel();
 
-    DatagramPtr dg = Datagram::create(target_stateserver, m_do_id, STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER);
+    DatagramPtr dg = Datagram::create(target_stateserver, m_do_id, STATESERVER_CREATE_MOVE_OBJECT);
     dg->add_doid(m_do_id);
     dg->add_location(m_parent_id,m_zone_id);
     dg->add_uint16(m_dclass->get_id());
@@ -464,16 +464,34 @@ void DistributedObject::handle_transfer(DatagramIterator &dgi, channel_t sender)
 
 }
 
-void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
+// replay_datagrams emits datagrams from the loading object queue in the order
+// they were received when the object is successully loaded
+void DistributedObject::replay_datagrams(DistributedObject* obj)
+{
+    m_log->trace() << "Replaying datagrams received while moving...\n";
+    for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it) {
+        try {
+            DatagramIterator dgi(*it);
+            dgi.seek_payload();
+            obj->handle_datagram(*it, dgi);
+        } catch(const DatagramIteratorEOF&) {
+            m_log->error() << "Detected truncated datagram while replaying"
+                           " datagrams to object, from loaded object. Skipped.\n";
+        }
+    }
+    m_log->trace() << "... replay finished.\n";
+}
+
+
+
+void DistributedObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
 
     if(m_in_transfer)
     {
-      if (msgtype) {
-        /* code */
-      }
+        m_datagram_queue.push_back(in_dg)
     }
 
     switch(msgtype) {
