@@ -113,7 +113,7 @@ If the perspective is intended to represent a DO on a client, no suffix is used.
 If the perspective is intended to represent the DO on an AI or UD, the object's name is suffixed with "AI" or "UD", respectively.  
 For example, if a developer wished to create an object called a DistributedMonkey, the following classes may exist in the game code:  
 DistributedMonkey: The client-side representation of the object, which handles rendering and sound output.  
-DistributedMoneyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.  
+DistributedMonkeyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.  
 DistributedMonkeyAI: The AI-side representation of the object. This contains all server-side logic. For example, the monkey's movement and feeding behaviors.  
 DistributedMonkeyUD: An UD-side representation of the object. For game objects like this, an UD representation is rarely needed, but can be useful if an UberDOG needs to know of certain events that happen on this game object.
 
