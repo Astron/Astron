@@ -11,6 +11,22 @@ typedef std::function<bool()> test;
 
 void config_error(const std::string& msg);
 
+/* The base ConfigGroup is a "mapping" of config values. Each key in the
+   mapping can correspond to a ConfigVariable or another ConfigGroup (or subclass).
+
+   Other collections of config variables inherit from ConfigGroup
+
+   Example usage:
+
+        general:  # ConfigGroup("general")>
+
+            eventlogger: 127.0.0.1:9090  # ConfigVariable<string>("eventlogger", general_group)
+
+            dc_files:  # ConfigVariable<vector<string>>("dc_files", general_group)
+                - core.dc
+                - game.dc
+                - minigames.dc
+*/
 class ConfigGroup
 {
     template <typename T>
@@ -60,28 +76,92 @@ class ConfigGroup
     void add_variable(const std::string&, rtest);
 };
 
+
+/* A KeyedConfigGroup is a "mapping" of ConfigGroups, where each ConfigGroup's
+   variables are flattened into the parent KeyedConfigGroup, and which grouping
+   of ConfigVariables to use is detected by a known key in the subgroups.
+
+   A KeyedConfigGroup is useful if you have a factory which is expected to be
+   configured to instantiate a single resulting object.
+
+   Example usage:
+
+        backend:  # KeyedConfigGroup("backend", "type")
+            - type: "mongodb"  # ConfigGroup("mongodb", backend_group)
+              A: 3
+
+        backend
+            - type: "mysql"  # ConfigGroup("mysql", backend_group)
+              B: "Tasty food"
+ */
+class KeyedConfigGroup : public ConfigGroup
+{
+  public:
+    KeyedConfigGroup(const std::string& name, const std::string& group_key,
+                     ConfigGroup& parent = ConfigGroup::root());
+    virtual ~KeyedConfigGroup();
+
+    bool validate(ConfigNode node) override;
+
+  protected:
+    std::string m_key;
+
+    // print_keys outputs all valid keys for the list into
+    //     the Config log with Info severity.
+    void print_keys();
+};
+
+
+/* A ConfigList is a "sequence" of ConfigGroups, where each mapping in the
+   sequence is expected to share the same config variables.
+
+   For sequences of scalar values use ConfigVariable<vector<ScalarType>>
+
+   Example usage:
+
+        uberdogs:  # ConfigList("uberdogs")
+
+          - id: 1234             # ConfigVariable("id", uberdogs_group)
+            class: LoginManager  # ConfigVariable("class", uberdogs_group)
+            anonymous: true      # ConfigVariable("anonymous", uberdogs_group)
+
+          - id: 1235
+            class: KillManager
+            anonymous: false
+*/
 class ConfigList : public ConfigGroup
 {
   public:
     ConfigList(const std::string& name, ConfigGroup& parent = ConfigGroup::root());
     virtual ~ConfigList();
 
-    virtual bool validate(ConfigNode node);
+    bool validate(ConfigNode node) override;
 };
 
-class KeyedConfigList : public ConfigGroup
+
+/* A KeyedConfigList is a "sequence" of ConfigGroups, where each mapping in the
+   sequence is expected to have different ConfigVariables as detected by a
+   known key in the subgroups.
+
+   A KeyedConfigList is useful if you have a factory which is expected to be
+   configured to instantiate multiple different objects.
+
+   Example usage:
+
+        roles:  # KeyedConfigList("roles", "type")
+
+            - type: "ConfigGroupAType"  # ConfigGroup("ConfigGroupAType", roles_group)
+              A: 3
+
+            - type: "ConfigGroupBType"  # ConfigGroup("ConfigGroupBType", roles_group)
+              B: "Tasty food"
+ */
+class KeyedConfigList : public KeyedConfigGroup
 {
   public:
     KeyedConfigList(const std::string& name, const std::string &list_key,
                     ConfigGroup& parent = ConfigGroup::root());
     virtual ~KeyedConfigList();
 
-    virtual bool validate(ConfigNode node);
-
-  private:
-    std::string m_key;
-
-    // print_keys outputs all valid keys for the list into
-    //     the Config log with Info severity.
-    void print_keys();
+    bool validate(ConfigNode node) override;
 };

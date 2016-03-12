@@ -608,8 +608,6 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 
         doid_t n_parent = dgi.read_doid();
         zone_t n_zone = dgi.read_zone();
-        doid_t old_parent = dgi.read_doid();
-        zone_t old_zone = dgi.read_zone();
 
         bool disable = true;
         for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {

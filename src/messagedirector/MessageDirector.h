@@ -61,8 +61,8 @@ class MessageDirector : public ChannelMap
     MDUpstream *m_upstream;
 
     // Connected participants
-    std::list<MDParticipantInterface*> m_participants;
-    std::list<MDParticipantInterface*> m_terminated_participants;
+    std::set<MDParticipantInterface*> m_participants;
+    std::set<MDParticipantInterface*> m_terminated_participants;
 
     // Threading stuff:
     bool m_shutdown;
