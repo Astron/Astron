@@ -122,7 +122,7 @@ For example, if you wanted to create a mechanism where players could redeem scra
 
 The ScratchCardManager would have the following two representations:  
 ScratchCardManagerUD: The UD-side representation of the object. The object's doId is hard coded.  
-ScratchCardManager: The client-side representation of the same. The client would be aware of this object because the object type and ID would be hard-coded into the code. The client can send updates on this object to request to redeem codes.
+ScratchCardManager: The client-side representation of the same. The client would be aware of this object because the object type and ID would be hard-coded. The client can send updates on this object to request to redeem codes.
 
 
 
