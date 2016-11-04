@@ -190,12 +190,12 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 {
     if(m_ssl_enabled) {
         async_read(*m_secure_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     } else {
         async_read(*m_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     }

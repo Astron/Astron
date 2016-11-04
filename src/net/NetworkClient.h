@@ -20,7 +20,7 @@ class NetworkHandler
     friend class NetworkClient;
 };
 
-class NetworkClient
+class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 {
   public:
     NetworkClient(NetworkHandler *handler);
