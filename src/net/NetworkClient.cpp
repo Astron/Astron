@@ -25,6 +25,7 @@ NetworkClient::NetworkClient(NetworkHandler *handler, ssl::stream<tcp::socket>* 
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+    assert(!is_connected());
     if(m_ssl_enabled) {
         // This also deletes m_socket:
         delete m_secure_socket;
@@ -134,8 +135,11 @@ void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
     if(m_disconnect_handled) {
         return;
     }
-
     m_disconnect_handled = true;
+
+    if(is_connected()) {
+        m_socket->close();
+    }
 
     if(m_local_disconnect) {
         m_handler->receive_disconnect(m_disconnect_error);
