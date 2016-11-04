@@ -656,9 +656,14 @@ class AstronClient : public Client, public NetworkClient
         return get_remote().port();
     }
 
-    virtual const tcp::socket* get_socket()
+    virtual const std::string get_local_address()
     {
-        return m_socket;
+        return get_local().address().to_string();
+    }
+
+    virtual uint16_t get_local_port()
+    {
+        return get_local().port();
     }
 };
 
