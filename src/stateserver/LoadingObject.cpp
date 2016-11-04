@@ -20,7 +20,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
     m_log = new LogCategory("dbobject", name.str());
     set_con_name(name.str());
 
-    MessageDirector::singleton.subscribe_channel(this, do_id);
+    subscribe_channel(do_id);
 }
 
 LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id,
@@ -35,7 +35,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
     m_log = new LogCategory("dbobject", name.str());
     set_con_name(name.str());
 
-    MessageDirector::singleton.subscribe_channel(this, do_id);
+    subscribe_channel(do_id);
 
     uint16_t field_count = dgi.read_uint16();
     for(int i = 0; i < field_count; ++i) {

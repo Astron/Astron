@@ -33,7 +33,7 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
     for(auto it = ranges.begin(); it != ranges.end(); ++it) {
         channel_t min = range_min.get_rval(*it);
         channel_t max = range_max.get_rval(*it);
-        MessageDirector::singleton.subscribe_range(this, min, max);
+        subscribe_range(min, max);
     }
 
     std::stringstream name;

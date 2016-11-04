@@ -6,8 +6,8 @@ class MDParticipantTest : public MDParticipantInterface
   public:
     MDParticipantTest() : MDParticipantInterface()
     {
-        MessageDirector::singleton.subscribe_channel(this, 100);
-        MessageDirector::singleton.subscribe_channel(this, 200);
+        subscribe_channel(100);
+        subscribe_channel(200);
 
         Datagram dg2;
         dg2.add_uint8(2);
@@ -17,8 +17,8 @@ class MDParticipantTest : public MDParticipantInterface
 
         MessageDirector::singleton.handle_datagram(NULL, dg2);
 
-        MessageDirector::singleton.unsubscribe_channel(this, 100);
-        MessageDirector::singleton.unsubscribe_channel(this, 200);
+        unsubscribe_channel(100);
+        unsubscribe_channel(200);
 
         /*MessageDirector::singleton.subscribe_range(this, 1000, 2000);
         MessageDirector::singleton.unsubscribe_range(this, 1500, 1700);*/
