@@ -16,6 +16,8 @@ class NetworkClient
     // is_connected returns true if the TCP connection is active, or false otherwise
     bool is_connected();
 
+    inline boost::asio::ip::tcp::endpoint get_remote() { return m_remote; }
+
   protected:
     NetworkClient();
     NetworkClient(boost::asio::ip::tcp::socket *socket);
@@ -53,7 +55,6 @@ class NetworkClient
 
     boost::asio::ip::tcp::socket *m_socket;
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
-    boost::asio::ip::tcp::endpoint m_remote;
 
   private:
     typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
@@ -63,6 +64,7 @@ class NetworkClient
 
     void handle_disconnect(const boost::system::error_code &ec);
 
+    boost::asio::ip::tcp::endpoint m_remote;
     bool m_ssl_enabled;
     bool m_disconnect_handled = false;
     bool m_local_disconnect = false;

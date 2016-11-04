@@ -109,8 +109,8 @@ class AstronClient : public Client, public NetworkClient
         }
 
         stringstream ss;
-        ss << "Client (" << m_remote.address().to_string()
-           << ":" << m_remote.port() << ", " << m_channel << ")";
+        ss << "Client (" << get_remote().address().to_string()
+           << ":" << get_remote().port() << ", " << m_channel << ")";
         m_log->set_name(ss.str());
         set_con_name(ss.str());
 
@@ -119,8 +119,8 @@ class AstronClient : public Client, public NetworkClient
 
         // Add remote endpoint to log
         ss.str(""); // empty the stream
-        ss << m_remote.address().to_string()
-           << ":" << m_remote.port();
+        ss << get_remote().address().to_string()
+           << ":" << get_remote().port();
         event.add("remote_address", ss.str());
 
         // Add local endpoint to log
@@ -648,12 +648,12 @@ class AstronClient : public Client, public NetworkClient
 
     virtual const std::string get_remote_address()
     {
-        return m_remote.address().to_string();
+        return get_remote().address().to_string();
     }
 
     virtual uint16_t get_remote_port()
     {
-        return m_remote.port();
+        return get_remote().port();
     }
 
     virtual const tcp::socket* get_socket()
