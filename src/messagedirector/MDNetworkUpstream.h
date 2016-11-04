@@ -6,7 +6,7 @@
 // All MDUpstreams must be thread-safe. This class does not need a lock, however,
 // because all of its operations are based on local variables and the functions
 // of NetworkClient (which are themselves thread-safe)
-class MDNetworkUpstream : public NetworkClient, public MDUpstream
+class MDNetworkUpstream : public NetworkHandler, public MDUpstream
 {
   public:
     MDNetworkUpstream(MessageDirector *md);
@@ -26,4 +26,5 @@ class MDNetworkUpstream : public NetworkClient, public MDUpstream
 
   private:
     MessageDirector *m_message_director;
+    NetworkClient m_client;
 };

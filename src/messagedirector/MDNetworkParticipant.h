@@ -2,7 +2,7 @@
 #include "MessageDirector.h"
 #include "net/NetworkClient.h"
 
-class MDNetworkParticipant : public MDParticipantInterface, public NetworkClient
+class MDNetworkParticipant : public MDParticipantInterface, public NetworkHandler
 {
   public:
     MDNetworkParticipant(boost::asio::ip::tcp::socket *socket);
@@ -10,4 +10,6 @@ class MDNetworkParticipant : public MDParticipantInterface, public NetworkClient
   private:
     virtual void receive_datagram(DatagramHandle dg);
     virtual void receive_disconnect(const boost::system::error_code &ec);
+
+    NetworkClient m_client;
 };
