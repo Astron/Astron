@@ -92,7 +92,7 @@ void NetworkClient::async_receive()
     } catch(const boost::system::system_error &err) {
         // An exception happening when trying to initiate a read is a clear
         // indicator that something happened to the connection. Therefore:
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
@@ -111,17 +111,17 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     } catch(const boost::system::system_error &err) {
         // We assume that the message just got dropped if the remote end died
         // before we could send it.
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
-void NetworkClient::send_disconnect()
+void NetworkClient::disconnect()
 {
     boost::system::error_code ec;
-    send_disconnect(ec);
+    disconnect(ec);
 }
 
-void NetworkClient::send_disconnect(const boost::system::error_code &ec)
+void NetworkClient::disconnect(const boost::system::error_code &ec)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     m_local_disconnect = true;

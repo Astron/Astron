@@ -34,8 +34,8 @@ class NetworkClient
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
     // disconnect closes the TCP connection
-    void send_disconnect();
-    void send_disconnect(const boost::system::error_code &ec);
+    void disconnect();
+    void disconnect(const boost::system::error_code &ec);
     // is_connected returns true if the TCP connection is active, or false otherwise
     bool is_connected();
 

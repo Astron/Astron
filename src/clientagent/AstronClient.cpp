@@ -149,7 +149,7 @@ class AstronClient : public Client, public NetworkHandler
             m_client.send_datagram(resp);
 
             m_clean_disconnect = true;
-            m_client.send_disconnect();
+            m_client.disconnect();
         }
     }
 
@@ -226,7 +226,7 @@ class AstronClient : public Client, public NetworkHandler
     virtual void handle_drop()
     {
         m_clean_disconnect = true;
-        m_client.send_disconnect();
+        m_client.disconnect();
     }
 
     // handle_add_interest should inform the client of an interest added by the server.
@@ -409,7 +409,7 @@ class AstronClient : public Client, public NetworkHandler
             log_event(event);
 
             m_clean_disconnect = true;
-            m_client.send_disconnect();
+            m_client.disconnect();
         }
         break;
         case CLIENT_OBJECT_SET_FIELD:
@@ -437,7 +437,7 @@ class AstronClient : public Client, public NetworkHandler
             log_event(event);
 
             m_clean_disconnect = true;
-            m_client.send_disconnect();
+            m_client.disconnect();
         }
         break;
         case CLIENT_OBJECT_SET_FIELD:
