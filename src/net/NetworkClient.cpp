@@ -70,6 +70,7 @@ void NetworkClient::start_receive()
 {
     try {
         m_remote = m_socket->remote_endpoint();
+        m_local = m_socket->local_endpoint();
     } catch(const boost::system::system_error&) {
         // A client might disconnect immediately after connecting.
         // Since we are in the constructor, ignore it. Resolves #122.

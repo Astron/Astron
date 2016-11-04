@@ -125,8 +125,8 @@ class AstronClient : public Client, public NetworkClient
 
         // Add local endpoint to log
         ss.str(""); // empty the stream
-        ss << m_socket->local_endpoint().address().to_string()
-           << ":" << m_socket->local_endpoint().port();
+        ss << get_local().address().to_string()
+           << ":" << get_local().port();
         event.add("local_address", ss.str());
 
         // Log created event

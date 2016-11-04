@@ -17,6 +17,7 @@ class NetworkClient
     bool is_connected();
 
     inline boost::asio::ip::tcp::endpoint get_remote() { return m_remote; }
+    inline boost::asio::ip::tcp::endpoint get_local() { return m_local; }
 
   protected:
     NetworkClient();
@@ -65,6 +66,7 @@ class NetworkClient
     void handle_disconnect(const boost::system::error_code &ec);
 
     boost::asio::ip::tcp::endpoint m_remote;
+    boost::asio::ip::tcp::endpoint m_local;
     bool m_ssl_enabled;
     bool m_disconnect_handled = false;
     bool m_local_disconnect = false;
