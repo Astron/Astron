@@ -57,24 +57,28 @@ class AstronClient : public Client, public NetworkHandler
 
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
-        Client(config, client_agent), m_client(this, socket), m_config(config),
+        Client(config, client_agent), m_client(this), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
+
+        m_client.set_socket(socket);
     }
 
     AstronClient(ConfigNode config, ClientAgent* client_agent,
                  ssl::stream<tcp::socket> *stream) :
-        Client(config, client_agent), m_client(this, stream), m_config(config),
+        Client(config, client_agent), m_client(this), m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         initialize();
+
+        m_client.set_socket(stream);
     }
 
     ~AstronClient()

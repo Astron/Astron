@@ -10,18 +10,6 @@ NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_so
 {
 }
 
-NetworkClient::NetworkClient(NetworkHandler *handler, tcp::socket *socket) : m_handler(handler), m_socket(socket), m_secure_socket(nullptr),
-    m_ssl_enabled(false)
-{
-    start_receive();
-}
-
-NetworkClient::NetworkClient(NetworkHandler *handler, ssl::stream<tcp::socket>* stream) :
-    m_handler(handler), m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true)
-{
-    start_receive();
-}
-
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);

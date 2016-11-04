@@ -24,8 +24,6 @@ class NetworkClient
 {
   public:
     NetworkClient(NetworkHandler *handler);
-    NetworkClient(NetworkHandler *handler, boost::asio::ip::tcp::socket *socket);
-    NetworkClient(NetworkHandler *handler, boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
     ~NetworkClient();
 
     void set_socket(boost::asio::ip::tcp::socket *socket);
