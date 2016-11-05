@@ -5,6 +5,16 @@
 #include <boost/asio/ssl.hpp>
 #include "util/Datagram.h"
 
+// NOTES:
+//
+// Do not subclass NetworkClient. Instead, you should implement NetworkHandler
+// and instantiate NetworkClient with std::make_shared.
+//
+// To begin receiving, pass it an ASIO socket or SSL stream via set_socket.
+//
+// You must not destruct your NetworkHandler implementor until
+// receive_disconnect is called!
+
 class NetworkClient;
 
 class NetworkHandler
@@ -15,6 +25,9 @@ class NetworkHandler
     virtual void receive_datagram(DatagramHandle dg) = 0;
     // receive_disconnect is called when the remote host closes the
     //     connection or otherwise when the tcp connection is lost.
+    //
+    // NOTE: Your handler pointer must remain valid until this function is
+    //     called, indicating that the NetworkClient has cleaned up.
     virtual void receive_disconnect(const boost::system::error_code &ec) = 0;
 
     friend class NetworkClient;
