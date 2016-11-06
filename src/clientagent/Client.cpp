@@ -767,6 +767,13 @@ InterestOperation::InterestOperation(
     m_timeout->start();
 }
 
+InterestOperation::~InterestOperation()
+{
+    bool canceled = m_timeout->cancel();
+
+    assert(m_finished || canceled);
+}
+
 void InterestOperation::timeout()
 {
     lock_guard<recursive_mutex> lock(m_client->m_client_lock);
@@ -813,6 +820,8 @@ void InterestOperation::finish(bool is_timeout)
         dgi.seek_payload();
         m_client->handle_datagram(*it, dgi);
     }
+
+    m_finished = true;
 
     delete this;
 }
