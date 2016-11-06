@@ -64,9 +64,9 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        initialize();
-
         m_client->set_socket(socket);
+
+        initialize();
     }
 
     AstronClient(ConfigNode config, ClientAgent* client_agent,
@@ -78,9 +78,9 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        initialize();
-
         m_client->set_socket(stream);
+
+        initialize();
     }
 
     void heartbeat_timeout()
