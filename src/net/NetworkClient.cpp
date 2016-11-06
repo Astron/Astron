@@ -199,27 +199,35 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
 
 void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    DatagramPtr dg;
 
-    if(ec) {
-        handle_disconnect(ec);
-        return;
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        if(ec) {
+            handle_disconnect(ec);
+            return;
+        }
+
+        if(bytes_transferred != m_data_size) {
+            boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+            handle_disconnect(epipe);
+            return;
+        }
+
+        dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
+
+        delete [] m_data_buf;
+        m_data_buf = nullptr;
+
+        m_is_data = false;
+        async_receive();
     }
 
-    if(bytes_transferred != m_data_size) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
-        handle_disconnect(epipe);
-        return;
-    }
-
-    DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
+    // Do NOT hold the lock when calling this. Our subclass may acquire a
+    // lock of its own, and the network lock should always be the lowest in the
+    // lock hierarchy.
     m_handler->receive_datagram(dg);
-
-    delete [] m_data_buf;
-    m_data_buf = nullptr;
-
-    m_is_data = false;
-    async_receive();
 }
 
 void NetworkClient::async_send(DatagramHandle dg)
