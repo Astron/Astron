@@ -62,12 +62,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
-	set(CMAKE_CXX_FLAGS_RELEASE
-		"${CMAKE_CXX_FLAGS_RELEASE} -std=c++0x -stdlib=libc++")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -std=c++0x -stdlib=libc++")
-	set(CMAKE_CXX_FLAGS_DEBUG
-		"${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -stdlib=libc++")
+	add_definitions(-std=c++0x -stdlib=libc++)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -91,7 +86,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 ### OS Specific Settings ###
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
-	set(CMAKE_CXX_FLAGS "-pthread -lrt")
+	list(APPEND EXTRA_LIBS pthread rt)
 endif()
 
 ### YAML Depedency -- required by config, used by yaml database ###
@@ -472,7 +467,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
