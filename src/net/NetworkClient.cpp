@@ -6,25 +6,14 @@
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false)
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_secure_socket(nullptr), m_ssl_enabled(false)
 {
-}
-
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_ssl_enabled(false)
-{
-    start_receive();
-}
-
-NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream), m_ssl_enabled(true)
-{
-    start_receive();
 }
 
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
+    assert(!is_connected());
     if(m_ssl_enabled) {
         // This also deletes m_socket:
         delete m_secure_socket;
@@ -70,6 +59,7 @@ void NetworkClient::start_receive()
 {
     try {
         m_remote = m_socket->remote_endpoint();
+        m_local = m_socket->local_endpoint();
     } catch(const boost::system::system_error&) {
         // A client might disconnect immediately after connecting.
         // Since we are in the constructor, ignore it. Resolves #122.
@@ -91,7 +81,7 @@ void NetworkClient::async_receive()
     } catch(const boost::system::system_error &err) {
         // An exception happening when trying to initiate a read is a clear
         // indicator that something happened to the connection. Therefore:
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
@@ -110,17 +100,17 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     } catch(const boost::system::system_error &err) {
         // We assume that the message just got dropped if the remote end died
         // before we could send it.
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
-void NetworkClient::send_disconnect()
+void NetworkClient::disconnect()
 {
     boost::system::error_code ec;
-    send_disconnect(ec);
+    disconnect(ec);
 }
 
-void NetworkClient::send_disconnect(const boost::system::error_code &ec)
+void NetworkClient::disconnect(const boost::system::error_code &ec)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     m_local_disconnect = true;
@@ -133,13 +123,16 @@ void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
     if(m_disconnect_handled) {
         return;
     }
-
     m_disconnect_handled = true;
 
+    if(is_connected()) {
+        m_socket->close();
+    }
+
     if(m_local_disconnect) {
-        receive_disconnect(m_disconnect_error);
+        m_handler->receive_disconnect(m_disconnect_error);
     } else {
-        receive_disconnect(ec);
+        m_handler->receive_disconnect(ec);
     }
 }
 
@@ -183,7 +176,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t byt
 
     DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
     m_is_data = false;
-    receive_datagram(dg);
+    m_handler->receive_datagram(dg);
     async_receive();
 }
 
@@ -197,12 +190,12 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 {
     if(m_ssl_enabled) {
         async_read(*m_secure_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     } else {
         async_read(*m_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     }
