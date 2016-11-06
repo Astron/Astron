@@ -24,7 +24,7 @@ roles:
         max: 1000010
       backend:
         type: yaml
-        foldername: %r
+        directory: %r
 """
 
 class TestDatabaseServerYAML(ProtocolTest, DBServerTestsuite):

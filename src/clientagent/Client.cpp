@@ -446,8 +446,8 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         resp->add_uint32(dgi.read_uint32()); // Context
         resp->add_string(get_remote_address());
         resp->add_uint16(get_remote_port());
-        resp->add_string(get_socket()->local_endpoint().address().to_string());
-        resp->add_uint16(get_socket()->local_endpoint().port());
+        resp->add_string(get_local_address());
+        resp->add_uint16(get_local_port());
         route_datagram(resp);
     }
     break;
@@ -608,8 +608,6 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 
         doid_t n_parent = dgi.read_doid();
         zone_t n_zone = dgi.read_zone();
-        doid_t old_parent = dgi.read_doid();
-        zone_t old_zone = dgi.read_zone();
 
         bool disable = true;
         for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
@@ -763,20 +761,34 @@ InterestOperation::InterestOperation(
         m_client_context(client_context),
         m_request_context(request_context),
         m_parent(parent), m_zones(zones),
-        m_timeout(timeout, bind(&InterestOperation::timeout, this))
+        m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
 {
     m_callers.insert(m_callers.end(), caller);
+    m_timeout->start();
+}
+
+InterestOperation::~InterestOperation()
+{
+    bool canceled = m_timeout->cancel();
+
+    assert(m_finished || canceled);
 }
 
 void InterestOperation::timeout()
 {
     lock_guard<recursive_mutex> lock(m_client->m_client_lock);
     m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
-    finish();
+    finish(true);
 }
 
-void InterestOperation::finish()
+void InterestOperation::finish(bool is_timeout)
 {
+    if(!is_timeout && !m_timeout->cancel())
+    {
+        // The timeout is already running; let it clean up instead.
+        return;
+    }
+
     // Send objects in the initial snapshot
     for(auto it = m_pending_generates.begin(); it != m_pending_generates.end(); ++it) {
         DatagramIterator dgi(*it);
@@ -808,6 +820,8 @@ void InterestOperation::finish()
         dgi.seek_payload();
         m_client->handle_datagram(*it, dgi);
     }
+
+    m_finished = true;
 
     delete this;
 }

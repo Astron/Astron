@@ -2,7 +2,7 @@ Astron Project
 --------------
 _A Server Technology for Realtime Object Networking_
 
-Astron is an open-source, distributed server suite particularily well-suited for powering MMO games.
+Astron is an open-source, distributed server suite particularly well-suited for powering MMO games.
 The design is inspired by a similar unrelated project developed at the Disney Interactive Media
 Group, and used in-house from 2001 until 2013.
 
@@ -47,7 +47,7 @@ Some keywords are listed below:
 > **required** _implies **ram**_  
 > This field must be present at all times. The server will interpret this to mean that the
 > field's value is fundamental to the existence of the object.  Therefore, an object must be given
-> required values on creation, and required values will reset to defaults when indvidually cleared.
+> required values on creation, and required values will reset to defaults when individually cleared.
 > The field is included in all object snapshots to the AI, and all snapshots to the client if it is
 > also visible to the client through ownrecv or clrecv.
 >
@@ -113,7 +113,7 @@ If the perspective is intended to represent a DO on a client, no suffix is used.
 If the perspective is intended to represent the DO on an AI or UD, the object's name is suffixed with "AI" or "UD", respectively.  
 For example, if a developer wished to create an object called a DistributedMonkey, the following classes may exist in the game code:  
 DistributedMonkey: The client-side representation of the object, which handles rendering and sound output.  
-DistributedMoneyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.  
+DistributedMonkeyOV: The client-side owner-view representation of the object. It is like an ai representation of the object, except that it handles fields marked ownrecv instead of fields marked airecv.  
 DistributedMonkeyAI: The AI-side representation of the object. This contains all server-side logic. For example, the monkey's movement and feeding behaviors.  
 DistributedMonkeyUD: An UD-side representation of the object. For game objects like this, an UD representation is rarely needed, but can be useful if an UberDOG needs to know of certain events that happen on this game object.
 
@@ -136,10 +136,10 @@ The message director receives messages from other daemons, and routes them. A "m
 The client agent handles communication with the game client. Game clients do not directly communicate with Astron. Rather, they communicate with the client agent, which in turn communicates with Astron. Most of the security is implemented in the client agent, which enforces the clsend and ownsend keyword restrictions. For example, if a client tries to update a field that is not marked clsend, or ownsend on an object it controls, the client agent will automatically disconnect the client and log a security violation. Since the client agent may have game-specific code, Astron provides a very simple reference implementation. You may want to subclass this base implementation to implement certain game-specific logic, such as allowing clients to create their own avatars directly, without relying on an UberDOG.
 
 ### State Server ###
-The state server manages the short-term state of all DistributedObjects. It stores information such as what type of object it is, what its object ID is, and where it's located within the visibility tree. It is also responsible for persisting the value of "ram" fields. Other components may commuicate with the state server to manipulate the object, query the object's state, and query the existence of all objects in a given location.
+The state server manages the short-term state of all DistributedObjects. It stores information such as what type of object it is, what its object ID is, and where it's located within the visibility tree. It is also responsible for persisting the value of "ram" fields. Other components may communicate with the state server to manipulate the object, query the object's state, and query the existence of all objects in a given location.
 
 ### Database Server ###
-The database server handles long term persistance of "db" fields. It stores these fields in a database of some sort, and can update them, or retreive their value.
+The database server handles long term persistence of "db" fields. It stores these fields in a database of some sort, and can update them, or retrieve their value.
 
 ### Database-State Server ###
 This is a specialized State Server for tracking the short-term state of objects that exist in the database. A DB-SS behaves exactly the same as a State Server, however, it also listens for updates to "db"-keyworded fields and informs the database of the change.  
@@ -148,27 +148,27 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 
 
 ## Building ##
-See the [build instructions](doc/building/build-readme.md).
+See the [build instructions](docs/building/build-readme.md).
 
 
 
 ## Development ##
 
 ### The Team ###
-* **Kestred** is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
-* **CFSworks** is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
-* **AlJaMa** is a bouncing board for architectural design and problem solving.  He works with OS X support, feature brainstorming, and some libastron design and implementation.
+* **@Kestred** Kevin Stenerson is the project maintainer and one of its architects. He does Astron maintenance (bugfixes, binary-distributions, etc), design revisions, new feature planning & implementation, architecture scalability, and application/network interface cleanliness.
+* **@CFSworks** Sam Edwards is the project author and the original and continuing architect. He provides guidance on the organization of the code and system architecture. He also works on major rewrites, architecture scalability, bugfixes, and efficiency improvements.
+* **@AlJaMa** Alex Mault is a bouncing board for architectural design and problem solving.  He works with OS X support, feature brainstorming, and some libastron design and implementation.
 
 ### Major Contributors ###
-* **MMavipc** -- wrote a lot of code to help get Astron out of its infancy
-* **bobbybee/shadowcoder** -- solves outstanding issues, bug fixes, feature implementation
-* **jjkoletar** -- early project inspiration/design, bug fixes
+* **@MMavipc** Maverick Mosher wrote a great deal of code to help get Astron out of its infancy.
+* **@bobbybee** Alyssa Rosenzweig solves outstanding issues, bug fixes, and implements miscellaneous features.
+* **@jjkoletar** Jeremy Koletar was key in Astron's early inspiration and initial design; he also works on bug fixes.
 
 ### License ###
 The Astron project is currently available under the Modified BSD license (BSD 3-Clause). The terms of this license are available in the "LICENSE.md" file of this archive.
 
 ### Contributing ###
-We welcome any potential contributers! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
+We welcome any potential contributors! Don't just start coding though; we all talk about what we're doing, what is next, etc. on IRC.
 Please come in and tell us what you'd like to do, or ask what we could use help on.
 
 #### Join us at: [#Astron on irc.freenode.net](irc://irc.freenode.net/Astron)

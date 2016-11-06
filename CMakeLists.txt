@@ -91,7 +91,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 ### OS Specific Settings ###
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
-	set(CMAKE_CXX_FLAGS "-pthread")
+	set(CMAKE_CXX_FLAGS "-pthread -lrt")
 endif()
 
 ### YAML Depedency -- required by config, used by yaml database ###
@@ -117,11 +117,11 @@ endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-find_package(Boost COMPONENTS system filesystem)
+find_package(Boost COMPONENTS system filesystem thread regex)
 if(NOT Boost_FOUND)
 	unset(Boost_USE_STATIC_LIBS CACHE)
 	set (Boost_USE_STATIC_LIBS OFF CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-	find_package(Boost COMPONENTS system filesystem)
+	find_package(Boost COMPONENTS system filesystem thread regex)
 	if(NOT Boost_FOUND)
 		unset(Boost_USE_STATIC_LIBS CACHE)
 	endif()
@@ -167,6 +167,9 @@ if(BUILD_TESTS)
 	)
 endif()
 
+# DB backends can add libraries here as needed:
+set(DB_LIBRARY_NAMES)
+
 set(BUILD_DBSERVER ON CACHE BOOL "If on, Database Server will be built into binary")
 if(BUILD_DBSERVER)
 	add_definitions(-DBUILD_DBSERVER)
@@ -195,6 +198,29 @@ if(BUILD_DBSERVER)
 		add_test(db_yaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_yaml.py")
 		add_test(validate_config_dbyaml "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbyaml.py")
 		set(PYTHON_TESTS ${PYTHON_TESTS} db_yaml validate_config_dbyaml)
+	endif()
+
+	### Check for the presence of the MongoDB client library ###
+	find_package(MongoDB)
+
+	if(MONGO_FOUND)
+		set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
+		message(STATUS "MongoDB client library found")
+	else()
+		unset(BUILD_DB_MONGO CACHE)
+		message(STATUS "MongoDB client library not found")
+	endif()
+	if(BUILD_DB_MONGO)
+		list(APPEND DBSERVER_FILES
+		     src/database/MongoDatabase.cpp)
+		include_directories("${MONGO_INCLUDE_DIR}")
+		link_directories(${MONGO_LIBRARY_DIR})
+		list(APPEND DB_LIBRARY_NAMES mongoclient)
+
+		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
+		add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
+		# TODO: Config validation test
+		list(APPEND PYTHON_TESTS db_mongo)
 	endif()
 
 	### Check for soci and if available, compile SQL database support ###
@@ -249,9 +275,9 @@ if(BUILD_DBSERVER)
 				${DBSERVER_FILES}
 				src/database/SociSQLDatabase.cpp
 			)
-			set(SOCI_LIBRARY_NAMES soci_core dl)
+    list(APPEND DB_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
-				set(SOCI_LIBRARY_NAMES ${SOCI_LIBRARY_NAMES} pq)
+        list(APPEND DB_LIBRARY_NAMES pq)
 				add_test(db_pgsql "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
 				add_test(validate_config_dbpostgres
 					 "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
@@ -271,6 +297,7 @@ else()
 	unset(BUILD_DB_MYSQL CACHE)
 	unset(BUILD_DB_POSTGRESQL CACHE)
 	unset(BUILD_DB_SQLITE CACHE)
+	unset(BUILD_DB_MONGO CACHE)
 endif()
 
 set(BUILD_STATESERVER ON CACHE BOOL "If on, State Server will be built into binary")
@@ -445,7 +472,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${Boost_LIBRARIES} ${SOCI_LIBRARY_NAMES})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

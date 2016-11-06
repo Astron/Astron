@@ -4,15 +4,28 @@
 #include <boost/bind.hpp>
 
 MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
-    : MDParticipantInterface(), NetworkClient(socket)
+    : MDParticipantInterface(), m_client(std::make_shared<NetworkClient>(this))
 {
     set_con_name("Network Participant");
+
+    m_client->set_socket(socket);
+}
+
+MDNetworkParticipant::~MDNetworkParticipant()
+{
+    m_client->disconnect();
 }
 
 void MDNetworkParticipant::handle_datagram(DatagramHandle dg, DatagramIterator&)
 {
-    logger().trace() << "MDNetworkParticipant sending to downstream MessageDirector.\n";
-    send_datagram(dg);
+    logger().trace() << "MDNetworkParticipant sending to downstream MD" << std::endl;
+    try {
+        m_client->send_datagram(dg);
+    } catch(const boost::system::system_error &) {
+        logger().warning() << "Received a system error while sending a datagram to a network "
+                           "participant (the participant may have lost connection)." << std::endl;
+        return;
+    }
 }
 
 void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
@@ -75,7 +88,8 @@ void MDNetworkParticipant::receive_datagram(DatagramHandle dg)
 void MDNetworkParticipant::receive_disconnect(const boost::system::error_code &ec)
 {
     logger().info() << "Lost connection from "
-                    << m_remote.address() << ":" << m_remote.port() << ": "
+                    << m_client->get_remote().address() << ":"
+		    << m_client->get_remote().port() << ": "
                     << ec.message() << std::endl;
     terminate();
 }

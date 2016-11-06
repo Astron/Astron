@@ -7,30 +7,15 @@ using namespace std;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient() : m_socket(nullptr), m_secure_socket(nullptr),
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_secure_socket(nullptr),
     m_async_timer(io_service), m_send_queue()
 {
-}
-
-NetworkClient::NetworkClient(tcp::socket *socket) : m_socket(socket), m_secure_socket(nullptr),
-    m_async_timer(io_service), m_send_queue()
-{
-    start_receive();
-}
-
-NetworkClient::NetworkClient(ssl::stream<tcp::socket>* stream) :
-    m_socket(&stream->next_layer()), m_secure_socket(stream),
-    m_async_timer(io_service), m_send_queue()
-{
-    start_receive();
 }
 
 NetworkClient::~NetworkClient()
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
-
-    send_disconnect();
-
+    assert(!is_connected());
     if(m_secure_socket) {
         // This also deletes m_socket:
         delete m_secure_socket;
@@ -96,7 +81,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
         {
             boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space, boost::system::system_category());
-            send_disconnect(enobufs);
+            disconnect(enobufs);
         }
     }
     else
@@ -118,6 +103,7 @@ void NetworkClient::start_receive()
 
     try {
         m_remote = m_socket->remote_endpoint();
+        m_local = m_socket->local_endpoint();
     } catch(const boost::system::system_error&) {
         // A client might disconnect immediately after connecting.
         // Since we are in the constructor, ignore it. Resolves #122.
@@ -139,17 +125,17 @@ void NetworkClient::async_receive()
     } catch(const boost::system::system_error &err) {
         // An exception happening when trying to initiate a read is a clear
         // indicator that something happened to the connection. Therefore:
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
-void NetworkClient::send_disconnect()
+void NetworkClient::disconnect()
 {
     boost::system::error_code ec;
-    send_disconnect(ec);
+    disconnect(ec);
 }
 
-void NetworkClient::send_disconnect(const boost::system::error_code &ec)
+void NetworkClient::disconnect(const boost::system::error_code &ec)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -175,13 +161,16 @@ void NetworkClient::handle_disconnect(const boost::system::error_code &ec)
     if(m_disconnect_handled) {
         return;
     }
-
     m_disconnect_handled = true;
 
+    if(is_connected()) {
+        m_socket->close();
+    }
+
     if(m_local_disconnect) {
-        receive_disconnect(m_disconnect_error);
+        m_handler->receive_disconnect(m_disconnect_error);
     } else {
-        receive_disconnect(ec);
+        m_handler->receive_disconnect(ec);
     }
 }
 
@@ -224,7 +213,7 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t byt
     }
 
     DatagramPtr dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
-    receive_datagram(dg);
+    m_handler->receive_datagram(dg);
 
     delete [] m_data_buf;
     m_data_buf = nullptr;
@@ -251,7 +240,7 @@ void NetworkClient::async_send(DatagramHandle dg)
     {
         // An exception happening when trying to initiate a send is a clear
         // indicator that something happened to the connection, therefore:
-        send_disconnect(err.code());
+        disconnect(err.code());
     }
 }
 
@@ -270,7 +259,7 @@ void NetworkClient::send_finished(const boost::system::error_code &ec)
     if(ec.value() != 0)
     {
         m_is_sending = false;
-        send_disconnect(ec);
+        disconnect(ec);
         return;
     }
 
@@ -298,7 +287,7 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
     if(ec != boost::asio::error::operation_aborted)
     {
         boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out, boost::system::system_category());
-        send_disconnect(etimeout);
+        disconnect(etimeout);
     }
 }
 
@@ -309,12 +298,12 @@ void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t c
 
     if(m_secure_socket) {
         async_read(*m_secure_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     } else {
         async_read(*m_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, this,
+                   boost::bind(callback, shared_from_this(),
                                boost::asio::placeholders::error,
                                boost::asio::placeholders::bytes_transferred));
     }
@@ -329,7 +318,7 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length)
     if(m_write_timeout > 0)
     {
         m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
-        m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, this,
+        m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, shared_from_this(),
                                              boost::asio::placeholders::error));
     }
 
@@ -337,13 +326,13 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length)
     if(m_secure_socket)
     {
         async_write(*m_secure_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, this,
+                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
                     boost::asio::placeholders::error));
     }
     else
     {
         async_write(*m_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, this,
+                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
                     boost::asio::placeholders::error));
     }
 }
