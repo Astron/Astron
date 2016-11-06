@@ -59,8 +59,12 @@ void Client::annihilate()
         route_datagram(dg);
     }
 
-    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-        it->second->finish();
+    // Note that finish() normally results in the InterestOperation deleting
+    // itself from m_pending_interests, so we have to be VERY careful with this
+    // for loop. Using (it++) ensures that 'it' is advanced BEFORE finish() is
+    // called; doing so after means the iterator is invalid!
+    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end();) {
+        (it++)->second->finish();
     }
 
     // Tell the MD this client is gone
