@@ -6,7 +6,7 @@
 using namespace std;
 using dclass::Class;
 
-Client::Client(ConfigNode config, ClientAgent* client_agent) :
+Client::Client(ConfigNode, ClientAgent* client_agent) :
     m_client_agent(client_agent)
 {
     m_channel = m_client_agent->m_ct.alloc_channel();
