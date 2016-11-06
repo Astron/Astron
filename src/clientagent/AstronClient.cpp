@@ -203,6 +203,10 @@ class AstronClient : public Client, public NetworkClient
             log_event(event);
         }
 
+        if(m_heartbeat_timer != nullptr) {
+            m_heartbeat_timer->cancel();
+        }
+
         annihilate();
     }
 
