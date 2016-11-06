@@ -28,9 +28,11 @@ Client::Client(ConfigNode config, ClientAgent* client_agent) :
 
 Client::~Client()
 {
-    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-        delete it->second;
-    }
+    // We need to be holding our own lock, just in case another thread is busy
+    // doing some last-microsecond cleanup.
+    lock_guard<recursive_mutex> lock(m_client_lock);
+
+    assert(!m_pending_interests.size());
 
     if(m_log) {
         delete m_log;
@@ -55,6 +57,10 @@ void Client::annihilate()
         DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
         dg->add_doid(do_id);
         route_datagram(dg);
+    }
+
+    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
+        it->second->finish();
     }
 
     // Tell the MD this client is gone
@@ -769,9 +775,7 @@ InterestOperation::InterestOperation(
 
 InterestOperation::~InterestOperation()
 {
-    bool canceled = m_timeout->cancel();
-
-    assert(m_finished || canceled);
+    assert(m_finished);
 }
 
 void InterestOperation::timeout()
