@@ -52,7 +52,7 @@ class AstronClient : public Client, public NetworkClient
 
     //Heartbeat
     long m_heartbeat_timeout;
-    Timeout *m_heartbeat_timer = nullptr;
+    std::shared_ptr<Timeout> m_heartbeat_timer = nullptr;
 
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
@@ -76,13 +76,6 @@ class AstronClient : public Client, public NetworkClient
         initialize();
     }
 
-    ~AstronClient()
-    {
-        if(m_heartbeat_timer != nullptr) {
-            delete m_heartbeat_timer;
-        }
-    }
-
     void heartbeat_timeout()
     {
         lock_guard<recursive_mutex> lock(m_client_lock);
@@ -94,8 +87,9 @@ class AstronClient : public Client, public NetworkClient
     {
         //If heartbeat, start the heartbeat timer now.
         if(m_heartbeat_timeout != 0) {
-            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
+            m_heartbeat_timer = std::make_shared<Timeout>(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
                                             this));
+            m_heartbeat_timer->start();
         }
 
         // Set interest permissions

@@ -761,20 +761,27 @@ InterestOperation::InterestOperation(
         m_client_context(client_context),
         m_request_context(request_context),
         m_parent(parent), m_zones(zones),
-        m_timeout(timeout, bind(&InterestOperation::timeout, this))
+        m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
 {
     m_callers.insert(m_callers.end(), caller);
+    m_timeout->start();
 }
 
 void InterestOperation::timeout()
 {
     lock_guard<recursive_mutex> lock(m_client->m_client_lock);
     m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
-    finish();
+    finish(true);
 }
 
-void InterestOperation::finish()
+void InterestOperation::finish(bool is_timeout)
 {
+    if(!is_timeout && !m_timeout->cancel())
+    {
+        // The timeout is already running; let it clean up instead.
+        return;
+    }
+
     // Send objects in the initial snapshot
     for(auto it = m_pending_generates.begin(); it != m_pending_generates.end(); ++it) {
         DatagramIterator dgi(*it);
