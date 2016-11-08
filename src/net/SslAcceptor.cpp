@@ -32,18 +32,31 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
         return;
     }
 
-    // Dispatch a handshake
+    // Dispatch a handshake (and appropriate timeout)
+    auto timeout = std::make_shared<Timeout>(
+            m_handshake_timeout,
+            std::bind(&SslAcceptor::handle_timeout, this, socket));
     socket->async_handshake(ssl::stream<tcp::socket>::server,
                             boost::bind(&SslAcceptor::handle_handshake, this,
-                                        socket, boost::asio::placeholders::error));
+                                        socket, timeout,
+                                        boost::asio::placeholders::error));
+    timeout->start();
 
     // Start accepting again:
     start_accept();
 }
 
 void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
+                                   std::shared_ptr<Timeout> timeout,
                                    const boost::system::error_code &ec)
 {
+    if(!timeout->cancel()) {
+        // We failed to cancel the timeout! That means it ran and got to our
+        // socket first. Oh well.
+        delete socket;
+        return;
+    }
+
     if(!m_started) {
         // We were turned off sometime before this operation completed; ignore.
         delete socket;
@@ -58,4 +71,12 @@ void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
 
     // Inform the callback:
     m_callback(socket);
+}
+
+void SslAcceptor::handle_timeout(ssl::stream<tcp::socket> *socket)
+{
+    // Handshake didn't complete in time. Kick out the client:
+    socket->next_layer().close();
+    // Socket NOT deleted here. handle_handshake above will run with an error
+    // code.
 }
