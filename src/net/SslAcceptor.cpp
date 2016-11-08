@@ -44,6 +44,12 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
 void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
                                    const boost::system::error_code &ec)
 {
+    if(!m_started) {
+        // We were turned off sometime before this operation completed; ignore.
+        delete socket;
+        return;
+    }
+
     if(ec.value() != 0) {
         // The handshake failed for some reason. Free the socket and try again:
         delete socket;
