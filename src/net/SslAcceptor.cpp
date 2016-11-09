@@ -63,14 +63,18 @@ void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
         return;
     }
 
-    if(ec.value() != 0) {
+    boost::system::error_code endpoint_ec;
+    tcp::endpoint remote = socket->next_layer().remote_endpoint(endpoint_ec);
+    tcp::endpoint local = socket->next_layer().local_endpoint(endpoint_ec);
+
+    if(ec || endpoint_ec) {
         // The handshake failed for some reason. Free the socket and try again:
         delete socket;
         return;
     }
 
     // Inform the callback:
-    m_callback(socket);
+    m_callback(socket, remote, local);
 }
 
 void SslAcceptor::handle_timeout(ssl::stream<tcp::socket> *socket)

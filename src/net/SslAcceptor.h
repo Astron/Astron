@@ -5,7 +5,7 @@
 #include <boost/asio/ssl.hpp>
 namespace ssl = boost::asio::ssl;
 
-typedef std::function<void(ssl::stream<tcp::socket>*)> SslAcceptorCallback;
+typedef std::function<void(ssl::stream<tcp::socket>*, tcp::endpoint, tcp::endpoint)> SslAcceptorCallback;
 
 class SslAcceptor : public NetworkAcceptor
 {

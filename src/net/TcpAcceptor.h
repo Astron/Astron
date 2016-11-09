@@ -2,7 +2,7 @@
 #include "NetworkAcceptor.h"
 #include <functional>
 
-typedef std::function<void(tcp::socket*)> TcpAcceptorCallback;
+typedef std::function<void(tcp::socket*, tcp::endpoint, tcp::endpoint)> TcpAcceptorCallback;
 
 class TcpAcceptor : public NetworkAcceptor
 {

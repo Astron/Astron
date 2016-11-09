@@ -24,7 +24,11 @@ void TcpAcceptor::handle_accept(tcp::socket *socket, const boost::system::error_
         return;
     }
 
-    if(ec.value() != 0) {
+    boost::system::error_code endpoint_ec;
+    tcp::endpoint remote = socket->remote_endpoint(endpoint_ec);
+    tcp::endpoint local = socket->local_endpoint(endpoint_ec);
+
+    if(ec || endpoint_ec) {
         // The accept failed for some reason. Free the socket and try again:
         delete socket;
         start_accept();
@@ -32,7 +36,7 @@ void TcpAcceptor::handle_accept(tcp::socket *socket, const boost::system::error_
     }
 
     // Inform the callback:
-    m_callback(socket);
+    m_callback(socket, remote, local);
 
     // Start accepting again:
     start_accept();
