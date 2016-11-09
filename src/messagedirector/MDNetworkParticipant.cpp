@@ -8,7 +8,7 @@ MDNetworkParticipant::MDNetworkParticipant(boost::asio::ip::tcp::socket *socket)
 {
     set_con_name("Network Participant");
 
-    m_client->set_socket(socket);
+    m_client->initialize(socket);
 }
 
 MDNetworkParticipant::~MDNetworkParticipant()

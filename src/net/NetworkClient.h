@@ -10,7 +10,7 @@
 // Do not subclass NetworkClient. Instead, you should implement NetworkHandler
 // and instantiate NetworkClient with std::make_shared.
 //
-// To begin receiving, pass it an ASIO socket or SSL stream via set_socket.
+// To begin receiving, pass it an ASIO socket or SSL stream via initialize().
 //
 // You must not destruct your NetworkHandler implementor until
 // receive_disconnect is called!
@@ -39,8 +39,8 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     NetworkClient(NetworkHandler *handler);
     ~NetworkClient();
 
-    void set_socket(boost::asio::ip::tcp::socket *socket);
-    void set_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void initialize(boost::asio::ip::tcp::socket *socket);
+    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
@@ -56,7 +56,7 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
   private:
     /* Asynchronous call loop */
 
-    // start_receive is called by the constructor or set_socket
+    // start_receive is called by initialize()
     //     after m_socket is set to a provided socket.
     void start_receive();
 

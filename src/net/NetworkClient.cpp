@@ -25,7 +25,7 @@ NetworkClient::~NetworkClient()
     delete [] m_data_buf;
 }
 
-void NetworkClient::set_socket(tcp::socket *socket)
+void NetworkClient::initialize(tcp::socket *socket)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     if(m_socket) {
@@ -42,7 +42,7 @@ void NetworkClient::set_socket(tcp::socket *socket)
     start_receive();
 }
 
-void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
+void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     if(m_socket) {
@@ -52,7 +52,7 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
     m_ssl_enabled = true;
     m_secure_socket = stream;
 
-    set_socket(&stream->next_layer());
+    initialize(&stream->next_layer());
 }
 
 void NetworkClient::start_receive()
