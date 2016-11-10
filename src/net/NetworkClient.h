@@ -56,11 +56,12 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
   private:
     /* Asynchronous call loop */
 
-    // start_receive is called by initialize()
-    //     after m_socket is set to a provided socket.
-    void start_receive();
+    // determine_endpoints is called by initialize() after m_socket is set to a
+    //     provided socket.
+    bool determine_endpoints(boost::asio::ip::tcp::endpoint &remote,
+                             boost::asio::ip::tcp::endpoint &local);
 
-    // async_receive is called by start_receive to begin receiving data, then by receive_size
+    // async_receive is called by initialize() to begin receiving data, then by receive_size
     //     or receive_data to wait for the next set of data.
     void async_receive();
 

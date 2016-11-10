@@ -39,7 +39,9 @@ void NetworkClient::initialize(tcp::socket *socket)
     boost::asio::ip::tcp::no_delay nodelay(true);
     m_socket->set_option(nodelay);
 
-    start_receive();
+    if(determine_endpoints(m_remote, m_local)) {
+        async_receive();
+    }
 }
 
 void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
@@ -55,18 +57,18 @@ void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
     initialize(&stream->next_layer());
 }
 
-void NetworkClient::start_receive()
+bool NetworkClient::determine_endpoints(tcp::endpoint &remote, tcp::endpoint &local)
 {
-    try {
-        m_remote = m_socket->remote_endpoint();
-        m_local = m_socket->local_endpoint();
-    } catch(const boost::system::system_error&) {
-        // A client might disconnect immediately after connecting.
-        // Since we are in the constructor, ignore it. Resolves #122.
-        // When the owner of the NetworkClient attempts to send or receive,
-        // the error will occur and we'll cleanup then;
+    boost::system::error_code ec;
+    remote = m_socket->remote_endpoint(ec);
+    local = m_socket->local_endpoint(ec);
+
+    if(ec) {
+        disconnect(ec);
+        return false;
+    } else {
+        return true;
     }
-    async_receive();
 }
 
 void NetworkClient::async_receive()
