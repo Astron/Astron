@@ -39,9 +39,24 @@ void NetworkClient::initialize(tcp::socket *socket)
     boost::asio::ip::tcp::no_delay nodelay(true);
     m_socket->set_option(nodelay);
 
-    if(determine_endpoints(m_remote, m_local)) {
+    bool endpoints_set = (m_remote.port() && m_local.port());
+    if(endpoints_set || determine_endpoints(m_remote, m_local)) {
         async_receive();
     }
+}
+
+void NetworkClient::initialize(tcp::socket *socket,
+                               const tcp::endpoint &remote,
+                               const tcp::endpoint &local)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    if(m_socket) {
+        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+    }
+    m_remote = remote;
+    m_local = local;
+
+    initialize(socket);
 }
 
 void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
@@ -55,6 +70,21 @@ void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
     m_secure_socket = stream;
 
     initialize(&stream->next_layer());
+}
+
+void NetworkClient::initialize(ssl::stream<tcp::socket> *stream,
+                               const tcp::endpoint &remote,
+                               const tcp::endpoint &local)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    if(m_socket) {
+        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+    }
+
+    m_ssl_enabled = true;
+    m_secure_socket = stream;
+
+    initialize(&stream->next_layer(), remote, local);
 }
 
 bool NetworkClient::determine_endpoints(tcp::endpoint &remote, tcp::endpoint &local)

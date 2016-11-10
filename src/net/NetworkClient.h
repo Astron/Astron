@@ -40,7 +40,13 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     ~NetworkClient();
 
     void initialize(boost::asio::ip::tcp::socket *socket);
+    void initialize(boost::asio::ip::tcp::socket *socket,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
     void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
