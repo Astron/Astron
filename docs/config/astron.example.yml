@@ -52,6 +52,15 @@ roles:
       #manual_dc_hash: 0xABCD1234
       version: "FooGame v7.0"
 
+      # "haproxy" can be turned on to indicate that incoming connections will
+      # be prefixed with HAProxy's PROXY protocol, and the client address
+      # should be read from this instead.
+      #
+      # You should enable this if you are running your Astron CAs behind
+      # HAProxy. In your HAProxy config, you must also add either the
+      # "send-proxy-v2" (recommended) or the "send-proxy" option (not recommended).
+      #haproxy: true
+
       # TLS is an optional section (though it should ALWAYS be used in production)
       # It enables SSL/TLS, allowing you to configure a number of TLS options.
       tls:

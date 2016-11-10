@@ -17,6 +17,7 @@ namespace filesystem = boost::filesystem;
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
 static ConfigVariable<string> server_version("version", "dev", clientagent_config);
+static ConfigVariable<bool> behind_haproxy("haproxy", false, clientagent_config);
 static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0, clientagent_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 
@@ -186,6 +187,8 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                                  std::placeholders::_3);
         m_net_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
     }
+
+    m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
     // Begin listening for new Clients
     boost::system::error_code ec;
