@@ -16,4 +16,6 @@ class TcpAcceptor : public NetworkAcceptor
 
     virtual void start_accept();
     void handle_accept(tcp::socket *socket, const boost::system::error_code &ec);
+    void handle_endpoints(tcp::socket *socket, const boost::system::error_code &ec,
+                          const tcp::endpoint &remote, const tcp::endpoint &local);
 };

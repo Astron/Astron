@@ -22,6 +22,13 @@ class SslAcceptor : public NetworkAcceptor
 
     virtual void start_accept();
     void handle_accept(ssl::stream<tcp::socket> *socket, const boost::system::error_code &ec);
-    void handle_handshake(ssl::stream<tcp::socket> *socket, std::shared_ptr<Timeout> timeout, const boost::system::error_code &ec);
+    void handle_endpoints(ssl::stream<tcp::socket> *socket,
+                          const boost::system::error_code &ec,
+                          const boost::asio::ip::tcp::endpoint &remote,
+                          const boost::asio::ip::tcp::endpoint &local);
+    void handle_handshake(ssl::stream<tcp::socket> *socket, std::shared_ptr<Timeout> timeout,
+                          const boost::system::error_code &ec,
+                          const boost::asio::ip::tcp::endpoint &remote,
+                          const boost::asio::ip::tcp::endpoint &local);
     void handle_timeout(ssl::stream<tcp::socket> *socket);
 };
