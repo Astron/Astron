@@ -46,8 +46,6 @@ static InvalidChannelConstraint max_not_invalid(max_channel);
 static ReservedChannelConstraint min_not_reserved(min_channel);
 static ReservedChannelConstraint max_not_reserved(max_channel);
 
-static bool have_warned_ca_insecure = false;
-
 ConfigGroup ca_client_config("client", clientagent_config);
 ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
 bool have_client_type(const string& backend)
@@ -105,14 +103,6 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                                  std::placeholders::_2,
                                                  std::placeholders::_3);
         m_net_acceptor = new TcpAcceptor(io_service, callback);
-
-        if(!have_warned_ca_insecure) {
-            have_warned_ca_insecure = true;
-            m_log->warning() << "\n==============================================\n"
-                             << "      CA not configured to use SSL!!!!!!\n"
-                             << " --- Do not use this config in production ---\n"
-                             << "==============================================\n";
-        }
     }
 
     // Handle SSL requested, but some information missing
