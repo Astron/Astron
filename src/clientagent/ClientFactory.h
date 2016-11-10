@@ -9,9 +9,13 @@ class BaseClientType
 {
   public:
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ip::tcp::socket *socket) = 0;
+                                boost::asio::ip::tcp::socket *socket,
+                                const boost::asio::ip::tcp::endpoint &remote,
+                                const boost::asio::ip::tcp::endpoint &local) = 0;
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream) = 0;
+                                boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                                const boost::asio::ip::tcp::endpoint &remote,
+                                const boost::asio::ip::tcp::endpoint &local) = 0;
   protected:
     BaseClientType(const std::string &name);
 };
@@ -27,15 +31,19 @@ class ClientType : public BaseClientType
     }
 
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ip::tcp::socket *socket)
+                                boost::asio::ip::tcp::socket *socket,
+                                const boost::asio::ip::tcp::endpoint &remote,
+                                const boost::asio::ip::tcp::endpoint &local)
     {
-        return new T(config, client_agent, socket);
+        return new T(config, client_agent, socket, remote, local);
     }
 
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream)
+                                boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                                const boost::asio::ip::tcp::endpoint &remote,
+                                const boost::asio::ip::tcp::endpoint &local)
     {
-        return new T(config, client_agent, stream);
+        return new T(config, client_agent, stream, remote, local);
     }
 };
 
@@ -47,10 +55,14 @@ class ClientFactory
 
     // instantiate_client creates a new Client object of type 'client_type'.
     Client* instantiate_client(const std::string &client_type, ConfigNode config,
-                               ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket);
+                               ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket,
+                               const boost::asio::ip::tcp::endpoint &remote,
+                               const boost::asio::ip::tcp::endpoint &local);
     Client* instantiate_client(const std::string &client_type, ConfigNode config,
                                ClientAgent* client_agent,
-                               boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+                               boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                               const boost::asio::ip::tcp::endpoint &remote,
+                               const boost::asio::ip::tcp::endpoint &local);
     // add_client_type adds a factory for client of type 'name'
     // It is called automatically when instantiating a new ClientType.
     void add_client_type(const std::string &name, BaseClientType *factory);

@@ -35,10 +35,14 @@ class ClientAgent : public Role
     ~ClientAgent();
 
     // handle_tcp generates a new Client object from a raw tcp connection.
-    void handle_tcp(boost::asio::ip::tcp::socket *socket);
+    void handle_tcp(boost::asio::ip::tcp::socket *socket,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
 
     // handle_ssl generates a new Client object from an ssl stream.
-    void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
 
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,

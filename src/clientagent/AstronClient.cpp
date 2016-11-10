@@ -56,7 +56,8 @@ class AstronClient : public Client, public NetworkHandler
     std::shared_ptr<Timeout> m_heartbeat_timer = nullptr;
 
   public:
-    AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
+    AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket,
+                 const tcp::endpoint &remote, const tcp::endpoint &local) :
         Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
         m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
@@ -64,13 +65,14 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        m_client->initialize(socket);
+        m_client->initialize(socket, remote, local);
 
         initialize();
     }
 
     AstronClient(ConfigNode config, ClientAgent* client_agent,
-                 ssl::stream<tcp::socket> *stream) :
+                 ssl::stream<tcp::socket> *stream,
+                 const tcp::endpoint &remote, const tcp::endpoint &local) :
         Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
         m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
@@ -78,7 +80,7 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        m_client->initialize(stream);
+        m_client->initialize(stream, remote, local);
 
         initialize();
     }
