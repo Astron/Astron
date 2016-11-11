@@ -1,19 +1,10 @@
 #pragma once
 #include <list>
+#include <queue>
 #include <mutex>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "util/Datagram.h"
-
-// NOTES:
-//
-// Do not subclass NetworkClient. Instead, you should implement NetworkHandler
-// and instantiate NetworkClient with std::make_shared.
-//
-// To begin receiving, pass it an ASIO socket or SSL stream via set_socket.
-//
-// You must not destruct your NetworkHandler implementor until
-// receive_disconnect is called!
 
 class NetworkClient;
 
@@ -25,9 +16,6 @@ class NetworkHandler
     virtual void receive_datagram(DatagramHandle dg) = 0;
     // receive_disconnect is called when the remote host closes the
     //     connection or otherwise when the tcp connection is lost.
-    //
-    // NOTE: Your handler pointer must remain valid until this function is
-    //     called, indicating that the NetworkClient has cleaned up.
     virtual void receive_disconnect(const boost::system::error_code &ec) = 0;
 
     friend class NetworkClient;
@@ -41,6 +29,8 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
     void set_socket(boost::asio::ip::tcp::socket *socket);
     void set_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void set_write_timeout(unsigned int timeout);
+    void set_write_buffer(uint64_t max_bytes);
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
@@ -55,6 +45,13 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
   private:
     /* Asynchronous call loop */
+    // async_send is called by send_datagram or send_finished when the socket is available
+    //     for writing to send the next datagram in the queue.
+    void async_send(DatagramHandle dg);
+    // send_finished is called when an async_send has completed
+    void send_finished(const boost::system::error_code &ec);
+    // send_expired is called when an async_send has expired
+    void send_expired(const boost::system::error_code& error);
 
     // start_receive is called by the constructor or set_socket
     //     after m_socket is set to a provided socket.
@@ -69,28 +66,36 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     // receive_data is called by async_receive when receiving the datagram data
     void receive_data(const boost::system::error_code &ec, size_t bytes_transferred);
 
-
-    boost::asio::ip::tcp::socket *m_socket;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
-
     typedef void (NetworkClient::*receive_handler_t)(const boost::system::error_code&, size_t);
 
     void socket_read(uint8_t* buf, size_t length, receive_handler_t callback);
-    void socket_write(std::list<boost::asio::const_buffer>&);
+    void socket_write(const uint8_t* buf, size_t length);
 
     void handle_disconnect(const boost::system::error_code &ec);
 
+    bool m_is_sending = false;
+    uint8_t *m_send_buf = nullptr;
+
+    bool m_is_data = false;
+
     NetworkHandler *m_handler;
+    boost::asio::ip::tcp::socket *m_socket;
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
     boost::asio::ip::tcp::endpoint m_remote;
     boost::asio::ip::tcp::endpoint m_local;
-    bool m_ssl_enabled;
-    bool m_disconnect_handled = false;
-    bool m_local_disconnect = false;
-    boost::system::error_code m_disconnect_error;
+    boost::asio::deadline_timer m_async_timer;
     uint8_t m_size_buf[sizeof(dgsize_t)];
     uint8_t* m_data_buf = nullptr;
     dgsize_t m_data_size = 0;
-    bool m_is_data = false;
+
+    uint64_t m_total_queue_size = 0;
+    uint64_t m_max_queue_size = 0;
+    unsigned int m_write_timeout = 0;
+    std::queue<DatagramHandle> m_send_queue;
 
     std::recursive_mutex m_lock;
+
+    bool m_disconnect_handled = false;
+    bool m_local_disconnect = false;
+    boost::system::error_code m_disconnect_error;
 };
