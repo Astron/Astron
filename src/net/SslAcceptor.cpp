@@ -40,7 +40,9 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
                             boost::bind(&SslAcceptor::handle_handshake, this,
                                         socket, timeout,
                                         boost::asio::placeholders::error));
-    timeout->start();
+    if(m_handshake_timeout > 0) {
+        timeout->start();
+    }
 
     // Start accepting again:
     start_accept();
