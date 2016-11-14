@@ -20,4 +20,7 @@ addons:
     - libssl-dev
     - libyaml-cpp-dev
 
+env:
+- CTEST_OUTPUT_ON_FAILURE=1
+
 script: mkdir build && cd build && cmake .. && make && make test
