@@ -1,0 +1,23 @@
+language: cpp
+dist: trusty
+sudo: required
+
+compiler:
+  - clang
+  - gcc
+
+os:
+  - linux
+
+addons:
+  apt:
+    packages:
+    - cmake
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-system-dev
+    - libboost-thread-dev
+    - libssl-dev
+    - libyaml-cpp-dev
+
+script: make build && cd build && cmake .. && make && make test
