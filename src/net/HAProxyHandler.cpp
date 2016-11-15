@@ -70,7 +70,7 @@ void HAProxyHandler::handle_header(const boost::system::error_code &ec, size_t b
         // single byte past the end of the "\r\n" because that's going to be
         // application-layer data and we have no facility for putting it back
         // into the read buffer after we take it out.
-        
+
         // This function deals with it.
         handle_v1(ec, bytes_transferred);
     } else {
@@ -296,4 +296,5 @@ void HAProxyHandler::parse_v1()
 void HAProxyHandler::finish(const boost::system::error_code &ec)
 {
     m_callback(ec, m_remote, m_local);
+    delete this;
 }
