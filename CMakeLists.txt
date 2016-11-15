@@ -203,9 +203,10 @@ if(BUILD_DBSERVER)
 	endif()
 
 	### Check for the presence of the MongoDB client library ###
-	find_package(MongoDB)
+	find_package(libmongocxx)
+	find_package(libbsoncxx)
 
-	if(MONGO_FOUND)
+	if(LIBMONGOCXX_LIBRARIES)
 		set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
 		message(STATUS "MongoDB client library found")
 	else()
@@ -215,9 +216,9 @@ if(BUILD_DBSERVER)
 	if(BUILD_DB_MONGO)
 		list(APPEND DBSERVER_FILES
 		     src/database/MongoDatabase.cpp)
-		include_directories("${MONGO_INCLUDE_DIR}")
-		link_directories(${MONGO_LIBRARY_DIR})
-		list(APPEND DB_LIBRARY_NAMES mongoclient)
+		include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
+		link_directories(${LIBMONGOCXX_LIBRARY_DIRS} ${LIBBSONCXX_LIBRARY_DIRS})
+		list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
 
 		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
 		add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
