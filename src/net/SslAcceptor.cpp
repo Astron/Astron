@@ -70,7 +70,9 @@ void SslAcceptor::handle_endpoints(ssl::stream<tcp::socket> *socket,
                                         socket, timeout,
                                         boost::asio::placeholders::error,
                                         remote, local));
-    timeout->start();
+    if(m_handshake_timeout > 0) {
+        timeout->start();
+    }
 }
 
 void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,

@@ -14,11 +14,13 @@ class SslAcceptor : public NetworkAcceptor
                 SslAcceptorCallback &callback);
     virtual ~SslAcceptor() {}
 
+    inline void set_handshake_timeout(int milliseconds) { m_handshake_timeout = milliseconds; }
+
   private:
     ssl::context& m_context;
     SslAcceptorCallback m_callback;
 
-    int m_handshake_timeout = 5000; // This might be tweakable in the future.
+    int m_handshake_timeout = 0;
 
     virtual void start_accept();
     void handle_accept(ssl::stream<tcp::socket> *socket, const boost::system::error_code &ec);
