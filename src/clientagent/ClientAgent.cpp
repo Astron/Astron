@@ -29,6 +29,7 @@ static ConfigVariable<unsigned int> tls_verify_depth("max_verify_depth", 6, tls_
 static ConfigVariable<bool> sslv2_enabled("sslv2", false, tls_config);
 static ConfigVariable<bool> sslv3_enabled("sslv3", false, tls_config);
 static ConfigVariable<bool> tlsv1_enabled("tlsv1", true, tls_config);
+static ConfigVariable<int> tls_handshake_timeout("handshake_timeout", 5000, tls_config);
 static FileAvailableConstraint tls_cert_exists(tls_cert);
 static FileAvailableConstraint tls_key_exists(tls_key);
 static FileAvailableConstraint tls_chain_exists(tls_chain);
@@ -180,7 +181,12 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 
         SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
                                        this, std::placeholders::_1);
-        m_net_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
+        auto ssl_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
+
+        // Set SSL handshake timeout.
+        ssl_acceptor->set_handshake_timeout(tls_handshake_timeout.get_rval(tls_settings));
+
+	m_net_acceptor = ssl_acceptor;
     }
 
     // Begin listening for new Clients

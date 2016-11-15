@@ -70,6 +70,7 @@ roles:
       tls:
           certificate: %r
           key_file: %r
+          handshake_timeout: 200
 
     - type: clientagent
       bind: 127.0.0.1:51201
@@ -3016,6 +3017,12 @@ class TestClientAgent(ProtocolTest):
         tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
         client = self.connect(port = 57214, tls_opts = tls_context)
         id = self.identify(client, min = 330600, max = 330699)
+
+    def test_ssl_tls_timeout(self):
+        client = self.connect(port = 57214, do_hello=False)
+        self.expectNone(client)
+        time.sleep(0.2)
+        self.assertRaises(EOFError, client.recv_maybe)
 
     def test_get_network_address(self):
         self.server.flush()
