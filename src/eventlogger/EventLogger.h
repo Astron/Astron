@@ -16,7 +16,7 @@ using boost::asio::ip::udp;
 
 // An EventLogger is a role in the daemon that opens up a local socket and reads UDP packets from
 // that socket.  Received UDP packets will be logged as configured by the daemon config file.
-class EventLogger : public Role
+class EventLogger final : public Role
 {
   public:
     EventLogger(RoleConfig roleconfig);
