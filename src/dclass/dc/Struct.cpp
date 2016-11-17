@@ -23,8 +23,8 @@ Struct::Struct(File* file) : m_file(file), m_id(0)
 // destructor
 Struct::~Struct()
 {
-    for(auto it = m_fields.begin(); it != m_fields.end(); ++it) {
-        delete(*it);
+    for(auto& it : m_fields) {
+        delete it;
     }
 }
 
@@ -108,8 +108,8 @@ void Struct::generate_hash(HashGenerator& hashgen) const
     DistributedType::generate_hash(hashgen);
     hashgen.add_string(m_name);
     hashgen.add_int(m_fields.size());
-    for(auto it = m_fields.begin(); it != m_fields.end(); ++it) {
-        (*it)->generate_hash(hashgen);
+    for(const auto& it : m_fields) {
+        it->generate_hash(hashgen);
     }
 }
 
