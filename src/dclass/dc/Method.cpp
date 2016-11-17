@@ -37,7 +37,7 @@ const Method* Method::as_method() const
 // add_parameter adds a new parameter to the method.
 bool Method::add_parameter(Parameter *param)
 {
-    // Param should not be null
+    // Param should not be nullptr
     if(param == nullptr) {
         return false;
     }
