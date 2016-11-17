@@ -215,9 +215,9 @@ void hash_keywords(HashGenerator& hashgen, const KeywordList* list)
             keywords_by_name.insert(list->get_keyword(i));
         }
 
-        for(auto it = keywords_by_name.begin(); it != keywords_by_name.end(); ++it) {
+        for(const auto& it : keywords_by_name) {
             // keyword->generate_hash();
-            hashgen.add_string(*it);
+            hashgen.add_string(it);
         }
     }
 }
