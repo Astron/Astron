@@ -9,6 +9,8 @@
 class ChannelSubscriber
 {
   public:
+    virtual ~ChannelSubscriber() {}
+
     inline std::set<channel_t> &channels()
     {
         return m_channels;
