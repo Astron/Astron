@@ -7,8 +7,8 @@ BaseDBBackendFactoryItem::BaseDBBackendFactoryItem(const std::string &name)
 
 DBBackendFactory& DBBackendFactory::singleton()
 {
-    static DBBackendFactory* fact = new DBBackendFactory();
-    return *fact;
+    static DBBackendFactory fact;
+    return fact;
 }
 
 // instantiate_backend creates a new DatabaseBackend object of type 'backend_name'.
