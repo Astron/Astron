@@ -12,7 +12,7 @@ namespace dclass   // open namespace
 class Parameter;
 
 // A Method is a field for a distributed Class that typically represents a remote procedure call.
-class Method : public DistributedType
+class Method final : public DistributedType
 {
   public:
     Method();
