@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <memory>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
@@ -24,10 +25,10 @@ class EventLogger : public Role
 
   private:
     LogCategory m_log;
-    udp::socket *m_socket;
+    std::unique_ptr<udp::socket> m_socket;
     udp::endpoint m_remote;
     std::string m_file_format;
-    std::ofstream *m_file;
+    std::unique_ptr<std::ofstream> m_file;
     uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
     void bind(const std::string &addr);
