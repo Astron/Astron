@@ -4,6 +4,7 @@ install:
 build_script:
 - set MSYSTEM=MINGW64
 - set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+- cd build
 - cmake -G"MSYS Makefiles" ..
 - make
 - make test
