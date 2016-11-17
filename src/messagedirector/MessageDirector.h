@@ -48,10 +48,10 @@ class MessageDirector final : public ChannelMap
     void receive_disconnect(const boost::system::error_code &ec);
 
   protected:
-    virtual void on_add_channel(channel_t c);
-    virtual void on_remove_channel(channel_t c);
-    virtual void on_add_range(channel_t lo, channel_t hi);
-    virtual void on_remove_range(channel_t lo, channel_t hi);
+    void on_add_channel(channel_t c);
+    void on_remove_channel(channel_t c);
+    void on_add_range(channel_t lo, channel_t hi);
+    void on_remove_range(channel_t lo, channel_t hi);
 
   private:
     MessageDirector();
