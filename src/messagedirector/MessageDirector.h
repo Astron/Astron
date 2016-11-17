@@ -5,6 +5,7 @@
 #include <queue>
 #include <thread>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <condition_variable>
 #include <boost/asio.hpp>
@@ -57,7 +58,7 @@ class MessageDirector : public ChannelMap
 
     bool m_initialized;
 
-    NetworkAcceptor *m_net_acceptor;
+    std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     MDUpstream *m_upstream;
 
     // Connected participants
