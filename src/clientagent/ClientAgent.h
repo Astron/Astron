@@ -28,7 +28,7 @@ class ChannelTracker
     std::queue<channel_t> m_unused_channels;
 };
 
-class ClientAgent : public Role
+class ClientAgent final : public Role
 {
     friend class Client;
 
