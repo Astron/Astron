@@ -138,7 +138,7 @@ void Client::build_interest(DatagramIterator &dgi, bool multiple, Interest &out)
     //       something wrong.
     out.zones.rehash((unsigned int)(ceil(count / out.zones.max_load_factor())));
 
-    for(int x = 0; x < count; ++x) {
+    for(uint16_t x{}; x < count; ++x) {
         zone_t zone = dgi.read_zone();
         out.zones.insert(out.zones.end(), zone);
     }
