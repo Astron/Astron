@@ -34,10 +34,7 @@ Client::~Client()
 
     assert(!m_pending_interests.size());
 
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
-    }
+    delete m_log;
 }
 
 void Client::annihilate()
