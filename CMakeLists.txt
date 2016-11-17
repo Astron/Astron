@@ -85,6 +85,10 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 
 ### OS Specific Settings ###
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")  ### Windows requires winsock
+	list(APPEND EXTRA_LIBS wsock32 ws2_32)
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	list(APPEND EXTRA_LIBS pthread rt)
 endif()
