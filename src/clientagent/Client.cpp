@@ -111,9 +111,9 @@ const Class *Client::lookup_object(doid_t do_id)
 list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 {
     list<Interest> interests;
-    for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
-        if(parent_id == it->second.parent && (it->second.zones.find(zone_id) != it->second.zones.end())) {
-            interests.push_back(it->second);
+    for(const auto& it : m_interests) {
+        if(parent_id == it.second.parent && (it.second.zones.find(zone_id) != it.second.zones.end())) {
+            interests.push_back(it.second);
         }
     }
     return interests;
@@ -151,9 +151,9 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 {
     unordered_set<zone_t> new_zones;
 
-    for(auto it = i.zones.begin(); it != i.zones.end(); ++it) {
-        if(lookup_interests(i.parent, *it).empty()) {
-            new_zones.insert(*it);
+    for(const auto& it : i.zones) {
+        if(lookup_interests(i.parent, it).empty()) {
+            new_zones.insert(it);
         }
     }
 
@@ -165,8 +165,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
         Interest previous_interest = m_interests[i.id];
         unordered_set<zone_t> killed_zones;
 
-        for(auto it = previous_interest.zones.begin(); it != previous_interest.zones.end(); ++it) {
-            if(lookup_interests(previous_interest.parent, *it).size() > 1) {
+        for(const auto& it : previous_interest.zones) {
+            if(lookup_interests(previous_interest.parent, it).size() > 1) {
                 // An interest other than the altered one can see this parent/zone,
                 // so we don't care about it.
                 continue;
@@ -174,8 +174,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 
             // If we've gotten here: parent,*it is unique, so if the new interest
             // doesn't cover it, we add it to the killed zones.
-            if(i.parent != previous_interest.parent || i.zones.find(*it) == i.zones.end()) {
-                killed_zones.insert(*it);
+            if(i.parent != previous_interest.parent || i.zones.find(it) == i.zones.end()) {
+                killed_zones.insert(it);
             }
         }
 
@@ -206,9 +206,9 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     resp->add_uint32(request_context);
     resp->add_doid(i.parent);
     resp->add_uint16(new_zones.size());
-    for(auto it = new_zones.begin(); it != new_zones.end(); ++it) {
-        resp->add_zone(*it);
-        subscribe_channel(location_as_channel(i.parent, *it));
+    for(const auto& it : new_zones) {
+        resp->add_zone(it);
+        subscribe_channel(location_as_channel(i.parent, it));
     }
     route_datagram(resp);
 }
@@ -219,10 +219,10 @@ void Client::remove_interest(Interest &i, uint32_t context, channel_t caller)
 {
     unordered_set<zone_t> killed_zones;
 
-    for(auto it = i.zones.begin(); it != i.zones.end(); ++it) {
-        if(lookup_interests(i.parent, *it).size() == 1) {
+    for(const auto& it : i.zones) {
+        if(lookup_interests(i.parent, it).size() == 1) {
             // We're the only interest who can see this zone, so let's kill it.
-            killed_zones.insert(*it);
+            killed_zones.insert(it);
         }
     }
 
@@ -242,40 +242,41 @@ void Client::close_zones(doid_t parent, const unordered_set<zone_t> &killed_zone
     // Kill off all objects that are in the matched parent/zones:
 
     list<doid_t> to_remove;
-    for(auto it = m_visible_objects.begin(); it != m_visible_objects.end(); ++it) {
-        if(it->second.parent != parent) {
+    for(const auto& it : m_visible_objects) {
+        const VisibleObject& visiable_object = it.second;
+        if(visiable_object.parent != parent) {
             // Object does not belong to the parent in question; ignore.
             continue;
         }
 
-        if(killed_zones.find(it->second.zone) != killed_zones.end()) {
-            if(m_owned_objects.find(it->second.id) != m_owned_objects.end()) {
+        if(killed_zones.find(visiable_object.zone) != killed_zones.end()) {
+            if(m_owned_objects.find(visiable_object.id) != m_owned_objects.end()) {
                 // Owned objects are always visible, ignore this object
                 continue;
             }
 
-            if(m_session_objects.find(it->second.id) != m_session_objects.end()) {
+            if(m_session_objects.find(visiable_object.id) != m_session_objects.end()) {
                 // This object is a session object. The client should be disconnected.
                 send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
                                 "A session object has unexpectedly left interest.");
                 return;
             }
 
-            handle_remove_object(it->second.id);
+            handle_remove_object(visiable_object.id);
 
-            m_seen_objects.erase(it->second.id);
-            m_historical_objects.insert(it->second.id);
-            to_remove.push_back(it->second.id);
+            m_seen_objects.erase(visiable_object.id);
+            m_historical_objects.insert(visiable_object.id);
+            to_remove.push_back(visiable_object.id);
         }
     }
 
-    for(auto it = to_remove.begin(); it != to_remove.end(); ++it) {
-        m_visible_objects.erase(*it);
+    for(const auto& it : to_remove) {
+        m_visible_objects.erase(it);
     }
 
     // Close all of the channels:
-    for(auto it = killed_zones.begin(); it != killed_zones.end(); ++it) {
-        unsubscribe_channel(location_as_channel(parent, *it));
+    for(const auto& it : killed_zones) {
+        unsubscribe_channel(location_as_channel(parent, it));
     }
 }
 
@@ -564,15 +565,16 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t do_id = dgi.read_doid();
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
-        for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second->m_parent == parent &&
-               it->second->m_zones.find(zone) != it->second->m_zones.end()) {
+        for(auto& it : m_pending_interests) {
+            InterestOperation *interest_operation = it.second;
+            if(interest_operation->m_parent == parent &&
+               interest_operation->m_zones.find(zone) != interest_operation->m_zones.end()) {
 
-                it->second->queue_datagram(in_dg);
+                interest_operation->queue_datagram(in_dg);
 
                 // Add the DoId to m_pending_objects, because while it's not an object
                 // from opening the interest, we should begin queueing messages for it
-                m_pending_objects.emplace(do_id, it->first);
+                m_pending_objects.emplace(do_id, it.first);
 
                 return;
             }
@@ -635,10 +637,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         zone_t n_zone = dgi.read_zone();
 
         bool disable = true;
-        for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
-            Interest &i = it->second;
-            for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2) {
-                if(*it2 == n_zone) {
+        for(const auto& it : m_interests) {
+            const Interest& i = it.second;
+            for(const auto& it2 : i.zones) {
+                if(it2 == n_zone) {
                     disable = false;
                     break;
                 }
@@ -816,8 +818,8 @@ void InterestOperation::finish(bool is_timeout)
     }
 
     // Send objects in the initial snapshot
-    for(auto it = m_pending_generates.begin(); it != m_pending_generates.end(); ++it) {
-        DatagramIterator dgi(*it);
+    for(const auto& it : m_pending_generates) {
+        DatagramIterator dgi(it);
         dgi.seek_payload();
         dgi.skip(sizeof(channel_t)); // skip sender
 
@@ -841,10 +843,10 @@ void InterestOperation::finish(bool is_timeout)
     m_client->m_pending_interests.erase(m_request_context);
 
     // Dispatch other received and queued messages
-    for(auto it = dispatch.begin(); it != dispatch.end(); ++it) {
-        DatagramIterator dgi(*it);
+    for(const auto& it : dispatch) {
+        DatagramIterator dgi(it);
         dgi.seek_payload();
-        m_client->handle_datagram(*it, dgi);
+        m_client->handle_datagram(it, dgi);
     }
 
     m_finished = true;
