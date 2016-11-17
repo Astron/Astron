@@ -9,7 +9,7 @@ Group, and used in-house from 2001 until 2013.
 The suite consists of many components, which handle separate tasks in order to distribute
 the workload of managing a multi-sharded game/application environment with many objects and clients.
 
-[![build status](https://build.riotcave.com/projects/1/status.png?ref=master)](https://build.riotcave.com/projects/1?ref=master)
+[![Build Status](https://travis-ci.org/Astron/Astron.svg?branch=master)](https://travis-ci.org/Astron/Astron)
 
 ## Overview ##
 

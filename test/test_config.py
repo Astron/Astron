@@ -2,6 +2,16 @@
 import unittest
 from common.unittests import ConfigTest
 from common.dcfile import *
+import socket
+
+def test_ipv6():
+    try:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.bind(('::1', 0))
+    except socket.error:
+        return False
+    else:
+        return True
 
 class TestConfigCore(ConfigTest):
     def test_core_good(self):
@@ -254,29 +264,35 @@ class TestConfigCore(ConfigTest):
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
         # Some IPv6 cases...
+
+        # Note: These only work if the test runner has IPv6 support. Let's
+        # check:
+
+        has_ipv6 = test_ipv6()
+
         config = """\
             messagedirector:
                 bind: "::1"
             """
-        self.assertEquals(self.checkConfig(config), 'Valid')
+        if has_ipv6: self.assertEquals(self.checkConfig(config), 'Valid')
 
         config = """\
             messagedirector:
                 bind: "0:0:0:0:0:0:0:1"
             """
-        self.assertEquals(self.checkConfig(config), 'Valid')
+        if has_ipv6: self.assertEquals(self.checkConfig(config), 'Valid')
 
         config = """\
             messagedirector:
                 bind: "[0:0::1]"
             """
-        self.assertEquals(self.checkConfig(config), 'Valid')
+        if has_ipv6: self.assertEquals(self.checkConfig(config), 'Valid')
 
         config = """\
             messagedirector:
                 bind: "[0:0::1]:57123"
             """
-        self.assertEquals(self.checkConfig(config), 'Valid')
+        if has_ipv6: self.assertEquals(self.checkConfig(config), 'Valid')
 
         config = """\
             messagedirector:

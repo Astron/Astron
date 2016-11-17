@@ -1,5 +1,7 @@
 #pragma once
 #include <functional>
+#include <atomic>
+#include <memory>
 #include <boost/asio.hpp>
 
 // This class abstracts the boost::asio timer in order to provide a generic
