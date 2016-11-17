@@ -208,7 +208,7 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
     m_header_len += bytes_transferred;
 
     // See if we got a '\n', indicating the end of the proxy header:
-    if(memrchr(m_header_buf, '\n', m_header_len) != nullptr) {
+    if(memchr(m_header_buf, '\n', m_header_len) != nullptr) {
         parse_v1();
         return;
     }
@@ -223,7 +223,7 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
 
     // Decide how many more bytes we want:
     size_t read_size;
-    if(memrchr(m_header_buf, '\r', m_header_len) != nullptr) {
+    if(memchr(m_header_buf, '\r', m_header_len) != nullptr) {
         // There's a '\r', so '\n' is imminent!
         read_size = 1;
     } else {
