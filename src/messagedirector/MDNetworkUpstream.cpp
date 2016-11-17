@@ -19,7 +19,7 @@ boost::system::error_code MDNetworkUpstream::connect(const std::string &address)
     tcp::socket *socket = connector.connect(address, 7199, ec);
 
     if(socket) {
-        m_client->set_socket(socket);
+        m_client->initialize(socket);
     }
 
     return ec;

@@ -17,6 +17,7 @@ namespace filesystem = boost::filesystem;
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
 static ConfigVariable<string> server_version("version", "dev", clientagent_config);
+static ConfigVariable<bool> behind_haproxy("haproxy", false, clientagent_config);
 static ConfigVariable<uint32_t> override_hash("manual_dc_hash", 0x0, clientagent_config);
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 
@@ -45,8 +46,6 @@ static InvalidChannelConstraint min_not_invalid(min_channel);
 static InvalidChannelConstraint max_not_invalid(max_channel);
 static ReservedChannelConstraint min_not_reserved(min_channel);
 static ReservedChannelConstraint max_not_reserved(max_channel);
-
-static bool have_warned_ca_insecure = false;
 
 ConfigGroup ca_client_config("client", clientagent_config);
 ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
@@ -100,17 +99,11 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     // Handle no SSL
     if(m_ssl_cert.empty() && m_ssl_key.empty()) {
         m_log->debug() << "Not using SSL/TLS.\n";
-        TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp,
-                                       this, std::placeholders::_1);
+        TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp, this,
+                                       std::placeholders::_1,
+                                       std::placeholders::_2,
+                                       std::placeholders::_3);
         m_net_acceptor = new TcpAcceptor(io_service, callback);
-
-        if(!have_warned_ca_insecure) {
-            have_warned_ca_insecure = true;
-            m_log->warning() << "\n==============================================\n"
-                             << "      CA not configured to use SSL!!!!!!\n"
-                             << " --- Do not use this config in production ---\n"
-                             << "==============================================\n";
-        }
     }
 
     // Handle SSL requested, but some information missing
@@ -179,8 +172,10 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
             m_ssl_ctx.set_verify_depth(tls_verify_depth.get_rval(tls_settings));
         }
 
-        SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl,
-                                       this, std::placeholders::_1);
+        SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl, this,
+                                       std::placeholders::_1,
+                                       std::placeholders::_2,
+                                       std::placeholders::_3);
         auto ssl_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
 
         // Set SSL handshake timeout.
@@ -188,6 +183,8 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 
         m_net_acceptor = ssl_acceptor;
     }
+
+    m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
     // Begin listening for new Clients
     boost::system::error_code ec;
@@ -211,45 +208,27 @@ ClientAgent::~ClientAgent()
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
-void ClientAgent::handle_tcp(tcp::socket *socket)
+void ClientAgent::handle_tcp(tcp::socket *socket,
+                             const tcp::endpoint &remote,
+                             const tcp::endpoint &local)
 {
-    tcp::endpoint remote;
-    try {
-        remote = socket->remote_endpoint();
-    } catch(const boost::system::system_error&) {
-        // A client might disconnect immediately after connecting.
-        // If this happens, do nothing. Resolves #122.
-        // N.B. due to a Boost.Asio bug, the socket will (may?) still have
-        // is_open() == true, so we just catch the exception on remote_endpoint
-        // instead.
-        delete socket;
-        return;
-    }
     m_log->debug() << "Got an incoming connection from "
                    << remote.address() << ":" << remote.port() << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote,
+            local);
 }
 
 // handle_ssl generates a new Client object from an ssl stream.
-void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream)
+void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream,
+                             const tcp::endpoint &remote,
+                             const tcp::endpoint &local)
 {
-    tcp::endpoint remote;
-    try {
-        remote = stream->next_layer().remote_endpoint();
-    } catch(const boost::system::system_error&) {
-        // A client might disconnect immediately after connecting.
-        // If this happens, do nothing. Resolves #122.
-        // N.B. due to a Boost.Asio bug, the socket will (may?) still have
-        // is_open() == true, so we just catch the exception on remote_endpoint
-        // instead.
-        delete stream;
-        return;
-    }
     m_log->debug() << "Got an incoming connection from "
                    << remote.address() << ":" << remote.port() << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream, remote,
+            local);
 }
 
 

@@ -1,4 +1,5 @@
 #include "SslAcceptor.h"
+#include "HAProxyHandler.h"
 #include <boost/bind.hpp>
 
 SslAcceptor::SslAcceptor(boost::asio::io_service &io_service, ssl::context& ctx,
@@ -25,10 +26,38 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
         return;
     }
 
-    if(ec.value() != 0) {
-        // The accept failed for some reason. Free the socket and try again:
+    // Start accepting another connection now:
+    start_accept();
+
+    if(ec) {
+        // The accept failed for some reason.
         delete socket;
-        start_accept();
+        return;
+    }
+
+    if(m_haproxy_mode) {
+        ProxyCallback callback = std::bind(&SslAcceptor::handle_endpoints,
+                                           this, socket,
+                                           std::placeholders::_1,
+                                           std::placeholders::_2,
+                                           std::placeholders::_3);
+        HAProxyHandler::async_process(&socket->next_layer(), callback);
+    } else {
+        boost::system::error_code endpoint_ec;
+        tcp::endpoint remote = socket->next_layer().remote_endpoint(endpoint_ec);
+        tcp::endpoint local = socket->next_layer().local_endpoint(endpoint_ec);
+        handle_endpoints(socket, endpoint_ec, remote, local);
+    }
+}
+
+void SslAcceptor::handle_endpoints(ssl::stream<tcp::socket> *socket,
+                                   const boost::system::error_code &ec,
+                                   const tcp::endpoint &remote,
+                                   const tcp::endpoint &local)
+{
+    if(ec) {
+        // The accept failed for some reason.
+        delete socket;
         return;
     }
 
@@ -39,18 +68,18 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
     socket->async_handshake(ssl::stream<tcp::socket>::server,
                             boost::bind(&SslAcceptor::handle_handshake, this,
                                         socket, timeout,
-                                        boost::asio::placeholders::error));
+                                        boost::asio::placeholders::error,
+                                        remote, local));
     if(m_handshake_timeout > 0) {
         timeout->start();
     }
-
-    // Start accepting again:
-    start_accept();
 }
 
 void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
                                    std::shared_ptr<Timeout> timeout,
-                                   const boost::system::error_code &ec)
+                                   const boost::system::error_code &ec,
+                                   const tcp::endpoint &remote,
+                                   const tcp::endpoint &local)
 {
     if(!timeout->cancel()) {
         // We failed to cancel the timeout! That means it ran and got to our
@@ -65,14 +94,14 @@ void SslAcceptor::handle_handshake(ssl::stream<tcp::socket> *socket,
         return;
     }
 
-    if(ec.value() != 0) {
+    if(ec) {
         // The handshake failed for some reason. Free the socket and try again:
         delete socket;
         return;
     }
 
     // Inform the callback:
-    m_callback(socket);
+    m_callback(socket, remote, local);
 }
 
 void SslAcceptor::handle_timeout(ssl::stream<tcp::socket> *socket)

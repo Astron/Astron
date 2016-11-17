@@ -6,6 +6,16 @@
 #include <boost/asio/ssl.hpp>
 #include "util/Datagram.h"
 
+// NOTES:
+//
+// Do not subclass NetworkClient. Instead, you should implement NetworkHandler
+// and instantiate NetworkClient with std::make_shared.
+//
+// To begin receiving, pass it an ASIO socket or SSL stream via initialize().
+//
+// You must not destruct your NetworkHandler implementor until
+// receive_disconnect is called!
+
 class NetworkClient;
 
 class NetworkHandler
@@ -27,8 +37,15 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     NetworkClient(NetworkHandler *handler);
     ~NetworkClient();
 
-    void set_socket(boost::asio::ip::tcp::socket *socket);
-    void set_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void initialize(boost::asio::ip::tcp::socket *socket);
+    void initialize(boost::asio::ip::tcp::socket *socket,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
+    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
+
     void set_write_timeout(unsigned int timeout);
     void set_write_buffer(uint64_t max_bytes);
 
@@ -59,11 +76,12 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     // send_expired is called when an async_send has expired
     void send_expired(const boost::system::error_code& error);
 
-    // start_receive is called by the constructor or set_socket
-    //     after m_socket is set to a provided socket.
-    void start_receive();
+    // determine_endpoints is called by initialize() after m_socket is set to a
+    //     provided socket.
+    bool determine_endpoints(boost::asio::ip::tcp::endpoint &remote,
+                             boost::asio::ip::tcp::endpoint &local);
 
-    // async_receive is called by start_receive to begin receiving data, then by receive_size
+    // async_receive is called by initialize() to begin receiving data, then by receive_size
     //     or receive_data to wait for the next set of data.
     void async_receive();
 

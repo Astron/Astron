@@ -30,7 +30,7 @@ NetworkClient::~NetworkClient()
     delete [] m_send_buf;
 }
 
-void NetworkClient::set_socket(tcp::socket *socket)
+void NetworkClient::initialize(tcp::socket *socket)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     if(m_socket) {
@@ -44,10 +44,27 @@ void NetworkClient::set_socket(tcp::socket *socket)
     boost::asio::ip::tcp::no_delay nodelay(true);
     m_socket->set_option(nodelay);
 
-    start_receive();
+    bool endpoints_set = (m_remote.port() && m_local.port());
+    if(endpoints_set || determine_endpoints(m_remote, m_local)) {
+        async_receive();
+    }
 }
 
-void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
+void NetworkClient::initialize(tcp::socket *socket,
+                               const tcp::endpoint &remote,
+                               const tcp::endpoint &local)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    if(m_socket) {
+        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+    }
+    m_remote = remote;
+    m_local = local;
+
+    initialize(socket);
+}
+
+void NetworkClient::initialize(ssl::stream<tcp::socket> *stream)
 {
     std::lock_guard<std::recursive_mutex> lock(m_lock);
     if(m_socket) {
@@ -56,7 +73,35 @@ void NetworkClient::set_socket(ssl::stream<tcp::socket> *stream)
 
     m_secure_socket = stream;
 
-    set_socket(&stream->next_layer());
+    initialize(&stream->next_layer());
+}
+
+void NetworkClient::initialize(ssl::stream<tcp::socket> *stream,
+                               const tcp::endpoint &remote,
+                               const tcp::endpoint &local)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_lock);
+    if(m_socket) {
+        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
+    }
+
+    m_secure_socket = stream;
+
+    initialize(&stream->next_layer(), remote, local);
+}
+
+bool NetworkClient::determine_endpoints(tcp::endpoint &remote, tcp::endpoint &local)
+{
+    boost::system::error_code ec;
+    remote = m_socket->remote_endpoint(ec);
+    local = m_socket->local_endpoint(ec);
+
+    if(ec) {
+        disconnect(ec);
+        return false;
+    } else {
+        return true;
+    }
 }
 
 void NetworkClient::set_write_timeout(unsigned int timeout)
@@ -93,22 +138,6 @@ bool NetworkClient::is_connected()
 {
     lock_guard<recursive_mutex> lock(m_lock);
     return m_socket->is_open();
-}
-
-void NetworkClient::start_receive()
-{
-    // Lock not needed: This is only called from the constructor.
-
-    try {
-        m_remote = m_socket->remote_endpoint();
-        m_local = m_socket->local_endpoint();
-    } catch(const boost::system::system_error&) {
-        // A client might disconnect immediately after connecting.
-        // Since we are in the constructor, ignore it. Resolves #122.
-        // When the owner of the NetworkClient attempts to send or receive,
-        // the error will occur and we'll cleanup then;
-    }
-    async_receive();
 }
 
 void NetworkClient::async_receive()

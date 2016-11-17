@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import unittest, time, ssl
+import unittest, time, ssl, struct
 from socket import socket, AF_INET, SOCK_STREAM
 from common.unittests import ProtocolTest
 from common.astron import *
@@ -73,6 +73,25 @@ roles:
           handshake_timeout: 200
 
     - type: clientagent
+      bind: 127.0.0.1:57223
+      version: "Sword Art Online v5.1"
+      haproxy: true
+      channels:
+          min: 440600
+          max: 440649
+
+    - type: clientagent
+      bind: 127.0.0.1:57224
+      version: "Sword Art Online v5.1"
+      haproxy: true
+      channels:
+          min: 440650
+          max: 440699
+      tls:
+          certificate: %r
+          key_file: %r
+
+    - type: clientagent
       bind: 127.0.0.1:51201
       version: "Sword Art Online v5.1"
       channels:
@@ -81,7 +100,7 @@ roles:
       client:
           heartbeat_timeout: 1000
 
-""" % (USE_THREADING, test_dc, server_crt, server_key)
+""" % (USE_THREADING, test_dc, server_crt, server_key, server_crt, server_key)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):
@@ -111,11 +130,14 @@ class TestClientAgent(ProtocolTest):
                 s.close()
                 return
 
-    def connect(self, do_hello=True, port=57128, tls_opts=None):
+    def connect(self, do_hello=True, port=57128, tls_opts=None, proxy_header=None):
         s = socket(AF_INET, SOCK_STREAM)
+        s.connect(('127.0.0.1', port))
+        if proxy_header is not None:
+            s.send(proxy_header)
         if tls_opts is not None:
             s = ssl.wrap_socket(s,**tls_opts)
-        s.connect(('127.0.0.1', port))
+
         client = ClientConnection(s)
 
         if do_hello:
@@ -3050,6 +3072,66 @@ class TestClientAgent(ProtocolTest):
         dgi.read_uint16() # Ignore local port (can't really test this)
 
         self.server.send(Datagram.create_remove_channel(10052))
+
+    def test_haproxy_protocol(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10010))
+
+        for test_id in xrange(8):
+            proto_v2 = bool(test_id&1)
+            ipv6 = bool(test_id&2)
+            tls = bool(test_id&4)
+
+            if ipv6:
+                source_ip = '2001:db8::1'
+                source_ip_bin = '20010db8000000000000000000000001'.decode('hex')
+                dest_ip = '2001:db8:dead:beef:0:face:feed:1'
+                dest_ip_bin = '20010db8deadbeef0000facefeed0001'.decode('hex')
+            else:
+                source_ip = '203.0.113.5'
+                source_ip_bin = struct.pack('BBBB', 203, 0, 113, 5)
+                dest_ip = '198.51.100.77'
+                dest_ip_bin = struct.pack('BBBB', 198, 51, 100, 77)
+
+            source_port = 54321
+            dest_port = 12345
+
+            if proto_v2:
+                body = (source_ip_bin + dest_ip_bin +
+                        struct.pack('>HH', source_port, dest_port))
+                header = ('\r\n\r\n\0\r\nQUIT\n\x21' +
+                          struct.pack('>BH', 0x21 if ipv6 else 0x11, len(body)) +
+                          body)
+            else:
+                header = 'PROXY TCP{} {} {} {} {}\r\n'.format(
+                    6 if ipv6 else 4, source_ip, dest_ip, source_port, dest_port)
+
+            if tls:
+                tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
+                client = self.connect(port=57224, proxy_header=header, tls_opts=tls_context)
+            else:
+                client = self.connect(port=57223, proxy_header=header)
+
+            id = self.identify(client, min=440600, max=440699)
+            dg = Datagram.create([id], 10010, CLIENTAGENT_GET_NETWORK_ADDRESS)
+            dg.add_uint32(test_id)
+            self.server.send(dg)
+
+            dg = self.server.recv_maybe()
+            self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_NETWORK_ADDRESS_RESP")
+
+            dgi = DatagramIterator(dg)
+            self.assertEqual(dgi.read_uint8(), 1)
+            self.assertEqual(dgi.read_channel(), 10010)
+            self.assertEqual(dgi.read_channel(), id)
+            self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_NETWORK_ADDRESS_RESP)
+            self.assertEqual(dgi.read_uint32(), test_id)
+            self.assertEqual(dgi.read_string(), source_ip)
+            self.assertEqual(dgi.read_uint16(), source_port)
+            self.assertEqual(dgi.read_string(), dest_ip)
+            self.assertEqual(dgi.read_uint16(), dest_port)
+
+        self.server.send(Datagram.create_remove_channel(10010))
 
     # Test the interest timeout
     # The heartbeat timeout is configured for 1000ms (1 second)
