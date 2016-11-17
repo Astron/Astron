@@ -19,7 +19,11 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
 
     stringstream name;
     name << "Client (" << m_allocated_channel << ")";
-    m_log = new LogCategory("client", name.str());
+
+    m_log_owner = std::unique_ptr<LogCategory>(new LogCategory("client", name.str()));
+
+    m_log = m_log_owner.get();
+
     set_con_name(name.str());
 
     subscribe_channel(m_channel);
@@ -33,8 +37,6 @@ Client::~Client()
     lock_guard<recursive_mutex> lock(m_client_lock);
 
     assert(!m_pending_interests.size());
-
-    delete m_log;
 }
 
 void Client::annihilate()

@@ -5,6 +5,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <memory>
+
 extern RoleConfigGroup clientagent_config;
 extern ConfigGroup ca_client_config;
 extern ConfigVariable<std::string> ca_client_type;
@@ -32,7 +34,6 @@ class ClientAgent : public Role
 
   public:
     ClientAgent(RoleConfig rolconfig);
-    ~ClientAgent();
 
     // handle_tcp generates a new Client object from a raw tcp connection.
     void handle_tcp(boost::asio::ip::tcp::socket *socket,
@@ -64,7 +65,7 @@ class ClientAgent : public Role
 
     LogCategory *log()
     {
-        return m_log;
+        return m_log.get();
     }
 
   private:
@@ -73,7 +74,7 @@ class ClientAgent : public Role
     std::string m_server_version;
     ChannelTracker m_ct;
     ConfigNode m_clientconfig;
-    LogCategory *m_log;
+    std::unique_ptr<LogCategory> m_log;
     uint32_t m_hash;
 
     unsigned long m_interest_timeout;

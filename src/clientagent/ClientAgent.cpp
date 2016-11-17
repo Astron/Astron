@@ -65,7 +65,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 
     stringstream ss;
     ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";
-    m_log = new LogCategory("clientagent", ss.str());
+    m_log = std::unique_ptr<LogCategory>(new LogCategory("clientagent", ss.str()));
 
     // We need to get the client type...
     ConfigNode client = clientagent_config.get_child_node(ca_client_config, roleconfig);
@@ -197,11 +197,6 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
         astron_shutdown(1);
     }
     m_net_acceptor->start();
-}
-
-ClientAgent::~ClientAgent()
-{
-    delete m_log;
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
