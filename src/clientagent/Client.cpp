@@ -424,7 +424,7 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         uint16_t field_count = dgi.read_uint16();
 
         unordered_set<uint16_t> fields;
-        for(unsigned int i = 0; i < field_count; ++i) {
+        for(uint16_t i{}; i < field_count; ++i) {
             fields.insert(dgi.read_uint16());
         }
         m_fields_sendable[do_id] = fields;
