@@ -107,7 +107,6 @@ class MDParticipantInterface : public ChannelSubscriber
     {
         MessageDirector::singleton.add_participant(this);
     }
-    virtual ~MDParticipantInterface() {}
 
     // handle_datagram should handle a message received from the MessageDirector.
     // Implementations of handle_datagram should be non-blocking operations.

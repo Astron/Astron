@@ -201,10 +201,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 
 ClientAgent::~ClientAgent()
 {
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
-    }
+    delete m_log;
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
