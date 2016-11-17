@@ -43,7 +43,9 @@ Client::~Client()
 void Client::annihilate()
 {
     lock_guard<recursive_mutex> lock(m_client_lock);
-    if(is_terminated()) { return; }
+    if(is_terminated()) {
+        return;
+    }
 
     // Unsubscribe from all channels first so the DELETE messages aren't sent back to us.
     unsubscribe_all();
@@ -131,7 +133,9 @@ void Client::build_interest(DatagramIterator &dgi, bool multiple, Interest &out)
     out.parent = parent;
 
     uint16_t count = 1;
-    if(multiple) { count = dgi.read_uint16(); }
+    if(multiple) {
+        count = dgi.read_uint16();
+    }
 
     // TODO: We shouldn't have to do this ourselves, figure out where else we're doing
     //       something wrong.
@@ -197,7 +201,7 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     uint32_t request_context = m_next_context++;
 
     InterestOperation *iop = new InterestOperation(this, m_client_agent->m_interest_timeout,
-                    i.id, context, request_context, i.parent, new_zones, caller);
+            i.id, context, request_context, i.parent, new_zones, caller);
     m_pending_interests.emplace(request_context, iop);
 
     DatagramPtr resp = Datagram::create();
@@ -304,10 +308,14 @@ void Client::send_disconnect(uint16_t reason, const string &error_string, bool s
 void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
     lock_guard<recursive_mutex> lock(m_client_lock);
-    if(is_terminated()) { return; }
+    if(is_terminated()) {
+        return;
+    }
 
     channel_t sender = dgi.read_channel();
-    if(sender == m_channel) { return; } // ignore messages from ourselves
+    if(sender == m_channel) {
+        return;    // ignore messages from ourselves
+    }
 
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {
@@ -464,7 +472,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
     case STATESERVER_OBJECT_SET_FIELD: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side field update for unknown object "
                              << do_id << ".\n";
             return;
@@ -478,7 +488,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
     case STATESERVER_OBJECT_SET_FIELDS: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side multi-field update for unknown object "
                              << do_id << ".\n";
             return;
@@ -495,7 +507,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_log->trace() << "Received DeleteRam for object with id " << do_id << "\n.";
 
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side object delete for unknown object "
                              << do_id << ".\n";
             return;
@@ -588,7 +602,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 
         m_pending_objects.emplace(dgi.read_doid(), request_context);
         it->second->queue_expected(in_dg);
-        if(it->second->is_ready()) { it->second->finish(); }
+        if(it->second->is_ready()) {
+            it->second->finish();
+        }
         return;
     }
     break;
@@ -605,7 +621,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         }
 
         it->second->set_expected(count);
-        if(it->second->is_ready()) { it->second->finish(); }
+        if(it->second->is_ready()) {
+            it->second->finish();
+        }
     }
     break;
     case STATESERVER_OBJECT_CHANGING_LOCATION: {
@@ -739,7 +757,9 @@ void Client::handle_object_entrance(DatagramIterator &dgi, bool other)
 // interest operation's caller, if one has been set.
 void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 {
-    if(caller == 0) { return; }
+    if(caller == 0) {
+        return;
+    }
 
     DatagramPtr resp = Datagram::create(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
     resp->add_channel(m_channel);
@@ -751,7 +771,9 @@ void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 // interest operation's caller, if one has been set.
 void Client::notify_interest_done(const InterestOperation* iop)
 {
-    if(iop->m_callers.size() == 0) { return; }
+    if(iop->m_callers.size() == 0) {
+        return;
+    }
 
     DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
     resp->add_channel(m_channel);
@@ -766,12 +788,12 @@ InterestOperation::InterestOperation(
     Client *client, unsigned long timeout,
     uint16_t interest_id, uint32_t client_context, uint32_t request_context,
     doid_t parent, unordered_set<zone_t> zones, channel_t caller) :
-        m_client(client),
-        m_interest_id(interest_id),
-        m_client_context(client_context),
-        m_request_context(request_context),
-        m_parent(parent), m_zones(zones),
-        m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
+    m_client(client),
+    m_interest_id(interest_id),
+    m_client_context(client_context),
+    m_request_context(request_context),
+    m_parent(parent), m_zones(zones),
+    m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
 {
     m_callers.insert(m_callers.end(), caller);
     m_timeout->start();
@@ -791,8 +813,7 @@ void InterestOperation::timeout()
 
 void InterestOperation::finish(bool is_timeout)
 {
-    if(!is_timeout && !m_timeout->cancel())
-    {
+    if(!is_timeout && !m_timeout->cancel()) {
         // The timeout is already running; let it clean up instead.
         return;
     }

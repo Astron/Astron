@@ -7,7 +7,8 @@ using namespace std;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_secure_socket(nullptr),
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
+    m_secure_socket(nullptr),
     m_async_timer(io_service), m_send_queue()
 {
 }
@@ -74,18 +75,15 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 {
     lock_guard<recursive_mutex> lock(m_lock);
 
-    if(m_is_sending)
-    {
+    if(m_is_sending) {
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
-        if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0)
-        {
-            boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space, boost::system::system_category());
+        if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
+            boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space,
+                                              boost::system::system_category());
             disconnect(enobufs);
         }
-    }
-    else
-    {
+    } else {
         m_is_sending = true;
         async_send(dg);
     }
@@ -184,7 +182,8 @@ void NetworkClient::receive_size(const boost::system::error_code &ec, size_t byt
     }
 
     if(bytes_transferred != sizeof(m_size_buf)) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
+                                        boost::system::system_category());
         handle_disconnect(epipe);
         return;
     }
@@ -210,7 +209,8 @@ void NetworkClient::receive_data(const boost::system::error_code &ec, size_t byt
         }
 
         if(bytes_transferred != m_data_size) {
-            boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe, boost::system::system_category());
+            boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
+                                            boost::system::system_category());
             handle_disconnect(epipe);
             return;
         }
@@ -238,14 +238,11 @@ void NetworkClient::async_send(DatagramHandle dg)
     dgsize_t len = swap_le(dg->size());
     m_send_buf = new uint8_t[buffer_size];
     memcpy(m_send_buf, (uint8_t*)&len, sizeof(dgsize_t));
-    memcpy(m_send_buf+sizeof(dgsize_t), dg->get_data(), dg->size());
+    memcpy(m_send_buf + sizeof(dgsize_t), dg->get_data(), dg->size());
 
-    try
-    {
+    try {
         socket_write(m_send_buf, buffer_size);
-    }
-    catch(const boost::system::system_error& err)
-    {
+    } catch(const boost::system::system_error& err) {
         // An exception happening when trying to initiate a send is a clear
         // indicator that something happened to the connection, therefore:
         disconnect(err.code());
@@ -264,16 +261,14 @@ void NetworkClient::send_finished(const boost::system::error_code &ec)
     m_send_buf = nullptr;
 
     // Check if the write had errors
-    if(ec.value() != 0)
-    {
+    if(ec.value() != 0) {
         m_is_sending = false;
         disconnect(ec);
         return;
     }
 
     // Check if we have more items in the queue
-    if(m_send_queue.size() > 0)
-    {
+    if(m_send_queue.size() > 0) {
         // Send the next item in the queue
         DatagramHandle dg = m_send_queue.front();
         m_total_queue_size -= dg->size();
@@ -292,9 +287,9 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
 
     // operation_aborted is received if the the timer is cancelled,
     //     ie. if the send completed before it expires, so don't do anything
-    if(ec != boost::asio::error::operation_aborted)
-    {
-        boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out, boost::system::system_category());
+    if(ec != boost::asio::error::operation_aborted) {
+        boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out,
+                                           boost::system::system_category());
         disconnect(etimeout);
     }
 }
@@ -323,24 +318,20 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length)
     // already holds the lock.
 
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
-    if(m_write_timeout > 0)
-    {
+    if(m_write_timeout > 0) {
         m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
         m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, shared_from_this(),
                                              boost::asio::placeholders::error));
     }
 
     // Start async write
-    if(m_secure_socket)
-    {
+    if(m_secure_socket) {
         async_write(*m_secure_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                    boost::asio::placeholders::error));
-    }
-    else
-    {
+                                boost::asio::placeholders::error));
+    } else {
         async_write(*m_socket, boost::asio::buffer(buf, length),
                     boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                    boost::asio::placeholders::error));
+                                boost::asio::placeholders::error));
     }
 }

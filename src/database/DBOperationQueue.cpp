@@ -61,5 +61,7 @@ bool DBOperationQueue::is_empty() const
 bool DBOperationQueue::can_operation_start(const DBOperation *op)
 {
     return all_of(m_running_operations.begin(), m_running_operations.end(),
-            [op](const DBOperation *running){ return op->is_independent_of(running); });
+    [op](const DBOperation * running) {
+        return op->is_independent_of(running);
+    });
 }

@@ -206,7 +206,7 @@ class MDParticipantInterface : public ChannelSubscriber
   private:
     // The messages to be distributed on unexpected disconnect.
     std::map<channel_t, std::vector<DatagramHandle> > m_post_removes;
-    std::atomic<bool> m_is_terminated{false};
+    std::atomic<bool> m_is_terminated {false};
     std::string m_name;
     std::string m_url;
 };

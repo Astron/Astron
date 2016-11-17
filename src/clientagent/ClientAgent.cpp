@@ -186,7 +186,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
         // Set SSL handshake timeout.
         ssl_acceptor->set_handshake_timeout(tls_handshake_timeout.get_rval(tls_settings));
 
-	m_net_acceptor = ssl_acceptor;
+        m_net_acceptor = ssl_acceptor;
     }
 
     // Begin listening for new Clients

@@ -16,7 +16,10 @@ class Timeout : public std::enable_shared_from_this<Timeout>
   public:
     Timeout(unsigned long ms, std::function<void()> f);
     ~Timeout();
-    inline void start() { reset(); }
+    inline void start()
+    {
+        reset();
+    }
     void reset();
     // cancel() attempts to invalidate the callback and ensure that it will not
     // run. On success, returns true, guaranteeing that the callback has/will
@@ -24,7 +27,7 @@ class Timeout : public std::enable_shared_from_this<Timeout>
     // callback was already canceled, the callback has already finished
     // running, or the callback is (about to be) called.
     bool cancel();
-    
+
 
   private:
     boost::asio::deadline_timer m_timer;
@@ -32,6 +35,6 @@ class Timeout : public std::enable_shared_from_this<Timeout>
     long m_timeout_interval;
 
     std::atomic<bool> m_callback_disabled;
-    
+
     void timer_callback(const boost::system::error_code &ec);
 };

@@ -34,8 +34,8 @@ void SslAcceptor::handle_accept(ssl::stream<tcp::socket> *socket,
 
     // Dispatch a handshake (and appropriate timeout)
     auto timeout = std::make_shared<Timeout>(
-            m_handshake_timeout,
-            std::bind(&SslAcceptor::handle_timeout, this, socket));
+                       m_handshake_timeout,
+                       std::bind(&SslAcceptor::handle_timeout, this, socket));
     socket->async_handshake(ssl::stream<tcp::socket>::server,
                             boost::bind(&SslAcceptor::handle_handshake, this,
                                         socket, timeout,

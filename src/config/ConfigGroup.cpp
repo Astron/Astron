@@ -97,7 +97,8 @@ bool ConfigGroup::validate(ConfigNode node)
 }
 
 // constructor
-KeyedConfigGroup::KeyedConfigGroup(const string& name, const string& group_key, ConfigGroup& parent) :
+KeyedConfigGroup::KeyedConfigGroup(const string& name, const string& group_key,
+                                   ConfigGroup& parent) :
     ConfigGroup(name, parent), m_key(group_key)
 {
 }

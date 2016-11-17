@@ -24,7 +24,8 @@ static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
 static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
 
-static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256*1024, ca_client_config);
+static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256 * 1024,
+        ca_client_config);
 static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, ca_client_config);
 
 //by default, have heartbeat disabled.
@@ -97,8 +98,9 @@ class AstronClient : public Client, public NetworkHandler
     {
         //If heartbeat, start the heartbeat timer now.
         if(m_heartbeat_timeout != 0) {
-            m_heartbeat_timer = std::make_shared<Timeout>(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
-                                            this));
+            m_heartbeat_timer = std::make_shared<Timeout>(m_heartbeat_timeout,
+                                std::bind(&AstronClient::heartbeat_timeout,
+                                          this));
             m_heartbeat_timer->start();
         }
 

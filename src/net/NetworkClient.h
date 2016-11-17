@@ -40,8 +40,14 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     // is_connected returns true if the TCP connection is active, or false otherwise
     bool is_connected();
 
-    inline boost::asio::ip::tcp::endpoint get_remote() { return m_remote; }
-    inline boost::asio::ip::tcp::endpoint get_local() { return m_local; }
+    inline boost::asio::ip::tcp::endpoint get_remote()
+    {
+        return m_remote;
+    }
+    inline boost::asio::ip::tcp::endpoint get_local()
+    {
+        return m_local;
+    }
 
   private:
     /* Asynchronous call loop */

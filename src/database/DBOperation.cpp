@@ -105,7 +105,9 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
 
         if(field->has_keyword("db")) {
             // Get criteria value
-            if(check_values) { dgi.unpack_field(field, m_criteria_fields[field]); }
+            if(check_values) {
+                dgi.unpack_field(field, m_criteria_fields[field]);
+            }
 
             // Get update value
             if(!delete_values) {
@@ -121,10 +123,14 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
                                          << field->get_name() << "\n";
 
             // Don't read in a non-db field
-            if(!delete_values) { dgi.skip_field(field); }
+            if(!delete_values) {
+                dgi.skip_field(field);
+            }
 
             // It is not proper to expect a non-db field in criteria.
-            if(check_values) { return false; }
+            if(check_values) {
+                return false;
+            }
         }
     }
 
@@ -282,7 +288,9 @@ bool DBOperationGet::initialize(channel_t sender, uint16_t msg_type, DatagramIte
 bool DBOperationGet::verify_class(const dclass::Class *dclass)
 {
     // If request is of type GET_OBJECT don't expect a class, so no need to verify it.
-    if(m_type == GET_OBJECT) { return true; }
+    if(m_type == GET_OBJECT) {
+        return true;
+    }
 
     // Otherwise verify the fields and spawn a warning for developers if its not valid
     else if(!verify_fields(dclass, m_get_fields)) {
@@ -303,31 +311,31 @@ bool DBOperationGet::is_independent_of(const DBOperation *other) const
     }
 
     switch(other->type()) {
-        case GET_OBJECT:
-        case GET_FIELDS:
-            return true;
+    case GET_OBJECT:
+    case GET_FIELDS:
+        return true;
 
-        case SET_FIELDS:
-        case UPDATE_FIELDS:
-            if(type() == GET_OBJECT) {
-                // A GET_OBJECT gets everything, and is therefore not
-                // independent of any changes to the object.
+    case SET_FIELDS:
+    case UPDATE_FIELDS:
+        if(type() == GET_OBJECT) {
+            // A GET_OBJECT gets everything, and is therefore not
+            // independent of any changes to the object.
+            return false;
+        }
+
+        // Test if any of the fields we're getting is a field changed by
+        // the other operation...
+        for(auto it = get_fields().begin(); it != get_fields().end(); ++it) {
+            if(other->set_fields().find(*it) != other->set_fields().end()) {
                 return false;
             }
+        }
 
-            // Test if any of the fields we're getting is a field changed by
-            // the other operation...
-            for(auto it = get_fields().begin(); it != get_fields().end(); ++it) {
-                if(other->set_fields().find(*it) != other->set_fields().end()) {
-                    return false;
-                }
-            }
+        // No conflict.
+        return true;
 
-            // No conflict.
-            return true;
-
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
@@ -446,40 +454,40 @@ bool DBOperationSet::is_independent_of(const DBOperation *other) const
     }
 
     switch(other->type()) {
-        case GET_OBJECT:
-        case GET_FIELDS:
-            // The logic for this is in DBOperationGet... Let's let that take
-            // care of it.
-            return other->is_independent_of(this);
+    case GET_OBJECT:
+    case GET_FIELDS:
+        // The logic for this is in DBOperationGet... Let's let that take
+        // care of it.
+        return other->is_independent_of(this);
 
-        case SET_FIELDS:
-            // The operations are independent as long as they're on different
-            // fields.
+    case SET_FIELDS:
+        // The operations are independent as long as they're on different
+        // fields.
 
-            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
-                if(other->set_fields().find(it->first) != other->set_fields().end()) {
-                    return false;
-                }
+        for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+            if(other->set_fields().find(it->first) != other->set_fields().end()) {
+                return false;
             }
+        }
 
-            // No conflict.
-            return true;
+        // No conflict.
+        return true;
 
-        case UPDATE_FIELDS:
-            // We must be independent of the other operation's fields *AND*
-            // their criteria.
-            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
-                if(other->set_fields().find(it->first) != other->set_fields().end() ||
-                   other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
-                    return false;
-                }
+    case UPDATE_FIELDS:
+        // We must be independent of the other operation's fields *AND*
+        // their criteria.
+        for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+            if(other->set_fields().find(it->first) != other->set_fields().end() ||
+               other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
+                return false;
             }
+        }
 
-            // No conflict.
-            return true;
+        // No conflict.
+        return true;
 
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
@@ -560,39 +568,39 @@ bool DBOperationUpdate::is_independent_of(const DBOperation *other) const
     }
 
     switch(other->type()) {
-        case GET_OBJECT:
-        case GET_FIELDS:
-        case SET_FIELDS:
-            // The logic for handling these types is elsewhere.
-            return other->is_independent_of(this);
+    case GET_OBJECT:
+    case GET_FIELDS:
+    case SET_FIELDS:
+        // The logic for handling these types is elsewhere.
+        return other->is_independent_of(this);
 
-        case UPDATE_FIELDS:
-            // This case gets really tricky. Not only may our set fields not
-            // conflict with their set fields/criteria, but our *criteria* may
-            // not overlap with their set fields. It *is* okay, however, to
-            // have a criteria overlap.
-            for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
-                if(other->set_fields().find(it->first) != other->set_fields().end() ||
-                   other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
-                    return false;
-                }
+    case UPDATE_FIELDS:
+        // This case gets really tricky. Not only may our set fields not
+        // conflict with their set fields/criteria, but our *criteria* may
+        // not overlap with their set fields. It *is* okay, however, to
+        // have a criteria overlap.
+        for(auto it = set_fields().begin(); it != set_fields().end(); ++it) {
+            if(other->set_fields().find(it->first) != other->set_fields().end() ||
+               other->criteria_fields().find(it->first) != other->criteria_fields().end()) {
+                return false;
             }
+        }
 
-            // Our set fields don't conflict, let's see if their set fields
-            // conflict.
-            for(auto it = other->set_fields().begin(); it != other->set_fields().end(); ++it) {
-                // We're only testing against our criteria_fields()... The
-                // set_fields()<->set_fields() intersection was already tested.
-                if(criteria_fields().find(it->first) != criteria_fields().end()) {
-                    return false;
-                }
+        // Our set fields don't conflict, let's see if their set fields
+        // conflict.
+        for(auto it = other->set_fields().begin(); it != other->set_fields().end(); ++it) {
+            // We're only testing against our criteria_fields()... The
+            // set_fields()<->set_fields() intersection was already tested.
+            if(criteria_fields().find(it->first) != criteria_fields().end()) {
+                return false;
             }
+        }
 
-            // No conflict.
-            return true;
+        // No conflict.
+        return true;
 
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 

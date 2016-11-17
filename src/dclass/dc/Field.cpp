@@ -16,9 +16,7 @@ Field::Field(DistributedType* type, const std::string &name) :
 
     if(m_type == NULL) {
         m_type = DistributedType::invalid;
-    }
-    else
-    {
+    } else {
         m_default_value = create_default_value(type, implicit_value);
         m_has_default_value = !implicit_value;
     }

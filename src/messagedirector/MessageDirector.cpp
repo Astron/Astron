@@ -180,7 +180,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
                           << p->m_name << "'.\n";
         } else {
             m_log.error() << "Detected truncated datagram reading header from "
-                             "unknown participant.\n";
+                          "unknown participant.\n";
         }
         return;
     }
@@ -188,15 +188,18 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
     // Find the participants that need to receive the message
     std::set<ChannelSubscriber*> receiving_participants;
     lookup_channels(channels, receiving_participants);
-    if(p) { receiving_participants.erase(p); }
+    if(p) {
+        receiving_participants.erase(p);
+    }
 
     // Send the datagram to each participant
     for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
         auto participant = static_cast<MDParticipantInterface*>(*it);
         DatagramIterator msg_dgi(dg, dgi.tell());
 
-        try { participant->handle_datagram(dg, msg_dgi); }
-        catch(DatagramIteratorEOF &) {
+        try {
+            participant->handle_datagram(dg, msg_dgi);
+        } catch(DatagramIteratorEOF &) {
             // Log error with receivers output
             m_log.error() << "Detected truncated datagram in handle_datagram for '"
                           << participant->m_name << "' from participant '" << p->m_name << "'.\n";

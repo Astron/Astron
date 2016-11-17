@@ -89,7 +89,7 @@ void MDNetworkParticipant::receive_disconnect(const boost::system::error_code &e
 {
     logger().info() << "Lost connection from "
                     << m_client->get_remote().address() << ":"
-		    << m_client->get_remote().port() << ": "
+                    << m_client->get_remote().port() << ": "
                     << ec.message() << std::endl;
     terminate();
 }

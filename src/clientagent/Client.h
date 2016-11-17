@@ -77,7 +77,7 @@ class InterestOperation
     void set_expected(doid_t total);
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
-    void finish(bool is_timeout=false);
+    void finish(bool is_timeout = false);
     void timeout();
 
   private:
@@ -86,7 +86,7 @@ class InterestOperation
 
 class Client : public MDParticipantInterface
 {
-  friend class InterestOperation;
+    friend class InterestOperation;
   public:
     virtual ~Client();
 
@@ -230,7 +230,7 @@ class Client : public MDParticipantInterface
     // handle_interest_done is called when all of the objects from an opened interest have been
     // received. Typically, informs the client that a particular group of objects is loaded.
     virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
-    
+
     // get_remote_address and friends are set by AstronClient, because we have no access
     // to m_remote from Client
     virtual const std::string get_remote_address() = 0;
