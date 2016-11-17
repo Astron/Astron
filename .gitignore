@@ -1,2 +1,3 @@
 # Ignore Mac's directory info
 .DS_Store
+build/
