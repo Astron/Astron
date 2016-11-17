@@ -1,10 +1,10 @@
 install:
-- C:\msys64\usr\bin\pacman -Su --noconfirm make mingw-w64-x86_64-gcc mingw-w64-x86_64-boost mingw-w64-x86_64-yaml-cpp mingw-w64-x86_64-python2
+- C:\msys64\usr\bin\pacman -Su --noconfirm make mingw-w64-x86_64-clang mingw-w64-x86_64-boost mingw-w64-x86_64-yaml-cpp mingw-w64-x86_64-python2
 
 build_script:
 - set MSYSTEM=MINGW64
 - set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
 - cd build
-- cmake -G"MSYS Makefiles" ..
+- cmake -G"MSYS Makefiles" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
 - make
 - make test
