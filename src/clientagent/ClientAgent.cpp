@@ -103,7 +103,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        std::placeholders::_3);
-        m_net_acceptor = new TcpAcceptor(io_service, callback);
+        m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
     }
 
     // Handle SSL requested, but some information missing
@@ -176,12 +176,12 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        std::placeholders::_3);
-        auto ssl_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
+        std::unique_ptr<SslAcceptor> ssl_acceptor(new SslAcceptor(io_service, m_ssl_ctx, callback));
 
         // Set SSL handshake timeout.
         ssl_acceptor->set_handshake_timeout(tls_handshake_timeout.get_rval(tls_settings));
 
-        m_net_acceptor = ssl_acceptor;
+        m_net_acceptor = std::move(ssl_acceptor);
     }
 
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));

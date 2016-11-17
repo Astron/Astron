@@ -69,7 +69,7 @@ class ClientAgent : public Role
     }
 
   private:
-    NetworkAcceptor *m_net_acceptor;
+    std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     std::string m_client_type;
     std::string m_server_version;
     ChannelTracker m_ct;
