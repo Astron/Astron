@@ -16,11 +16,11 @@ class Method final : public DistributedType
 {
   public:
     Method();
-    virtual ~Method();
+    ~Method();
 
     // as_method returns this as a Method if it is a method, or nullptr otherwise.
-    virtual Method* as_method();
-    virtual const Method* as_method() const;
+    Method* as_method();
+    const Method* as_method() const;
 
     // get_num_parameters returns the number of parameters/arguments of the method.
     inline size_t get_num_parameters() const;
@@ -36,7 +36,7 @@ class Method final : public DistributedType
     bool add_parameter(Parameter *param);
 
     // generate_hash accumulates the properties of this field into the hash
-    virtual void generate_hash(HashGenerator &hashgen) const;
+    void generate_hash(HashGenerator &hashgen) const;
 
   private:
     std::vector<Parameter*> m_parameters; // the "arguments" or parameters of the method
