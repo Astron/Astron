@@ -22,7 +22,7 @@ class MDUpstream;
 // A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector : public ChannelMap
+class MessageDirector final : public ChannelMap
 {
   public:
     ~MessageDirector();
