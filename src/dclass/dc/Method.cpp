@@ -17,9 +17,10 @@ Method::Method()
 // destructor
 Method::~Method()
 {
-    for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it) {
-        delete(*it);
+    for(auto& it : m_parameters) {
+        delete it;
     }
+
     m_parameters.clear();
 }
 
@@ -72,8 +73,8 @@ void Method::generate_hash(HashGenerator& hashgen) const
 {
     DistributedType::generate_hash(hashgen);
     hashgen.add_int(m_parameters.size());
-    for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it) {
-        (*it)->generate_hash(hashgen);
+    for(const auto& it : m_parameters) {
+        it->generate_hash(hashgen);
     }
 }
 
