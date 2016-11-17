@@ -70,19 +70,19 @@ class DistributedType
     // set_alias gives this type the alternate name <alias>.
     inline void set_alias(const std::string& alias);
 
-    // as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
+    // as_numeric returns this as a NumericType if it is numeric, or nullptr otherwise.
     virtual NumericType* as_numeric();
     virtual const NumericType* as_numeric() const;
 
-    // as_array returns this as an ArrayType if it is an array, or NULL otherwise.
+    // as_array returns this as an ArrayType if it is an array, or nullptr otherwise.
     virtual ArrayType* as_array();
     virtual const ArrayType* as_array() const;
 
-    // as_struct returns this as a Struct if it is a struct, or NULL otherwise.
+    // as_struct returns this as a Struct if it is a struct, or nullptr otherwise.
     virtual Struct* as_struct();
     virtual const Struct* as_struct() const;
 
-    // as_method returns this as a Method if it is a method, or NULL otherwise.
+    // as_method returns this as a Method if it is a method, or nullptr otherwise.
     virtual Method* as_method();
     virtual const Method* as_method() const;
 

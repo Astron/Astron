@@ -17,7 +17,7 @@ class ArrayType : public DistributedType
   public:
     ArrayType(DistributedType* element_type, const NumericRange &size = NumericRange());
 
-    // as_array returns this as a ArrayType if it is an array/string/blob, or NULL otherwise.
+    // as_array returns this as a ArrayType if it is an array/string/blob, or nullptr otherwise.
     virtual ArrayType* as_array();
     virtual const ArrayType* as_array() const;
 

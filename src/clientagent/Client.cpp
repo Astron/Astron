@@ -84,7 +84,7 @@ void Client::log_event(LoggedEvent &event)
 }
 
 // lookup_object returns the class of the object with a do_id.
-// If that object is not visible to the client, NULL will be returned instead.
+// If that object is not visible to the client, nullptr will be returned instead.
 const Class *Client::lookup_object(doid_t do_id)
 {
     // First see if it's an UberDOG:
@@ -107,7 +107,7 @@ const Class *Client::lookup_object(doid_t do_id)
     }
 
     // We're at the end of our rope; we have no clue what this object is.
-    return NULL;
+    return nullptr;
 }
 
 // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.

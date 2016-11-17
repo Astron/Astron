@@ -42,7 +42,7 @@
 	static int warning_count = 0;
 
 	// This is the pointer to the current input stream.
-	static std::istream *input_p = NULL;
+	static std::istream *input_p = nullptr;
 
 	// This is the name of the dc file we're parsing.  We keep it so we
 	// can print it out for error messages.
@@ -149,7 +149,7 @@
 
 				// Truncate it at the newline.
 				char *end = strchr(current_line, '\n');
-				if(end != NULL)
+				if(end != nullptr)
 				{
 					*end = '\0';
 				}

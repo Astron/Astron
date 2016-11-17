@@ -10,11 +10,11 @@ namespace dclass   // open namespace
 
 // constructor
 Field::Field(DistributedType* type, const std::string &name) :
-    m_struct(NULL), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
+    m_struct(nullptr), m_id(0), m_name(name), m_type(type), m_has_default_value(false)
 {
     bool implicit_value;
 
-    if(m_type == NULL) {
+    if(m_type == nullptr) {
         m_type = DistributedType::invalid;
     } else {
         m_default_value = create_default_value(type, implicit_value);
@@ -28,14 +28,14 @@ Field::~Field()
     delete m_type;
 }
 
-// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
+// as_molecular returns this as a MolecularField if it is molecular, or nullptr otherwise.
 MolecularField* Field::as_molecular()
 {
-    return (MolecularField*)NULL;
+    return nullptr;
 }
 const MolecularField* Field::as_molecular() const
 {
-    return (MolecularField*)NULL;
+    return nullptr;
 }
 
 // set_name sets the name of this field.  Returns false if a field with
@@ -43,7 +43,7 @@ const MolecularField* Field::as_molecular() const
 bool Field::set_name(const std::string& name)
 {
     // Check to make sure no other fields in our struct have this name
-    if(m_struct != (Struct*)NULL && m_struct->get_field_by_name(name) != (Field*)NULL) {
+    if(m_struct != nullptr && m_struct->get_field_by_name(name) != nullptr) {
         return false;
     }
 

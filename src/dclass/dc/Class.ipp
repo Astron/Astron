@@ -37,10 +37,10 @@ inline const Class* Class::get_child(unsigned int n) const
 //     or false if it just uses the default constructor.
 inline bool Class::has_constructor() const
 {
-	return (m_constructor != (Field*)NULL);
+	return (m_constructor != nullptr);
 }
 // get_constructor returns the constructor method for this class if it is defined,
-//     or NULL if the class uses the default constructor.
+//     or nullptr if the class uses the default constructor.
 inline Field* Class::get_constructor()
 {
 	return m_constructor;

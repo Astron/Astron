@@ -24,7 +24,7 @@ string create_default_value(const DistributedType* dtype)
 //     or false otherwise (ie. at least one value was user-defined via set_default_value).
 string create_default_value(const DistributedType* dtype, bool& is_implicit)
 {
-    if(dtype == NULL) {
+    if(dtype == nullptr) {
         return "";
     }
 

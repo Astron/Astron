@@ -15,7 +15,7 @@ class MDParticipantTest : public MDParticipantInterface
         dg2.add_channel(200);
         dg2.add_string("test");
 
-        MessageDirector::singleton.handle_datagram(NULL, dg2);
+        MessageDirector::singleton.handle_datagram(nullptr, dg2);
 
         unsubscribe_channel(100);
         unsubscribe_channel(200);

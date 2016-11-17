@@ -10,7 +10,7 @@ LogCategory mdperf_log("PerfTestMD", "Performance Test - MessageDirector");
 #define MD_PERF_NUM_PARTICIPANTS 10
 #define MD_PERF_TIME 5.0
 #define MD_PERF_DATASIZE 70 //must be atleast 1+(MD_PERF_NUM_DEST_CHANNELS*sizeof(channel_t))
-uint8_t *data = NULL;
+uint8_t *data = nullptr;
 
 boost::random::mt19937_64 gen;
 

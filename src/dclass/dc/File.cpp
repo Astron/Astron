@@ -38,49 +38,49 @@ File::~File()
     m_keywords.clear();
 }
 
-// get_class_by_id returns the requested class or NULL if there is no such class.
+// get_class_by_id returns the requested class or nullptr if there is no such class.
 Class* File::get_class_by_id(unsigned int id)
 {
     DistributedType* dt = get_type_by_id(id);
-    if(dt == NULL) {
-        return NULL;
+    if(dt == nullptr) {
+        return nullptr;
     }
-    if(dt->as_struct() == NULL) {
-        return NULL;
+    if(dt->as_struct() == nullptr) {
+        return nullptr;
     }
     return dt->as_struct()->as_class();
 }
 const Class* File::get_class_by_id(unsigned int id) const
 {
     const DistributedType* dt = get_type_by_id(id);
-    if(dt == NULL) {
-        return NULL;
+    if(dt == nullptr) {
+        return nullptr;
     }
-    if(dt->as_struct() == NULL) {
-        return NULL;
+    if(dt->as_struct() == nullptr) {
+        return nullptr;
     }
     return dt->as_struct()->as_class();
 }
-// get_class_by_name returns the requested class or NULL if there is no such class.
+// get_class_by_name returns the requested class or nullptr if there is no such class.
 Class* File::get_class_by_name(const std::string &name)
 {
     DistributedType* dt = get_type_by_name(name);
-    if(dt == NULL) {
-        return NULL;
+    if(dt == nullptr) {
+        return nullptr;
     }
-    if(dt->as_struct() == NULL) {
-        return NULL;
+    if(dt->as_struct() == nullptr) {
+        return nullptr;
     }
     return dt->as_struct()->as_class();
 }
 const Class* File::get_class_by_name(const std::string &name) const
 {
     const DistributedType* dt = get_type_by_name(name);
-    if(dt == NULL) {
-        return NULL;
+    if(dt == nullptr) {
+        return nullptr;
     }
-    if(dt->as_struct() == NULL) {
-        return NULL;
+    if(dt->as_struct() == nullptr) {
+        return nullptr;
     }
     return dt->as_struct()->as_class();
 }

@@ -71,7 +71,7 @@ LockedLogOutput Logger::log(LogSeverity sev)
     const char *sevtext;
 
     if(sev < m_severity) {
-        LockedLogOutput null_out(NULL, NULL);
+        LockedLogOutput null_out(nullptr, nullptr);
         return null_out;
     }
 
