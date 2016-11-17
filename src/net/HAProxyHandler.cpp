@@ -103,10 +103,10 @@ void HAProxyHandler::parse_v2()
 {
     boost::system::error_code no_error;
 
-    int version = (m_header_buf[12]>>4)&0xF;
-    int command = (m_header_buf[12])&0xF;
-    int family  = (m_header_buf[13]>>4)&0xF;
-    int transp  = (m_header_buf[13])&0xF;
+    int version = (m_header_buf[12] >> 4) & 0xF;
+    int command = (m_header_buf[12]) & 0xF;
+    int family  = (m_header_buf[13] >> 4) & 0xF;
+    int transp  = (m_header_buf[13]) & 0xF;
 
     if(version != 2) {
         boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
@@ -124,7 +124,7 @@ void HAProxyHandler::parse_v2()
 
     if(transp != 0x1) {
         boost::system::error_code eprotonosupport(boost::system::errc::errc_t::protocol_not_supported,
-                                                  boost::system::system_category());
+                boost::system::system_category());
         finish(eprotonosupport);
         return;
     }
@@ -182,8 +182,8 @@ void HAProxyHandler::parse_v2()
         port_offset = 32;
     }
 
-    int remote_port = m_body_buf[port_offset]<<8 | m_body_buf[port_offset+1];
-    int local_port = m_body_buf[port_offset+2]<<8 | m_body_buf[port_offset+3];
+    int remote_port = m_body_buf[port_offset] << 8 | m_body_buf[port_offset + 1];
+    int local_port = m_body_buf[port_offset + 2] << 8 | m_body_buf[port_offset + 3];
 
     m_remote = tcp::endpoint(remote_address, remote_port);
     m_local = tcp::endpoint(local_address, local_port);
@@ -247,8 +247,8 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
 
 void HAProxyHandler::parse_v1()
 {
-    if((m_header_buf[m_header_len-2] != '\r') ||
-       (m_header_buf[m_header_len-1] != '\n')) {
+    if((m_header_buf[m_header_len - 2] != '\r') ||
+       (m_header_buf[m_header_len - 1] != '\n')) {
         boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
                                          boost::system::system_category());
         finish(eproto);

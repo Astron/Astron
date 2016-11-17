@@ -17,7 +17,8 @@
 
 using boost::asio::ip::tcp;
 
-typedef std::function<void(const boost::system::error_code &, const tcp::endpoint &, const tcp::endpoint &)> ProxyCallback;
+typedef std::function<void(const boost::system::error_code &, const tcp::endpoint &, const tcp::endpoint &)>
+ProxyCallback;
 
 class HAProxyHandler
 {
@@ -46,7 +47,7 @@ class HAProxyHandler
     tcp::endpoint m_remote;
     tcp::endpoint m_local;
 
-    uint8_t m_header_buf[HAPROXY_HEADER_MAX+1];
+    uint8_t m_header_buf[HAPROXY_HEADER_MAX + 1];
     size_t m_header_len = 0;
 
     uint8_t *m_body_buf = nullptr;

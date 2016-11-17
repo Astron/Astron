@@ -100,9 +100,9 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     if(m_ssl_cert.empty() && m_ssl_key.empty()) {
         m_log->debug() << "Not using SSL/TLS.\n";
         TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp, this,
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2,
-                                                 std::placeholders::_3);
+                                       std::placeholders::_1,
+                                       std::placeholders::_2,
+                                       std::placeholders::_3);
         m_net_acceptor = new TcpAcceptor(io_service, callback);
     }
 
@@ -173,9 +173,9 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
         }
 
         SslAcceptorCallback callback = std::bind(&ClientAgent::handle_ssl, this,
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2,
-                                                 std::placeholders::_3);
+                                       std::placeholders::_1,
+                                       std::placeholders::_2,
+                                       std::placeholders::_3);
         auto ssl_acceptor = new SslAcceptor(io_service, m_ssl_ctx, callback);
 
         // Set SSL handshake timeout.
@@ -215,7 +215,8 @@ void ClientAgent::handle_tcp(tcp::socket *socket,
     m_log->debug() << "Got an incoming connection from "
                    << remote.address() << ":" << remote.port() << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote, local);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote,
+            local);
 }
 
 // handle_ssl generates a new Client object from an ssl stream.
@@ -226,7 +227,8 @@ void ClientAgent::handle_ssl(ssl::stream<tcp::socket> *stream,
     m_log->debug() << "Got an incoming connection from "
                    << remote.address() << ":" << remote.port() << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream, remote, local);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, stream, remote,
+            local);
 }
 
 

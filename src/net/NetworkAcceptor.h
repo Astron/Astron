@@ -14,7 +14,10 @@ class NetworkAcceptor
     void start();
     void stop();
 
-    inline void set_haproxy_mode(bool haproxy_mode) { m_haproxy_mode = haproxy_mode; }
+    inline void set_haproxy_mode(bool haproxy_mode)
+    {
+        m_haproxy_mode = haproxy_mode;
+    }
 
   protected:
     boost::asio::io_service &m_io_service;

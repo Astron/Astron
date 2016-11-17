@@ -5,7 +5,8 @@
 #include <boost/asio/ssl.hpp>
 namespace ssl = boost::asio::ssl;
 
-typedef std::function<void(ssl::stream<tcp::socket>*, tcp::endpoint, tcp::endpoint)> SslAcceptorCallback;
+typedef std::function<void(ssl::stream<tcp::socket>*, tcp::endpoint, tcp::endpoint)>
+SslAcceptorCallback;
 
 class SslAcceptor : public NetworkAcceptor
 {
@@ -14,7 +15,10 @@ class SslAcceptor : public NetworkAcceptor
                 SslAcceptorCallback &callback);
     virtual ~SslAcceptor() {}
 
-    inline void set_handshake_timeout(int milliseconds) { m_handshake_timeout = milliseconds; }
+    inline void set_handshake_timeout(int milliseconds)
+    {
+        m_handshake_timeout = milliseconds;
+    }
 
   private:
     ssl::context& m_context;
