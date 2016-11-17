@@ -23,13 +23,13 @@ class Method final : public DistributedType
     const Method* as_method() const;
 
     // get_num_parameters returns the number of parameters/arguments of the method.
-    inline size_t get_num_parameters() const;
+    size_t get_num_parameters() const;
     // get_par returns the <n>th parameter of the method.
-    inline Parameter* get_parameter(unsigned int n);
-    inline const Parameter* get_parameter(unsigned int n) const;
+    Parameter* get_parameter(unsigned int n);
+    const Parameter* get_parameter(unsigned int n) const;
     // get_parameter_by_name returns the requested parameter or nullptr if there is no such param.
-    inline Parameter* get_parameter_by_name(const std::string& name);
-    inline const Parameter* get_parameter_by_name(const std::string& name) const;
+    Parameter* get_parameter_by_name(const std::string& name);
+    const Parameter* get_parameter_by_name(const std::string& name) const;
 
     // add_parameter adds a new parameter to the method.
     //     Returns false if the parameter could not be added to the method.
