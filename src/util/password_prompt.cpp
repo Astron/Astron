@@ -1,7 +1,7 @@
 #include "password_prompt.h"
 using namespace std;
 
-#ifdef WIN32
+#ifdef _WIN32
 
 // Define getpass for windows
 #include <iostream>

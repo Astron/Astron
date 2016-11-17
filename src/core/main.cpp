@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 {
     string cfg_file;
 
-#ifdef WIN32
+#ifdef _WIN32
     bool prettyPrint = false;
 #else
     bool prettyPrint = true;

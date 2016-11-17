@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <mutex>
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #  include <windows.h>
 #else
@@ -23,7 +23,7 @@ static mutex exit_mtx;
 static mutex ctrlc_mtx;
 
 
-#ifdef WIN32 /* Handle Windows signals */
+#ifdef _WIN32 /* Handle Windows signals */
 static BOOL handle_interrupt(DWORD)
 {
     interrupts += 1;
