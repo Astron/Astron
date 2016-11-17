@@ -28,7 +28,7 @@ Struct::~Struct()
     }
 }
 
-// as_struct returns this as a Struct if it is a Struct, or NULL otherwise.
+// as_struct returns this as a Struct if it is a Struct, or nullptr otherwise.
 Struct* Struct::as_struct()
 {
     return this;
@@ -38,26 +38,26 @@ const Struct* Struct::as_struct() const
     return this;
 }
 
-// as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
+// as_class returns this Struct as a Class if it is a Class, or nullptr otherwise.
 Class* Struct::as_class()
 {
-    return (Class*)NULL;
+    return nullptr;
 }
 const Class* Struct::as_class() const
 {
-    return (const Class*)NULL;
+    return nullptr;
 }
 
 // add_field adds a new Field to the struct.
 bool Struct::add_field(Field* field)
 {
     // Field must not be null
-    if(field == (Field*)NULL) {
+    if(field == nullptr) {
         return false;
     }
 
     // Structs can't share a field
-    if(field->get_struct() != NULL && field->get_struct() != this) {
+    if(field->get_struct() != nullptr && field->get_struct() != this) {
         return false;
     }
 

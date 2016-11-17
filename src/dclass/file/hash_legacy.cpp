@@ -182,7 +182,7 @@ void hash_keywords(HashGenerator& hashgen, const KeywordList* list)
         { "clrecv", 0x0040 },
         { "ownsend", 0x0080 },
         { "airecv", 0x0100 },
-        { NULL, 0 }
+        { nullptr, 0 }
     };
 
     size_t num_keywords = list->get_num_keywords();

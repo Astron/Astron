@@ -134,11 +134,11 @@ class SociSQLDatabase : public OldDatabaseBackend
         try {
             m_sql << "SELECT class_id FROM objects WHERE id=" << do_id << ";", into(dc_id, ind);
         } catch(const soci_error &e) {
-            return NULL;
+            return nullptr;
         }
 
         if(ind != i_ok || dc_id == -1) {
-            return NULL;
+            return nullptr;
         }
 
         return g_dcf->get_class_by_id(dc_id);

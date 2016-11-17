@@ -109,12 +109,12 @@
 
 
 	// Parser output
-	static File* parsed_file = (File*)NULL;
-	static string* parsed_value = (string*)NULL;
+	static File* parsed_file = nullptr;
+	static string* parsed_value = nullptr;
 
 	// Parser state
-	static Class* current_class = (Class*)NULL;
-	static Struct* current_struct = (Struct*)NULL;
+	static Class* current_class = nullptr;
+	static Struct* current_struct = nullptr;
 
 	// Stack of distributed types for parsing values
 	struct TypeAndDepth
@@ -128,8 +128,8 @@
 
 	// These two types are really common types the parser doesn't need to make new
 	//     duplicates of every time a string or blob is used.
-	static ArrayType* basic_string = (ArrayType*)NULL;
-	static ArrayType* basic_blob = (ArrayType*)NULL;
+	static ArrayType* basic_string = nullptr;
+	static ArrayType* basic_blob = nullptr;
 
 	/* Helper functions */
 	static bool check_depth();
@@ -162,8 +162,8 @@
 	{
 		current_depth = 0;
 		type_stack = stack<TypeAndDepth>();
-		parsed_file = (File*)NULL;
-		parsed_value = (string*)NULL;
+		parsed_file = nullptr;
+		parsed_value = nullptr;
 	}
 
 	int parser_error_count()
@@ -1664,7 +1664,7 @@ yyreduce:
   case 24:
 #line 316 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[0].nametype).type == (DistributedType*)NULL)
+		if((yyvsp[0].nametype).type == nullptr)
 		{
 			// Ignore this typedef, it should have already produced an error
 			break;
@@ -1678,14 +1678,14 @@ yyreduce:
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[0].nametype).name);
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding typedef to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'typedef " + (yyvsp[0].nametype).name
 				             + "' to file because a typedef was already declared with that name.");
@@ -1739,10 +1739,10 @@ yyreduce:
 #line 383 "parser.ypp" /* yacc.c:1646  */
     {
 		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[0].str));
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			parser_error("Type '" + string((yyvsp[0].str)) + "' has not been declared.");
-			(yyval.u.dtype) = NULL;
+			(yyval.u.dtype) = nullptr;
 			break;
 		}
 
@@ -1775,14 +1775,14 @@ yyreduce:
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name(current_class->get_name());
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding class to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'dclass " + current_class->get_name()
 				             + "' to file because a typedef was already declared with that name.");
@@ -1807,7 +1807,7 @@ yyreduce:
   case 36:
 #line 455 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[0].u.dclass) != (Class*)NULL)
+		if((yyvsp[0].u.dclass) != nullptr)
 		{
 			current_class->add_parent((yyvsp[0].u.dclass));
 		}
@@ -1818,7 +1818,7 @@ yyreduce:
   case 37:
 #line 462 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[0].u.dclass) != (Class*)NULL)
+		if((yyvsp[0].u.dclass) != nullptr)
 		{
 			current_class->add_parent((yyvsp[0].u.dclass));
 		}
@@ -1830,26 +1830,26 @@ yyreduce:
 #line 472 "parser.ypp" /* yacc.c:1646  */
     {
 		DistributedType* dtype = parsed_file->get_type_by_name((yyvsp[0].str));
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			parser_error("'dclass " + string((yyvsp[0].str)) + "' has not been declared.");
-			(yyval.u.dclass) = NULL;
+			(yyval.u.dclass) = nullptr;
 			break;
 		}
 
 		Struct* dstruct = dtype->as_struct();
-		if(dstruct == (Struct*)NULL)
+		if(dstruct == nullptr)
 		{
 			parser_error("class cannot inherit from non-class type '" + string((yyvsp[0].str)) + "'.");
-			(yyval.u.dclass) = NULL;
+			(yyval.u.dclass) = nullptr;
 			break;
 		}
 
 		Class* dclass = dstruct->as_class();
-		if(dclass == (Class*)NULL)
+		if(dclass == nullptr)
 		{
 			parser_error("class cannot inherit from struct type '" + string((yyvsp[0].str)) + "'.");
-			(yyval.u.dclass) = NULL;
+			(yyval.u.dclass) = nullptr;
 			break;
 		}
 
@@ -1861,7 +1861,7 @@ yyreduce:
   case 41:
 #line 505 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[-1].u.dfield) == (Field*)NULL)
+		if((yyvsp[-1].u.dfield) == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;
@@ -1900,17 +1900,17 @@ yyreduce:
   case 42:
 #line 543 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[-1].u.dfield) == (Field*)NULL)
+		if((yyvsp[-1].u.dfield) == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
-			(yyval.u.dfield) = NULL;
+			(yyval.u.dfield) = nullptr;
 			break;
 		}
 
 		if((yyvsp[-1].u.dfield)->get_name().empty())
 		{
 			parser_error("An unnamed field can't be defined in a class.");
-			(yyval.u.dfield) = NULL;
+			(yyval.u.dfield) = nullptr;
 			break;
 		}
 
@@ -1949,14 +1949,14 @@ yyreduce:
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name(current_struct->get_name());
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding struct to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'struct " + current_struct->get_name()
 				             + "' to file because a typedef was already declared with that name.");
@@ -1981,7 +1981,7 @@ yyreduce:
   case 48:
 #line 616 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[-1].u.dfield) == (Field*)NULL || (yyvsp[-1].u.dfield)->get_type() == (DistributedType*)NULL)
+		if((yyvsp[-1].u.dfield) == nullptr || (yyvsp[-1].u.dfield)->get_type() == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;
@@ -2135,17 +2135,17 @@ yyreduce:
   case 70:
 #line 749 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[0].u.dtype) == (DistributedType*)NULL)
+		if((yyvsp[0].u.dtype) == nullptr)
 		{
-			// defined_type should have output an error, pass NULL upstream
-			(yyval.u.dtype) = NULL;
+			// defined_type should have output an error, pass nullptr upstream
+			(yyval.u.dtype) = nullptr;
 			break;
 		}
 
 		if((yyvsp[0].u.dtype)->get_type() == T_METHOD)
 		{
 			parser_error("Cannot use a method type here.");
-			(yyval.u.dtype) = NULL;
+			(yyval.u.dtype) = nullptr;
 			break;
 		}
 
@@ -2198,7 +2198,7 @@ yyreduce:
 #line 794 "parser.ypp" /* yacc.c:1646  */
     {
 		MolecularField* mol = new MolecularField(current_class, (yyvsp[-2].str));
-		if((yyvsp[0].u.dfield) == (Field*)NULL)
+		if((yyvsp[0].u.dfield) == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.u.dmolecule) = mol;
@@ -2227,7 +2227,7 @@ yyreduce:
   case 78:
 #line 820 "parser.ypp" /* yacc.c:1646  */
     {
-		if((yyvsp[0].u.dfield) == (Field*)NULL)
+		if((yyvsp[0].u.dfield) == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.u.dmolecule) = (yyvsp[-2].u.dmolecule);
@@ -2264,15 +2264,15 @@ yyreduce:
 		if(!current_class)
 		{
 			parser_error("Field '" + (yyvsp[0].str) + "' not defined in current class.");
-			(yyval.u.dfield) = NULL;
+			(yyval.u.dfield) = nullptr;
 			break;
 		}
 
 		Field *field = current_class->get_field_by_name((yyvsp[0].str));
-		if(field == (Field*)NULL)
+		if(field == nullptr)
 		{
 			parser_error("Field '" + (yyvsp[0].str) + "' not defined in current class.");
-			(yyval.u.dfield) = NULL;
+			(yyval.u.dfield) = nullptr;
 			break;
 		}
 
@@ -2286,7 +2286,7 @@ yyreduce:
     {
 		if((yyvsp[0].u.type) == T_STRING)
 		{
-			if(basic_string == NULL)
+			if(basic_string == nullptr)
 			{
 				basic_string = new ArrayType(new NumericType(T_CHAR));
 				basic_string->set_alias("string");
@@ -2296,7 +2296,7 @@ yyreduce:
 		}
 		else if((yyvsp[0].u.type) == T_BLOB)
 		{
-			if(basic_blob == NULL)
+			if(basic_blob == nullptr)
 			{
 				basic_blob = new ArrayType(new NumericType(T_UINT8));
 				basic_blob->set_alias("blob");
@@ -2307,7 +2307,7 @@ yyreduce:
 		else
 		{
 			parser_error("Found builtin ArrayType not handled by parser.");
-			(yyval.u.dtype) = NULL;
+			(yyval.u.dtype) = nullptr;
 		}
 	}
 #line 2314 "parser.cpp" /* yacc.c:1646  */
@@ -2331,7 +2331,7 @@ yyreduce:
 		else
 		{
 			parser_error("Found builtin ArrayType not handled by parser.");
-			(yyval.u.dtype) = NULL;
+			(yyval.u.dtype) = nullptr;
 		}
 	}
 #line 2338 "parser.cpp" /* yacc.c:1646  */
@@ -2653,7 +2653,7 @@ yyreduce:
 		if(!check_depth()) depth_error("signed integer");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2672,7 +2672,7 @@ yyreduce:
 		if(!check_depth()) depth_error("unsigned integer");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2691,7 +2691,7 @@ yyreduce:
 		if(!check_depth()) depth_error("floating point");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2710,7 +2710,7 @@ yyreduce:
 		if(!check_depth()) depth_error("string");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2751,7 +2751,7 @@ yyreduce:
 		if(!check_depth()) depth_error("hex-string");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2789,7 +2789,7 @@ yyreduce:
 		if(!check_depth()) depth_error("method");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -2844,7 +2844,7 @@ yyreduce:
 		if(!check_depth()) depth_error("struct");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -2907,7 +2907,7 @@ yyreduce:
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -2955,7 +2955,7 @@ yyreduce:
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -2988,7 +2988,7 @@ yyreduce:
 			uint64_t actual_size = current_depth - type_stack.top().depth;
 
 			const DistributedType* dtype = type_stack.top().type;
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				// Ignore this field, it should have already generated an error
 				(yyval.str) = "";
@@ -3034,7 +3034,7 @@ yyreduce:
 		// Don't increment the depth; the array_expansion will add to
 		// the current_depth depending on the number of elements it adds.
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -3066,7 +3066,7 @@ yyreduce:
 #line 1528 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -3092,7 +3092,7 @@ yyreduce:
 #line 1550 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -3118,7 +3118,7 @@ yyreduce:
 #line 1572 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -3144,7 +3144,7 @@ yyreduce:
 #line 1594 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -3204,7 +3204,7 @@ yyreduce:
 #line 1650 "parser.ypp" /* yacc.c:1646  */
     {
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			(yyval.str) = "";
@@ -3620,7 +3620,7 @@ void depth_error(string what)
 	}
 	else
 	{
-		parser_error("Too few nested values while parsing value for " + what + ".");	
+		parser_error("Too few nested values while parsing value for " + what + ".");
 	}
 }
 

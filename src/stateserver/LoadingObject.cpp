@@ -12,7 +12,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
                              doid_t parent_id, zone_t zone_id,
                              const std::unordered_set<uint32_t> &contexts) :
     m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
-    m_context(stateserver->m_next_context++), m_dclass(NULL), m_valid_contexts(contexts),
+    m_context(stateserver->m_next_context++), m_dclass(nullptr), m_valid_contexts(contexts),
     m_is_loaded(false)
 {
     std::stringstream name;

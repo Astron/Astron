@@ -18,7 +18,7 @@ class Method : public DistributedType
     Method();
     virtual ~Method();
 
-    // as_method returns this as a Method if it is a method, or NULL otherwise.
+    // as_method returns this as a Method if it is a method, or nullptr otherwise.
     virtual Method* as_method();
     virtual const Method* as_method() const;
 
@@ -27,7 +27,7 @@ class Method : public DistributedType
     // get_par returns the <n>th parameter of the method.
     inline Parameter* get_parameter(unsigned int n);
     inline const Parameter* get_parameter(unsigned int n) const;
-    // get_parameter_by_name returns the requested parameter or NULL if there is no such param.
+    // get_parameter_by_name returns the requested parameter or nullptr if there is no such param.
     inline Parameter* get_parameter_by_name(const std::string& name);
     inline const Parameter* get_parameter_by_name(const std::string& name) const;
 

@@ -136,7 +136,7 @@ class Client : public MDParticipantInterface
     void log_event(LoggedEvent &event);
 
     // lookup_object returns the class of the object with a do_id.
-    // If that object is not visible to the client, NULL will be returned instead.
+    // If that object is not visible to the client, nullptr will be returned instead.
     const dclass::Class* lookup_object(doid_t do_id);
 
     // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.

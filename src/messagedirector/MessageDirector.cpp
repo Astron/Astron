@@ -27,8 +27,8 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL), m_upstream(NULL),
-    m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
+    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
 }
 
@@ -330,7 +330,7 @@ void MessageDirector::recall_post_removes(channel_t sender)
 
 void MessageDirector::receive_datagram(DatagramHandle dg)
 {
-    route_datagram(NULL, dg);
+    route_datagram(nullptr, dg);
 }
 
 void MessageDirector::receive_disconnect(const boost::system::error_code &ec)

@@ -731,7 +731,7 @@ class MongoDatabase : public DatabaseBackend
         operation->on_failure();
     }
 
-    // Get a DBObjectSnapshot from a MongoDB BSON object; returns NULL if failure.
+    // Get a DBObjectSnapshot from a MongoDB BSON object; returns nullptr if failure.
     DBObjectSnapshot *format_snapshot(doid_t doid, const BSONObj &obj)
     {
         m_log->trace() << "Formatting database snapshot of " << doid << ": "
@@ -742,7 +742,7 @@ class MongoDatabase : public DatabaseBackend
             if(!dclass) {
                 m_log->error() << "Encountered unknown database object: "
                                << dclass_name << "(" << doid << ")" << endl;
-                return NULL;
+                return nullptr;
             }
 
             BSONObj fields = obj["fields"].Obj();
@@ -771,7 +771,7 @@ class MongoDatabase : public DatabaseBackend
             m_log->error() << "Unexpected error while trying to format"
                            " database snapshot for " << doid << ": "
                            << e.what() << endl;
-            return NULL;
+            return nullptr;
         }
     }
 

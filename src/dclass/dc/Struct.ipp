@@ -32,7 +32,7 @@ inline size_t Struct::get_num_fields() const
 	return m_fields.size();
 }
 
-// get_field returns the <n>th field of the struct or NULL if out-of-range.
+// get_field returns the <n>th field of the struct or nullptr if out-of-range.
 inline Field* Struct::get_field(unsigned int n)
 {
 	return m_fields.at(n);
@@ -42,13 +42,13 @@ inline const Field* Struct::get_field(unsigned int n) const
 	return m_fields.at(n);
 }
 
-// get_field_by_id returns the field with the index <id>, or NULL if no such field exists.
+// get_field_by_id returns the field with the index <id>, or nullptr if no such field exists.
 inline Field* Struct::get_field_by_id(unsigned int id)
 {
 	auto it = m_fields_by_id.find(id);
 	if(it == m_fields_by_id.end())
 	{
-		return (Field*)NULL;
+		return nullptr;
 	}
 	return it->second;
 }
@@ -57,18 +57,18 @@ inline const Field* Struct::get_field_by_id(unsigned int id) const
 	auto it = m_fields_by_id.find(id);
 	if(it == m_fields_by_id.end())
 	{
-		return (Field*)NULL;
+		return nullptr;
 	}
 	return it->second;
 }
 
-// get_field_by_name returns the field with <name>, or NULL if no such field exists.
+// get_field_by_name returns the field with <name>, or nullptr if no such field exists.
 inline Field* Struct::get_field_by_name(const std::string& name)
 {
 	auto it = m_fields_by_name.find(name);
 	if(it == m_fields_by_name.end())
 	{
-		return (Field*)NULL;
+		return nullptr;
 	}
 	return it->second;
 }
@@ -77,7 +77,7 @@ inline const Field* Struct::get_field_by_name(const std::string& name) const
 	auto it = m_fields_by_name.find(name);
 	if(it == m_fields_by_name.end())
 	{
-		return (Field*)NULL;
+		return nullptr;
 	}
 	return it->second;
 }

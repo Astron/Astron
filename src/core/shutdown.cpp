@@ -65,7 +65,7 @@ void astron_handle_signals()
     interruptHandler.sa_handler = handle_interrupt;
     sigemptyset(&interruptHandler.sa_mask);
     interruptHandler.sa_flags = 0;
-    sigaction(SIGINT, &interruptHandler, NULL);
+    sigaction(SIGINT, &interruptHandler, nullptr);
 }
 
 #endif
