@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
     LogSeverity sev = g_logger->get_min_severity();
     for(int i = 1; i < argc; i++) {
         if((strcmp(argv[i], "--log") == 0 || strcmp(argv[i], "-L") == 0) && i + 1 < argc) {
-            delete g_logger;
-            g_logger = new Logger(argv[++i], sev);
+            g_logger.reset(new Logger(argv[++i], sev));
         } else if((strcmp(argv[i], "--loglevel") == 0 || strcmp(argv[i], "-l") == 0) && i + 1 < argc) {
             string llstr(argv[++i]);
             if(llstr == "packet") {

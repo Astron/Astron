@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <mutex>
 
 // The LogSeverity represents the importance and usage of a log message.
@@ -46,7 +47,7 @@ class NullBuffer;
 class Logger;
 
 // Extern variables
-extern Logger* g_logger; // forward declaration from "global.h"
+extern std::unique_ptr<Logger> g_logger; // forward declaration from "global.h"
 extern NullStream null_stream;
 extern NullBuffer null_buffer;
 
