@@ -10,8 +10,8 @@ BaseClientType::BaseClientType(const std::string &name)
 
 ClientFactory& ClientFactory::singleton()
 {
-    static ClientFactory* fact = new ClientFactory();
-    return *fact;
+    static ClientFactory fact;
+    return fact;
 }
 
 // add_client_type adds a factory for client of type 'name'
