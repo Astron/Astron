@@ -65,8 +65,8 @@ class ConfigGroup
     virtual bool validate(ConfigNode node);
 
   protected:
-    ConfigGroup* m_parent;
     std::string m_name;
+    ConfigGroup* m_parent;
 
     std::unordered_map<std::string, rtest> m_variables;
     std::unordered_map<std::string, ConfigGroup*> m_children;

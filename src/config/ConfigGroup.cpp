@@ -21,9 +21,8 @@ ConfigGroup::ConfigGroup() : m_name("")
 }
 
 // constructor
-ConfigGroup::ConfigGroup(const string& name, ConfigGroup& parent) : m_parent(&parent)
+ConfigGroup::ConfigGroup(const string& name, ConfigGroup& parent) : m_name(name), m_parent(&parent)
 {
-    m_name = name;
     parent.m_children.insert(pair<string, ConfigGroup*>(name, this));
 }
 
