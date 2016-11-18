@@ -5,6 +5,6 @@ build_script:
 - set MSYSTEM=MINGW64
 - set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
 - cd build
-- cmake -G"MSYS Makefiles" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
+- 'cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..' # --allow-multiple-definition for https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
 - make
 - make test
