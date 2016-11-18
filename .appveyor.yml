@@ -14,3 +14,6 @@ build_script:
 test_script:
 - set CTEST_OUTPUT_ON_FAILURE=1
 - make test
+
+artifacts:
+- path: build\astrond.exe
