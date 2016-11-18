@@ -8,7 +8,7 @@ build_script:
 # Linker flag --allow-multiple-definition below is a workaround for
 # https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
 # and is only necessary on Clang:
-- cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
+- cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition -static -static-libgcc -static-libstdc++" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
 - make
 
 test_script:
