@@ -43,8 +43,6 @@ void EventSender::send(DatagramHandle dg)
                      m_target);
 }
 
-EventSender g_eventsender;
-
 // And now the convenience class:
 LoggedEvent::LoggedEvent()
 {
