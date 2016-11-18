@@ -48,7 +48,7 @@ class ConfigGroup
     //     to the root separated by slashes, with the oldest ancestor at the beginning.
     inline std::string get_path() const
     {
-        return m_path;
+        return (m_parent == nullptr) ? "" : (m_parent->get_path() + m_name + "/");
     }
 
     // get_child_node returns the sub node of a given ConfigNode that
@@ -65,15 +65,21 @@ class ConfigGroup
     virtual bool validate(ConfigNode node);
 
   protected:
+    std::string m_name;
     ConfigGroup* m_parent;
-    std::string m_name, m_path;
 
     std::unordered_map<std::string, rtest> m_variables;
-    std::unordered_map<std::string, ConfigGroup*> m_children;
+    inline std::unordered_map<std::string, ConfigGroup*>& get_children()
+    {
+        return config_tree()[this];
+    }
 
   private:
     ConfigGroup(); // root constructor
     void add_variable(const std::string&, rtest);
+
+    static std::unordered_map<ConfigGroup*, std::unordered_map<std::string, ConfigGroup*>>&
+            config_tree();
 };
 
 
@@ -98,13 +104,14 @@ class KeyedConfigGroup : public ConfigGroup
 {
   public:
     KeyedConfigGroup(const std::string& name, const std::string& group_key,
-                     ConfigGroup& parent = ConfigGroup::root());
+                     ConfigGroup& parent = ConfigGroup::root(), const std::string& default_key = "");
     virtual ~KeyedConfigGroup();
 
     bool validate(ConfigNode node) override;
 
   protected:
     std::string m_key;
+    std::string m_default_key;
 
     // print_keys outputs all valid keys for the list into
     //     the Config log with Info severity.

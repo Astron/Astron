@@ -8,7 +8,7 @@
 #include <memory>
 
 extern RoleConfigGroup clientagent_config;
-extern ConfigGroup ca_client_config;
+extern KeyedConfigGroup ca_client_config;
 extern ConfigVariable<std::string> ca_client_type;
 
 // A ChannelTracker is used to keep track of available and allocated channels that
