@@ -17,19 +17,20 @@ using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 
-static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
-static ConfigVariable<string> interest_permissions("add_interest", "visible", ca_client_config);
+static ConfigGroup astronclient_config("libastron", ca_client_config);
+static ConfigVariable<bool> relocate_owned("relocate", false, astronclient_config);
+static ConfigVariable<string> interest_permissions("add_interest", "visible", astronclient_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 
-static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
-static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+static ConfigVariable<bool> send_hash_to_client("send_hash", true, astronclient_config);
+static ConfigVariable<bool> send_version_to_client("send_version", true, astronclient_config);
 
 static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256 * 1024,
-        ca_client_config);
-static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, ca_client_config);
+        astronclient_config);
+static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, astronclient_config);
 
 //by default, have heartbeat disabled.
-static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, ca_client_config);
+static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, astronclient_config);
 
 static bool is_permission_level(const string& str)
 {

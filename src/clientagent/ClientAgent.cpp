@@ -47,7 +47,7 @@ static InvalidChannelConstraint max_not_invalid(max_channel);
 static ReservedChannelConstraint min_not_reserved(min_channel);
 static ReservedChannelConstraint max_not_reserved(max_channel);
 
-ConfigGroup ca_client_config("client", clientagent_config);
+KeyedConfigGroup ca_client_config("client", "type", clientagent_config, "libastron");
 ConfigVariable<string> ca_client_type("type", "libastron", ca_client_config);
 bool have_client_type(const string& backend)
 {
