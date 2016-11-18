@@ -71,13 +71,15 @@ class ConfigGroup
     std::unordered_map<std::string, rtest> m_variables;
     inline std::unordered_map<std::string, ConfigGroup*>& get_children()
     {
-        return m_children;
+        return config_tree()[this];
     }
-    std::unordered_map<std::string, ConfigGroup*> m_children;
 
   private:
     ConfigGroup(); // root constructor
     void add_variable(const std::string&, rtest);
+
+    static std::unordered_map<ConfigGroup*, std::unordered_map<std::string, ConfigGroup*>>&
+            config_tree();
 };
 
 

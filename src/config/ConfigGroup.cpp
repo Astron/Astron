@@ -15,6 +15,13 @@ ConfigGroup& ConfigGroup::root()
     return *root;
 }
 
+std::unordered_map<ConfigGroup*, std::unordered_map<std::string, ConfigGroup*>>&
+        ConfigGroup::config_tree()
+{
+    static std::unordered_map<ConfigGroup*, std::unordered_map<std::string, ConfigGroup*>> config_tree;
+    return config_tree;
+}
+
 // root constructor
 ConfigGroup::ConfigGroup() : m_name(""), m_parent(nullptr)
 {
@@ -23,7 +30,9 @@ ConfigGroup::ConfigGroup() : m_name(""), m_parent(nullptr)
 // constructor
 ConfigGroup::ConfigGroup(const string& name, ConfigGroup& parent) : m_name(name), m_parent(&parent)
 {
-    parent.get_children().insert(pair<string, ConfigGroup*>(name, this));
+    // m_parent might not be initialized yet, so we use this config_tree()
+    // mechanism so it knows who its children are before it gets initialized.
+    config_tree()[m_parent].insert(pair<string, ConfigGroup*>(name, this));
 }
 
 // destructor
