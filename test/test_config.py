@@ -180,7 +180,7 @@ class TestConfigCore(ConfigTest):
             messagedirector:
                 bind: foobar:20
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
@@ -188,25 +188,25 @@ class TestConfigCore(ConfigTest):
             general:
                 eventlogger: ble3.3.3.3:20
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: 10.0.0.0foobar
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: 10.0.blam.20
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: pizza-pie
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
@@ -218,13 +218,13 @@ class TestConfigCore(ConfigTest):
             messagedirector:
                 bind: "127-0-0-1:57123"
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
                 bind: "99-0-0-1:57123"
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:
@@ -249,7 +249,7 @@ class TestConfigCore(ConfigTest):
             messagedirector:
                 bind: "nxdomain.doesntexist.foo:57123"
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         config = """\
             messagedirector:

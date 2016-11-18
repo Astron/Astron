@@ -163,7 +163,7 @@ class TestConfigClientAgent(ConfigTest):
                       min: 3100
                       max: 3999
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         # ipv6 test disabled because client agent can't accept them yet, and causes a crash
         config = """\
