@@ -1,0 +1,19 @@
+install:
+- C:\msys64\usr\bin\pacman -Syu --noconfirm make mingw-w64-x86_64-clang mingw-w64-x86_64-boost mingw-w64-x86_64-yaml-cpp mingw-w64-x86_64-python2
+
+build_script:
+- set MSYSTEM=MINGW64
+- set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+- cd build
+# Linker flag --allow-multiple-definition below is a workaround for
+# https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
+# and is only necessary on Clang:
+- cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition -static -static-libgcc -static-libstdc++" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
+- make
+
+test_script:
+- set CTEST_OUTPUT_ON_FAILURE=1
+- make test
+
+artifacts:
+- path: build\astrond.exe

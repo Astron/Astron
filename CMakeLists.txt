@@ -19,6 +19,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 ### Define extra windows defines ###
 if(WIN32)
+	add_definitions(-DBOOST_USE_WINDOWS_H)
+	add_definitions(-DWIN32_LEAN_AND_MEAN)
+
 	add_definitions(-D_WIN32_WINDOWS)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
