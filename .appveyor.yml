@@ -9,6 +9,9 @@ build_script:
 # https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
 # and is only necessary on Clang:
 - cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition -static -static-libgcc -static-libstdc++" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
+# MSYS2 seems not to understand what "-static-libstdc++" means. Let's spell it
+# out for them:
+- rm /mingw64/x86_64-w64-mingw32/lib/lib*pthread.dll.a /mingw64/lib/gcc/x86_64-w64-mingw32/*/libstdc++.dll.a
 - make
 
 test_script:
