@@ -1,13 +1,16 @@
 language: cpp
+os:
+  - linux
+  - osx
+
 dist: trusty
 sudo: required
+
+osx_image: xcode7.3
 
 compiler:
   - clang
   - gcc
-
-os:
-  - linux
 
 addons:
   apt:
