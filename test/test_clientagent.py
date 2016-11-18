@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 import unittest, time, ssl, struct
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, error as socket_error
 from common.unittests import ProtocolTest
 from common.astron import *
 from common.dcfile import *
@@ -3044,7 +3044,15 @@ class TestClientAgent(ProtocolTest):
         client = self.connect(port = 57214, do_hello=False)
         self.expectNone(client)
         time.sleep(0.2)
-        self.assertRaises(EOFError, client.recv_maybe)
+
+        # Client should now be dropped. It will either socket.error or return
+        # '' when we try to recv from it (depending on platform):
+        try:
+            r = client.s.recv(1024)
+        except socket_error as e:
+            self.assertEqual(e.errno, 10054)
+        else:
+            self.assertEqual(r, '')
 
     def test_get_network_address(self):
         self.server.flush()
