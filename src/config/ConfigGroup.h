@@ -48,7 +48,7 @@ class ConfigGroup
     //     to the root separated by slashes, with the oldest ancestor at the beginning.
     inline std::string get_path() const
     {
-        return m_path;
+        return (m_parent == nullptr) ? "" : (m_parent->get_path() + m_name + "/");
     }
 
     // get_child_node returns the sub node of a given ConfigNode that
@@ -66,7 +66,7 @@ class ConfigGroup
 
   protected:
     ConfigGroup* m_parent;
-    std::string m_name, m_path;
+    std::string m_name;
 
     std::unordered_map<std::string, rtest> m_variables;
     std::unordered_map<std::string, ConfigGroup*> m_children;

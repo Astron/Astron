@@ -16,7 +16,7 @@ ConfigGroup& ConfigGroup::root()
 }
 
 // root constructor
-ConfigGroup::ConfigGroup() : m_name(""), m_path("")
+ConfigGroup::ConfigGroup() : m_name("")
 {
 }
 
@@ -24,7 +24,6 @@ ConfigGroup::ConfigGroup() : m_name(""), m_path("")
 ConfigGroup::ConfigGroup(const string& name, ConfigGroup& parent) : m_parent(&parent)
 {
     m_name = name;
-    m_path = parent.get_path() + name + "/";
     parent.m_children.insert(pair<string, ConfigGroup*>(name, this));
 }
 
@@ -49,7 +48,7 @@ bool ConfigGroup::validate(ConfigNode node)
     if(!node.IsMap()) {
         if(m_name.length() > 0) {
             // NOTE(Kevin): ConfigGroup is used for mappings, not sequences or scalars
-            config_log.error() << "Section '" << m_path
+            config_log.error() << "Section '" << get_path()
                                << "' has key/value config variables.\n";
         } else {
             // NOTE(Kevin): The root of the config file must be a mapping, not a sequence or scalar
@@ -69,7 +68,7 @@ bool ConfigGroup::validate(ConfigNode node)
         if(found_var != m_variables.end()) {
             rtest r = found_var->second;
             if(!r(node)) {
-                config_log.info() << "In Section '" << m_path << "', attribute '"
+                config_log.info() << "In Section '" << get_path() << "', attribute '"
                                   << key << "' did not match constraint (see error).\n";
                 ok = false;
             }
@@ -86,7 +85,7 @@ bool ConfigGroup::validate(ConfigNode node)
         }
 
         if(m_name.length() > 0) {
-            config_log.error() << "Section '" << m_path
+            config_log.error() << "Section '" << get_path()
                                << "' has no attribute named '" << key << "'.\n";
         } else {
             config_log.error() << "Section '" << key << "' is not a valid config category.\n";
@@ -112,7 +111,7 @@ bool KeyedConfigGroup::validate(ConfigNode node)
 {
     if(!node.IsMap()) {
         // NOTE(Kevin): KeyedConfigGroup is used for mappings, not sequences or scalars
-        config_log.error() << "Section '" << m_path
+        config_log.error() << "Section '" << get_path()
                            << "' expects a list of values.\n";
         return false;
     }
@@ -120,7 +119,7 @@ bool KeyedConfigGroup::validate(ConfigNode node)
     // NOTE(Kevin): A Keyed config group is validated based on the value of a known key;
     // typically the name of this key is "type"
     if(!node[m_key]) {
-        config_log.error() << "The section '" << m_path << "' did not specify the attribute '"
+        config_log.error() << "The section '" << get_path() << "' did not specify the attribute '"
                            << m_key << "'.\n";
         return false;
     }
@@ -131,7 +130,7 @@ bool KeyedConfigGroup::validate(ConfigNode node)
     if(found_grp == m_children.end()) {
         // A group doesn't exist whose name is the value of m_key
         config_log.error() << "The value '" << key << "' is not valid for attribute '"
-                           << m_key << "' of section '" << m_path << "'.\n";
+                           << m_key << "' of section '" << get_path() << "'.\n";
         print_keys();
         return false;
     }
@@ -165,7 +164,7 @@ bool ConfigList::validate(ConfigNode node)
 {
     if(!node.IsSequence()) {
         // NOTE(Kevin): ConfigList is used for sequences, not mappings or scalars
-        config_log.error() << "Section '" << m_path
+        config_log.error() << "Section '" << get_path()
                            << "' expects a list of values.\n";
         return false;
     }
@@ -195,7 +194,7 @@ bool KeyedConfigList::validate(ConfigNode node)
 {
     if(!node.IsSequence()) {
         // NOTE(Kevin): KeyedConfigList is used for sequences, not mappings or scalars
-        config_log.error() << "Section '" << m_path
+        config_log.error() << "Section '" << get_path()
                            << "' expects a list of values.\n";
         return false;
     }
@@ -207,7 +206,7 @@ bool KeyedConfigList::validate(ConfigNode node)
 
         // Items in a keyed config list must be a mapping include a key with the name from m_key
         if(!it->IsMap()) {
-            config_log.error() << "The " << n << "th item of section '" << m_path
+            config_log.error() << "The " << n << "th item of section '" << get_path()
                                << "' does not have key/value config variables.\n";
             ok = false;
             continue;
@@ -217,7 +216,7 @@ bool KeyedConfigList::validate(ConfigNode node)
         // in an items values; typically the name of this key "type"
         ConfigNode element = *it;
         if(!element[m_key]) {
-            config_log.error() << "The " << n << "th item of section '" << m_path
+            config_log.error() << "The " << n << "th item of section '" << get_path()
                                << "' did not specify the attribute '" << m_key << "'.\n";
             ok = false;
             continue;
@@ -227,7 +226,7 @@ bool KeyedConfigList::validate(ConfigNode node)
         auto found_grp = m_children.find(key);
         if(found_grp == m_children.end()) {
             config_log.error() << "The value '" << key << "' is not valid for attribute '"
-                               << m_key << "' of section '" << m_path << "'.\n";
+                               << m_key << "' of section '" << get_path() << "'.\n";
             print_keys();
             ok = false;
             continue;
