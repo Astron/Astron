@@ -23,7 +23,7 @@ ConfigGroup::ConfigGroup() : m_name(""), m_parent(nullptr)
 // constructor
 ConfigGroup::ConfigGroup(const string& name, ConfigGroup& parent) : m_name(name), m_parent(&parent)
 {
-    parent.m_children.insert(pair<string, ConfigGroup*>(name, this));
+    parent.get_children().insert(pair<string, ConfigGroup*>(name, this));
 }
 
 // destructor
@@ -75,8 +75,8 @@ bool ConfigGroup::validate(ConfigNode node)
         }
 
         // Check if the key is a subgroup, if so recursively validate it
-        auto found_grp = m_children.find(key);
-        if(found_grp != m_children.end()) {
+        auto found_grp = get_children().find(key);
+        if(found_grp != get_children().end()) {
             if(!found_grp->second->validate(node[key])) {
                 ok = false;
             }
@@ -125,8 +125,8 @@ bool KeyedConfigGroup::validate(ConfigNode node)
 
     // Find the appropriate config group for the value of m_key
     string key = node[m_key].as<std::string>();
-    auto found_grp = m_children.find(key);
-    if(found_grp == m_children.end()) {
+    auto found_grp = get_children().find(key);
+    if(found_grp == get_children().end()) {
         // A group doesn't exist whose name is the value of m_key
         config_log.error() << "The value '" << key << "' is not valid for attribute '"
                            << m_key << "' of section '" << get_path() << "'.\n";
@@ -144,7 +144,7 @@ void KeyedConfigGroup::print_keys()
     auto out = config_log.info();
     out << "Expected value in '" << m_name << "',\n"
         << "    Candidates for attribute '" << m_key << "' are:\n";
-    for(auto it = m_children.begin(); it != m_children.end(); ++it) {
+    for(auto it = get_children().begin(); it != get_children().end(); ++it) {
         out << "        " << it->second->get_name() << "\n";
     }
     out << "\n";
@@ -222,8 +222,8 @@ bool KeyedConfigList::validate(ConfigNode node)
         }
 
         string key = element[m_key].as<std::string>();
-        auto found_grp = m_children.find(key);
-        if(found_grp == m_children.end()) {
+        auto found_grp = get_children().find(key);
+        if(found_grp == get_children().end()) {
             config_log.error() << "The value '" << key << "' is not valid for attribute '"
                                << m_key << "' of section '" << get_path() << "'.\n";
             print_keys();

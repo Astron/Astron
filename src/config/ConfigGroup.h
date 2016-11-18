@@ -69,6 +69,10 @@ class ConfigGroup
     ConfigGroup* m_parent;
 
     std::unordered_map<std::string, rtest> m_variables;
+    inline std::unordered_map<std::string, ConfigGroup*>& get_children()
+    {
+        return m_children;
+    }
     std::unordered_map<std::string, ConfigGroup*> m_children;
 
   private:
