@@ -16,7 +16,7 @@ ConfigGroup& ConfigGroup::root()
 }
 
 // root constructor
-ConfigGroup::ConfigGroup() : m_name("")
+ConfigGroup::ConfigGroup() : m_name(""), m_parent(nullptr)
 {
 }
 
