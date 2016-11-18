@@ -7,5 +7,7 @@ build_script:
 - cd build
 - 'cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..' # --allow-multiple-definition for https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
 - make
+
+test_script:
 - set CTEST_OUTPUT_ON_FAILURE=1
 - make test
