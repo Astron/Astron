@@ -3093,8 +3093,8 @@ class TestClientAgent(ProtocolTest):
             if ipv6:
                 source_ip = '2001:db8::1'
                 source_ip_bin = '20010db8000000000000000000000001'.decode('hex')
-                dest_ip = '2001:db8:dead:beef:0:face:feed:1'
-                dest_ip_bin = '20010db8deadbeef0000facefeed0001'.decode('hex')
+                dest_ip = '2001:db8:dead:beef::feed:1'
+                dest_ip_bin = '20010db8deadbeef00000000feed0001'.decode('hex')
             else:
                 source_ip = '203.0.113.5'
                 source_ip_bin = struct.pack('BBBB', 203, 0, 113, 5)
