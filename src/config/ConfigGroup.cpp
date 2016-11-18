@@ -105,8 +105,8 @@ bool ConfigGroup::validate(ConfigNode node)
 
 // constructor
 KeyedConfigGroup::KeyedConfigGroup(const string& name, const string& group_key,
-                                   ConfigGroup& parent) :
-    ConfigGroup(name, parent), m_key(group_key)
+                                   ConfigGroup& parent, const string& default_key) :
+    ConfigGroup(name, parent), m_key(group_key), m_default_key(default_key)
 {
 }
 
@@ -126,14 +126,20 @@ bool KeyedConfigGroup::validate(ConfigNode node)
 
     // NOTE(Kevin): A Keyed config group is validated based on the value of a known key;
     // typically the name of this key is "type"
+    string key;
     if(!node[m_key]) {
-        config_log.error() << "The section '" << get_path() << "' did not specify the attribute '"
-                           << m_key << "'.\n";
-        return false;
+        if(m_default_key != "") {
+            key = m_default_key;
+        } else {
+            config_log.error() << "The section '" << get_path() << "' did not specify the attribute '"
+                               << m_key << "'.\n";
+            return false;
+        }
+    } else {
+        key = node[m_key].as<string>();
     }
 
     // Find the appropriate config group for the value of m_key
-    string key = node[m_key].as<std::string>();
     auto found_grp = get_children().find(key);
     if(found_grp == get_children().end()) {
         // A group doesn't exist whose name is the value of m_key

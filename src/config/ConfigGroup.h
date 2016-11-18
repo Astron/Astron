@@ -104,13 +104,14 @@ class KeyedConfigGroup : public ConfigGroup
 {
   public:
     KeyedConfigGroup(const std::string& name, const std::string& group_key,
-                     ConfigGroup& parent = ConfigGroup::root());
+                     ConfigGroup& parent = ConfigGroup::root(), const std::string& default_key = "");
     virtual ~KeyedConfigGroup();
 
     bool validate(ConfigNode node) override;
 
   protected:
     std::string m_key;
+    std::string m_default_key;
 
     // print_keys outputs all valid keys for the list into
     //     the Config log with Info severity.
