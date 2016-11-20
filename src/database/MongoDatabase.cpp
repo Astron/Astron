@@ -11,103 +11,112 @@
 #include "dclass/dc/Struct.h"
 #include "dclass/dc/Method.h"
 
-#include "mongo/client/dbclient.h"
-#include "mongo/bson/bson.h"
+#include <bsoncxx/builder/basic/array.hpp>
+#include <bsoncxx/builder/stream/document.hpp>
+#include <bsoncxx/types.hpp>
+#include <bsoncxx/types/value.hpp>
 
 using namespace std;
-using namespace mongo;
 
 static ConfigGroup mongodb_backend_config("mongodb", db_backend_config);
 static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test",
                                         mongodb_backend_config);
 static ConfigVariable<int> num_workers("workers", 8, mongodb_backend_config);
 
-// These are helper functions to convert between BSONElement and packed Bamboo
+// These are helper functions to convert between BSON values and packed Bamboo
 // field values.
 
-static BSONObj bamboo2bson(const dclass::DistributedType *type,
-                           DatagramIterator &dgi)
+static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
+        DatagramIterator &dgi)
 {
-    // The BSON library's weird data model doesn't allow elements to exist on
-    // their own; they must be part of an object. Therefore, we always return
-    // results in a single BSONObj with key "_"
-    BSONObjBuilder b;
+    using namespace bsoncxx::types;
     switch(type->get_type()) {
     case dclass::Type::T_INT8: {
-        b << "_" << dgi.read_int8();
+        return value {b_int32 {dgi.read_int8()}};
     }
     break;
     case dclass::Type::T_INT16: {
-        b << "_" << dgi.read_int16();
+        return value {b_int32 {dgi.read_int16()}};
     }
     break;
     case dclass::Type::T_INT32: {
-        b << "_" << dgi.read_int32();
+        return value {b_int32 {dgi.read_int32()}};
     }
     break;
     case dclass::Type::T_INT64: {
-        b.appendIntOrLL("_", dgi.read_int64());
+        return value {b_int64 {dgi.read_int64()}};
     }
     break;
     case dclass::Type::T_UINT8: {
-        b << "_" << dgi.read_uint8();
+        return value {b_int32 {dgi.read_uint8()}};
     }
     break;
     case dclass::Type::T_UINT16: {
-        b << "_" << dgi.read_uint16();
+        return value {b_int32 {dgi.read_uint16()}};
     }
     break;
     case dclass::Type::T_UINT32: {
-        b << "_" << dgi.read_uint32();
+        return value {b_int64 {dgi.read_uint32()}};
     }
     break;
     case dclass::Type::T_UINT64: {
-        b.appendIntOrLL("_", dgi.read_uint64());
+        // Note: Values over 1/2 the maximum will become negative.
+        return value {b_int64 {static_cast<int64_t>(dgi.read_uint64())}};
     }
     break;
     case dclass::Type::T_CHAR: {
         unsigned char c = dgi.read_uint8();
         string str(c, 1);
-        b << "_" << str;
+        return value {b_utf8 {str}};
     }
     break;
     case dclass::Type::T_FLOAT32: {
-        b << "_" << dgi.read_float32();
+        return value {b_double {dgi.read_float32()}};
     }
     break;
     case dclass::Type::T_FLOAT64: {
-        b << "_" << dgi.read_float64();
+        return value {b_double {dgi.read_float64()}};
     }
     break;
     case dclass::Type::T_STRING: {
         vector<uint8_t> vec = dgi.read_data(type->get_size());
         string str((const char *)vec.data(), vec.size());
-        b << "_" << str;
+        return value {b_utf8 {str}};
     }
     case dclass::Type::T_VARSTRING: {
-        b << "_" << dgi.read_string();
+        return value {b_utf8 {dgi.read_string()}};
     }
     break;
     case dclass::Type::T_BLOB: {
         vector<uint8_t> blob = dgi.read_data(type->get_size());
-        b.appendBinData("_", blob.size(), BinDataGeneral, blob.data());
+        return value {b_binary {
+                bsoncxx::binary_sub_type::k_binary,
+                static_cast<uint32_t>(blob.size()),
+                blob.data()
+            }
+        };
     }
     break;
     case dclass::Type::T_VARBLOB: {
         vector<uint8_t> blob = dgi.read_blob();
-        b.appendBinData("_", blob.size(), BinDataGeneral, blob.data());
+        return value {b_binary {
+                bsoncxx::binary_sub_type::k_binary,
+                static_cast<uint32_t>(blob.size()),
+                blob.data()
+            }
+        };
     }
     break;
     case dclass::Type::T_ARRAY: {
         const dclass::ArrayType *array = type->as_array();
 
-        BSONArrayBuilder ab;
+        bsoncxx::builder::basic::array ab {};
 
         for(size_t i = 0; i < array->get_array_size(); i++) {
-            ab << bamboo2bson(array->get_element_type(), dgi)["_"];
+            ab.append(bamboo2bson(array->get_element_type(), dgi));
         }
 
-        b << "_" << ab.arr();
+        return value {b_array {ab.extract()}};
     }
     break;
     case dclass::Type::T_VARARRAY: {
@@ -116,35 +125,35 @@ static BSONObj bamboo2bson(const dclass::DistributedType *type,
         dgsize_t array_length = dgi.read_size();
         dgsize_t starting_size = dgi.tell();
 
-        BSONArrayBuilder ab;
+        bsoncxx::builder::basic::array ab {};
 
         while(dgi.tell() != starting_size + array_length) {
-            ab << bamboo2bson(array->get_element_type(), dgi)["_"];
+            ab.append(bamboo2bson(array->get_element_type(), dgi));
             if(dgi.tell() > starting_size + array_length) {
                 throw mongo::DBException("Discovered corrupt array-length tag!", 0);
             }
         }
 
-        b << "_" << ab.arr();
+        return value {b_array {ab.extract()}};
     }
     break;
     case dclass::Type::T_STRUCT: {
         const dclass::Struct *s = type->as_struct();
         size_t fields = s->get_num_fields();
-        BSONObjBuilder ob;
+        bsoncxx::builder::stream::document ob {};
 
         for(unsigned int i = 0; i < fields; ++i) {
             const dclass::Field *field = s->get_field(i);
-            ob << field->get_name() << bamboo2bson(field->get_type(), dgi)["_"];
+            ob << field->get_name() << bamboo2bson(field->get_type(), dgi);
         }
 
-        b << "_" << ob.obj();
+        return value {b_document {ob.extract()}};
     }
     break;
     case dclass::Type::T_METHOD: {
         const dclass::Method *m = type->as_method();
         size_t parameters = m->get_num_parameters();
-        BSONObjBuilder ob;
+        bsoncxx::builder::stream::document ob {};
 
         for(unsigned int i = 0; i < parameters; ++i) {
             const dclass::Parameter *parameter = m->get_parameter(i);
@@ -154,10 +163,10 @@ static BSONObj bamboo2bson(const dclass::DistributedType *type,
                 n << "_" << i;
                 name = n.str();
             }
-            ob << name << bamboo2bson(parameter->get_type(), dgi)["_"];
+            ob << name << bamboo2bson(parameter->get_type(), dgi);
         }
 
-        b << "_" << ob.obj();
+        return value {b_document {ob.extract()}};
     }
     break;
     case dclass::Type::T_INVALID:
@@ -165,8 +174,6 @@ static BSONObj bamboo2bson(const dclass::DistributedType *type,
         assert(false);
         break;
     }
-
-    return b.obj();
 }
 
 static void bson2bamboo(const dclass::DistributedType *type,
