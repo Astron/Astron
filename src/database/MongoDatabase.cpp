@@ -25,6 +25,16 @@ static ConfigVariable<int> num_workers("workers", 8, mongodb_backend_config);
 
 // These are helper functions to convert between BSON values and packed Bamboo
 // field values.
+class ConversionException : public exception
+{
+  public:
+    string desc;
+    ConversionException(const char *desc) : desc(desc) {}
+    virtual const char * what() const throw()
+    {
+        return desc.c_str();
+    }
+};
 
 static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
         DatagramIterator &dgi)
@@ -130,7 +140,7 @@ static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
         while(dgi.tell() != starting_size + array_length) {
             ab.append(bamboo2bson(array->get_element_type(), dgi));
             if(dgi.tell() > starting_size + array_length) {
-                throw mongo::DBException("Discovered corrupt array-length tag!", 0);
+                throw ConversionException("Discovered corrupt array-length tag!");
             }
         }
 
@@ -216,7 +226,7 @@ static void bson2bamboo(const dclass::DistributedType *type,
     case dclass::Type::T_CHAR: {
         string str = element.String();
         if(str.size() != 1) {
-            throw mongo::DBException("Expected single-length string for char field", 0);
+            throw ConversionException("Expected single-length string for char field");
         }
         dg.add_uint8(str[0]);
     }
