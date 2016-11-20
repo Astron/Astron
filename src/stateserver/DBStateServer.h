@@ -13,7 +13,7 @@ bool unpack_db_fields(DatagramIterator &dg, const dclass::Class* dclass,
 
 class LoadingObject;
 
-class DBStateServer : public StateServer
+class DBStateServer final : public StateServer
 {
     friend class LoadingObject;
 
@@ -21,7 +21,7 @@ class DBStateServer : public StateServer
     DBStateServer(RoleConfig roleconfig);
     ~DBStateServer();
 
-    virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
+    void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
   private:
     channel_t m_db_channel; // database control channel
