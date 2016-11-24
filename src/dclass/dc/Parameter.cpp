@@ -11,13 +11,13 @@ namespace dclass   // open namespace dclass
 
 // constructor
 Parameter::Parameter(DistributedType* type, const std::string& name) :
-    m_name(name), m_type(type), m_method(NULL), m_has_default_value(false)
+    m_name(name), m_type(type), m_method(nullptr), m_has_default_value(false)
 {
     bool implicit_value;
     m_default_value = create_default_value(type, implicit_value);
     m_has_default_value = !implicit_value;
 
-    if(m_type == NULL) {
+    if(m_type == nullptr) {
         m_type = DistributedType::invalid;
     }
 }
@@ -27,7 +27,7 @@ Parameter::Parameter(DistributedType* type, const std::string& name) :
 bool Parameter::set_name(const std::string& name)
 {
     // Check to make sure no other fields in our struct have this name
-    if(m_method != (Method*)NULL && m_method->get_parameter_by_name(name) != (Parameter*)NULL) {
+    if(m_method != nullptr && m_method->get_parameter_by_name(name) != nullptr) {
         return false;
     }
 
@@ -38,7 +38,7 @@ bool Parameter::set_name(const std::string& name)
 // set_type sets the distributed type of the parameter and clear's the default value.
 bool Parameter::set_type(DistributedType* type)
 {
-    if(type == (DistributedType*)NULL) {
+    if(type == nullptr) {
         return false;
     }
 

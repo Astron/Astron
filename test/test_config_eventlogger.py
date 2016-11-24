@@ -28,7 +28,7 @@ class TestConfigEventLogger(ConfigTest):
                   output: /var/log/astron/eventlogger/el-%Y-%m-%d-%H-%M-%S.log
                   rotate_interval: 1d
             """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
         # ipv6 test disabled because client agent can't accept them yet, and causes a crash
         config = """\

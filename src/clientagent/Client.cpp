@@ -6,7 +6,7 @@
 using namespace std;
 using dclass::Class;
 
-Client::Client(ConfigNode config, ClientAgent* client_agent) :
+Client::Client(ConfigNode, ClientAgent* client_agent) :
     m_client_agent(client_agent)
 {
     m_channel = m_client_agent->m_ct.alloc_channel();
@@ -19,7 +19,11 @@ Client::Client(ConfigNode config, ClientAgent* client_agent) :
 
     stringstream name;
     name << "Client (" << m_allocated_channel << ")";
-    m_log = new LogCategory("client", name.str());
+
+    m_log_owner = std::unique_ptr<LogCategory>(new LogCategory("client", name.str()));
+
+    m_log = m_log_owner.get();
+
     set_con_name(name.str());
 
     subscribe_channel(m_channel);
@@ -28,20 +32,19 @@ Client::Client(ConfigNode config, ClientAgent* client_agent) :
 
 Client::~Client()
 {
-    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-        delete it->second;
-    }
+    // We need to be holding our own lock, just in case another thread is busy
+    // doing some last-microsecond cleanup.
+    lock_guard<recursive_mutex> lock(m_client_lock);
 
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
-    }
+    assert(!m_pending_interests.size());
 }
 
 void Client::annihilate()
 {
     lock_guard<recursive_mutex> lock(m_client_lock);
-    if(is_terminated()) { return; }
+    if(is_terminated()) {
+        return;
+    }
 
     // Unsubscribe from all channels first so the DELETE messages aren't sent back to us.
     unsubscribe_all();
@@ -55,6 +58,14 @@ void Client::annihilate()
         DatagramPtr dg = Datagram::create(do_id, m_channel, STATESERVER_OBJECT_DELETE_RAM);
         dg->add_doid(do_id);
         route_datagram(dg);
+    }
+
+    // Note that finish() normally results in the InterestOperation deleting
+    // itself from m_pending_interests, so we have to be VERY careful with this
+    // for loop. Using (it++) ensures that 'it' is advanced BEFORE finish() is
+    // called; doing so after means the iterator is invalid!
+    for(auto it = m_pending_interests.begin(); it != m_pending_interests.end();) {
+        (it++)->second->finish();
     }
 
     // Tell the MD this client is gone
@@ -72,7 +83,7 @@ void Client::log_event(LoggedEvent &event)
 }
 
 // lookup_object returns the class of the object with a do_id.
-// If that object is not visible to the client, NULL will be returned instead.
+// If that object is not visible to the client, nullptr will be returned instead.
 const Class *Client::lookup_object(doid_t do_id)
 {
     // First see if it's an UberDOG:
@@ -95,16 +106,16 @@ const Class *Client::lookup_object(doid_t do_id)
     }
 
     // We're at the end of our rope; we have no clue what this object is.
-    return NULL;
+    return nullptr;
 }
 
 // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
 list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 {
     list<Interest> interests;
-    for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
-        if(parent_id == it->second.parent && (it->second.zones.find(zone_id) != it->second.zones.end())) {
-            interests.push_back(it->second);
+    for(const auto& it : m_interests) {
+        if(parent_id == it.second.parent && (it.second.zones.find(zone_id) != it.second.zones.end())) {
+            interests.push_back(it.second);
         }
     }
     return interests;
@@ -121,13 +132,15 @@ void Client::build_interest(DatagramIterator &dgi, bool multiple, Interest &out)
     out.parent = parent;
 
     uint16_t count = 1;
-    if(multiple) { count = dgi.read_uint16(); }
+    if(multiple) {
+        count = dgi.read_uint16();
+    }
 
     // TODO: We shouldn't have to do this ourselves, figure out where else we're doing
     //       something wrong.
     out.zones.rehash((unsigned int)(ceil(count / out.zones.max_load_factor())));
 
-    for(int x = 0; x < count; ++x) {
+    for(uint16_t x{}; x < count; ++x) {
         zone_t zone = dgi.read_zone();
         out.zones.insert(out.zones.end(), zone);
     }
@@ -140,9 +153,9 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 {
     unordered_set<zone_t> new_zones;
 
-    for(auto it = i.zones.begin(); it != i.zones.end(); ++it) {
-        if(lookup_interests(i.parent, *it).empty()) {
-            new_zones.insert(*it);
+    for(const auto& it : i.zones) {
+        if(lookup_interests(i.parent, it).empty()) {
+            new_zones.insert(it);
         }
     }
 
@@ -154,8 +167,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
         Interest previous_interest = m_interests[i.id];
         unordered_set<zone_t> killed_zones;
 
-        for(auto it = previous_interest.zones.begin(); it != previous_interest.zones.end(); ++it) {
-            if(lookup_interests(previous_interest.parent, *it).size() > 1) {
+        for(const auto& it : previous_interest.zones) {
+            if(lookup_interests(previous_interest.parent, it).size() > 1) {
                 // An interest other than the altered one can see this parent/zone,
                 // so we don't care about it.
                 continue;
@@ -163,8 +176,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 
             // If we've gotten here: parent,*it is unique, so if the new interest
             // doesn't cover it, we add it to the killed zones.
-            if(i.parent != previous_interest.parent || i.zones.find(*it) == i.zones.end()) {
-                killed_zones.insert(*it);
+            if(i.parent != previous_interest.parent || i.zones.find(it) == i.zones.end()) {
+                killed_zones.insert(it);
             }
         }
 
@@ -187,7 +200,7 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     uint32_t request_context = m_next_context++;
 
     InterestOperation *iop = new InterestOperation(this, m_client_agent->m_interest_timeout,
-                    i.id, context, request_context, i.parent, new_zones, caller);
+            i.id, context, request_context, i.parent, new_zones, caller);
     m_pending_interests.emplace(request_context, iop);
 
     DatagramPtr resp = Datagram::create();
@@ -195,9 +208,9 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
     resp->add_uint32(request_context);
     resp->add_doid(i.parent);
     resp->add_uint16(new_zones.size());
-    for(auto it = new_zones.begin(); it != new_zones.end(); ++it) {
-        resp->add_zone(*it);
-        subscribe_channel(location_as_channel(i.parent, *it));
+    for(const auto& it : new_zones) {
+        resp->add_zone(it);
+        subscribe_channel(location_as_channel(i.parent, it));
     }
     route_datagram(resp);
 }
@@ -208,10 +221,10 @@ void Client::remove_interest(Interest &i, uint32_t context, channel_t caller)
 {
     unordered_set<zone_t> killed_zones;
 
-    for(auto it = i.zones.begin(); it != i.zones.end(); ++it) {
-        if(lookup_interests(i.parent, *it).size() == 1) {
+    for(const auto& it : i.zones) {
+        if(lookup_interests(i.parent, it).size() == 1) {
             // We're the only interest who can see this zone, so let's kill it.
-            killed_zones.insert(*it);
+            killed_zones.insert(it);
         }
     }
 
@@ -231,40 +244,41 @@ void Client::close_zones(doid_t parent, const unordered_set<zone_t> &killed_zone
     // Kill off all objects that are in the matched parent/zones:
 
     list<doid_t> to_remove;
-    for(auto it = m_visible_objects.begin(); it != m_visible_objects.end(); ++it) {
-        if(it->second.parent != parent) {
+    for(const auto& it : m_visible_objects) {
+        const VisibleObject& visiable_object = it.second;
+        if(visiable_object.parent != parent) {
             // Object does not belong to the parent in question; ignore.
             continue;
         }
 
-        if(killed_zones.find(it->second.zone) != killed_zones.end()) {
-            if(m_owned_objects.find(it->second.id) != m_owned_objects.end()) {
+        if(killed_zones.find(visiable_object.zone) != killed_zones.end()) {
+            if(m_owned_objects.find(visiable_object.id) != m_owned_objects.end()) {
                 // Owned objects are always visible, ignore this object
                 continue;
             }
 
-            if(m_session_objects.find(it->second.id) != m_session_objects.end()) {
+            if(m_session_objects.find(visiable_object.id) != m_session_objects.end()) {
                 // This object is a session object. The client should be disconnected.
                 send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
                                 "A session object has unexpectedly left interest.");
                 return;
             }
 
-            handle_remove_object(it->second.id);
+            handle_remove_object(visiable_object.id);
 
-            m_seen_objects.erase(it->second.id);
-            m_historical_objects.insert(it->second.id);
-            to_remove.push_back(it->second.id);
+            m_seen_objects.erase(visiable_object.id);
+            m_historical_objects.insert(visiable_object.id);
+            to_remove.push_back(visiable_object.id);
         }
     }
 
-    for(auto it = to_remove.begin(); it != to_remove.end(); ++it) {
-        m_visible_objects.erase(*it);
+    for(const auto& it : to_remove) {
+        m_visible_objects.erase(it);
     }
 
     // Close all of the channels:
-    for(auto it = killed_zones.begin(); it != killed_zones.end(); ++it) {
-        unsubscribe_channel(location_as_channel(parent, *it));
+    for(const auto& it : killed_zones) {
+        unsubscribe_channel(location_as_channel(parent, it));
     }
 }
 
@@ -294,10 +308,14 @@ void Client::send_disconnect(uint16_t reason, const string &error_string, bool s
 void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 {
     lock_guard<recursive_mutex> lock(m_client_lock);
-    if(is_terminated()) { return; }
+    if(is_terminated()) {
+        return;
+    }
 
     channel_t sender = dgi.read_channel();
-    if(sender == m_channel) { return; } // ignore messages from ourselves
+    if(sender == m_channel) {
+        return;    // ignore messages from ourselves
+    }
 
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {
@@ -408,7 +426,7 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         uint16_t field_count = dgi.read_uint16();
 
         unordered_set<uint16_t> fields;
-        for(unsigned int i = 0; i < field_count; ++i) {
+        for(uint16_t i{}; i < field_count; ++i) {
             fields.insert(dgi.read_uint16());
         }
         m_fields_sendable[do_id] = fields;
@@ -446,15 +464,17 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         resp->add_uint32(dgi.read_uint32()); // Context
         resp->add_string(get_remote_address());
         resp->add_uint16(get_remote_port());
-        resp->add_string(get_socket()->local_endpoint().address().to_string());
-        resp->add_uint16(get_socket()->local_endpoint().port());
+        resp->add_string(get_local_address());
+        resp->add_uint16(get_local_port());
         route_datagram(resp);
     }
     break;
     case STATESERVER_OBJECT_SET_FIELD: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side field update for unknown object "
                              << do_id << ".\n";
             return;
@@ -468,7 +488,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
     case STATESERVER_OBJECT_SET_FIELDS: {
         doid_t do_id = dgi.read_doid();
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side multi-field update for unknown object "
                              << do_id << ".\n";
             return;
@@ -485,7 +507,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_log->trace() << "Received DeleteRam for object with id " << do_id << "\n.";
 
         if(!lookup_object(do_id)) {
-            if(try_queue_pending(do_id, in_dg)) { return; }
+            if(try_queue_pending(do_id, in_dg)) {
+                return;
+            }
             m_log->warning() << "Received server-side object delete for unknown object "
                              << do_id << ".\n";
             return;
@@ -543,15 +567,16 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t do_id = dgi.read_doid();
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
-        for(auto it = m_pending_interests.begin(); it != m_pending_interests.end(); ++it) {
-            if(it->second->m_parent == parent &&
-               it->second->m_zones.find(zone) != it->second->m_zones.end()) {
+        for(auto& it : m_pending_interests) {
+            InterestOperation *interest_operation = it.second;
+            if(interest_operation->m_parent == parent &&
+               interest_operation->m_zones.find(zone) != interest_operation->m_zones.end()) {
 
-                it->second->queue_datagram(in_dg);
+                interest_operation->queue_datagram(in_dg);
 
                 // Add the DoId to m_pending_objects, because while it's not an object
                 // from opening the interest, we should begin queueing messages for it
-                m_pending_objects.emplace(do_id, it->first);
+                m_pending_objects.emplace(do_id, it.first);
 
                 return;
             }
@@ -578,7 +603,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
 
         m_pending_objects.emplace(dgi.read_doid(), request_context);
         it->second->queue_expected(in_dg);
-        if(it->second->is_ready()) { it->second->finish(); }
+        if(it->second->is_ready()) {
+            it->second->finish();
+        }
         return;
     }
     break;
@@ -595,7 +622,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         }
 
         it->second->set_expected(count);
-        if(it->second->is_ready()) { it->second->finish(); }
+        if(it->second->is_ready()) {
+            it->second->finish();
+        }
     }
     break;
     case STATESERVER_OBJECT_CHANGING_LOCATION: {
@@ -610,10 +639,10 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         zone_t n_zone = dgi.read_zone();
 
         bool disable = true;
-        for(auto it = m_interests.begin(); it != m_interests.end(); ++it) {
-            Interest &i = it->second;
-            for(auto it2 = i.zones.begin(); it2 != i.zones.end(); ++it2) {
-                if(*it2 == n_zone) {
+        for(const auto& it : m_interests) {
+            const Interest& i = it.second;
+            for(const auto& it2 : i.zones) {
+                if(it2 == n_zone) {
                     disable = false;
                     break;
                 }
@@ -729,7 +758,9 @@ void Client::handle_object_entrance(DatagramIterator &dgi, bool other)
 // interest operation's caller, if one has been set.
 void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 {
-    if(caller == 0) { return; }
+    if(caller == 0) {
+        return;
+    }
 
     DatagramPtr resp = Datagram::create(caller, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
     resp->add_channel(m_channel);
@@ -741,7 +772,9 @@ void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 // interest operation's caller, if one has been set.
 void Client::notify_interest_done(const InterestOperation* iop)
 {
-    if(iop->m_callers.size() == 0) { return; }
+    if(iop->m_callers.size() == 0) {
+        return;
+    }
 
     DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
     resp->add_channel(m_channel);
@@ -756,28 +789,39 @@ InterestOperation::InterestOperation(
     Client *client, unsigned long timeout,
     uint16_t interest_id, uint32_t client_context, uint32_t request_context,
     doid_t parent, unordered_set<zone_t> zones, channel_t caller) :
-        m_client(client),
-        m_interest_id(interest_id),
-        m_client_context(client_context),
-        m_request_context(request_context),
-        m_parent(parent), m_zones(zones),
-        m_timeout(timeout, bind(&InterestOperation::timeout, this))
+    m_client(client),
+    m_interest_id(interest_id),
+    m_client_context(client_context),
+    m_request_context(request_context),
+    m_parent(parent), m_zones(zones),
+    m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
 {
     m_callers.insert(m_callers.end(), caller);
+    m_timeout->start();
+}
+
+InterestOperation::~InterestOperation()
+{
+    assert(m_finished);
 }
 
 void InterestOperation::timeout()
 {
     lock_guard<recursive_mutex> lock(m_client->m_client_lock);
     m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
-    finish();
+    finish(true);
 }
 
-void InterestOperation::finish()
+void InterestOperation::finish(bool is_timeout)
 {
+    if(!is_timeout && !m_timeout->cancel()) {
+        // The timeout is already running; let it clean up instead.
+        return;
+    }
+
     // Send objects in the initial snapshot
-    for(auto it = m_pending_generates.begin(); it != m_pending_generates.end(); ++it) {
-        DatagramIterator dgi(*it);
+    for(const auto& it : m_pending_generates) {
+        DatagramIterator dgi(it);
         dgi.seek_payload();
         dgi.skip(sizeof(channel_t)); // skip sender
 
@@ -801,11 +845,13 @@ void InterestOperation::finish()
     m_client->m_pending_interests.erase(m_request_context);
 
     // Dispatch other received and queued messages
-    for(auto it = dispatch.begin(); it != dispatch.end(); ++it) {
-        DatagramIterator dgi(*it);
+    for(const auto& it : dispatch) {
+        DatagramIterator dgi(it);
         dgi.seek_payload();
-        m_client->handle_datagram(*it, dgi);
+        m_client->handle_datagram(it, dgi);
     }
+
+    m_finished = true;
 
     delete this;
 }

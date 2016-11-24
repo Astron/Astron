@@ -22,7 +22,7 @@ void EventSender::init(const std::string& target)
     auto addresses = resolve_address(target, 7197, io_service, ec);
     if(ec.value() != 0) {
         m_log.fatal() << "Couldn't resolve " << target << std::endl;
-	exit(1);
+        exit(1);
     }
 
     m_target = udp::endpoint(addresses[0].address(), addresses[0].port());
@@ -42,8 +42,6 @@ void EventSender::send(DatagramHandle dg)
     m_socket.send_to(boost::asio::buffer(dg->get_data(), dg->size()),
                      m_target);
 }
-
-EventSender g_eventsender;
 
 // And now the convenience class:
 LoggedEvent::LoggedEvent()

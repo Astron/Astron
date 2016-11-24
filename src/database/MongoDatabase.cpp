@@ -18,7 +18,8 @@ using namespace std;
 using namespace mongo;
 
 static ConfigGroup mongodb_backend_config("mongodb", db_backend_config);
-static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test", mongodb_backend_config);
+static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test",
+                                        mongodb_backend_config);
 static ConfigVariable<int> num_workers("workers", 8, mongodb_backend_config);
 
 // These are helper functions to convert between BSONElement and packed Bamboo
@@ -298,9 +299,9 @@ class MongoDatabase : public DatabaseBackend
 {
   public:
     MongoDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
-            DatabaseBackend(dbeconfig, min_id, max_id),
-            m_shutdown(false),
-            m_monotonic_exhausted(false)
+        DatabaseBackend(dbeconfig, min_id, max_id),
+        m_shutdown(false),
+        m_monotonic_exhausted(false)
     {
         stringstream log_name;
         log_name << "Database-MongoDB" << "(Range: [" << min_id << ", " << max_id << "])";
@@ -549,7 +550,7 @@ class MongoDatabase : public DatabaseBackend
         BSONObj obj;
         try {
             obj = client->findOne(m_obj_collection,
-                                 BSON("_id" << operation->doid()));
+                                  BSON("_id" << operation->doid()));
         } catch(mongo::DBException &e) {
             m_log->error() << "Unexpected error occurred while trying to"
                            " retrieve object with DOID "
@@ -653,7 +654,7 @@ class MongoDatabase : public DatabaseBackend
             if(!operation->criteria_fields().empty()) {
                 try {
                     obj = client->findOne(m_obj_collection,
-                                         BSON("_id" << operation->doid()));
+                                          BSON("_id" << operation->doid()));
                 } catch(mongo::DBException &e) {
                     m_log->error() << "Unexpected error while modifying "
                                    << operation->doid() << ": " << e.what() << endl;
@@ -730,7 +731,7 @@ class MongoDatabase : public DatabaseBackend
         operation->on_failure();
     }
 
-    // Get a DBObjectSnapshot from a MongoDB BSON object; returns NULL if failure.
+    // Get a DBObjectSnapshot from a MongoDB BSON object; returns nullptr if failure.
     DBObjectSnapshot *format_snapshot(doid_t doid, const BSONObj &obj)
     {
         m_log->trace() << "Formatting database snapshot of " << doid << ": "
@@ -741,7 +742,7 @@ class MongoDatabase : public DatabaseBackend
             if(!dclass) {
                 m_log->error() << "Encountered unknown database object: "
                                << dclass_name << "(" << doid << ")" << endl;
-                return NULL;
+                return nullptr;
             }
 
             BSONObj fields = obj["fields"].Obj();
@@ -770,7 +771,7 @@ class MongoDatabase : public DatabaseBackend
             m_log->error() << "Unexpected error while trying to format"
                            " database snapshot for " << doid << ": "
                            << e.what() << endl;
-            return NULL;
+            return nullptr;
         }
     }
 

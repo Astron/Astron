@@ -1,12 +1,14 @@
 #include "password_prompt.h"
 using namespace std;
 
-#ifdef WIN32
+#ifdef _WIN32
 
 // Define getpass for windows
 #include <iostream>
 #include <string>
-#define WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 string password_prompt(const string& prompt)
 {

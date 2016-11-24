@@ -7,8 +7,8 @@ BaseDBBackendFactoryItem::BaseDBBackendFactoryItem(const std::string &name)
 
 DBBackendFactory& DBBackendFactory::singleton()
 {
-    static DBBackendFactory* fact = new DBBackendFactory();
-    return *fact;
+    static DBBackendFactory fact;
+    return fact;
 }
 
 // instantiate_backend creates a new DatabaseBackend object of type 'backend_name'.
@@ -18,7 +18,7 @@ DatabaseBackend* DBBackendFactory::instantiate_backend(const std::string &backen
     if(m_factories.find(backend_name) != m_factories.end()) {
         return m_factories[backend_name]->instantiate(config, min_id, max_id);
     }
-    return NULL;
+    return nullptr;
 }
 
 // add_backend adds a factory for backend of type 'name'

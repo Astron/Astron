@@ -7,8 +7,8 @@ BaseRoleFactoryItem::BaseRoleFactoryItem(const std::string &name)
 
 RoleFactory& RoleFactory::singleton()
 {
-    static RoleFactory* fact = new RoleFactory();
-    return *fact;
+    static RoleFactory fact;
+    return fact;
 }
 
 // add_role adds a factory for role of type 'name'
@@ -24,5 +24,5 @@ Role* RoleFactory::instantiate_role(const std::string &role_name, RoleConfig rol
     if(m_factories.find(role_name) != m_factories.end()) {
         return m_factories[role_name]->instantiate(roleconfig);
     }
-    return NULL;
+    return nullptr;
 }

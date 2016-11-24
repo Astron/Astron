@@ -17,8 +17,8 @@ struct Uberdog {
 };
 
 extern const dclass::File *g_dcf;
-extern Logger *g_logger;
-extern ConfigFile *g_config;
-extern EventSender g_eventsender;
+extern std::unique_ptr<Logger> g_logger;
+extern std::unique_ptr<ConfigFile> g_config;
 extern boost::asio::io_service io_service;
+extern EventSender g_eventsender;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;

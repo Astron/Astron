@@ -27,8 +27,8 @@ static ConfigVariable<std::string> daemon_url("url", "", daemon_config);
 MessageDirector MessageDirector::singleton;
 
 
-MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(NULL), m_upstream(NULL),
-    m_thread(NULL), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
+MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
+    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
 {
 }
 
@@ -51,7 +51,7 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = new TcpAcceptor(io_service, callback);
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
             boost::system::error_code ec;
             ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
             if(ec.value() != 0) {
@@ -180,7 +180,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
                           << p->m_name << "'.\n";
         } else {
             m_log.error() << "Detected truncated datagram reading header from "
-                             "unknown participant.\n";
+                          "unknown participant.\n";
         }
         return;
     }
@@ -188,15 +188,18 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
     // Find the participants that need to receive the message
     std::set<ChannelSubscriber*> receiving_participants;
     lookup_channels(channels, receiving_participants);
-    if(p) { receiving_participants.erase(p); }
+    if(p) {
+        receiving_participants.erase(p);
+    }
 
     // Send the datagram to each participant
     for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
         auto participant = static_cast<MDParticipantInterface*>(*it);
         DatagramIterator msg_dgi(dg, dgi.tell());
 
-        try { participant->handle_datagram(dg, msg_dgi); }
-        catch(DatagramIteratorEOF &) {
+        try {
+            participant->handle_datagram(dg, msg_dgi);
+        } catch(DatagramIteratorEOF &) {
             // Log error with receivers output
             m_log.error() << "Detected truncated datagram in handle_datagram for '"
                           << participant->m_name << "' from participant '" << p->m_name << "'.\n";
@@ -327,7 +330,7 @@ void MessageDirector::recall_post_removes(channel_t sender)
 
 void MessageDirector::receive_datagram(DatagramHandle dg)
 {
-    route_datagram(NULL, dg);
+    route_datagram(nullptr, dg);
 }
 
 void MessageDirector::receive_disconnect(const boost::system::error_code &ec)

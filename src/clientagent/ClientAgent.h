@@ -5,8 +5,10 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <memory>
+
 extern RoleConfigGroup clientagent_config;
-extern ConfigGroup ca_client_config;
+extern KeyedConfigGroup ca_client_config;
 extern ConfigVariable<std::string> ca_client_type;
 
 // A ChannelTracker is used to keep track of available and allocated channels that
@@ -26,19 +28,22 @@ class ChannelTracker
     std::queue<channel_t> m_unused_channels;
 };
 
-class ClientAgent : public Role
+class ClientAgent final : public Role
 {
     friend class Client;
 
   public:
     ClientAgent(RoleConfig rolconfig);
-    ~ClientAgent();
 
     // handle_tcp generates a new Client object from a raw tcp connection.
-    void handle_tcp(boost::asio::ip::tcp::socket *socket);
+    void handle_tcp(boost::asio::ip::tcp::socket *socket,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
 
     // handle_ssl generates a new Client object from an ssl stream.
-    void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
+    void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
+                    const boost::asio::ip::tcp::endpoint &remote,
+                    const boost::asio::ip::tcp::endpoint &local);
 
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,
@@ -60,16 +65,16 @@ class ClientAgent : public Role
 
     LogCategory *log()
     {
-        return m_log;
+        return m_log.get();
     }
 
   private:
-    NetworkAcceptor *m_net_acceptor;
+    std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     std::string m_client_type;
     std::string m_server_version;
     ChannelTracker m_ct;
     ConfigNode m_clientconfig;
-    LogCategory *m_log;
+    std::unique_ptr<LogCategory> m_log;
     uint32_t m_hash;
 
     unsigned long m_interest_timeout;

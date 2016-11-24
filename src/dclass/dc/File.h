@@ -42,24 +42,24 @@ class File
     inline Struct* get_struct(unsigned int n);
     inline const Struct* get_struct(unsigned int n) const;
 
-    // get_class_by_id returns the requested class or NULL if there is no such class.
+    // get_class_by_id returns the requested class or nullptr if there is no such class.
     Class* get_class_by_id(unsigned int id);
     const Class* get_class_by_id(unsigned int id) const;
-    // get_class_by_name returns the requested class or NULL if there is no such class.
+    // get_class_by_name returns the requested class or nullptr if there is no such class.
     Class* get_class_by_name(const std::string &name);
     const Class* get_class_by_name(const std::string &name) const;
 
     // get_num_types returns the number of types in the file.
     //     All type ids will be within the range 0 <= id < get_num_types().
     inline size_t get_num_types() const;
-    // get_type_by_id returns the requested type or NULL if there is no such type.
+    // get_type_by_id returns the requested type or nullptr if there is no such type.
     inline DistributedType* get_type_by_id(unsigned int id);
     inline const DistributedType* get_type_by_id(unsigned int id) const;
-    // get_type_by_name returns the requested type or NULL if there is no such type.
+    // get_type_by_name returns the requested type or nullptr if there is no such type.
     inline DistributedType* get_type_by_name(const std::string &name);
     inline const DistributedType* get_type_by_name(const std::string &name) const;
 
-    // get_field_by_id returns the request field or NULL if there is no such field.
+    // get_field_by_id returns the request field or nullptr if there is no such field.
     inline Field* get_field_by_id(unsigned int id);
     inline const Field* get_field_by_id(unsigned int id) const;
 

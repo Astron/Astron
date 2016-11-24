@@ -16,16 +16,21 @@ using dclass::Field;
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
-static ConfigVariable<bool> relocate_owned("relocate", false, ca_client_config);
-static ConfigVariable<string> interest_permissions("add_interest", "visible", ca_client_config);
+
+static ConfigGroup astronclient_config("libastron", ca_client_config);
+static ConfigVariable<bool> relocate_owned("relocate", false, astronclient_config);
+static ConfigVariable<string> interest_permissions("add_interest", "visible", astronclient_config);
 static BooleanValueConstraint relocate_is_boolean(relocate_owned);
 
-//set default to true
-static ConfigVariable<bool> send_hash_to_client("send_hash", true, ca_client_config);
-static ConfigVariable<bool> send_version_to_client("send_version", true, ca_client_config);
+static ConfigVariable<bool> send_hash_to_client("send_hash", true, astronclient_config);
+static ConfigVariable<bool> send_version_to_client("send_version", true, astronclient_config);
+
+static ConfigVariable<uint64_t> write_buffer_size("write_buffer_size", 256 * 1024,
+        astronclient_config);
+static ConfigVariable<unsigned int> write_timeout_ms("write_timeout_ms", 5000, astronclient_config);
 
 //by default, have heartbeat disabled.
-static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, ca_client_config);
+static ConfigVariable<long> heartbeat_timeout_config("heartbeat_timeout", 0, astronclient_config);
 
 static bool is_permission_level(const string& str)
 {
@@ -40,9 +45,10 @@ enum InterestPermission {
     INTERESTS_DISABLED
 };
 
-class AstronClient : public Client, public NetworkClient
+class AstronClient : public Client, public NetworkHandler
 {
   private:
+    std::shared_ptr<NetworkClient> m_client;
     ConfigNode m_config;
     bool m_clean_disconnect;
     bool m_relocate_owned;
@@ -52,35 +58,36 @@ class AstronClient : public Client, public NetworkClient
 
     //Heartbeat
     long m_heartbeat_timeout;
-    Timeout *m_heartbeat_timer = nullptr;
+    std::shared_ptr<Timeout> m_heartbeat_timer = nullptr;
 
   public:
-    AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket) :
-        Client(config, client_agent), NetworkClient(socket), m_config(config),
+    AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket,
+                 const tcp::endpoint &remote, const tcp::endpoint &local) :
+        Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
+        m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
+        m_client->initialize(socket, remote, local);
+
         initialize();
     }
 
     AstronClient(ConfigNode config, ClientAgent* client_agent,
-                 ssl::stream<tcp::socket> *stream) :
-        Client(config, client_agent), NetworkClient(stream), m_config(config),
+                 ssl::stream<tcp::socket> *stream,
+                 const tcp::endpoint &remote, const tcp::endpoint &local) :
+        Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
+        m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
         m_send_hash(send_hash_to_client.get_rval(config)),
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        initialize();
-    }
+        m_client->initialize(stream, remote, local);
 
-    ~AstronClient()
-    {
-        if(m_heartbeat_timer != nullptr) {
-            delete m_heartbeat_timer;
-        }
+        initialize();
     }
 
     void heartbeat_timeout()
@@ -94,8 +101,10 @@ class AstronClient : public Client, public NetworkClient
     {
         //If heartbeat, start the heartbeat timer now.
         if(m_heartbeat_timeout != 0) {
-            m_heartbeat_timer = new Timeout(m_heartbeat_timeout, std::bind(&AstronClient::heartbeat_timeout,
-                                            this));
+            m_heartbeat_timer = std::make_shared<Timeout>(m_heartbeat_timeout,
+                                std::bind(&AstronClient::heartbeat_timeout,
+                                          this));
+            m_heartbeat_timer->start();
         }
 
         // Set interest permissions
@@ -108,9 +117,13 @@ class AstronClient : public Client, public NetworkClient
             m_interests_allowed = INTERESTS_DISABLED;
         }
 
+        // Set NetworkClient config
+        m_client->set_write_timeout(write_timeout_ms.get_rval(m_config));
+        m_client->set_write_buffer(write_buffer_size.get_rval(m_config));
+
         stringstream ss;
-        ss << "Client (" << m_remote.address().to_string()
-           << ":" << m_remote.port() << ", " << m_channel << ")";
+        ss << "Client (" << m_client->get_remote().address().to_string()
+           << ":" << m_client->get_remote().port() << ", " << m_channel << ")";
         m_log->set_name(ss.str());
         set_con_name(ss.str());
 
@@ -119,14 +132,14 @@ class AstronClient : public Client, public NetworkClient
 
         // Add remote endpoint to log
         ss.str(""); // empty the stream
-        ss << m_remote.address().to_string()
-           << ":" << m_remote.port();
+        ss << m_client->get_remote().address().to_string()
+           << ":" << m_client->get_remote().port();
         event.add("remote_address", ss.str());
 
         // Add local endpoint to log
         ss.str(""); // empty the stream
-        ss << m_socket->local_endpoint().address().to_string()
-           << ":" << m_socket->local_endpoint().port();
+        ss << m_client->get_local().address().to_string()
+           << ":" << m_client->get_local().port();
         event.add("local_address", ss.str());
 
         // Log created event
@@ -138,17 +151,17 @@ class AstronClient : public Client, public NetworkClient
     // Handler for CLIENTAGENT_EJECT.
     virtual void send_disconnect(uint16_t reason, const string &error_string, bool security = false)
     {
-        if(is_connected()) {
+        if(m_client->is_connected()) {
             Client::send_disconnect(reason, error_string, security);
 
             DatagramPtr resp = Datagram::create();
             resp->add_uint16(CLIENT_EJECT);
             resp->add_uint16(reason);
             resp->add_string(error_string);
-            send_datagram(resp);
+            m_client->send_datagram(resp);
 
             m_clean_disconnect = true;
-            NetworkClient::send_disconnect();
+            m_client->disconnect();
         }
     }
 
@@ -209,6 +222,10 @@ class AstronClient : public Client, public NetworkClient
             log_event(event);
         }
 
+        if(m_heartbeat_timer != nullptr) {
+            m_heartbeat_timer->cancel();
+        }
+
         annihilate();
     }
 
@@ -217,7 +234,7 @@ class AstronClient : public Client, public NetworkClient
     // Handler for CLIENTAGENT_SEND_DATAGRAM.
     virtual void forward_datagram(DatagramHandle dg)
     {
-        send_datagram(dg);
+        m_client->send_datagram(dg);
     }
 
     // handle_drop should immediately disconnect the client without sending any more data.
@@ -225,7 +242,7 @@ class AstronClient : public Client, public NetworkClient
     virtual void handle_drop()
     {
         m_clean_disconnect = true;
-        NetworkClient::send_disconnect();
+        m_client->disconnect();
     }
 
     // handle_add_interest should inform the client of an interest added by the server.
@@ -244,7 +261,7 @@ class AstronClient : public Client, public NetworkClient
         for(auto it = i.zones.begin(); it != i.zones.end(); ++it) {
             resp->add_zone(*it);
         }
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_remove_interest should inform the client an interest was removed by the server.
@@ -254,7 +271,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_uint16(CLIENT_REMOVE_INTEREST);
         resp->add_uint32(context);
         resp->add_uint16(interest_id);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_add_object should inform the client of a new object. The datagram iterator
@@ -269,7 +286,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_location(parent_id, zone_id);
         resp->add_uint16(dc_id);
         resp->add_data(dgi.read_remainder());
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_add_ownership should inform the client it has control of a new object. The datagram
@@ -285,7 +302,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_location(parent_id, zone_id);
         resp->add_uint16(dc_id);
         resp->add_data(dgi.read_remainder());
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_set_field should inform the client that the field has been updated.
@@ -296,7 +313,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_doid(do_id);
         resp->add_uint16(field_id);
         resp->add_data(dgi.read_remainder());
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_set_fields should inform the client that a group of fields has been updated.
@@ -307,7 +324,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_doid(do_id);
         resp->add_uint16(num_fields);
         resp->add_data(dgi.read_remainder());
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_change_location should inform the client that the objects location has changed.
@@ -317,7 +334,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_uint16(CLIENT_OBJECT_LOCATION);
         resp->add_doid(do_id);
         resp->add_location(new_parent, new_zone);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_remove_object should send a mesage to remove the object from the connected client.
@@ -328,7 +345,7 @@ class AstronClient : public Client, public NetworkClient
         DatagramPtr resp = Datagram::create();
         resp->add_uint16(CLIENT_OBJECT_LEAVING);
         resp->add_doid(do_id);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_remove_ownership should notify the client it no has control of the object.
@@ -338,7 +355,7 @@ class AstronClient : public Client, public NetworkClient
         DatagramPtr resp = Datagram::create();
         resp->add_uint16(CLIENT_OBJECT_LEAVING_OWNER);
         resp->add_doid(do_id);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // handle_interest_done is called when all of the objects from an opened interest have been
@@ -349,7 +366,7 @@ class AstronClient : public Client, public NetworkClient
         resp->add_uint16(CLIENT_DONE_INTEREST_RESP);
         resp->add_uint32(context);
         resp->add_uint16(interest_id);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
     }
 
     // Client has just connected and should only send "CLIENT_HELLO"
@@ -393,7 +410,7 @@ class AstronClient : public Client, public NetworkClient
 
         DatagramPtr resp = Datagram::create();
         resp->add_uint16(CLIENT_HELLO_RESP);
-        send_datagram(resp);
+        m_client->send_datagram(resp);
 
         m_state = CLIENT_STATE_ANONYMOUS;
     }
@@ -408,7 +425,7 @@ class AstronClient : public Client, public NetworkClient
             log_event(event);
 
             m_clean_disconnect = true;
-            NetworkClient::send_disconnect();
+            m_client->disconnect();
         }
         break;
         case CLIENT_OBJECT_SET_FIELD:
@@ -436,7 +453,7 @@ class AstronClient : public Client, public NetworkClient
             log_event(event);
 
             m_clean_disconnect = true;
-            NetworkClient::send_disconnect();
+            m_client->disconnect();
         }
         break;
         case CLIENT_OBJECT_SET_FIELD:
@@ -648,17 +665,22 @@ class AstronClient : public Client, public NetworkClient
 
     virtual const std::string get_remote_address()
     {
-        return m_remote.address().to_string();
+        return m_client->get_remote().address().to_string();
     }
 
     virtual uint16_t get_remote_port()
     {
-        return m_remote.port();
+        return m_client->get_remote().port();
     }
 
-    virtual const tcp::socket* get_socket()
+    virtual const std::string get_local_address()
     {
-        return m_socket;
+        return m_client->get_local().address().to_string();
+    }
+
+    virtual uint16_t get_local_port()
+    {
+        return m_client->get_local().port();
     }
 };
 

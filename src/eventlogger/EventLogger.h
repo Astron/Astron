@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <memory>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
@@ -15,7 +16,7 @@ using boost::asio::ip::udp;
 
 // An EventLogger is a role in the daemon that opens up a local socket and reads UDP packets from
 // that socket.  Received UDP packets will be logged as configured by the daemon config file.
-class EventLogger : public Role
+class EventLogger final : public Role
 {
   public:
     EventLogger(RoleConfig roleconfig);
@@ -24,10 +25,10 @@ class EventLogger : public Role
 
   private:
     LogCategory m_log;
-    udp::socket *m_socket;
+    std::unique_ptr<udp::socket> m_socket;
     udp::endpoint m_remote;
     std::string m_file_format;
-    std::ofstream *m_file;
+    std::unique_ptr<std::ofstream> m_file;
     uint8_t m_buffer[EVENTLOG_BUFSIZE];
 
     void bind(const std::string &addr);

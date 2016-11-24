@@ -41,7 +41,7 @@ File* read(istream &in, const string &filename)
         return f;
     }
 
-    return NULL;
+    return nullptr;
 }
 File* read(const string &filename)
 {
@@ -51,7 +51,7 @@ File* read(const string &filename)
         return f;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 

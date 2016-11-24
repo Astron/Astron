@@ -254,7 +254,7 @@ class YAMLDatabase : public OldDatabaseBackend
         // Open file for object
         YAML::Node document;
         if(!load(do_id, document)) {
-            return NULL;
+            return nullptr;
         }
 
         return g_dcf->get_class_by_name(document["class"].as<string>());

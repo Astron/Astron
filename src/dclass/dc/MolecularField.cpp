@@ -9,7 +9,7 @@ namespace dclass   // open namespace dclass
 
 // constructor
 MolecularField::MolecularField(Class* cls, const std::string &name) :
-    Field(NULL, name), Struct(cls->get_file())
+    Field(nullptr, name), Struct(cls->get_file())
 {
     Field::m_type = this;
 }
@@ -19,7 +19,7 @@ MolecularField::~MolecularField()
 {
 }
 
-// as_molecular returns this as a MolecularField if it is molecular, or NULL otherwise.
+// as_molecular returns this as a MolecularField if it is molecular, or nullptr otherwise.
 MolecularField* MolecularField::as_molecular()
 {
     return this;
@@ -87,8 +87,8 @@ void MolecularField::generate_hash(HashGenerator& hashgen) const
     hashgen.add_string(Field::m_name);
     // We aren't the owner of the fields so we only use their id in the hash
     hashgen.add_int(m_fields.size());
-    for(auto it = m_fields.begin(); it != m_fields.end(); ++it) {
-        hashgen.add_int((*it)->get_id());
+    for(const auto& it : m_fields) {
+        hashgen.add_int(it->get_id());
     }
 }
 

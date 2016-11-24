@@ -5,6 +5,7 @@
 #include <queue>
 #include <thread>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <condition_variable>
 #include <boost/asio.hpp>
@@ -21,7 +22,7 @@ class MDUpstream;
 // A MessageDirector is the internal networking object for an Astron server-node.
 // The MessageDirector receives message from other servers and routes them to the
 //     Client Agent, State Server, DB Server, DB-SS, and other server-nodes as necessary.
-class MessageDirector : public ChannelMap
+class MessageDirector final : public ChannelMap
 {
   public:
     ~MessageDirector();
@@ -47,17 +48,17 @@ class MessageDirector : public ChannelMap
     void receive_disconnect(const boost::system::error_code &ec);
 
   protected:
-    virtual void on_add_channel(channel_t c);
-    virtual void on_remove_channel(channel_t c);
-    virtual void on_add_range(channel_t lo, channel_t hi);
-    virtual void on_remove_range(channel_t lo, channel_t hi);
+    void on_add_channel(channel_t c);
+    void on_remove_channel(channel_t c);
+    void on_add_range(channel_t lo, channel_t hi);
+    void on_remove_range(channel_t lo, channel_t hi);
 
   private:
     MessageDirector();
 
     bool m_initialized;
 
-    NetworkAcceptor *m_net_acceptor;
+    std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     MDUpstream *m_upstream;
 
     // Connected participants
@@ -107,7 +108,6 @@ class MDParticipantInterface : public ChannelSubscriber
     {
         MessageDirector::singleton.add_participant(this);
     }
-    virtual ~MDParticipantInterface() {}
 
     // handle_datagram should handle a message received from the MessageDirector.
     // Implementations of handle_datagram should be non-blocking operations.
@@ -206,7 +206,7 @@ class MDParticipantInterface : public ChannelSubscriber
   private:
     // The messages to be distributed on unexpected disconnect.
     std::map<channel_t, std::vector<DatagramHandle> > m_post_removes;
-    std::atomic<bool> m_is_terminated{false};
+    std::atomic<bool> m_is_terminated {false};
     std::string m_name;
     std::string m_url;
 };

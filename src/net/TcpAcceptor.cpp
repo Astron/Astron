@@ -1,4 +1,5 @@
 #include "TcpAcceptor.h"
+#include "HAProxyHandler.h"
 #include <boost/bind.hpp>
 
 TcpAcceptor::TcpAcceptor(boost::asio::io_service &io_service,
@@ -24,16 +25,40 @@ void TcpAcceptor::handle_accept(tcp::socket *socket, const boost::system::error_
         return;
     }
 
-    if(ec.value() != 0) {
-        // The accept failed for some reason. Free the socket and try again:
+    // Start accepting another connection now:
+    start_accept();
+
+    if(ec) {
+        // The accept failed for some reason.
         delete socket;
-        start_accept();
+        return;
+    }
+
+    if(m_haproxy_mode) {
+        ProxyCallback callback = std::bind(&TcpAcceptor::handle_endpoints,
+                                           this, socket,
+                                           std::placeholders::_1,
+                                           std::placeholders::_2,
+                                           std::placeholders::_3);
+        HAProxyHandler::async_process(socket, callback);
+    } else {
+        boost::system::error_code endpoint_ec;
+        tcp::endpoint remote = socket->remote_endpoint(endpoint_ec);
+        tcp::endpoint local = socket->local_endpoint(endpoint_ec);
+        handle_endpoints(socket, endpoint_ec, remote, local);
+    }
+}
+
+void TcpAcceptor::handle_endpoints(tcp::socket *socket, const boost::system::error_code &ec,
+                                   const tcp::endpoint &remote,
+                                   const tcp::endpoint &local)
+{
+    if(ec) {
+        // The accept failed for some reason.
+        delete socket;
         return;
     }
 
     // Inform the callback:
-    m_callback(socket);
-
-    // Start accepting again:
-    start_accept();
+    m_callback(socket, remote, local);
 }

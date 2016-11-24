@@ -43,7 +43,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
         }
     }
 
-    MessageDirector::singleton.subscribe_channel(this, do_id);
+    subscribe_channel(do_id);
 
     m_log->debug() << "Object created..." << endl;
 
@@ -66,7 +66,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
     m_required_fields = required;
     m_ram_fields = ram;
 
-    MessageDirector::singleton.subscribe_channel(this, do_id);
+    subscribe_channel(do_id);
     handle_location_change(parent_id, zone_id, sender);
     wake_children();
 }
@@ -198,7 +198,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
     if(new_parent != old_parent) {
         // Unsubscribe from the old parent's child-broadcast channel.
         if(old_parent) { // If we have an old parent
-            MessageDirector::singleton.unsubscribe_channel(this, parent_to_children(m_parent_id));
+            unsubscribe_channel(parent_to_children(m_parent_id));
             // Notify old parent of changing location
             targets.insert(old_parent);
             // Notify old location of changing location
@@ -210,7 +210,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
 
         // Subscribe to new one...
         if(new_parent) { // If we have a new parent
-            MessageDirector::singleton.subscribe_channel(this, parent_to_children(m_parent_id));
+            subscribe_channel(parent_to_children(m_parent_id));
             if(!m_ai_explicitly_set) {
                 // Ask the new parent what its AI is.
                 DatagramPtr dg = Datagram::create(m_parent_id, m_do_id, STATESERVER_OBJECT_GET_AI);

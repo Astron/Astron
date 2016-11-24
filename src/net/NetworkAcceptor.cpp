@@ -19,12 +19,12 @@ boost::system::error_code NetworkAcceptor::bind(const std::string &address,
         return ec;
     }
 
-    for(auto it = addresses.begin(); it != addresses.end(); ++it) {
+    for(const auto& it : addresses) {
         if(m_acceptor.is_open()) {
             m_acceptor.close();
         }
 
-        m_acceptor.open(it->protocol(), ec);
+        m_acceptor.open(it.protocol(), ec);
         if(ec.value() != 0) {
             continue;
         }
@@ -34,7 +34,7 @@ boost::system::error_code NetworkAcceptor::bind(const std::string &address,
             continue;
         }
 
-        m_acceptor.bind(*it, ec);
+        m_acceptor.bind(it, ec);
         if(ec.value() == 0) {
             break;
         }

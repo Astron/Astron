@@ -5,6 +5,7 @@
 #include "util/Timeout.h"
 
 #include <queue>
+#include <memory>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -60,7 +61,7 @@ class InterestOperation
     std::unordered_set<zone_t> m_zones;
     std::set<channel_t> m_callers;
 
-    Timeout m_timeout;
+    std::shared_ptr<Timeout> m_timeout;
 
     bool m_has_total = false;
     doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
@@ -71,18 +72,22 @@ class InterestOperation
     InterestOperation(Client *client, unsigned long timeout,
                       uint16_t interest_id, uint32_t client_context, uint32_t request_context,
                       doid_t parent, std::unordered_set<zone_t> zones, channel_t caller);
+    ~InterestOperation();
 
     bool is_ready();
     void set_expected(doid_t total);
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
-    void finish();
+    void finish(bool is_timeout = false);
     void timeout();
+
+  private:
+    bool m_finished = false;
 };
 
 class Client : public MDParticipantInterface
 {
-  friend class InterestOperation;
+    friend class InterestOperation;
   public:
     virtual ~Client();
 
@@ -121,7 +126,13 @@ class Client : public MDParticipantInterface
     std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
     // m_fields_sendable is a map of DoIds to sendable field sets.
     std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
+    // If we did not receive a pointer from the Client Agent, we create one ourselves
+    // in m_log_owner and have m_log point to that. This way, we are guarenteed that
+    // the instance will always be freed, no matter if we are using the logger from
+    // the Client Agent or in here.
     LogCategory *m_log;
+    // new LogCategory, incase we did not receive one from the Client Agent
+    std::unique_ptr<LogCategory> m_log_owner;
 
     Client(ConfigNode config, ClientAgent* client_agent);
 
@@ -132,7 +143,7 @@ class Client : public MDParticipantInterface
     void log_event(LoggedEvent &event);
 
     // lookup_object returns the class of the object with a do_id.
-    // If that object is not visible to the client, NULL will be returned instead.
+    // If that object is not visible to the client, nullptr will be returned instead.
     const dclass::Class* lookup_object(doid_t do_id);
 
     // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
@@ -226,12 +237,13 @@ class Client : public MDParticipantInterface
     // handle_interest_done is called when all of the objects from an opened interest have been
     // received. Typically, informs the client that a particular group of objects is loaded.
     virtual void handle_interest_done(uint16_t interest_id, uint32_t context) = 0;
-    
+
     // get_remote_address and friends are set by AstronClient, because we have no access
     // to m_remote from Client
     virtual const std::string get_remote_address() = 0;
     virtual uint16_t get_remote_port() = 0;
-    virtual const tcp::socket* get_socket() = 0;
+    virtual const std::string get_local_address() = 0;
+    virtual uint16_t get_local_port() = 0;
 
   private:
     // notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the

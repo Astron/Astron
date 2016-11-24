@@ -47,12 +47,12 @@
 
 
 	// Parser output
-	static File* parsed_file = (File*)NULL;
-	static string* parsed_value = (string*)NULL;
+	static File* parsed_file = nullptr;
+	static string* parsed_value = nullptr;
 
 	// Parser state
-	static Class* current_class = (Class*)NULL;
-	static Struct* current_struct = (Struct*)NULL;
+	static Class* current_class = nullptr;
+	static Struct* current_struct = nullptr;
 
 	// Stack of distributed types for parsing values
 	struct TypeAndDepth
@@ -66,8 +66,8 @@
 
 	// These two types are really common types the parser doesn't need to make new
 	//     duplicates of every time a string or blob is used.
-	static ArrayType* basic_string = (ArrayType*)NULL;
-	static ArrayType* basic_blob = (ArrayType*)NULL;
+	static ArrayType* basic_string = nullptr;
+	static ArrayType* basic_blob = nullptr;
 
 	/* Helper functions */
 	static bool check_depth();
@@ -100,8 +100,8 @@
 	{
 		current_depth = 0;
 		type_stack = stack<TypeAndDepth>();
-		parsed_file = (File*)NULL;
-		parsed_value = (string*)NULL;
+		parsed_file = nullptr;
+		parsed_value = nullptr;
 	}
 
 	int parser_error_count()
@@ -314,7 +314,7 @@ import_alternatives
 typedef
 	: typedef_type
 	{
-		if($1.type == (DistributedType*)NULL)
+		if($1.type == nullptr)
 		{
 			// Ignore this typedef, it should have already produced an error
 			break;
@@ -328,14 +328,14 @@ typedef
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name($1.name);
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding typedef to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'typedef " + $1.name
 				             + "' to file because a typedef was already declared with that name.");
@@ -382,10 +382,10 @@ defined_type
 	: IDENTIFIER
 	{
 		DistributedType* dtype = parsed_file->get_type_by_name($1);
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			parser_error("Type '" + string($1) + "' has not been declared.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
@@ -417,14 +417,14 @@ dclass
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name(current_class->get_name());
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding class to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'dclass " + current_class->get_name()
 				             + "' to file because a typedef was already declared with that name.");
@@ -453,14 +453,14 @@ class_inheritance
 class_parents
 	: defined_class
 	{
-		if($1 != (Class*)NULL)
+		if($1 != nullptr)
 		{
 			current_class->add_parent($1);
 		}
 	}
 	| class_parents ',' defined_class
 	{
-		if($3 != (Class*)NULL)
+		if($3 != nullptr)
 		{
 			current_class->add_parent($3);
 		}
@@ -471,26 +471,26 @@ defined_class
 	: IDENTIFIER
 	{
 		DistributedType* dtype = parsed_file->get_type_by_name($1);
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			parser_error("'dclass " + string($1) + "' has not been declared.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
 		Struct* dstruct = dtype->as_struct();
-		if(dstruct == (Struct*)NULL)
+		if(dstruct == nullptr)
 		{
 			parser_error("class cannot inherit from non-class type '" + string($1) + "'.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
 		Class* dclass = dstruct->as_class();
-		if(dclass == (Class*)NULL)
+		if(dclass == nullptr)
 		{
 			parser_error("class cannot inherit from struct type '" + string($1) + "'.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
@@ -503,7 +503,7 @@ class_fields
 	| class_fields ';'
 	| class_fields class_field ';'
 	{
-		if($2 == (Field*)NULL)
+		if($2 == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;
@@ -541,17 +541,17 @@ class_fields
 class_field
 	: named_field keyword_list
 	{
-		if($1 == (Field*)NULL)
+		if($1 == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
 		if($1->get_name().empty())
 		{
 			parser_error("An unnamed field can't be defined in a class.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
@@ -581,14 +581,14 @@ dstruct
 		{
 			// Lets be really descriptive about why this failed
 			DistributedType* dtype = parsed_file->get_type_by_name(current_struct->get_name());
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				parser_error("Unknown error adding struct to file.");
 				break;
 			}
 
 			Struct* dstruct = dtype->as_struct();
-			if(dstruct == (Struct*)NULL)
+			if(dstruct == nullptr)
 			{
 				parser_error("Cannot add 'struct " + current_struct->get_name()
 				             + "' to file because a typedef was already declared with that name.");
@@ -614,7 +614,7 @@ struct_fields
 	| struct_fields ';'
 	| struct_fields struct_field ';'
 	{
-		if($2 == (Field*)NULL || $2->get_type() == (DistributedType*)NULL)
+		if($2 == nullptr || $2->get_type() == nullptr)
 		{
 			// Ignore this field, it should have already generated a parser error
 			break;
@@ -697,7 +697,7 @@ field_with_name_as_array
 	;
 
 field_with_name_and_default
-	: field_with_name '=' 
+	: field_with_name '='
 	{
 		current_depth = 0;
 		type_stack.push(TypeAndDepth($1->get_type(), 0));
@@ -747,17 +747,17 @@ nonmethod_type
 nonmethod_type_no_array
 	: defined_type
 	{
-		if($1 == (DistributedType*)NULL)
+		if($1 == nullptr)
 		{
-			// defined_type should have output an error, pass NULL upstream
-			$$ = NULL;
+			// defined_type should have output an error, pass nullptr upstream
+			$$ = nullptr;
 			break;
 		}
 
 		if($1->get_type() == T_METHOD)
 		{
 			parser_error("Cannot use a method type here.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
@@ -793,7 +793,7 @@ molecular
 	: IDENTIFIER ':' defined_field
 	{
 		MolecularField* mol = new MolecularField(current_class, $1);
-		if($3 == (Field*)NULL)
+		if($3 == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = mol;
@@ -818,7 +818,7 @@ molecular
 	}
 	| molecular ',' defined_field
 	{
-		if($3 == (Field*)NULL)
+		if($3 == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = $1;
@@ -853,15 +853,15 @@ defined_field
 		if(!current_class)
 		{
 			parser_error("Field '" + $1 + "' not defined in current class.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
 		Field *field = current_class->get_field_by_name($1);
-		if(field == (Field*)NULL)
+		if(field == nullptr)
 		{
 			parser_error("Field '" + $1 + "' not defined in current class.");
-			$$ = NULL;
+			$$ = nullptr;
 			break;
 		}
 
@@ -874,7 +874,7 @@ builtin_array_type
 	{
 		if($1 == T_STRING)
 		{
-			if(basic_string == NULL)
+			if(basic_string == nullptr)
 			{
 				basic_string = new ArrayType(new NumericType(T_CHAR));
 				basic_string->set_alias("string");
@@ -884,7 +884,7 @@ builtin_array_type
 		}
 		else if($1 == T_BLOB)
 		{
-			if(basic_blob == NULL)
+			if(basic_blob == nullptr)
 			{
 				basic_blob = new ArrayType(new NumericType(T_UINT8));
 				basic_blob->set_alias("blob");
@@ -895,7 +895,7 @@ builtin_array_type
 		else
 		{
 			parser_error("Found builtin ArrayType not handled by parser.");
-			$$ = NULL;
+			$$ = nullptr;
 		}
 	}
 	| array_type_token '(' array_range ')'
@@ -915,7 +915,7 @@ builtin_array_type
 		else
 		{
 			parser_error("Found builtin ArrayType not handled by parser.");
-			$$ = NULL;
+			$$ = nullptr;
 		}
 	}
 	;
@@ -1032,7 +1032,7 @@ parameter
 	{
 		$$ = new Parameter($1);
 	}
-	| nonmethod_type '=' 
+	| nonmethod_type '='
 	{
 		current_depth = 0;
 		type_stack.push(TypeAndDepth($1,0));
@@ -1159,7 +1159,7 @@ type_value
 		if(!check_depth()) depth_error("signed integer");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1174,7 +1174,7 @@ type_value
 		if(!check_depth()) depth_error("unsigned integer");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1189,7 +1189,7 @@ type_value
 		if(!check_depth()) depth_error("floating point");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1204,7 +1204,7 @@ type_value
 		if(!check_depth()) depth_error("string");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1241,7 +1241,7 @@ type_value
 		if(!check_depth()) depth_error("hex-string");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1280,7 +1280,7 @@ method_value
 		if(!check_depth()) depth_error("method");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -1330,7 +1330,7 @@ struct_value
 		if(!check_depth()) depth_error("struct");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -1385,7 +1385,7 @@ array_value
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1429,7 +1429,7 @@ array_value
 		if(!check_depth()) depth_error("array");
 
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -1458,7 +1458,7 @@ array_value
 			uint64_t actual_size = current_depth - type_stack.top().depth;
 
 			const DistributedType* dtype = type_stack.top().type;
-			if(dtype == (DistributedType*)NULL)
+			if(dtype == nullptr)
 			{
 				// Ignore this field, it should have already generated an error
 				$$ = "";
@@ -1498,13 +1498,13 @@ array_value
 
 element_values
 	: array_expansion
-	| element_values ',' 
+	| element_values ','
 	{
 		// We popped off the only element we added, so we're back to the array
 		// Don't increment the depth; the array_expansion will add to
 		// the current_depth depending on the number of elements it adds.
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			break;
@@ -1527,7 +1527,7 @@ array_expansion
 	| signed_integer '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1549,7 +1549,7 @@ array_expansion
 	| UNSIGNED_INTEGER '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1571,7 +1571,7 @@ array_expansion
 	| REAL '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1593,7 +1593,7 @@ array_expansion
 	| STRING '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1649,7 +1649,7 @@ array_expansion
 	| HEX_STRING '*' small_unsigned_integer
 	{
 		const DistributedType* dtype = type_stack.top().type;
-		if(dtype == (DistributedType*)NULL)
+		if(dtype == nullptr)
 		{
 			// Ignore this field, it should have already generated an error
 			$$ = "";
@@ -1767,7 +1767,7 @@ void depth_error(string what)
 	}
 	else
 	{
-		parser_error("Too few nested values while parsing value for " + what + ".");	
+		parser_error("Too few nested values while parsing value for " + what + ".");
 	}
 }
 

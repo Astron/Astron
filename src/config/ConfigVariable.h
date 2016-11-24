@@ -20,7 +20,7 @@ class ConfigFile
 
 
 // Foward declarations
-extern ConfigFile *g_config;
+extern std::unique_ptr<ConfigFile> g_config;
 template<typename T>
 class ConfigConstraint;
 template<typename T>

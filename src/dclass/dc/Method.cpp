@@ -17,13 +17,14 @@ Method::Method()
 // destructor
 Method::~Method()
 {
-    for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it) {
-        delete(*it);
+    for(auto& it : m_parameters) {
+        delete it;
     }
+
     m_parameters.clear();
 }
 
-// as_method returns this as a Method if it is a method, or NULL otherwise.
+// as_method returns this as a Method if it is a method, or nullptr otherwise.
 Method* Method::as_method()
 {
     return this;
@@ -36,8 +37,8 @@ const Method* Method::as_method() const
 // add_parameter adds a new parameter to the method.
 bool Method::add_parameter(Parameter *param)
 {
-    // Param should not be null
-    if(param == (Parameter*)NULL) {
+    // Param should not be nullptr
+    if(param == nullptr) {
         return false;
     }
 
@@ -72,8 +73,8 @@ void Method::generate_hash(HashGenerator& hashgen) const
 {
     DistributedType::generate_hash(hashgen);
     hashgen.add_int(m_parameters.size());
-    for(auto it = m_parameters.begin(); it != m_parameters.end(); ++it) {
-        (*it)->generate_hash(hashgen);
+    for(const auto& it : m_parameters) {
+        it->generate_hash(hashgen);
     }
 }
 

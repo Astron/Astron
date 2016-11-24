@@ -63,7 +63,7 @@ void hash_file(HashGenerator& hashgen, const File* file)
     hashgen.add_int(file->get_num_structs() + file->get_num_classes());
 
     size_t num_types = file->get_num_types();
-    for(unsigned int i = 0; i < num_types; ++i) {
+    for(size_t i{}; i < num_types; ++i) {
         const DistributedType* type = file->get_type_by_id(i);
         if(!type->as_struct()) {
             cerr << "Cannot generate legacy hash for this file.\n";
@@ -85,7 +85,7 @@ void hash_class(HashGenerator& hashgen, const Class* cls)
 
     size_t num_parents = cls->get_num_parents();
     hashgen.add_int(num_parents);
-    for(unsigned int i = 0; i < num_parents; ++i) {
+    for(size_t i{}; i < num_parents; ++i) {
         hashgen.add_int(cls->get_parent(i)->get_id());
     }
 
@@ -95,7 +95,7 @@ void hash_class(HashGenerator& hashgen, const Class* cls)
 
     size_t num_fields = cls->get_num_base_fields();
     hashgen.add_int(num_fields);
-    for(unsigned int i = 0; i < num_fields; ++i) {
+    for(size_t i{}; i < num_fields; ++i) {
         hash_field(hashgen, cls->get_base_field(i));
     }
 }
@@ -108,7 +108,7 @@ void hash_struct(HashGenerator& hashgen, const Struct* strct)
 
     size_t num_fields = strct->get_num_fields();
     hashgen.add_int(num_fields);
-    for(unsigned int i = 0; i < num_fields; ++i) {
+    for(size_t i{}; i < num_fields; ++i) {
         hash_field(hashgen, strct->get_field(i));
     }
 }
@@ -125,7 +125,7 @@ void hash_field(HashGenerator& hashgen, const Field* field)
         size_t num_fields = mol->get_num_fields();
 
         hashgen.add_int(num_fields); // _fields.size();
-        for(unsigned int i = 0; i < num_fields; ++i) {
+        for(size_t i{}; i < num_fields; ++i) {
             hash_field(hashgen, mol->get_field(i));
         }
         return;
@@ -142,7 +142,7 @@ void hash_field(HashGenerator& hashgen, const Field* field)
         size_t num_params = method->get_num_parameters();
 
         hashgen.add_int(num_params); // _elements.size();
-        for(unsigned int i = 0; i < num_params; ++i) {
+        for(size_t i{}; i < num_params; ++i) {
             hash_parameter(hashgen, method->get_parameter(i));
         }
 
@@ -182,16 +182,16 @@ void hash_keywords(HashGenerator& hashgen, const KeywordList* list)
         { "clrecv", 0x0040 },
         { "ownsend", 0x0080 },
         { "airecv", 0x0100 },
-        { NULL, 0 }
+        { nullptr, 0 }
     };
 
     size_t num_keywords = list->get_num_keywords();
 
     int flags = 0;
-    for(unsigned int i = 0; i < num_keywords; ++i) {
+    for(size_t i{}; i < num_keywords; ++i) {
         bool set_flag = false;
         string keyword = list->get_keyword(i);
-        for(unsigned int j = 0; j < sizeof(legacy_keywords); ++j) {
+        for(size_t j{}; j < sizeof(legacy_keywords); ++j) {
             if(keyword == legacy_keywords[j].keyword) {
                 flags |= legacy_keywords[j].flag;
                 set_flag = true;
@@ -211,13 +211,13 @@ void hash_keywords(HashGenerator& hashgen, const KeywordList* list)
         hashgen.add_int(num_keywords); // _keywords_by_name.size()
 
         set<string> keywords_by_name;
-        for(unsigned int i = 0; i < num_keywords; ++i) {
+        for(size_t i{}; i < num_keywords; ++i) {
             keywords_by_name.insert(list->get_keyword(i));
         }
 
-        for(auto it = keywords_by_name.begin(); it != keywords_by_name.end(); ++it) {
+        for(const auto& it : keywords_by_name) {
             // keyword->generate_hash();
-            hashgen.add_string(*it);
+            hashgen.add_string(it);
         }
     }
 }

@@ -48,7 +48,7 @@ NumericType::NumericType(Type type) :
     }
 }
 
-// as_numeric returns this as a NumericType if it is numeric, or NULL otherwise.
+// as_numeric returns this as a NumericType if it is numeric, or nullptr otherwise.
 NumericType* NumericType::as_numeric()
 {
     return this;

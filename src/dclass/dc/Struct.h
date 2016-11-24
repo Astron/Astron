@@ -23,11 +23,11 @@ class Struct : public DistributedType
     Struct(File* file, const std::string &name);
     virtual ~Struct();
 
-    // as_struct returns this as a Struct if it is a Struct, or NULL otherwise.
+    // as_struct returns this as a Struct if it is a Struct, or nullptr otherwise.
     virtual Struct* as_struct();
     virtual const Struct* as_struct() const;
 
-    // as_class returns this Struct as a Class if it is a Class, or NULL otherwise.
+    // as_class returns this Struct as a Class if it is a Class, or nullptr otherwise.
     virtual Class* as_class();
     virtual const Class* as_class() const;
 
@@ -45,10 +45,10 @@ class Struct : public DistributedType
     inline Field* get_field(unsigned int n);
     inline const Field* get_field(unsigned int n) const;
 
-    // get_field_by_id returns the field with the index <id>, or NULL if no such field exists.
+    // get_field_by_id returns the field with the index <id>, or nullptr if no such field exists.
     inline Field* get_field_by_id(unsigned int id);
     inline const Field* get_field_by_id(unsigned int id) const;
-    // get_field_by_name returns the field with <name>, or NULL if no such field exists.
+    // get_field_by_name returns the field with <name>, or nullptr if no such field exists.
     inline Field* get_field_by_name(const std::string& name);
     inline const Field* get_field_by_name(const std::string& name) const;
 

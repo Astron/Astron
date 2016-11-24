@@ -15,7 +15,7 @@ static ConfigVariable<std::string> rotate_interval("rotate_interval", "0", el_co
 static ValidAddressConstraint valid_bind_addr(bind_addr);
 
 EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
-    m_log("eventlogger", "Event Logger"), m_file(0)
+    m_log("eventlogger", "Event Logger"), m_file(nullptr)
 {
     bind(bind_addr.get_rval(roleconfig));
 
@@ -39,8 +39,8 @@ void EventLogger::bind(const std::string &addr)
         exit(1);
     }
 
-    m_socket = new udp::socket(io_service,
-                               udp::endpoint(addresses[0].address(), addresses[0].port()));
+    m_socket.reset((new udp::socket(io_service,
+                        udp::endpoint(addresses[0].address(), addresses[0].port()))));
 }
 
 void EventLogger::open_log()
@@ -56,7 +56,7 @@ void EventLogger::open_log()
         m_file->close();
     }
 
-    m_file = new std::ofstream(filename);
+    m_file.reset(new std::ofstream(filename));
 
     m_log.info() << "Opened new log." << std::endl;
 }
@@ -110,7 +110,7 @@ void EventLogger::process_packet(DatagramHandle dg)
     char timestamp[64];
     strftime(timestamp, 64, "{\"_time\": \"%Y-%m-%d %H:%M:%S%z\", ", localtime(&rawtime));
 
-    *m_file << timestamp << data.substr(1) << std::endl;
+    *m_file.get() << timestamp << data.substr(1) << std::endl;
 }
 
 void EventLogger::start_receive()

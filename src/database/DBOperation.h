@@ -54,13 +54,13 @@ class DBOperation
 
         // SET_FIELDS operations are for setting (replaces existiing) fields on an object.
         // This includes adding unset fields, deleting set fields, and changing existing fields.
-        // The changes are in the m_set_fields map, where NULL represents a field deletion.
+        // The changes are in the m_set_fields map, where nullptr represents a field deletion.
         SET_FIELDS,
 
         // UPDATE_FIELDS operations are like set fields operations, but with conditions
         // typically to verify that the object is in a sane state before applying updates.
         // The m_criteria_fields map can be used to specify the state of
-        // the "if empty" or "if equal" fields where NULL represents empty/absent.
+        // the "if empty" or "if equal" fields where nullptr represents empty/absent.
         UPDATE_FIELDS
     };
 

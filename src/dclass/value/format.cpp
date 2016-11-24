@@ -9,7 +9,7 @@
 #include "dc/Parameter.h"
 #include "util/byteorder.h"
 
-#if defined(WIN32) && defined(_MSC_VER) && _MSC_VER <= 1800
+#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER <= 1800
 #define snprintf sprintf_s
 #endif
 

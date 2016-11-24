@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <iostream>
 #include <mutex>
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
 #  include <windows.h>
 #else
 #  include <signal.h>
@@ -23,7 +25,7 @@ static mutex exit_mtx;
 static mutex ctrlc_mtx;
 
 
-#ifdef WIN32 /* Handle Windows signals */
+#ifdef _WIN32 /* Handle Windows signals */
 static BOOL handle_interrupt(DWORD)
 {
     interrupts += 1;
@@ -65,7 +67,7 @@ void astron_handle_signals()
     interruptHandler.sa_handler = handle_interrupt;
     sigemptyset(&interruptHandler.sa_mask);
     interruptHandler.sa_flags = 0;
-    sigaction(SIGINT, &interruptHandler, NULL);
+    sigaction(SIGINT, &interruptHandler, nullptr);
 }
 
 #endif

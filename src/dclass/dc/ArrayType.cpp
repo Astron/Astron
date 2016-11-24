@@ -17,7 +17,7 @@ namespace dclass   // open namespace
 ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
     m_element_type(element_type), m_array_range(size)
 {
-    if(m_element_type == (DistributedType*)NULL) {
+    if(m_element_type == nullptr) {
         m_element_type = DistributedType::invalid;
     }
 
@@ -57,7 +57,7 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
     }
 }
 
-// as_array returns this as an ArrayType if it is an array, or NULL otherwise.
+// as_array returns this as an ArrayType if it is an array, or nullptr otherwise.
 ArrayType* ArrayType::as_array()
 {
     return this;
