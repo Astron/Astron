@@ -425,12 +425,16 @@ class MongoDatabase : public DatabaseBackend
 
         // Init the globals collection/document:
         auto client = new_connection();
-        client[m_uri.database()]["astron.globals"].insert_one(
-            document {} << "_id" << "GLOBALS"
-            << "doid" << open_document
-            << "monotonic" << static_cast<int64_t>(min_id)
-            << "free" << bsoncxx::types::b_array {}
-            << close_document << finalize);
+        auto globals = client[m_uri.database()]["astron.globals"].find_one(
+                           document {} << "_id" << "GLOBALS" << finalize);
+        if(!globals) {
+            client[m_uri.database()]["astron.globals"].insert_one(
+                document {} << "_id" << "GLOBALS"
+                << "doid" << open_document
+                << "monotonic" << static_cast<int64_t>(min_id)
+                << "free" << bsoncxx::types::b_array {}
+                << close_document << finalize);
+        }
 
         // Spawn worker threads:
         for(int i = 0; i < num_workers.get_rval(m_config); ++i) {
