@@ -13,12 +13,17 @@
 
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
+#include <bsoncxx/json.hpp>
 #include <bsoncxx/types.hpp>
 #include <bsoncxx/types/value.hpp>
+#include <mongocxx/uri.hpp>
+#include <mongocxx/client.hpp>
+#include <mongocxx/exception/operation_exception.hpp>
 
 #include <limits>
 
 using namespace std;
+using namespace bsoncxx::builder::stream;
 
 static ConfigGroup mongodb_backend_config("mongodb", db_backend_config);
 static ConfigVariable<string> db_server("server", "mongodb://127.0.0.1/test",
@@ -206,7 +211,7 @@ template<typename T> T handle_bson_number(const bsoncxx::types::value &value)
         throw ConversionException("Non-numeric BSON type encountered");
     }
 
-    if(numeric_limits<T>::is_integer() && is_double) {
+    if(numeric_limits<T>::is_integer && is_double) {
         // We have to convert a double to an integer. Error if the double is
         // not floored.
         double intpart;
@@ -220,7 +225,7 @@ template<typename T> T handle_bson_number(const bsoncxx::types::value &value)
         }
 
         i = static_cast<int64_t>(d);
-    } else if(!numeric_limits<T>::is_integer() && !is_double) {
+    } else if(!numeric_limits<T>::is_integer && !is_double) {
         // Integer to double. Simple enough:
         d = i;
     }
@@ -232,7 +237,7 @@ template<typename T> T handle_bson_number(const bsoncxx::types::value &value)
     }
 
     // For floating types, we'll just cast and return:
-    if(!numeric_limits<T>::is_integer()) {
+    if(!numeric_limits<T>::is_integer) {
         return static_cast<T>(d);
     }
 
@@ -409,37 +414,23 @@ class MongoDatabase : public DatabaseBackend
   public:
     MongoDatabase(ConfigNode dbeconfig, doid_t min_id, doid_t max_id) :
         DatabaseBackend(dbeconfig, min_id, max_id),
-        m_shutdown(false),
-        m_monotonic_exhausted(false)
+        m_shutdown(false)
     {
         stringstream log_name;
         log_name << "Database-MongoDB" << "(Range: [" << min_id << ", " << max_id << "])";
         m_log = new LogCategory("mongodb", log_name.str());
 
-        // Init connection.
-        string error;
-        m_connection_string = ConnectionString::parse(db_server.get_rval(m_config), error);
-
-        if(!m_connection_string.isValid()) {
-            m_log->fatal() << "Could not parse connection string: " << error << endl;
-            exit(1);
-        }
-
-        // Init the collection/database names:
-        m_db = m_connection_string.getDatabase(); // NOTE: If this line won't compile, install mongo-cxx-driver's 'legacy' branch.
-        m_obj_collection = m_db + ".astron.objects";
-        m_global_collection = m_db + ".astron.globals";
+        // Init URI.
+        m_uri = mongocxx::uri {db_server.get_rval(m_config)};
 
         // Init the globals collection/document:
-        DBClientBase *client = new_connection();
-        BSONObj query = BSON("_id" << "GLOBALS");
-        BSONObj globals = BSON("$setOnInsert" << BSON(
-                                   "doid" << BSON(
-                                       "monotonic" << min_id <<
-                                       "free" << BSONArray())
-                               ));
-        client->update(m_global_collection, query, globals, true);
-        delete client;
+        auto client = new_connection();
+        client[m_uri.database()]["astron.globals"].insert_one(
+            document {} << "_id" << "GLOBALS"
+            << "doid" << open_document
+            << "monotonic" << static_cast<int64_t>(min_id)
+            << "free" << bsoncxx::types::b_array {}
+            << close_document << finalize);
 
         // Spawn worker threads:
         for(int i = 0; i < num_workers.get_rval(m_config); ++i) {
@@ -473,7 +464,7 @@ class MongoDatabase : public DatabaseBackend
   private:
     LogCategory *m_log;
 
-    ConnectionString m_connection_string;
+    mongocxx::uri m_uri;
 
     queue<DBOperation *> m_operation_queue;
     condition_variable m_cv;
@@ -482,54 +473,25 @@ class MongoDatabase : public DatabaseBackend
     vector<thread *> m_threads;
     bool m_shutdown;
 
-    string m_db;
-    string m_obj_collection;
-    string m_global_collection;
-
-    // N.B. this variable is NOT guarded by a lock. While there can conceivably
-    // be races on accessing it, this is not a problem, because:
-    // 1) It is initialized to false by the main thread, and only set to true
-    //    by sub-threads. There is no way for this variable to go back from
-    //    true to false.
-    // 2) It is only used to tell the DOID allocator to stop trying to use the
-    //    monotonic counter. If a thread misses the update from false->true,
-    //    it will only waste time fruitlessly trying to allocate an ID from
-    //    the (exhausted) monotonic counter, before falling back on the free
-    //    DOIDs list.
-    bool m_monotonic_exhausted;
-
-    DBClientBase *new_connection()
+    mongocxx::client new_connection()
     {
-        string error;
-        DBClientBase *connection;
-
-        if(!(connection = m_connection_string.connect(error))) {
-            m_log->fatal() << "Connection failure: " << error << endl;
-            exit(1);
-        }
-
-        return connection;
+        return (mongocxx::client {m_uri});
     }
 
     void run_thread()
     {
         unique_lock<mutex> guard(m_lock);
 
-        DBClientBase *client = new_connection();
+        auto client = new_connection();
+        mongocxx::database db = client[m_uri.database()];
 
         while(true) {
-            if(!client->isStillConnected()) {
-                m_log->error() << "A thread lost its connection, reconnecting..." << endl;
-                delete client;
-                client = new_connection();
-            }
-
             if(m_operation_queue.size() > 0) {
                 DBOperation *op = m_operation_queue.front();
                 m_operation_queue.pop();
 
                 guard.unlock();
-                handle_operation(client, op);
+                handle_operation(db, op);
                 guard.lock();
             } else if(m_shutdown) {
                 break;
@@ -537,60 +499,57 @@ class MongoDatabase : public DatabaseBackend
                 m_cv.wait(guard);
             }
         }
-
-        delete client;
     }
 
-    void handle_operation(DBClientBase *client, DBOperation *operation)
+    void handle_operation(mongocxx::database &db, DBOperation *operation)
     {
         // First, figure out what kind of operation it is, and dispatch:
         switch(operation->type()) {
         case DBOperation::OperationType::CREATE_OBJECT: {
-            handle_create(client, operation);
+            handle_create(db, operation);
         }
         break;
         case DBOperation::OperationType::DELETE_OBJECT: {
-            handle_delete(client, operation);
+            handle_delete(db, operation);
         }
         break;
         case DBOperation::OperationType::GET_OBJECT:
         case DBOperation::OperationType::GET_FIELDS: {
-            handle_get(client, operation);
+            handle_get(db, operation);
         }
         break;
         case DBOperation::OperationType::SET_FIELDS:
         case DBOperation::OperationType::UPDATE_FIELDS: {
-            handle_modify(client, operation);
+            handle_modify(db, operation);
         }
         break;
         }
     }
 
-    void handle_create(DBClientBase *client, DBOperation *operation)
+    void handle_create(mongocxx::database &db, DBOperation *operation)
     {
         // First, let's convert the requested object into BSON; this way, if
         // a failure happens, it happens before we waste a doid.
-        BSONObjBuilder fields;
 
+        auto builder = document {};
         try {
-            for(auto it = operation->set_fields().begin();
-                it != operation->set_fields().end();
-                ++it) {
+            for(const auto& it : operation->set_fields()) {
                 DatagramPtr dg = Datagram::create();
-                dg->add_data(it->second);
+                dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                fields << it->first->get_name()
-                       << bamboo2bson(it->first->get_type(), dgi)["_"];
+                builder << it.first->get_name()
+                        << bamboo2bson(it.first->get_type(), dgi);
             }
-        } catch(mongo::DBException &e) {
+        } catch(ConversionException &e) {
             m_log->error() << "While formatting "
                            << operation->dclass()->get_name()
                            << " for insertion: " << e.what() << endl;
             operation->on_failure();
             return;
         }
+        auto fields = builder << finalize;
 
-        doid_t doid = assign_doid(client);
+        doid_t doid = assign_doid(db);
         if(doid == INVALID_DO_ID) {
             // The error will already have been emitted at this point, so
             // all that's left for us to do is fail silently:
@@ -598,16 +557,16 @@ class MongoDatabase : public DatabaseBackend
             return;
         }
 
-        BSONObj b = BSON("_id" << doid <<
-                         "dclass" << operation->dclass()->get_name() <<
-                         "fields" << fields.obj());
-
         m_log->trace() << "Inserting new " << operation->dclass()->get_name()
-                       << "(" << doid << "): " << b << endl;
+                       << "(" << doid << "): " << bsoncxx::to_json(fields) << endl;
 
         try {
-            client->insert(m_obj_collection, b);
-        } catch(mongo::DBException &e) {
+            db["astron.objects"].insert_one(document {}
+                                            << "_id" << static_cast<int64_t>(doid)
+                                            << "dclass" << operation->dclass()->get_name()
+                                            << "fields" << fields
+                                            << finalize);
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Cannot insert new "
                            << operation->dclass()->get_name()
                            << "(" << doid << "): " << e.what() << endl;
@@ -618,49 +577,39 @@ class MongoDatabase : public DatabaseBackend
         operation->on_complete(doid);
     }
 
-    void handle_delete(DBClientBase *client, DBOperation *operation)
+    void handle_delete(mongocxx::database &db, DBOperation *operation)
     {
-        BSONObj result;
-
         bool success;
         try {
-            success = client->runCommand(
-                          m_db,
-                          BSON("findandmodify" << "astron.objects" <<
-                               "query" << BSON(
-                                   "_id" << operation->doid()) <<
-                               "remove" << true),
-                          result);
-        } catch(mongo::DBException &e) {
+            auto result = db["astron.objects"].delete_one(document {}
+                          << "_id" << static_cast<int64_t>(operation->doid()) <<
+                          finalize);
+            success = result && (result->deleted_count() == 1);
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Unexpected error while deleting "
                            << operation->doid() << ": " << e.what() << endl;
             operation->on_failure();
             return;
         }
 
-        m_log->trace() << "handle_delete: got response: "
-                       << result << endl;
-
-        // If the findandmodify command failed, there wasn't anything there
-        // to delete in the first place.
-        if(!success || result["value"].isNull()) {
+        if(success) {
+            free_doid(db, operation->doid());
+            operation->on_complete();
+        } else {
             m_log->error() << "Tried to delete non-existent doid "
                            << operation->doid() << endl;
             operation->on_failure();
-            return;
         }
-
-        free_doid(client, operation->doid());
-        operation->on_complete();
     }
 
-    void handle_get(DBClientBase *client, DBOperation *operation)
+    void handle_get(mongocxx::database &db, DBOperation *operation)
     {
-        BSONObj obj;
+        bsoncxx::stdx::optional<bsoncxx::document::value> obj;
         try {
-            obj = client->findOne(m_obj_collection,
-                                  BSON("_id" << operation->doid()));
-        } catch(mongo::DBException &e) {
+            obj = db["astron.objects"].find_one(document {}
+                                                << "_id" << static_cast<int64_t>(operation->doid())
+                                                << finalize);
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Unexpected error occurred while trying to"
                            " retrieve object with DOID "
                            << operation->doid() << ": " << e.what() << endl;
@@ -668,14 +617,14 @@ class MongoDatabase : public DatabaseBackend
             return;
         }
 
-        if(obj.isEmpty()) {
+        if(!obj) {
             m_log->warning() << "Got queried for non-existent object with DOID "
                              << operation->doid() << endl;
             operation->on_failure();
             return;
         }
 
-        DBObjectSnapshot *snap = format_snapshot(operation->doid(), obj);
+        DBObjectSnapshot *snap = format_snapshot(operation->doid(), *obj);
         if(!snap || !operation->verify_class(snap->m_dclass)) {
             operation->on_failure();
         } else {
@@ -683,96 +632,77 @@ class MongoDatabase : public DatabaseBackend
         }
     }
 
-    void handle_modify(DBClientBase *client, DBOperation *operation)
+    void handle_modify(mongocxx::database &db, DBOperation *operation)
     {
-        // First, we have to format our findandmodify.
-        BSONObjBuilder sets;
-        bool has_sets = false;
-        BSONObjBuilder unsets;
-        bool has_unsets = false;
-        for(auto it  = operation->set_fields().begin();
-            it != operation->set_fields().end(); ++it) {
+        // Format the changes to be made:
+        document sets {};
+        document unsets {};
+        for(const auto& it : operation->set_fields()) {
             stringstream fieldname;
-            fieldname << "fields." << it->first->get_name();
-            if(it->second.empty()) {
+            fieldname << "fields." << it.first->get_name();
+            if(it.second.empty()) {
                 unsets << fieldname.str() << true;
-                has_unsets = true;
             } else {
                 DatagramPtr dg = Datagram::create();
-                dg->add_data(it->second);
+                dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                sets << fieldname.str() << bamboo2bson(it->first->get_type(), dgi)["_"];
-                has_sets = true;
+                sets << fieldname.str() << bamboo2bson(it.first->get_type(), dgi);
             }
         }
 
-        BSONObjBuilder updates_b;
-        if(has_sets) {
-            updates_b << "$set" << sets.obj();
-        }
-        if(has_unsets) {
-            updates_b << "$unset" << unsets.obj();
-        }
-        BSONObj updates = updates_b.obj();
+        auto updates = document {} << "$set" << (sets << finalize)
+                       << "$unset" << (unsets << finalize) << finalize;
 
         // Also format any criteria for the change:
-        BSONObjBuilder query_b;
-        query_b << "_id" << operation->doid();
-        for(auto it  = operation->criteria_fields().begin();
-            it != operation->criteria_fields().end(); ++it) {
+        document query {};
+        query << "_id" << static_cast<int64_t>(operation->doid());
+        for(const auto &it : operation->criteria_fields()) {
             stringstream fieldname;
-            fieldname << "fields." << it->first->get_name();
-            if(it->second.empty()) {
-                query_b << fieldname.str() << BSON("$exists" << false);
+            fieldname << "fields." << it.first->get_name();
+            if(it.second.empty()) {
+                query << fieldname.str() << open_document << "$exists" << false << close_document;
             } else {
                 DatagramPtr dg = Datagram::create();
-                dg->add_data(it->second);
+                dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                query_b << fieldname.str() << bamboo2bson(it->first->get_type(), dgi)["_"];
+                query << fieldname.str() << bamboo2bson(it.first->get_type(), dgi);
             }
         }
-        BSONObj query = query_b.obj();
+        auto query_obj = query << finalize;
 
         m_log->trace() << "Performing updates to " << operation->doid()
-                       << ": " << updates << endl;
-        m_log->trace() << "Query is: " << query << endl;
+                       << ": " << bsoncxx::to_json(updates) << endl;
+        m_log->trace() << "Query is: " << bsoncxx::to_json(query_obj) << endl;
 
-        BSONObj result;
-        bool success;
+        bsoncxx::stdx::optional<bsoncxx::document::value> obj;
         try {
-            success = client->runCommand(
-                          m_db,
-                          BSON("findandmodify" << "astron.objects"
-                               << "query" << query
-                               << "update" << updates),
-                          result);
-        } catch(mongo::DBException &e) {
+            obj = db["astron.objects"].find_one_and_update(query_obj.view(), updates.view());
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Unexpected error while modifying "
                            << operation->doid() << ": " << e.what() << endl;
             operation->on_failure();
             return;
         }
 
-        m_log->trace() << "Update result: " << result << endl;
+        m_log->trace() << "Update result: " << bsoncxx::to_json(*obj) << endl;
 
-        BSONObj obj;
-        if(!success || result["value"].isNull()) {
+        if(!obj) {
             // Okay, something didn't work right. If we had criteria, let's
             // try to fetch the object without the criteria to see if it's a
             // criteria mismatch or a missing DOID.
             if(!operation->criteria_fields().empty()) {
                 try {
-                    obj = client->findOne(m_obj_collection,
-                                          BSON("_id" << operation->doid()));
-                } catch(mongo::DBException &e) {
+                    obj = db["astron.objects"].find_one(document {}
+                                                        << "_id" << static_cast<int64_t>(operation->doid()) << finalize);
+                } catch(mongocxx::operation_exception &e) {
                     m_log->error() << "Unexpected error while modifying "
                                    << operation->doid() << ": " << e.what() << endl;
                     operation->on_failure();
                     return;
                 }
-                if(!obj.isEmpty()) {
+                if(obj) {
                     // There's the problem. Now we can send back a snapshot:
-                    DBObjectSnapshot *snap = format_snapshot(operation->doid(), obj);
+                    DBObjectSnapshot *snap = format_snapshot(operation->doid(), *obj);
                     if(snap && operation->verify_class(snap->m_dclass)) {
                         operation->on_criteria_mismatch(snap);
                         return;
@@ -799,19 +729,17 @@ class MongoDatabase : public DatabaseBackend
         // Let's, however, double-check our changes. (Specifically, we should
         // run verify_class so that we know the frontend is happy with what
         // kind of object we just modified.)
-        obj = result["value"].Obj();
-        try {
-            string dclass_name = obj["dclass"].String();
-            const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
-            if(!dclass) {
-                m_log->error() << "Encountered unknown database object: "
-                               << dclass_name << "(" << operation->doid() << ")" << endl;
-            } else if(operation->verify_class(dclass)) {
-                // Yep, it all checks out. Complete the operation:
-                operation->on_complete();
-                return;
-            }
-        } catch(mongo::DBException &e) { }
+        auto obj_v = obj->view();
+        string dclass_name {obj_v["dclass"].get_utf8().value};
+        const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
+        if(!dclass) {
+            m_log->error() << "Encountered unknown database object: "
+                           << dclass_name << "(" << operation->doid() << ")" << endl;
+        } else if(operation->verify_class(dclass)) {
+            // Yep, it all checks out. Complete the operation:
+            operation->on_complete();
+            return;
+        }
 
         // If we've gotten here, something is seriously wrong. We've just
         // mucked with an object without knowing the consequences! What have
@@ -828,11 +756,10 @@ class MongoDatabase : public DatabaseBackend
         // outlandish requests like this) this shouldn't be a huge issue.
         m_log->trace() << "Reverting changes made to " << operation->doid() << endl;
         try {
-            client->update(
-                m_obj_collection,
-                BSON("_id" << operation->doid()),
-                obj);
-        } catch(mongo::DBException &e) {
+            db["astron.objects"].update_one(
+                document {} << "_id" << static_cast<int64_t>(operation->doid()) << finalize,
+                obj_v);
+        } catch(mongocxx::operation_exception &e) {
             // Wow, we REALLY fail at life.
             m_log->error() << "Could not revert corrupting changes to "
                            << operation->doid() << ": " << e.what() << endl;
@@ -841,12 +768,12 @@ class MongoDatabase : public DatabaseBackend
     }
 
     // Get a DBObjectSnapshot from a MongoDB BSON object; returns nullptr if failure.
-    DBObjectSnapshot *format_snapshot(doid_t doid, const BSONObj &obj)
+    DBObjectSnapshot *format_snapshot(doid_t doid, bsoncxx::document::view obj)
     {
         m_log->trace() << "Formatting database snapshot of " << doid << ": "
-                       << obj << endl;
+                       << bsoncxx::to_json(obj) << endl;
         try {
-            string dclass_name = obj["dclass"].String();
+            string dclass_name {obj["dclass"].get_utf8().value};
             const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
             if(!dclass) {
                 m_log->error() << "Encountered unknown database object: "
@@ -854,12 +781,12 @@ class MongoDatabase : public DatabaseBackend
                 return nullptr;
             }
 
-            BSONObj fields = obj["fields"].Obj();
+            auto fields = obj["fields"].get_document().value;
 
             DBObjectSnapshot *snap = new DBObjectSnapshot();
             snap->m_dclass = dclass;
-            for(auto it = fields.begin(); it.more(); ++it) {
-                const char *name = (*it).fieldName();
+            for(auto it : fields) {
+                string name {it.key()};
                 const dclass::Field *field = dclass->get_field_by_name(name);
                 if(!field) {
                     m_log->warning() << "Encountered unexpected field " << name
@@ -869,14 +796,14 @@ class MongoDatabase : public DatabaseBackend
                 }
                 {
                     DatagramPtr dg = Datagram::create();
-                    bson2bamboo(field->get_type(), *it, *dg);
+                    bson2bamboo(field->get_type(), it.get_value(), *dg);
                     snap->m_fields[field].resize(dg->size());
                     memcpy(snap->m_fields[field].data(), dg->get_data(), dg->size());
                 }
             }
 
             return snap;
-        } catch(mongo::DBException &e) {
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Unexpected error while trying to format"
                            " database snapshot for " << doid << ": "
                            << e.what() << endl;
@@ -885,111 +812,87 @@ class MongoDatabase : public DatabaseBackend
     }
 
     // This function is used by handle_create to get a fresh DOID assignment.
-    doid_t assign_doid(DBClientBase *client)
+    doid_t assign_doid(mongocxx::database &db)
     {
         try {
-            if(!m_monotonic_exhausted) {
-                doid_t doid = assign_doid_monotonic(client);
-                if(doid == INVALID_DO_ID) {
-                    m_monotonic_exhausted = true;
-                } else {
-                    return doid;
-                }
+            doid_t doid = assign_doid_monotonic(db);
+            if(doid != INVALID_DO_ID) {
+                return doid;
             }
 
             // We've exhausted our supply of doids from the monotonic counter.
             // We must now resort to pulling things out of the free list:
-            return assign_doid_reuse(client);
-        } catch(mongo::DBException &e) {
+            return assign_doid_reuse(db);
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Unexpected error occurred while trying to"
                            " allocate a new DOID: " << e.what() << endl;
             return INVALID_DO_ID;
         }
     }
 
-    doid_t assign_doid_monotonic(DBClientBase *client)
+    doid_t assign_doid_monotonic(mongocxx::database &db)
     {
-        BSONObj result;
-
-        bool success = client->runCommand(
-                           m_db,
-                           BSON("findandmodify" << "astron.globals" <<
-                                "query" << BSON(
-                                    "_id" << "GLOBALS" <<
-                                    "doid.monotonic" << GTE << m_min_id <<
-                                    "doid.monotonic" << LTE << m_max_id
-                                ) <<
-                                "update" << BSON(
-                                    "$inc" << BSON("doid.monotonic" << 1)
-                                )), result);
+        auto obj = db["astron.globals"].find_one_and_update(
+                       document {} << "_id" << "GLOBALS"
+                       << "doid.monotonic" << open_document << "$gte" << static_cast<int64_t>(m_min_id) << close_document
+                       << "doid.monotonic" << open_document << "$lte" << static_cast<int64_t>(m_max_id) << close_document
+                       << finalize,
+                       document {} << "$inc" << open_document
+                       << "doid.monotonic" << 1
+                       << close_document << finalize);
 
         // If the findandmodify command failed, the document either doesn't
         // exist, or we ran out of monotonic doids.
-        if(!success || result["value"].isNull()) {
+        if(!obj) {
             return INVALID_DO_ID;
         }
 
         m_log->trace() << "assign_doid_monotonic: got globals element: "
-                       << result << endl;
+                       << bsoncxx::to_json(*obj) << endl;
 
-        doid_t doid;
-        const BSONElement &element = result["value"]["doid"]["monotonic"];
-        if(sizeof(doid) == sizeof(long long)) {
-            doid = element.Long();
-        } else if(sizeof(doid) == sizeof(int)) {
-            doid = element.Int();
-        }
+        doid_t doid = handle_bson_number<doid_t>(obj->view()["doid"]["monotonic"].get_value());
         return doid;
     }
 
     // This is used when the monotonic counter is exhausted:
-    doid_t assign_doid_reuse(DBClientBase *client)
+    doid_t assign_doid_reuse(mongocxx::database &db)
     {
-        BSONObj result;
-
-        bool success = client->runCommand(
-                           m_db,
-                           BSON("findandmodify" << "astron.globals" <<
-                                "query" << BSON(
-                                    "_id" << "GLOBALS" <<
-                                    "doid.free.0" << BSON("$exists" << true)
-                                ) <<
-                                "update" << BSON(
-                                    "$pop" << BSON("doid.free" << -1)
-                                )), result);
+        auto obj = db["astron.globals"].find_one_and_update(
+                       document {} << "_id" << "GLOBALS"
+                       << "doid.free.0" << open_document
+                       << "$exists" << true
+                       << close_document << finalize,
+                       document {} << "$pop" << open_document
+                       << "doid.free" << -1
+                       << close_document << finalize);
 
         // If the findandmodify command failed, the document either doesn't
         // exist, or we ran out of reusable doids.
-        if(!success || result["value"].isNull()) {
+        if(!obj) {
             m_log->error() << "Could not allocate a reused DOID!" << endl;
             return INVALID_DO_ID;
         }
 
         m_log->trace() << "assign_doid_reuse: got globals element: "
-                       << result << endl;
+                       << bsoncxx::to_json(*obj) << endl;
 
         // Otherwise, use the first one:
-        doid_t doid;
-        const BSONElement &element = result["value"]["doid"]["free"];
-        if(sizeof(doid) == sizeof(long long)) {
-            doid = element.Array()[0].Long();
-        } else if(sizeof(doid) == sizeof(int)) {
-            doid = element.Array()[0].Int();
-        }
+        doid_t doid = handle_bson_number<doid_t>(obj->view()["doid"]["free"].get_array().value[0].get_value());
         return doid;
     }
 
     // This returns a DOID to the free list:
-    void free_doid(DBClientBase *client, doid_t doid)
+    void free_doid(mongocxx::database &db, doid_t doid)
     {
         m_log->trace() << "Returning doid " << doid << " to the free pool..." << endl;
 
         try {
-            client->update(
-                m_global_collection,
-                BSON("_id" << "GLOBALS"),
-                BSON("$push" << BSON("doid.free" << doid)));
-        } catch(mongo::DBException &e) {
+            db["astron.globals"].update_one(
+                document {} << "_id" << "GLOBALS" << finalize,
+                document {} << "$push" << open_document
+                << "doid.free" << static_cast<int64_t>(doid)
+                << close_document << finalize);
+        } catch(mongocxx::operation_exception &e) {
             m_log->error() << "Could not return doid " << doid
                            << " to free pool: " << e.what() << endl;
         }
