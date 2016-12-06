@@ -634,23 +634,27 @@ class MongoDatabase : public DatabaseBackend
     void handle_modify(mongocxx::database &db, DBOperation *operation)
     {
         // Format the changes to be made:
-        document sets {};
-        document unsets {};
+        document sets_builder {};
+        document unsets_builder {};
         for(const auto& it : operation->set_fields()) {
             stringstream fieldname;
             fieldname << "fields." << it.first->get_name();
             if(it.second.empty()) {
-                unsets << fieldname.str() << true;
+                unsets_builder << fieldname.str() << true;
             } else {
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                sets << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
+                sets_builder << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
             }
         }
+        auto sets = sets_builder << finalize;
+        auto unsets = unsets_builder << finalize;
 
-        auto updates = document {} << "$set" << (sets << finalize)
-                       << "$unset" << (unsets << finalize) << finalize;
+        auto updates_builder = document {};
+        if(!sets.view().empty()) updates_builder << "$set" << sets;
+        if(!unsets.view().empty()) updates_builder << "$unset" << unsets;
+        auto updates = updates_builder << finalize;
 
         // Also format any criteria for the change:
         document query {};
