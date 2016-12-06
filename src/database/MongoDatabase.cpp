@@ -242,8 +242,10 @@ template<typename T> T handle_bson_number(const bsoncxx::types::value &value)
     }
 
     // For everything else, cast if in range:
-    if(i > numeric_limits<T>::max() ||
-       i < numeric_limits<T>::min()) {
+    int64_t max = static_cast<int64_t>(numeric_limits<T>::max());
+    int64_t min = static_cast<int64_t>(numeric_limits<T>::min());
+
+    if(i > max || i < min) {
         throw ConversionException("Integer is out of range");
     }
 
