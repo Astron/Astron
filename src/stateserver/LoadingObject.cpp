@@ -17,7 +17,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
 {
     std::stringstream name;
     name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
-    m_log = new LogCategory("dbobject", name.str());
+    m_log = std::unique_ptr<LogCategory>(new LogCategory("dbobject", name.str()));
     set_con_name(name.str());
 
     subscribe_channel(do_id);
@@ -32,13 +32,13 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
 {
     std::stringstream name;
     name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
-    m_log = new LogCategory("dbobject", name.str());
+    m_log = std::unique_ptr<LogCategory>(new LogCategory("dbobject", name.str()));
     set_con_name(name.str());
 
     subscribe_channel(do_id);
 
     uint16_t field_count = dgi.read_uint16();
-    for(int i = 0; i < field_count; ++i) {
+    for(uint16_t i{}; i < field_count; ++i) {
         uint16_t field_id = dgi.read_uint16();
         const Field *field = m_dclass->get_field_by_id(field_id);
 
@@ -53,14 +53,6 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
             m_log->error() << "Received non-RAM field " << field->get_name()
                            << " within an OTHER section.\n";
         }
-    }
-}
-
-LoadingObject::~LoadingObject()
-{
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
     }
 }
 
@@ -84,15 +76,15 @@ void LoadingObject::send_get_object(doid_t do_id)
 void LoadingObject::replay_datagrams(DistributedObject* obj)
 {
     m_log->trace() << "Replaying datagrams received while loading...\n";
-    for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it) {
+    for(const auto& it : m_datagram_queue) {
         if(m_dbss->m_objs.find(m_do_id) == m_dbss->m_objs.end()) {
             m_log->trace() << "... deleted while replaying, aborted.\n";
             return;
         }
         try {
-            DatagramIterator dgi(*it);
+            DatagramIterator dgi(it);
             dgi.seek_payload();
-            obj->handle_datagram(*it, dgi);
+            obj->handle_datagram(it, dgi);
         } catch(const DatagramIteratorEOF&) {
             m_log->error() << "Detected truncated datagram while replaying"
                            " datagrams to object, from loaded object. Skipped.\n";
@@ -106,11 +98,11 @@ void LoadingObject::replay_datagrams(DistributedObject* obj)
 void LoadingObject::forward_datagrams()
 {
     m_log->trace() << "Forwarding datagrams received while loading...\n";
-    for(auto it = m_datagram_queue.begin(); it != m_datagram_queue.end(); ++it) {
+    for(const auto& it : m_datagram_queue) {
         try {
-            DatagramIterator dgi(*it);
+            DatagramIterator dgi(it);
             dgi.seek_payload();
-            m_dbss->handle_datagram(*it, dgi);
+            m_dbss->handle_datagram(it, dgi);
         } catch(const DatagramIteratorEOF&) {
             m_log->error() << "Detected truncated datagram while replaying"
                            " datagrams to dbss, from failed loading object. Skipped.\n";
@@ -177,8 +169,8 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         }
 
         // Add default values and updated values
-        int dcc_field_count = r_dclass->get_num_fields();
-        for(int i = 0; i < dcc_field_count; ++i) {
+        std::size_t dcc_field_count = r_dclass->get_num_fields();
+        for(std::size_t i{}; i < dcc_field_count; ++i) {
             const Field *field = r_dclass->get_field(i);
             if(!field->as_molecular()) {
                 if(field->has_keyword("required")) {

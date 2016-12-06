@@ -30,9 +30,9 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
     m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
 {
     ConfigNode ranges = dbss_config.get_child_node(ranges_config, roleconfig);
-    for(auto it = ranges.begin(); it != ranges.end(); ++it) {
-        channel_t min = range_min.get_rval(*it);
-        channel_t max = range_max.get_rval(*it);
+    for(const auto& it : ranges) {
+        channel_t min = range_min.get_rval(it);
+        channel_t max = range_max.get_rval(it);
         subscribe_range(min, max);
     }
 
@@ -266,9 +266,9 @@ void DBStateServer::handle_set_fields(DatagramIterator &dgi)
         DatagramPtr dg = Datagram::create(m_db_channel, do_id, DBSERVER_OBJECT_SET_FIELDS);
         dg->add_doid(do_id);
         dg->add_uint16(db_fields.size());
-        for(auto it = db_fields.begin(); it != db_fields.end(); ++it) {
-            dg->add_uint16(it->first->get_id());
-            dg->add_data(it->second);
+        for(const auto& it : db_fields) {
+            dg->add_uint16(it.first->get_id());
+            dg->add_data(it.second);
         }
         route_datagram(dg);
     }
@@ -399,9 +399,9 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
         m_context_datagrams[db_context]->add_uint32(r_context);
         m_context_datagrams[db_context]->add_bool(true);
         m_context_datagrams[db_context]->add_uint16(ram_fields.size() + db_fields.size());
-        for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it) {
-            m_context_datagrams[db_context]->add_uint16((*it)->get_id());
-            m_context_datagrams[db_context]->add_data((*it)->get_default_value());
+        for(const auto& it : ram_fields) {
+            m_context_datagrams[db_context]->add_uint16(it->get_id());
+            m_context_datagrams[db_context]->add_data(it->get_default_value());
         }
 
         // Send query to database
@@ -409,8 +409,8 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
         dg->add_uint32(db_context);
         dg->add_doid(r_do_id);
         dg->add_uint16(db_fields.size());
-        for(auto it = db_fields.begin(); it != db_fields.end(); ++it) {
-            dg->add_uint16((*it)->get_id());
+        for(const auto& it : db_fields) {
+            dg->add_uint16(it->get_id());
         }
         route_datagram(dg);
     } else { // If no database fields exist
@@ -418,9 +418,9 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
         dg->add_uint32(r_context);
         dg->add_bool(true);
         dg->add_uint16(ram_fields.size());
-        for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it) {
-            dg->add_uint16((*it)->get_id());
-            dg->add_data((*it)->get_default_value());
+        for(const auto& it : ram_fields) {
+            dg->add_uint16(it->get_id());
+            dg->add_data(it->get_default_value());
         }
         route_datagram(dg);
     }
@@ -567,9 +567,9 @@ void DBStateServer::handle_get_all_resp(DatagramIterator& dgi)
 
     // Add ram fields to datagram
     dg->add_uint16(ram_fields.size());
-    for(auto it = ram_fields.begin(); it != ram_fields.end(); ++it) {
-        dg->add_uint16(it->first->get_id());
-        dg->add_data(it->second);
+    for(const auto& it : ram_fields) {
+        dg->add_uint16(it.first->get_id());
+        dg->add_data(it.second);
     }
 
     // Send response back to caller

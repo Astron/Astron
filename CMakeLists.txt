@@ -53,15 +53,7 @@ endif()
 ### Add per-compiler flags ###
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -Wall -Wextra")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-		"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -Wall")
-
-	# warnings are errors, release code should not have warnings
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -Werror")
-
-	# debug flags, wall, wextra
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)

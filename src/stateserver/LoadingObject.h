@@ -1,8 +1,9 @@
 #pragma once
+#include <memory>
 #include "DBStateServer.h"
 #include "DistributedObject.h"
 
-class LoadingObject : public MDParticipantInterface
+class LoadingObject final : public MDParticipantInterface
 {
     friend class DBStateServer;
 
@@ -12,19 +13,16 @@ class LoadingObject : public MDParticipantInterface
     LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t parent_id, zone_t zone_id,
                   const dclass::Class *dclass, DatagramIterator &dgi,
                   const std::unordered_set<uint32_t> &contexts = std::unordered_set<uint32_t>());
-    ~LoadingObject();
 
     void begin();
-
-    virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
-
+    void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
   private:
     DBStateServer *m_dbss;
     doid_t m_do_id;
     doid_t m_parent_id;
     zone_t m_zone_id;
     uint32_t m_context;
-    LogCategory *m_log;
+    std::unique_ptr<LogCategory> m_log;
 
     // Upstream object data
     const dclass::Class *m_dclass;
