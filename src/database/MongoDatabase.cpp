@@ -43,97 +43,95 @@ class ConversionException : public exception
     }
 };
 
-static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
-        DatagramIterator &dgi)
+static void bamboo2bson(single_context builder,
+                        const dclass::DistributedType *type, DatagramIterator &dgi)
 {
     using namespace bsoncxx::types;
     switch(type->get_type()) {
     case dclass::Type::T_INT8: {
-        return value {b_int32 {dgi.read_int8()}};
+        builder << b_int32 {dgi.read_int8()};
     }
     break;
     case dclass::Type::T_INT16: {
-        return value {b_int32 {dgi.read_int16()}};
+        builder << b_int32 {dgi.read_int16()};
     }
     break;
     case dclass::Type::T_INT32: {
-        return value {b_int32 {dgi.read_int32()}};
+        builder << b_int32 {dgi.read_int32()};
     }
     break;
     case dclass::Type::T_INT64: {
-        return value {b_int64 {dgi.read_int64()}};
+        builder << b_int64 {dgi.read_int64()};
     }
     break;
     case dclass::Type::T_UINT8: {
-        return value {b_int32 {dgi.read_uint8()}};
+        builder << b_int32 {dgi.read_uint8()};
     }
     break;
     case dclass::Type::T_UINT16: {
-        return value {b_int32 {dgi.read_uint16()}};
+        builder << b_int32 {dgi.read_uint16()};
     }
     break;
     case dclass::Type::T_UINT32: {
-        return value {b_int64 {dgi.read_uint32()}};
+        builder << b_int64 {dgi.read_uint32()};
     }
     break;
     case dclass::Type::T_UINT64: {
         // Note: Values over 1/2 the maximum will become negative.
-        return value {b_int64 {static_cast<int64_t>(dgi.read_uint64())}};
+        builder << b_int64 {static_cast<int64_t>(dgi.read_uint64())};
     }
     break;
     case dclass::Type::T_CHAR: {
         unsigned char c = dgi.read_uint8();
         string str(c, 1);
-        return value {b_utf8 {str}};
+        builder << b_utf8 {str};
     }
     break;
     case dclass::Type::T_FLOAT32: {
-        return value {b_double {dgi.read_float32()}};
+        builder << b_double {dgi.read_float32()};
     }
     break;
     case dclass::Type::T_FLOAT64: {
-        return value {b_double {dgi.read_float64()}};
+        builder << b_double {dgi.read_float64()};
     }
     break;
     case dclass::Type::T_STRING: {
         vector<uint8_t> vec = dgi.read_data(type->get_size());
         string str((const char *)vec.data(), vec.size());
-        return value {b_utf8 {str}};
+        builder << b_utf8 {str};
     }
     case dclass::Type::T_VARSTRING: {
-        return value {b_utf8 {dgi.read_string()}};
+        builder << b_utf8 {dgi.read_string()};
     }
     break;
     case dclass::Type::T_BLOB: {
         vector<uint8_t> blob = dgi.read_data(type->get_size());
-        return value {b_binary {
-                bsoncxx::binary_sub_type::k_binary,
-                static_cast<uint32_t>(blob.size()),
-                blob.data()
-            }
+        builder << b_binary {
+            bsoncxx::binary_sub_type::k_binary,
+            static_cast<uint32_t>(blob.size()),
+            blob.data()
         };
     }
     break;
     case dclass::Type::T_VARBLOB: {
         vector<uint8_t> blob = dgi.read_blob();
-        return value {b_binary {
-                bsoncxx::binary_sub_type::k_binary,
-                static_cast<uint32_t>(blob.size()),
-                blob.data()
-            }
+        builder << b_binary {
+            bsoncxx::binary_sub_type::k_binary,
+            static_cast<uint32_t>(blob.size()),
+            blob.data()
         };
     }
     break;
     case dclass::Type::T_ARRAY: {
         const dclass::ArrayType *array = type->as_array();
 
-        bsoncxx::builder::basic::array ab {};
+        auto sub_builder = builder << open_array;
 
         for(size_t i = 0; i < array->get_array_size(); i++) {
-            ab.append(bamboo2bson(array->get_element_type(), dgi));
+            sub_builder << bind(bamboo2bson, _1, array->get_element_type(), dgi);
         }
 
-        return value {b_array {ab.extract()}};
+        sub_builder << close_array;
     }
     break;
     case dclass::Type::T_VARARRAY: {
@@ -142,35 +140,37 @@ static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
         dgsize_t array_length = dgi.read_size();
         dgsize_t starting_size = dgi.tell();
 
-        bsoncxx::builder::basic::array ab {};
+        auto sub_builder = builder << open_array;
 
         while(dgi.tell() != starting_size + array_length) {
-            ab.append(bamboo2bson(array->get_element_type(), dgi));
+            sub_builder << bind(bamboo2bson, _1, array->get_element_type(), dgi);
             if(dgi.tell() > starting_size + array_length) {
                 throw ConversionException("Discovered corrupt array-length tag!");
             }
         }
 
-        return value {b_array {ab.extract()}};
+        sub_builder << close_array;
     }
     break;
     case dclass::Type::T_STRUCT: {
         const dclass::Struct *s = type->as_struct();
         size_t fields = s->get_num_fields();
-        bsoncxx::builder::stream::document ob {};
+
+        auto sub_builder = builder << open_document;
 
         for(unsigned int i = 0; i < fields; ++i) {
             const dclass::Field *field = s->get_field(i);
-            ob << field->get_name() << bamboo2bson(field->get_type(), dgi);
+            sub_builder << field->get_name() << bind(bamboo2bson, _1, field->get_type(), dgi);
         }
 
-        return value {b_document {ob.extract()}};
+        sub_builder << close_document;
     }
     break;
     case dclass::Type::T_METHOD: {
         const dclass::Method *m = type->as_method();
         size_t parameters = m->get_num_parameters();
-        bsoncxx::builder::stream::document ob {};
+
+        auto sub_builder = builder << open_document;
 
         for(unsigned int i = 0; i < parameters; ++i) {
             const dclass::Parameter *parameter = m->get_parameter(i);
@@ -180,10 +180,10 @@ static bsoncxx::types::value bamboo2bson(const dclass::DistributedType *type,
                 n << "_" << i;
                 name = n.str();
             }
-            ob << name << bamboo2bson(parameter->get_type(), dgi);
+            sub_builder << name << bind(bamboo2bson, _1, parameter->get_type(), dgi);
         }
 
-        return value {b_document {ob.extract()}};
+        sub_builder << close_document;
     }
     break;
     case dclass::Type::T_INVALID:
@@ -537,8 +537,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                builder << it.first->get_name()
-                        << bamboo2bson(it.first->get_type(), dgi);
+                builder << it.first->get_name() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
             }
         } catch(ConversionException &e) {
             m_log->error() << "While formatting "
@@ -646,7 +645,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                sets << fieldname.str() << bamboo2bson(it.first->get_type(), dgi);
+                sets << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
             }
         }
 
@@ -665,7 +664,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                query << fieldname.str() << bamboo2bson(it.first->get_type(), dgi);
+                query << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
             }
         }
         auto query_obj = query << finalize;
@@ -877,7 +876,8 @@ class MongoDatabase : public DatabaseBackend
                        << bsoncxx::to_json(*obj) << endl;
 
         // Otherwise, use the first one:
-        doid_t doid = handle_bson_number<doid_t>(obj->view()["doid"]["free"].get_array().value[0].get_value());
+        doid_t doid = handle_bson_number<doid_t>
+                      (obj->view()["doid"]["free"].get_array().value[0].get_value());
         return doid;
     }
 
