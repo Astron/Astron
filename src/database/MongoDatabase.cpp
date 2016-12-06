@@ -769,7 +769,7 @@ class MongoDatabase : public DatabaseBackend
         // outlandish requests like this) this shouldn't be a huge issue.
         m_log->trace() << "Reverting changes made to " << operation->doid() << endl;
         try {
-            db["astron.objects"].update_one(
+            db["astron.objects"].replace_one(
                 document {} << "_id" << static_cast<int64_t>(operation->doid()) << finalize,
                 obj_v);
         } catch(mongocxx::operation_exception &e) {
