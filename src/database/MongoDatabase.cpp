@@ -687,7 +687,11 @@ class MongoDatabase : public DatabaseBackend
             return;
         }
 
-        m_log->trace() << "Update result: " << bsoncxx::to_json(*obj) << endl;
+        if(obj) {
+            m_log->trace() << "Update result: " << bsoncxx::to_json(*obj) << endl;
+        } else {
+            m_log->trace() << "Update result: [server could not find a matching object]" << endl;
+        }
 
         if(!obj) {
             // Okay, something didn't work right. If we had criteria, let's
