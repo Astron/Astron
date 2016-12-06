@@ -86,7 +86,7 @@ void MessageDirector::init_network()
         }
 
         if(threaded_mode.get_val()) {
-            m_thread = new std::thread(std::bind(&MessageDirector::routing_thread, this));
+            m_thread.reset(new std::thread(std::bind(&MessageDirector::routing_thread, this)));
         }
 
         m_initialized = true;
@@ -108,7 +108,7 @@ void MessageDirector::shutdown_threading()
 
     // Wait for it to do so:
     m_thread->join();
-    delete m_thread;
+    m_thread.reset();
 }
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
@@ -193,8 +193,8 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
     }
 
     // Send the datagram to each participant
-    for(auto it = receiving_participants.begin(); it != receiving_participants.end(); ++it) {
-        auto participant = static_cast<MDParticipantInterface*>(*it);
+    for(const auto& it : receiving_participants) {
+        auto participant = static_cast<MDParticipantInterface *>(it);
         DatagramIterator msg_dgi(dg, dgi.tell());
 
         try {
@@ -229,8 +229,8 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 void MessageDirector::process_terminates()
 {
     std::lock_guard<std::mutex> lock(m_terminated_lock);
-    for(auto it = m_terminated_participants.begin(); it != m_terminated_participants.end(); ++it) {
-        delete *it;
+    for(const auto& it : m_terminated_participants) {
+        delete it;
     }
     m_terminated_participants.clear();
 }
