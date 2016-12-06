@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 import unittest
+import time
 from common.unittests import ProtocolTest
 from common.dbserver import DBServerTestsuite
 from common.astron import *
@@ -36,6 +37,9 @@ class TestDatabaseServerMongo(ProtocolTest, DBServerTestsuite):
         cls.objects = cls.connectToServer()
         cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
                                                    DATABASE_PREFIX|1000010))
+
+        # Allow MongoDB + Astron some time to get acquainted...
+        time.sleep(0.5)
 
     @classmethod
     def tearDownClass(cls):
