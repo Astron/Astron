@@ -36,8 +36,8 @@ before_install:
 
 install:
 - OLD_PWD=$PWD
-- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.5.0-rc4/libbson-1.5.0-rc4.tar.gz && tar xzf libbson-1.5.0-rc4.tar.gz && cd libbson-1.5.0-rc4 && ./configure && make && sudo make install
-- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.5.0-rc4/mongo-c-driver-1.5.0-rc4.tar.gz && tar xzf mongo-c-driver-1.5.0-rc4.tar.gz && cd mongo-c-driver-1.5.0-rc4 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.5.0/libbson-1.5.0.tar.gz && tar xzf libbson-1.5.0.tar.gz && cd libbson-1.5.0 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.5.0/mongo-c-driver-1.5.0.tar.gz && tar xzf mongo-c-driver-1.5.0.tar.gz && cd mongo-c-driver-1.5.0 && ./configure && make && sudo make install
 - cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
 - cd $OLD_PWD
 
