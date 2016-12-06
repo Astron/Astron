@@ -432,7 +432,7 @@ class MongoDatabase : public DatabaseBackend
                 document {} << "_id" << "GLOBALS"
                 << "doid" << open_document
                 << "monotonic" << static_cast<int64_t>(min_id)
-                << "free" << bsoncxx::types::b_array {}
+                << "free" << open_array << close_array
                 << close_document << finalize);
         }
 
