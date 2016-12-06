@@ -24,16 +24,8 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 
         std::stringstream name;
         name << "StateServer(" << channel << ")";
-        m_log = new LogCategory("stateserver", name.str());
+        m_log = std::unique_ptr<LogCategory>(new LogCategory("stateserver", name.str()));
         set_con_name(name.str());
-    }
-}
-
-StateServer::~StateServer()
-{
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
     }
 }
 

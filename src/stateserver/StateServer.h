@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <unordered_map>
 #include "core/Role.h"
 #include "core/RoleFactory.h"
@@ -11,12 +12,11 @@ class StateServer : public Role
 
   public:
     StateServer(RoleConfig roleconfig);
-    ~StateServer();
 
     virtual void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
   protected:
-    LogCategory *m_log;
+    std::unique_ptr<LogCategory> m_log;
     std::unordered_map<doid_t, DistributedObject*> m_objs;
 
   private:
