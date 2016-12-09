@@ -447,7 +447,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
