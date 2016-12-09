@@ -1,12 +1,12 @@
 install:
-- set BOOST_ROOT=C:\Libraries\boost
-- set BOOST_LIBRARYDIR=%BOOST_ROOT%\lib64-msvc-12.0
+- set BOOST_ROOT=C:\Libraries\boost\boost_1_62_0
+- set BOOST_LIBRARYDIR=%BOOST_ROOT%\lib64-msvc-14.0
 - cd dependencies
 - appveyor DownloadFile https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.5.3.zip -FileName yaml-cpp.zip
 - 7z x yaml-cpp.zip
 - ren yaml-cpp-yaml-cpp-0.5.3 yaml-cpp
 - cd yaml-cpp
-- cmake -G"Visual Studio 12 2013 Win64" -DYAML_CPP_BUILD_TOOLS=OFF .
+- cmake -G"Visual Studio 14 2015 Win64" -DYAML_CPP_BUILD_TOOLS=OFF .
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - set CMAKE_LIBRARY_PATH=%CMAKE_LIBRARY_PATH%;%CD%\Release
 - set CMAKE_INCLUDE_PATH=%CMAKE_INCLUDE_PATH%;%CD%
@@ -17,7 +17,7 @@ install:
 
 build_script:
 - cd build
-- cmake -G"Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=YES ..
+- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=YES ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - copy Release\astrond.exe .
 
