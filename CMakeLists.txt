@@ -104,6 +104,8 @@ endif()
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
 find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
+include_directories(${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIRS})
 
 add_definitions(
 	-DBOOST_ALL_NO_LIB
