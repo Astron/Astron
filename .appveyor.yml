@@ -39,6 +39,7 @@ install:
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
 - cd ..\..\..
+- set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;C:\libraries\mongo-cxx-driver
 
 build_script:
 - cd build
