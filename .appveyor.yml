@@ -1,22 +1,28 @@
 install:
-- C:\msys64\usr\bin\pacman -Syu --noconfirm make mingw-w64-x86_64-clang mingw-w64-x86_64-boost mingw-w64-x86_64-yaml-cpp mingw-w64-x86_64-python2
+- set BOOST_ROOT=C:\Libraries\boost
+- set BOOST_LIBRARYDIR=%BOOST_ROOT%\lib64-msvc-12.0
+- cd dependencies
+- appveyor DownloadFile https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.5.3.zip -FileName yaml-cpp.zip
+- 7z x yaml-cpp.zip
+- ren yaml-cpp-yaml-cpp-0.5.3 yaml-cpp
+- cd yaml-cpp
+- cmake -G"Visual Studio 12 2013 Win64" .
+- msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+- set CMAKE_LIBRARY_PATH=%CMAKE_LIBRARY_PATH%;%CD%\Release
+- set CMAKE_INCLUDE_PATH=%CMAKE_INCLUDE_PATH%;%CD%
+- cd ..\..
+# What is it with CMake and not detecting the right versions of libraries...
+- del C:\OpenSSL-Win64\lib\ssleay32.lib
+- del C:\OpenSSL-Win64\lib\libeay32.lib
 
 build_script:
-- set MSYSTEM=MINGW64
-- set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
 - cd build
-# Linker flag --allow-multiple-definition below is a workaround for
-# https://llvm.org/bugs/show_bug.cgi?format=multiple&id=9744
-# and is only necessary on Clang:
-- cmake -G"MSYS Makefiles" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-multiple-definition -static -static-libgcc -static-libstdc++" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
-# MSYS2 seems not to understand what "-static-libstdc++" means. Let's spell it
-# out for them:
-- rm /mingw64/x86_64-w64-mingw32/lib/lib*pthread.dll.a /mingw64/lib/gcc/x86_64-w64-mingw32/*/libstdc++.dll.a
-- make
+- cmake -G"Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=YES -DOPENSSL_MSVC_STATIC_RT=YES ..
+- msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+- copy Release\astrond.exe .
 
 test_script:
-- set CTEST_OUTPUT_ON_FAILURE=1
-- make test
+- ctest --output-on-failure
 
 artifacts:
 - path: build\astrond.exe
