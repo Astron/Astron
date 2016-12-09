@@ -26,6 +26,9 @@ if(WIN32)
 	add_definitions(-D_WIN32_WINNT=0x0600)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
+	if(MSVC)
+		add_definitions("/wd4267") # 64-bit size_t complaints
+	endif()
 endif()
 
 ### Set build type to Release with Debug Info by default ###
