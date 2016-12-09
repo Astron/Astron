@@ -324,3 +324,14 @@ void printCompiledOptions(ostream &s)
 
 
 }
+
+// http://stackoverflow.com/a/34207323
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+struct VS2013_threading_fix
+{
+	VS2013_threading_fix()
+	{
+		_Cnd_do_broadcast_at_thread_exit();
+	}
+} threading_fix;
+#endif

@@ -38,16 +38,8 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
 
     std::stringstream name;
     name << "DBSS(Database: " << m_db_channel << ")";
-    m_log = new LogCategory("dbss", name.str());
+    m_log = std::unique_ptr<LogCategory>(new LogCategory("dbss", name.str()));
     set_con_name(name.str());
-}
-
-DBStateServer::~DBStateServer()
-{
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
-    }
 }
 
 void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)

@@ -23,8 +23,12 @@ if(WIN32)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
 
 	add_definitions(-D_WIN32_WINDOWS)
+	add_definitions(-D_WIN32_WINNT=0x0600)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
+	if(MSVC)
+		add_definitions("/wd4267") # 64-bit size_t complaints
+	endif()
 endif()
 
 ### Set build type to Release with Debug Info by default ###
@@ -90,19 +94,11 @@ endif()
 
 ### YAML Depedency -- required by config, used by yaml database ###
 set(YAMLCPP_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
-find_package(YamlCpp)
-if(NOT YAMLCPP_FOUND)
-	set(YAMLCPP_USE_STATIC_LIBS OFF CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
-	find_package(YamlCpp)
-endif()
-if(YAMLCPP_FOUND)
-	include_directories(${YAMLCPP_INCLUDE_DIR})
-	link_directories(${YAMLCPP_LIBRARY_DIR})
-	message(STATUS "Found the following YamlCpp library:")
-	message("  ${YAMLCPP_LIBRARY}\n")
-else()
-	message(FATAL_ERROR "You need yamlcpp to build this, build yamlcpp in the 'dependencies/' directory, or install it as a system package")
-endif()
+find_package(YamlCpp REQUIRED)
+include_directories(${YAMLCPP_INCLUDE_DIR})
+link_directories(${YAMLCPP_LIBRARY_DIR})
+message(STATUS "Found the following YamlCpp library:")
+message("  ${YAMLCPP_LIBRARY}\n")
 
 set(BUILD_YAML ON) # ON CACHE BOOL "Stuff"
 if(BUILD_YAML)
@@ -111,22 +107,9 @@ endif()
 
 ### BOOST Dependency -- required by yaml-cpp and networking ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-find_package(Boost COMPONENTS system filesystem thread regex)
-if(NOT Boost_FOUND)
-	unset(Boost_USE_STATIC_LIBS CACHE)
-	set (Boost_USE_STATIC_LIBS OFF CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-	find_package(Boost COMPONENTS system filesystem thread regex)
-	if(NOT Boost_FOUND)
-		unset(Boost_USE_STATIC_LIBS CACHE)
-	endif()
-endif()
-if(Boost_FOUND)
-	include_directories(${Boost_INCLUDE_DIR})
-	link_directories(${Boost_LIBRARY_DIRS})
-	message("  ${Boost_LIBRARIES}\n")
-else()
-	message(FATAL_ERROR "You need boost to build this, set the BOOST_ROOT or BOOSTROOT env variables, or pass them to cmake")
-endif()
+find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
+include_directories(${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIRS})
 
 add_definitions(
 	-DBOOST_ALL_NO_LIB
@@ -135,11 +118,7 @@ add_definitions(
 
 ### SSL Dependency -- required by Boost::ASIO's SSL library
 find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-	include_directories(${OPENSSL_INCLUDE_DIR})
-else()
-	message(FATAL_ERROR "You need OpenSSL to build this.")
-endif()
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
@@ -469,7 +448,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBNAME} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

@@ -67,7 +67,7 @@ class MessageDirector final : public ChannelMap
 
     // Threading stuff:
     bool m_shutdown;
-    std::thread *m_thread;
+    std::unique_ptr<std::thread> m_thread;
     std::mutex m_participants_lock;
     std::mutex m_terminated_lock;
     std::mutex m_messages_lock;

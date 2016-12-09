@@ -24,16 +24,8 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 
         std::stringstream name;
         name << "StateServer(" << channel << ")";
-        m_log = new LogCategory("stateserver", name.str());
+        m_log = std::unique_ptr<LogCategory>(new LogCategory("stateserver", name.str()));
         set_con_name(name.str());
-    }
-}
-
-StateServer::~StateServer()
-{
-    if(m_log) {
-        delete m_log;
-        m_log = nullptr;
     }
 }
 
@@ -73,9 +65,9 @@ void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 {
     channel_t ai_channel = dgi.read_channel();
     std::set <channel_t> targets;
-    for(auto it = m_objs.begin(); it != m_objs.end(); ++it) {
-        if(it->second && it->second->m_ai_channel == ai_channel && it->second->m_ai_explicitly_set) {
-            targets.insert(it->second->m_do_id);
+    for(const auto& it : m_objs) {
+        if(it.second && it.second->m_ai_channel == ai_channel && it.second->m_ai_explicitly_set) {
+            targets.insert(it.second->m_do_id);
         }
     }
 

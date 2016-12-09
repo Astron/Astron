@@ -19,7 +19,6 @@ class DBStateServer final : public StateServer
 
   public:
     DBStateServer(RoleConfig roleconfig);
-    ~DBStateServer();
 
     void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
 
