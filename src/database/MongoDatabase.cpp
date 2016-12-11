@@ -128,7 +128,7 @@ static void bamboo2bson(single_context builder,
         auto sub_builder = builder << open_array;
 
         for(size_t i = 0; i < array->get_array_size(); i++) {
-            sub_builder << bind(bamboo2bson, _1, array->get_element_type(), dgi);
+            bamboo2bson(sub_builder, array->get_element_type(), dgi);
         }
 
         sub_builder << close_array;
@@ -143,7 +143,7 @@ static void bamboo2bson(single_context builder,
         auto sub_builder = builder << open_array;
 
         while(dgi.tell() != starting_size + array_length) {
-            sub_builder << bind(bamboo2bson, _1, array->get_element_type(), dgi);
+            bamboo2bson(sub_builder, array->get_element_type(), dgi);
             if(dgi.tell() > starting_size + array_length) {
                 throw ConversionException("Discovered corrupt array-length tag!");
             }
@@ -160,7 +160,7 @@ static void bamboo2bson(single_context builder,
 
         for(unsigned int i = 0; i < fields; ++i) {
             const dclass::Field *field = s->get_field(i);
-            sub_builder << field->get_name() << bind(bamboo2bson, _1, field->get_type(), dgi);
+            bamboo2bson(sub_builder << field->get_name(), field->get_type(), dgi);
         }
 
         sub_builder << close_document;
@@ -180,7 +180,7 @@ static void bamboo2bson(single_context builder,
                 n << "_" << i;
                 name = n.str();
             }
-            sub_builder << name << bind(bamboo2bson, _1, parameter->get_type(), dgi);
+            bamboo2bson(sub_builder << name, parameter->get_type(), dgi);
         }
 
         sub_builder << close_document;
@@ -543,7 +543,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                builder << it.first->get_name() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
+                bamboo2bson(builder << it.first->get_name(), it.first->get_type(), dgi);
             }
         } catch(ConversionException &e) {
             m_log->error() << "While formatting "
@@ -651,7 +651,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                sets_builder << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
+                bamboo2bson(sets_builder << fieldname.str(), it.first->get_type(), dgi);
             }
         }
         auto sets = sets_builder << finalize;
@@ -674,7 +674,7 @@ class MongoDatabase : public DatabaseBackend
                 DatagramPtr dg = Datagram::create();
                 dg->add_data(it.second);
                 DatagramIterator dgi(dg);
-                query << fieldname.str() << bind(bamboo2bson, _1, it.first->get_type(), dgi);
+                bamboo2bson(query << fieldname.str(), it.first->get_type(), dgi);
             }
         }
         auto query_obj = query << finalize;
