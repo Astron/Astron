@@ -24,6 +24,7 @@ if(WIN32)
 
 	add_definitions(-D_WIN32_WINDOWS)
 	add_definitions(-D_WIN32_WINNT=0x0600)
+	add_definitions(-DNOMINMAX) # min() and max() macros conflict with <limits>
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 	if(MSVC)
