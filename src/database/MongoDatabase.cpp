@@ -455,9 +455,9 @@ class MongoDatabase : public DatabaseBackend
             m_shutdown = true;
             m_cv.notify_all();
         }
-        for(auto it = m_threads.begin(); it != m_threads.end(); ++it) {
-            (*it)->join();
-            delete *it;
+        for(auto &it : m_threads) {
+            it->join();
+            delete it;
         }
 
         delete m_log;
@@ -801,7 +801,7 @@ class MongoDatabase : public DatabaseBackend
 
             DBObjectSnapshot *snap = new DBObjectSnapshot();
             snap->m_dclass = dclass;
-            for(auto it : fields) {
+            for(const auto &it : fields) {
                 string name = it.key().to_string();
                 const dclass::Field *field = dclass->get_field_by_name(name);
                 if(!field) {
