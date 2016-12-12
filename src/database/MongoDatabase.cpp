@@ -16,6 +16,7 @@
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/types.hpp>
 #include <bsoncxx/types/value.hpp>
+#include <mongocxx/instance.hpp>
 #include <mongocxx/uri.hpp>
 #include <mongocxx/client.hpp>
 #include <mongocxx/exception/operation_exception.hpp>
@@ -410,6 +411,8 @@ static void bson2bamboo(const dclass::DistributedType *type,
         break;
     }
 }
+
+static mongocxx::instance mongo_inst;
 
 class MongoDatabase : public DatabaseBackend
 {
