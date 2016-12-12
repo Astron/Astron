@@ -55,6 +55,7 @@ build_script:
 
 test_script:
 - 7z x Release\astron.zip
+- set PATH=%PATH%;C:\mongodb\bin
 - ctest --output-on-failure
 
 artifacts:
