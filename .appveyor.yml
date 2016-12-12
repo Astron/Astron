@@ -45,10 +45,17 @@ build_script:
 - cd build
 - cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=NO ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
-- copy Release\astrond.exe .
+- cd Release
+- copy /Y C:\libraries\libbson\bin\*.dll .
+- copy /Y C:\libraries\mongoc\bin\*.dll .
+- copy /Y C:\libraries\mongo-cxx-driver\bin\*.dll .
+- copy /Y C:\OpenSSL-Win64\*eay32.dll .
+- 7z a astron.zip *
+- cd ..
 
 test_script:
+- 7z x Release\astron.zip
 - ctest --output-on-failure
 
 artifacts:
-- path: build\astrond.exe
+- path: Release\astron.zip
