@@ -150,7 +150,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                 m_ssl_ctx.use_private_key_file(m_ssl_key, ssl::context::file_format::pem);
                 key_error = false;
                 break;
-            } catch(const boost::system::system_error& e) {
+            } catch(const boost::system::system_error&) {
                 key_error = true;
             }
         }
