@@ -20,6 +20,7 @@
 #include <mongocxx/uri.hpp>
 #include <mongocxx/client.hpp>
 #include <mongocxx/exception/operation_exception.hpp>
+#include <mongocxx/exception/logic_error.hpp>
 
 #include <limits>
 
@@ -426,7 +427,12 @@ class MongoDatabase : public DatabaseBackend
         m_log = new LogCategory("mongodb", log_name.str());
 
         // Init URI.
-        m_uri = mongocxx::uri {db_server.get_rval(m_config)};
+        try {
+            m_uri = mongocxx::uri {db_server.get_rval(m_config)};
+        } catch(mongocxx::logic_error &) {
+            m_log->fatal() << "Could not parse URI!" << endl;
+            exit(1);
+        }
 
         // Init the globals collection/document:
         auto client = new_connection();

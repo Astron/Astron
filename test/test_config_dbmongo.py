@@ -194,5 +194,27 @@ class TestConfigDBMongo(ConfigTest):
             """ % (test_dc)
         self.assertEquals(self.checkConfig(config), 'Invalid')
 
+    def test_dbmongo_bad_uri(self):
+        config = """\
+            messagedirector:
+                bind: 127.0.0.1:57123
+
+            general:
+                dc_files:
+                    - %r
+
+            roles:
+                - type: database
+                  control: 75757
+                  broadcast: false
+                  generate:
+                    min: 1000000
+                    max: 1000010
+                  backend:
+                    type: mongodb
+                    server: baddb://127.0.0.1:57023/test
+            """ % (test_dc)
+        self.assertEquals(self.checkConfig(config), 'Invalid')
+
 if __name__ == '__main__':
     unittest.main()
