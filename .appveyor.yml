@@ -59,4 +59,4 @@ test_script:
 - ctest --output-on-failure
 
 artifacts:
-- path: Release\astron.zip
+- path: build\Release\astron.zip
