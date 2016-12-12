@@ -150,6 +150,8 @@ In addition, a DB-SS listens on the entire range of object IDs that it manages. 
 ## Building ##
 See the [build instructions](docs/building/build-readme.md).
 
+You can also check out the AstronDocs that are under construction but can be used at https://astron.github.io/.
+
 
 
 ## Development ##
