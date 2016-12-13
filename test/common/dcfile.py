@@ -17,6 +17,7 @@ CLASSES = [
     'DistributedClientTestObject',
     'Block',
     'DistributedChunk',
+    'DistributedDBTypeTestObject',
 ]
 for i,n in enumerate(CLASSES):
     locals()[n] = i
@@ -76,7 +77,24 @@ FIELDS = [
     ### Fields for DistributedChunk ###
     'blockList',
     'lastBlock',
-    'newBlock'
+    'newBlock',
+
+    ### Fields for DistributedDBTypeTestObject ###
+    'db_uint8',
+    'db_uint16',
+    'db_uint32',
+    'db_uint64',
+    'db_int8',
+    'db_int16',
+    'db_int32',
+    'db_int64',
+    'db_char',
+    'db_float64',
+    'db_string',
+    'db_fixstr',
+    'db_blob',
+    'db_fixblob',
+    'db_complex',
 ]
 for i,n in enumerate(FIELDS):
     locals()[n] = i
@@ -87,4 +105,4 @@ setRDbD5DefaultValue = 20
 
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
-DC_HASH = 0x7a9b0e3
+DC_HASH = 0x9a71149
