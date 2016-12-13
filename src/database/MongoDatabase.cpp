@@ -102,6 +102,7 @@ static void bamboo2bson(single_context builder,
         string str((const char *)vec.data(), vec.size());
         builder << b_utf8 {str};
     }
+    break;
     case dclass::Type::T_VARSTRING: {
         builder << b_utf8 {dgi.read_string()};
     }
