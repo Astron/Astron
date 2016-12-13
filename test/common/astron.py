@@ -52,6 +52,8 @@ DATATYPES = {
     'uint32': '<I',
     'int64': '<q',
     'uint64': '<Q',
+    'char': '<s',
+    'float64': '<d',
 }
 
 CONSTANTS = {
