@@ -85,7 +85,7 @@ static void bamboo2bson(single_context builder,
     break;
     case dclass::Type::T_CHAR: {
         unsigned char c = dgi.read_uint8();
-        string str(c, 1);
+        string str(1, c);
         builder << b_utf8 {str};
     }
     break;
