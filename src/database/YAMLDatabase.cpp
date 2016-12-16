@@ -110,8 +110,9 @@ class YAMLDatabase : public OldDatabaseBackend
         bool error;
         string packed_data = dclass::parse_value(field->get_type(), node.as<string>(), error);
         if(error) {
-            m_log->error() << "Failed parsing value for field '" << field->get_name()
-                           << "' of object " << id << "' from database.\n";
+            m_log->error() << "Failed parsing " << node.as<string>()
+                           << " for field '" << field->get_name()
+                           << "' of object " << id << " from database.\n";
             return vector<uint8_t>();
         }
 
