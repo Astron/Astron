@@ -125,7 +125,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
             boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space,
                                               boost::system::system_category());
-            disconnect(enobufs);
+            disconnect(enobufs, lock);
         }
     } else {
         m_is_sending = true;
@@ -306,7 +306,7 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
     if(ec != boost::asio::error::operation_aborted) {
         boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out,
                                            boost::system::system_category());
-        disconnect(etimeout);
+        disconnect(etimeout, lock);
     }
 }
 
