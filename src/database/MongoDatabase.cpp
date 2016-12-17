@@ -130,20 +130,34 @@ static void bamboo2bson(single_context builder,
     break;
     case dclass::Type::T_BLOB: {
         vector<uint8_t> blob = dgi.read_data(type->get_size());
-        builder << b_binary {
-            bsoncxx::binary_sub_type::k_binary,
-            static_cast<uint32_t>(blob.size()),
-            blob.data()
-        };
+        if(blob.data() == nullptr) {
+            // libbson gets upset if passed a nullptr here, but it's valid for
+            // vector.data() to return nullptr if it's empty, so we make
+            // something up instead:
+            builder << b_binary { bsoncxx::binary_sub_type::k_binary, 0, (const uint8_t*)1 };
+        } else {
+            builder << b_binary {
+                bsoncxx::binary_sub_type::k_binary,
+                static_cast<uint32_t>(blob.size()),
+                blob.data()
+            };
+        }
     }
     break;
     case dclass::Type::T_VARBLOB: {
         vector<uint8_t> blob = dgi.read_blob();
-        builder << b_binary {
-            bsoncxx::binary_sub_type::k_binary,
-            static_cast<uint32_t>(blob.size()),
-            blob.data()
-        };
+        if(blob.data() == nullptr) {
+            // libbson gets upset if passed a nullptr here, but it's valid for
+            // vector.data() to return nullptr if it's empty, so we make
+            // something up instead:
+            builder << b_binary { bsoncxx::binary_sub_type::k_binary, 0, (const uint8_t*)1 };
+        } else {
+            builder << b_binary {
+                bsoncxx::binary_sub_type::k_binary,
+                static_cast<uint32_t>(blob.size()),
+                blob.data()
+            };
+        }
     }
     break;
     case dclass::Type::T_ARRAY: {
