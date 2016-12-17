@@ -480,6 +480,11 @@ class DatagramIterator(object):
 
         return struct.unpack("<%ds" % length, self._data[self._offset-length:self._offset])[0]
 
+    def read_remainder(self):
+        remainder = self._data[self._offset:]
+        self._offset = len(self._data)
+        return remainder
+
     def seek(self, offset):
         self._offset = offset
 

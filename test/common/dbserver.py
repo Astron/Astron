@@ -1330,5 +1330,57 @@ class DBServerTestsuite(object):
         add_fields_to_complex(dg)
         self.expect(self.conn, dg)
 
+        # Finally let's test CREATING an object with diverse datatypes.
+        # So we're going to cheat a little and use the object we have now.
+        ctx += 1
+        dg = Datagram.create([75757], 110, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(ctx) # Context
+        dg.add_doid(doid)
+        self.conn.send(dg)
+
+        # Get reply with all fields
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive GetAllResp.")
+        dgi = DatagramIterator(dg)
+        self.assertEqual(dgi.read_uint8(), 1) # Number of recipients
+        self.assertEqual(dgi.read_channel(), 110) # Recipient channel
+        self.assertEqual(dgi.read_channel(), 75757) # Sender
+        self.assertEqual(dgi.read_uint16(), DBSERVER_OBJECT_GET_ALL_RESP)
+        self.assertEqual(dgi.read_uint32(), ctx)
+        self.assertEqual(dgi.read_uint8(), SUCCESS)
+        self.assertEqual(dgi.read_uint16(), DistributedDBTypeTestObject)
+        fielddata = dgi.read_remainder()
+
+        # Delete the last object, we don't need it.
         self.deleteObject(110, doid)
+
+        # Make a fresh one
+        ctx += 1
+        dg = Datagram.create([75757], 110, DBSERVER_CREATE_OBJECT)
+        dg.add_uint32(ctx) # Context
+        dg.add_uint16(DistributedDBTypeTestObject)
+        dg.add_raw(fielddata)
+        self.conn.send(dg)
+
+        dg = self.conn.recv_maybe()
+        self.assertTrue(dg is not None, "Did not receive CreateObjectResp.")
+        dgi = DatagramIterator(dg)
+        dgi.seek(CREATE_DOID_OFFSET)
+        doid = dgi.read_doid()
+
+        # Get everything...
+        ctx += 1
+        dg = Datagram.create([75757], 110, DBSERVER_OBJECT_GET_ALL)
+        dg.add_uint32(ctx) # Context
+        dg.add_doid(doid)
+        self.conn.send(dg)
+
+        # This time we know what the object should look like:
+        dg = Datagram.create([110], 75757, DBSERVER_OBJECT_GET_ALL_RESP)
+        dg.add_uint32(ctx)
+        dg.add_uint8(SUCCESS)
+        dg.add_uint16(DistributedDBTypeTestObject)
+        dg.add_raw(fielddata)
+        self.expect(self.conn, dg)
+
         self.conn.send(Datagram.create_remove_channel(110))
