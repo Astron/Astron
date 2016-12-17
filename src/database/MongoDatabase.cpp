@@ -860,7 +860,7 @@ class MongoDatabase : public DatabaseBackend
             }
         } catch(ConversionException &e) {
             m_log->error() << "Unexpected error while trying to format"
-                           " database snapshot for " << doid << ": "
+                           " database snapshot for " << dclass_name << "(" << doid << "): "
                            << e.what() << endl;
             delete snap;
             return nullptr;
