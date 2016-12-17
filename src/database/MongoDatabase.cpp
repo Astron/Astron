@@ -828,19 +828,21 @@ class MongoDatabase : public DatabaseBackend
     {
         m_log->trace() << "Formatting database snapshot of " << doid << ": "
                        << bsoncxx::to_json(obj) << endl;
+
+        string dclass_name = obj["dclass"].get_utf8().value.to_string();
+        const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
+        if(!dclass) {
+            m_log->error() << "Encountered unknown database object: "
+                           << dclass_name << "(" << doid << ")" << endl;
+            return nullptr;
+        }
+
+        auto fields = obj["fields"].get_document().value;
+
+        DBObjectSnapshot *snap = new DBObjectSnapshot();
+        snap->m_dclass = dclass;
+
         try {
-            string dclass_name = obj["dclass"].get_utf8().value.to_string();
-            const dclass::Class *dclass = g_dcf->get_class_by_name(dclass_name);
-            if(!dclass) {
-                m_log->error() << "Encountered unknown database object: "
-                               << dclass_name << "(" << doid << ")" << endl;
-                return nullptr;
-            }
-
-            auto fields = obj["fields"].get_document().value;
-
-            DBObjectSnapshot *snap = new DBObjectSnapshot();
-            snap->m_dclass = dclass;
             for(const auto &it : fields) {
                 string name = it.key().to_string();
                 const dclass::Field *field = dclass->get_field_by_name(name);
@@ -850,21 +852,21 @@ class MongoDatabase : public DatabaseBackend
                                      << "(" << doid << "); ignored." << endl;
                     continue;
                 }
-                {
-                    DatagramPtr dg = Datagram::create();
-                    bson2bamboo(field->get_type(), field->get_name(), it.get_value(), *dg);
-                    snap->m_fields[field].resize(dg->size());
-                    memcpy(snap->m_fields[field].data(), dg->get_data(), dg->size());
-                }
-            }
 
-            return snap;
-        } catch(mongocxx::operation_exception &e) {
+                DatagramPtr dg = Datagram::create();
+                bson2bamboo(field->get_type(), field->get_name(), it.get_value(), *dg);
+                snap->m_fields[field].resize(dg->size());
+                memcpy(snap->m_fields[field].data(), dg->get_data(), dg->size());
+            }
+        } catch(ConversionException &e) {
             m_log->error() << "Unexpected error while trying to format"
                            " database snapshot for " << doid << ": "
                            << e.what() << endl;
+            delete snap;
             return nullptr;
         }
+
+        return snap;
     }
 
     // This function is used by handle_create to get a fresh DOID assignment.
