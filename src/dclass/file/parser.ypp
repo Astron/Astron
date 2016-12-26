@@ -1199,6 +1199,34 @@ type_value
 
 		$$ = number_value(dtype->get_type(), $1);
 	}
+	| CHAR
+	{
+		if(!check_depth()) depth_error("char");
+
+		const DistributedType* dtype = type_stack.top().type;
+		if(dtype == nullptr)
+		{
+			// Ignore this field, it should have already generated an error
+			$$ = "";
+			break;
+		}
+		type_stack.pop(); // Remove type from stack
+
+		if(dtype->get_type() != T_CHAR) {
+			parser_error("Cannot use char value for non-char type '"
+			             + format_type(dtype->get_type()) + "'.");
+		}
+
+		if($1.length() != 1)
+		{
+			parser_error("Single character required.");
+			$$ = "";
+		}
+		else
+		{
+			$$ = $1;
+		}
+	}
 	| STRING
 	{
 		if(!check_depth()) depth_error("string");
