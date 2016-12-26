@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,7 +43,8 @@ extern int yydebug;
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-enum yytokentype {
+  enum yytokentype
+  {
     UNSIGNED_INTEGER = 258,
     REAL = 259,
     STRING = 260,
@@ -71,7 +72,7 @@ enum yytokentype {
     KW_STRING = 282,
     KW_BLOB = 283,
     KW_CHAR = 284
-};
+  };
 #endif
 
 /* Value type.  */
@@ -79,6 +80,6 @@ enum yytokentype {
 
 extern YYSTYPE yylval;
 
-int yyparse(void);
+int yyparse (void);
 
 #endif /* !YY_YY_PARSER_H_INCLUDED  */
