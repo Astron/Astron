@@ -57,4 +57,6 @@ add_library(dclass
 set_target_properties(dclass PROPERTIES LINK_FLAGS -lfl)
 
 # Workaround for Flex bug #140:
-set_source_files_properties(file/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
+if(NOT MSVC)
+	set_source_files_properties(file/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
+endif()
