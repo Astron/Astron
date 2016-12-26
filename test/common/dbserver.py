@@ -1260,10 +1260,10 @@ class DBServerTestsuite(object):
             ('int32', [88, 0, (1<<31)-1, -1<<31]),
             ('uint64', [88, 0, (1<<64)-1]),
             ('int64', [88, 0, (1<<63)-1, -1<<63]),
-            ('char',  ['H', 'i', '\x00', '\xff']),
+            ('char',  ['H', 'i', '\x00', '\x7f']),
             ('float64', [2.0, 8.7, -32.114]),
-            ('string', ['Hey', 'there', 'Astron', 'world']),
-            ('blob', ['\x00', '\xffabcdefgh', '\x00\x00\x00\x00\x01\x00\x00\x02']),
+            ('string', ['Hey', 'there', '', 'Astron', 'world']),
+            ('blob', ['\x00', '\xffabcdefgh', '', '\x00\x00\x00\x00\x01\x00\x00\x02']),
             ('fixstr', ['a'*32, 'b'*32, 'c'*32]),
             ('fixblob', ['d'*16, 'e'*16, 'f'*16])]:
             field_id = FIELDS.index('db_' + dbtype)
