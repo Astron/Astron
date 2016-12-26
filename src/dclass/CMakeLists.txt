@@ -5,25 +5,23 @@ include_directories(.)
 find_package(BISON)
 if(BISON_FOUND)
     add_custom_command(
-      SOURCE ${CMAKE_SOURCE_DIR}/src/dclass/parser.ypp
-      COMMAND ${BISON_EXECUTABLE}
-      ARGS --defines=${CMAKE_SOURCE_DIR}/src/dclass/parser.h
-           -o ${CMAKE_SOURCE_DIR}/src/dclass/parser.cpp
-           ${CMAKE_SOURCE_DIR}/src/dclass/parser.ypp
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/file/parser.ypp
+      COMMAND ${BISON_EXECUTABLE} --defines=parser.h -o parser.cpp parser.ypp
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/file
       COMMENT "Generating dclass/parser.cpp"
-      OUTPUT ${CMAKE_SOURCE_DIR}/src/dclass/parser.cpp
+      OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/file/parser.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/file/parser.h
     )
 endif(BISON_FOUND)
 
 find_package(FLEX)
 if(FLEX_FOUND)
     add_custom_command(
-      SOURCE ${CMAKE_SOURCE_DIR}/src/dclass/lexer.lpp
-      COMMAND ${FLEX_EXECUTABLE}
-      ARGS -o${CMAKE_SOURCE_DIR}/src/dclass/lexer.cpp
-           ${CMAKE_SOURCE_DIR}/src/dclass/lexer.lpp
+      DEPENDS file/lexer.lpp
+      COMMAND ${FLEX_EXECUTABLE} -olexer.cpp lexer.lpp
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/file
       COMMENT "Generating dclass/lexer.cpp"
-      OUTPUT ${CMAKE_SOURCE_DIR}/src/dclass/lexer.cpp
+      OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/file/lexer.cpp
     )
 endif(FLEX_FOUND)
 
