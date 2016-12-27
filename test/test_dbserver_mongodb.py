@@ -33,6 +33,7 @@ class TestDatabaseServerMongo(ProtocolTest, DBServerTestsuite):
         cls.daemon = Daemon(CONFIG)
         cls.daemon.start()
         cls.conn = cls.connectToServer()
+        cls.conn.s.settimeout(1.0) # Allow time for Astron<->MongoDB communication.
         cls.objects = cls.connectToServer()
         cls.objects.send(Datagram.create_add_range(DATABASE_PREFIX|1000000,
                                                    DATABASE_PREFIX|1000010))
