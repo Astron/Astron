@@ -235,13 +235,11 @@ template<typename T> T handle_bson_number(const bsoncxx::types::value &value)
 {
     int64_t i;
     double d;
-    bool is_double;
+    bool is_double = false;
     if(value.type() == bsoncxx::type::k_int32) {
         i = value.get_int32().value;
-        is_double = false;
     } else if(value.type() == bsoncxx::type::k_int64) {
         i = value.get_int64().value;
-        is_double = false;
     } else if(value.type() == bsoncxx::type::k_double) {
         d = value.get_double().value;
         is_double = true;
@@ -383,7 +381,7 @@ static void bson2bamboo(const dclass::DistributedType *type,
             const dclass::DistributedType *element_type = type->as_array()->get_element_type();
             auto array = value.get_array().value;
 
-            int index = 0;
+            size_t index = 0;
             for(const auto& it : array) {
                 stringstream array_index;
                 array_index << "[" << index++ << "]";
@@ -400,7 +398,7 @@ static void bson2bamboo(const dclass::DistributedType *type,
 
             DatagramPtr newdg = Datagram::create();
 
-            int index = 0;
+            size_t index = 0;
             for(const auto& it : array) {
                 stringstream array_index;
                 array_index << "[" << index++ << "]";
