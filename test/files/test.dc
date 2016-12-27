@@ -34,8 +34,8 @@ dclass DistributedTestObject4 {
 };
 
 dclass DistributedTestObject5 : DistributedTestObject3 {
-    setRDbD5(uint8 rdbd = 20) required db;
-    setFoo(uint16 foo) db;
+	setRDbD5(uint8 rdbd = 20) required db;
+	setFoo(uint16 foo) db;
 };
 
 dclass UberDog1 {
@@ -65,4 +65,22 @@ dclass DistributedChunk {
 	blockList(Block blocks[]) required clrecv;
 	lastBlock(Block block) ram clrecv airecv;
 	newBlock(Block block) broadcast;
+};
+
+dclass DistributedDBTypeTestObject {
+	uint8 db_uint8 db;
+	uint16 db_uint16 db;
+	uint32 db_uint32 db;
+	uint64 db_uint64 db;
+	int8 db_int8 db;
+	int16 db_int16 db;
+	int32 db_int32 db;
+	int64 db_int64 db;
+	char db_char db;
+	float64 db_float64 db;
+	string db_string db;
+	string(32) db_fixstr db;
+	blob db_blob db;
+	blob(16) db_fixblob db;
+	db_complex(Block named[], Block[3]) db;
 };
