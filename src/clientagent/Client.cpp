@@ -641,10 +641,12 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         bool disable = true;
         for(const auto& it : m_interests) {
             const Interest& i = it.second;
-            for(const auto& it2 : i.zones) {
-                if(it2 == n_zone) {
-                    disable = false;
-                    break;
+            if (i.parent == n_parent) {
+                for(const auto& it2 : i.zones) {
+                    if(it2 == n_zone) {
+                        disable = false;
+                        break;
+                    }
                 }
             }
         }

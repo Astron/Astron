@@ -3153,7 +3153,7 @@ class TestClientAgent(ProtocolTest):
         self.set_state(client, CLIENT_STATE_ESTABLISHED)
 
         #setup our testing DG that will go test(server) -> MD -> CA -> Test(Client)
-        #A successful receival of this DG on the Test(client) side will denote an 
+        #A successful receival of this DG on the Test(client) side will denote an
         #active socket.
         raw_dg = Datagram("Hello World")
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
@@ -3177,7 +3177,183 @@ class TestClientAgent(ProtocolTest):
         # We should be disconnected now...
         self.assertDisconnect(client,CLIENT_DISCONNECT_NO_HEARTBEAT)
 
-        
+    def test_interest_parent_change(self):
+        self.server.flush()
+
+        self.server.send(Datagram.create_add_channel(5555))
+        self.server.send(Datagram.create_add_channel(6666))
+        self.server.send(Datagram.create_add_channel(7777))
+        self.server.send(Datagram.create_add_channel(8888))
+
+        client = self.connect()
+        id = self.identify(client)
+
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Let's find 5555 and 6666 in (1234, 300)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(2) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(300) # Zone 1
+        client.send(dg)
+
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_zone(), 300)
+
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(2) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(5555) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(300) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(6666) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(300) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(5555) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(300) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(6666) # do_id
+        dg.add_doid(1234) # parent_id
+        dg.add_zone(300) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(2) # Context
+        dg.add_uint16(1) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # Now, let's find 7777 and 8888 in (6666, 400)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(3) # Context
+        dg.add_uint16(2) # Interest id
+        dg.add_doid(6666) # Parent
+        dg.add_zone(400) # Zone 1
+        client.send(dg)
+
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([6666], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 6666)
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_zone(), 400)
+
+        dg = Datagram.create([id], 6666, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(2) # Object count, uses an integer with same width as doids
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(7777) # do_id
+        dg.add_doid(6666) # parent_id
+        dg.add_zone(400) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(8888) # do_id
+        dg.add_doid(6666) # parent_id
+        dg.add_zone(400) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(7777) # do_id
+        dg.add_doid(6666) # parent_id
+        dg.add_zone(400) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(6666) # parent_id
+        dg.add_zone(400) # zone_id
+        dg.add_uint16(DistributedTestObject1)
+        dg.add_uint32(999999) # setRequired1
+        self.expect(client, dg, isClient = True)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(3) # Context
+        dg.add_uint16(2) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # Move 7777 from (6666, 400) to (5555, 600)
+        dg = Datagram.create([(6666<<ZONE_SIZE_BITS)|400], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(7777) # do_id
+        dg.add_doid(5555) # new_parent
+        dg.add_zone(600) # new_zone
+        dg.add_doid(6666) # old_parent
+        dg.add_zone(400) # old_zone
+        self.server.send(dg)
+
+        # The client should have the object disabled.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
+        dg.add_doid(7777)
+        self.expect(client, dg, isClient = True)
+
+        # Move 8888 from (6666, 400) to (5555, 400)
+        dg = Datagram.create([(6666<<ZONE_SIZE_BITS)|400], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(8888) # do_id
+        dg.add_doid(5555) # new_parent
+        dg.add_zone(400) # new_zone
+        dg.add_doid(6666) # old_parent
+        dg.add_zone(400) # old_zone
+        self.server.send(dg)
+
+        # The client should have the object disabled.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
+        dg.add_doid(8888)
+        self.expect(client, dg, isClient = True)
+
+        # Cleanup
+        self.server.flush()
+        client.close()
+
 
     def send_heartbeat(self, client):
         # Construct heartbeat datagram
