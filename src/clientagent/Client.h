@@ -29,6 +29,13 @@ struct DeclaredObject {
     const dclass::Class *dcc;
 };
 
+// An OwnedObject is used to cache metadata associated with
+// a particular object when it becomes owned by a Client.
+struct OwnedObject : DeclaredObject {
+    doid_t parent;
+    zone_t zone;
+};
+
 // A VisibleObject is used to cache metadata associated with
 // a particular object when it becomes visible to a Client.
 struct VisibleObject : DeclaredObject {
@@ -102,8 +109,6 @@ class Client : public MDParticipantInterface
     channel_t m_allocated_channel = 0;      // Channel assigned to client at creation time
     uint32_t m_next_context = 1;
 
-    // m_owned_objects is a list of all objects visible through ownership
-    std::unordered_set<doid_t> m_owned_objects;
     // m_seen_objects is a list of all objects visible through interests
     std::unordered_set<doid_t> m_seen_objects;
     // m_session_objects is a list of objects that are automatically cleaned up when the
@@ -117,6 +122,8 @@ class Client : public MDParticipantInterface
     std::unordered_map<doid_t, VisibleObject> m_visible_objects;
     // m_declared_objects is a map of declared objects to their metadata.
     std::unordered_map<doid_t, DeclaredObject> m_declared_objects;
+    // m_owned_objects is a map of all owned objects to their metadata
+    std::unordered_map<doid_t, OwnedObject> m_owned_objects;
     // m_pending_objects is a map of doids for objects that we need to buffer dg's for
     std::unordered_map<doid_t, uint32_t> m_pending_objects;
 

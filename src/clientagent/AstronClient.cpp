@@ -578,9 +578,13 @@ class AstronClient : public Client, public NetworkHandler
                             "Owned object relocation is disabled by server.", true);
             return;
         }
+
         // Check that the object the client is trying manipulate actually exists
+        // and that the client is actually allowed to change the object's location
         doid_t do_id = dgi.read_doid();
-        if(m_visible_objects.find(do_id) == m_visible_objects.end()) {
+
+        bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
+        if(!is_owned) {
             if(is_historical_object(do_id)) {
                 // The client isn't disconnected in this case because it could be a delayed
                 // message, we also have to skip to the end so a disconnect overside_datagram
@@ -588,19 +592,19 @@ class AstronClient : public Client, public NetworkHandler
                 // TODO: Allow configuration to limit how long historical objects remain,
                 //       for example with a timeout or bad-message limit.
                 dgi.skip(dgi.get_remaining());
-            } else {
+            }
+
+            else if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
+                send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE,
+                                "Can't relocate an object the client doesn't own", true);
+            }
+
+            else {
                 stringstream ss;
                 ss << "Client tried to manipulate unknown object " << do_id;
                 send_disconnect(CLIENT_DISCONNECT_MISSING_OBJECT, ss.str(), true);
             }
-            return;
-        }
 
-        // Check that the client is actually allowed to change the object's location
-        bool is_owned = m_owned_objects.find(do_id) != m_owned_objects.end();
-        if(!is_owned) {
-            send_disconnect(CLIENT_DISCONNECT_FORBIDDEN_RELOCATE,
-                            "Can't relocate an object the client doesn't own", true);
             return;
         }
 
