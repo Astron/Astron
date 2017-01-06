@@ -561,6 +561,98 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(0)
         self.expect(client, dg, isClient = True)
 
+        # Move the object, the client should receive the new location.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # parent
+        dg.add_zone(5679) # zone
+        dg.add_doid(1234) # old parent
+        dg.add_zone(5678) # old zone
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_doid(55446655)
+        dg.add_doid(1234)
+        dg.add_zone(5679)
+        self.expect(client, dg, isClient = True)
+
+        # Now, let's add interest in (1234, 5679) and (1234, 4321)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST_MULTIPLE)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_uint16(2) # Zone count
+        dg.add_zone(5679) # Zone
+        dg.add_zone(4321) # Zone
+        client.send(dg)
+
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 2)
+        self.assertEquals(set([dgi.read_zone(), dgi.read_zone()]), set([5679, 4321]))
+
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(1)
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5679) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # The client should recv CLIENT_ENTER_OBJECT_REQUIRED_OTHER for the owned object
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
+        dg.add_doid(55446655)
+        dg.add_doid(1234)
+        dg.add_zone(5679)
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.expect(client, dg, isClient = True)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(1) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # Next, let's move the object away
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # parent
+        dg.add_zone(5678) # zone
+        dg.add_doid(1234) # old parent
+        dg.add_zone(5679) # old zone
+        self.server.send(dg)
+
+        # The client should recv CLIENT_OBJECT_LEAVING for the owned object
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING)
+        dg.add_doid(55446655)
+        self.expect(client, dg, isClient = True)
+
+        # And nothing else
+        self.expectNone(client)
+
         # ownsend should be okay...
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
@@ -580,7 +672,22 @@ class TestClientAgent(ProtocolTest):
         client.send(dg)
         self.expectNone(client)
 
+        # Let's check ownrecv while we're at it
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(55446655)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello there!')
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(55446655)
+        dg.add_uint16(sendMessage)
+        dg.add_string('Hello there!')
+        self.expect(client, dg, isClient = True)
+
         # And we can relocate it...
+        self.server.send(Datagram.create_add_channel(55446655))
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_LOCATION)
         dg.add_doid(55446655) # Doid
@@ -588,6 +695,39 @@ class TestClientAgent(ProtocolTest):
         dg.add_zone(4321) # Zone
         client.send(dg)
         self.expectNone(client)
+
+        # The server replies with STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED
+        dg = self.server.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([55446655], id, STATESERVER_OBJECT_SET_LOCATION))
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_zone(), 4321)
+
+        dg = Datagram.create([(1234<<ZONE_SIZE_BITS)|4321], 55446655, STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5679) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # Hey, we have interest in (1234, 4321) -- should get our visible view back
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER)
+        dg.add_doid(55446655)
+        dg.add_doid(1234)
+        dg.add_zone(5679)
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.expect(client, dg, isClient = True)
 
         # But anything else is a no-no.
         dg = Datagram()

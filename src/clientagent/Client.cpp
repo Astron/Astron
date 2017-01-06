@@ -93,8 +93,11 @@ const Class *Client::lookup_object(doid_t do_id)
 
     // Next, check the object cache, but this client only knows about it
     // if it occurs in m_seen_objects or m_owned_objects:
-    if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
-       m_seen_objects.find(do_id) != m_seen_objects.end()) {
+    if(m_owned_objects.find(do_id) != m_owned_objects.end()) {
+        return m_owned_objects[do_id].dcc;
+    }
+
+    else if(m_seen_objects.find(do_id) != m_seen_objects.end()) {
         if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
             return m_visible_objects[do_id].dcc;
         }
@@ -245,30 +248,25 @@ void Client::close_zones(doid_t parent, const unordered_set<zone_t> &killed_zone
 
     list<doid_t> to_remove;
     for(const auto& it : m_visible_objects) {
-        const VisibleObject& visiable_object = it.second;
-        if(visiable_object.parent != parent) {
+        const VisibleObject& visible_object = it.second;
+        if(visible_object.parent != parent) {
             // Object does not belong to the parent in question; ignore.
             continue;
         }
 
-        if(killed_zones.find(visiable_object.zone) != killed_zones.end()) {
-            if(m_owned_objects.find(visiable_object.id) != m_owned_objects.end()) {
-                // Owned objects are always visible, ignore this object
-                continue;
-            }
-
-            if(m_session_objects.find(visiable_object.id) != m_session_objects.end()) {
+        if(killed_zones.find(visible_object.zone) != killed_zones.end()) {
+            if(m_session_objects.find(visible_object.id) != m_session_objects.end()) {
                 // This object is a session object. The client should be disconnected.
                 send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED,
                                 "A session object has unexpectedly left interest.");
                 return;
             }
 
-            handle_remove_object(visiable_object.id);
+            handle_remove_object(visible_object.id);
 
-            m_seen_objects.erase(visiable_object.id);
-            m_historical_objects.insert(visiable_object.id);
-            to_remove.push_back(visiable_object.id);
+            m_seen_objects.erase(visible_object.id);
+            m_historical_objects.insert(visible_object.id);
+            to_remove.push_back(visible_object.id);
         }
     }
 
@@ -547,15 +545,15 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         doid_t parent = dgi.read_doid();
         zone_t zone = dgi.read_zone();
         uint16_t dc_id = dgi.read_uint16();
-        m_owned_objects.insert(do_id);
 
-        if(m_visible_objects.find(do_id) == m_visible_objects.end()) {
-            VisibleObject obj;
+        if (m_owned_objects.find(do_id) == m_owned_objects.end())
+        {
+            OwnedObject obj;
             obj.id = do_id;
             obj.parent = parent;
             obj.zone = zone;
             obj.dcc = g_dcf->get_class_by_id(dc_id);
-            m_visible_objects[do_id] = obj;
+            m_owned_objects[do_id] = obj;
         }
 
         bool with_other = (msgtype == STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER);
@@ -651,16 +649,28 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             }
         }
 
+        bool visible = false;
         if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
+            visible = true;
             m_visible_objects[do_id].parent = n_parent;
             m_visible_objects[do_id].zone = n_zone;
-        } else {
+        }
+
+        else if(m_owned_objects.find(do_id) != m_owned_objects.end()) {
+            m_owned_objects[do_id].parent = n_parent;
+            m_owned_objects[do_id].zone = n_zone;
+        }
+
+        else {
             // We don't actually *see* this object, we're receiving this
             // message as a fluke.
             return;
         }
 
-        if(disable && m_owned_objects.find(do_id) == m_owned_objects.end()) {
+        // Disable this object if:
+        // 1 - We don't have interest in its location (i.e. disable == true)
+        // 2 - It's visible (owned objects may exist without being visible)
+        if(disable && visible) {
             if(m_session_objects.find(do_id) != m_session_objects.end()) {
                 stringstream ss;
                 ss << "The session object with id " << do_id
@@ -738,8 +748,7 @@ void Client::handle_object_entrance(DatagramIterator &dgi, bool other)
     // this object is no longer pending
     m_pending_objects.erase(do_id);
 
-    if(m_owned_objects.find(do_id) != m_owned_objects.end() ||
-       m_seen_objects.find(do_id) != m_seen_objects.end()) {
+    if(m_seen_objects.find(do_id) != m_seen_objects.end()) {
         return;
     }
 
