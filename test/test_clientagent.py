@@ -729,12 +729,60 @@ class TestClientAgent(ProtocolTest):
         dg.add_uint16(0)
         self.expect(client, dg, isClient = True)
 
-        # But anything else is a no-no.
+        # Remove thier ownership
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_doid(55446655)
+        dg.add_channel(0) # new parent
+        dg.add_channel(id) # old parent
+        self.server.send(dg)
+
+        # Expect CLIENT_OBJECT_LEAVING_OWNER
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LEAVING_OWNER)
+        dg.add_doid(55446655)
+        self.expect(client, dg, isClient = True)
+
+        # However, the object is still visible (we have an interest in its location)
+        # We should get broadcast updates
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(55446655)
+        dg.add_uint16(setColor)
+        dg.add_uint8(8)
+        dg.add_uint8(16)
+        dg.add_uint8(32)
+        self.server.send(dg)
+
         dg = Datagram()
         dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
         dg.add_doid(55446655)
-        dg.add_uint16(setName)
-        dg.add_string('Alicorn Amulet')
+        dg.add_uint16(setColor)
+        dg.add_uint8(8)
+        dg.add_uint8(16)
+        dg.add_uint8(32)
+        self.expect(client, dg, isClient = True)
+
+        # Check if clsend is okay
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(55446655)
+        dg.add_uint16(requestKill)
+        client.send(dg)
+        self.expectNone(client)
+
+        dg = self.server.recv()
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([55446655], id, STATESERVER_OBJECT_SET_FIELD))
+        self.assertEquals(dgi.read_doid(), 55446655)
+        self.assertEquals(dgi.read_uint16(), requestKill)
+
+        # But ownsend is a no-no.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(55446655)
+        dg.add_uint16(setColor)
+        dg.add_uint8(44)
+        dg.add_uint8(55)
+        dg.add_uint8(66)
         client.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_FORBIDDEN_FIELD)
 
@@ -824,6 +872,120 @@ class TestClientAgent(ProtocolTest):
         client2.send(dg)
         ## Which should cause an error
         self.assertDisconnect(client2, CLIENT_DISCONNECT_FORBIDDEN_RELOCATE)
+
+    def test_ownership_with_session(self):
+        self.server.flush()
+        client = self.connect()
+        id = self.identify(client)
+
+        # Let the client out of the sandbox...
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Give it an object that it owns.
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        # The client should receive the new object.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5678) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.expect(client, dg, isClient = True)
+
+        # Make this object a session object
+        dg = Datagram.create([id], 1, CLIENTAGENT_ADD_SESSION_OBJECT)
+        dg.add_uint32(55446655)
+        self.server.send(dg)
+
+        # Now, let's add interest in (1234, 5679)
+        dg = Datagram()
+        dg.add_uint16(CLIENT_ADD_INTEREST)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(1) # Interest id
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5679) # Zone
+        client.send(dg)
+
+        dg = self.server.recv_maybe()
+        self.assertTrue(dg is not None)
+        dgi = DatagramIterator(dg)
+        self.assertTrue(*dgi.matches_header([1234], id, STATESERVER_OBJECT_GET_ZONES_OBJECTS))
+        context = dgi.read_uint32()
+        self.assertEquals(dgi.read_doid(), 1234)
+        self.assertEquals(dgi.read_uint16(), 1)
+        self.assertEquals(dgi.read_zone(), 5679)
+
+        dg = Datagram.create([id], 1234, STATESERVER_OBJECT_GET_ZONES_COUNT_RESP)
+        dg.add_uint32(context)
+        dg.add_doid(1)
+        self.server.send(dg)
+
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER)
+        dg.add_uint32(context) # request_context
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # Parent
+        dg.add_zone(5679) # Zone
+        dg.add_uint16(DistributedClientTestObject)
+        dg.add_string('Big crown thingy')
+        dg.add_uint8(11)
+        dg.add_uint8(22)
+        dg.add_uint8(33)
+        dg.add_uint16(0)
+        self.server.send(dg)
+
+        dg = Datagram()
+        dg.add_uint16(CLIENT_DONE_INTEREST_RESP)
+        dg.add_uint32(1) # Context
+        dg.add_uint16(1) # Interest Id
+        self.expect(client, dg, isClient = True)
+
+        # The client should NOT recv CLIENT_ENTER_OBJECT_REQUIRED_OTHER for the session object
+        self.expectNone(client)
+
+        # Next, let's move the object away
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGING_LOCATION)
+        dg.add_doid(55446655)
+        dg.add_doid(1234) # parent
+        dg.add_zone(5678) # zone
+        dg.add_doid(1234) # old parent
+        dg.add_zone(5679) # old zone
+        self.server.send(dg)
+
+        # The client should recv CLIENT_OBJECT_LOCATION for the owned object
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_LOCATION)
+        dg.add_doid(55446655)
+        dg.add_doid(1234)
+        dg.add_zone(5678)
+        self.expect(client, dg, isClient = True)
+
+        # But not CLIENT_OBJECT_LEAVING
+        self.expectNone(client)
+
+        # Remove thier ownership
+        dg = Datagram.create([id], 1, STATESERVER_OBJECT_CHANGING_OWNER)
+        dg.add_doid(55446655)
+        dg.add_channel(0) # new parent
+        dg.add_channel(id) # old parent
+        self.server.send(dg)
+        self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
+        
 
     def test_postremove(self):
         self.server.flush()
