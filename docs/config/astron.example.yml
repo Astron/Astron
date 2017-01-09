@@ -87,6 +87,7 @@ roles:
         # This is a feature specific to the Astron client, a custom client class
         # could define its own set of configuration values.
         relocate: true # Default: false
+        add_interest: enabled
       # Channels defines the range of channels this clientagent can assign to Clients
       channels:
           min: 100100
@@ -107,8 +108,8 @@ roles:
           min: 100000000 # Required (no default)
           #max: 200000000 # Default: DOID_T_MAX (UINT_MAX)
       backend:
-          type: bdb
-          filename: main_database.db
+          type: bdb # Other database types can be used, such as yaml.
+          directory: main_database.db
 
     # We will then create a database state server which provides state-server-like
     #     behavior on database objects.  The dbss does not have a control channel,
