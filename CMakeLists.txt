@@ -93,6 +93,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	list(APPEND EXTRA_LIBS pthread rt)
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")		### FreeBSD does not use -lrt
+	set(CMAKE_CXX_FLAGS "-pthread")
+endif()
+
 ### YAML Depedency -- required by config, used by yaml database ###
 set(YAMLCPP_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
 find_package(YamlCpp REQUIRED)
