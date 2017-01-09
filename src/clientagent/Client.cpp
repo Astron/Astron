@@ -649,33 +649,45 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             }
         }
 
-        bool visible = false;
-        if(m_visible_objects.find(do_id) != m_visible_objects.end()) {
-            visible = true;
-            m_visible_objects[do_id].parent = n_parent;
-            m_visible_objects[do_id].zone = n_zone;
-        }
+        bool visible = m_visible_objects.find(do_id) != m_visible_objects.end();
+        bool owned = m_owned_objects.find(do_id) != m_owned_objects.end();
 
-        else if(m_owned_objects.find(do_id) != m_owned_objects.end()) {
-            m_owned_objects[do_id].parent = n_parent;
-            m_owned_objects[do_id].zone = n_zone;
-        }
-
-        else {
+        if (!visible && !owned) {
             // We don't actually *see* this object, we're receiving this
             // message as a fluke.
             return;
         }
 
+        bool session = m_session_objects.find(do_id) != m_session_objects.end();
+
+        if(visible) {
+            m_visible_objects[do_id].parent = n_parent;
+            m_visible_objects[do_id].zone = n_zone;
+        }
+
+        if(owned) {
+            m_owned_objects[do_id].parent = n_parent;
+            m_owned_objects[do_id].zone = n_zone;
+        }
+
         // Disable this object if:
         // 1 - We don't have interest in its location (i.e. disable == true)
         // 2 - It's visible (owned objects may exist without being visible)
+        // 3 - If it's owned, it isn't a session object
         if(disable && visible) {
-            if(m_session_objects.find(do_id) != m_session_objects.end()) {
-                stringstream ss;
-                ss << "The session object with id " << do_id
-                   << " has unexpectedly left interest.";
-                send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+            if(session) {
+                if (owned) {
+                    // Owned session object: do not disable, but send CLIENT_OBJECT_LOCATION
+                    handle_change_location(do_id, n_parent, n_zone);
+                }
+
+                else {
+                    stringstream ss;
+                    ss << "The session object with id " << do_id
+                       << " has unexpectedly left interest.";
+                    send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+                }
+
                 return;
             }
 
@@ -683,7 +695,9 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             m_seen_objects.erase(do_id);
             m_historical_objects.insert(do_id);
             m_visible_objects.erase(do_id);
-        } else {
+        }
+
+        else {
             handle_change_location(do_id, n_parent, n_zone);
         }
     }
@@ -705,20 +719,19 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
             return;
         }
 
-        if(m_seen_objects.find(do_id) == m_seen_objects.end()) {
-            if(m_session_objects.find(do_id) != m_session_objects.end()) {
-                stringstream ss;
-                ss << "The session object with id " << do_id
-                   << " has unexpectedly left ownership.";
-                send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
-                return;
-            }
-
-            handle_remove_ownership(do_id);
-            m_owned_objects.erase(do_id);
-            m_historical_objects.insert(do_id);
-            m_visible_objects.erase(do_id);
+        // If it's a session object, disconnect the client
+        if(m_session_objects.find(do_id) != m_session_objects.end()) {
+            stringstream ss;
+            ss << "The session object with id " << do_id
+               << " has unexpectedly left ownership.";
+            send_disconnect(CLIENT_DISCONNECT_SESSION_OBJECT_DELETED, ss.str());
+            return;
         }
+
+        // N.B.: This object visible might be still visible through an interest.
+        // We don't have to touch it, just remove the ownership
+        handle_remove_ownership(do_id);
+        m_owned_objects.erase(do_id);        
     }
     break;
     default:
@@ -749,6 +762,11 @@ void Client::handle_object_entrance(DatagramIterator &dgi, bool other)
     m_pending_objects.erase(do_id);
 
     if(m_seen_objects.find(do_id) != m_seen_objects.end()) {
+        return;
+    }
+
+    if(m_owned_objects.find(do_id) != m_owned_objects.end()
+       && m_session_objects.find(do_id) != m_session_objects.end()) {
         return;
     }
 
