@@ -375,7 +375,12 @@ class AstronClient : public Client, public NetworkHandler
     {
         uint16_t msg_type = dgi.read_uint16();
         if(msg_type != CLIENT_HELLO) {
-            send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "First packet is not CLIENT_HELLO");
+            if(msg_type == 24) {
+                send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "Astron is not a Toontown server");
+                printf("Astron is not a Toontown server.\n");
+            } else {
+                send_disconnect(CLIENT_DISCONNECT_NO_HELLO, "First packet is not CLIENT_HELLO");
+            }
             return;
         }
 

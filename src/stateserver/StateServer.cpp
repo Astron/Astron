@@ -27,6 +27,7 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
         m_log = std::unique_ptr<LogCategory>(new LogCategory("stateserver", name.str()));
         set_con_name(name.str());
     }
+    MessageDirector::singleton.subscribe_channel(this, BCHAN_STATESERVERS);
 }
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
