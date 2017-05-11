@@ -41,8 +41,8 @@ class SociSQLDatabase : public OldDatabaseBackend
         m_log = new LogCategory(m_backend, log_name.str());
 
         string server = database_address.get_rval(dbeconfig);
-        int col_index = server.find_last_of(":");
-        int sqr_index = server.find_last_of("]");
+        size_t col_index = server.find_last_of(":");
+        size_t sqr_index = server.find_last_of("]");
         if(col_index != string::npos && col_index > sqr_index) {
             m_db_host = server.substr(0, col_index);
             m_db_port = stoi(server.substr(col_index + 1));
@@ -554,7 +554,7 @@ class SociSQLDatabase : public OldDatabaseBackend
         // Get next available id from m_free_ids set
         interval_t first = *m_free_ids.begin();
         doid_t id = first.lower();
-        if(!(first.bounds().bits() & BOOST_BINARY(10))) {
+        if(!(first.bounds().bits() & 2)) {
             id += 1;
         }
 
