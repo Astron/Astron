@@ -3,7 +3,6 @@
 #include "Client.h"
 
 #include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 
 #include <memory>
 
@@ -40,18 +39,10 @@ class ClientAgent final : public Role
                     const boost::asio::ip::tcp::endpoint &remote,
                     const boost::asio::ip::tcp::endpoint &local);
 
-    // handle_ssl generates a new Client object from an ssl stream.
-    void handle_ssl(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
-                    const boost::asio::ip::tcp::endpoint &remote,
-                    const boost::asio::ip::tcp::endpoint &local);
-
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,
     // and delegates everything to the Client objects.
     void handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi);
-
-    // ssl_password_callback prompts for password on stdin if the cert/key has a password
-    std::string ssl_password_callback();
 
     const std::string& get_version() const
     {
@@ -78,8 +69,4 @@ class ClientAgent final : public Role
     uint32_t m_hash;
 
     unsigned long m_interest_timeout;
-
-    boost::asio::ssl::context m_ssl_ctx;
-    std::string m_ssl_cert;
-    std::string m_ssl_key;
 };

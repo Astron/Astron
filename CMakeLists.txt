@@ -391,8 +391,6 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
-	src/net/SslAcceptor.cpp
-	src/net/SslAcceptor.h
 )
 
 include_directories(src)

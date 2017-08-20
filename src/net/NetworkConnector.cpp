@@ -37,17 +37,3 @@ tcp::socket *NetworkConnector::connect(const std::string &address,
 
     return socket;
 }
-
-ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address,
-        unsigned int default_port, ssl::context *ctx, boost::system::error_code &ec)
-{
-    ssl::stream<tcp::socket> *socket = new ssl::stream<tcp::socket>(m_io_service, *ctx);
-    do_connect(socket->next_layer(), address, default_port, ec);
-
-    if(ec.value() != 0) {
-        delete socket;
-        return nullptr;
-    }
-
-    return socket;
-}
