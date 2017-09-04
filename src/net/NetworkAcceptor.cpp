@@ -1,54 +1,19 @@
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
-#include <boost/bind.hpp>
 
-NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
-    m_io_service(io_service),
-    m_acceptor(io_service),
-    m_started(false)
+NetworkAcceptor::NetworkAcceptor() :
+    m_started(false),
+    m_loop(nullptr),
+    m_acceptor(nullptr)
 {
+    m_loop = uvw::Loop::getDefault();
 }
 
-boost::system::error_code NetworkAcceptor::bind(const std::string &address,
+void NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
-    boost::system::error_code ec;
-
-    auto addresses = resolve_address(address, default_port, m_io_service, ec);
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    for(const auto& it : addresses) {
-        if(m_acceptor.is_open()) {
-            m_acceptor.close();
-        }
-
-        m_acceptor.open(it.protocol(), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.bind(it, ec);
-        if(ec.value() == 0) {
-            break;
-        }
-    }
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    m_acceptor.listen(tcp::socket::max_connections, ec);
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    return ec;
+    m_acceptor = m_loop->resource<uvw::TcpHandle>();
+    m_acceptor->bind(address.c_str(), default_port);
 }
 
 void NetworkAcceptor::start()
@@ -60,7 +25,13 @@ void NetworkAcceptor::start()
 
     m_started = true;
 
+    // Sets up the handlers for accepting peers.
     start_accept();
+
+    // Start listening for inbound connections.
+    m_acceptor->listen();
+
+    m_loop->run();
 }
 
 void NetworkAcceptor::stop()
@@ -72,5 +43,5 @@ void NetworkAcceptor::stop()
 
     m_started = false;
 
-    m_acceptor.cancel();
+    m_acceptor->close();
 }
