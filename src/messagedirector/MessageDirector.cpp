@@ -186,7 +186,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
     }
 
     // Find the participants that need to receive the message
-    std::set<ChannelSubscriber*> receiving_participants;
+    std::unordered_set<ChannelSubscriber*> receiving_participants;
     lookup_channels(channels, receiving_participants);
     if(p) {
         receiving_participants.erase(p);

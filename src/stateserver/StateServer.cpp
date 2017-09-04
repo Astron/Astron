@@ -64,7 +64,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)
 {
     channel_t ai_channel = dgi.read_channel();
-    std::set <channel_t> targets;
+    std::unordered_set<channel_t> targets;
     for(const auto& it : m_objs) {
         if(it.second && it.second->m_ai_channel == ai_channel && it.second->m_ai_explicitly_set) {
             targets.insert(it.second->m_do_id);

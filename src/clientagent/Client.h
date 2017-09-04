@@ -66,7 +66,7 @@ class InterestOperation
     uint32_t m_request_context;
     doid_t m_parent;
     std::unordered_set<zone_t> m_zones;
-    std::set<channel_t> m_callers;
+    std::unordered_set<channel_t> m_callers;
 
     std::shared_ptr<Timeout> m_timeout;
 

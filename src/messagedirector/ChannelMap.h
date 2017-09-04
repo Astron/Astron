@@ -1,6 +1,6 @@
 #pragma once
 #include <list>
-#include <set>
+#include <unordered_set>
 #include <unordered_map>
 #include <mutex>
 #include "core/types.h"
@@ -11,7 +11,7 @@ class ChannelSubscriber
   public:
     virtual ~ChannelSubscriber() {}
 
-    inline std::set<channel_t> &channels()
+    inline std::unordered_set<channel_t> &channels()
     {
         return m_channels;
     }
@@ -21,7 +21,7 @@ class ChannelSubscriber
     }
 
   private:
-    std::set<channel_t> m_channels; // The set of all individually subscribed channels.
+    std::unordered_set<channel_t> m_channels; // The set of all individually subscribed channels.
     boost::icl::interval_set<channel_t> m_ranges; // The set of all subscribed channel ranges.
 };
 
@@ -60,10 +60,10 @@ class ChannelMap
     bool is_subscribed(ChannelSubscriber *p, channel_t c);
 
     // lookup_channel populates a set with the subscribers for a channel.
-    void lookup_channel(channel_t c, std::set<ChannelSubscriber *> &ps);
+    void lookup_channel(channel_t c, std::unordered_set<ChannelSubscriber *> &ps);
 
     // lookup_channels is the same, but it works on a list of channels.
-    void lookup_channels(const std::list<channel_t> &cl, std::set<ChannelSubscriber *> &ps);
+    void lookup_channels(const std::list<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps);
 
   protected:
     virtual void on_add_channel(channel_t) { }
@@ -76,10 +76,10 @@ class ChannelMap
 
   private:
     // Single channel subscriptions
-    std::unordered_map<channel_t, std::set<ChannelSubscriber *> > m_channel_subscriptions;
+    std::unordered_map<channel_t, std::unordered_set<ChannelSubscriber *> > m_channel_subscriptions;
 
     // Range channel subscriptions
-    boost::icl::interval_map<channel_t, std::set<ChannelSubscriber *> > m_range_subscriptions;
+    boost::icl::interval_map<channel_t, std::unordered_set<ChannelSubscriber *> > m_range_subscriptions;
 
     // In order to make this object thread-safe...
     std::recursive_mutex m_lock;
