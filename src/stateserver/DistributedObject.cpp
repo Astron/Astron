@@ -1,5 +1,5 @@
 #include "DistributedObject.h"
-#include <set>
+#include <unordered_set>
 #include "core/global.h"
 #include "core/msgtypes.h"
 #include "dclass/dc/Class.h"
@@ -177,7 +177,7 @@ void DistributedObject::handle_location_change(doid_t new_parent, zone_t new_zon
     zone_t old_zone = m_zone_id;
 
     // Set of channels that must be notified about location_change
-    set<channel_t> targets;
+    unordered_set<channel_t> targets;
 
     // Notify AI of changing location
     if(m_ai_channel) {
@@ -257,7 +257,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
     }
 
     // Set of channels that must be notified about ai_change
-    set<channel_t> targets;
+    unordered_set<channel_t> targets;
 
     if(old_ai) {
         targets.insert(old_ai);
@@ -285,7 +285,7 @@ void DistributedObject::handle_ai_change(channel_t new_ai, channel_t sender,
 
 void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 {
-    set<channel_t> targets;
+    unordered_set<channel_t> targets;
     if(m_parent_id) {
         targets.insert(location_as_channel(m_parent_id, m_zone_id));
         // Leave parent on explicit delete ram
@@ -379,7 +379,7 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
         save_field(field, data);
     }
 
-    set<channel_t> targets;
+    unordered_set<channel_t> targets;
     if(field->has_keyword("broadcast")) {
         targets.insert(location_as_channel(m_parent_id, m_zone_id));
     }
@@ -829,7 +829,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     case STATESERVER_GET_ACTIVE_ZONES: {
         uint32_t context = dgi.read_uint32();
 
-        std::set<zone_t> keys;
+        std::unordered_set<zone_t> keys;
 
         for(auto kv : m_zone_objects) {
             keys.insert(kv.first);
@@ -840,7 +840,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         dg->add_uint32(context);
         dg->add_uint16(keys.size());
 
-        std::set<zone_t>::iterator it;
+        std::unordered_set<zone_t>::iterator it;
         for(it = keys.begin(); it != keys.end(); ++it) {
             dg->add_zone(*it);
         }

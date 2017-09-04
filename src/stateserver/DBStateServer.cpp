@@ -172,7 +172,7 @@ void DBStateServer::handle_delete_disk(channel_t sender, DatagramIterator& dgi)
     auto obj_keyval = m_objs.find(do_id);
     if(obj_keyval != m_objs.end()) {
         DistributedObject* obj = obj_keyval->second;
-        std::set<channel_t> targets;
+        std::unordered_set<channel_t> targets;
 
         // Add location to broadcast
         if(obj->get_location()) {

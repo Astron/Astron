@@ -1,6 +1,6 @@
 #pragma once
 #include <list>
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <queue>
 #include <thread>
@@ -62,8 +62,8 @@ class MessageDirector final : public ChannelMap
     MDUpstream *m_upstream;
 
     // Connected participants
-    std::set<MDParticipantInterface*> m_participants;
-    std::set<MDParticipantInterface*> m_terminated_participants;
+    std::unordered_set<MDParticipantInterface*> m_participants;
+    std::unordered_set<MDParticipantInterface*> m_terminated_participants;
 
     // Threading stuff:
     bool m_shutdown;
@@ -205,7 +205,7 @@ class MDParticipantInterface : public ChannelSubscriber
 
   private:
     // The messages to be distributed on unexpected disconnect.
-    std::map<channel_t, std::vector<DatagramHandle> > m_post_removes;
+    std::unordered_map<channel_t, std::vector<DatagramHandle> > m_post_removes;
     std::atomic<bool> m_is_terminated {false};
     std::string m_name;
     std::string m_url;

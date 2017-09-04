@@ -1,5 +1,5 @@
 #pragma once
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -126,7 +126,7 @@ class Datagram
 
     // server-header-constructor(multi-target):
     //     creates a new datagram initialized with a server header (accepts a set of receivers)
-    Datagram(const std::set<channel_t> &to_channels, channel_t from_channel,
+    Datagram(const std::unordered_set<channel_t> &to_channels, channel_t from_channel,
              uint16_t message_type) : buf(new uint8_t[64]), buf_cap(64), buf_offset(0)
     {
         add_server_header(to_channels, from_channel, message_type);
@@ -184,7 +184,7 @@ class Datagram
         return dg_ptr;
     }
 
-    static DatagramPtr create(const std::set<channel_t> &to_channels,
+    static DatagramPtr create(const std::unordered_set<channel_t> &to_channels,
                               channel_t from_channel,
                               uint16_t message_type)
     {
@@ -445,7 +445,7 @@ class Datagram
         add_channel(from);
         add_uint16(message_type);
     }
-    void add_server_header(const std::set<channel_t> &to, channel_t from, uint16_t message_type)
+    void add_server_header(const std::unordered_set<channel_t> &to, channel_t from, uint16_t message_type)
     {
         add_uint8(to.size());
         for(auto it = to.begin(); it != to.end(); ++it) {
