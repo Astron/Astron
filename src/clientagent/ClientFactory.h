@@ -9,9 +9,9 @@ class BaseClientType
 {
   public:
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ip::tcp::socket *socket,
-                                const boost::asio::ip::tcp::endpoint &remote,
-                                const boost::asio::ip::tcp::endpoint &local) = 0;
+                                SocketPtr socket,
+                                const uvw::Addr &remote,
+                                const uvw::Addr &local) = 0;
   protected:
     BaseClientType(const std::string &name);
 };
@@ -27,9 +27,9 @@ class ClientType : public BaseClientType
     }
 
     virtual Client* instantiate(ConfigNode config, ClientAgent* client_agent,
-                                boost::asio::ip::tcp::socket *socket,
-                                const boost::asio::ip::tcp::endpoint &remote,
-                                const boost::asio::ip::tcp::endpoint &local)
+                                SocketPtr socket,
+                                const uvw::Addr &remote,
+                                const uvw::Addr &local)
     {
         return new T(config, client_agent, socket, remote, local);
     }
@@ -43,9 +43,9 @@ class ClientFactory
 
     // instantiate_client creates a new Client object of type 'client_type'.
     Client* instantiate_client(const std::string &client_type, ConfigNode config,
-                               ClientAgent* client_agent, boost::asio::ip::tcp::socket *socket,
-                               const boost::asio::ip::tcp::endpoint &remote,
-                               const boost::asio::ip::tcp::endpoint &local);
+                               ClientAgent* client_agent, SocketPtr socket,
+                               const uvw::Addr &remote,
+                               const uvw::Addr &local);
     // add_client_type adds a factory for client of type 'name'
     // It is called automatically when instantiating a new ClientType.
     void add_client_type(const std::string &name, BaseClientType *factory);

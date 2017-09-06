@@ -1,54 +1,28 @@
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
-#include <boost/bind.hpp>
+#include "core/shutdown.h"
 
-NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
-    m_io_service(io_service),
-    m_acceptor(io_service),
-    m_started(false)
+#include <iostream>
+
+NetworkAcceptor::NetworkAcceptor() : m_started(false)
 {
+    auto loop = uvw::Loop::getDefault();
+    m_acceptor = loop->resource<uvw::TcpHandle>();
+    m_acceptor->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent& error, const auto&) {
+        this->error_callback(error);
+    });
 }
 
-boost::system::error_code NetworkAcceptor::bind(const std::string &address,
+bool NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
-    boost::system::error_code ec;
-
-    auto addresses = resolve_address(address, default_port, m_io_service, ec);
-    if(ec.value() != 0) {
-        return ec;
+    auto addr = resolve_address(address, default_port);
+    if(addr.ip == "") {
+        return false;
     }
 
-    for(const auto& it : addresses) {
-        if(m_acceptor.is_open()) {
-            m_acceptor.close();
-        }
-
-        m_acceptor.open(it.protocol(), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.bind(it, ec);
-        if(ec.value() == 0) {
-            break;
-        }
-    }
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    m_acceptor.listen(tcp::socket::max_connections, ec);
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    return ec;
+    m_acceptor->bind(addr);
+    return true;
 }
 
 void NetworkAcceptor::start()
@@ -72,5 +46,11 @@ void NetworkAcceptor::stop()
 
     m_started = false;
 
-    m_acceptor.cancel();
+    m_acceptor->stop();
+}
+
+void NetworkAcceptor::error_callback(const uvw::ErrorEvent& err)
+{
+    std::cerr << "Acceptor error: " << err.what() << std::endl;
+    astron_shutdown(1);
 }

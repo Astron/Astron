@@ -8,13 +8,13 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 #include "ChannelMap.h"
 #include "core/global.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
 #include "net/NetworkAcceptor.h"
+#include "net/SocketWrapper.h"
 
 class MDParticipantInterface;
 class MDUpstream;
@@ -27,9 +27,10 @@ class MessageDirector final : public ChannelMap
   public:
     ~MessageDirector();
 
-    // init_network causes the MessageDirector to start listening for
-    //     messages if it hasn't already been initialized.
+    // init_network causes the MessageDirector to connect to upstream (if any)
+    //    then start listening.
     void init_network();
+    void start_listening();
     static MessageDirector singleton;
 
     // route_datagram accepts any Astron message (a Datagram), and
@@ -45,7 +46,7 @@ class MessageDirector final : public ChannelMap
 
     // For MDUpstream (and subclasses) to call.
     void receive_datagram(DatagramHandle dg);
-    void receive_disconnect(const boost::system::error_code &ec);
+    void receive_disconnect(const uvw::ErrorEvent &error);
 
   protected:
     void on_add_channel(channel_t c);
@@ -88,7 +89,7 @@ class MessageDirector final : public ChannelMap
     void recall_post_removes(channel_t sender);
 
     // I/O OPERATIONS
-    void handle_connection(boost::asio::ip::tcp::socket *socket);
+    void handle_connection(SocketPtr socket, const uvw::Addr& remote);
 };
 
 

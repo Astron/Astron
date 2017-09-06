@@ -1,6 +1,6 @@
 #pragma once
-#include <boost/asio.hpp>
-using boost::asio::ip::tcp;
+
+#include <uvw.hpp>
 
 class NetworkAcceptor
 {
@@ -9,7 +9,7 @@ class NetworkAcceptor
 
     // Parses the string "address" and binds to it. If no port is specified
     // as part of the address, it will use default_port.
-    boost::system::error_code bind(const std::string &address, unsigned int default_port);
+    bool bind(const std::string &address, unsigned int default_port);
 
     void start();
     void stop();
@@ -20,12 +20,13 @@ class NetworkAcceptor
     }
 
   protected:
-    boost::asio::io_service &m_io_service;
-    tcp::acceptor m_acceptor;
+    void error_callback(const uvw::ErrorEvent& err);
+
+    std::shared_ptr<uvw::TcpHandle> m_acceptor;
     bool m_started;
     bool m_haproxy_mode = false;
 
-    NetworkAcceptor(boost::asio::io_service&);
+    NetworkAcceptor();
 
     virtual void start_accept() = 0;
 };

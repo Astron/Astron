@@ -1,21 +1,24 @@
 #pragma once
 #include "NetworkAcceptor.h"
-#include <functional>
+#include "SocketWrapper.h"
 
-typedef std::function<void(tcp::socket*, tcp::endpoint, tcp::endpoint)> TcpAcceptorCallback;
+#include <functional>
+#include <uvw.hpp>
+
+typedef std::function<void(SocketPtr, uvw::Addr, uvw::Addr)> TcpAcceptorCallback;
 
 class TcpAcceptor : public NetworkAcceptor
 {
   public:
-    TcpAcceptor(boost::asio::io_service &io_service,
-                TcpAcceptorCallback &callback);
+    TcpAcceptor(TcpAcceptorCallback callback);
     virtual ~TcpAcceptor() {}
 
   private:
     TcpAcceptorCallback m_callback;
 
     virtual void start_accept();
-    void handle_accept(tcp::socket *socket, const boost::system::error_code &ec);
-    void handle_endpoints(tcp::socket *socket, const boost::system::error_code &ec,
-                          const tcp::endpoint &remote, const tcp::endpoint &local);
+    void handle_accept(std::shared_ptr<uvw::TcpHandle> socket);
+    void handle_endpoints(SocketPtr socket,
+                          const uvw::Addr &remote,
+                          const uvw::Addr &local);
 };

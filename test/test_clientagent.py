@@ -4,7 +4,6 @@ from socket import socket, AF_INET, SOCK_STREAM, error as socket_error
 from common.unittests import ProtocolTest
 from common.astron import *
 from common.dcfile import *
-from common.tls import *
 
 CONFIG = """\
 messagedirector:
@@ -34,7 +33,6 @@ roles:
       client:
           relocate: true
           add_interest: enabled
-          write_buffer_size: 0
           write_timeout_ms: 0
       tuning:
           interest_timeout: 500
@@ -47,7 +45,6 @@ roles:
           max: 110699
       client:
           add_interest: disabled
-          write_buffer_size: 0
           write_timeout_ms: 0
 
     - type: clientagent
@@ -55,7 +52,6 @@ roles:
       version: "Sword Art Online v5.1"
       client:
           add_interest: visible
-          write_buffer_size: 0
           write_timeout_ms: 0
       channels:
           min: 220600
@@ -108,13 +104,11 @@ class TestClientAgent(ProtocolTest):
                 s.close()
                 return
 
-    def connect(self, do_hello=True, port=57128, tls_opts=None, proxy_header=None):
+    def connect(self, do_hello=True, port=57128, proxy_header=None):
         s = socket(AF_INET, SOCK_STREAM)
         s.connect(('127.0.0.1', port))
         if proxy_header is not None:
             s.send(proxy_header)
-        if tls_opts is not None:
-            s = ssl.wrap_socket(s,**tls_opts)
 
         client = ClientConnection(s)
 
@@ -431,7 +425,9 @@ class TestClientAgent(ProtocolTest):
         client = self.connect()
         dg = Datagram()
         client.send(dg)
-        self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
+        # TODO: Rewrite this line to be less ugly.
+        # Check that the connection closes with no other data.
+        self.assertEqual(client.s.recv(1024), '')
 
         # Really truncated datagram:
         client = self.connect()
@@ -963,7 +959,7 @@ class TestClientAgent(ProtocolTest):
         dg.add_channel(id) # old parent
         self.server.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
-        
+
 
     def test_postremove(self):
         self.server.flush()

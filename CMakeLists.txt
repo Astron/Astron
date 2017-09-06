@@ -62,22 +62,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Xcode)
-	add_definitions(-std=c++0x -stdlib=libc++)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_definitions(-std=c++11)
+	add_definitions(-stdlib=libc++)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	execute_process(COMMAND "${CMAKE_C_COMPILER}" -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	message(STATUS "GCC Version: ${GCC_VERSION}")
-	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-		add_definitions(-std=c++11) # Enable the new C++ standard
-	else()
-		add_definitions(-std=c++0x) # Enable the new C++ standard
-	endif()
 endif()
+
+### uwv requires c++14 ###
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 ### Debug Flags -- compile in spam/debug log messages ###
@@ -117,9 +112,12 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-### SSL Dependency -- required by Boost::ASIO's SSL library
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
+### UVW Dependency ###
+find_package(UV REQUIRED)
+find_package(UVW REQUIRED)
+
+include_directories(${UV_INCLUDE_DIR})
+include_directories(${UVW_INCLUDE_DIR})
 
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
@@ -372,8 +370,6 @@ set(UTIL_FILES
 	src/util/DatagramIterator.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
-	src/util/password_prompt.cpp
-	src/util/password_prompt.h
 	src/util/Timeout.cpp
 	src/util/Timeout.h
 )
@@ -391,6 +387,8 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
+	src/net/SocketWrapper.h
+	src/net/SocketWrapper.cpp
 )
 
 include_directories(src)
@@ -447,7 +445,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${UV_LIBRARY} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

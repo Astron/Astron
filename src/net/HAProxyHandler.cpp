@@ -1,5 +1,5 @@
 #include "HAProxyHandler.h"
-#include <boost/bind.hpp>
+#include <boost/asio.hpp> // For boost::asio::ip;
 #include <cstring>
 
 using namespace boost::asio::ip;
@@ -11,18 +11,16 @@ static const uint8_t haproxy_signature_v2[] = {
     0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
 };
 
-void HAProxyHandler::async_process(tcp::socket *socket, ProxyCallback &callback)
+void HAProxyHandler::async_process(SocketPtr socket, ProxyCallback callback)
 {
     HAProxyHandler *handler = new HAProxyHandler(socket, callback);
     handler->begin();
 }
 
-HAProxyHandler::HAProxyHandler(tcp::socket *socket, ProxyCallback &callback) :
+HAProxyHandler::HAProxyHandler(SocketPtr socket, ProxyCallback callback) :
     m_socket(socket), m_callback(callback)
 {
-    boost::system::error_code ec;
-    m_remote = m_socket->remote_endpoint(ec);
-    m_local = m_socket->local_endpoint(ec);
+    m_socket->determine_endpoints(m_remote, m_local);
 }
 
 HAProxyHandler::~HAProxyHandler()
@@ -34,35 +32,22 @@ HAProxyHandler::~HAProxyHandler()
 
 void HAProxyHandler::begin()
 {
-    async_read(*m_socket, boost::asio::buffer(m_header_buf, HAPROXY_HEADER_MIN),
-               boost::bind(&HAProxyHandler::handle_header, this,
-                           boost::asio::placeholders::error,
-                           boost::asio::placeholders::bytes_transferred));
+    m_socket->read(HAPROXY_HEADER_MIN, [this](std::vector<uint8_t>& data) {
+        std::copy(data.begin(), data.end(), this->m_header_buf);
+        this->handle_header();
+    });
 }
 
-void HAProxyHandler::handle_header(const boost::system::error_code &ec, size_t bytes_transferred)
+void HAProxyHandler::handle_header()
 {
-    if(ec) {
-        // Something happened, abort!
-        finish(ec);
-        return;
-    }
-
-    if(bytes_transferred != HAPROXY_HEADER_MIN) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
-                                        boost::system::system_category());
-        finish(epipe);
-        return;
-    }
-
     if(!memcmp(m_header_buf, haproxy_signature_v2, sizeof(haproxy_signature_v2))) {
         // Yay, it's a binary proxy header! These are easy to process:
         m_body_len = (m_header_buf[14] << 8) | m_header_buf[15];
         m_body_buf = new uint8_t[m_body_len];
-        async_read(*m_socket, boost::asio::buffer(m_body_buf, m_body_len),
-                   boost::bind(&HAProxyHandler::handle_v2, this,
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::bytes_transferred));
+        m_socket->read(m_body_len, [this](std::vector<uint8_t>& data) {
+            std::copy(data.begin(), data.end(), this->m_body_buf);
+            this->handle_v2();
+        });
     } else if(!memcmp(m_header_buf, haproxy_signature_v1, sizeof(haproxy_signature_v1))) {
         // This is the ASCII version (begins with "PROXY ", terminated by
         // "\r\n"). These are harder to process, since we don't know how much
@@ -72,36 +57,22 @@ void HAProxyHandler::handle_header(const boost::system::error_code &ec, size_t b
         // into the read buffer after we take it out.
 
         // This function deals with it.
-        handle_v1(ec, bytes_transferred);
+        m_header_len += HAPROXY_HEADER_MIN;
+        handle_v1();
     } else {
         // Couldn't recognize any proxy header.
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
     }
 }
 
-void HAProxyHandler::handle_v2(const boost::system::error_code &ec, size_t bytes_transferred)
+void HAProxyHandler::handle_v2()
 {
-    if(ec) {
-        // Something happened, abort!
-        finish(ec);
-        return;
-    }
-
-    if(bytes_transferred != m_body_len) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
-                                        boost::system::system_category());
-        finish(epipe);
-        return;
-    }
-
     parse_v2();
 }
 
 void HAProxyHandler::parse_v2()
 {
-    boost::system::error_code no_error;
+    uvw::ErrorEvent no_error(0);
 
     int version = (m_header_buf[12] >> 4) & 0xF;
     int command = (m_header_buf[12]) & 0xF;
@@ -109,23 +80,17 @@ void HAProxyHandler::parse_v2()
     int transp  = (m_header_buf[13]) & 0xF;
 
     if(version != 2) {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
     if(family != 0x1 && family != 0x2) {
-        boost::system::error_code eafnosupport(boost::system::errc::errc_t::address_family_not_supported,
-                                               boost::system::system_category());
-        finish(eafnosupport);
+        finish(uvw::ErrorEvent{(int)UV_EAFNOSUPPORT});
         return;
     }
 
     if(transp != 0x1) {
-        boost::system::error_code eprotonosupport(boost::system::errc::errc_t::protocol_not_supported,
-                boost::system::system_category());
-        finish(eprotonosupport);
+        finish(uvw::ErrorEvent{(int)UV_EPROTONOSUPPORT});
         return;
     }
 
@@ -136,17 +101,13 @@ void HAProxyHandler::parse_v2()
     }
 
     if(command != 0x1) {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
     if((family == 0x1 && m_body_len < 12) ||
        (family == 0x2 && m_body_len < 36)) {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
@@ -163,8 +124,8 @@ void HAProxyHandler::parse_v2()
         memcpy(address_bytes.data(), &m_body_buf[4], 4);
         address_v4 local_v4(address_bytes);
 
-        remote_address = remote_v4;
-        local_address = local_v4;
+        m_remote.ip = remote_v4.to_string();
+        m_local.ip = local_v4.to_string();
 
         port_offset = 8;
     } else {
@@ -176,37 +137,20 @@ void HAProxyHandler::parse_v2()
         memcpy(address_bytes.data(), &m_body_buf[16], 16);
         address_v6 local_v6(address_bytes);
 
-        remote_address = remote_v6;
-        local_address = local_v6;
+        m_remote.ip = remote_v6.to_string();
+        m_local.ip = local_v6.to_string();
 
         port_offset = 32;
     }
 
-    int remote_port = m_body_buf[port_offset] << 8 | m_body_buf[port_offset + 1];
-    int local_port = m_body_buf[port_offset + 2] << 8 | m_body_buf[port_offset + 3];
+    m_remote.port = m_body_buf[port_offset] << 8 | m_body_buf[port_offset + 1];
+    m_local.port = m_body_buf[port_offset + 2] << 8 | m_body_buf[port_offset + 3];
 
-    m_remote = tcp::endpoint(remote_address, remote_port);
-    m_local = tcp::endpoint(local_address, local_port);
     finish(no_error);
 }
 
-void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes_transferred)
+void HAProxyHandler::handle_v1()
 {
-    if(ec) {
-        // Something happened, abort!
-        finish(ec);
-        return;
-    }
-
-    if(bytes_transferred == 0) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
-                                        boost::system::system_category());
-        finish(epipe);
-        return;
-    }
-
-    m_header_len += bytes_transferred;
-
     // See if we got a '\n', indicating the end of the proxy header:
     if(memchr(m_header_buf, '\n', m_header_len) != nullptr) {
         parse_v1();
@@ -214,9 +158,7 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
     }
 
     if(m_header_len >= HAPROXY_HEADER_MAX) {
-        boost::system::error_code eoverflow(boost::system::errc::errc_t::value_too_large,
-                                            boost::system::system_category());
-        finish(eoverflow);
+        finish(uvw::ErrorEvent{(int)UV_EAI_OVERFLOW});
         return;
     }
     size_t remaining_size = HAPROXY_HEADER_MAX - m_header_len;
@@ -237,21 +179,18 @@ void HAProxyHandler::handle_v1(const boost::system::error_code &ec, size_t bytes
                 read_size -= 2;
     }
 
-    async_read(*m_socket,
-               boost::asio::buffer(&m_header_buf[m_header_len],
-                                   std::min(read_size, remaining_size)),
-               boost::bind(&HAProxyHandler::handle_v1, this,
-                           boost::asio::placeholders::error,
-                           boost::asio::placeholders::bytes_transferred));
+    m_socket->read(std::min(read_size, remaining_size), [this](std::vector<uint8_t>& data) {
+        std::copy(data.begin(), data.end(), &this->m_header_buf[this->m_header_len]);
+        this->m_header_len += data.size();
+        this->handle_v1();
+    });
 }
 
 void HAProxyHandler::parse_v1()
 {
     if((m_header_buf[m_header_len - 2] != '\r') ||
        (m_header_buf[m_header_len - 1] != '\n')) {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
@@ -265,36 +204,27 @@ void HAProxyHandler::parse_v1()
     const char *dstport = strtok(NULL, "\r");
 
     if(dstport == nullptr) {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
-    address remote_address;
-    address local_address;
-
-    if(!strcmp(tcp, "TCP4")) {
-        remote_address = address_v4::from_string(srcip);
-        local_address = address_v4::from_string(dstip);
-    } else if(!strcmp(tcp, "TCP6")) {
-        remote_address = address_v6::from_string(srcip);
-        local_address = address_v6::from_string(dstip);
-    } else {
-        boost::system::error_code eproto(boost::system::errc::errc_t::protocol_error,
-                                         boost::system::system_category());
-        finish(eproto);
+    if(strcmp(tcp, "TCP4") && strcmp(tcp, "TCP6")) {
+        finish(uvw::ErrorEvent{(int)UV_EPROTO});
         return;
     }
 
-    boost::system::error_code no_error;
-    m_remote = tcp::endpoint(remote_address, atoi(srcport));
-    m_local = tcp::endpoint(local_address, atoi(dstport));
+    m_remote.ip = std::string(srcip);
+    m_remote.port = atoi(srcport);
+
+    m_local.ip = std::string(dstip);
+    m_local.port = atoi(dstport);
+
+    uvw::ErrorEvent no_error(0);
     finish(no_error);
 }
 
-void HAProxyHandler::finish(const boost::system::error_code &ec)
+void HAProxyHandler::finish(const uvw::ErrorEvent& error)
 {
-    m_callback(ec, m_remote, m_local);
+    m_callback(error, m_remote, m_local);
     delete this;
 }

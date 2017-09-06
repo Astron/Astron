@@ -39,7 +39,6 @@ class TestConfigClientAgent(ConfigTest):
                   client:
                       type: libastron
                       add_interest: disabled
-                      write_buffer_size: 262144
                       write_timeout_ms: 20
                   channels:
                       min: 110600
@@ -51,7 +50,6 @@ class TestConfigClientAgent(ConfigTest):
                   client:
                       type: libastron
                       add_interest: visible
-                      write_buffer_size: 0
                       write_timeout_ms: 0
                   channels:
                       min: 220600
