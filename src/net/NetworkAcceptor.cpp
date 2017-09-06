@@ -13,7 +13,12 @@ void NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
     m_acceptor = m_loop->resource<uvw::TcpHandle>();
-    m_acceptor->bind(address.c_str(), default_port);
+
+    std::vector<uvw::Addr> addresses = resolve_address(address, default_port, m_loop);
+
+    for (uvw::Addr& addr : addresses) {
+	    m_acceptor->bind(addr);
+    }
 }
 
 void NetworkAcceptor::start()
