@@ -74,6 +74,7 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 ### Debug Flags -- compile in spam/debug log messages ###
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
@@ -386,6 +387,8 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
+	src/net/SocketWrapper.h
+	src/net/SocketWrapper.cpp
 )
 
 include_directories(src)

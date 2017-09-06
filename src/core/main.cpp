@@ -6,6 +6,7 @@
 #include "dclass/dc/Class.h"
 using dclass::Class;
 
+#include <uvw/loop.hpp>
 #include <boost/filesystem.hpp>
 #include <cstring>
 #include <string>  // std::string
@@ -33,6 +34,8 @@ static void printCompiledOptions(ostream &s);
 
 int main(int argc, char *argv[])
 {
+     auto loop = uvw::Loop::getDefault();
+
     string cfg_file;
 
 #ifdef _WIN32
@@ -221,7 +224,7 @@ int main(int argc, char *argv[])
     // Run the main event loop
     int exit_code = 0;
     try {
-        io_service.run();
+        loop->run();
     }
 
     // This exception is propogated if astron_shutdown is called

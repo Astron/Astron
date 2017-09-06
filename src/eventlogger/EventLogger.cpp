@@ -17,6 +17,9 @@ static ValidAddressConstraint valid_bind_addr(bind_addr);
 EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
     m_log("eventlogger", "Event Logger"), m_file(nullptr)
 {
+    auto loop = uvw::Loop::getDefault();
+    m_socket = loop->resource<uvw::UDPHandle>();
+
     bind(bind_addr.get_rval(roleconfig));
 
     m_file_format = output_format.get_rval(roleconfig);
@@ -32,15 +35,19 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 void EventLogger::bind(const std::string &addr)
 {
     m_log.info() << "Opening UDP socket..." << std::endl;
-    boost::system::error_code ec;
-    auto addresses = resolve_address(addr, 7197, io_service, ec);
-    if(ec.value() != 0) {
+    auto address = resolve_address(addr, 7197);
+    if(address.ip == "") {
         m_log.fatal() << "Couldn't resolve " << addr << std::endl;
         exit(1);
     }
 
-    m_socket.reset((new udp::socket(io_service,
-                        udp::endpoint(addresses[0].address(), addresses[0].port()))));
+    m_socket->bind(address);
+    m_socket->on<uvw::UDPDataEvent>([this](const auto& event, auto&) {
+        this->handle_receive(event);
+    });
+    m_socket->on<uvw::ErrorEvent>([this](const auto& error, auto&) {
+        this->handle_error(error);
+    });
 }
 
 void EventLogger::open_log()
@@ -78,14 +85,12 @@ void EventLogger::process_packet(DatagramHandle dg)
     try {
         msgpack_decode(stream, dgi);
     } catch(DatagramIteratorEOF&) {
-        m_log.error() << "Received truncated packet from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+        m_log.error() << "Received truncated packet" << std::endl;
         return;
     }
 
     if(dgi.tell() != dg->size()) {
-        m_log.error() << "Received packet with extraneous data from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+        m_log.error() << "Received packet with extraneous data" << std::endl;
         return;
     }
 
@@ -97,9 +102,7 @@ void EventLogger::process_packet(DatagramHandle dg)
     // easiest way to do this is to make sure that the JSON representation
     // begins with {
     if(data[0] != '{') {
-        m_log.error() << "Received non-map event log from "
-                      << m_remote.address() << ":" << m_remote.port()
-                      << ": " << data << std::endl;
+        m_log.error() << "Received non-map event log: " << data << std::endl;
         return;
     }
 
@@ -115,29 +118,21 @@ void EventLogger::process_packet(DatagramHandle dg)
 
 void EventLogger::start_receive()
 {
-    m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
-                                 m_remote, boost::bind(&EventLogger::handle_receive, this,
-                                         boost::asio::placeholders::error,
-                                         boost::asio::placeholders::bytes_transferred));
+    m_socket->recv();
 }
 
-void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)
+void EventLogger::handle_receive(const uvw::UDPDataEvent& event)
 {
-    if(ec.value()) {
-        m_log.warning() << "While receiving packet from "
-                        << m_remote.address() << ":" << m_remote.port()
-                        << ", an error occurred: "
-                        << ec.value() << std::endl;
-        return;
-    }
-
     m_log.trace() << "Got packet from "
-                  << m_remote.address() << ":" << m_remote.port() << std::endl;
+                  << event.sender.ip << ":" << event.sender.port << std::endl;
 
-    DatagramPtr dg = Datagram::create(m_buffer, bytes);
+    DatagramPtr dg = Datagram::create(std::string(event.data.get(), event.length));
     process_packet(dg);
+}
 
-    start_receive();
+void EventLogger::handle_error(const uvw::ErrorEvent& error)
+{
+    m_log.warning() << "While receiving packet: " << error.what() << std::endl;
 }
 
 static RoleFactoryItem<EventLogger> el_fact("eventlogger");

@@ -1,39 +1,40 @@
 #include "NetworkConnector.h"
 #include "address_utils.h"
 
-NetworkConnector::NetworkConnector(boost::asio::io_service &io_service) : m_io_service(io_service)
+NetworkConnector::NetworkConnector(ConnectCallback callback) : m_callback(callback),
+  m_socket(nullptr)
 {
 }
 
-void NetworkConnector::do_connect(tcp::socket &socket, const std::string &address,
-                                  uint16_t port, boost::system::error_code &ec)
+NetworkConnector::~NetworkConnector()
 {
-    std::vector<tcp::endpoint> addresses = resolve_address(address, port, m_io_service, ec);
+    m_socket = nullptr;
+}
 
-    if(ec.value() != 0) {
+void NetworkConnector::do_connect(const std::string &address, uint16_t port)
+{
+    m_socket->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent &error, uvw::TcpHandle &) {
+        this->m_callback(nullptr, error);
+    });
+    m_socket->once<uvw::ConnectEvent>([this](const uvw::ConnectEvent &, uvw::TcpHandle &) {
+        uvw::ErrorEvent noerror(0);
+        auto sock = std::make_shared<SocketWrapper>(this->m_socket);
+        sock->initialize();
+        this->m_callback(sock, noerror);
+    });
+
+    auto addr = resolve_address(address, port);
+    if (addr.ip == "") {
+        m_callback(nullptr, uvw::ErrorEvent{(int)UV_EINVAL});
         return;
     }
 
-    for(auto it = addresses.begin(); it != addresses.end(); ++it) {
-        socket.connect(*it, ec);
-
-        if(ec.value() == 0) {
-            return;
-        }
-    }
+    m_socket->connect(addr);
 }
 
-tcp::socket *NetworkConnector::connect(const std::string &address,
-                                       unsigned int default_port,
-                                       boost::system::error_code &ec)
+void NetworkConnector::connect(const std::string &address, unsigned int default_port)
 {
-    tcp::socket* socket = new tcp::socket(m_io_service);
-    do_connect(*socket, address, default_port, ec);
-
-    if(ec.value() != 0) {
-        delete socket;
-        return nullptr;
-    }
-
-    return socket;
+    auto loop = uvw::Loop::getDefault();
+    m_socket = loop->resource<uvw::TcpHandle>();
+    do_connect(address, default_port);
 }

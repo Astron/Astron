@@ -2,7 +2,7 @@
 #include "core/Role.h"
 #include "Client.h"
 
-#include <boost/asio.hpp>
+#include <uvw.hpp>
 
 #include <memory>
 
@@ -35,9 +35,9 @@ class ClientAgent final : public Role
     ClientAgent(RoleConfig rolconfig);
 
     // handle_tcp generates a new Client object from a raw tcp connection.
-    void handle_tcp(boost::asio::ip::tcp::socket *socket,
-                    const boost::asio::ip::tcp::endpoint &remote,
-                    const boost::asio::ip::tcp::endpoint &local);
+    void handle_tcp(SocketPtr socket,
+                    const uvw::Addr &remote,
+                    const uvw::Addr &local);
 
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,

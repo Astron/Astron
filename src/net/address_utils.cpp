@@ -1,5 +1,7 @@
 #include "address_utils.h"
 
+#include <boost/asio.hpp> // For validate_ip
+
 #include <algorithm>
 
 static bool split_port(std::string &ip, uint16_t &port)
@@ -31,15 +33,6 @@ static bool split_port(std::string &ip, uint16_t &port)
     }
 
     return true;
-}
-
-static address parse_address(const std::string &ip, boost::system::error_code &ec)
-{
-    if(ip[0] == '[' && ip[ip.length() - 1] == ']') {
-        return address::from_string(ip.substr(1, ip.length() - 2), ec);
-    } else {
-        return address::from_string(ip, ec);
-    }
 }
 
 static bool validate_hostname(const std::string &hostname)
@@ -78,6 +71,13 @@ static bool validate_hostname(const std::string &hostname)
     return true;
 }
 
+static bool validate_ip(const std::string &ip)
+{
+    boost::system::error_code ec;
+    boost::asio::ip::address::from_string(ip, ec);
+    return ec.value() == 0;
+}
+
 bool is_valid_address(const std::string &hostspec)
 {
     std::string host = hostspec;
@@ -87,21 +87,13 @@ bool is_valid_address(const std::string &hostspec)
         return false;
     }
 
-    boost::system::error_code ec;
-    parse_address(host, ec);
-
-    if(ec.value() == 0) {
-        return true;
-    } else {
-        return validate_hostname(host);
-    }
+    return validate_ip(host) || validate_hostname(host);
 }
 
-std::vector<tcp::endpoint> resolve_address(
-    const std::string &hostspec, uint16_t port,
-    boost::asio::io_service &io_service, boost::system::error_code &ec)
+uvw::Addr resolve_address(
+    const std::string &hostspec, uint16_t port)
 {
-    std::vector<tcp::endpoint> ret;
+    uvw::Addr ret;
 
     std::string host = hostspec;
 
@@ -109,21 +101,9 @@ std::vector<tcp::endpoint> resolve_address(
         return ret;
     }
 
-    address addr = parse_address(host, ec);
-    if(ec.value() == 0) {
-        tcp::endpoint ep(addr, port);
-        ret.push_back(ep);
-    } else {
-        tcp::resolver resolver(io_service);
-        tcp::resolver::query query(host, std::to_string(port));
-
-        tcp::resolver::iterator it = resolver.resolve(query, ec);
-        tcp::resolver::iterator end;
-
-        while(it != end) {
-            ret.push_back(*it++);
-        }
-    }
+    // TODO: ipv6 and hostname support
+    ret.ip = host;
+    ret.port = port;
 
     return ret;
 }

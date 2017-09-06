@@ -4,9 +4,10 @@
 #include "net/address_utils.h"
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
-    m_socket(io_service, udp::v4()), m_enabled(false)
+  m_enabled(false)
 {
-
+    auto loop = uvw::Loop::getDefault();
+    m_socket = loop->resource<uvw::UDPHandle>();
 }
 
 void EventSender::init(const std::string& target)
@@ -18,14 +19,12 @@ void EventSender::init(const std::string& target)
     }
 
     m_log.debug() << "Resolving target..." << std::endl;
-    boost::system::error_code ec;
-    auto addresses = resolve_address(target, 7197, io_service, ec);
-    if(ec.value() != 0) {
+    m_target = resolve_address(target, 7197);
+    if(m_target.ip == "") {
         m_log.fatal() << "Couldn't resolve " << target << std::endl;
         exit(1);
     }
 
-    m_target = udp::endpoint(addresses[0].address(), addresses[0].port());
     m_enabled = true;
 
     m_log.debug() << "Initialized." << std::endl;
@@ -39,8 +38,10 @@ void EventSender::send(DatagramHandle dg)
     }
 
     m_log.trace() << "Sending event..." << std::endl;
-    m_socket.send_to(boost::asio::buffer(dg->get_data(), dg->size()),
-                     m_target);
+
+    auto data = std::make_unique<char[]>(dg->size());
+    std::copy_n((const char*)dg->get_data(), dg->size(), data.get());
+    m_socket->send(m_target, std::move(data), dg->size());
 }
 
 // And now the convenience class:

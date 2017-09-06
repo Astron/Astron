@@ -9,7 +9,6 @@
 #include "dclass/file/hash.h"
 #include "net/TcpAcceptor.h"
 using namespace std;
-namespace filesystem = boost::filesystem;
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
@@ -69,36 +68,34 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     ConfigNode tuning = clientagent_config.get_child_node(tuning_config, roleconfig);
     m_interest_timeout = interest_timeout.get_rval(tuning);
 
-    TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp, this,
-                                             std::placeholders::_1,
-                                             std::placeholders::_2,
-                                             std::placeholders::_3);
-    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
+    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor([this](
+                                 SocketPtr socket,
+                                 const uvw::Addr &remote,
+                                 const uvw::Addr &local) {
+        this->handle_tcp(socket, remote, local);
+    }));
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
     // Begin listening for new Clients
-    boost::system::error_code ec;
-    ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
-    if(ec.value() != 0) {
+    if (!m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198))
+    {
         m_log->fatal() << "Could not bind listening port: "
                        << bind_addr.get_val() << std::endl;
-        m_log->fatal() << "Error code: " << ec.value()
-                       << "(" << ec.category().message(ec.value()) << ")\n";
         astron_shutdown(1);
     }
     m_net_acceptor->start();
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
-void ClientAgent::handle_tcp(tcp::socket *socket,
-                             const tcp::endpoint &remote,
-                             const tcp::endpoint &local)
+void ClientAgent::handle_tcp(SocketPtr socket,
+                             const uvw::Addr &remote,
+                             const uvw::Addr &local)
 {
     m_log->debug() << "Got an incoming connection from "
-                   << remote.address() << ":" << remote.port() << "\n";
+                   << remote.ip << ":" << remote.port << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote,
-            local);
+    ClientFactory::singleton().instantiate_client(m_client_type,
+        m_clientconfig, this, socket, remote, local);
 }
 
 // handle_datagram handles Datagrams received from the message director.

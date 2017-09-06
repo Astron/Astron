@@ -33,7 +33,6 @@ roles:
       client:
           relocate: true
           add_interest: enabled
-          write_buffer_size: 0
           write_timeout_ms: 0
       tuning:
           interest_timeout: 500
@@ -46,7 +45,6 @@ roles:
           max: 110699
       client:
           add_interest: disabled
-          write_buffer_size: 0
           write_timeout_ms: 0
 
     - type: clientagent
@@ -54,7 +52,6 @@ roles:
       version: "Sword Art Online v5.1"
       client:
           add_interest: visible
-          write_buffer_size: 0
           write_timeout_ms: 0
       channels:
           min: 220600
@@ -436,7 +433,9 @@ class TestClientAgent(ProtocolTest):
         client = self.connect()
         dg = Datagram()
         client.send(dg)
-        self.assertDisconnect(client, CLIENT_DISCONNECT_TRUNCATED_DATAGRAM)
+        # TODO: Rewrite this line to be less ugly.
+        # Check that the connection closes with no other data.
+        self.assertEqual(client.s.recv(1024), '')
 
         # Really truncated datagram:
         client = self.connect()
