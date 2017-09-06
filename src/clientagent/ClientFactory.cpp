@@ -1,6 +1,5 @@
 #include "ClientFactory.h"
 using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
 
 BaseClientType::BaseClientType(const std::string &name)
 {
@@ -34,15 +33,6 @@ Client* ClientFactory::instantiate_client(const std::string &client_type, Config
 {
     if(m_factories.find(client_type) != m_factories.end()) {
         return m_factories[client_type]->instantiate(config, client_agent, socket, remote, local);
-    }
-    return nullptr;
-}
-Client* ClientFactory::instantiate_client(const std::string &client_type, ConfigNode config,
-        ClientAgent* client_agent, ssl::stream<tcp::socket> *stream,
-        const tcp::endpoint &remote, const tcp::endpoint &local)
-{
-    if(m_factories.find(client_type) != m_factories.end()) {
-        return m_factories[client_type]->instantiate(config, client_agent, stream, remote, local);
     }
     return nullptr;
 }

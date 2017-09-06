@@ -117,10 +117,6 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-### SSL Dependency -- required by Boost::ASIO's SSL library
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
-
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
@@ -372,8 +368,6 @@ set(UTIL_FILES
 	src/util/DatagramIterator.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
-	src/util/password_prompt.cpp
-	src/util/password_prompt.h
 	src/util/Timeout.cpp
 	src/util/Timeout.h
 )
@@ -391,8 +385,6 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
-	src/net/SslAcceptor.cpp
-	src/net/SslAcceptor.h
 )
 
 include_directories(src)
@@ -449,7 +441,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

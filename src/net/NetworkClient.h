@@ -3,7 +3,6 @@
 #include <queue>
 #include <mutex>
 #include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include "util/Datagram.h"
 
 // NOTES:
@@ -11,7 +10,7 @@
 // Do not subclass NetworkClient. Instead, you should implement NetworkHandler
 // and instantiate NetworkClient with std::make_shared.
 //
-// To begin receiving, pass it an ASIO socket or SSL stream via initialize().
+// To begin receiving, pass it an ASIO socket via initialize().
 //
 // You must not destruct your NetworkHandler implementor until
 // receive_disconnect is called!
@@ -48,18 +47,6 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     {
         std::unique_lock<std::mutex> lock(m_mutex);
         initialize(socket, remote, local, lock);
-    }
-    inline void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        initialize(stream, lock);
-    }
-    inline void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
-                           const boost::asio::ip::tcp::endpoint &remote,
-                           const boost::asio::ip::tcp::endpoint &local)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        initialize(stream, remote, local, lock);
     }
 
     void set_write_timeout(unsigned int timeout);
@@ -99,12 +86,6 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     void initialize(boost::asio::ip::tcp::socket *socket,
                     std::unique_lock<std::mutex> &lock);
     void initialize(boost::asio::ip::tcp::socket *socket,
-                    const boost::asio::ip::tcp::endpoint &remote,
-                    const boost::asio::ip::tcp::endpoint &local,
-                    std::unique_lock<std::mutex> &lock);
-    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
-                    std::unique_lock<std::mutex> &lock);
-    void initialize(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream,
                     const boost::asio::ip::tcp::endpoint &remote,
                     const boost::asio::ip::tcp::endpoint &local,
                     std::unique_lock<std::mutex> &lock);
@@ -150,7 +131,6 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
     NetworkHandler *m_handler;
     boost::asio::ip::tcp::socket *m_socket;
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *m_secure_socket;
     boost::asio::ip::tcp::endpoint m_remote;
     boost::asio::ip::tcp::endpoint m_local;
     boost::asio::deadline_timer m_async_timer;

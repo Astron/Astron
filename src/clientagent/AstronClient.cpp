@@ -14,8 +14,6 @@ using namespace std;
 using dclass::Class;
 using dclass::Field;
 using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
-
 
 static ConfigGroup astronclient_config("libastron", ca_client_config);
 static ConfigVariable<bool> relocate_owned("relocate", false, astronclient_config);
@@ -71,21 +69,6 @@ class AstronClient : public Client, public NetworkHandler
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         m_client->initialize(socket, remote, local);
-
-        initialize();
-    }
-
-    AstronClient(ConfigNode config, ClientAgent* client_agent,
-                 ssl::stream<tcp::socket> *stream,
-                 const tcp::endpoint &remote, const tcp::endpoint &local) :
-        Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
-        m_config(config),
-        m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
-        m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config)),
-        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
-    {
-        m_client->initialize(stream, remote, local);
 
         initialize();
     }

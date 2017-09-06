@@ -5,10 +5,8 @@
 #include "config/ConfigVariable.h"
 using namespace std;
 using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
-    m_secure_socket(nullptr),
     m_async_timer(io_service), m_send_queue()
 {
 }
@@ -17,14 +15,8 @@ NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     assert(!is_connected(lock));
-    if(m_secure_socket) {
-        // This also deletes m_socket:
-        delete m_secure_socket;
-    } else {
-        // ONLY delete m_socket if we must do so directly. If it's wrapped in
-        // an SSL stream, the stream "owns" the socket.
-        delete m_socket;
-    }
+
+    delete m_socket;
 
     delete [] m_data_buf;
     delete [] m_send_buf;
@@ -61,31 +53,6 @@ void NetworkClient::initialize(tcp::socket *socket,
     m_local = local;
 
     initialize(socket, lock);
-}
-
-void NetworkClient::initialize(ssl::stream<tcp::socket> *stream, std::unique_lock<std::mutex> &lock)
-{
-    if(m_socket) {
-        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
-    }
-
-    m_secure_socket = stream;
-
-    initialize(&stream->next_layer(), lock);
-}
-
-void NetworkClient::initialize(ssl::stream<tcp::socket> *stream,
-                               const tcp::endpoint &remote,
-                               const tcp::endpoint &local,
-                               std::unique_lock<std::mutex> &lock)
-{
-    if(m_socket) {
-        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
-    }
-
-    m_secure_socket = stream;
-
-    initialize(&stream->next_layer(), remote, local, lock);
 }
 
 bool NetworkClient::determine_endpoints(tcp::endpoint &remote, tcp::endpoint &local,
@@ -313,17 +280,10 @@ void NetworkClient::send_expired(const boost::system::error_code& ec)
 void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback,
                                 std::unique_lock<std::mutex> &)
 {
-    if(m_secure_socket) {
-        async_read(*m_secure_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, shared_from_this(),
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::bytes_transferred));
-    } else {
-        async_read(*m_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, shared_from_this(),
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::bytes_transferred));
-    }
+    async_read(*m_socket, boost::asio::buffer(buf, length),
+               boost::bind(callback, shared_from_this(),
+                           boost::asio::placeholders::error,
+                           boost::asio::placeholders::bytes_transferred));
 }
 
 void NetworkClient::socket_write(const uint8_t* buf, size_t length, std::unique_lock<std::mutex> &)
@@ -335,14 +295,7 @@ void NetworkClient::socket_write(const uint8_t* buf, size_t length, std::unique_
                                              boost::asio::placeholders::error));
     }
 
-    // Start async write
-    if(m_secure_socket) {
-        async_write(*m_secure_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                                boost::asio::placeholders::error));
-    } else {
-        async_write(*m_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                                boost::asio::placeholders::error));
-    }
+    async_write(*m_socket, boost::asio::buffer(buf, length),
+                boost::bind(&NetworkClient::send_finished, shared_from_this(),
+                            boost::asio::placeholders::error));
 }
