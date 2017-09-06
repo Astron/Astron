@@ -15,6 +15,7 @@ using dclass::Class;
 using dclass::Field;
 using boost::asio::ip::tcp;
 
+
 static ConfigGroup astronclient_config("libastron", ca_client_config);
 static ConfigVariable<bool> relocate_owned("relocate", false, astronclient_config);
 static ConfigVariable<string> interest_permissions("add_interest", "visible", astronclient_config);

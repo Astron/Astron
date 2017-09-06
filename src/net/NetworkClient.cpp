@@ -6,6 +6,7 @@ using namespace std;
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler),
    m_socket(nullptr), m_disconnect_error(0)
+
 {
     auto loop = uvw::Loop::getDefault();
     m_async_timer = loop->resource<uvw::TimerHandle>();
@@ -15,7 +16,7 @@ NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     assert(!is_connected(lock));
-
+ 
     m_socket->clear();
     m_socket = nullptr;
 }

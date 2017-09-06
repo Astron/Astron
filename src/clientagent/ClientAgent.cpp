@@ -1,7 +1,5 @@
 #include "ClientAgent.h"
 #include "ClientFactory.h"
-
-#include <boost/filesystem.hpp>
 #include "core/global.h"
 #include "core/shutdown.h"
 #include "core/RoleFactory.h"
@@ -9,6 +7,7 @@
 #include "dclass/file/hash.h"
 #include "net/TcpAcceptor.h"
 using namespace std;
+
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);
@@ -74,6 +73,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                  const uvw::Addr &local) {
         this->handle_tcp(socket, remote, local);
     }));
+
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
     // Begin listening for new Clients
@@ -97,6 +97,7 @@ void ClientAgent::handle_tcp(SocketPtr socket,
     ClientFactory::singleton().instantiate_client(m_client_type,
         m_clientconfig, this, socket, remote, local);
 }
+
 
 // handle_datagram handles Datagrams received from the message director.
 void ClientAgent::handle_datagram(DatagramHandle, DatagramIterator&)

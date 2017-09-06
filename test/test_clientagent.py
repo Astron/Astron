@@ -66,14 +66,6 @@ roles:
           max: 440649
 
     - type: clientagent
-      bind: 127.0.0.1:57224
-      version: "Sword Art Online v5.1"
-      haproxy: true
-      channels:
-          min: 440650
-          max: 440699
-
-    - type: clientagent
       bind: 127.0.0.1:51201
       version: "Sword Art Online v5.1"
       channels:
@@ -3347,10 +3339,9 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10010))
 
-        for test_id in xrange(8):
+        for test_id in xrange(4):
             proto_v2 = bool(test_id&1)
             ipv6 = bool(test_id&2)
-            tls = bool(test_id&4)
 
             if ipv6:
                 source_ip = '2001:db8::1'

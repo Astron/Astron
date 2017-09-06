@@ -12,6 +12,7 @@
 // and instantiate NetworkClient with std::make_shared.
 //
 // To begin receiving, pass it a socket via initialize().
+
 //
 // You must not destruct your NetworkHandler implementor until
 // receive_disconnect is called!
@@ -128,11 +129,11 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     bool m_is_data = false;
 
     NetworkHandler *m_handler;
-
     SocketPtr m_socket;
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::shared_ptr<uvw::TimerHandle> m_async_timer;
+
     dgsize_t m_data_size = 0;
 
     unsigned int m_write_timeout = 0;
