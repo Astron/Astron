@@ -26,7 +26,7 @@ class NetworkHandler
     virtual void receive_datagram(DatagramHandle dg) = 0;
     // receive_disconnect is called when the remote host closes the
     //     connection or otherwise when the tcp connection is lost.
-    virtual void receive_disconnect(const uvw::ErrorEvent&) = 0;
+    virtual void receive_disconnect(const uvw::ErrorEvent &) = 0;
 
     friend class NetworkClient;
 };
@@ -44,8 +44,8 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     }
 
     inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket, 
-                           uvw::Addr& remote,
-                           uvw::Addr& local)
+                           const uvw::Addr& remote,
+                           const uvw::Addr& local)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
         initialize(socket, remote, local, lock);
@@ -62,6 +62,11 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     {
         std::unique_lock<std::mutex> lock(m_mutex);
         disconnect(ec, lock);
+    }
+
+    inline void disconnect()
+    {
+        disconnect((uv_errno_t)0);
     }
 
     // handle_disconnect closes the TCP connection and informs the NetworkHandler.
@@ -113,11 +118,10 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     bool determine_endpoints(uvw::Addr &remote,
                              uvw::Addr &local);
 
-    // async_receive is called by initialize() to begin receiving data, then by receive_size
-    //     or receive_data to wait for the next set of data.
-    void async_receive();
+    // start_receive is called by initialize() to begin receiving data.
+    void start_receive();
 
-    void socket_write(const uint8_t* buf, size_t length, std::unique_lock<std::mutex> &lock);
+    void socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &lock);
 
     void handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
 
@@ -125,10 +129,11 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     void process_datagram(const std::unique_ptr<char[]>& data, size_t length);
 
     bool m_is_sending = false;
-    uint8_t *m_send_buf = nullptr;
+    char *m_send_buf = nullptr;
 
     NetworkHandler *m_handler;
     std::shared_ptr<uvw::TcpHandle> m_socket;
+    std::shared_ptr<uvw::TimerHandle> m_async_timer;
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;

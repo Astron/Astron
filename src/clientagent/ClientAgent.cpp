@@ -73,33 +73,24 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                    std::placeholders::_1,
                                    std::placeholders::_2,
                                    std::placeholders::_3);
-    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
+    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(loop, callback));
 
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
     // Begin listening for new Clients
-    boost::system::error_code ec;
-    ec = m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
-    if(ec.value() != 0) {
-        m_log->fatal() << "Could not bind listening port: "
-                       << bind_addr.get_val() << std::endl;
-        m_log->fatal() << "Error code: " << ec.value()
-                       << "(" << ec.category().message(ec.value()) << ")\n";
-        astron_shutdown(1);
-    }
+    m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
     m_net_acceptor->start();
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
-void ClientAgent::handle_tcp(tcp::socket *socket,
-                             const tcp::endpoint &remote,
-                             const tcp::endpoint &local)
+void ClientAgent::handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
+                             const uvw::Addr &remote,
+                             const uvw::Addr &local)
 {
     m_log->debug() << "Got an incoming connection from "
-                   << remote.address() << ":" << remote.port() << "\n";
+                   << remote.ip << ":" << remote.port << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote,
-            local);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote, local);
 }
 
 

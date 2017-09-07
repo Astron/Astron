@@ -51,17 +51,8 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
-            boost::system::error_code ec;
-            ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
-            if(ec.value() != 0) {
-                m_log.fatal() << "Could not bind listening port: "
-                              << bind_addr.get_val() << std::endl;
-                m_log.fatal() << "Error code: " << ec.value()
-                              << "(" << ec.category().message(ec.value()) << ")"
-                              << std::endl;
-                exit(1);
-            }
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(loop, callback));
+            m_net_acceptor->bind(bind_addr.get_val(), 7199);
             m_net_acceptor->start();
         }
 
@@ -71,16 +62,7 @@ void MessageDirector::init_network()
 
             MDNetworkUpstream *upstream = new MDNetworkUpstream(this);
 
-            boost::system::error_code ec;
-            ec = upstream->connect(connect_addr.get_val());
-            if(ec.value() != 0) {
-                m_log.fatal() << "Could not connect to remote MD at IP: "
-                              << connect_addr.get_val() << std::endl;
-                m_log.fatal() << "Error code: " << ec.value()
-                              << "(" << ec.category().message(ec.value()) << ")"
-                              << std::endl;
-                exit(1);
-            }
+            upstream->connect(connect_addr.get_val());
 
             m_upstream = upstream;
         }
@@ -267,12 +249,11 @@ void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
     }
 }
 
-void MessageDirector::handle_connection(tcp::socket *socket)
+void MessageDirector::handle_connection(const std::shared_ptr<uvw::TcpHandle> &socket)
 {
-    boost::asio::ip::tcp::endpoint remote;
-    remote = socket->remote_endpoint();
+    uvw::Addr remote = socket->peer();
     m_log.info() << "Got an incoming connection from "
-                 << remote.address() << ":" << remote.port() << std::endl;
+                 << remote.ip << ":" << remote.port << std::endl;
     new MDNetworkParticipant(socket); // It deletes itself when connection is lost
 }
 
@@ -333,8 +314,8 @@ void MessageDirector::receive_datagram(DatagramHandle dg)
     route_datagram(nullptr, dg);
 }
 
-void MessageDirector::receive_disconnect(const boost::system::error_code &ec)
+void MessageDirector::receive_disconnect(const uvw::ErrorEvent &evt)
 {
-    m_log.fatal() << "Lost connection to upstream md: " << ec.message() << std::endl;
+    m_log.fatal() << "Lost connection to upstream md: " << evt.what() << std::endl;
     exit(1);
 }

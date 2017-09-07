@@ -1,23 +1,21 @@
 #pragma once
-#include <boost/asio.hpp>
+#include <deps/uvw/uvw.hpp>
 
-using boost::asio::ip::tcp;
+typedef std::function<void(const std::shared_ptr<uvw::TcpHandle> &)> ConnectCallback;
 
 class NetworkConnector
 {
   public:
-    NetworkConnector(boost::asio::io_service &io_service);
-
     // Parses the string "address" and connects to it. If no port is specified
     // as part of the address, it will use default_port.
-    // The return value will either be a freshly-allocated socket, or nullptr.
-    // If the return value is nullptr, the error code will be set to indicate
-    // the reason that the connect failed.
-    tcp::socket *connect(const std::string &address, unsigned int default_port,
-                         boost::system::error_code &ec);
-  private:
-    boost::asio::io_service &m_io_service;
+    // The provided callback will be invoked with the created socket post-connection.
 
-    void do_connect(tcp::socket &socket, const std::string &address,
-                    uint16_t port, boost::system::error_code &ec);
+    NetworkConnector(const std::shared_ptr<uvw::Loop> &loop);
+    void connect(const std::string &address, unsigned int default_port,
+                         ConnectCallback callback);
+  private:
+    std::shared_ptr<uvw::Loop> m_loop;
+    ConnectCallback connect_callback;
+
+    void do_connect(const std::shared_ptr<uvw::TcpHandle> &socket, const std::string &address, uint16_t port);
 };

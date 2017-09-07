@@ -1,12 +1,11 @@
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
 
-NetworkAcceptor::NetworkAcceptor() :
-    m_started(false),
-    m_loop(nullptr),
-    m_acceptor(nullptr)
+NetworkAcceptor::NetworkAcceptor(const std::shared_ptr<uvw::Loop>& loop) :
+    m_loop(loop),
+    m_acceptor(nullptr),
+    m_started(false)
 {
-    m_loop = uvw::Loop::getDefault();
 }
 
 void NetworkAcceptor::bind(const std::string &address,
@@ -35,8 +34,6 @@ void NetworkAcceptor::start()
 
     // Start listening for inbound connections.
     m_acceptor->listen();
-
-    m_loop->run();
 }
 
 void NetworkAcceptor::stop()

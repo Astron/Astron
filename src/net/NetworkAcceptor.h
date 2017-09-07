@@ -20,13 +20,13 @@ class NetworkAcceptor
     }
 
   protected:
-    std::shared_ptr<uvw::TcpHandle> m_acceptor;
     std::shared_ptr<uvw::Loop> m_loop;
+    std::shared_ptr<uvw::TcpHandle> m_acceptor;
 
-    bool m_started;
+    bool m_started = false;
     bool m_haproxy_mode = false;
 
-    NetworkAcceptor();
+    NetworkAcceptor(const std::shared_ptr<uvw::Loop>&);
 
     virtual void start_accept() = 0;
 };

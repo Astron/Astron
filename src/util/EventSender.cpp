@@ -19,13 +19,9 @@ void EventSender::init(const std::string& target)
 
     m_log.debug() << "Resolving target..." << std::endl;
     boost::system::error_code ec;
-    auto addresses = resolve_address(target, 7197, io_service, ec);
-    if(ec.value() != 0) {
-        m_log.fatal() << "Couldn't resolve " << target << std::endl;
-        exit(1);
-    }
+    auto addresses = resolve_address(target, 7197, loop);
 
-    m_target = udp::endpoint(addresses[0].address(), addresses[0].port());
+    m_target = udp::endpoint(boost::asio::ip::address::from_string(addresses[0].ip.c_str()), addresses[0].port);
     m_enabled = true;
 
     m_log.debug() << "Initialized." << std::endl;

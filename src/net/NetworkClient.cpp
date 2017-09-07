@@ -3,8 +3,9 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 
-NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_send_queue(), 
-                                                        m_disconnect_error(0)
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), 
+                                                        m_async_timer(), m_send_queue(), 
+                                                        m_disconnect_error(UV_EOF)
 {
 }
 
@@ -17,19 +18,22 @@ NetworkClient::~NetworkClient()
     delete [] m_send_buf;
 }
 
-void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
+
     m_socket = socket;
 
     m_socket->noDelay(true);
     m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
+    m_async_timer = uvw::Loop::getDefault()->resource<uvw::TimerHandle>();
+
     bool endpoints_set = (m_remote.port && m_local.port);
     if(endpoints_set || determine_endpoints(m_remote, m_local)) {
-        async_receive();
+        start_receive();
     }
 }
 
@@ -128,8 +132,10 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
     defragment_input();
 }
 
-void NetworkClient::async_receive()
+void NetworkClient::start_receive()
 {
+    // Sets up all the handlers needed for the NetworkClient instance and starts receiving data from the stream.
+
     // The lambda below runs within the context of the event loop thread.
     // We do not have to worry about locking as long as nothing touches m_data_buf besides process_datagram.
     m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
@@ -140,8 +146,16 @@ void NetworkClient::async_receive()
         this->handle_disconnect((uv_errno_t)event.code());
     });
 
-    m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent& event, uvw::TcpHandle &) {
+    m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent&, uvw::TcpHandle &) {
         this->handle_disconnect(UV_EOF);
+    });
+
+    m_socket->on<uvw::WriteEvent>([this](const uvw::WriteEvent&, uvw::TcpHandle &) {
+        this->send_finished();
+    });
+
+    m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
+        this->send_expired();
     });
 
     m_socket->read();
@@ -158,6 +172,7 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
     m_disconnect_error = ec;
 
     m_socket->close();
+    m_async_timer->stop();
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
@@ -177,49 +192,33 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
     // lock hierarchy.
     lock.unlock();
     if(m_local_disconnect) {
-        m_handler->receive_disconnect(uvw::ErrorEvent((int)m_disconnect_error));
+        m_handler->receive_disconnect(uvw::ErrorEvent{(int)m_disconnect_error});
     } else {
-        m_handler->receive_disconnect(uvw::ErrorEvent((int)ec));
+        m_handler->receive_disconnect(uvw::ErrorEvent{(int)ec});
     }
 }
 
 void NetworkClient::async_send(DatagramHandle dg, std::unique_lock<std::mutex> &lock)
 {
-    /*
     size_t buffer_size = sizeof(dgsize_t) + dg->size();
     dgsize_t len = swap_le(dg->size());
-    m_send_buf = new uint8_t[buffer_size];
-    memcpy(m_send_buf, (uint8_t*)&len, sizeof(dgsize_t));
+    m_send_buf = new char[buffer_size];
+    memcpy(m_send_buf, (char*)&len, sizeof(dgsize_t));
     memcpy(m_send_buf + sizeof(dgsize_t), dg->get_data(), dg->size());
 
-    try {
-        socket_write(m_send_buf, buffer_size, lock);
-    } catch(const boost::system::system_error& err) {
-        // An exception happening when trying to initiate a send is a clear
-        // indicator that something happened to the connection, therefore:
-        disconnect(err.code(), lock);
-    }
-    */
+    socket_write(m_send_buf, buffer_size, lock);
 }
 
 void NetworkClient::send_finished()
 {
-    /*
     std::unique_lock<std::mutex> lock(m_mutex);
 
     // Cancel the outstanding timeout
-    m_async_timer.cancel();
+    m_async_timer->stop();
 
     // Discard the buffer we just used:
     delete [] m_send_buf;
     m_send_buf = nullptr;
-
-    // Check if the write had errors
-    if(ec.value() != 0) {
-        m_is_sending = false;
-        disconnect(ec, lock);
-        return;
-    }
 
     // Check if we have more items in the queue
     if(m_send_queue.size() > 0) {
@@ -233,36 +232,22 @@ void NetworkClient::send_finished()
 
     // Nothing left in the queue to send, lets open up for another write
     m_is_sending = false;
-    */
 }
 
 void NetworkClient::send_expired()
 {
-    /*
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    // operation_aborted is received if the the timer is cancelled,
-    //     ie. if the send completed before it expires, so don't do anything
-    if(ec != boost::asio::error::operation_aborted) {
-        boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out,
-                                           boost::system::system_category());
-        disconnect(etimeout, lock);
-    }
-    */
+    disconnect(UV_ETIMEDOUT, lock);
 }
 
-void NetworkClient::socket_write(const uint8_t* buf, size_t length, std::unique_lock<std::mutex> &)
+void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &)
 {
-    /*
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
-        m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
-        m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, shared_from_this(),
-                                             boost::asio::placeholders::error));
+        m_async_timer->stop();
+        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
     }
 
-    async_write(*m_socket, boost::asio::buffer(buf, length),
-                boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                            boost::asio::placeholders::error));
-    */
+    m_socket->write(buf, length);
 }

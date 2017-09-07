@@ -7,7 +7,7 @@ typedef std::function<void(const std::shared_ptr<uvw::TcpHandle>&, const uvw::Ad
 class TcpAcceptor : public NetworkAcceptor
 {
   public:
-    TcpAcceptor(TcpAcceptorCallback &callback);
+    TcpAcceptor(const std::shared_ptr<uvw::Loop> &loop, TcpAcceptorCallback &callback);
     virtual ~TcpAcceptor() {}
 
   private:

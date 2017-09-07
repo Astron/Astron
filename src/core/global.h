@@ -4,6 +4,7 @@
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
 #include <boost/asio.hpp>
+#include <deps/uvw/uvw.hpp>
 #include <unordered_map>
 
 // An Uberdog represents a global DistributedObject that manages itself, instead of being managed by
@@ -20,5 +21,6 @@ extern const dclass::File *g_dcf;
 extern std::unique_ptr<Logger> g_logger;
 extern std::unique_ptr<ConfigFile> g_config;
 extern boost::asio::io_service io_service;
+extern std::shared_ptr<uvw::Loop> loop;
 extern EventSender g_eventsender;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;
