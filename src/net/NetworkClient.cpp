@@ -3,7 +3,8 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 
-NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_send_queue()
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), m_send_queue(), 
+                                                        m_disconnect_error(0)
 {
 }
 
@@ -67,27 +68,23 @@ void NetworkClient::set_write_buffer(uint64_t max_bytes)
 
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
-    /*
     std::unique_lock<std::mutex> lock(m_mutex);
 
     if(m_is_sending) {
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
         if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
-            boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space,
-                                              boost::system::system_category());
-            disconnect(enobufs, lock);
+            disconnect(UV_ENOBUFS, lock);
         }
     } else {
         m_is_sending = true;
         async_send(dg, lock);
     }
-    */
 }
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
 {
-    return m_socket && m_socket->readable();
+    return m_socket && m_socket->readable() && m_socket->writable();
 }
 
 void NetworkClient::defragment_input()
@@ -135,14 +132,22 @@ void NetworkClient::async_receive()
 {
     // The lambda below runs within the context of the event loop thread.
     // We do not have to worry about locking as long as nothing touches m_data_buf besides process_datagram.
-    m_socket->on<uvw::DataEvent>([client = this](const uvw::DataEvent &event, uvw::TcpHandle &) {
-        client->process_datagram(event.data, event.length);
+    m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
+        this->process_datagram(event.data, event.length);
+    });
+
+    m_socket->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent& event, uvw::TcpHandle &) {
+        this->handle_disconnect((uv_errno_t)event.code());
+    });
+
+    m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent& event, uvw::TcpHandle &) {
+        this->handle_disconnect(UV_EOF);
     });
 
     m_socket->read();
 }
 
-void NetworkClient::disconnect(std::unique_lock<std::mutex> &)
+void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
 {
     if(m_local_disconnect || m_disconnect_handled) {
         // We've already set the error code and closed the socket; wait.
@@ -150,15 +155,17 @@ void NetworkClient::disconnect(std::unique_lock<std::mutex> &)
     }
 
     m_local_disconnect = true;
+    m_disconnect_error = ec;
 
     m_socket->close();
 }
 
-void NetworkClient::handle_disconnect(std::unique_lock<std::mutex> &lock)
+void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
 {
     if(m_disconnect_handled) {
         return;
     }
+
     m_disconnect_handled = true;
 
     if(is_connected(lock)) {
@@ -170,9 +177,9 @@ void NetworkClient::handle_disconnect(std::unique_lock<std::mutex> &lock)
     // lock hierarchy.
     lock.unlock();
     if(m_local_disconnect) {
-        m_handler->receive_disconnect();
+        m_handler->receive_disconnect(uvw::ErrorEvent((int)m_disconnect_error));
     } else {
-        m_handler->receive_disconnect();
+        m_handler->receive_disconnect(uvw::ErrorEvent((int)ec));
     }
 }
 
@@ -241,17 +248,6 @@ void NetworkClient::send_expired()
                                            boost::system::system_category());
         disconnect(etimeout, lock);
     }
-    */
-}
-
-void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback,
-                                std::unique_lock<std::mutex> &)
-{
-    /*
-    async_read(*m_socket, boost::asio::buffer(buf, length),
-               boost::bind(callback, shared_from_this(),
-                           boost::asio::placeholders::error,
-                           boost::asio::placeholders::bytes_transferred));
     */
 }
 

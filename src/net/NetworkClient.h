@@ -26,7 +26,7 @@ class NetworkHandler
     virtual void receive_datagram(DatagramHandle dg) = 0;
     // receive_disconnect is called when the remote host closes the
     //     connection or otherwise when the tcp connection is lost.
-    virtual void receive_disconnect() = 0;
+    virtual void receive_disconnect(const uvw::ErrorEvent&) = 0;
 
     friend class NetworkClient;
 };
@@ -56,11 +56,19 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
-    // disconnect closes the TCP connection
-    inline void disconnect()
+
+    // disconnect closes the TCP connection without informing the NetworkHandler.
+    inline void disconnect(uv_errno_t ec)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        disconnect(lock);
+        disconnect(ec, lock);
+    }
+
+    // handle_disconnect closes the TCP connection and informs the NetworkHandler.
+    inline void handle_disconnect(uv_errno_t ec)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        handle_disconnect(ec, lock);
     }
 
     // is_connected returns true if the TCP connection is active, or false otherwise
@@ -88,7 +96,7 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
                     const uvw::Addr &remote,
                     const uvw::Addr &local,
                     std::unique_lock<std::mutex> &lock);
-    void disconnect(std::unique_lock<std::mutex> &lock);
+    void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
     bool is_connected(std::unique_lock<std::mutex> &lock);
 
     /* Asynchronous call loop */
@@ -109,21 +117,15 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     //     or receive_data to wait for the next set of data.
     void async_receive();
 
-    typedef void (NetworkClient::*receive_handler_t)(size_t);
-
-    void socket_read(uint8_t* buf, size_t length, receive_handler_t callback,
-                     std::unique_lock<std::mutex> &lock);
     void socket_write(const uint8_t* buf, size_t length, std::unique_lock<std::mutex> &lock);
 
-    void handle_disconnect(std::unique_lock<std::mutex> &lock);
+    void handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
 
     void defragment_input();
     void process_datagram(const std::unique_ptr<char[]>& data, size_t length);
 
     bool m_is_sending = false;
     uint8_t *m_send_buf = nullptr;
-
-    bool m_is_data = false;
 
     NetworkHandler *m_handler;
     std::shared_ptr<uvw::TcpHandle> m_socket;
@@ -140,4 +142,5 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
     bool m_disconnect_handled = false;
     bool m_local_disconnect = false;
+    uv_errno_t m_disconnect_error;
 };
