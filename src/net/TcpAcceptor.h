@@ -2,7 +2,7 @@
 #include "NetworkAcceptor.h"
 #include <functional>
 
-typedef std::function<void(std::shared_ptr<uvw::TcpHandle>&)> TcpAcceptorCallback;
+typedef std::function<void(std::shared_ptr<uvw::TcpHandle>&, const uvw::Addr& remote, const uvw::Addr& local)> TcpAcceptorCallback;
 
 class TcpAcceptor : public NetworkAcceptor
 {
@@ -15,5 +15,5 @@ class TcpAcceptor : public NetworkAcceptor
 
     virtual void start_accept();
     void handle_accept(std::shared_ptr<uvw::TcpHandle>& socket);
-    void handle_endpoints(std::shared_ptr<uvw::TcpHandle>& socket, uvw::Addr& remote, uvw::Addr& local);
+    void handle_endpoints(std::shared_ptr<uvw::TcpHandle>& socket, const uvw::Addr& remote, const uvw::Addr& local);
 };
