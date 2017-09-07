@@ -37,13 +37,13 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
     NetworkClient(NetworkHandler *handler);
     ~NetworkClient();
 
-    inline void initialize(std::shared_ptr<uvw::TcpHandle>& socket)
+    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
         initialize(socket, lock);
     }
 
-    inline void initialize(std::shared_ptr<uvw::TcpHandle>& socket, 
+    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket, 
                            uvw::Addr& remote,
                            uvw::Addr& local)
     {
@@ -82,9 +82,9 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 
   private:
     // Locked versions of public functions:
-    void initialize(std::shared_ptr<uvw::TcpHandle>& socket,
+    void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     std::unique_lock<std::mutex> &lock);
-    void initialize(std::shared_ptr<uvw::TcpHandle>& socket,
+    void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     const uvw::Addr &remote,
                     const uvw::Addr &local,
                     std::unique_lock<std::mutex> &lock);

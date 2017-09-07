@@ -16,7 +16,7 @@ NetworkClient::~NetworkClient()
     delete [] m_send_buf;
 }
 
-void NetworkClient::initialize(std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
@@ -32,7 +32,7 @@ void NetworkClient::initialize(std::shared_ptr<uvw::TcpHandle>& socket, std::uni
     }
 }
 
-void NetworkClient::initialize(std::shared_ptr<uvw::TcpHandle>& socket,
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                                const uvw::Addr &remote,
                                const uvw::Addr &local,
                                std::unique_lock<std::mutex> &lock)

@@ -17,7 +17,7 @@ void TcpAcceptor::start_accept()
     });
 }
 
-void TcpAcceptor::handle_accept(std::shared_ptr<uvw::TcpHandle>& socket)
+void TcpAcceptor::handle_accept(const std::shared_ptr<uvw::TcpHandle>& socket)
 {
     if(!m_started) {
         // We were turned off sometime before this operation completed; ignore.
@@ -39,7 +39,7 @@ void TcpAcceptor::handle_accept(std::shared_ptr<uvw::TcpHandle>& socket)
     }
 }
 
-void TcpAcceptor::handle_endpoints(std::shared_ptr<uvw::TcpHandle>& socket, const uvw::Addr& remote, const uvw::Addr& local)
+void TcpAcceptor::handle_endpoints(const std::shared_ptr<uvw::TcpHandle>& socket, const uvw::Addr& remote, const uvw::Addr& local)
 {
     // Inform the callback:
     m_callback(socket, remote, local);
