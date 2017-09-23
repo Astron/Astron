@@ -11,12 +11,22 @@ local f_doid = ProtoField.uint32("astron.doid", "DistributedObject ID", base.DEC
 local f_field = ProtoField.uint16("astron.field", "Field ID", base.DEC)
 local f_field_count = ProtoField.uint16("astron.field_count", "Field count", base.DEC)
 
+local f_object_count = ProtoField.uint32("astron.object_count", "Object count", base.DEC)
+
+local f_parent = ProtoField.uint32("astron.parent", "Parent ID", base.DEC)
+local f_zone = ProtoField.uint32("astron.zone", "Zone ID", base.DEC)
+local f_zone_count = ProtoField.uint16("astron.zone_count", "Zone count", base.DEC)
+
 local f_context = ProtoField.uint32("astron.context", "Request context", base.DEC)
 
 p_astron.fields = {
 	f_length, f_recipient, f_sender, f_msgtype,
 
 	f_doid, f_field, f_field_count,
+
+	f_object_count,
+
+	f_parent, f_zone, f_zone_count,
 
 	f_context,
 }
@@ -68,6 +78,106 @@ local message_table = {
 			return string.format("%s(%d).%s(%s)",
 			                     dclass_by_field(field), doid,
 			                     field_by_index(field), decoded)
+		end
+	},
+	[2100] = {
+		name="STATESERVER_OBJECT_GET_ZONE_OBJECTS",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local parent = buf(4,4):le_uint()
+			root:add_le(f_parent, buf(4,4))
+
+			local zone = buf(8,4):le_uint()
+			root:add_le(f_zone, buf(8,4))
+
+			return string.format("%d: %d, %d", context, parent, zone)
+		end
+	},
+	[2102] = {
+		name="STATESERVER_OBJECT_GET_ZONES_OBJECTS",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local parent = buf(4,4):le_uint()
+			root:add_le(f_parent, buf(4,4))
+
+			local zone_count = buf(8,2):le_uint()
+			local count_item = root:add_le(f_zone_count, buf(8,2))
+
+			local zones = buf(10)
+			local zone_strings = {}
+			for i = 0, zone_count-1 do
+				table.insert(zone_strings, tostring(zones(i*4,4):le_uint()))
+				count_item:add_le(f_zone, zones(i*4,4))
+			end
+
+			return string.format("%d: %d(%s)", context, parent,
+			                     table.concat(zone_strings, "&"))
+		end
+	},
+	[2110] = {
+		name="STATESERVER_OBJECT_GET_ZONE_COUNT",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local parent = buf(4,4):le_uint()
+			root:add_le(f_parent, buf(4,4))
+
+			local zone = buf(8,4):le_uint()
+			root:add_le(f_zone, buf(8,4))
+
+			return string.format("%d: %d, %d", context, parent, zone)
+		end
+	},
+	[2111] = {
+		name="STATESERVER_OBJECT_GET_ZONE_COUNT_RESP",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local object_count = buf(4,4):le_uint()
+			root:add_le(f_object_count, buf(4,4))
+
+			return string.format("%d: %d", context, object_count)
+		end
+	},
+	[2112] = {
+		name="STATESERVER_OBJECT_GET_ZONES_COUNT",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local parent = buf(4,4):le_uint()
+			root:add_le(f_parent, buf(4,4))
+
+			local zone_count = buf(8,2):le_uint()
+			local count_item = root:add_le(f_zone_count, buf(8,2))
+
+			local zones = buf(10)
+			local zone_strings = {}
+			for i = 0, zone_count-1 do
+				table.insert(zone_strings, tostring(zones(i*4,4):le_uint()))
+				count_item:add_le(f_zone, zones(i*4,4))
+			end
+
+			return string.format("%d: %d(%s)", context, parent,
+			                     table.concat(zone_strings, "&"))
+		end
+	},
+	[2113] = {
+		name="STATESERVER_OBJECT_GET_ZONES_COUNT_RESP",
+		dissector=function(buf, root)
+			local context = buf(0,4):le_uint()
+			root:add_le(f_context, buf(0,4))
+
+			local object_count = buf(4,4):le_uint()
+			root:add_le(f_object_count, buf(4,4))
+
+			return string.format("%d: %d", context, object_count)
 		end
 	},
 	[3012] = {
