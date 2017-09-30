@@ -222,6 +222,17 @@ class TestStateServer(ProtocolTest):
         self.expect(conn, dg)
 
 
+        ### Test that the AI does NOT get its own reflected messages back
+        dg = Datagram.create([100010], 1300, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(100010)
+        dg.add_uint16(setBA1)
+        dg.add_uint16(0xF00D)
+        conn.send(dg)
+
+        # The AI should get nothing
+        self.expectNone(conn)
+
+
         ### Test for AI notification of object deletions ### (continues from previous)
         # Delete the object
         deleteObject(conn, 5, 100010)
@@ -1443,6 +1454,16 @@ class TestStateServer(ProtocolTest):
         dg.add_uint16(setBRO1)
         dg.add_uint32(0xF005BA11)
         self.expect(conn, dg)
+
+        ### Test that the client does NOT get its own reflected messages back
+        dg = Datagram.create([doid], owner, STATESERVER_OBJECT_SET_FIELD)
+        dg.add_doid(doid)
+        dg.add_uint16(setBRO1)
+        dg.add_uint32(0xF005BA11)
+        conn.send(dg)
+
+        # The owner should get nothing
+        self.expectNone(conn)
 
         # Delete the object...
         deleteObject(conn, 5, doid)
