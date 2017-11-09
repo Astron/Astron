@@ -14,8 +14,9 @@ class NetworkConnector
     void connect(const std::string &address, unsigned int default_port,
                          ConnectCallback callback);
   private:
+    std::shared_ptr<uvw::TcpHandle> m_socket;
     std::shared_ptr<uvw::Loop> m_loop;
     ConnectCallback connect_callback;
 
-    void do_connect(const std::shared_ptr<uvw::TcpHandle> &socket, const std::string &address, uint16_t port);
+    void do_connect(const std::string &address, uint16_t port);
 };

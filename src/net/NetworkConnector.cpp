@@ -5,7 +5,7 @@ NetworkConnector::NetworkConnector(const std::shared_ptr<uvw::Loop> &loop) : m_l
 {
 }
 
-void NetworkConnector::do_connect(const std::shared_ptr<uvw::TcpHandle> &socket, const std::string &address,
+void NetworkConnector::do_connect(const std::string &address,
                                   uint16_t port)
 {
     std::vector<uvw::Addr> addresses = resolve_address(address, port, m_loop);
@@ -16,7 +16,7 @@ void NetworkConnector::do_connect(const std::shared_ptr<uvw::TcpHandle> &socket,
     }
 
     for(auto it = addresses.begin(); it != addresses.end(); ++it) {
-        socket->connect(*it);
+        this->m_socket->connect(*it);
     }
 }
 
@@ -24,11 +24,11 @@ void NetworkConnector::connect(const std::string &address, unsigned int default_
 {
     connect_callback = callback;
 
-    std::shared_ptr<uvw::TcpHandle> socket = m_loop->resource<uvw::TcpHandle>();
+    this->m_socket = m_loop->resource<uvw::TcpHandle>();
 
-    socket->on<uvw::ConnectEvent>([this, socket](const uvw::ConnectEvent &, uvw::TcpHandle &) {
-        this->connect_callback(socket);
+    this->m_socket->on<uvw::ConnectEvent>([this](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
+        this->connect_callback(this->m_socket);
     });
 
-    do_connect(socket, address, default_port);
+    do_connect(address, default_port);
 }

@@ -12,8 +12,8 @@ NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_so
 NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    assert(!is_connected(lock));
 
+    m_socket->close();
     m_socket = nullptr;
     delete [] m_send_buf;
 }
@@ -117,7 +117,7 @@ void NetworkClient::defragment_input()
 
 void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t size)
 {
-    if(m_data_buf.size() == 0 && size >= 2) {
+    if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
         // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
         dgsize_t datagram_size = *reinterpret_cast<dgsize_t*>(data.get());
         if(datagram_size == size - sizeof(dgsize_t)) {
@@ -147,6 +147,10 @@ void NetworkClient::start_receive()
     });
 
     m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent&, uvw::TcpHandle &) {
+        this->handle_disconnect(UV_EOF);
+    });
+
+    m_socket->on<uvw::CloseEvent>([this](const uvw::CloseEvent&, uvw::TcpHandle &) {
         this->handle_disconnect(UV_EOF);
     });
 
