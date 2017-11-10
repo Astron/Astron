@@ -3,7 +3,7 @@
 
 typedef std::function<void(const std::shared_ptr<uvw::TcpHandle> &)> ConnectCallback;
 
-class NetworkConnector
+class NetworkConnector : std::enable_shared_from_this<NetworkConnector>
 {
   public:
     // Parses the string "address" and connects to it. If no port is specified

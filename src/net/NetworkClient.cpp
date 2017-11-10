@@ -119,6 +119,7 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
 {
     if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
         // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
+        // Should occur in most cases, as we're expecting <= the average TCP MSS for most datagrams.
         dgsize_t datagram_size = *reinterpret_cast<dgsize_t*>(data.get());
         if(datagram_size == size - sizeof(dgsize_t)) {
             // Yep. Dispatch to receive_datagram and early-out.
@@ -249,8 +250,8 @@ void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std:
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
-        m_async_timer->stop();
-        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
+        //m_async_timer->stop();
+        //m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
     }
 
     m_socket->write(buf, length);

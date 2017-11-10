@@ -12,7 +12,7 @@ MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
 
 void MDNetworkUpstream::connect(const std::string &address)
 {
-    NetworkConnector* connector = new NetworkConnector(loop);
+    std::shared_ptr<NetworkConnector> connector = std::make_shared<NetworkConnector>(loop);
     ConnectCallback callback = std::bind(&MDNetworkUpstream::on_connect, this, std::placeholders::_1);
 
     connector->connect(address, 7199, callback);

@@ -26,8 +26,8 @@ void NetworkConnector::connect(const std::string &address, unsigned int default_
 
     this->m_socket = m_loop->resource<uvw::TcpHandle>();
 
-    this->m_socket->on<uvw::ConnectEvent>([this](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
-        this->connect_callback(this->m_socket);
+    this->m_socket->on<uvw::ConnectEvent>([connector = shared_from_this()](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
+        connector->connect_callback(connector->m_socket);
     });
 
     do_connect(address, default_port);
