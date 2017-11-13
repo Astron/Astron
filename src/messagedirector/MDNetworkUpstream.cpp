@@ -5,17 +5,15 @@
 #include "core/msgtypes.h"
 
 MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
-    m_message_director(md), m_client(std::make_shared<NetworkClient>(this))
+    m_message_director(md), m_client(std::make_shared<NetworkClient>(this)), m_connector(new NetworkConnector(loop))
 {
 
 }
 
 void MDNetworkUpstream::connect(const std::string &address)
 {
-    std::shared_ptr<NetworkConnector> connector = std::make_shared<NetworkConnector>(loop);
     ConnectCallback callback = std::bind(&MDNetworkUpstream::on_connect, this, std::placeholders::_1);
-
-    connector->connect(address, 7199, callback);
+    m_connector->connect(address, 7199, callback);
 }
 
 void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket)

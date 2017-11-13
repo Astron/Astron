@@ -28,4 +28,5 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
   private:
     MessageDirector *m_message_director;
     std::shared_ptr<NetworkClient> m_client;
+    NetworkConnector *m_connector;
 };

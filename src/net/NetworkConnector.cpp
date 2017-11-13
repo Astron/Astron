@@ -16,7 +16,7 @@ void NetworkConnector::do_connect(const std::string &address,
     }
 
     for(auto it = addresses.begin(); it != addresses.end(); ++it) {
-        this->m_socket->connect(*it);
+        m_socket->connect(*it);
     }
 }
 
@@ -24,10 +24,10 @@ void NetworkConnector::connect(const std::string &address, unsigned int default_
 {
     connect_callback = callback;
 
-    this->m_socket = m_loop->resource<uvw::TcpHandle>();
+    m_socket = m_loop->resource<uvw::TcpHandle>();
 
-    this->m_socket->on<uvw::ConnectEvent>([connector = shared_from_this()](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
-        connector->connect_callback(connector->m_socket);
+    m_socket->on<uvw::ConnectEvent>([this](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
+        this->connect_callback(this->m_socket);
     });
 
     do_connect(address, default_port);
