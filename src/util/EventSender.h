@@ -2,12 +2,9 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
 
+#include "deps/uvw/uvw.hpp"
 #include "util/Datagram.h"
-
-using boost::asio::ip::udp;
 
 // This is a convenience class for building up MessagePack logs.
 class LoggedEvent
@@ -39,7 +36,8 @@ class EventSender
     }
   private:
     LogCategory m_log;
-    udp::socket m_socket;
-    udp::endpoint m_target;
+    std::shared_ptr<uvw::Loop> m_loop;
+    std::shared_ptr<uvw::UDPHandle> m_socket;
+    uvw::Addr m_target;
     bool m_enabled;
 };

@@ -2,9 +2,9 @@
 #include <functional>
 #include <atomic>
 #include <memory>
-#include <boost/asio.hpp>
+#include "deps/uvw/uvw.hpp"
 
-// This class abstracts the boost::asio timer in order to provide a generic
+// This class abstracts the uvw::TimerHandle timer in order to provide a generic
 // facility for timeouts. Once constructed, this class will wait a certain
 // amount of time and then call the function. The timeout must be canceled
 // with cancel() before you invalidate your callback.
@@ -32,11 +32,12 @@ class Timeout : public std::enable_shared_from_this<Timeout>
 
 
   private:
-    boost::asio::deadline_timer m_timer;
+    std::shared_ptr<uvw::Loop> m_loop;
+    std::shared_ptr<uvw::TimerHandle> m_timer;
     std::function<void()> m_callback;
     long m_timeout_interval;
 
     std::atomic<bool> m_callback_disabled;
 
-    void timer_callback(const boost::system::error_code &ec);
+    void timer_callback();
 };

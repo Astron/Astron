@@ -221,8 +221,7 @@ int main(int argc, char *argv[])
     // Run the main event loop
     int exit_code = 0;
     try {
-        loop->run();
-        io_service.run();
+
     }
 
     // This exception is propogated if astron_shutdown is called

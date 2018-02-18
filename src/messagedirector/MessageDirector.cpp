@@ -105,7 +105,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
     } else if(std::this_thread::get_id() != m_main_thread) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+        // TODO: Use uvw's async functionality here.
     } else {
         // Main thread; we can just process it here.
         process_datagram(p, dg);

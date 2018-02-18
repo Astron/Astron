@@ -32,11 +32,9 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 void EventLogger::bind(const std::string &addr)
 {
     m_log.info() << "Opening UDP socket..." << std::endl;
-    boost::system::error_code ec;
-    auto addresses = resolve_address(addr, 7197, loop);
+    auto addresses = resolve_address(addr, 7197, uvw::Loop::getDefault());
 
-    m_socket.reset((new udp::socket(io_service,
-                        udp::endpoint(boost::asio::ip::address::from_string(addresses[0].ip), addresses[0].port))));
+    m_socket->bind(addresses.front());
 }
 
 void EventLogger::open_log()
@@ -75,13 +73,13 @@ void EventLogger::process_packet(DatagramHandle dg)
         msgpack_decode(stream, dgi);
     } catch(DatagramIteratorEOF&) {
         m_log.error() << "Received truncated packet from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+                      << m_remote.ip << ":" << m_remote.port << std::endl;
         return;
     }
 
     if(dgi.tell() != dg->size()) {
         m_log.error() << "Received packet with extraneous data from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+                      << m_remote.ip << ":" << m_remote.port << std::endl;
         return;
     }
 
@@ -94,7 +92,7 @@ void EventLogger::process_packet(DatagramHandle dg)
     // begins with {
     if(data[0] != '{') {
         m_log.error() << "Received non-map event log from "
-                      << m_remote.address() << ":" << m_remote.port()
+                      << m_remote.ip << ":" << m_remote.port
                       << ": " << data << std::endl;
         return;
     }
@@ -111,24 +109,27 @@ void EventLogger::process_packet(DatagramHandle dg)
 
 void EventLogger::start_receive()
 {
+    /*
+     * TODO: Port receive logic over from Boost to libuv.
     m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
                                  m_remote, boost::bind(&EventLogger::handle_receive, this,
                                          boost::asio::placeholders::error,
                                          boost::asio::placeholders::bytes_transferred));
-}
+    */
+ }
 
 void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)
 {
     if(ec.value()) {
         m_log.warning() << "While receiving packet from "
-                        << m_remote.address() << ":" << m_remote.port()
+                        << m_remote.ip << ":" << m_remote.port
                         << ", an error occurred: "
                         << ec.value() << std::endl;
         return;
     }
 
     m_log.trace() << "Got packet from "
-                  << m_remote.address() << ":" << m_remote.port() << std::endl;
+                  << m_remote.ip << ":" << m_remote.port << std::endl;
 
     DatagramPtr dg = Datagram::create(m_buffer, bytes);
     process_packet(dg);
