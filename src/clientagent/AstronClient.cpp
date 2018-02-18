@@ -636,7 +636,7 @@ class AstronClient : public Client, public NetworkHandler
 
         // check the interest actually exists to be removed
         if(m_interests.find(id) == m_interests.end()) {
-            send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest", true);
+            send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing interest.", true);
             return;
         }
 
