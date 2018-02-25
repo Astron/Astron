@@ -371,7 +371,7 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
     break;
     case CLIENTAGENT_SEND_DATAGRAM: {
         DatagramPtr forward = Datagram::create();
-        forward->add_data(dgi.read_string());
+        forward->add_data(dgi.read_datagram());
         forward_datagram(forward);
     }
     break;
