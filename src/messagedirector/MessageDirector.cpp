@@ -313,7 +313,7 @@ void MessageDirector::preroute_post_remove(channel_t sender, DatagramHandle post
     if(m_upstream != nullptr) {
         DatagramPtr dg = Datagram::create(CONTROL_ADD_POST_REMOVE);
         dg->add_channel(sender);
-        dg->add_blob(post_remove);
+        dg->add_datagram(post_remove);
         m_upstream->handle_datagram(dg);
     }
 }
