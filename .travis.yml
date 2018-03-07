@@ -6,14 +6,17 @@ os:
 dist: trusty
 sudo: required
 
-osx_image: xcode7.3
+osx_image: xcode8.3
 
 compiler:
 - clang
 - gcc
-
+services:
+    - mongodb
 addons:
   apt:
+    sources:
+    - mongodb-3.0-trusty
     packages:
     - cmake
     - libboost-filesystem-dev
@@ -22,7 +25,7 @@ addons:
     - libboost-thread-dev
     - libssl-dev
     - libyaml-cpp-dev
-    - mongodb-server
+    - mongodb-org-server
 
 before_install:
 - |
@@ -33,6 +36,7 @@ before_install:
     brew install yaml-cpp;
     brew install mongodb;
   fi
+- sudo killall mongod
 
 install:
 - OLD_PWD=$PWD
