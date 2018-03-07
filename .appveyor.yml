@@ -17,17 +17,17 @@ install:
 - set CMAKE_INCLUDE_PATH=%CMAKE_INCLUDE_PATH%;%CD%
 - cd ..
 # build libbson
-- appveyor DownloadFile https://github.com/mongodb/libbson/archive/1.5.0.zip -FileName libbson-1.5.0.zip
-- 7z x libbson-1.5.0.zip
-- cd libbson-1.5.0
+- appveyor DownloadFile https://github.com/mongodb/libbson/archive/1.9.3.zip -FileName libbson-1.9.3.zip
+- 7z x libbson-1.9.3.zip
+- cd libbson-1.9.3
 - cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\libbson -DENABLE_TESTS=OFF
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
 - cd ..
 # build mongoc
-- appveyor DownloadFile https://github.com/mongodb/mongo-c-driver/archive/1.5.0.zip -FileName mongo-c-driver-1.5.0.zip
-- 7z x mongo-c-driver-1.5.0.zip
-- cd mongo-c-driver-1.5.0
+- appveyor DownloadFile https://github.com/mongodb/mongo-c-driver/archive/1.9.3.zip -FileName mongo-c-driver-1.9.3.zip
+- 7z x mongo-c-driver-1.9.3.zip
+- cd mongo-c-driver-1.9.3
 - cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongoc -DENABLE_SSL=OFF -DENABLE_TESTS=OFF -DBSON_ROOT_DIR=C:\libraries\libbson
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
@@ -35,7 +35,7 @@ install:
 # build mongo-cxx-driver
 - git clone --branch releases/stable https://github.com/mongodb/mongo-cxx-driver
 - cd mongo-cxx-driver\build
-- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DLIBBSON_DIR=C:\libraries\libbson -DLIBMONGOC_DIR=C:\libraries\mongoc ..
+- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DCMAKE_PREFIX_PATH=C:\libraries\libbson;C:\libraries\mongoc -DLIBMONGOC_DIR=C:\libraries\mongoc ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
 - cd ..\..\..
@@ -43,7 +43,7 @@ install:
 
 build_script:
 - cd build
-- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=NO ..
+- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DCMAKE_PREFIX_PATH=C:\libraries\libbson;C:\libraries\mongoc -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=NO ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - cd Release
 - copy /Y C:\libraries\libbson\bin\*.dll .
