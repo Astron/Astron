@@ -117,6 +117,16 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
+if(APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
+    # Use Homebrew's version of OpenSSL by default
+    if(EXISTS /usr/local/opt/openssl)
+        set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+        message(STATUS "Using Homebrew OpenSSL")
+    else()
+        message(WARNING "Could not find Homebrew version of OpenSSL, please consider installing OpenSSL via Homebrew [#385]")
+    endif()
+endif()
+
 ### SSL Dependency -- required by Boost::ASIO's SSL library
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
