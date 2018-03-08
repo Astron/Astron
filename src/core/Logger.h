@@ -144,7 +144,7 @@ class Logger
     LogSeverity get_min_severity();
 
   private:
-    auto get_severity_color(LogSeverity sev);
+    const char* get_severity_color(LogSeverity sev);
 
     LoggerBuf m_buf;
     LogSeverity m_severity;

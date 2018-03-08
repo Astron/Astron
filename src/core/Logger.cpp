@@ -54,7 +54,7 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colo
 #define DARK_GREY "\x1b[37;2m"
 #endif
 
-auto Logger::get_severity_color(LogSeverity sev)
+const char* Logger::get_severity_color(LogSeverity sev)
 {
 
     switch(sev) {
