@@ -9,6 +9,8 @@
 #  define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+
+CONSOLE_SCREEN_BUFFER_INFO old_colors;
 #endif
 
 NullStream null_stream; // used to print nothing by compiling out the unwanted messages
@@ -27,38 +29,50 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colo
 {
 }
 
-/* Reset code */
-static const char* ANSI_RESET = "\x1b[0m";
+#ifdef _WIN32
+#define STDOUT GetStdHandle(STD_OUTPUT_HANDLE)
+#define RESET (SetConsoleTextAttribute(STDOUT, old_colors.wAttributes) ? "" : "")
 
-/* Normal Colors */
-static const char* ANSI_RED = "\x1b[31m";
-static const char* ANSI_GREEN = "\x1b[32m";
-static const char* ANSI_ORANGE = "\x1b[33m";
-static const char* ANSI_YELLOW = "\x1b[33;2m";
-static const char* ANSI_GREY = "\x1b[37m";
+#define RED (SetConsoleTextAttribute(STDOUT, 4) ? "" : "")
+#define GREEN (SetConsoleTextAttribute(STDOUT, 2) ? "" : "")
+#define ORANGE (SetConsoleTextAttribute(STDOUT, 13) ? "" : "") // This is actually light magenta; there's no orange.
+#define YELLOW (SetConsoleTextAttribute(STDOUT, 14) ? "" : "")
+#define GREY (SetConsoleTextAttribute(STDOUT, 7) ? "" : "")
+#define CYAN (SetConsoleTextAttribute(STDOUT, 3) ? "" : "")
 
-/* Dark Colors */
-static const char* ANSI_DARK_CYAN = "\x1b[36;2m";
-static const char* ANSI_DARK_GREY = "\x1b[37;2m";
+#define DARK_GREY (SetConsoleTextAttribute(STDOUT, 8) ? "" : "")
+#else
+#define RESET "\x1b[0m"
 
-const char* Logger::get_severity_color(LogSeverity sev)
+#define RED "\x1b[31m"
+#define GREEN "\x1b[32m"
+#define ORANGE "\x1b[33m"
+#define YELLOW "\x1b[33;2m"
+#define GREY "\x1b[37m"
+#define CYAN "\x1b[36;2m"
+
+#define DARK_GREY "\x1b[37;2m"
+#endif
+
+auto Logger::get_severity_color(LogSeverity sev)
 {
+
     switch(sev) {
     case LSEVERITY_FATAL:
     case LSEVERITY_ERROR:
-        return ANSI_RED;
+        return RED;
     case LSEVERITY_SECURITY:
-        return ANSI_ORANGE;
+        return ORANGE;
     case LSEVERITY_WARNING:
-        return ANSI_YELLOW;
+        return YELLOW;
     case LSEVERITY_DEBUG:
     case LSEVERITY_PACKET:
     case LSEVERITY_TRACE:
-        return ANSI_DARK_CYAN;
+        return CYAN;
     case LSEVERITY_INFO:
-        return ANSI_GREEN;
+        return GREEN;
     default:
-        return ANSI_GREY;
+        return GREY;
     }
 }
 
@@ -107,12 +121,16 @@ LockedLogOutput Logger::log(LogSeverity sev)
     LockedLogOutput out(&m_output, &m_lock);
 
     if(m_color_enabled) {
-        out << ANSI_DARK_GREY
-            << "[" << timetext << "] "
-            << get_severity_color(sev)
-            << sevtext
-            << ": "
-            << ANSI_RESET;
+#ifdef _WIN32
+		GetConsoleScreenBufferInfo(STDOUT, &old_colors);
+#endif
+		out << DARK_GREY;
+		out << "[" << timetext << "] ";
+		out << get_severity_color(sev);
+		out << sevtext;
+		out << ": ";
+		out << RESET;
+
     } else {
         out << "[" << timetext << "] "
             << sevtext
@@ -127,14 +145,6 @@ LockedLogOutput Logger::log(LogSeverity sev)
 // set_color_enabled turns ANSI colorized output on or off.
 void Logger::set_color_enabled(bool enabled)
 {
-#ifdef _WIN32
-	// Enable ANSI colors on newer versions of Windows
-	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD mode = 0;
-	GetConsoleMode(hOut, &mode);
-	mode |= 0x0004; // ENABLE_VIRTUAL_TERMINAL_PROCESSING
-	SetConsoleMode(hOut, mode);
-#endif
     m_color_enabled = enabled;
 }
 
