@@ -4,6 +4,13 @@
 
 #include "Logger.h"
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 NullStream null_stream; // used to print nothing by compiling out the unwanted messages
 NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messages
 
@@ -28,19 +35,9 @@ static const char* ANSI_RED = "\x1b[31m";
 static const char* ANSI_GREEN = "\x1b[32m";
 static const char* ANSI_ORANGE = "\x1b[33m";
 static const char* ANSI_YELLOW = "\x1b[33;2m";
-//static const char* ANSI_BLUE = "\x1b[34m";
-//static const char* ANSI_CYAN = "\x1b[36m";
 static const char* ANSI_GREY = "\x1b[37m";
 
-/* Bold Colors */
-//static const char* ANSI_BOLD_RED = "\x1b[31;1m";
-//static const char* ANSI_BOLD_GREEN = "\x1b[32:1m";
-//static const char* ANSI_BOLD_YELLOW = "\x1b[33:1m";
-//static const char* ANSI_BOLD_WHITE = "\x1b[37;1m";
-
 /* Dark Colors */
-//static const char* ANSI_DARK_RED = "\x1b[31;2m";
-//static const char* ANSI_DARK_GREEN = "\x1b[32;2m";
 static const char* ANSI_DARK_CYAN = "\x1b[36;2m";
 static const char* ANSI_DARK_GREY = "\x1b[37;2m";
 
@@ -130,6 +127,14 @@ LockedLogOutput Logger::log(LogSeverity sev)
 // set_color_enabled turns ANSI colorized output on or off.
 void Logger::set_color_enabled(bool enabled)
 {
+#ifdef _WIN32
+	// Enable ANSI colors on newer versions of Windows
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD mode = 0;
+	GetConsoleMode(hOut, &mode);
+	mode |= 0x0004; // ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	SetConsoleMode(hOut, mode);
+#endif
     m_color_enabled = enabled;
 }
 
