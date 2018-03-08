@@ -33,14 +33,14 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colo
 #define STDOUT GetStdHandle(STD_OUTPUT_HANDLE)
 #define RESET (SetConsoleTextAttribute(STDOUT, old_colors.wAttributes) ? "" : "")
 
-#define RED (SetConsoleTextAttribute(STDOUT, 4) ? "" : "")
-#define GREEN (SetConsoleTextAttribute(STDOUT, 2) ? "" : "")
-#define ORANGE (SetConsoleTextAttribute(STDOUT, 13) ? "" : "") // This is actually light magenta; there's no orange.
-#define YELLOW (SetConsoleTextAttribute(STDOUT, 14) ? "" : "")
-#define GREY (SetConsoleTextAttribute(STDOUT, 7) ? "" : "")
-#define CYAN (SetConsoleTextAttribute(STDOUT, 3) ? "" : "")
+#define RED (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED) ? "" : "")
+#define GREEN (SetConsoleTextAttribute(STDOUT, FOREGROUND_GREEN) ? "" : "")
+#define ORANGE (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY) ? "" : "") // This is actually light magenta; there's no orange.
+#define YELLOW (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_GREEN) ? "" : "")
+#define GREY (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE) ? "" : "")
+#define CYAN (SetConsoleTextAttribute(STDOUT, FOREGROUND_GREEN | FOREGROUND_BLUE) ? "" : "")
 
-#define DARK_GREY (SetConsoleTextAttribute(STDOUT, 8) ? "" : "")
+#define DARK_GREY (SetConsoleTextAttribute(STDOUT, FOREGROUND_INTENSITY) ? "" : "")
 #else
 #define RESET "\x1b[0m"
 
