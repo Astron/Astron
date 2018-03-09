@@ -31,16 +31,17 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colo
 
 #ifdef _WIN32
 #define STDOUT GetStdHandle(STD_OUTPUT_HANDLE)
-#define RESET (SetConsoleTextAttribute(STDOUT, old_colors.wAttributes) ? "" : "")
+#define WINCOLOR(x) (SetConsoleTextAttribute(STDOUT, x) ? "" : "")
+#define RESET WINCOLOR(old_colors.wAttributes)
 
-#define RED (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED) ? "" : "")
-#define GREEN (SetConsoleTextAttribute(STDOUT, FOREGROUND_GREEN) ? "" : "")
-#define ORANGE (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY) ? "" : "") // This is actually light magenta; there's no orange.
-#define YELLOW (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_GREEN) ? "" : "")
-#define GREY (SetConsoleTextAttribute(STDOUT, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE) ? "" : "")
-#define CYAN (SetConsoleTextAttribute(STDOUT, FOREGROUND_GREEN | FOREGROUND_BLUE) ? "" : "")
+#define RED WINCOLOR(FOREGROUND_RED)
+#define GREEN WINCOLOR(FOREGROUND_GREEN)
+#define ORANGE WINCOLOR(FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY) // This is actually light magenta; there's no orange.
+#define YELLOW WINCOLOR(FOREGROUND_RED | FOREGROUND_GREEN)
+#define GREY WINCOLOR(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE)
+#define CYAN WINCOLOR(FOREGROUND_GREEN | FOREGROUND_BLUE)
 
-#define DARK_GREY (SetConsoleTextAttribute(STDOUT, FOREGROUND_INTENSITY) ? "" : "")
+#define DARK_GREY WINCOLOR(FOREGROUND_INTENSITY)
 #else
 #define RESET "\x1b[0m"
 
@@ -124,11 +125,11 @@ LockedLogOutput Logger::log(LogSeverity sev)
 #ifdef _WIN32
 		GetConsoleScreenBufferInfo(STDOUT, &old_colors);
 #endif
-		out << DARK_GREY;
-		out << "[" << timetext << "] ";
-		out << get_severity_color(sev);
-		out << sevtext;
-		out << ": ";
+		out << DARK_GREY
+			<< "[" << timetext << "] ";
+		out << get_severity_color(sev)
+			<< sevtext
+			<< ": ";
 		out << RESET;
 
     } else {
