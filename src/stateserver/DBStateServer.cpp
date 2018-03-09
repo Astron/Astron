@@ -96,12 +96,25 @@ void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         break;
     }
      case DBSS_ADD_POST_REMOVE: {
-         doid_t obj_id = dgi.read_doid();
-         add_post_remove(obj_id, dgi.read_datagram());
+         doid_t do_id = dgi.read_doid();
+
+         if(m_objs.find(do_id) == m_objs.end() && m_loading.find(do_id) == m_loading.end()) {
+             m_log->warning() << "Sender " << sender << " tried to add post-remove for object that does not exist on DBSS with id " << do_id;
+             return;
+         }
+
+         add_post_remove(do_id, dgi.read_datagram());
          break;
      }
      case DBSS_CLEAR_POST_REMOVES: {
-         clear_post_removes(dgi.read_doid());
+         doid_t do_id = dgi.read_doid();
+
+         if(m_objs.find(do_id) == m_objs.end() && m_loading.find(do_id) == m_loading.end()) {
+             m_log->warning() << "Sender " << sender << " tried to clear post-removes for object that does not exist on DBSS with id " << do_id;
+             return;
+         }
+
+         clear_post_removes(do_id);
          break;
      }
     default:
