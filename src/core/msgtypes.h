@@ -123,6 +123,8 @@ enum MessageTypes {
     DBSS_OBJECT_DELETE_FIELD_RAM             = 2230,
     DBSS_OBJECT_DELETE_FIELDS_RAM            = 2231,
     DBSS_OBJECT_DELETE_DISK                  = 2232,
+    DBSS_ADD_POST_REMOVE                          = 2233,
+    DBSS_CLEAR_POST_REMOVES                   = 2234,
 
     // DatabaseServer messages
     DBSERVER_CREATE_OBJECT                    = 3000,

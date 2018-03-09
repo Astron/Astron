@@ -390,3 +390,15 @@ to stored objects in the database.
 >
 > _Note: Currently this message does not propogate to children. This behavior
 >        should be reviewed to determine whether it is expected or not._
+
+
+**DBSS_ADD_POST_REMOVE(2233)**
+`args(uint32 do_id, blob datagram)`
+>Similar to CONTROL_ADD_POST_REMOVE, this hangs a "post-remove" message to the database object specified.
+>If the database state server is ever disconnected from the Message Director, the post-remove messages will be sent out automatically.
+>It is ultimately the responsibility of the application handling the post-remove to deal with the graceful disassociation of the affected object (e.g. deletion from the State Server's RAM et al).
+
+
+**DBSS_CLEAR_POST_REMOVES(2234)**
+`args(uint32 do_id)`
+>Disassociates any "post-remove" messages relating to the database object specified.
