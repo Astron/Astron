@@ -1,5 +1,5 @@
 #pragma once
-#include <boost/asio.hpp>
+#include <thread>
 #include <deps/uvw/uvw.hpp>
 
 class NetworkAcceptor
@@ -11,6 +11,10 @@ class NetworkAcceptor
     // as part of the address, it will use default_port.
     void bind(const std::string &address, unsigned int default_port);
 
+    // The libuv loop thread for each acceptor runs under listener_thread.
+    // Each acceptor has its own loop, and each acceptor's loop has its own thread.
+    void listener_thread();
+
     void start();
     void stop();
 
@@ -20,13 +24,14 @@ class NetworkAcceptor
     }
 
   protected:
+    std::unique_ptr<std::thread> m_thread;
     std::shared_ptr<uvw::Loop> m_loop;
     std::shared_ptr<uvw::TcpHandle> m_acceptor;
 
     bool m_started = false;
     bool m_haproxy_mode = false;
 
-    NetworkAcceptor(const std::shared_ptr<uvw::Loop>&);
+    NetworkAcceptor();
 
     virtual void start_accept() = 0;
 };

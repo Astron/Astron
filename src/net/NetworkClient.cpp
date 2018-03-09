@@ -3,8 +3,8 @@
 #include "core/global.h"
 #include "config/ConfigVariable.h"
 
-NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr), 
-                                                        m_async_timer(), m_send_queue(), 
+NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
+                                                        m_async_timer(), m_send_queue(),
                                                         m_disconnect_error(UV_EOF)
 {
 }
@@ -73,7 +73,8 @@ void NetworkClient::set_write_buffer(uint64_t max_bytes)
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-
+    async_send(dg, lock);
+    /*
     if(m_is_sending) {
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
@@ -84,6 +85,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         m_is_sending = true;
         async_send(dg, lock);
     }
+     */
 }
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
@@ -155,6 +157,7 @@ void NetworkClient::start_receive()
         this->handle_disconnect(UV_EOF);
     });
 
+    /*
     m_socket->on<uvw::WriteEvent>([this](const uvw::WriteEvent&, uvw::TcpHandle &) {
         this->send_finished();
     });
@@ -162,6 +165,7 @@ void NetworkClient::start_receive()
     m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
         this->send_expired();
     });
+     */
 
     m_socket->read();
 }

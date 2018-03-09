@@ -51,7 +51,7 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(loop, callback));
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
             m_net_acceptor->bind(bind_addr.get_val(), 7199);
             m_net_acceptor->start();
         }

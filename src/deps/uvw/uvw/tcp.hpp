@@ -49,10 +49,8 @@ public:
     using IPv4 = uvw::IPv4;
     using IPv6 = uvw::IPv6;
 
-    using StreamHandle::StreamHandle;
-
-    explicit TcpHandle(ConstructorAccess ca, std::shared_ptr<Loop> ref, unsigned int f)
-        : StreamHandle{ca, std::move(ref)}, tag{FLAGS}, flags{f}
+    explicit TcpHandle(ConstructorAccess ca, std::shared_ptr<Loop> ref, unsigned int f = {})
+        : StreamHandle{ca, std::move(ref)}, tag{f ? FLAGS : DEFAULT}, flags{f}
     {}
 
     /**
@@ -128,6 +126,26 @@ public:
      * * `TcpHandle::Bind::IPV6ONLY`: it disables dual-stack support and only
      * IPv6 is used.
      *
+     * @param addr Initialized `sockaddr_in` or `sockaddr_in6` data structure.
+     * @param opts Optional additional flags.
+     */
+    void bind(const sockaddr &addr, Flags<Bind> opts = Flags<Bind>{}) {
+        invoke(&uv_tcp_bind, get(), &addr, opts);
+    }
+
+    /**
+     * @brief Binds the handle to an address and port.
+     *
+     * A successful call to this function does not guarantee that the call to
+     * `listen()` or `connect()` will work properly.<br/>
+     * ErrorEvent events can be emitted because of either this function or the
+     * ones mentioned above.
+     *
+     * Available flags are:
+     *
+     * * `TcpHandle::Bind::IPV6ONLY`: it disables dual-stack support and only
+     * IPv6 is used.
+     *
      * @param ip The address to which to bind.
      * @param port The port to which to bind.
      * @param opts Optional additional flags.
@@ -136,7 +154,7 @@ public:
     void bind(std::string ip, unsigned int port, Flags<Bind> opts = Flags<Bind>{}) {
         typename details::IpTraits<I>::Type addr;
         details::IpTraits<I>::addrFunc(ip.data(), port, &addr);
-        invoke(&uv_tcp_bind, get(), reinterpret_cast<const sockaddr *>(&addr), opts);
+        bind(reinterpret_cast<const sockaddr &>(addr), std::move(opts));
     }
 
     /**
@@ -157,7 +175,7 @@ public:
      */
     template<typename I = IPv4>
     void bind(Addr addr, Flags<Bind> opts = Flags<Bind>{}) {
-        bind<I>(addr.ip, addr.port, opts);
+        bind<I>(std::move(addr.ip), addr.port, std::move(opts));
     }
 
     /**
@@ -181,6 +199,30 @@ public:
     /**
      * @brief Establishes an IPv4 or IPv6 TCP connection.
      *
+     * On Windows if the addr is initialized to point to an unspecified address
+     * (`0.0.0.0` or `::`) it will be changed to point to localhost. This is
+     * done to match the behavior of Linux systems.
+     *
+     * A ConnectEvent event is emitted when the connection has been
+     * established.<br/>
+     * An ErrorEvent event is emitted in case of errors during the connection.
+     *
+     * @param addr Initialized `sockaddr_in` or `sockaddr_in6` data structure.
+     */
+    void connect(const sockaddr &addr) {
+        auto listener = [ptr = shared_from_this()](const auto &event, const auto &) {
+            ptr->publish(event);
+        };
+
+        auto req = loop().resource<details::ConnectReq>();
+        req->once<ErrorEvent>(listener);
+        req->once<ConnectEvent>(listener);
+        req->connect(&uv_tcp_connect, get(), &addr);
+    }
+
+    /**
+     * @brief Establishes an IPv4 or IPv6 TCP connection.
+     *
      * A ConnectEvent event is emitted when the connection has been
      * established.<br/>
      * An ErrorEvent event is emitted in case of errors during the connection.
@@ -192,15 +234,7 @@ public:
     void connect(std::string ip, unsigned int port) {
         typename details::IpTraits<I>::Type addr;
         details::IpTraits<I>::addrFunc(ip.data(), port, &addr);
-
-        auto listener = [ptr = shared_from_this()](const auto &event, const auto &) {
-            ptr->publish(event);
-        };
-
-        auto req = loop().resource<details::ConnectReq>();
-        req->once<ErrorEvent>(listener);
-        req->once<ConnectEvent>(listener);
-        req->connect(&uv_tcp_connect, get(), reinterpret_cast<const sockaddr *>(&addr));
+        connect(reinterpret_cast<const sockaddr &>(addr));
     }
 
     /**
@@ -214,12 +248,12 @@ public:
      */
     template<typename I = IPv4>
     void connect(Addr addr) {
-        connect<I>(addr.ip, addr.port);
+        connect<I>(std::move(addr.ip), addr.port);
     }
 
 private:
-    enum { DEFAULT, FLAGS } tag{DEFAULT};
-    unsigned int flags{};
+    enum { DEFAULT, FLAGS } tag;
+    unsigned int flags;
 };
 
 

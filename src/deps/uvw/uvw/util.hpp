@@ -52,12 +52,24 @@ template<typename T>
 struct UVTypeWrapper {
     using Type = T;
 
+    constexpr UVTypeWrapper(): value{} {}
     constexpr UVTypeWrapper(Type val): value{val} {}
+
     constexpr operator Type() const noexcept { return value; }
+
+    bool operator==(UVTypeWrapper other) const noexcept {
+        return value == other.value;
+    }
 
 private:
     const Type value;
 };
+
+
+template<typename T>
+bool operator==(UVTypeWrapper<T> lhs, UVTypeWrapper<T> rhs) {
+    return !(lhs == rhs);
+}
 
 
 }
@@ -182,9 +194,11 @@ struct WinSize {
 
 using HandleType = details::UVHandleType; /*!< The type of a handle. */
 
+using HandleCategory = details::UVTypeWrapper<uv_handle_type>; /*!< Utility class that wraps an internal handle type. */
 using FileHandle = details::UVTypeWrapper<uv_file>; /*!< Utility class that wraps an internal file handle. */
 using OSSocketHandle = details::UVTypeWrapper<uv_os_sock_t>; /*!< Utility class that wraps an os socket handle. */
 using OSFileDescriptor = details::UVTypeWrapper<uv_os_fd_t>; /*!< Utility class that wraps an os file descriptor. */
+using PidType = details::UVTypeWrapper<uv_pid_t>; /*!< Utility class that wraps a cross platform representation of a pid. */
 
 constexpr FileHandle StdIN{0}; /*!< Placeholder for stdin descriptor. */
 constexpr FileHandle StdOUT{1}; /*!< Placeholder for stdout descriptor. */
@@ -425,6 +439,32 @@ struct Utilities {
      */
     struct OS {
         /**
+         * @brief Returns the current process id.
+         *
+         * See the official
+         * [documentation](http://docs.libuv.org/en/v1.x/misc.html#c.uv_os_getpid)
+         * for further details.
+         *
+         * @return The current process id.
+         */
+        static PidType pid() noexcept {
+            return uv_os_getpid();
+        }
+
+        /**
+         * @brief Returns the parent process id.
+         *
+         * See the official
+         * [documentation](http://docs.libuv.org/en/v1.x/misc.html#c.uv_os_getppid)
+         * for further details.
+         *
+         * @return The parent process id.
+         */
+        static PidType parent() noexcept {
+            return uv_os_getppid();
+        }
+
+        /**
          * @brief Gets the current user's home directory.
          *
          * See the official
@@ -505,27 +545,12 @@ struct Utilities {
     };
 
     /**
-     * @brief Gets the type of the stream to be used with the given descriptor.
-     *
-     * Returns the type of stream that should be used with a given file
-     * descriptor.<br/>
-     * Usually this will be used during initialization to guess the type of the
-     * stdio streams.
-     *
-     * @param file A valid descriptor.
-     * @return One of the following types:
-     *
-     * * `HandleType::UNKNOWN`
-     * * `HandleType::PIPE`
-     * * `HandleType::TCP`
-     * * `HandleType::TTY`
-     * * `HandleType::UDP`
-     * * `HandleType::FILE`
+     * @brief Gets the type of the handle given a category.
+     * @param category A properly initialized handle category.
+     * @return The actual type of the handle as defined by HandleType
      */
-    static HandleType guessHandle(FileHandle file) noexcept {
-        auto type = uv_guess_handle(file);
-
-        switch(type) {
+    static HandleType guessHandle(HandleCategory category) noexcept {
+        switch(category) {
         case UV_ASYNC:
             return HandleType::ASYNC;
         case UV_CHECK:
@@ -565,6 +590,29 @@ struct Utilities {
         }
     }
 
+    /**
+     * @brief Gets the type of the stream to be used with the given descriptor.
+     *
+     * Returns the type of stream that should be used with a given file
+     * descriptor.<br/>
+     * Usually this will be used during initialization to guess the type of the
+     * stdio streams.
+     *
+     * @param file A valid descriptor.
+     * @return One of the following types:
+     *
+     * * `HandleType::UNKNOWN`
+     * * `HandleType::PIPE`
+     * * `HandleType::TCP`
+     * * `HandleType::TTY`
+     * * `HandleType::UDP`
+     * * `HandleType::FILE`
+     */
+    static HandleType guessHandle(FileHandle file) noexcept {
+        HandleCategory category = uv_guess_handle(file);
+        return guessHandle(category);
+    }
+
 
     /** @brief Gets information about the CPUs on the system.
      *
@@ -589,7 +637,6 @@ struct Utilities {
 
         return cpuinfos;
     }
-
 
     /**
      * @brief Gets a set of descriptors of all the available interfaces.
@@ -630,6 +677,36 @@ struct Utilities {
         return interfaces;
     }
 
+    /**
+     * @brief IPv6-capable implementation of
+     * [if_indextoname](https://linux.die.net/man/3/if_indextoname).
+     *
+     * Mapping between network interface names and indexes.
+     *
+     * See the official
+     * [documentation](http://docs.libuv.org/en/v1.x/misc.html#c.uv_if_indextoname)
+     * for further details.
+     *
+     * @param index Network interface index.
+     * @return Network interface name.
+     */
+    static std::string indexToName(unsigned int index) noexcept {
+        return details::tryRead(&uv_if_indextoname, index);
+    }
+
+    /**
+     * @brief Retrieves a network interface identifier.
+     *
+     * See the official
+     * [documentation](http://docs.libuv.org/en/v1.x/misc.html#c.uv_if_indextoiid)
+     * for further details.
+     *
+     * @param index Network interface index.
+     * @return Network interface identifier.
+     */
+    static std::string indexToIid(unsigned int index) noexcept {
+        return details::tryRead(&uv_if_indextoiid, index);
+    }
 
     /**
      * @brief Override the use of some standard library’s functions.

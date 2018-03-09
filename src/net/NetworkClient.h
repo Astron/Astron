@@ -20,7 +20,7 @@ class NetworkClient;
 
 class NetworkHandler
 {
-  protected:
+protected:
     // receive_datagram is called when both a datagram's size and its data
     //     have been received asynchronously from the network.
     virtual void receive_datagram(DatagramHandle dg) = 0;
@@ -33,7 +33,7 @@ class NetworkHandler
 
 class NetworkClient : public std::enable_shared_from_this<NetworkClient>
 {
-  public:
+public:
     NetworkClient(NetworkHandler *handler);
     ~NetworkClient();
 
@@ -43,7 +43,7 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
         initialize(socket, lock);
     }
 
-    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket, 
+    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                            const uvw::Addr& remote,
                            const uvw::Addr& local)
     {
@@ -93,7 +93,7 @@ class NetworkClient : public std::enable_shared_from_this<NetworkClient>
         return m_local;
     }
 
-  private:
+private:
     // Locked versions of public functions:
     void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     std::unique_lock<std::mutex> &lock);

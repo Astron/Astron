@@ -1,17 +1,27 @@
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
 
-NetworkAcceptor::NetworkAcceptor(const std::shared_ptr<uvw::Loop>& loop) :
-    m_loop(loop),
+NetworkAcceptor::NetworkAcceptor() :
+    m_loop(nullptr),
     m_acceptor(nullptr),
     m_started(false)
 {
 }
 
+void NetworkAcceptor::listener_thread()
+{
+    printf("loop is running\n");
+    m_loop->run();
+    printf("loop is dead\n");
+    stop();
+}
+
 void NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
+    m_loop = uvw::Loop::create();
     m_acceptor = m_loop->resource<uvw::TcpHandle>();
+    m_acceptor->simultaneousAccepts(true);
 
     std::vector<uvw::Addr> addresses = resolve_address(address, default_port, m_loop);
 
@@ -34,6 +44,9 @@ void NetworkAcceptor::start()
 
     // Start listening for inbound connections.
     m_acceptor->listen();
+
+    // Start loop's thread.
+    m_thread.reset(new std::thread(std::bind(&NetworkAcceptor::listener_thread, this)));
 }
 
 void NetworkAcceptor::stop()

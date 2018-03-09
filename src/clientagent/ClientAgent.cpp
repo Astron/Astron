@@ -73,7 +73,7 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                    std::placeholders::_1,
                                    std::placeholders::_2,
                                    std::placeholders::_3);
-    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(loop, callback));
+    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
 
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 

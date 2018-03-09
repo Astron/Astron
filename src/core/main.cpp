@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
     try {
         // Initialize configured MessageDirector
         MessageDirector::singleton.init_network();
-        g_eventsender.init(eventlogger_addr.get_val());
+        //g_eventsender.init(eventlogger_addr.get_val());
 
         // Load uberdog metadata from configuration
         ConfigNode udnodes = g_config->copy_node()["uberdogs"];
@@ -221,7 +221,9 @@ int main(int argc, char *argv[])
     // Run the main event loop
     int exit_code = 0;
     try {
+        while(true) {
 
+        }
     }
 
     // This exception is propogated if astron_shutdown is called

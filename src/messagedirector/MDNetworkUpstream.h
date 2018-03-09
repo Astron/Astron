@@ -1,6 +1,7 @@
 #pragma once
 #include "MessageDirector.h"
 #include "net/NetworkClient.h"
+#include "net/NetworkConnector.h"
 #include <boost/asio.hpp>
 
 // All MDUpstreams must be thread-safe. This class does not need a lock, however,
