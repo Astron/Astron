@@ -123,14 +123,14 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
     if(m_color_enabled) {
 #ifdef _WIN32
-		GetConsoleScreenBufferInfo(STDOUT, &old_colors);
+        GetConsoleScreenBufferInfo(STDOUT, &old_colors);
 #endif
-		out << DARK_GREY
-			<< "[" << timetext << "] ";
-		out << get_severity_color(sev)
-			<< sevtext
-			<< ": ";
-		out << RESET;
+        out << DARK_GREY
+            << "[" << timetext << "] ";
+        out << get_severity_color(sev)
+            << sevtext
+            << ": ";
+        out << RESET;
 
     } else {
         out << "[" << timetext << "] "
