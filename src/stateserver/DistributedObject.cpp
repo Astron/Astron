@@ -383,10 +383,10 @@ bool DistributedObject::handle_one_update(DatagramIterator &dgi, channel_t sende
     if(field->has_keyword("broadcast")) {
         targets.insert(location_as_channel(m_parent_id, m_zone_id));
     }
-    if(field->has_keyword("airecv") && m_ai_channel) {
+    if(field->has_keyword("airecv") && m_ai_channel && m_ai_channel != sender) {
         targets.insert(m_ai_channel);
     }
-    if(field->has_keyword("ownrecv") && m_owner_channel) {
+    if(field->has_keyword("ownrecv") && m_owner_channel && m_owner_channel != sender) {
         targets.insert(m_owner_channel);
     }
     if(targets.size()) { // TODO: Review this for efficiency?
