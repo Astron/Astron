@@ -296,8 +296,8 @@ if(BUILD_STATESERVER)
 			src/stateserver/LoadingObject.h
 			src/stateserver/LoadingObject.cpp
 		)
-		add_test(dbss "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbss.py")
-                add_test(dbss_postremove "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbss_postremove.py")
+                add_test(dbss "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbss.py")
+		add_test(dbss_postremove "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbss_postremove.py")
 		add_test(validate_config_dbss "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbss.py")
 		set(PYTHON_TESTS ${PYTHON_TESTS} dbss dbss_postremove validate_config_dbss)
 	endif()
