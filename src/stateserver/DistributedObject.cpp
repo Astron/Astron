@@ -45,7 +45,7 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
             } else {
                 m_log->error() << "Received non-RAM field " << field->get_name()
                                << " within an OTHER section.\n";
-                break;
+                dgi.skip_field(field);
             }
         }
     }
