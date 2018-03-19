@@ -9,6 +9,9 @@
 #include <memory>
 #include "core/types.h"
 #include "dclass/util/byteorder.h"
+#include "dclass/dc/DistributedType.h" // sizetag_t
+
+using dclass::sizetag_t;
 
 #ifdef ASTRON_32BIT_DATAGRAMS
 typedef uint32_t dgsize_t;
@@ -293,10 +296,20 @@ class Datagram
         buf_offset += 8;
     }
 
-    // add_size adds a datagram or field length-tag to the datagram.
+    // add_size adds a field length-tag to the datagram.
     // Note: this method should always be used instead of add_uint16 when adding a length tag
     //       to allow for future support of larger or small length limits.
-    void add_size(const dgsize_t &v)
+    void add_size(const sizetag_t &v)
+    {
+        check_add_length(sizeof(sizetag_t));
+        *(sizetag_t *)(buf + buf_offset) = swap_le(v);
+        buf_offset += sizeof(sizetag_t);
+    }
+
+    // add_dgsize adds a datagram length-tag to the datagram.
+    // Note: this method should always be used instead of add_uint16 when adding a length tag
+    //       to allow for future support of larger or small length limits.
+    void add_dgsize(const dgsize_t &v)
     {
         check_add_length(sizeof(dgsize_t));
         *(dgsize_t *)(buf + buf_offset) = swap_le(v);
@@ -397,7 +410,7 @@ class Datagram
     }
 
     // add_blob adds a dclass blob to the datagram from binary data;
-    // a length tag (typically a uint16_t) is prepended to the blob before it is added.
+    // a length tag (sizetag_t) is prepended to the blob before it is added.
     void add_blob(const std::vector<uint8_t> &blob)
     {
         add_size(blob.size());
@@ -412,9 +425,12 @@ class Datagram
         memcpy(buf + buf_offset, data, length);
         buf_offset += length;
     }
-    void add_blob(DatagramHandle dg)
+
+    // add_datagram adds a datagram blob to the datagram from binary data;
+    // a length tag (dgsize_t) is prepended to the blob before it is added.
+    void add_datagram(DatagramHandle dg)
     {
-        add_size(dg->buf_offset);
+        add_dgsize(dg->buf_offset);
         check_add_length(dg->buf_offset);
         memcpy(buf + buf_offset, dg->buf, dg->buf_offset);
         buf_offset += dg->buf_offset;

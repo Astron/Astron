@@ -126,8 +126,17 @@ class DatagramIterator
         return swap_le(r);
     }
 
-    // read_size reads a dgsize_t from the datagram.
-    dgsize_t read_size()
+    // read_size reads a sizetag_t from the datagram.
+    sizetag_t read_size()
+    {
+        check_read_length(sizeof(sizetag_t));
+        sizetag_t r = *(sizetag_t*)(m_dg->get_data() + m_offset);
+        m_offset += sizeof(sizetag_t);
+        return swap_le(r);
+    }
+
+    // read_dgsize reads a dgsize_t from the datagram.
+    dgsize_t read_dgsize()
     {
         check_read_length(sizeof(dgsize_t));
         dgsize_t r = *(dgsize_t*)(m_dg->get_data() + m_offset);
@@ -183,10 +192,10 @@ class DatagramIterator
     }
 
     // read_string reads a string from the datagram in the format
-    //     {dgsize_t length; char[length] characters} and returns the character data.
+    //     {sizetag_t length; char[length] characters} and returns the character data.
     std::string read_string()
     {
-        dgsize_t length = read_size();
+        sizetag_t length = read_size();
         check_read_length(length);
         std::string str((char*)(m_dg->get_data() + m_offset), length);
         m_offset += length;
@@ -194,17 +203,17 @@ class DatagramIterator
     }
 
     // read_blob reads a blob from the datagram in the format
-    //     {dgsize_t length; uint8[length] binary} and returns the binary part.
+    //     {sizetag_t length; uint8[length] binary} and returns the binary part.
     std::vector<uint8_t> read_blob()
     {
-        dgsize_t length = read_size();
+        sizetag_t length = read_size();
         return read_data(length);
     }
 
     // read_datagram reads a blob from the datagram and returns it as another datagram.
     DatagramPtr read_datagram()
     {
-        dgsize_t length = read_size();
+        dgsize_t length = read_dgsize();
         return Datagram::create(m_dg->get_data() + m_offset, length);
     }
 
@@ -256,9 +265,9 @@ class DatagramIterator
         case T_VARSTRING:
         case T_VARBLOB:
         case T_VARARRAY: {
-            dgsize_t len = read_size();
-            dgsize_t net_len = swap_le(len);
-            buffer.insert(buffer.end(), (uint8_t*)&net_len, (uint8_t*)&net_len + sizeof(dgsize_t));
+            sizetag_t len = read_size();
+            sizetag_t net_len = swap_le(len);
+            buffer.insert(buffer.end(), (uint8_t*)&net_len, (uint8_t*)&net_len + sizeof(sizetag_t));
 
             std::vector<uint8_t> blob = read_data(len);
             buffer.insert(buffer.end(), blob.begin(), blob.end());
@@ -300,7 +309,7 @@ class DatagramIterator
     {
         using namespace dclass;
         if(dtype->has_fixed_size()) {
-            dgsize_t length = dtype->get_size();
+            sizetag_t length = dtype->get_size();
             check_read_length(length);
             m_offset += length;
             return;
@@ -310,7 +319,7 @@ class DatagramIterator
         case T_VARSTRING:
         case T_VARBLOB:
         case T_VARARRAY: {
-            dgsize_t length = read_size();
+            sizetag_t length = read_size();
             check_read_length(length);
             m_offset += length;
             break;

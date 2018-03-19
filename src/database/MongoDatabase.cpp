@@ -175,8 +175,8 @@ static void bamboo2bson(single_context builder,
     case dclass::Type::T_VARARRAY: {
         const dclass::ArrayType *array = type->as_array();
 
-        dgsize_t array_length = dgi.read_size();
-        dgsize_t starting_size = dgi.tell();
+        sizetag_t array_length = dgi.read_size();
+        sizetag_t starting_size = dgi.tell();
 
         auto sub_builder = builder << open_array;
 

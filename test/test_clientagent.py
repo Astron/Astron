@@ -985,7 +985,7 @@ class TestClientAgent(ProtocolTest):
         dg.add_channel(id) # old parent
         self.server.send(dg)
         self.assertDisconnect(client, CLIENT_DISCONNECT_SESSION_OBJECT_DELETED)
-        
+
 
     def test_postremove(self):
         self.server.flush()
@@ -998,7 +998,7 @@ class TestClientAgent(ProtocolTest):
 
         # Add a post-remove...
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr1.get_data())
+        dg.add_datagram(pr1)
         self.server.send(dg)
 
         # Clear the post-removes...
@@ -1007,11 +1007,11 @@ class TestClientAgent(ProtocolTest):
 
         # Add two different ones...
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr2.get_data())
+        dg.add_datagram(pr2)
         self.server.send(dg)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_ADD_POST_REMOVE)
-        dg.add_string(pr3.get_data())
+        dg.add_datagram(pr3)
         self.server.send(dg)
 
         #Wait
@@ -1034,7 +1034,7 @@ class TestClientAgent(ProtocolTest):
         raw_dg.add_channel(152379565)
 
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
-        dg.add_string(raw_dg.get_data())
+        dg.add_datagram(raw_dg)
         self.server.send(dg)
 
         self.expect(client, raw_dg, isClient = True)
@@ -3459,7 +3459,7 @@ class TestClientAgent(ProtocolTest):
         #active socket.
         raw_dg = Datagram("Hello World")
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
-        dg.add_string(raw_dg.get_data())
+        dg.add_datagram(raw_dg)
 
         #inital connection test
         self.server.send(dg)
