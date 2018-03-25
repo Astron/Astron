@@ -1,16 +1,27 @@
 language: cpp
-os:
-- linux
-- osx
+
+matrix:
+  fast_finish: true
+  include:
+  - os: linux
+    compiler: clang
+  - os: linux
+    compiler: gcc
+    env: BUILD_TYPE=coverage
+      addons:
+        apt:
+          packages:
+            - lcov
+  - os: osx
+    compiler: gcc
+  - os: osx
+    compiler: clang
 
 dist: trusty
 sudo: required
 
 osx_image: xcode8.3
 
-compiler:
-- clang
-- gcc
 services:
     - mongodb
 addons:
@@ -26,6 +37,7 @@ addons:
     - libssl-dev
     - libyaml-cpp-dev
     - mongodb-org-server
+    - lcov
 
 before_install:
 - |
@@ -35,6 +47,10 @@ before_install:
     brew upgrade openssl && export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2n/
     brew install yaml-cpp;
     brew install mongodb;
+  fi
+
+  if [ "$BUILD_TYPE" = coverage ]; then
+    gem install coveralls-lcov;
   fi
 
 install:
@@ -48,4 +64,32 @@ install:
 before_script:
 - 'if [[ "$CXX" == "clang++" && "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget && sudo wget -O /usr/include/boost/config/stdlib/libstdcpp3.hpp https://raw.githubusercontent.com/boostorg/config/b36566fe04a89103b7ef5569c03e3a26eb77af36/include/boost/config/stdlib/libstdcpp3.hpp; fi'
 
-script: cd build && cmake .. && make && env CTEST_OUTPUT_ON_FAILURE=1 make test
+after_success:
+  - if [ "$BUILD_TYPE" = coverage ]; then
+      echo "Running coverage..."
+      pwd
+      rm -f coverage.info
+      lcov -c -o coverage.info \
+        -d CMakeFiles/astrond.dir/src/ \
+        -d src/dclass/CMakeFiles/dclass.dir/
+
+      lcov -r coverage.info -o coverage.info build/* \
+        c++/* \
+        boost/* \
+        yaml-cpp/* \
+        bsoncxx/* \
+        mongocxx/* \
+        src/dclass/CMakeFiles/dclass.dir/file/lexer.cpp \
+        src/dclass/CMakeFiles/dclass.dir/file/parser.cpp
+
+      lcov -l coverage.info
+      coveralls-lcov coverage.info
+    else
+      echo "No coverage for this build";
+    fi
+
+script:
+  - cd build
+  - if [ "$BUILD_TYPE" = coverage ]; then cmake -DENABLE_COVERAGE=1 -DBUILD_TYPE=Debug ..; else cmake ..; fi
+  - make
+  - env CTEST_OUTPUT_ON_FAILURE=1 make test
