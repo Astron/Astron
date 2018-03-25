@@ -67,6 +67,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	add_definitions(-std=c++11)
+	add_definitions(-Wno-deprecated-register)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -83,6 +84,13 @@ endif()
 ### Debug Flags -- compile in spam/debug log messages ###
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
+if (ENABLE_COVERAGE)
+    add_definitions(-DCOVERAGE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    message(STATUS "Enabling coverage support")
+endif()
 
 ### OS Specific Settings ###
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")  ### Windows requires winsock
