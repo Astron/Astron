@@ -4,6 +4,7 @@
 #include "dclass/dc/Method.h"
 #include "dclass/dc/Field.h"
 #include "dclass/dc/Parameter.h"
+#include "dclass/dc/ArrayType.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif
@@ -14,6 +15,14 @@ class DatagramIteratorEOF : public std::runtime_error
 {
   public:
     DatagramIteratorEOF(const std::string &what) : std::runtime_error(what) { }
+};
+
+// An ArraySizeOOB is an exception that is thrown when attempting to read an array-type field
+// where the provided array length is outside the provided sane range for the given field type.
+class ArraySizeOOB : public std::runtime_error
+{
+    public:
+        ArraySizeOOB(const std::string &what) : std::runtime_error(what) { }
 };
 
 // A DatagramIterator lets you step trough a datagram by reading a single value at a time.
@@ -256,8 +265,18 @@ class DatagramIterator
         case T_VARSTRING:
         case T_VARBLOB:
         case T_VARARRAY: {
+            const ArrayType* darray = dtype->as_array();
+
             dgsize_t len = read_size();
             dgsize_t net_len = swap_le(len);
+
+            if(!darray->is_within_constraints(net_len)) {
+                std::stringstream error;
+                error << "Failed to unpack array-type field " << darray->get_alias()
+                      << " due to size constraint violation (got " << net_len << ")";
+                throw new ArraySizeOOB(error.str());
+            }
+
             buffer.insert(buffer.end(), (uint8_t*)&net_len, (uint8_t*)&net_len + sizeof(dgsize_t));
 
             std::vector<uint8_t> blob = read_data(len);
@@ -310,8 +329,18 @@ class DatagramIterator
         case T_VARSTRING:
         case T_VARBLOB:
         case T_VARARRAY: {
+            const ArrayType* darray = dtype->as_array();
+
             dgsize_t length = read_size();
             check_read_length(length);
+
+            if(!darray->is_within_constraints(length)) {
+                std::stringstream error;
+                error << "Failed to skip array-type field " << darray->get_alias()
+                      << " due to size constraint violation (got " << length << ")";
+                throw new ArraySizeOOB(error.str());
+            }
+
             m_offset += length;
             break;
         }

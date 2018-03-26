@@ -29,6 +29,9 @@ class ArrayType : public DistributedType
     //     or 0 if the array may contain a variable number of elements.
     inline size_t get_array_size() const;
 
+    // is_within_constraints checks whether the given array size is within the size constraints for the given type.
+    bool is_within_constraints(uint64_t array_size) const;
+
     // has_range returns true if there is a constraint on the range of valid array sizes.
     //     This is always true for fixed-size arrays.
     inline bool has_range() const;
