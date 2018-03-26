@@ -197,6 +197,10 @@ class AstronClient : public Client, public NetworkHandler
             send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM,
                             "ClientDatagram too large to be routed on MD.", true);
             return;
+        } catch(const FieldConstraintViolation& violation) {
+            // The field that was being updated has constraints, and one of its attributes (length or value) violates the type constraints specified in our dclass.
+            send_disconnect(CLIENT_DISCONNECT_FIELD_CONSTRAINT, violation.what(), true);
+            return;
         }
 
         if(dgi.get_remaining()) {
