@@ -3656,6 +3656,147 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         client.close()
 
+    def test_length_constraints(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Exceed maximum length for sendMessageConstraint's string field.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('A damaged Dream of Arcadia.')
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # OK, reconnect...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Go under the minimum length for sendMessageConstraint
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('Ikiru')
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # One more time...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Now for something within the field length bounds.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('Tainai nai ba...')
+        client.send(dg)
+
+        self.expectNone(client)
+
+    def test_value_constraints(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # New client:
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Put the client in the ESTABLISHED state.
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Go above the maximum value constraint for setColorConstraint's "r" field.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setColorConstraint)
+        dg.add_uint8(128)
+        dg.add_uint8(55)
+        dg.add_uint8(66)
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # OK, reconnect...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Now for a valid in-range update.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setColorConstraint)
+        dg.add_uint8(54)
+        dg.add_uint8(51) 
+        dg.add_uint8(65)
+        client.send(dg) 
+
+        self.expectNone(client)
 
     def send_heartbeat(self, client):
         # Construct heartbeat datagram
