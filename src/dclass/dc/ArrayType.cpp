@@ -57,6 +57,17 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
     }
 }
 
+// is_within_constraints checks whether the provided array size is within the size constraints for the given type.
+bool ArrayType::is_within_constraints(uint64_t array_size) const
+{
+    if(m_array_size > 0) {
+        // Fixed-size array expected. Compare against m_array_size instead of the range.
+        return m_array_size == array_size;
+    }
+
+    return (m_array_range.min.uinteger <= array_size) && (m_array_range.max.uinteger >= array_size);
+}
+
 // as_array returns this as an ArrayType if it is an array, or nullptr otherwise.
 ArrayType* ArrayType::as_array()
 {
