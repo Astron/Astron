@@ -564,7 +564,8 @@ class AstronClient : public Client, public NetworkHandler
             // One of its attributes (either length or value) violates the type constraints specified in our dclass.
             std::stringstream ss;
 ;           ss << "Client tried to send update that violates the constraints for field "
-               << dcc->get_name() << "(" << do_id << ")." << field->get_name();
+               << dcc->get_name() << "(" << do_id << ")." << field->get_name()
+               << ": " << violation.what();
             send_disconnect(CLIENT_DISCONNECT_FIELD_CONSTRAINT, ss.str(), true);
             return;
         }
