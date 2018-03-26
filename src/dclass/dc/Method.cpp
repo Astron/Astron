@@ -9,7 +9,7 @@ namespace dclass   // open namespace
 
 
 // constructor
-Method::Method()
+Method::Method() : m_has_constraint(false)
 {
     m_type = T_METHOD;
 }
@@ -63,6 +63,10 @@ bool Method::add_parameter(Parameter *param)
         } else {
             m_size = 0;
         }
+    }
+
+    if(!m_has_constraint && param->get_type()->has_range()) {
+        m_has_constraint = true;
     }
 
     return true;

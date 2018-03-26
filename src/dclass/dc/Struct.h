@@ -56,6 +56,9 @@ class Struct : public DistributedType
     //     Returns false if the field could not be added to the struct.
     virtual bool add_field(Field* field);
 
+    // has_range in this case returns true if any of the fields within the struct have a constraint.
+    virtual bool has_range() const;
+
     // generate_hash accumulates the properties of this type into the hash.
     virtual void generate_hash(HashGenerator &hashgen) const;
 
@@ -73,6 +76,8 @@ class Struct : public DistributedType
     std::vector<Field*> m_fields;
     std::unordered_map<std::string, Field*> m_fields_by_name;
     std::unordered_map<unsigned int, Field*> m_fields_by_id;
+
+    bool m_has_constraint;
 };
 
 

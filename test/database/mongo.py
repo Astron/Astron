@@ -33,6 +33,7 @@ def setup_mongo(unittest):
 def teardown_mongo(unittest):
     # Kill Server
     unittest.mongod.terminate()
+    unittest.mongod.wait()
 
     # Remove temp files
     try:
