@@ -203,7 +203,7 @@ bool NumericType::set_range(const NumericRange &range)
 bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length) const
 {
     (void) length;
-    if(m_size != data.size()) {
+    if(m_size != data->size()) {
         // Somehow we got passed a short read for this field...
         return false;
     }
@@ -211,7 +211,7 @@ bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length
     // We use val as a 'scratch value' for any further operations so we have an assurance as to size.
     // We always assume 64-bit values for casts.
     double val = 0;
-    memcpy(&val, &data.front(), m_size);
+    memcpy(&val, &data->front(), m_size);
 
     switch(m_type) {
         case T_INT8:
