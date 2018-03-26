@@ -77,7 +77,11 @@ struct NumericRange {
             return (min.uinteger <= num.uinteger && num.uinteger <= max.uinteger);
         case Number::FLOAT:
             return (min.floating <= num.floating && num.floating <= max.floating);
+        default:
+            break;
         }
+
+        return false;
     }
 
     inline bool is_empty() const

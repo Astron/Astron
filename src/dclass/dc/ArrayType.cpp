@@ -57,9 +57,11 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
     }
 }
 
-// is_within_constraints checks whether the provided array size is within the size constraints for the given type.
-bool ArrayType::is_within_constraints(uint64_t array_size) const
+// within_range checks whether the provided array size is within the size constraints for the given type.
+bool ArrayType::within_range(const std::vector<uint8_t>* data, uint64_t array_size) const
 {
+    (void) data;
+
     if(m_array_size > 0) {
         // Fixed-size array expected. Compare against m_array_size instead of the range.
         return m_array_size == array_size;

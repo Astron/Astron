@@ -2,6 +2,8 @@
 #pragma once
 #include <stdint.h>
 #include <string> // std::string
+#include <vector> // std::vector
+
 namespace dclass   // open namespace dclass
 {
 
@@ -85,6 +87,12 @@ class DistributedType
     // as_method returns this as a Method if it is a method, or nullptr otherwise.
     virtual Method* as_method();
     virtual const Method* as_method() const;
+
+    // has_range returns true if the type has any constraints, or false otherwise.
+    virtual bool has_range() const;
+
+    // within_range returns true if the field information provided fits the constraints of the given type.
+    virtual bool within_range(const std::vector<uint8_t>* data, uint64_t length) const;
 
     // generate_hash accumulates the properties of this file into the hash.
     virtual void generate_hash(HashGenerator& hashgen) const;

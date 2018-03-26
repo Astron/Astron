@@ -41,6 +41,7 @@ class Method final : public DistributedType
   private:
     std::vector<Parameter*> m_parameters; // the "arguments" or parameters of the method
     std::unordered_map<std::string, Parameter*> m_parameters_by_name;
+    bool m_has_constraint;
 };
 
 

@@ -377,11 +377,11 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
 
     // First, validate whether our response fields fall within our dclass' constraints.
     for(const auto& it : response_fields) {
+        std::vector<uint8_t> buffer;
         try {
             // Try and unpack the field contents using a DatagramIterator.
             // If we get a FieldConstraintViolation, the field in this object (as serialised in the DB) is invalid.
             // If we get a DatagramIteratorEOF, we have a short read for this field.
-            std::vector<uint8_t> buffer;
             DatagramPtr dg = Datagram::create();
             dg->add_data(it.second);
             DatagramIterator dgi(dg);
