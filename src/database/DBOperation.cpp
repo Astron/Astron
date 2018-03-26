@@ -62,6 +62,7 @@ void DBOperation::announce_fields(const FieldValues& fields)
         m_dbserver->route_datagram(update);
     }
 }
+
 bool DBOperation::verify_fields(const dclass::Class *dclass, const FieldSet& fields)
 {
     bool valid = true;
@@ -371,6 +372,30 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
             if(it2 != snapshot->m_fields.end()) {
                 response_fields[it2->first] = it2->second;
             }
+        }
+    }
+
+    // First, validate whether our response fields fall within our dclass' constraints.
+    for(const auto& it : response_fields) {
+        try {
+            // Try and unpack the field contents using a DatagramIterator.
+            // If we get a FieldConstraintViolation, the field in this object (as serialised in the DB) is invalid.
+            // If we get a DatagramIteratorEOF, we have a short read for this field.
+            std::vector<uint8_t> buffer;
+            DatagramPtr dg = Datagram::create();
+            dg->add_data(it.second);
+            DatagramIterator dgi(dg);
+            dgi.unpack_field(it.first, buffer);
+        } catch(const FieldConstraintViolation& violation) {
+            m_dbserver->m_log->warning() << "Field constraint violation while retrieving field " << it.first->get_name()
+                                         << " on object " << this->doid() << ": " << violation.what();
+            on_failure();
+            return;
+        } catch(const DatagramIteratorEOF&) {
+            m_dbserver->m_log->warning() << "Short read from database while trying to validate field " << it.first->get_name()
+                                         << " on object " << this->doid();
+            on_failure();
+            return;
         }
     }
 
