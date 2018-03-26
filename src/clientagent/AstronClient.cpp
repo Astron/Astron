@@ -197,10 +197,6 @@ class AstronClient : public Client, public NetworkHandler
             send_disconnect(CLIENT_DISCONNECT_OVERSIZED_DATAGRAM,
                             "ClientDatagram too large to be routed on MD.", true);
             return;
-        } catch(const FieldConstraintViolation& violation) {
-            // The field that was being updated has constraints, and one of its attributes (length or value) violates the type constraints specified in our dclass.
-            send_disconnect(CLIENT_DISCONNECT_FIELD_CONSTRAINT, violation.what(), true);
-            return;
         }
 
         if(dgi.get_remaining()) {
@@ -557,10 +553,20 @@ class AstronClient : public Client, public NetworkHandler
             }
         }
 
-        // If an exception occurs while unpacking data it will be handled by
+        // If a datagram read-related exception occurs while unpacking data it will be handled by
         // receive_datagram and the client will be dc'd with "truncated datagram".
-        vector<uint8_t> data;
-        dgi.unpack_field(field, data);
+        try {
+            vector<uint8_t> data;
+            dgi.unpack_field(field, data);
+        } catch(const FieldConstraintViolation& violation) {
+            // The field that was being updated has constraints.
+            // One of its attributes (either length or value) violates the type constraints specified in our dclass.
+            std::stringstream ss;
+;           ss << "Client tried to send update that violates the constraints for field "
+               << dcc->get_name() << "(" << do_id << ")." << field->get_name();
+            send_disconnect(CLIENT_DISCONNECT_FIELD_CONSTRAINT, ss.str(), true);
+            return;
+        }
 
         // If an exception occurs while packing data it will be handled by
         // receive_datagram and the client will be dc'd with "oversized datagram".
