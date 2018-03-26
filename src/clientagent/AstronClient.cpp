@@ -555,8 +555,9 @@ class AstronClient : public Client, public NetworkHandler
 
         // If a datagram read-related exception occurs while unpacking data it will be handled by
         // receive_datagram and the client will be dc'd with "truncated datagram".
+        vector<uint8_t> data;
+
         try {
-            vector<uint8_t> data;
             dgi.unpack_field(field, data);
         } catch(const FieldConstraintViolation& violation) {
             // The field that was being updated has constraints.
