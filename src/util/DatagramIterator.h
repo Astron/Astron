@@ -253,7 +253,12 @@ class DatagramIterator
     void unpack_dtype(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
     {
         using namespace dclass;
-        if(dtype->has_fixed_size()) {
+
+        // For Struct or Method-type fields, any constraints on child fields prevent us from taking the single-read fast-path.
+        // Ergo, their has_range field lets us know whether there are any constraints applicable to their "child" fields.
+        const bool skip_fixed = ((dtype->get_type() == T_STRUCT || dtype->get_type() == T_METHOD) && dtype->has_range());
+
+        if(dtype->has_fixed_size() && !skip_fixed) {
             const ArrayType* array = dtype->as_array();
 
             if(dtype->get_type() == T_ARRAY && array && array->get_element_type()->has_range()) {
@@ -279,11 +284,11 @@ class DatagramIterator
             // Check for any value range constraints applying to fixed-size numerical types:
             if(num && num->has_range()) {
                 // We do have a value range constraint to check for.
-                if(!num->within_range(data, 0)) {
+                if(!num->within_range(&data, 0)) {
                     std::stringstream error;
                     error << "Failed to unpack numeric-type field of type " << num->get_alias()
                           << " due to value range constraint violation";
-                    throw new FieldConstraintViolation(error.str());
+                    throw FieldConstraintViolation(error.str());
                 }
             }
 
@@ -324,7 +329,7 @@ class DatagramIterator
                 std::stringstream error;
                 error << "Failed to unpack variable-length field of type " << array->get_alias()
                       << " due to element count constraint violation (got " << elem_cnt << ")";
-                throw new FieldConstraintViolation(error.str());
+                throw FieldConstraintViolation(error.str());
             }
 
             break;

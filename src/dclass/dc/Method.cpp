@@ -72,6 +72,11 @@ bool Method::add_parameter(Parameter *param)
     return true;
 }
 
+bool Method::has_range() const
+{
+    return m_has_constraint;
+}
+
 // generate_hash accumulates the properties of this method into the hash
 void Method::generate_hash(HashGenerator& hashgen) const
 {

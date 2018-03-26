@@ -53,6 +53,8 @@ dclass DistributedClientTestObject {
 	setColor(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) required broadcast ownsend;
 	requestKill() clsend airecv;
 	sendMessage(string msg) clsend ownrecv;
+        sendMessageConstraint(string(8-16) msg) clsend ownrecv;
+        setColorConstraint(uint8(0-100) r, uint8(0-100) g, uint8(0-100) b) clsend ownrecv;
 };
 
 struct Block {
