@@ -200,9 +200,9 @@ bool NumericType::set_range(const NumericRange &range)
     return true;
 }
 
-bool NumericType::within_range(const std::vector<uint8_t>& data, uint64_t length) const
+bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length) const
 {
-    (void)length;
+    (void) length;
     if(m_size != data.size()) {
         // Somehow we got passed a short read for this field...
         return false;

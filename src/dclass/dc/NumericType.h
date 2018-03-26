@@ -43,7 +43,7 @@ class NumericType : public DistributedType
     //     Returns false if the range is not valid for this type.
     bool set_range(const NumericRange &range);
 
-    virtual bool within_range(const std::vector<uint8_t>& data, uint64_t length) const;
+    virtual bool within_range(const std::vector<uint8_t>* data, uint64_t length) const;
 
     // generate_hash accumulates the properties of this type into the hash.
     virtual void generate_hash(HashGenerator &hashgen) const;
