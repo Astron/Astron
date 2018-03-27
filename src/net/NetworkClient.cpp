@@ -31,10 +31,9 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, st
 
     m_async_timer = uvw::Loop::getDefault()->resource<uvw::TimerHandle>();
 
-    bool endpoints_set = (m_remote.port && m_local.port);
-    if(endpoints_set || determine_endpoints(m_remote, m_local)) {
-        start_receive();
-    }
+    determine_endpoints(m_remote, m_local);
+
+    start_receive();
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
