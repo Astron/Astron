@@ -6,7 +6,7 @@
 
 MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
     m_message_director(md), m_client(std::make_shared<NetworkClient>(this)),
-    m_connector(new NetworkConnector(uvw::Loop::getDefault()))
+    m_connector(new NetworkConnector(g_loop))
 {
 
 }

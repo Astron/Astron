@@ -4,7 +4,7 @@
 #include "net/address_utils.h"
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
-    m_loop(uvw::Loop::getDefault()), m_socket(nullptr), m_enabled(false)
+    m_loop(g_loop), m_socket(nullptr), m_enabled(false)
 {
     m_socket = m_loop->resource<uvw::UDPHandle>();
 }

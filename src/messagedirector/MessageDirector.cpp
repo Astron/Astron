@@ -11,8 +11,6 @@
 #include "MDNetworkParticipant.h"
 #include "MDNetworkUpstream.h"
 
-using boost::asio::ip::tcp;
-
 static ConfigGroup md_config("messagedirector");
 static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
@@ -28,7 +26,7 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
-    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
+    m_thread(nullptr), m_log("msgdir", "Message Director")
 {
 }
 
@@ -95,7 +93,28 @@ void MessageDirector::shutdown_threading()
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
-    process_datagram(p, dg);
+    if(m_thread) {
+        // Threaded mode! First, we have to get the lock to our queue:
+        std::lock_guard<std::mutex> lock(m_messages_lock);
+
+        // Now, we put the message into our queue and ring the bell:
+        m_messages.push(std::make_pair(p, dg));
+        m_cv.notify_one();
+    } else if(std::this_thread::get_id() != g_main_thread_id) {
+        // We aren't working in threaded mode, but we aren't in the main thread
+        // either. For safety, we should post this down to the main thread.
+        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
+
+        handle->on<uvw::AsyncEvent>([this, p, dg](const uvw::AsyncEvent&, uvw::AsyncHandle& handle) {
+            this->process_datagram(p, dg);
+            handle.close();
+        });
+
+        handle->send();
+    } else {
+        // Main thread; we can just process it here.
+        process_datagram(p, dg);
+    }
 }
 
 // This function runs in a thread; it loops until it's told to shut down:

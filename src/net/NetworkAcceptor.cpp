@@ -1,9 +1,10 @@
+#include "core/global.h"
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
 
 
 NetworkAcceptor::NetworkAcceptor() :
-    m_loop(uvw::Loop::getDefault()),
+    m_loop(g_loop),
     m_acceptor(nullptr),
     m_started(false)
 {

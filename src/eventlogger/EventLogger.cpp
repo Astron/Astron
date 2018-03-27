@@ -32,7 +32,7 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 void EventLogger::bind(const std::string &addr)
 {
     m_log.info() << "Opening UDP socket..." << std::endl;
-    auto addresses = resolve_address(addr, 7197, uvw::Loop::getDefault());
+    auto addresses = resolve_address(addr, 7197, g_loop);
 
     m_socket->bind(addresses.front());
 }

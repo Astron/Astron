@@ -29,7 +29,7 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, st
     m_socket->noDelay(true);
     m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
-    m_async_timer = uvw::Loop::getDefault()->resource<uvw::TimerHandle>();
+    m_async_timer = g_loop->resource<uvw::TimerHandle>();
 
     determine_endpoints(m_remote, m_local);
 
@@ -73,6 +73,18 @@ void NetworkClient::set_write_buffer(uint64_t max_bytes)
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
+
+    if(std::this_thread::get_id() != g_main_thread_id) {
+        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
+
+        handle->on<uvw::AsyncEvent>([this, dg](const uvw::AsyncEvent&, uvw::AsyncHandle& handle) {
+            this->send_datagram(dg);
+            handle.close();
+        });
+
+        handle->send();
+        return;
+    }
 
     if(m_is_sending) {
         m_send_queue.push(dg);
@@ -160,11 +172,9 @@ void NetworkClient::start_receive()
         this->send_finished();
     });
 
-    /*
     m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
         this->send_expired();
     });
-    */
 
     m_socket->read();
 }
@@ -180,7 +190,7 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
     m_disconnect_error = ec;
 
     m_socket->close();
-    //m_async_timer->stop();
+    m_async_timer->stop();
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
@@ -222,7 +232,7 @@ void NetworkClient::send_finished()
     std::unique_lock<std::mutex> lock(m_mutex);
 
     // Cancel the outstanding timeout
-    //m_async_timer->stop();
+    m_async_timer->stop();
 
     // Discard the buffer we just used:
     delete [] m_send_buf;
@@ -253,8 +263,8 @@ void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std:
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
-        //m_async_timer->stop();
-        //m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
+        m_async_timer->stop();
+        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
     }
 
     m_socket->write(buf, length);

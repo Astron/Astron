@@ -73,7 +73,6 @@ class MessageDirector final : public ChannelMap
     std::mutex m_messages_lock;
     std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
     std::condition_variable m_cv;
-    std::thread::id m_main_thread;
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
     void process_terminates();
     void routing_thread();

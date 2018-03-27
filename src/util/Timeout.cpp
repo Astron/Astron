@@ -4,7 +4,7 @@
 #include <boost/bind.hpp>
 
 Timeout::Timeout(unsigned long ms, std::function<void()> f) :
-    m_loop(uvw::Loop::getDefault()),
+    m_loop(g_loop),
     m_timer(nullptr),
     m_callback(f),
     m_timeout_interval(ms),

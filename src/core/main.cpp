@@ -109,6 +109,9 @@ int main(int argc, char *argv[])
         }
     }
 
+    g_loop = uvw::Loop::getDefault();
+    g_main_thread_id = std::this_thread::get_id();
+
     g_logger->set_color_enabled(prettyPrint);
 
     if(config_arg_index != -1) {
@@ -221,7 +224,7 @@ int main(int argc, char *argv[])
     // Run the main event loop
     int exit_code = 0;
     try {
-        uvw::Loop::getDefault()->run();
+        g_loop->run();
     }
 
     // This exception is propogated if astron_shutdown is called
