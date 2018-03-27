@@ -45,6 +45,7 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
+
     m_remote = remote;
     m_local = local;
 
@@ -73,8 +74,7 @@ void NetworkClient::set_write_buffer(uint64_t max_bytes)
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    async_send(dg, lock);
-    /*
+
     if(m_is_sending) {
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
@@ -85,7 +85,6 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         m_is_sending = true;
         async_send(dg, lock);
     }
-     */
 }
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
@@ -97,18 +96,19 @@ void NetworkClient::defragment_input()
 {
     while(m_data_buf.size() > sizeof(dgsize_t)) {
         // Enough data to know the expected length of the datagram.
-        dgsize_t data_size = *reinterpret_cast<dgsize_t*>(&m_data_buf[0]);
+        dgsize_t data_size = *reinterpret_cast<dgsize_t*>(&m_data_buf.front());
         if(m_data_buf.size() >= data_size + sizeof(dgsize_t)) {
             dgsize_t overread_size = (m_data_buf.size() - data_size - sizeof(dgsize_t));
-            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf[0] + sizeof(dgsize_t)), data_size);
+            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf.front() + sizeof(dgsize_t)), data_size);
             if(overread_size > 0) {
                 // Splice leftover data to new m_data_buf based on expected datagram length.
-                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf[0] + sizeof(dgsize_t) + data_size),
-                                                        reinterpret_cast<char*>(&m_data_buf[0] + sizeof(dgsize_t) + data_size + overread_size));
+                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf.front() + sizeof(dgsize_t) + data_size),
+                                                        reinterpret_cast<char*>(&m_data_buf.front() + sizeof(dgsize_t) + data_size + overread_size));
             } else {
                 // No overread, buffer is empty.
                 m_data_buf = std::vector<unsigned char>();
             }
+
             m_handler->receive_datagram(dg);
         }
         else {
@@ -157,15 +157,15 @@ void NetworkClient::start_receive()
         this->handle_disconnect(UV_EOF);
     });
 
-    /*
     m_socket->on<uvw::WriteEvent>([this](const uvw::WriteEvent&, uvw::TcpHandle &) {
         this->send_finished();
     });
 
+    /*
     m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
         this->send_expired();
     });
-     */
+    */
 
     m_socket->read();
 }
@@ -181,7 +181,7 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
     m_disconnect_error = ec;
 
     m_socket->close();
-    m_async_timer->stop();
+    //m_async_timer->stop();
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
@@ -223,7 +223,7 @@ void NetworkClient::send_finished()
     std::unique_lock<std::mutex> lock(m_mutex);
 
     // Cancel the outstanding timeout
-    m_async_timer->stop();
+    //m_async_timer->stop();
 
     // Discard the buffer we just used:
     delete [] m_send_buf;

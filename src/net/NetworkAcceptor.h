@@ -11,10 +11,6 @@ class NetworkAcceptor
     // as part of the address, it will use default_port.
     void bind(const std::string &address, unsigned int default_port);
 
-    // The libuv loop thread for each acceptor runs under listener_thread.
-    // Each acceptor has its own loop, and each acceptor's loop has its own thread.
-    void listener_thread();
-
     void start();
     void stop();
 

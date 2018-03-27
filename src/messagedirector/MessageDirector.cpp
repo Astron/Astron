@@ -95,21 +95,7 @@ void MessageDirector::shutdown_threading()
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
-    if(m_thread) {
-        // Threaded mode! First, we have to get the lock to our queue:
-        std::lock_guard<std::mutex> lock(m_messages_lock);
-
-        // Now, we put the message into our queue and ring the bell:
-        m_messages.push(std::make_pair(p, dg));
-        m_cv.notify_one();
-    } else if(std::this_thread::get_id() != m_main_thread) {
-        // We aren't working in threaded mode, but we aren't in the main thread
-        // either. For safety, we should post this down to the main thread.
-        // TODO: Use uvw's async functionality here.
-    } else {
-        // Main thread; we can just process it here.
-        process_datagram(p, dg);
-    }
+    process_datagram(p, dg);
 }
 
 // This function runs in a thread; it loops until it's told to shut down:
