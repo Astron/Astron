@@ -100,7 +100,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
 {
-    return m_socket && m_socket->readable() && m_socket->writable();
+    return m_socket && m_socket->active();
 }
 
 void NetworkClient::defragment_input()
@@ -130,6 +130,7 @@ void NetworkClient::defragment_input()
 
 void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t size)
 {
+    /*
     if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
         // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
         // Should occur in most cases, as we're expecting <= the average TCP MSS for most datagrams.
@@ -141,6 +142,7 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
             return;
         }
     }
+    */
 
     m_data_buf.insert(m_data_buf.end(), data.get(), data.get() + size);
     defragment_input();
@@ -201,9 +203,8 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
 
     m_disconnect_handled = true;
 
-    if(is_connected(lock)) {
-        m_socket->close();
-    }
+    m_socket->close();
+    m_async_timer->stop();
 
     // Do NOT hold the lock when calling this. Our handler may acquire a
     // lock of its own, and the network lock should always be the lowest in the

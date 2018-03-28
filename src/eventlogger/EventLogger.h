@@ -22,7 +22,7 @@ class EventLogger final : public Role
 
   private:
     LogCategory m_log;
-    std::unique_ptr<uvw::UDPHandle> m_socket;
+    std::shared_ptr<uvw::UDPHandle> m_socket;
     uvw::Addr m_remote;
     std::string m_file_format;
     std::unique_ptr<std::ofstream> m_file;

@@ -34,6 +34,7 @@ void EventLogger::bind(const std::string &addr)
     m_log.info() << "Opening UDP socket..." << std::endl;
     auto addresses = resolve_address(addr, 7197, g_loop);
 
+    m_socket = g_loop->resource<uvw::UDPHandle>();
     m_socket->bind(addresses.front());
 }
 

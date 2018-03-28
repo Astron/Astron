@@ -4,9 +4,8 @@
 #include "net/address_utils.h"
 
 EventSender::EventSender() : m_log("eventsender", "Event Sender"),
-    m_loop(g_loop), m_socket(nullptr), m_enabled(false)
+    m_loop(nullptr), m_socket(nullptr), m_enabled(false)
 {
-    m_socket = m_loop->resource<uvw::UDPHandle>();
 }
 
 void EventSender::init(const std::string& target)
@@ -16,6 +15,9 @@ void EventSender::init(const std::string& target)
         m_log.debug() << "Not enabled." << std::endl;
         return;
     }
+
+    m_loop = g_loop;
+    m_socket = g_loop->resource<uvw::UDPHandle>();
 
     m_log.debug() << "Resolving target..." << std::endl;
     auto addresses = resolve_address(target, 7197, m_loop);
