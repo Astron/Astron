@@ -24,6 +24,10 @@ void Timeout::timer_callback()
 
 void Timeout::reset()
 {
+    m_timer->once<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+        this->timer_callback();
+    });
+
     m_timer->stop();
     m_timer->start(uvw::TimerHandle::Time{m_timeout_interval}, uvw::TimerHandle::Time{0});
 }
