@@ -125,7 +125,7 @@ private:
 
     void handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
 
-    void defragment_input();
+    void defragment_input(std::unique_lock<std::mutex> &lock);
     void process_datagram(const std::unique_ptr<char[]>& data, size_t length);
 
     bool m_is_sending = false;

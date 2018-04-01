@@ -15,7 +15,11 @@ NetworkClient::~NetworkClient()
 
     m_socket->close();
     m_socket = nullptr;
-    delete [] m_send_buf;
+
+    if(m_send_buf != nullptr) {
+        delete [] m_send_buf;
+        m_send_buf = nullptr;
+    }
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &)
@@ -74,18 +78,6 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    if(std::this_thread::get_id() != g_main_thread_id) {
-        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
-
-        handle->on<uvw::AsyncEvent>([this, dg](const uvw::AsyncEvent&, uvw::AsyncHandle& handle) {
-            this->send_datagram(dg);
-            handle.close();
-        });
-
-        handle->send();
-        return;
-    }
-
     if(m_is_sending) {
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
@@ -103,7 +95,7 @@ bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
     return m_socket && m_socket->active();
 }
 
-void NetworkClient::defragment_input()
+void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
 {
     while(m_data_buf.size() > sizeof(dgsize_t)) {
         // Enough data to know the expected length of the datagram.
@@ -120,7 +112,9 @@ void NetworkClient::defragment_input()
                 m_data_buf = std::vector<unsigned char>();
             }
 
+            lock.unlock();
             m_handler->receive_datagram(dg);
+            lock.lock();
         }
         else {
             break;
@@ -130,7 +124,8 @@ void NetworkClient::defragment_input()
 
 void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t size)
 {
-    /*
+    std::unique_lock<std::mutex> lock(m_mutex);
+
     if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
         // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
         // Should occur in most cases, as we're expecting <= the average TCP MSS for most datagrams.
@@ -138,22 +133,20 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
         if(datagram_size == size - sizeof(dgsize_t)) {
             // Yep. Dispatch to receive_datagram and early-out.
             DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(data.get() + sizeof(dgsize_t)), datagram_size);
+            lock.unlock();
             m_handler->receive_datagram(dg);
             return;
         }
     }
-    */
 
     m_data_buf.insert(m_data_buf.end(), data.get(), data.get() + size);
-    defragment_input();
+    defragment_input(lock);
 }
 
 void NetworkClient::start_receive()
 {
     // Sets up all the handlers needed for the NetworkClient instance and starts receiving data from the stream.
 
-    // The lambda below runs within the context of the event loop thread.
-    // We do not have to worry about locking as long as nothing touches m_data_buf besides process_datagram.
     m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
         this->process_datagram(event.data, event.length);
     });

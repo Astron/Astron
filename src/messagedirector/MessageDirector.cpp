@@ -215,11 +215,16 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
 void MessageDirector::process_terminates()
 {
-    std::lock_guard<std::mutex> lock(m_terminated_lock);
-    for(const auto& it : m_terminated_participants) {
+    std::unordered_set<MDParticipantInterface*> terminating_participants;
+
+    {
+        std::lock_guard<std::mutex> lock(m_terminated_lock);
+        terminating_participants = std::move(m_terminated_participants);
+    }
+
+    for(const auto& it : terminating_participants) {
         delete it;
     }
-    m_terminated_participants.clear();
 }
 
 void MessageDirector::on_add_channel(channel_t c)
