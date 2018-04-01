@@ -1,106 +1,65 @@
 #include "NetworkClient.h"
 #include <stdexcept>
-#include <boost/bind.hpp>
 #include "core/global.h"
 #include "config/ConfigVariable.h"
-using namespace std;
-using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
-    m_secure_socket(nullptr),
-    m_async_timer(io_service), m_send_queue()
+                                                        m_async_timer(), m_send_queue(),
+                                                        m_disconnect_error(UV_EOF)
 {
 }
 
 NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    assert(!is_connected(lock));
-    if(m_secure_socket) {
-        // This also deletes m_socket:
-        delete m_secure_socket;
-    } else {
-        // ONLY delete m_socket if we must do so directly. If it's wrapped in
-        // an SSL stream, the stream "owns" the socket.
-        delete m_socket;
-    }
 
-    delete [] m_data_buf;
-    delete [] m_send_buf;
+    m_socket->close();
+    m_socket = nullptr;
+
+    if(m_send_buf != nullptr) {
+        delete [] m_send_buf;
+        m_send_buf = nullptr;
+    }
 }
 
-void NetworkClient::initialize(tcp::socket *socket, std::unique_lock<std::mutex> &lock)
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
+
     m_socket = socket;
 
-    boost::asio::socket_base::keep_alive keepalive(true);
-    m_socket->set_option(keepalive);
+    m_socket->noDelay(true);
+    m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
-    boost::asio::ip::tcp::no_delay nodelay(true);
-    m_socket->set_option(nodelay);
+    m_async_timer = g_loop->resource<uvw::TimerHandle>();
 
-    bool endpoints_set = (m_remote.port() && m_local.port());
-    if(endpoints_set || determine_endpoints(m_remote, m_local, lock)) {
-        async_receive(lock);
-    }
+    determine_endpoints(m_remote, m_local);
+
+    start_receive();
 }
 
-void NetworkClient::initialize(tcp::socket *socket,
-                               const tcp::endpoint &remote,
-                               const tcp::endpoint &local,
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
+                               const uvw::Addr &remote,
+                               const uvw::Addr &local,
                                std::unique_lock<std::mutex> &lock)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
+
     m_remote = remote;
     m_local = local;
 
     initialize(socket, lock);
 }
 
-void NetworkClient::initialize(ssl::stream<tcp::socket> *stream, std::unique_lock<std::mutex> &lock)
+bool NetworkClient::determine_endpoints(uvw::Addr &remote, uvw::Addr &local)
 {
-    if(m_socket) {
-        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
-    }
-
-    m_secure_socket = stream;
-
-    initialize(&stream->next_layer(), lock);
-}
-
-void NetworkClient::initialize(ssl::stream<tcp::socket> *stream,
-                               const tcp::endpoint &remote,
-                               const tcp::endpoint &local,
-                               std::unique_lock<std::mutex> &lock)
-{
-    if(m_socket) {
-        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
-    }
-
-    m_secure_socket = stream;
-
-    initialize(&stream->next_layer(), remote, local, lock);
-}
-
-bool NetworkClient::determine_endpoints(tcp::endpoint &remote, tcp::endpoint &local,
-                                        std::unique_lock<std::mutex> &lock)
-{
-    boost::system::error_code ec;
-    remote = m_socket->remote_endpoint(ec);
-    local = m_socket->local_endpoint(ec);
-
-    if(ec) {
-        disconnect(ec, lock);
-        return false;
-    } else {
-        return true;
-    }
+    remote = m_socket->peer();
+    local = m_socket->sock();
+    return true;
 }
 
 void NetworkClient::set_write_timeout(unsigned int timeout)
@@ -123,9 +82,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
         m_send_queue.push(dg);
         m_total_queue_size += dg->size();
         if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
-            boost::system::error_code enobufs(boost::system::errc::errc_t::no_buffer_space,
-                                              boost::system::system_category());
-            disconnect(enobufs, lock);
+            disconnect(UV_ENOBUFS, lock);
         }
     } else {
         m_is_sending = true;
@@ -135,25 +92,89 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
 {
-    return m_socket && m_socket->is_open();
+    return m_socket && m_socket->active();
 }
 
-void NetworkClient::async_receive(std::unique_lock<std::mutex> &lock)
+void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
 {
-    try {
-        if(m_is_data) { // Read data
-            socket_read(m_data_buf, m_data_size, &NetworkClient::receive_data, lock);
-        } else { // Read length
-            socket_read(m_size_buf, sizeof(dgsize_t), &NetworkClient::receive_size, lock);
+    while(m_data_buf.size() > sizeof(dgsize_t)) {
+        // Enough data to know the expected length of the datagram.
+        dgsize_t data_size = *reinterpret_cast<dgsize_t*>(&m_data_buf.front());
+        if(m_data_buf.size() >= data_size + sizeof(dgsize_t)) {
+            dgsize_t overread_size = (m_data_buf.size() - data_size - sizeof(dgsize_t));
+            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf.front() + sizeof(dgsize_t)), data_size);
+            if(overread_size > 0) {
+                // Splice leftover data to new m_data_buf based on expected datagram length.
+                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf.front() + sizeof(dgsize_t) + data_size),
+                                                        reinterpret_cast<char*>(&m_data_buf.front() + sizeof(dgsize_t) + data_size + overread_size));
+            } else {
+                // No overread, buffer is empty.
+                m_data_buf = std::vector<unsigned char>();
+            }
+
+            lock.unlock();
+            m_handler->receive_datagram(dg);
+            lock.lock();
         }
-    } catch(const boost::system::system_error &err) {
-        // An exception happening when trying to initiate a read is a clear
-        // indicator that something happened to the connection. Therefore:
-        disconnect(err.code(), lock);
+        else {
+            break;
+        }
     }
 }
 
-void NetworkClient::disconnect(const boost::system::error_code &ec, std::unique_lock<std::mutex> &)
+void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t size)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+
+    if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
+        // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
+        // Should occur in most cases, as we're expecting <= the average TCP MSS for most datagrams.
+        dgsize_t datagram_size = *reinterpret_cast<dgsize_t*>(data.get());
+        if(datagram_size == size - sizeof(dgsize_t)) {
+            // Yep. Dispatch to receive_datagram and early-out.
+            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(data.get() + sizeof(dgsize_t)), datagram_size);
+            lock.unlock();
+            m_handler->receive_datagram(dg);
+            return;
+        }
+    }
+
+    m_data_buf.insert(m_data_buf.end(), data.get(), data.get() + size);
+    defragment_input(lock);
+}
+
+void NetworkClient::start_receive()
+{
+    // Sets up all the handlers needed for the NetworkClient instance and starts receiving data from the stream.
+
+    m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
+        this->process_datagram(event.data, event.length);
+    });
+
+    m_socket->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent& event, uvw::TcpHandle &) {
+        this->handle_disconnect((uv_errno_t)event.code());
+    });
+
+    m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent&, uvw::TcpHandle &) {
+        this->handle_disconnect(UV_EOF);
+    });
+
+    m_socket->on<uvw::CloseEvent>([this](const uvw::CloseEvent&, uvw::TcpHandle &) {
+        this->handle_disconnect(UV_EOF);
+    });
+
+    m_socket->on<uvw::WriteEvent>([this](const uvw::WriteEvent&, uvw::TcpHandle &) {
+        this->send_finished();
+    });
+
+    m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
+        this->send_expired();
+    });
+
+    m_socket->read();
+}
+
+void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
 {
     if(m_local_disconnect || m_disconnect_handled) {
         // We've already set the error code and closed the socket; wait.
@@ -163,125 +184,53 @@ void NetworkClient::disconnect(const boost::system::error_code &ec, std::unique_
     m_local_disconnect = true;
     m_disconnect_error = ec;
 
-    m_socket->cancel();
     m_socket->close();
-
-    m_async_timer.cancel();
+    m_async_timer->stop();
 }
 
-void NetworkClient::handle_disconnect(const boost::system::error_code &ec,
-                                      std::unique_lock<std::mutex> &lock)
+void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
 {
     if(m_disconnect_handled) {
         return;
     }
+
     m_disconnect_handled = true;
 
-    if(is_connected(lock)) {
-        m_socket->close();
-    }
+    m_socket->close();
+    m_async_timer->stop();
 
     // Do NOT hold the lock when calling this. Our handler may acquire a
     // lock of its own, and the network lock should always be the lowest in the
     // lock hierarchy.
     lock.unlock();
     if(m_local_disconnect) {
-        m_handler->receive_disconnect(m_disconnect_error);
+        m_handler->receive_disconnect(uvw::ErrorEvent{(int)m_disconnect_error});
     } else {
-        m_handler->receive_disconnect(ec);
+        m_handler->receive_disconnect(uvw::ErrorEvent{(int)ec});
     }
-}
-
-void NetworkClient::receive_size(const boost::system::error_code &ec, size_t bytes_transferred)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-
-    if(ec) {
-        handle_disconnect(ec, lock);
-        return;
-    }
-
-    if(bytes_transferred != sizeof(m_size_buf)) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
-                                        boost::system::system_category());
-        handle_disconnect(epipe, lock);
-        return;
-    }
-
-    // required to disable strict-aliasing optimizations, which can break the code
-    dgsize_t* new_size_p = (dgsize_t*)m_size_buf;
-    m_data_size = swap_le(*new_size_p);
-    m_data_buf = new uint8_t[m_data_size];
-    m_is_data = true;
-    async_receive(lock);
-}
-
-void NetworkClient::receive_data(const boost::system::error_code &ec, size_t bytes_transferred)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-    DatagramPtr dg;
-
-    if(ec) {
-        handle_disconnect(ec, lock);
-        return;
-    }
-
-    if(bytes_transferred != m_data_size) {
-        boost::system::error_code epipe(boost::system::errc::errc_t::broken_pipe,
-                                        boost::system::system_category());
-        handle_disconnect(epipe, lock);
-        return;
-    }
-
-    dg = Datagram::create(m_data_buf, m_data_size); // Datagram makes a copy
-
-    delete [] m_data_buf;
-    m_data_buf = nullptr;
-
-    m_is_data = false;
-    async_receive(lock);
-
-    // Do NOT hold the lock when calling this. Our handler may acquire a
-    // lock of its own, and the network lock should always be the lowest in the
-    // lock hierarchy.
-    lock.unlock();
-    m_handler->receive_datagram(dg);
 }
 
 void NetworkClient::async_send(DatagramHandle dg, std::unique_lock<std::mutex> &lock)
 {
     size_t buffer_size = sizeof(dgsize_t) + dg->size();
     dgsize_t len = swap_le(dg->size());
-    m_send_buf = new uint8_t[buffer_size];
-    memcpy(m_send_buf, (uint8_t*)&len, sizeof(dgsize_t));
+    m_send_buf = new char[buffer_size];
+    memcpy(m_send_buf, (char*)&len, sizeof(dgsize_t));
     memcpy(m_send_buf + sizeof(dgsize_t), dg->get_data(), dg->size());
 
-    try {
-        socket_write(m_send_buf, buffer_size, lock);
-    } catch(const boost::system::system_error& err) {
-        // An exception happening when trying to initiate a send is a clear
-        // indicator that something happened to the connection, therefore:
-        disconnect(err.code(), lock);
-    }
+    socket_write(m_send_buf, buffer_size, lock);
 }
 
-void NetworkClient::send_finished(const boost::system::error_code &ec)
+void NetworkClient::send_finished()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
     // Cancel the outstanding timeout
-    m_async_timer.cancel();
+    m_async_timer->stop();
 
     // Discard the buffer we just used:
     delete [] m_send_buf;
     m_send_buf = nullptr;
-
-    // Check if the write had errors
-    if(ec.value() != 0) {
-        m_is_sending = false;
-        disconnect(ec, lock);
-        return;
-    }
 
     // Check if we have more items in the queue
     if(m_send_queue.size() > 0) {
@@ -297,52 +246,20 @@ void NetworkClient::send_finished(const boost::system::error_code &ec)
     m_is_sending = false;
 }
 
-void NetworkClient::send_expired(const boost::system::error_code& ec)
+void NetworkClient::send_expired()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    // operation_aborted is received if the the timer is cancelled,
-    //     ie. if the send completed before it expires, so don't do anything
-    if(ec != boost::asio::error::operation_aborted) {
-        boost::system::error_code etimeout(boost::system::errc::errc_t::timed_out,
-                                           boost::system::system_category());
-        disconnect(etimeout, lock);
-    }
+    disconnect(UV_ETIMEDOUT, lock);
 }
 
-void NetworkClient::socket_read(uint8_t* buf, size_t length, receive_handler_t callback,
-                                std::unique_lock<std::mutex> &)
-{
-    if(m_secure_socket) {
-        async_read(*m_secure_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, shared_from_this(),
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::bytes_transferred));
-    } else {
-        async_read(*m_socket, boost::asio::buffer(buf, length),
-                   boost::bind(callback, shared_from_this(),
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::bytes_transferred));
-    }
-}
-
-void NetworkClient::socket_write(const uint8_t* buf, size_t length, std::unique_lock<std::mutex> &)
+void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &)
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
-        m_async_timer.expires_from_now(boost::posix_time::milliseconds(m_write_timeout));
-        m_async_timer.async_wait(boost::bind(&NetworkClient::send_expired, shared_from_this(),
-                                             boost::asio::placeholders::error));
+        m_async_timer->stop();
+        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
     }
 
-    // Start async write
-    if(m_secure_socket) {
-        async_write(*m_secure_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                                boost::asio::placeholders::error));
-    } else {
-        async_write(*m_socket, boost::asio::buffer(buf, length),
-                    boost::bind(&NetworkClient::send_finished, shared_from_this(),
-                                boost::asio::placeholders::error));
-    }
+    m_socket->write(buf, length);
 }

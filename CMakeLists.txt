@@ -73,7 +73,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	execute_process(COMMAND "${CMAKE_C_COMPILER}" -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	message(STATUS "GCC Version: ${GCC_VERSION}")
 	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-		add_definitions(-std=c++11) # Enable the new C++ standard
+		add_definitions(-std=c++14) # Enable the new C++ standard
 	else()
 		add_definitions(-std=c++0x) # Enable the new C++ standard
 	endif()
@@ -106,7 +106,14 @@ if(BUILD_YAML)
 	add_definitions(-DASTRON_WITH_YAML)
 endif()
 
-### BOOST Dependency -- required by yaml-cpp and networking ###
+# libuv dependency -- required by networking
+find_package(libuv REQUIRED)
+include_directories(${LIBUV_INCLUDE_DIR})
+link_directories(${LIBUV_LIBRARY_DIR})
+message(STATUS "Found the libuv library:")
+message("   ${LIBUV_LIBRARY}\n")
+
+### BOOST Dependency -- required by yaml-cpp ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
 find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
 include_directories(${Boost_INCLUDE_DIR})
@@ -381,8 +388,6 @@ set(UTIL_FILES
 set(NET_FILES
 	src/net/address_utils.cpp
 	src/net/address_utils.h
-	src/net/HAProxyHandler.cpp
-	src/net/HAProxyHandler.h
 	src/net/NetworkAcceptor.cpp
 	src/net/NetworkAcceptor.h
 	src/net/NetworkClient.cpp
@@ -391,8 +396,6 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
-	src/net/SslAcceptor.cpp
-	src/net/SslAcceptor.h
 )
 
 include_directories(src)
@@ -449,7 +452,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

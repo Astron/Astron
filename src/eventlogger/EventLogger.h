@@ -1,14 +1,11 @@
 #pragma once
 #include <fstream>
 #include <memory>
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
 
 #include "core/global.h"
 #include "core/Role.h"
 #include "util/Datagram.h"
-
-using boost::asio::ip::udp;
+#include "deps/uvw/uvw.hpp"
 
 // There will typically only be one Event Logger, so we can afford to make the
 // receive buffer pretty big.
@@ -25,8 +22,8 @@ class EventLogger final : public Role
 
   private:
     LogCategory m_log;
-    std::unique_ptr<udp::socket> m_socket;
-    udp::endpoint m_remote;
+    std::shared_ptr<uvw::UDPHandle> m_socket;
+    uvw::Addr m_remote;
     std::string m_file_format;
     std::unique_ptr<std::ofstream> m_file;
     uint8_t m_buffer[EVENTLOG_BUFSIZE];

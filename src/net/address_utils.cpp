@@ -1,6 +1,11 @@
 #include "address_utils.h"
 
 #include <algorithm>
+#include <utility>
+
+#include <deps/uvw/uvw.hpp>
+#include <deps/uvw/uvw/util.hpp>
+#include <uv.h>
 
 static bool split_port(std::string &ip, uint16_t &port)
 {
@@ -33,12 +38,25 @@ static bool split_port(std::string &ip, uint16_t &port)
     return true;
 }
 
-static address parse_address(const std::string &ip, boost::system::error_code &ec)
+static std::pair<bool, uvw::Addr> parse_address(const std::string &ip, uint16_t port)
 {
     if(ip[0] == '[' && ip[ip.length() - 1] == ']') {
-        return address::from_string(ip.substr(1, ip.length() - 2), ec);
+	    sockaddr_in6 sockaddr;
+	    if(uv_ip6_addr(ip.c_str(), port, &sockaddr) == 0) {
+		    return std::pair<bool, uvw::Addr>(true, uvw::details::address<uvw::IPv6>(&sockaddr));
+	    }
+	    else {
+		    return std::pair<bool, uvw::Addr>(false, uvw::Addr());
+	    }
     } else {
-        return address::from_string(ip, ec);
+	    sockaddr_in sockaddr;
+	    if (uv_ip4_addr(ip.c_str(), port, &sockaddr) == 0) {
+		    uvw::Addr addr = uvw::details::address<uvw::IPv4>(&sockaddr);
+		    return std::pair<bool, uvw::Addr>(true, addr);
+	    }
+	    else {
+		    return std::pair<bool, uvw::Addr>(false, uvw::Addr());
+	    }
     }
 }
 
@@ -87,21 +105,18 @@ bool is_valid_address(const std::string &hostspec)
         return false;
     }
 
-    boost::system::error_code ec;
-    parse_address(host, ec);
+    auto result = parse_address(host, port);
 
-    if(ec.value() == 0) {
+    if(result.first) {
         return true;
     } else {
         return validate_hostname(host);
     }
 }
 
-std::vector<tcp::endpoint> resolve_address(
-    const std::string &hostspec, uint16_t port,
-    boost::asio::io_service &io_service, boost::system::error_code &ec)
+std::vector<uvw::Addr> resolve_address(const std::string &hostspec, uint16_t port, const std::shared_ptr<uvw::Loop> &loop)
 {
-    std::vector<tcp::endpoint> ret;
+    std::vector<uvw::Addr> ret;
 
     std::string host = hostspec;
 
@@ -109,20 +124,30 @@ std::vector<tcp::endpoint> resolve_address(
         return ret;
     }
 
-    address addr = parse_address(host, ec);
-    if(ec.value() == 0) {
-        tcp::endpoint ep(addr, port);
-        ret.push_back(ep);
+    auto result = parse_address(host, port);
+    if(result.first) {
+        ret.push_back(result.second);
     } else {
-        tcp::resolver resolver(io_service);
-        tcp::resolver::query query(host, std::to_string(port));
+	    std::shared_ptr<uvw::GetAddrInfoReq> request = loop->resource<uvw::GetAddrInfoReq>();
+	    auto results = request->nodeAddrInfoSync(host);
+	    if (results.first) {
+		    addrinfo* addrinfo = results.second.get();
+		    while (addrinfo != nullptr) {
+			    if (addrinfo->ai_family == AF_INET) {
+				    sockaddr_in* sockaddr = reinterpret_cast<sockaddr_in*>(addrinfo->ai_addr);
+				    uvw::Addr addr = uvw::details::address<uvw::IPv4>(sockaddr);
+				    ret.push_back(addr);
+			    }
+			    else if (addrinfo->ai_family == AF_INET6) {
+				    sockaddr_in6* sockaddr = reinterpret_cast<sockaddr_in6*>(addrinfo->ai_addr);
+				    uvw::Addr addr = uvw::details::address<uvw::IPv6>(sockaddr);
+				    ret.push_back(addr);
+			    }
 
-        tcp::resolver::iterator it = resolver.resolve(query, ec);
-        tcp::resolver::iterator end;
+			    addrinfo = addrinfo->ai_next;
+		    }
 
-        while(it != end) {
-            ret.push_back(*it++);
-        }
+	    }
     }
 
     return ret;

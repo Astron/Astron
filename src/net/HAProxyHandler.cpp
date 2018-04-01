@@ -20,9 +20,8 @@ void HAProxyHandler::async_process(tcp::socket *socket, ProxyCallback &callback)
 HAProxyHandler::HAProxyHandler(tcp::socket *socket, ProxyCallback &callback) :
     m_socket(socket), m_callback(callback)
 {
-    boost::system::error_code ec;
-    m_remote = m_socket->remote_endpoint(ec);
-    m_local = m_socket->local_endpoint(ec);
+    m_remote = m_socket->peer();
+    m_local = m_socket->sock();
 }
 
 HAProxyHandler::~HAProxyHandler()

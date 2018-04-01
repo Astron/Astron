@@ -4,19 +4,17 @@
 #include <boost/bind.hpp>
 
 Timeout::Timeout(unsigned long ms, std::function<void()> f) :
-    m_timer(io_service, boost::posix_time::milliseconds(ms)),
+    m_loop(g_loop),
+    m_timer(nullptr),
     m_callback(f),
     m_timeout_interval(ms),
     m_callback_disabled(false)
 {
+    m_timer = m_loop->resource<uvw::TimerHandle>();
 }
 
-void Timeout::timer_callback(const boost::system::error_code &ec)
+void Timeout::timer_callback()
 {
-    if(ec) {
-        return; // We were canceled.
-    }
-
     if(m_callback_disabled.exchange(true)) {
         return; // Stop m_callback running twice or after successful cancel().
     }
@@ -26,15 +24,17 @@ void Timeout::timer_callback(const boost::system::error_code &ec)
 
 void Timeout::reset()
 {
-    m_timer.cancel();
-    m_timer.expires_from_now(boost::posix_time::millisec(m_timeout_interval));
-    m_timer.async_wait(boost::bind(&Timeout::timer_callback, shared_from_this(),
-                                   boost::asio::placeholders::error));
+    m_timer->once<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+        this->timer_callback();
+    });
+
+    m_timer->stop();
+    m_timer->start(uvw::TimerHandle::Time{m_timeout_interval}, uvw::TimerHandle::Time{0});
 }
 
 bool Timeout::cancel()
 {
-    m_timer.cancel();
+    m_timer->stop();
     return !m_callback_disabled.exchange(true);
 }
 

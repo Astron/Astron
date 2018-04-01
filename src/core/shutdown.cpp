@@ -80,7 +80,6 @@ void astron_shutdown(int code, bool throw_exception)
     /*log->info()*/
     cerr << "Exiting...\n";
     exit_code = code;
-    io_service.stop();
     if(throw_exception) {
         throw ShutdownException(code);
     }

@@ -1,53 +1,34 @@
 #include "NetworkConnector.h"
 #include "address_utils.h"
 
-NetworkConnector::NetworkConnector(boost::asio::io_service &io_service) : m_io_service(io_service)
+NetworkConnector::NetworkConnector(const std::shared_ptr<uvw::Loop> &loop) : m_loop(loop)
 {
 }
 
-void NetworkConnector::do_connect(tcp::socket &socket, const std::string &address,
-                                  uint16_t port, boost::system::error_code &ec)
+void NetworkConnector::do_connect(const std::string &address,
+                                  uint16_t port)
 {
-    std::vector<tcp::endpoint> addresses = resolve_address(address, port, m_io_service, ec);
+    std::vector<uvw::Addr> addresses = resolve_address(address, port, m_loop);
 
-    if(ec.value() != 0) {
+    if(addresses.size() == 0) {
+        connect_callback(nullptr);
         return;
     }
 
     for(auto it = addresses.begin(); it != addresses.end(); ++it) {
-        socket.connect(*it, ec);
-
-        if(ec.value() == 0) {
-            return;
-        }
+        m_socket->connect(*it);
     }
 }
 
-tcp::socket *NetworkConnector::connect(const std::string &address,
-                                       unsigned int default_port,
-                                       boost::system::error_code &ec)
+void NetworkConnector::connect(const std::string &address, unsigned int default_port, ConnectCallback callback)
 {
-    tcp::socket* socket = new tcp::socket(m_io_service);
-    do_connect(*socket, address, default_port, ec);
+    connect_callback = callback;
 
-    if(ec.value() != 0) {
-        delete socket;
-        return nullptr;
-    }
+    m_socket = m_loop->resource<uvw::TcpHandle>();
 
-    return socket;
-}
+    m_socket->on<uvw::ConnectEvent>([this](const uvw::ConnectEvent &, uvw::TcpHandle& ) {
+        this->connect_callback(this->m_socket);
+    });
 
-ssl::stream<tcp::socket> *NetworkConnector::connect(const std::string &address,
-        unsigned int default_port, ssl::context *ctx, boost::system::error_code &ec)
-{
-    ssl::stream<tcp::socket> *socket = new ssl::stream<tcp::socket>(m_io_service, *ctx);
-    do_connect(socket->next_layer(), address, default_port, ec);
-
-    if(ec.value() != 0) {
-        delete socket;
-        return nullptr;
-    }
-
-    return socket;
+    do_connect(address, default_port);
 }

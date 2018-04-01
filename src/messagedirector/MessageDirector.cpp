@@ -11,8 +11,6 @@
 #include "MDNetworkParticipant.h"
 #include "MDNetworkUpstream.h"
 
-using boost::asio::ip::tcp;
-
 static ConfigGroup md_config("messagedirector");
 static ConfigVariable<std::string> bind_addr("bind", "unspecified", md_config);
 static ConfigVariable<std::string> connect_addr("connect", "unspecified", md_config);
@@ -28,7 +26,7 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
-    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
+    m_thread(nullptr), m_log("msgdir", "Message Director")
 {
 }
 
@@ -51,17 +49,8 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(io_service, callback));
-            boost::system::error_code ec;
-            ec = m_net_acceptor->bind(bind_addr.get_val(), 7199);
-            if(ec.value() != 0) {
-                m_log.fatal() << "Could not bind listening port: "
-                              << bind_addr.get_val() << std::endl;
-                m_log.fatal() << "Error code: " << ec.value()
-                              << "(" << ec.category().message(ec.value()) << ")"
-                              << std::endl;
-                exit(1);
-            }
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
+            m_net_acceptor->bind(bind_addr.get_val(), 7199);
             m_net_acceptor->start();
         }
 
@@ -71,16 +60,7 @@ void MessageDirector::init_network()
 
             MDNetworkUpstream *upstream = new MDNetworkUpstream(this);
 
-            boost::system::error_code ec;
-            ec = upstream->connect(connect_addr.get_val());
-            if(ec.value() != 0) {
-                m_log.fatal() << "Could not connect to remote MD at IP: "
-                              << connect_addr.get_val() << std::endl;
-                m_log.fatal() << "Error code: " << ec.value()
-                              << "(" << ec.category().message(ec.value()) << ")"
-                              << std::endl;
-                exit(1);
-            }
+            upstream->connect(connect_addr.get_val());
 
             m_upstream = upstream;
         }
@@ -120,10 +100,17 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
         // Now, we put the message into our queue and ring the bell:
         m_messages.push(std::make_pair(p, dg));
         m_cv.notify_one();
-    } else if(std::this_thread::get_id() != m_main_thread) {
+    } else if(std::this_thread::get_id() != g_main_thread_id) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
+
+        handle->on<uvw::AsyncEvent>([this, p, dg](const uvw::AsyncEvent&, uvw::AsyncHandle& handle) {
+            this->process_datagram(p, dg);
+            handle.close();
+        });
+
+        handle->send();
     } else {
         // Main thread; we can just process it here.
         process_datagram(p, dg);
@@ -228,11 +215,16 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
 void MessageDirector::process_terminates()
 {
-    std::lock_guard<std::mutex> lock(m_terminated_lock);
-    for(const auto& it : m_terminated_participants) {
+    std::unordered_set<MDParticipantInterface*> terminating_participants;
+
+    {
+        std::lock_guard<std::mutex> lock(m_terminated_lock);
+        terminating_participants = std::move(m_terminated_participants);
+    }
+
+    for(const auto& it : terminating_participants) {
         delete it;
     }
-    m_terminated_participants.clear();
 }
 
 void MessageDirector::on_add_channel(channel_t c)
@@ -267,12 +259,11 @@ void MessageDirector::on_remove_range(channel_t lo, channel_t hi)
     }
 }
 
-void MessageDirector::handle_connection(tcp::socket *socket)
+void MessageDirector::handle_connection(const std::shared_ptr<uvw::TcpHandle> &socket)
 {
-    boost::asio::ip::tcp::endpoint remote;
-    remote = socket->remote_endpoint();
+    uvw::Addr remote = socket->peer();
     m_log.info() << "Got an incoming connection from "
-                 << remote.address() << ":" << remote.port() << std::endl;
+                 << remote.ip << ":" << remote.port << std::endl;
     new MDNetworkParticipant(socket); // It deletes itself when connection is lost
 }
 
@@ -333,8 +324,8 @@ void MessageDirector::receive_datagram(DatagramHandle dg)
     route_datagram(nullptr, dg);
 }
 
-void MessageDirector::receive_disconnect(const boost::system::error_code &ec)
+void MessageDirector::receive_disconnect(const uvw::ErrorEvent &evt)
 {
-    m_log.fatal() << "Lost connection to upstream md: " << ec.message() << std::endl;
+    m_log.fatal() << "Lost connection to upstream md: " << evt.what() << std::endl;
     exit(1);
 }

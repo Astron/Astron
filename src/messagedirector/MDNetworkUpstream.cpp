@@ -4,25 +4,22 @@
 #include "core/global.h"
 #include "core/msgtypes.h"
 
-using boost::asio::ip::tcp;
-
 MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
-    m_message_director(md), m_client(std::make_shared<NetworkClient>(this))
+    m_message_director(md), m_client(std::make_shared<NetworkClient>(this)),
+    m_connector(new NetworkConnector(g_loop))
 {
 
 }
 
-boost::system::error_code MDNetworkUpstream::connect(const std::string &address)
+void MDNetworkUpstream::connect(const std::string &address)
 {
-    NetworkConnector connector(io_service);
-    boost::system::error_code ec;
-    tcp::socket *socket = connector.connect(address, 7199, ec);
+    ConnectCallback callback = std::bind(&MDNetworkUpstream::on_connect, this, std::placeholders::_1);
+    m_connector->connect(address, 7199, callback);
+}
 
-    if(socket) {
-        m_client->initialize(socket);
-    }
-
-    return ec;
+void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket)
+{
+    m_client->initialize(socket);
 }
 
 void MDNetworkUpstream::subscribe_channel(channel_t c)
@@ -65,7 +62,7 @@ void MDNetworkUpstream::receive_datagram(DatagramHandle dg)
     m_message_director->receive_datagram(dg);
 }
 
-void MDNetworkUpstream::receive_disconnect(const boost::system::error_code &ec)
+void MDNetworkUpstream::receive_disconnect(const uvw::ErrorEvent &evt)
 {
-    m_message_director->receive_disconnect(ec);
+    m_message_director->receive_disconnect(evt);
 }
