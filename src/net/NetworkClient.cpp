@@ -253,7 +253,7 @@ void NetworkClient::send_expired()
     disconnect(UV_ETIMEDOUT, lock);
 }
 
-void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &)
+void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &locl)
 {
     // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
     if(m_write_timeout > 0) {
@@ -261,5 +261,6 @@ void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std:
         m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
     }
 
+    lock.unlock();
     m_socket->write(buf, length);
 }
