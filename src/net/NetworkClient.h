@@ -104,6 +104,9 @@ private:
     void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
     bool is_connected(std::unique_lock<std::mutex> &lock);
 
+    /* This cleans up all libuv handles */
+    void shutdown(std::unique_lock<std::mutex> &lock);
+
     /* Asynchronous call loop */
     // flush_send_queue is called to try and flush m_send_queue to the socket
     void flush_send_queue(std::unique_lock<std::mutex> &lock);
@@ -126,6 +129,8 @@ private:
     NetworkHandler *m_handler;
     std::shared_ptr<uvw::TcpHandle> m_socket;
     std::shared_ptr<uvw::TimerHandle> m_async_timer;
+    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
+    std::shared_ptr<uvw::AsyncHandle> m_shutdown_handle;
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;

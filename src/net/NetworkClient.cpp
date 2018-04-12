@@ -13,13 +13,23 @@ NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    m_socket->close();
-    m_socket = nullptr;
+    shutdown(lock);
 
     if(m_send_buf != nullptr) {
         delete [] m_send_buf;
         m_send_buf = nullptr;
     }
+}
+
+void NetworkClient::shutdown(std::unique_lock<std::mutex> &)
+{
+    if(m_shutdown_handle != nullptr) {
+        m_shutdown_handle->send();
+    }
+    m_socket = nullptr;
+    m_async_timer = nullptr;
+    m_flush_handle = nullptr;
+    m_shutdown_handle = nullptr;
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
@@ -45,6 +55,8 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
     m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
     m_async_timer = g_loop->resource<uvw::TimerHandle>();
+    m_flush_handle = g_loop->resource<uvw::AsyncHandle>();
+    m_shutdown_handle = g_loop->resource<uvw::AsyncHandle>();
 
     m_remote = remote;
     m_local = local;
@@ -82,14 +94,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     // Poke the main thread to flush its buffer (it's fine if this is called
     // twice, it checks if it's already sending)
     if(g_main_thread_id != std::this_thread::get_id()) {
-        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
-        handle->once<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle &handle) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            this->flush_send_queue(lock);
-            handle.close();
-        });
-
-        handle->send();
+        m_flush_handle->send();
     } else {
         flush_send_queue(lock);
     }
@@ -97,8 +102,8 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
 {
-    assert(std::this_thread::get_id() == g_main_thread_id);
-    return m_socket && m_socket->active();
+    // We always set m_socket to nullptr on disconnect, so:
+    return m_socket != nullptr;
 }
 
 void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
@@ -182,10 +187,28 @@ void NetworkClient::start_receive()
         this->send_expired();
     });
 
+    m_flush_handle->on<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        this->flush_send_queue(lock);
+    });
+
+    auto socket = m_socket;
+    auto async_timer = m_async_timer;
+    auto flush_handle = m_flush_handle;
+    auto shutdown_handle = m_shutdown_handle;
+    m_shutdown_handle->once<uvw::AsyncEvent>(
+            [socket, async_timer, flush_handle, shutdown_handle](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
+        socket->close();
+        async_timer->stop();
+        async_timer->close();
+        flush_handle->close();
+        shutdown_handle->close();
+    });
+
     m_socket->read();
 }
 
-void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
+void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
 {
     if(m_local_disconnect || m_disconnect_handled) {
         // We've already set the error code and closed the socket; wait.
@@ -195,9 +218,7 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
     m_local_disconnect = true;
     m_disconnect_error = ec;
 
-    assert(std::this_thread::get_id() == g_main_thread_id);
-    m_socket->close();
-    m_async_timer->stop();
+    shutdown(lock);
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
@@ -211,8 +232,7 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
 
     m_disconnect_handled = true;
 
-    m_socket->close();
-    m_async_timer->stop();
+    shutdown(lock);
 
     // Do NOT hold the lock when calling this. Our handler may acquire a
     // lock of its own, and the network lock should always be the lowest in the
@@ -225,11 +245,16 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
     }
 }
 
-void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &)
+void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
 {
     // libuv is NOT thread-safe. This function must ONLY be called in the main
     // thread.
     assert(std::this_thread::get_id() == g_main_thread_id);
+
+    // If we aren't connected, stop here
+    if(!is_connected(lock)) {
+        return;
+    }
 
     // Are we sending already?
     if(m_is_sending) {
@@ -293,12 +318,17 @@ void NetworkClient::send_finished()
     assert(m_is_sending);
     m_is_sending = false;
 
-    // Cancel the outstanding timeout:
-    m_async_timer->stop();
-
     // Discard the buffer we just used:
     delete [] m_send_buf;
     m_send_buf = nullptr;
+
+    // If we aren't connected, stop here
+    if(!is_connected(lock)) {
+        return;
+    }
+
+    // Cancel the outstanding timeout:
+    m_async_timer->stop();
 
     // Flush more items out of the queue:
     flush_send_queue(lock);
