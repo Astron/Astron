@@ -28,7 +28,8 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
-    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director")
+    m_thread(nullptr), m_main_thread(std::this_thread::get_id()), m_log("msgdir", "Message Director"),
+    m_shutdown(false), m_main_is_routing(false)
 {
 }
 
