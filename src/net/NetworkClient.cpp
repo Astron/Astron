@@ -218,7 +218,18 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock
     m_local_disconnect = true;
     m_disconnect_error = ec;
 
-    shutdown(lock);
+    if(!m_is_sending && m_total_queue_size == 0) {
+        // Nothing left to send out, shutdown the socket immediately.
+        shutdown(lock);
+    } else {
+        // Let flush_send_queue execute first:
+        // The send_finished callback is responsible for closing the socket at the end of the flush.
+        if(g_main_thread_id != std::this_thread::get_id()) {
+            m_flush_handle->send();
+        } else {
+            flush_send_queue(lock);
+        }
+    }
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
@@ -329,6 +340,12 @@ void NetworkClient::send_finished()
 
     // Cancel the outstanding timeout:
     m_async_timer->stop();
+
+    // If we've had a local disconnect and there are no pending buffers to send, stop here
+    if(m_local_disconnect && m_total_queue_size <= 0) {
+        shutdown(lock);
+        return;
+    }
 
     // Flush more items out of the queue:
     flush_send_queue(lock);
