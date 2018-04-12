@@ -7,10 +7,6 @@
 #include "util/Datagram.h"
 #include "deps/uvw/uvw.hpp"
 
-// There will typically only be one Event Logger, so we can afford to make the
-// receive buffer pretty big.
-#define EVENTLOG_BUFSIZE 8192
-
 // An EventLogger is a role in the daemon that opens up a local socket and reads UDP packets from
 // that socket.  Received UDP packets will be logged as configured by the daemon config file.
 class EventLogger final : public Role
@@ -23,15 +19,13 @@ class EventLogger final : public Role
   private:
     LogCategory m_log;
     std::shared_ptr<uvw::UDPHandle> m_socket;
-    uvw::Addr m_remote;
     std::string m_file_format;
     std::unique_ptr<std::ofstream> m_file;
-    uint8_t m_buffer[EVENTLOG_BUFSIZE];
-
+    uvw::Addr m_local;
+    
     void bind(const std::string &addr);
     void open_log();
     void cycle_log();
     void start_receive();
-    void handle_receive(const boost::system::error_code &error, std::size_t bytes);
-    void process_packet(DatagramHandle dg);
+    void process_packet(DatagramHandle dg, const uvw::Addr& sender);
 };

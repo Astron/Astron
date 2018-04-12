@@ -22,6 +22,11 @@ void EventSender::init(const std::string& target)
     m_log.debug() << "Resolving target..." << std::endl;
     auto addresses = resolve_address(target, 7197, m_loop);
 
+    if(addresses.size() == 0) {
+        m_log.error() << "Failed to resolve target address " << target << " for EventSender.\n";
+        return;
+    }
+
     m_target = addresses.front();
     m_enabled = true;
 
