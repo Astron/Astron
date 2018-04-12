@@ -13,6 +13,8 @@ NetworkClient::~NetworkClient()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
+    assert(!is_connected(lock));
+
     shutdown(lock);
 
     if(m_send_buf != nullptr) {
