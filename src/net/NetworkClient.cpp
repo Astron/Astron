@@ -36,6 +36,9 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
     }
 
+    // This function should ONLY run in the main thread. libuv is not thread-safe.
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_socket = socket;
 
     m_socket->noDelay(true);
@@ -94,6 +97,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 
 bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
     return m_socket && m_socket->active();
 }
 
@@ -128,6 +132,9 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
+    // This function should ONLY run in the main thread. It's a libuv event.
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(m_data_buf.size() == 0 && size >= sizeof(dgsize_t)) {
         // Fast-path mode: Check if we have just enough data from the stream for a single datagram.
         // Should occur in most cases, as we're expecting <= the average TCP MSS for most datagrams.
@@ -148,6 +155,8 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
 void NetworkClient::start_receive()
 {
     // Sets up all the handlers needed for the NetworkClient instance and starts receiving data from the stream.
+
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
     m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
         this->process_datagram(event.data, event.length);
@@ -186,12 +195,16 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &)
     m_local_disconnect = true;
     m_disconnect_error = ec;
 
+    assert(std::this_thread::get_id() == g_main_thread_id);
     m_socket->close();
     m_async_timer->stop();
 }
 
 void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock)
 {
+    // This function should ONLY run in the main thread. It's a libuv event.
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(m_disconnect_handled) {
         return;
     }
@@ -294,6 +307,9 @@ void NetworkClient::send_finished()
 void NetworkClient::send_expired()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
+
+    // This function should ONLY run in the main thread. It's a libuv event.
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
     disconnect(UV_ETIMEDOUT, lock);
 }
