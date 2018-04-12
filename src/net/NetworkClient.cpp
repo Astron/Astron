@@ -342,7 +342,7 @@ void NetworkClient::send_finished()
     m_async_timer->stop();
 
     // If we've had a local disconnect and there are no pending buffers to send, stop here
-    if(m_local_disconnect && m_total_queue_size <= 0) {
+    if(m_local_disconnect && m_total_queue_size == 0) {
         shutdown(lock);
         return;
     }
