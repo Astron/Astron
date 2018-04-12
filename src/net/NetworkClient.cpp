@@ -22,7 +22,15 @@ NetworkClient::~NetworkClient()
     }
 }
 
-void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &)
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
+{
+    initialize(socket, socket->peer(), socket->sock(), lock);
+}
+
+void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
+                               const uvw::Addr &remote,
+                               const uvw::Addr &local,
+                               std::unique_lock<std::mutex> &)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
@@ -35,31 +43,11 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, st
 
     m_async_timer = g_loop->resource<uvw::TimerHandle>();
 
-    determine_endpoints(m_remote, m_local);
-
-    start_receive();
-}
-
-void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
-                               const uvw::Addr &remote,
-                               const uvw::Addr &local,
-                               std::unique_lock<std::mutex> &lock)
-{
-    if(m_socket) {
-        throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
-    }
-
     m_remote = remote;
     m_local = local;
 
-    initialize(socket, lock);
-}
-
-bool NetworkClient::determine_endpoints(uvw::Addr &remote, uvw::Addr &local)
-{
-    remote = m_socket->peer();
-    local = m_socket->sock();
-    return true;
+    // NOT protected by a lock, make sure it runs in main!
+    start_receive();
 }
 
 void NetworkClient::set_write_timeout(unsigned int timeout)

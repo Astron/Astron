@@ -113,11 +113,6 @@ private:
     // send_expired is called when an async_send has expired
     void send_expired();
 
-    // determine_endpoints is called by initialize() after m_socket is set to a
-    //     provided socket.
-    bool determine_endpoints(uvw::Addr &remote,
-                             uvw::Addr &local);
-
     // start_receive is called by initialize() to begin receiving data.
     void start_receive();
 
