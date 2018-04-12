@@ -66,15 +66,29 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    if(m_is_sending) {
-        m_send_queue.push(dg);
-        m_total_queue_size += dg->size();
-        if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
-            disconnect(UV_ENOBUFS, lock);
-        }
+    // Put the packet in our outgoing send queue
+    m_send_queue.push_back(dg);
+
+    // Check our quota, disconnect if it's too much
+    m_total_queue_size += dg->size();
+    if(m_total_queue_size > m_max_queue_size && m_max_queue_size != 0) {
+        disconnect(UV_ENOBUFS, lock);
+        return;
+    }
+
+    // Poke the main thread to flush its buffer (it's fine if this is called
+    // twice, it checks if it's already sending)
+    if(g_main_thread_id != std::this_thread::get_id()) {
+        std::shared_ptr<uvw::AsyncHandle> handle = g_loop->resource<uvw::AsyncHandle>();
+        handle->once<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle &handle) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            this->flush_send_queue(lock);
+            handle.close();
+        });
+
+        handle->send();
     } else {
-        m_is_sending = true;
-        async_send(dg, lock);
+        flush_send_queue(lock);
     }
 }
 
@@ -198,40 +212,83 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
     }
 }
 
-void NetworkClient::async_send(DatagramHandle dg, std::unique_lock<std::mutex> &lock)
+void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &)
 {
-    size_t buffer_size = sizeof(dgsize_t) + dg->size();
-    dgsize_t len = swap_le(dg->size());
-    m_send_buf = new char[buffer_size];
-    memcpy(m_send_buf, (char*)&len, sizeof(dgsize_t));
-    memcpy(m_send_buf + sizeof(dgsize_t), dg->get_data(), dg->size());
+    // libuv is NOT thread-safe. This function must ONLY be called in the main
+    // thread.
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
-    socket_write(m_send_buf, buffer_size, lock);
+    // Are we sending already?
+    if(m_is_sending) {
+        return;
+    }
+
+    // Do we have anything to send?
+    if(!m_send_queue.size()) {
+        assert(m_total_queue_size == 0);
+        return;
+    }
+
+    // Figure out how big of a send buffer we need
+    size_t buffer_size = 0;
+    for(auto dg : m_send_queue) {
+        buffer_size += sizeof(dgsize_t) + dg->size();
+    }
+    assert(m_send_buf == nullptr);
+    m_send_buf = new char[buffer_size];
+
+    // Fill the send buffer with our data:
+    char *send_ptr = &m_send_buf[0];
+    for(auto dg : m_send_queue) {
+        // Add the size tag:
+        dgsize_t len = swap_le(dg->size());
+        memcpy(send_ptr, (char*)&len, sizeof(dgsize_t));
+        send_ptr += sizeof(dgsize_t);
+
+        // Add the data:
+        memcpy(send_ptr, dg->get_data(), dg->size());
+        send_ptr += dg->size();
+
+        // Discount it from our send queue:
+        m_total_queue_size -= dg->size();
+    }
+    assert(send_ptr == &m_send_buf[buffer_size]);
+
+    // Clean up our m_send_queue:
+    assert(m_total_queue_size == 0);
+    m_send_queue.clear();
+
+    // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
+    if(m_write_timeout > 0) {
+        m_async_timer->stop();
+        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
+    }
+
+    // Bombs away!
+    m_is_sending = true;
+    m_socket->write(m_send_buf, buffer_size);
 }
 
 void NetworkClient::send_finished()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    // Cancel the outstanding timeout
+    // This function should ONLY run in the main thread. It's a libuv event.
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
+    // Mark ourselves as "not sending"
+    assert(m_is_sending);
+    m_is_sending = false;
+
+    // Cancel the outstanding timeout:
     m_async_timer->stop();
 
     // Discard the buffer we just used:
     delete [] m_send_buf;
     m_send_buf = nullptr;
 
-    // Check if we have more items in the queue
-    if(m_send_queue.size() > 0) {
-        // Send the next item in the queue
-        DatagramHandle dg = m_send_queue.front();
-        m_total_queue_size -= dg->size();
-        m_send_queue.pop();
-        async_send(dg, lock);
-        return;
-    }
-
-    // Nothing left in the queue to send, lets open up for another write
-    m_is_sending = false;
+    // Flush more items out of the queue:
+    flush_send_queue(lock);
 }
 
 void NetworkClient::send_expired()
@@ -239,16 +296,4 @@ void NetworkClient::send_expired()
     std::unique_lock<std::mutex> lock(m_mutex);
 
     disconnect(UV_ETIMEDOUT, lock);
-}
-
-void NetworkClient::socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &lock)
-{
-    // Start async timeout, a value of 0 indicates the writes shouldn't timeout (used in debugging)
-    if(m_write_timeout > 0) {
-        m_async_timer->stop();
-        m_async_timer->start(uvw::TimerHandle::Time{m_write_timeout}, uvw::TimerHandle::Time{0});
-    }
-
-    lock.unlock();
-    m_socket->write(buf, length);
 }

@@ -105,9 +105,8 @@ private:
     bool is_connected(std::unique_lock<std::mutex> &lock);
 
     /* Asynchronous call loop */
-    // async_send is called by send_datagram or send_finished when the socket is available
-    //     for writing to send the next datagram in the queue.
-    void async_send(DatagramHandle dg, std::unique_lock<std::mutex> &lock);
+    // flush_send_queue is called to try and flush m_send_queue to the socket
+    void flush_send_queue(std::unique_lock<std::mutex> &lock);
     // send_finished is called when an async_send has completed
     void send_finished();
     // send_expired is called when an async_send has expired
@@ -115,8 +114,6 @@ private:
 
     // start_receive is called by initialize() to begin receiving data.
     void start_receive();
-
-    void socket_write(char* buf, size_t length, std::unique_lock<std::mutex> &lock);
 
     void handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
 
@@ -136,7 +133,7 @@ private:
     uint64_t m_total_queue_size = 0;
     uint64_t m_max_queue_size = 0;
     unsigned int m_write_timeout = 0;
-    std::queue<DatagramHandle> m_send_queue;
+    std::list<DatagramHandle> m_send_queue;
 
     std::mutex m_mutex;
 
