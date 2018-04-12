@@ -113,21 +113,53 @@ void MessageDirector::shutdown_threading()
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
-    if(m_thread) {
-        // Threaded mode! First, we have to get the lock to our queue:
+    {
+        // Scoped lock, we only hold this to push our datagram into the message queue:
         std::lock_guard<std::mutex> lock(m_messages_lock);
-
-        // Now, we put the message into our queue and ring the bell:
         m_messages.push(std::make_pair(p, dg));
+    }
+
+    if(m_thread) {
+        // If in threaded mode, ring the bell to let the MD thread know we have a datagram to process and return.
         m_cv.notify_one();
     } else if(std::this_thread::get_id() != m_main_thread) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        io_service.post(boost::bind(&MessageDirector::process_datagram, this, p, dg));
+        io_service.post(boost::bind(&MessageDirector::flush_queue, this));
     } else {
-        // Main thread; we can just process it here.
-        process_datagram(p, dg);
+        // Main thread: Invoke flush_queue directly.
+        flush_queue();
     }
+}
+
+void MessageDirector::flush_queue()
+{
+    // We want to be sure this is being invoked from within the main thread.
+    assert(std::this_thread::get_id() == m_main_thread);
+
+    if(m_main_is_routing) {
+        // We're already in the middle of a queue flush, return immediately.
+        return;
+    }
+
+    m_main_is_routing = true;
+
+    {
+        std::unique_lock<std::mutex> lock(m_messages_lock);
+
+        while(!m_messages.empty()) {
+            // Get and process the datagram:
+            auto msg = m_messages.front();
+            m_messages.pop();
+
+            lock.unlock();
+            process_datagram(msg.first, msg.second);
+            lock.lock();
+        }
+    }
+
+    // We're done flushing, we can now be invoked from others.
+    m_main_is_routing = false;
 }
 
 // This function runs in a thread; it loops until it's told to shut down:
