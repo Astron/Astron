@@ -28,20 +28,23 @@ void NetworkClient::shutdown(std::unique_lock<std::mutex> &)
     if(m_shutdown_handle != nullptr) {
         m_shutdown_handle->send();
     }
+
     m_socket = nullptr;
     m_async_timer = nullptr;
     m_flush_handle = nullptr;
     m_shutdown_handle = nullptr;
+    m_haproxy_handler = nullptr;
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
 {
-    initialize(socket, socket->peer(), socket->sock(), lock);
+    initialize(socket, socket->peer(), socket->sock(), false, lock);
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                                const uvw::Addr &remote,
                                const uvw::Addr &local,
+                               const bool haproxy_mode,
                                std::unique_lock<std::mutex> &)
 {
     if(m_socket) {
@@ -62,6 +65,12 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
 
     m_remote = remote;
     m_local = local;
+
+    m_haproxy_mode = haproxy_mode;
+
+    if(m_haproxy_mode) {
+        m_haproxy_handler = std::make_unique<HAProxyHandler>();
+    }
 
     // NOT protected by a lock, make sure it runs in main!
     start_receive();
@@ -166,7 +175,36 @@ void NetworkClient::start_receive()
     assert(std::this_thread::get_id() == g_main_thread_id);
 
     m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
-        this->process_datagram(event.data, event.length);
+        if(m_haproxy_handler != nullptr) {
+            m_haproxy_handler->consume(reinterpret_cast<const uint8_t*>(event.data.get()), event.length);
+            if(m_haproxy_handler->is_done()) {
+                if(m_haproxy_handler->has_error()) {
+                    // An error occured while processing the HAProxy headers.
+                    // Disconnect the client with the error code passed down as the reason, and destroy the HAProxyHandler instance without doing anything else.
+                    disconnect(m_haproxy_handler->get_error());
+                    m_haproxy_handler = nullptr;
+                    return;
+                }
+
+                m_local = m_haproxy_handler->get_local();
+                m_remote = m_haproxy_handler->get_remote();
+
+                // We need to feed any bytes left-over in the HAProxyHandler back to our own datagram processing function.
+                size_t overread_size = m_haproxy_handler->get_buffer().size();
+                if(overread_size == 0) {
+                    // No bytes over-read, get rid of the reference to the HAProxyHandler and proceed as usual.
+                    m_haproxy_handler = nullptr;
+                    return;
+                }
+
+                std::unique_ptr<char[]> overread_data(new char[overread_size]);
+                memcpy(overread_data.get(), &m_haproxy_handler->get_buffer().front(), overread_size);
+                process_datagram(overread_data, overread_size);
+                m_haproxy_handler = nullptr;
+            }
+        } else {
+            this->process_datagram(event.data, event.length);
+        }
     });
 
     m_socket->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent& event, uvw::TcpHandle &) {

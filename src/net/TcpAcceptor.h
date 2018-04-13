@@ -2,7 +2,7 @@
 #include "NetworkAcceptor.h"
 #include <functional>
 
-typedef std::function<void(const std::shared_ptr<uvw::TcpHandle>&, const uvw::Addr& remote, const uvw::Addr& local)> TcpAcceptorCallback;
+typedef std::function<void(const std::shared_ptr<uvw::TcpHandle>&, const uvw::Addr& remote, const uvw::Addr& local, const bool haproxy_mode)> TcpAcceptorCallback;
 
 class TcpAcceptor : public NetworkAcceptor
 {

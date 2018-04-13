@@ -29,10 +29,10 @@ bool ClientFactory::has_client_type(const std::string &name)
 // instantiate_client creates a new Client object of type 'client_type'.
 Client* ClientFactory::instantiate_client(const std::string &client_type, ConfigNode config,
         ClientAgent* client_agent, const std::shared_ptr<uvw::TcpHandle> &socket,
-        const uvw::Addr &remote, const uvw::Addr &local)
+        const uvw::Addr &remote, const uvw::Addr &local, const bool haproxy_mode)
 {
     if(m_factories.find(client_type) != m_factories.end()) {
-        return m_factories[client_type]->instantiate(config, client_agent, socket, remote, local);
+        return m_factories[client_type]->instantiate(config, client_agent, socket, remote, local, haproxy_mode);
     }
     return nullptr;
 }

@@ -72,7 +72,8 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     TcpAcceptorCallback callback = std::bind(&ClientAgent::handle_tcp, this,
                                    std::placeholders::_1,
                                    std::placeholders::_2,
-                                   std::placeholders::_3);
+                                   std::placeholders::_3,
+                                   std::placeholders::_4);
     m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
 
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
@@ -85,12 +86,13 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 // handle_tcp generates a new Client object from a raw tcp connection.
 void ClientAgent::handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
                              const uvw::Addr &remote,
-                             const uvw::Addr &local)
+                             const uvw::Addr &local,
+                             const bool haproxy_mode)
 {
     m_log->debug() << "Got an incoming connection from "
                    << remote.ip << ":" << remote.port << "\n";
 
-    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote, local);
+    ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote, local, haproxy_mode);
 }
 
 

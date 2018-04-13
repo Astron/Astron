@@ -32,5 +32,5 @@ void TcpAcceptor::handle_accept(const std::shared_ptr<uvw::TcpHandle>& socket)
 void TcpAcceptor::handle_endpoints(const std::shared_ptr<uvw::TcpHandle>& socket, const uvw::Addr& remote, const uvw::Addr& local)
 {
     // Inform the callback:
-    m_callback(socket, remote, local);
+    m_callback(socket, remote, local, m_haproxy_mode);
 }

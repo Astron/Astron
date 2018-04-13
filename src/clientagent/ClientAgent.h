@@ -37,7 +37,8 @@ class ClientAgent final : public Role
     // handle_tcp generates a new Client object from a raw tcp connection.
     void handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
                     const uvw::Addr &remote,
-                    const uvw::Addr &local);
+                    const uvw::Addr &local,
+                    const bool haproxy_mode);
 
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,

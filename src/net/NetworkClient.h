@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 #include <deps/uvw/uvw.hpp>
 #include "util/Datagram.h"
+#include "HAProxyHandler.h"
 
 // NOTES:
 //
@@ -45,10 +46,11 @@ public:
 
     inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                            const uvw::Addr& remote,
-                           const uvw::Addr& local)
+                           const uvw::Addr& local,
+                           const bool haproxy_mode)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        initialize(socket, remote, local, lock);
+        initialize(socket, remote, local, haproxy_mode, lock);
     }
 
     void set_write_timeout(unsigned int timeout);
@@ -100,6 +102,7 @@ private:
     void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     const uvw::Addr &remote,
                     const uvw::Addr &local,
+                    const bool haproxy_mode,
                     std::unique_lock<std::mutex> &lock);
     void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
     bool is_connected(std::unique_lock<std::mutex> &lock);
@@ -131,6 +134,7 @@ private:
     std::shared_ptr<uvw::TimerHandle> m_async_timer;
     std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
     std::shared_ptr<uvw::AsyncHandle> m_shutdown_handle;
+    std::unique_ptr<HAProxyHandler> m_haproxy_handler;
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;
@@ -144,5 +148,7 @@ private:
 
     bool m_disconnect_handled = false;
     bool m_local_disconnect = false;
+    bool m_haproxy_mode = false;
+
     uv_errno_t m_disconnect_error;
 };
