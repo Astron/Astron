@@ -195,6 +195,8 @@ size_t HAProxyHandler::parse_v1_block()
     m_local.ip =  std::string(dstip);
     m_local.port = atoi(dstport);
 
+    delete[] header_buf;
+
     return hdr_size;
 }
 
