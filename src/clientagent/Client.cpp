@@ -801,7 +801,7 @@ void Client::notify_interest_done(uint16_t interest_id, channel_t caller)
 // interest operation's caller, if one has been set.
 void Client::notify_interest_done(const InterestOperation* iop)
 {
-    if(iop->m_callers.size() == 0) {
+    if(iop->m_callers.size() == 0 || iop->m_channel==0) {
         return;
     }
 
