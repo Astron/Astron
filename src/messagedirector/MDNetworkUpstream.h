@@ -14,6 +14,7 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
 
     void connect(const std::string &address);
     void on_connect(const std::shared_ptr<uvw::TcpHandle> &socket);
+    void on_connect_error(const uvw::ErrorEvent& evt);
 
     // Interfaces that MDUpstream needs us to implement:
     virtual void subscribe_channel(channel_t c);

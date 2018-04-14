@@ -40,6 +40,7 @@ class Daemon(object):
         time.sleep(1.0) # Allow some time for daemon to finish up...
         if self.daemon is not None:
             self.daemon.kill()
+            # In Windows, kill() is an alias for terminate(), which isn't guaranteed to be instantaneous like SIGKILL signals are on UNIX systems.
             self.daemon.wait()
         if self.config_file is not None:
             os.remove(self.config_file)

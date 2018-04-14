@@ -74,7 +74,10 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
                                    std::placeholders::_2,
                                    std::placeholders::_3,
                                    std::placeholders::_4);
-    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
+    AcceptorErrorCallback err_callback = std::bind(&ClientAgent::handle_error, this,
+                                            std::placeholders::_1);
+
+    m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback, err_callback));
 
     m_net_acceptor->set_haproxy_mode(behind_haproxy.get_rval(m_roleconfig));
 
@@ -95,6 +98,14 @@ void ClientAgent::handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
     ClientFactory::singleton().instantiate_client(m_client_type, m_clientconfig, this, socket, remote, local, haproxy_mode);
 }
 
+void ClientAgent::handle_error(const uvw::ErrorEvent& evt)
+{
+    m_log->fatal() << evt.what() << "\n";
+    if(evt.code() == UV_EADDRINUSE || evt.code() == UV_EADDRNOTAVAIL) {
+        m_log->fatal() << "Failed to bind to address: " << evt.what() << "\n";
+        exit(1);
+    }
+}
 
 // handle_datagram handles Datagrams received from the message director.
 void ClientAgent::handle_datagram(DatagramHandle, DatagramIterator&)

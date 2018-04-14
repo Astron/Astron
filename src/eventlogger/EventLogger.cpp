@@ -36,8 +36,8 @@ void EventLogger::bind(const std::string &addr)
     auto addresses = resolve_address(addr, 7197, g_loop);
 
     if(addresses.size() == 0) {
-        m_log.error() << "Failed to bind to EventLogger address " << addr << "\n";
-        return;
+        m_log.fatal() << "Failed to bind to EventLogger address " << addr << "\n";
+        exit(1);
     }
 
     m_local = addresses.front();

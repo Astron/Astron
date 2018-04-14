@@ -40,6 +40,8 @@ class ClientAgent final : public Role
                     const uvw::Addr &local,
                     const bool haproxy_mode);
 
+    void handle_error(const uvw::ErrorEvent& evt);
+
     // handle_datagram handles Datagrams received from the message director.
     // Currently the ClientAgent does not handle any datagrams,
     // and delegates everything to the Client objects.

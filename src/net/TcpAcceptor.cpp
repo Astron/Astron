@@ -1,8 +1,8 @@
 #include "TcpAcceptor.h"
 #include <boost/bind.hpp>
 
-TcpAcceptor::TcpAcceptor(TcpAcceptorCallback &callback) :
-    NetworkAcceptor(),
+TcpAcceptor::TcpAcceptor(TcpAcceptorCallback &callback, AcceptorErrorCallback& err_callback) :
+    NetworkAcceptor(err_callback),
     m_callback(callback)
 {
 }
@@ -13,6 +13,11 @@ void TcpAcceptor::start_accept()
         std::shared_ptr<uvw::TcpHandle> client = srv.loop().resource<uvw::TcpHandle>();
         srv.accept(*client);
         handle_accept(client);
+    });
+
+    m_acceptor->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent &evt, uvw::TcpHandle &) {
+        // Inform the error callback:
+        this->m_err_callback(evt);
     });
 }
 

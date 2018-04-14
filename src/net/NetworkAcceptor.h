@@ -2,6 +2,8 @@
 #include <thread>
 #include <deps/uvw/uvw.hpp>
 
+typedef std::function<void(const uvw::ErrorEvent& evt)> AcceptorErrorCallback;
+
 class NetworkAcceptor
 {
   public:
@@ -26,8 +28,9 @@ class NetworkAcceptor
 
     bool m_started = false;
     bool m_haproxy_mode = false;
+    AcceptorErrorCallback m_err_callback;
 
-    NetworkAcceptor();
+    NetworkAcceptor(AcceptorErrorCallback err_callback);
 
     virtual void start_accept() = 0;
 };

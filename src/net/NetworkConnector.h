@@ -2,6 +2,7 @@
 #include <deps/uvw/uvw.hpp>
 
 typedef std::function<void(const std::shared_ptr<uvw::TcpHandle> &)> ConnectCallback;
+typedef std::function<void(const uvw::ErrorEvent& evt)> ConnectErrorCallback;
 
 class NetworkConnector : std::enable_shared_from_this<NetworkConnector>
 {
@@ -12,11 +13,12 @@ class NetworkConnector : std::enable_shared_from_this<NetworkConnector>
 
     NetworkConnector(const std::shared_ptr<uvw::Loop> &loop);
     void connect(const std::string &address, unsigned int default_port,
-                         ConnectCallback callback);
+                 ConnectCallback callback, ConnectErrorCallback err_callback);
   private:
     std::shared_ptr<uvw::TcpHandle> m_socket;
     std::shared_ptr<uvw::Loop> m_loop;
-    ConnectCallback connect_callback;
+    ConnectCallback m_connect_callback;
+    ConnectErrorCallback m_err_callback;
 
     void do_connect(const std::string &address, uint16_t port);
 };

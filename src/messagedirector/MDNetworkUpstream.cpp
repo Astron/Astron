@@ -14,12 +14,24 @@ MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
 void MDNetworkUpstream::connect(const std::string &address)
 {
     ConnectCallback callback = std::bind(&MDNetworkUpstream::on_connect, this, std::placeholders::_1);
-    m_connector->connect(address, 7199, callback);
+    ConnectErrorCallback err_callback = std::bind(&MDNetworkUpstream::on_connect_error, this, std::placeholders::_1);
+
+    m_connector->connect(address, 7199, callback, err_callback);
 }
 
 void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket)
 {
+    if(socket == nullptr) {
+        m_message_director->receive_disconnect(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
+        exit(1);
+    }
+
     m_client->initialize(socket);
+}
+
+void MDNetworkUpstream::on_connect_error(const uvw::ErrorEvent& evt)
+{
+    m_message_director->receive_disconnect(evt);
 }
 
 void MDNetworkUpstream::subscribe_channel(channel_t c)

@@ -88,6 +88,7 @@ class MessageDirector final : public ChannelMap
 
     // I/O OPERATIONS
     void handle_connection(const std::shared_ptr<uvw::TcpHandle> &socket);
+    void handle_error(const uvw::ErrorEvent& evt);
 };
 
 

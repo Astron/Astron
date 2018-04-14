@@ -3,10 +3,12 @@
 #include "address_utils.h"
 
 
-NetworkAcceptor::NetworkAcceptor() :
+NetworkAcceptor::NetworkAcceptor(AcceptorErrorCallback err_callback) :
     m_loop(g_loop),
     m_acceptor(nullptr),
-    m_started(false)
+    m_started(false),
+    m_haproxy_mode(false),
+    m_err_callback(err_callback)
 {
 }
 
@@ -17,6 +19,14 @@ void NetworkAcceptor::bind(const std::string &address,
     m_acceptor->simultaneousAccepts(true);
 
     std::vector<uvw::Addr> addresses = resolve_address(address, default_port, m_loop);
+
+    if(addresses.size() == 0) {
+        if(this->m_err_callback != nullptr) {
+            this->m_err_callback(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
+        }
+
+        return;
+    }
 
     for (uvw::Addr& addr : addresses) {
         m_acceptor->bind(addr);

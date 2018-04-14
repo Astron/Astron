@@ -49,7 +49,11 @@ void MessageDirector::init_network()
 
             TcpAcceptorCallback callback = std::bind(&MessageDirector::handle_connection,
                                            this, std::placeholders::_1);
-            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback));
+
+            AcceptorErrorCallback err_callback = std::bind(&MessageDirector::handle_error,
+                                                    this, std::placeholders::_1);
+
+            m_net_acceptor = std::unique_ptr<TcpAcceptor>(new TcpAcceptor(callback, err_callback));
             m_net_acceptor->bind(bind_addr.get_val(), 7199);
             m_net_acceptor->start();
         }
@@ -265,6 +269,14 @@ void MessageDirector::handle_connection(const std::shared_ptr<uvw::TcpHandle> &s
     m_log.info() << "Got an incoming connection from "
                  << remote.ip << ":" << remote.port << std::endl;
     new MDNetworkParticipant(socket); // It deletes itself when connection is lost
+}
+
+void MessageDirector::handle_error(const uvw::ErrorEvent& evt)
+{
+    if(evt.code() == UV_EADDRINUSE || evt.code() == UV_EADDRNOTAVAIL) {
+        m_log.fatal() << "Failed to bind to address: " << evt.what() << "\n";
+        exit(1);
+    }
 }
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
