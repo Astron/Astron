@@ -136,13 +136,13 @@ std::vector<uvw::Addr> resolve_address(const std::string &hostspec, uint16_t por
 			    if (addrinfo->ai_family == AF_INET && addrinfo->ai_socktype == SOCK_STREAM) {
 				    sockaddr_in* sockaddr = reinterpret_cast<sockaddr_in*>(addrinfo->ai_addr);
 				    uvw::Addr addr = uvw::details::address<uvw::IPv4>(sockaddr);
-                                    addr.port = port;
+                    addr.port = port;
 				    ret.push_back(addr);
 			    }
 			    else if (addrinfo->ai_family == AF_INET6 && addrinfo->ai_socktype == SOCK_STREAM) {
 				    sockaddr_in6* sockaddr = reinterpret_cast<sockaddr_in6*>(addrinfo->ai_addr);
 				    uvw::Addr addr = uvw::details::address<uvw::IPv6>(sockaddr);
-                                    addr.port = port;
+                    addr.port = port;
 				    ret.push_back(addr);
 			    }
 
