@@ -100,7 +100,6 @@ void ClientAgent::handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
 
 void ClientAgent::handle_error(const uvw::ErrorEvent& evt)
 {
-    m_log->fatal() << evt.what() << "\n";
     if(evt.code() == UV_EADDRINUSE || evt.code() == UV_EADDRNOTAVAIL) {
         m_log->fatal() << "Failed to bind to address: " << evt.what() << "\n";
         exit(1);
