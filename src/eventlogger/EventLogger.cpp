@@ -36,7 +36,7 @@ void EventLogger::bind(const std::string &addr)
     auto addresses = resolve_address(addr, 7197, g_loop);
 
     if(addresses.size() == 0) {
-        m_log.error() << "Failed to bind to EventLogger address: There was none.\n";
+        m_log.error() << "Failed to bind to EventLogger address " << target << "\n";
         return;
     }
 
@@ -122,7 +122,7 @@ void EventLogger::start_receive()
 {
     m_socket->on<uvw::UDPDataEvent>([this](const uvw::UDPDataEvent &event, uvw::UDPHandle &) {
         m_log.trace() << "Got packet from " << event.sender.ip
-                      << ":" << event.sender << ".\n";
+                      << ":" << event.sender.port << ".\n";
 
         DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(event.data.get()), event.length);
         process_packet(dg, event.sender);
