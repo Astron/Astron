@@ -21,10 +21,7 @@ void NetworkAcceptor::bind(const std::string &address,
     std::vector<uvw::Addr> addresses = resolve_address(address, default_port, m_loop);
 
     if(addresses.size() == 0) {
-        if(this->m_err_callback != nullptr) {
-            this->m_err_callback(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
-        }
-
+        this->m_err_callback(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
         return;
     }
 
