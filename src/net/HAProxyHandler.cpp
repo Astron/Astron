@@ -149,12 +149,13 @@ size_t HAProxyHandler::parse_v1_block()
     assert(!(m_data_buf.size() < HAPROXY_HEADER_MIN));
 
     char* cr_chr = (char*)memchr(&m_data_buf[0], '\r', m_data_buf.size());
-    size_t cr_off = (cr_chr - (char*)&m_data_buf[0]) + 1;
 
     if(cr_chr == NULL) {
         // We need *at least* 2 more bytes for the header to be complete.
         return m_data_buf.size() + 2;
     }
+
+    size_t cr_off = (cr_chr - (char*)&m_data_buf[0]) + 1;
 
     if(cr_off > HAPROXY_HEADER_MAX - 1) {
         // If the CR is after the 106th character in our buffer, we probably stepped into application-layer data.
