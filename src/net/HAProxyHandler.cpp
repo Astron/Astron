@@ -168,7 +168,7 @@ size_t HAProxyHandler::parse_v1_block()
     assert(!(m_data_buf.size() < hdr_size));
 
     // Scratch-buffer for strtok() related operations.
-    char* header_buf = new char[hdr_size];
+    char* header_buf = new char[hdr_size + 1];
     memcpy(header_buf, &m_data_buf[0], hdr_size);
     header_buf[hdr_size] = '\0';
 
