@@ -95,7 +95,7 @@ public:
         return m_local;
     }
 
-    inline const std::vector<uint8_t>& get_tlvs()
+    inline const std::vector<uint8_t>& get_tlvs() const
     {
         return m_tlv_buf;
     }
