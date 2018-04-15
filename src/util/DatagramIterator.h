@@ -4,6 +4,8 @@
 #include "dclass/dc/Method.h"
 #include "dclass/dc/Field.h"
 #include "dclass/dc/Parameter.h"
+#include "dclass/dc/ArrayType.h"
+#include "dclass/dc/NumericType.h"
 #ifdef _DEBUG
 #include <fstream>
 #endif
@@ -14,6 +16,14 @@ class DatagramIteratorEOF : public std::runtime_error
 {
   public:
     DatagramIteratorEOF(const std::string &what) : std::runtime_error(what) { }
+};
+
+// A FieldConstraintViolation is an exception that is thrown when attempting to read a field
+// where the provided field value (if of numerical type) or field length (if of array type) is outside the provided sane range for the given field type.
+class FieldConstraintViolation : public std::runtime_error
+{
+    public:
+        FieldConstraintViolation(const std::string &what) : std::runtime_error(what) { }
 };
 
 // A DatagramIterator lets you step trough a datagram by reading a single value at a time.
@@ -243,11 +253,47 @@ class DatagramIterator
     void unpack_dtype(const dclass::DistributedType* dtype, std::vector<uint8_t> &buffer)
     {
         using namespace dclass;
-        if(dtype->has_fixed_size()) {
+
+        // For Struct or Method-type fields, any constraints on child fields prevent us from taking the single-read fast-path.
+        // Ergo, their has_range field lets us know whether there are any constraints applicable to their "child" fields.
+        const bool skip_fixed = ((dtype->get_type() == T_STRUCT || dtype->get_type() == T_METHOD) && dtype->has_range());
+
+        if(dtype->has_fixed_size() && !skip_fixed) {
+            const ArrayType* array = dtype->as_array();
+
+            if(dtype->get_type() == T_ARRAY && array && array->get_element_type()->has_range()) {
+                // Slow-path mode:
+                // We have a (slightly unoptimised) edge case to account for here.
+                // unpack_dtype is normally not recursively invoked in the event that we have a fixed-size array with fixed-size elements (T_ARRAY)
+                // Ergo, we have to do this here instead. We more or less effectively lose out the benefits of our single-read optimisation.
+                // Of course, this only applies if the underlying element type has any constraints applying to it in the first place.
+
+                for(size_t i = 0; i < array->get_array_size(); ++i) {
+                    unpack_dtype(array->get_element_type(), buffer);
+                }
+
+                return;
+            }
+
             // If field is a fixed-sized type like uint, int, float, etc
             // Also any other type lucky enough to be fixed size will be computed faster
+            const NumericType* num = dtype->as_numeric();
+
             std::vector<uint8_t> data = read_data(dtype->get_size());
+
+            // Check for any value range constraints applying to fixed-size numerical types:
+            if(num && num->has_range()) {
+                // We do have a value range constraint to check for.
+                if(!num->within_range(&data, 0)) {
+                    std::stringstream error;
+                    error << "Failed to unpack numeric-type field of type " << num->get_alias()
+                          << " due to value range constraint violation";
+                    throw FieldConstraintViolation(error.str());
+                }
+            }
+
             buffer.insert(buffer.end(), data.begin(), data.end());
+
             return;
         }
 
@@ -256,12 +302,36 @@ class DatagramIterator
         case T_VARSTRING:
         case T_VARBLOB:
         case T_VARARRAY: {
+            const ArrayType* array = dtype->as_array();
+
             dgsize_t len = read_size();
             dgsize_t net_len = swap_le(len);
+
+            uint64_t elem_cnt = 0;
             buffer.insert(buffer.end(), (uint8_t*)&net_len, (uint8_t*)&net_len + sizeof(dgsize_t));
 
-            std::vector<uint8_t> blob = read_data(len);
-            buffer.insert(buffer.end(), blob.begin(), blob.end());
+            if(dtype->get_type() == T_VARARRAY) {
+                // We handle variable-length arrays in a slightly different manner, as we have to check for value constraints.
+                size_t cur_ptr = buffer.size();
+
+                do {
+                    unpack_dtype(array->get_element_type(), buffer);
+                    ++elem_cnt;
+                } while(buffer.size() - cur_ptr < len);
+            } else {
+                // We're dealing with a blob or a string, ergo elem_cnt == len
+                std::vector<uint8_t> data = read_data(len);
+                buffer.insert(buffer.end(), data.begin(), data.end());
+                elem_cnt = len;
+            }
+
+            if(!array->within_range(nullptr, elem_cnt)) {
+                std::stringstream error;
+                error << "Failed to unpack variable-length field of type " << array->get_alias()
+                      << " due to element count constraint violation (got " << elem_cnt << ")";
+                throw FieldConstraintViolation(error.str());
+            }
+
             break;
         }
         case T_STRUCT: {

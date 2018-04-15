@@ -2,7 +2,6 @@
 #include <list>
 #include <queue>
 #include <mutex>
-#include <boost/asio.hpp>
 #include <deps/uvw/uvw.hpp>
 #include "util/Datagram.h"
 #include "HAProxyHandler.h"

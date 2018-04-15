@@ -1,5 +1,4 @@
 #include "ClientFactory.h"
-using boost::asio::ip::tcp;
 
 BaseClientType::BaseClientType(const std::string &name)
 {

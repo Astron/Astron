@@ -7,6 +7,7 @@
 
 #include <stdint.h> // fixed-width integer limits
 #include <math.h>
+#include <memory.h>
 #include "util/HashGenerator.h"
 
 #include "NumericType.h"
@@ -197,6 +198,44 @@ bool NumericType::set_range(const NumericRange &range)
     }
 
     return true;
+}
+
+bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length) const
+{
+    (void) length;
+    if(m_size != data->size()) {
+        // Somehow we got passed a short read for this field...
+        return false;
+    }
+
+    // We use val as a 'scratch value' for any further operations so we have an assurance as to size.
+    // We always assume 64-bit values for casts.
+    double val = 0;
+    memcpy(&val, &data->front(), m_size);
+
+    switch(m_type) {
+        case T_INT8:
+        case T_INT16:
+        case T_INT32:
+        case T_INT64: {
+            return m_range.contains(Number(*(int64_t*)&val));
+        }
+        case T_CHAR:
+        case T_UINT8:
+        case T_UINT16:
+        case T_UINT32:
+        case T_UINT64: {
+            return m_range.contains(Number(*(uint64_t*)&val));
+        }
+        case T_FLOAT32:
+        case T_FLOAT64: {
+            return m_range.contains(Number(*(double*)&val));
+        }
+        default:
+            break;
+    }
+
+    return false;
 }
 
 // generate_hash accumulates the properties of this type into the hash.

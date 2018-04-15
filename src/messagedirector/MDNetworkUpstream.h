@@ -2,7 +2,6 @@
 #include "MessageDirector.h"
 #include "net/NetworkClient.h"
 #include "net/NetworkConnector.h"
-#include <boost/asio.hpp>
 
 // All MDUpstreams must be thread-safe. This class does not need a lock, however,
 // because all of its operations are based on local variables and the functions
@@ -30,5 +29,5 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
   private:
     MessageDirector *m_message_director;
     std::shared_ptr<NetworkClient> m_client;
-    NetworkConnector *m_connector;
+    std::shared_ptr<NetworkConnector> m_connector;
 };

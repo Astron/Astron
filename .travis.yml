@@ -6,14 +6,17 @@ os:
 dist: trusty
 sudo: required
 
-osx_image: xcode7.3
+osx_image: xcode8.3
 
 compiler:
 - clang
 - gcc
-
+services:
+    - mongodb
 addons:
   apt:
+    sources:
+    - mongodb-3.0-trusty
     packages:
     - cmake
     - libboost-filesystem-dev
@@ -22,22 +25,22 @@ addons:
     - libboost-thread-dev
     - libssl-dev
     - libyaml-cpp-dev
-    - mongodb-server
+    - mongodb-org-server
 
 before_install:
 - |
   if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update;
     brew outdated boost || brew upgrade boost;
-    brew install openssl && export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2j/
+    brew upgrade openssl && export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2n/
     brew install yaml-cpp;
     brew install mongodb;
   fi
 
 install:
 - OLD_PWD=$PWD
-- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.5.0/libbson-1.5.0.tar.gz && tar xzf libbson-1.5.0.tar.gz && cd libbson-1.5.0 && ./configure && make && sudo make install
-- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.5.0/mongo-c-driver-1.5.0.tar.gz && tar xzf mongo-c-driver-1.5.0.tar.gz && cd mongo-c-driver-1.5.0 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.9.3/libbson-1.9.3.tar.gz && tar xzf libbson-1.9.3.tar.gz && cd libbson-1.9.3 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.9.3/mongo-c-driver-1.9.3.tar.gz && tar xzf mongo-c-driver-1.9.3.tar.gz && cd mongo-c-driver-1.9.3 && ./configure && make && sudo make install
 - cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
 - cd $OLD_PWD
 

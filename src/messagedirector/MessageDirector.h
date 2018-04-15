@@ -8,7 +8,6 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 #include "ChannelMap.h"
 #include "core/global.h"
@@ -67,12 +66,16 @@ class MessageDirector final : public ChannelMap
 
     // Threading stuff:
     bool m_shutdown;
+    bool m_main_is_routing;
     std::unique_ptr<std::thread> m_thread;
     std::mutex m_participants_lock;
     std::mutex m_terminated_lock;
     std::mutex m_messages_lock;
     std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
     std::condition_variable m_cv;
+    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
+
+    void flush_queue();
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
     void process_terminates();
     void routing_thread();

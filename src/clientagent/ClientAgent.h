@@ -2,8 +2,6 @@
 #include "core/Role.h"
 #include "Client.h"
 
-#include <boost/asio.hpp>
-
 #include <memory>
 
 extern RoleConfigGroup clientagent_config;

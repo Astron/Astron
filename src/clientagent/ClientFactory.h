@@ -1,7 +1,6 @@
 #pragma once
 #include "Client.h"
 #include "config/ConfigVariable.h"
-#include <boost/asio.hpp>
 #include <unordered_map>
 
 // A BaseClientType is a common ancestor that all client factory templates inherit from.

@@ -3,10 +3,10 @@
 #include "config/ConfigVariable.h"
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
-#include <boost/asio.hpp>
 #include <deps/uvw/uvw.hpp>
 #include <unordered_map>
 #include <thread>
+#include <cassert>
 
 // An Uberdog represents a global DistributedObject that manages itself, instead of being managed by
 //     a StateServer or DatabaseServer.  Uberdogs are typically used for RPC calls, and typically

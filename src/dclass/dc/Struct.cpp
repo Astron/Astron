@@ -9,13 +9,13 @@ namespace dclass   // open namespace dclass
 {
 
 // public constructor
-Struct::Struct(File* file, const string& name) : m_file(file), m_id(0), m_name(name)
+Struct::Struct(File* file, const string& name) : m_file(file), m_id(0), m_name(name), m_has_constraint(false)
 {
     m_type = T_STRUCT;
 }
 
 // protected constructor
-Struct::Struct(File* file) : m_file(file), m_id(0)
+Struct::Struct(File* file) : m_file(file), m_id(0), m_has_constraint(false)
 {
     m_type = T_STRUCT;
 }
@@ -99,7 +99,18 @@ bool Struct::add_field(Field* field)
             m_size = 0;
         }
     }
+
+    if(!m_has_constraint && field->get_type()->has_range()) {
+        m_has_constraint = true;
+    }
+
     return true;
+}
+
+// has_range in this case returns true if any of the fields in the struct have a constraint.
+bool Struct::has_range() const
+{
+    return m_has_constraint;
 }
 
 // generate_hash accumulates the properties of this class into the hash.

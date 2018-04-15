@@ -68,6 +68,8 @@ FIELDS = [
     'setColor',
     'requestKill',
     'sendMessage',
+    'sendMessageConstraint',
+    'setColorConstraint',
 
     ### Fields for Block ###
     'blockX',
@@ -105,4 +107,4 @@ setRDbD5DefaultValue = 20
 
 # If you edit test.dc *AT ALL*, you will have to recalculate this.
 # If you don't know how, ask CFS.
-DC_HASH = 0x9a71149
+DC_HASH = 0xb77baf2
