@@ -141,6 +141,13 @@ size_t HAProxyHandler::parse_v2_block()
     delete[] remote_address;
     delete[] local_address;
 
+    // Store TLVs into our own internal buffer, to be copied by NetworkClient for CA-sided consumption.
+    size_t tlv_off = port_offset + 4;
+    ssize_t tlv_size = (total_len - tlv_off);
+    if(tlv_size > 0) {
+        m_tlv_buf = std::vector<uint8_t>(&m_data_buf[tlv_off], &m_data_buf[tlv_off + tlv_size]);
+    }
+
     return total_len;
 }
 
@@ -237,6 +244,16 @@ uvw::Addr HAProxyHandler::get_remote() const
 uvw::Addr HAProxyHandler::get_local() const
 {
     return m_local;
+}
+
+const std::vector<uint8_t>& HAProxyHandler::get_tlvs() const
+{
+    return m_tlv_buf;
+}
+
+bool HAProxyHandler::has_tlvs() const
+{
+    return m_tlv_buf.size() > 0;
 }
 
 bool HAProxyHandler::has_error() const

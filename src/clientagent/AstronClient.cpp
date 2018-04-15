@@ -670,6 +670,12 @@ class AstronClient : public Client, public NetworkHandler
     {
         return m_client->get_local().port;
     }
+
+    virtual const std::vector<uint8_t>& get_tlvs() const
+    {
+        return m_client->get_tlvs();
+    }
+
 };
 
 static ClientType<AstronClient> astron_client_fact("libastron");

@@ -124,11 +124,11 @@ void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
         dgsize_t data_size = *reinterpret_cast<dgsize_t*>(&m_data_buf[0]);
         if(m_data_buf.size() >= data_size + sizeof(dgsize_t)) {
             dgsize_t overread_size = (m_data_buf.size() - data_size - sizeof(dgsize_t));
-            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf[0] + sizeof(dgsize_t)), data_size);
+            DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf[sizeof(dgsize_t)]), data_size);
             if(0 < overread_size) {
                 // Splice leftover data to new m_data_buf based on expected datagram length.
-                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf[0] + sizeof(dgsize_t) + data_size),
-                                                        reinterpret_cast<char*>(&m_data_buf[0] + sizeof(dgsize_t) + data_size + overread_size));
+                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf[sizeof(dgsize_t) + data_size]),
+                                                        reinterpret_cast<char*>(&m_data_buf[sizeof(dgsize_t) + data_size + overread_size]));
             } else {
                 // No overread, buffer is empty.
                 m_data_buf = std::vector<unsigned char>();
@@ -188,6 +188,7 @@ void NetworkClient::start_receive()
 
                 m_local = m_haproxy_handler->get_local();
                 m_remote = m_haproxy_handler->get_remote();
+                m_tlv_buf = m_haproxy_handler->get_tlvs();
 
                 ssize_t bytes_left = event.length - bytes_consumed;
                 if(0 < bytes_left) {

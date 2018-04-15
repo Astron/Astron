@@ -3346,6 +3346,7 @@ class TestClientAgent(ProtocolTest):
         for test_id in xrange(4):
             proto_v2 = bool(test_id&1)
             ipv6 = bool(test_id&2)
+            spoof_tlv = 'The higher we soar, the smaller we appear to those who cannot fly.'
 
             if ipv6:
                 source_ip = '2001:db8::1'
@@ -3363,7 +3364,8 @@ class TestClientAgent(ProtocolTest):
 
             if proto_v2:
                 body = (source_ip_bin + dest_ip_bin +
-                        struct.pack('>HH', source_port, dest_port))
+                        struct.pack('>HH', source_port, dest_port) +
+                        spoof_tlv)
                 header = ('\r\n\r\n\0\r\nQUIT\n\x21' +
                           struct.pack('>BH', 0x21 if ipv6 else 0x11, len(body)) +
                           body)
@@ -3391,6 +3393,22 @@ class TestClientAgent(ProtocolTest):
             self.assertEqual(dgi.read_uint16(), source_port)
             self.assertEqual(dgi.read_string(), dest_ip)
             self.assertEqual(dgi.read_uint16(), dest_port)
+
+            if proto_v2:
+                dg = Datagram.create([id], 10010, CLIENTAGENT_GET_TLVS)
+                dg.add_uint32(test_id)
+                self.server.send(dg)
+
+                dg = self.server.recv_maybe()
+                self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_TLVS_RESP")
+
+                dgi = DatagramIterator(dg)
+                self.assertEqual(dgi.read_uint8(), 1)
+                self.assertEqual(dgi.read_channel(), 10010)
+                self.assertEqual(dgi.read_channel(), id)
+                self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_TLVS_RESP)
+                self.assertEqual(dgi.read_uint32(), test_id)
+                self.assertEqual(dgi.read_string(), spoof_tlv)
 
         self.server.send(Datagram.create_remove_channel(10010))
 

@@ -13,6 +13,7 @@ class HAProxyHandler
     private:
         // Data members.
         std::vector<uint8_t> m_data_buf;
+        std::vector<uint8_t> m_tlv_buf;
         
         uvw::Addr m_local;
         uvw::Addr m_remote;
@@ -29,6 +30,8 @@ class HAProxyHandler
         size_t consume(const uint8_t* buffer, size_t length); 
         uvw::Addr get_local() const;
         uvw::Addr get_remote() const;
+        const std::vector<uint8_t>& get_tlvs() const;
+        bool has_tlvs() const;
         bool has_error() const;
         uv_errno_t get_error() const;
 };

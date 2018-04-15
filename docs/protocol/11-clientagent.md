@@ -132,6 +132,15 @@ session channel.
 > security-overridden fields for that object.
 
 
+**CLIENTAGENT_GET_TLVS(1015)**
+    `args(uint32 context)`
+> Requests the TLVs associated with the client.
+
+
+**CLIENTAGENT_GET_TLVS_RESP(1016)**
+    `args(uint32 context, blob tlvs)`
+> Returns the blob representation of the TLVs associated with the client, as provided by HAProxy.
+
 #### Section 3.1: Client Agent Control Messages ####
 
 **CLIENTAGENT_OPEN_CHANNEL(1100)** `args(uint64 channel)`  

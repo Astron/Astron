@@ -95,6 +95,11 @@ public:
         return m_local;
     }
 
+    inline const std::vector<uint8_t>& get_tlvs()
+    {
+        return m_tlv_buf;
+    }
+
 private:
     // Locked versions of public functions:
     void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
@@ -138,6 +143,7 @@ private:
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;
+    std::vector<uint8_t> m_tlv_buf;
 
     uint64_t m_total_queue_size = 0;
     uint64_t m_max_queue_size = 0;

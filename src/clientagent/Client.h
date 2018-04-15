@@ -251,6 +251,7 @@ class Client : public MDParticipantInterface
     virtual uint16_t get_remote_port() = 0;
     virtual const std::string get_local_address() = 0;
     virtual uint16_t get_local_port() = 0;
+    virtual const std::vector<uint8_t>& get_tlvs() const = 0;
 
   private:
     // notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the

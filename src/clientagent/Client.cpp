@@ -457,6 +457,13 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_session_objects.erase(do_id);
     }
     break;
+    case CLIENTAGENT_GET_TLVS: {
+        DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_TLVS_RESP);
+        resp->add_uint32(dgi.read_uint32()); // Context
+        resp->add_blob(get_tlvs());
+        route_datagram(resp);
+    }
+    break;
     case CLIENTAGENT_GET_NETWORK_ADDRESS: {
         DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_NETWORK_ADDRESS_RESP);
         resp->add_uint32(dgi.read_uint32()); // Context
