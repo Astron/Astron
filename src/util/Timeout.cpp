@@ -11,6 +11,7 @@ Timeout::Timeout(unsigned long ms, std::function<void()> f) :
     m_callback_disabled(false)
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
+    
     m_timer = m_loop->resource<uvw::TimerHandle>();
 }
 
@@ -25,6 +26,8 @@ void Timeout::timer_callback()
 
 void Timeout::reset()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_timer->once<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
         this->timer_callback();
     });
@@ -35,6 +38,8 @@ void Timeout::reset()
 
 bool Timeout::cancel()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_timer->stop();
     return !m_callback_disabled.exchange(true);
 }
