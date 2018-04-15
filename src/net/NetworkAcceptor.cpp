@@ -15,6 +15,8 @@ NetworkAcceptor::NetworkAcceptor(AcceptorErrorCallback err_callback) :
 void NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_acceptor = m_loop->resource<uvw::TcpHandle>();
     m_acceptor->simultaneousAccepts(true);
 
@@ -35,6 +37,8 @@ void NetworkAcceptor::bind(const std::string &address,
 
 void NetworkAcceptor::start()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(m_started) {
         // Already started, start() was called twice!
         return;
@@ -48,6 +52,8 @@ void NetworkAcceptor::start()
 
 void NetworkAcceptor::stop()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(!m_started) {
         // Already stopped, stop() was called twice!
         return;

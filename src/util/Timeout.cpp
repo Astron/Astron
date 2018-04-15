@@ -10,6 +10,7 @@ Timeout::Timeout(unsigned long ms, std::function<void()> f) :
     m_timeout_interval(ms),
     m_callback_disabled(false)
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
     m_timer = m_loop->resource<uvw::TimerHandle>();
 }
 

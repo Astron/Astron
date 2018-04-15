@@ -1,5 +1,6 @@
 #include "NetworkConnector.h"
 #include "address_utils.h"
+#include "core/global.h"
 
 NetworkConnector::NetworkConnector(const std::shared_ptr<uvw::Loop> &loop) : m_loop(loop)
 {
@@ -23,6 +24,8 @@ void NetworkConnector::do_connect(const std::string &address,
 void NetworkConnector::connect(const std::string &address, unsigned int default_port,
                                ConnectCallback callback, ConnectErrorCallback err_callback)
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_connect_callback = callback;
     m_err_callback = err_callback;
 
