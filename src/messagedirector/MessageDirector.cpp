@@ -117,7 +117,9 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
     } else if(std::this_thread::get_id() != g_main_thread_id) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        m_flush_handle->send();
+        if(m_flush_handle != nullptr) {
+            m_flush_handle->send();
+        }
     } else {
         // Main thread: Invoke flush_queue directly.
         flush_queue();
