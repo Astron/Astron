@@ -148,9 +148,17 @@ size_t HAProxyHandler::parse_v1_block()
 {
     assert(!(m_data_buf.size() < HAPROXY_HEADER_MIN));
 
-    char* cr_chr = (char*)memchr(&m_data_buf[0], '\r', m_data_buf.size());
+    size_t capped_length = m_data_buf.size() > HAPROXY_HEADER_MAX ? HAPROXY_HEADER_MAX : m_data_buf.size();
+
+    char* cr_chr = (char*)memrchr(&m_data_buf[0], '\r', capped_length);
 
     if(cr_chr == NULL) {
+        if(m_data_buf.size() >= HAPROXY_HEADER_MAX - 1) {
+            // We should have a CR by now, if we don't we're not dealing with a valid PROXYv1 block as per the spec.
+            set_error(UV_EPROTO);
+            return 0;
+        }
+
         // We need *at least* 2 more bytes for the header to be complete.
         return m_data_buf.size() + 2;
     }
@@ -163,9 +171,15 @@ size_t HAProxyHandler::parse_v1_block()
         return 0;
     }
 
-    char* lf_chr = (char*)memchr(&m_data_buf[0], '\n', m_data_buf.size());
+    char* lf_chr = (char*)memrchr(&m_data_buf[0], '\n', capped_length);
     if(lf_chr == NULL || lf_chr != cr_chr + 1) {
-        // Either there is no new-line character, or for whatever reason it isn't located after a CR.
+        if(m_data_buf.size() >= HAPROXY_HEADER_MAX) {
+            // We should have an LF character located after our CR by now.
+            set_error(UV_EPROTO);
+            return 0;
+        }
+
+        // Either there is no line-feed character, or for whatever reason it isn't located after a CR.
         // Only expect one more byte.
         return m_data_buf.size() + 1;
     }
