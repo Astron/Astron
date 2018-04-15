@@ -148,13 +148,21 @@ size_t HAProxyHandler::parse_v1_block()
 {
     assert(!(m_data_buf.size() < HAPROXY_HEADER_MIN));
 
-    char* cr_chr = (char*)memrchr(&m_data_buf[0], '\r', m_data_buf.size());
+    char* cr_chr = (char*)memchr(&m_data_buf[0], '\r', m_data_buf.size());
+    size_t cr_off = (cr_chr - (char*)&m_data_buf[0]) + 1;
+
     if(cr_chr == NULL) {
         // We need *at least* 2 more bytes for the header to be complete.
         return m_data_buf.size() + 2;
     }
 
-    char* lf_chr = (char*)memrchr(&m_data_buf[0], '\n', m_data_buf.size());
+    if(cr_off > HAPROXY_HEADER_MAX - 1) {
+        // If the CR is after the 106th character in our buffer, we probably stepped into application-layer data.
+        set_error(UV_EPROTO);
+        return 0;
+    }
+
+    char* lf_chr = (char*)memchr(&m_data_buf[0], '\n', m_data_buf.size());
     if(lf_chr == NULL || lf_chr != cr_chr + 1) {
         // Either there is no new-line character, or for whatever reason it isn't located after a CR.
         // Only expect one more byte.
@@ -163,6 +171,12 @@ size_t HAProxyHandler::parse_v1_block()
 
     // (header_end_ptr - header_beg_ptr) + 1 is our final PROXYv1 header size.
     size_t hdr_size = (lf_chr - (char*)&m_data_buf[0]) + 1;
+
+    if(hdr_size > HAPROXY_HEADER_MAX) {
+        // Our CRLF is after the maximum bounds of the expected HAProxy header size.
+        set_error(UV_EPROTO);
+        return 0;
+    }
 
     // Our header obviously cannot be larger than the buffer it originates from.
     assert(!(m_data_buf.size() < hdr_size));
