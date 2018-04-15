@@ -25,6 +25,9 @@ void NetworkAcceptor::bind(const std::string &address,
         return;
     }
 
+    // Setup listen/error event handlers.
+    start_accept();
+
     for (uvw::Addr& addr : addresses) {
         m_acceptor->bind(addr);
     }
@@ -38,10 +41,7 @@ void NetworkAcceptor::start()
     }
 
     m_started = true;
-
-    // Setup listen event handlers.
-    start_accept();
-
+    
     // Queue listener for loop.
     m_acceptor->listen();
 }

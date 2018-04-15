@@ -43,9 +43,8 @@ void EventLogger::bind(const std::string &addr)
     m_local = addresses.front();
 
     m_socket = g_loop->resource<uvw::UDPHandle>();
-    m_socket->bind(m_local);
-
     start_receive();
+    m_socket->bind(m_local);
 }
 
 void EventLogger::open_log()
