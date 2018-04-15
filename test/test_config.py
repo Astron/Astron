@@ -227,12 +227,11 @@ class TestConfigCore(ConfigTest):
             """
         self.assertEquals(self.checkConfig(config, 10), 'Invalid')
 
-        # Valid as per address_utils rework for libuv
-        #config = """\
-        #    messagedirector:
-        #        bind: "99.1:57123"
-        #    """
-        #self.assertEquals(self.checkConfig(config), 'Invalid')
+        config = """\
+            messagedirector:
+                bind: "99.1:57123"
+            """
+        self.assertEquals(self.checkConfig(config), 'Invalid')
 
         # And now to test some hostname cases...
         config = """\
