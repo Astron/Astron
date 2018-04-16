@@ -878,8 +878,9 @@ InterestOperation::~InterestOperation()
 
 void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout> timeout)
 {
-    m_timeout = timeout;
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
+    m_timeout = timeout;
     m_timeout->initialize(m_timeout_interval, bind(&InterestOperation::timeout, this));
     m_timeout->start();
 }
