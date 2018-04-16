@@ -17,7 +17,7 @@ addons:
   apt:
     sources:
     - mongodb-3.0-trusty
-    - llvm-toolchain-trusty
+    - llvm-toolchain-trusty-5.0
     - ubuntu-toolchain-r-test
     packages:
     - cmake
