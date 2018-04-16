@@ -6,7 +6,7 @@ os:
 dist: trusty
 sudo: required
 
-osx_image: xcode8.3
+osx_image: xcode9.3
 
 compiler:
 - clang
@@ -17,6 +17,8 @@ addons:
   apt:
     sources:
     - mongodb-3.0-trusty
+    - llvm-toolchain-trusty
+    - ubuntu-toolchain-r-test
     packages:
     - cmake
     - libboost-filesystem-dev
@@ -27,6 +29,9 @@ addons:
     - libyaml-cpp-dev
     - mongodb-org-server
     - libuv-dev
+    - clang-5.0
+    - g++-6
+    - gcc-6
 
 before_install:
 - |
