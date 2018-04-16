@@ -26,6 +26,7 @@ addons:
     - libssl-dev
     - libyaml-cpp-dev
     - mongodb-org-server
+    - libuv-dev
 
 before_install:
 - |
