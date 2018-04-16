@@ -68,6 +68,7 @@ class InterestOperation
     std::unordered_set<zone_t> m_zones;
     std::unordered_set<channel_t> m_callers;
 
+    unsigned long m_timeout_interval;
     std::shared_ptr<Timeout> m_timeout;
 
     bool m_has_total = false;
@@ -86,6 +87,7 @@ class InterestOperation
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
     void finish(bool is_timeout = false);
+    void on_timeout_generate(std::shared_ptr<Timeout> timeout);
     void timeout();
 
   private:
@@ -140,6 +142,10 @@ class Client : public MDParticipantInterface
     LogCategory *m_log;
     // new LogCategory, incase we did not receive one from the Client Agent
     std::unique_ptr<LogCategory> m_log_owner;
+
+    std::shared_ptr<uvw::AsyncHandle> m_timeout_generator_handle;
+    std::mutex m_timeout_mutex;
+    std::queue<TimeoutSetCallback> m_pending_timeouts;
 
     Client(ConfigNode config, ClientAgent* client_agent);
 
@@ -254,6 +260,8 @@ class Client : public MDParticipantInterface
     virtual const std::vector<uint8_t>& get_tlvs() const = 0;
 
   private:
+    void generate_timeout(TimeoutSetCallback timeout_set_callback);
+    void generate_timeouts();
     // notify_interest_done send a CLIENTAGENT_DONE_INTEREST_RESP to the
     // interest operation's caller, if one has been set.
     void notify_interest_done(uint16_t interest_id, channel_t caller);
