@@ -105,16 +105,21 @@ void MessageDirector::shutdown_threading()
 
 void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle dg)
 {
-    {
-        // Scoped lock, we only hold this to push our datagram into the message queue:
-        std::lock_guard<std::mutex> lock(m_messages_lock);
-        m_messages.push(std::make_pair(p, dg));
-    }
+    std::unique_lock<std::mutex> lock(m_messages_lock);
+
+    // We need to hold the lock to push the datagram into the message queue, and to signal the MD thread (if in threaded mode).
+    m_messages.push(std::make_pair(p, dg));
 
     if(m_thread) {
         // If in threaded mode, ring the bell to let the MD thread know we have a datagram to process and return.
         m_cv.notify_one();
-    } else if(std::this_thread::get_id() != g_main_thread_id) {
+        return;
+    }
+
+    // We don't need to hold the message lock past this point, as we're not in threaded mode.
+    lock.unlock();
+
+    if(std::this_thread::get_id() != g_main_thread_id) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
         if(m_flush_handle != nullptr) {
