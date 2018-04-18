@@ -42,7 +42,7 @@ install:
 # build libuv
 - git clone -b v1.x https://github.com/libuv/libuv
 - cd libuv
-- vcbuild release shared
+- vcbuild release shared x64
 - cd ..\..\
 - set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;C:\libraries\mongo-cxx-driver
 
