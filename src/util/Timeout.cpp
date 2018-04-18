@@ -67,8 +67,10 @@ bool Timeout::cancel()
 {
     const bool already_cancelled = !m_callback_disabled.exchange(true);
 
-    if(std::this_thread::get_id() != g_main_thread_id && m_cancel_handle != nullptr) {
-        m_cancel_handle->send();
+    if(std::this_thread::get_id() != g_main_thread_id) {
+        if(m_cancel_handle != nullptr)
+            m_cancel_handle->send();
+
         return already_cancelled;
     }
 
