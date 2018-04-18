@@ -41,16 +41,15 @@ class Timeout : public std::enable_shared_from_this<Timeout>
   private:
     std::shared_ptr<uvw::Loop> m_loop;
     std::shared_ptr<uvw::TimerHandle> m_timer;
-    std::shared_ptr<uvw::AsyncHandle> m_reset_handle;
     std::shared_ptr<uvw::AsyncHandle> m_cancel_handle;
     TimeoutCallback m_callback;
     unsigned long m_timeout_interval;
 
     std::atomic<bool> m_callback_disabled;
 
-    void setup_handlers();
+    void destroy_timer();
     void timer_callback();
 };
 
-typedef std::function<void(std::shared_ptr<Timeout>)> TimeoutSetCallback;
+typedef std::function<void(const std::shared_ptr<Timeout>&)> TimeoutSetCallback;
 

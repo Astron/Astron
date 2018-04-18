@@ -87,7 +87,7 @@ class InterestOperation
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
     void finish(bool is_timeout = false);
-    void on_timeout_generate(std::shared_ptr<Timeout> timeout);
+    void on_timeout_generate(const std::shared_ptr<Timeout>& timeout);
     void timeout();
 
   private:

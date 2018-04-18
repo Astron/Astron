@@ -18,13 +18,6 @@ Timeout::Timeout() :
 {
 }
 
-void Timeout::setup_handlers()
-{
-    m_reset_handle->on<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
-        this->reset();
-    });
-}
-
 void Timeout::initialize(unsigned long ms, TimeoutCallback callback)
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
@@ -32,40 +25,38 @@ void Timeout::initialize(unsigned long ms, TimeoutCallback callback)
     m_timeout_interval = ms;
     m_callback = callback;
 
-    m_reset_handle = m_loop->resource<uvw::AsyncHandle>();
     m_cancel_handle = m_loop->resource<uvw::AsyncHandle>();
     m_timer = m_loop->resource<uvw::TimerHandle>();
-    setup_handlers();
+}
+
+void Timeout::destroy_timer()
+{
+    m_callback = nullptr;
+    m_cancel_handle = nullptr;
+    m_timer = nullptr;
 }
 
 void Timeout::timer_callback()
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
-    if(m_callback == nullptr) {
-        return;
+    if(m_callback != nullptr && !m_callback_disabled.exchange(true)) {
+        m_callback();
     }
 
-    if(m_callback_disabled.exchange(true)) {
-        return; // Stop m_callback running twice or after successful cancel().
-    }
-
-    m_callback();
+    destroy_timer();
 }
 
 void Timeout::reset()
 {
-    if(std::this_thread::get_id() != g_main_thread_id) {
-        m_reset_handle->send();
-        return;
-    }
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
-    m_timer->once<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle&) {
-        this->timer_callback();
+    m_timer->once<uvw::TimerEvent>([self = shared_from_this()](const uvw::TimerEvent&, uvw::TimerHandle&) {
+        self->timer_callback();
     });
 
-    m_cancel_handle->once<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
-        this->cancel();
+    m_cancel_handle->once<uvw::AsyncEvent>([self = shared_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
+        self->cancel();
     });
 
     m_timer->stop();
@@ -76,12 +67,16 @@ bool Timeout::cancel()
 {
     const bool already_cancelled = !m_callback_disabled.exchange(true);
 
-    if(std::this_thread::get_id() != g_main_thread_id) {
+    if(std::this_thread::get_id() != g_main_thread_id && m_cancel_handle != nullptr) {
         m_cancel_handle->send();
         return already_cancelled;
     }
 
-    m_timer->stop();
+    if(m_timer != nullptr) {
+        m_timer->stop();
+        destroy_timer();
+    }
+
     return already_cancelled;
 }
 

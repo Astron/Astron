@@ -876,7 +876,7 @@ InterestOperation::~InterestOperation()
     assert(m_finished);
 }
 
-void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout> timeout)
+void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& timeout)
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 

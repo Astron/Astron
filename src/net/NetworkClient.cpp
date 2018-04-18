@@ -171,63 +171,62 @@ void NetworkClient::process_datagram(const std::unique_ptr<char[]>& data, size_t
 void NetworkClient::start_receive()
 {
     // Sets up all the handlers needed for the NetworkClient instance and starts receiving data from the stream.
-
     assert(std::this_thread::get_id() == g_main_thread_id);
 
-    m_socket->on<uvw::DataEvent>([this](const uvw::DataEvent &event, uvw::TcpHandle &) {
-        if(m_haproxy_handler != nullptr) {
-            size_t bytes_consumed = m_haproxy_handler->consume(reinterpret_cast<const uint8_t*>(event.data.get()), event.length);
+    m_socket->on<uvw::DataEvent>([self = shared_from_this()](const uvw::DataEvent &event, uvw::TcpHandle &) {
+        if(self->m_haproxy_handler != nullptr) {
+            size_t bytes_consumed = self->m_haproxy_handler->consume(reinterpret_cast<const uint8_t*>(event.data.get()), event.length);
             if(bytes_consumed < event.length || bytes_consumed == 0) {
-                if(m_haproxy_handler->has_error()) {
+                if(self->m_haproxy_handler->has_error()) {
                     // An error occured while processing the HAProxy headers.
                     // Disconnect the client with the error code passed down as the reason, and destroy the HAProxyHandler instance without doing anything else.
-                    disconnect(m_haproxy_handler->get_error());
-                    m_haproxy_handler = nullptr;
+                    self->disconnect(self->m_haproxy_handler->get_error());
+                    self->m_haproxy_handler = nullptr;
                     return;
                 }
 
-                m_local = m_haproxy_handler->get_local();
-                m_remote = m_haproxy_handler->get_remote();
-                m_tlv_buf = m_haproxy_handler->get_tlvs();
+                self->m_local = self->m_haproxy_handler->get_local();
+                self->m_remote = self->m_haproxy_handler->get_remote();
+                self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
 
                 ssize_t bytes_left = event.length - bytes_consumed;
                 if(0 < bytes_left) {
                     // Feed any left-over bytes (if any) back to process_datagram.
                     std::unique_ptr<char[]> overread_bytes = std::make_unique<char[]>(bytes_left);
                     memcpy(overread_bytes.get(), event.data.get() + bytes_consumed, bytes_left);
-                    process_datagram(overread_bytes, bytes_left);
+                    self->process_datagram(overread_bytes, bytes_left);
                 }
 
-                m_haproxy_handler = nullptr;
+                self->m_haproxy_handler = nullptr;
             }
         } else {
-            this->process_datagram(event.data, event.length);
+            self->process_datagram(event.data, event.length);
         }
     });
 
-    m_socket->on<uvw::ErrorEvent>([this](const uvw::ErrorEvent& event, uvw::TcpHandle &) {
-        this->handle_disconnect((uv_errno_t)event.code());
+    m_socket->on<uvw::ErrorEvent>([self = shared_from_this()](const uvw::ErrorEvent& event, uvw::TcpHandle &) {
+        self->handle_disconnect((uv_errno_t)event.code());
     });
 
-    m_socket->on<uvw::EndEvent>([this](const uvw::EndEvent&, uvw::TcpHandle &) {
-        this->handle_disconnect(UV_EOF);
+    m_socket->on<uvw::EndEvent>([self = shared_from_this()](const uvw::EndEvent&, uvw::TcpHandle &) {
+        self->handle_disconnect(UV_EOF);
     });
 
-    m_socket->on<uvw::CloseEvent>([this](const uvw::CloseEvent&, uvw::TcpHandle &) {
-        this->handle_disconnect(UV_EOF);
+    m_socket->on<uvw::CloseEvent>([self = shared_from_this()](const uvw::CloseEvent&, uvw::TcpHandle &) {
+        self->handle_disconnect(UV_EOF);
     });
 
-    m_socket->on<uvw::WriteEvent>([this](const uvw::WriteEvent&, uvw::TcpHandle &) {
-        this->send_finished();
+    m_socket->on<uvw::WriteEvent>([self = shared_from_this()](const uvw::WriteEvent&, uvw::TcpHandle &) {
+        self->send_finished();
     });
 
-    m_async_timer->on<uvw::TimerEvent>([this](const uvw::TimerEvent&, uvw::TimerHandle &) {
-        this->send_expired();
+    m_async_timer->on<uvw::TimerEvent>([self = shared_from_this()](const uvw::TimerEvent&, uvw::TimerHandle &) {
+        self->send_expired();
     });
 
-    m_flush_handle->on<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        this->flush_send_queue(lock);
+    m_flush_handle->on<uvw::AsyncEvent>([self = shared_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
+        std::unique_lock<std::mutex> lock(self->m_mutex);
+        self->flush_send_queue(lock);
     });
 
     auto socket = m_socket;
