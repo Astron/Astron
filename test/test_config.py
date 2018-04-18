@@ -159,11 +159,12 @@ class TestConfigCore(ConfigTest):
         #    """
         #self.assertEquals(self.checkConfig(config), 'Valid')
 
-        config = """\
-            messagedirector:
-                bind: 127.0.0:20
-            """
-        self.assertEquals(self.checkConfig(config), 'Invalid')
+        # This is actually a valid bind address now as per the address_utils rework. 
+        #config = """\
+        #    messagedirector:
+        #        bind: 127.0.0:20
+        #    """
+        #self.assertEquals(self.checkConfig(config), 'Invalid')
 
         # Windows actually supports incomplete addresses like this,
         #    since its system specific, we'll just let the OS decide whether

@@ -6,6 +6,7 @@
 const dclass::File *g_dcf = nullptr;
 std::unique_ptr<Logger> g_logger(new Logger);
 std::unique_ptr<ConfigFile> g_config(new ConfigFile);
-boost::asio::io_service io_service;
 EventSender g_eventsender;
 std::unordered_map<doid_t, Uberdog> g_uberdogs;
+std::thread::id g_main_thread_id;
+std::shared_ptr<uvw::Loop> g_loop;

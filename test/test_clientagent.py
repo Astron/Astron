@@ -62,34 +62,12 @@ roles:
           max: 220699
 
     - type: clientagent
-      bind: 127.0.0.1:57214
-      version: "Sword Art Online v5.1"
-      channels:
-          min: 330600
-          max: 330699
-      tls:
-          certificate: %r
-          key_file: %r
-          handshake_timeout: 200
-
-    - type: clientagent
       bind: 127.0.0.1:57223
       version: "Sword Art Online v5.1"
       haproxy: true
       channels:
           min: 440600
           max: 440649
-
-    - type: clientagent
-      bind: 127.0.0.1:57224
-      version: "Sword Art Online v5.1"
-      haproxy: true
-      channels:
-          min: 440650
-          max: 440699
-      tls:
-          certificate: %r
-          key_file: %r
 
     - type: clientagent
       bind: 127.0.0.1:51201
@@ -100,7 +78,7 @@ roles:
       client:
           heartbeat_timeout: 1000
 
-""" % (USE_THREADING, test_dc, server_crt, server_key, server_crt, server_key)
+""" % (USE_THREADING, test_dc)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):
@@ -3334,28 +3312,6 @@ class TestClientAgent(ProtocolTest):
         self.server.send(Datagram.create_remove_channel(10052))
         self.server.send(Datagram.create_remove_channel(10053))
 
-    def test_ssl_tls(self):
-        self.server.flush()
-
-        # Declare a client
-        tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
-        client = self.connect(port = 57214, tls_opts = tls_context)
-        id = self.identify(client, min = 330600, max = 330699)
-
-    def test_ssl_tls_timeout(self):
-        client = self.connect(port = 57214, do_hello=False)
-        self.expectNone(client)
-        time.sleep(0.2)
-
-        # Client should now be dropped. It will either socket.error or return
-        # '' when we try to recv from it (depending on platform):
-        try:
-            r = client.s.recv(1024)
-        except socket_error as e:
-            self.assertEqual(e.errno, 10054)
-        else:
-            self.assertEqual(r, '')
-
     def test_get_network_address(self):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10052))
@@ -3387,10 +3343,10 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10010))
 
-        for test_id in xrange(8):
+        for test_id in xrange(4):
             proto_v2 = bool(test_id&1)
             ipv6 = bool(test_id&2)
-            tls = bool(test_id&4)
+            spoof_tlv = 'The higher we soar, the smaller we appear to those who cannot fly.'
 
             if ipv6:
                 source_ip = '2001:db8::1'
@@ -3408,7 +3364,8 @@ class TestClientAgent(ProtocolTest):
 
             if proto_v2:
                 body = (source_ip_bin + dest_ip_bin +
-                        struct.pack('>HH', source_port, dest_port))
+                        struct.pack('>HH', source_port, dest_port) +
+                        spoof_tlv)
                 header = ('\r\n\r\n\0\r\nQUIT\n\x21' +
                           struct.pack('>BH', 0x21 if ipv6 else 0x11, len(body)) +
                           body)
@@ -3416,11 +3373,7 @@ class TestClientAgent(ProtocolTest):
                 header = 'PROXY TCP{} {} {} {} {}\r\n'.format(
                     6 if ipv6 else 4, source_ip, dest_ip, source_port, dest_port)
 
-            if tls:
-                tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
-                client = self.connect(port=57224, proxy_header=header, tls_opts=tls_context)
-            else:
-                client = self.connect(port=57223, proxy_header=header)
+            client = self.connect(port=57223, proxy_header=header)
 
             id = self.identify(client, min=440600, max=440699)
             dg = Datagram.create([id], 10010, CLIENTAGENT_GET_NETWORK_ADDRESS)
@@ -3440,6 +3393,22 @@ class TestClientAgent(ProtocolTest):
             self.assertEqual(dgi.read_uint16(), source_port)
             self.assertEqual(dgi.read_string(), dest_ip)
             self.assertEqual(dgi.read_uint16(), dest_port)
+
+            if proto_v2:
+                dg = Datagram.create([id], 10010, CLIENTAGENT_GET_TLVS)
+                dg.add_uint32(test_id)
+                self.server.send(dg)
+
+                dg = self.server.recv_maybe()
+                self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_TLVS_RESP")
+
+                dgi = DatagramIterator(dg)
+                self.assertEqual(dgi.read_uint8(), 1)
+                self.assertEqual(dgi.read_channel(), 10010)
+                self.assertEqual(dgi.read_channel(), id)
+                self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_TLVS_RESP)
+                self.assertEqual(dgi.read_uint32(), test_id)
+                self.assertEqual(dgi.read_string(), spoof_tlv)
 
         self.server.send(Datagram.create_remove_channel(10010))
 
