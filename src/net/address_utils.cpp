@@ -42,6 +42,15 @@ static std::pair<bool, uvw::Addr> parse_address(const std::string &ip, uint16_t 
 {
     if((ip.find(':') != std::string::npos) || (ip[0] == '[' && ip[ip.length() - 1] == ']')) {
         sockaddr_in6 sockaddr;
+        size_t opening_bracket = ip.find('[');
+        size_t closing_bracket = ip.find(']');
+        if((opening_bracket != std::string::npos && closing_bracket == std::string::npos) ||
+           (closing_bracket != std::string::npos && opening_bracket == std::string::npos)) {
+            // Unbalanced set of brackets, this is an invalid address.
+            return std::pair<bool, uvw::Addr>(false, uvw::Addr());
+        }
+
+        // Strip brackets from IPv6 address (if they exist). libuv won't accept them otherwise.
         std::string unbracketed_addr = ip;
         unbracketed_addr.erase(std::remove(unbracketed_addr.begin(), unbracketed_addr.end(), '['), unbracketed_addr.end());
         unbracketed_addr.erase(std::remove(unbracketed_addr.begin(), unbracketed_addr.end(), ']'), unbracketed_addr.end());
