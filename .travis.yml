@@ -48,8 +48,8 @@ before_install:
   fi
 - |
   if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6.0 100
-    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6.0 100
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 100
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 100
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-5.0 100
     update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-5.0 100
   fi
