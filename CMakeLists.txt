@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR) # Required for FindBoost
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR) # Required for FindBoost
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(Astron)
 
@@ -60,25 +62,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
    CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 endif()
-
-if(CMAKE_GENERATOR STREQUAL Xcode)
-	add_definitions(-std=c++0x -stdlib=libc++)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_definitions(-std=c++11)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	execute_process(COMMAND "${CMAKE_C_COMPILER}" -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	message(STATUS "GCC Version: ${GCC_VERSION}")
-	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-		add_definitions(-std=c++14) # Enable the new C++ standard
-	else()
-		add_definitions(-std=c++0x) # Enable the new C++ standard
-	endif()
-endif()
-
 
 ### Debug Flags -- compile in spam/debug log messages ###
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
