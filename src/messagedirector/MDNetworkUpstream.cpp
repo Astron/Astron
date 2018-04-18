@@ -21,14 +21,15 @@ void MDNetworkUpstream::connect(const std::string &address)
 
 void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket)
 {
-    m_connector = nullptr;
-
     if(socket == nullptr) {
         m_message_director->receive_disconnect(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
         exit(1);
     }
 
     m_client->initialize(socket);
+
+    m_connector->destroy();
+    m_connector = nullptr;
 }
 
 void MDNetworkUpstream::on_connect_error(const uvw::ErrorEvent& evt)

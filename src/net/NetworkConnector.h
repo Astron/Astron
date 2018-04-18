@@ -12,6 +12,7 @@ class NetworkConnector : public std::enable_shared_from_this<NetworkConnector>
     // The provided callback will be invoked with the created socket post-connection.
 
     NetworkConnector(const std::shared_ptr<uvw::Loop> &loop);
+    void destroy();
     void connect(const std::string &address, unsigned int default_port,
                  ConnectCallback callback, ConnectErrorCallback err_callback);
   private:
