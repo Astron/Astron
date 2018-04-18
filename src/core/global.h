@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <thread>
 #include <cassert>
+#include <climits>
 
 // An Uberdog represents a global DistributedObject that manages itself, instead of being managed by
 //     a StateServer or DatabaseServer.  Uberdogs are typically used for RPC calls, and typically

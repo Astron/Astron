@@ -157,7 +157,7 @@ size_t HAProxyHandler::parse_v1_block()
 
     size_t capped_length = m_data_buf.size() > HAPROXY_HEADER_MAX ? HAPROXY_HEADER_MAX : m_data_buf.size();
 
-    char* cr_chr = (char*)memrchr(&m_data_buf[0], '\r', capped_length);
+    char* cr_chr = (char*)memchr(&m_data_buf[0], '\r', capped_length);
 
     if(cr_chr == NULL) {
         if(m_data_buf.size() >= HAPROXY_HEADER_MAX - 1) {
@@ -178,7 +178,7 @@ size_t HAProxyHandler::parse_v1_block()
         return 0;
     }
 
-    char* lf_chr = (char*)memrchr(&m_data_buf[0], '\n', capped_length);
+    char* lf_chr = (char*)memchr(&m_data_buf[0], '\n', capped_length);
     if(lf_chr == NULL || lf_chr != cr_chr + 1) {
         if(m_data_buf.size() >= HAPROXY_HEADER_MAX) {
             // We should have an LF character located after our CR by now.
