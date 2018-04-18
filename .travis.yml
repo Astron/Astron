@@ -28,7 +28,6 @@ addons:
     - libssl-dev
     - libyaml-cpp-dev
     - mongodb-org-server
-    - libuv-dev
     - clang-5.0
     - g++-6
     - gcc-6
@@ -43,12 +42,20 @@ before_install:
     brew install yaml-cpp;
     brew install mongodb;
   fi
+- |
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6.0 100
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6.0 100
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-5.0 100
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-5.0 100
+  fi
 
 install:
 - OLD_PWD=$PWD
 - cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.9.3/libbson-1.9.3.tar.gz && tar xzf libbson-1.9.3.tar.gz && cd libbson-1.9.3 && ./configure && make && sudo make install
 - cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.9.3/mongo-c-driver-1.9.3.tar.gz && tar xzf mongo-c-driver-1.9.3.tar.gz && cd mongo-c-driver-1.9.3 && ./configure && make && sudo make install
 - cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
+- cd ~/build && git clone -b v1.x https://github.com/libuv/libuv && cd libuv && sh autogen.sh && ./configure && make && make check && make install
 - cd $OLD_PWD
 
 # Workaround for https://svn.boost.org/trac/boost/ticket/7473
