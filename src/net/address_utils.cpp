@@ -40,6 +40,8 @@ static bool split_port(std::string &ip, uint16_t &port)
 
 static std::pair<bool, uvw::Addr> parse_address(const std::string &ip, uint16_t port)
 {
+    sockaddr_in sockaddr;
+
     if((ip.find(':') != std::string::npos) || (ip[0] == '[' && ip[ip.length() - 1] == ']')) {
 	    if(uv_ip6_addr(ip.c_str(), port, &sockaddr) == 0) {
 		    return std::pair<bool, uvw::Addr>(true, uvw::details::address<uvw::IPv6>(&sockaddr));
@@ -48,7 +50,6 @@ static std::pair<bool, uvw::Addr> parse_address(const std::string &ip, uint16_t 
 		    return std::pair<bool, uvw::Addr>(false, uvw::Addr());
 	    }
     } else {
-	    sockaddr_in sockaddr;
 	    if (uv_ip4_addr(ip.c_str(), port, &sockaddr) == 0) {
 		    uvw::Addr addr = uvw::details::address<uvw::IPv4>(&sockaddr);
 		    return std::pair<bool, uvw::Addr>(true, addr);
