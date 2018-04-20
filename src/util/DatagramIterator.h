@@ -314,10 +314,10 @@ class DatagramIterator
                 // We handle variable-length arrays in a slightly different manner, as we have to check for value constraints.
                 size_t cur_ptr = buffer.size();
 
-                do {
+                while(buffer.size() - cur_ptr < len) {
                     unpack_dtype(array->get_element_type(), buffer);
                     ++elem_cnt;
-                } while(buffer.size() - cur_ptr < len);
+                }
             } else {
                 // We're dealing with a blob or a string, ergo elem_cnt == len
                 std::vector<uint8_t> data = read_data(len);
