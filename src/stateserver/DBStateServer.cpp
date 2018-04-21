@@ -47,42 +47,76 @@ void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
     channel_t sender = dgi.read_channel();
     uint16_t msgtype = dgi.read_uint16();
     switch(msgtype) {
-    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS:
+    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS: {
         handle_activate(dgi, false);
         break;
-    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER:
+    }
+    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER: {
         handle_activate(dgi, true);
         break;
-    case DBSS_OBJECT_DELETE_DISK:
+    }
+    case DBSS_OBJECT_DELETE_DISK: {
         handle_delete_disk(sender, dgi);
         break;
-    case STATESERVER_OBJECT_SET_FIELD:
+    }
+    case STATESERVER_OBJECT_SET_FIELD: {
         handle_set_field(dgi);
         break;
-    case STATESERVER_OBJECT_SET_FIELDS:
+    }
+    case STATESERVER_OBJECT_SET_FIELDS: {
         handle_set_fields(dgi);
         break;
-    case STATESERVER_OBJECT_GET_FIELD:
+    }
+    case STATESERVER_OBJECT_GET_FIELD: {
         handle_get_field(sender, dgi);
         break;
-    case DBSERVER_OBJECT_GET_FIELD_RESP:
+    }
+    case DBSERVER_OBJECT_GET_FIELD_RESP: {
         handle_get_field_resp(dgi);
         break;
-    case STATESERVER_OBJECT_GET_FIELDS:
+    }
+    case STATESERVER_OBJECT_GET_FIELDS: {
         handle_get_fields(sender, dgi);
         break;
-    case DBSERVER_OBJECT_GET_FIELDS_RESP:
+    }
+    case DBSERVER_OBJECT_GET_FIELDS_RESP: {
         handle_get_fields_resp(dgi);
         break;
-    case STATESERVER_OBJECT_GET_ALL:
+    }
+    case STATESERVER_OBJECT_GET_ALL: {
         handle_get_all(sender, dgi);
         break;
-    case DBSERVER_OBJECT_GET_ALL_RESP:
+    }
+    case DBSERVER_OBJECT_GET_ALL_RESP: {
         handle_get_all_resp(dgi);
         break;
-    case DBSS_OBJECT_GET_ACTIVATED:
+    }
+    case DBSS_OBJECT_GET_ACTIVATED: {
         handle_get_activated(sender, dgi);
         break;
+    }
+     case DBSS_ADD_POST_REMOVE: {
+         doid_t do_id = dgi.read_doid();
+
+         if(m_objs.find(do_id) == m_objs.end() && m_loading.find(do_id) == m_loading.end()) {
+             m_log->warning() << "Sender " << sender << " tried to add post-remove for object that does not exist on DBSS with id " << do_id;
+             return;
+         }
+
+         add_post_remove(do_id, dgi.read_datagram());
+         break;
+     }
+     case DBSS_CLEAR_POST_REMOVES: {
+         doid_t do_id = dgi.read_doid();
+
+         if(m_objs.find(do_id) == m_objs.end() && m_loading.find(do_id) == m_loading.end()) {
+             m_log->warning() << "Sender " << sender << " tried to clear post-removes for object that does not exist on DBSS with id " << do_id;
+             return;
+         }
+
+         clear_post_removes(do_id);
+         break;
+     }
     default:
         m_log->trace() << "Ignoring message of type '" << msgtype << "'.\n";
     }

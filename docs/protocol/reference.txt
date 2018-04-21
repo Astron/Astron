@@ -132,6 +132,8 @@
 | DBSS_OBJECT_DELETE_FIELD_DISK            |    2230 | `uint32 do_id`, `uint16 field_id`                                                   |
 | DBSS_OBJECT_DELETE_FIELDS_DISK           |    2231 | `uint32 do_id`, `uint16 field_count`, `[uint16 field_id]*field_count`               |
 | DBSS_OBJECT_DELETE_DISK                  |    2232 | `uint32 do_id`                                                                      |
+| DBSS_ADD_POST_REMOVE                     |    2233 | `uint32 do_id`, `blob datagram`                                                     |
+| DBSS_CLEAR_POST_REMOVES                  |    2234 | `uint32 do_id`                                                                      |
 
 ### Database Object Messages ###
 | Message                                   | Type Id | Format                                                                                                                    |

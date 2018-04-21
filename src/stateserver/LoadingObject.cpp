@@ -202,7 +202,9 @@ void LoadingObject::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         break;
     }
     case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS:
-    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER: {
+    case DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER:
+    case DBSS_ADD_POST_REMOVE:
+    case DBSS_CLEAR_POST_REMOVES: {
         // Don't cache these messages in the queue, they are received and
         // handled by the DBSS.  Since the object is already loading they
         // are simply ignored (the DBSS may generate a warning/error).
