@@ -11,7 +11,7 @@ the workload of managing a multi-sharded game/application environment with many 
 
 [![Build Status](https://travis-ci.org/Astron/Astron.svg?branch=master)](https://travis-ci.org/Astron/Astron)
 
-## Overview ## 
+## Overview ##
 
 ### Objects ###
 The core concept in an Astron environment is a DistributedObject. These represent individual game
