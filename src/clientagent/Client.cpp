@@ -845,11 +845,15 @@ void Client::notify_interest_done(const InterestOperation* iop)
     if(iop->m_callers.size() == 0) {
         return;
     }
-
-    DatagramPtr resp = Datagram::create(iop->m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
-    resp->add_channel(m_channel);
-    resp->add_uint16(iop->m_interest_id);
-    route_datagram(resp);
+	std::unordered_set<channel_t> m_callers;
+	for (channel_t c : iop->m_callers) {
+		if (c != 0)
+			m_callers.insert(m_callers.end(), c);
+	}
+		DatagramPtr resp = Datagram::create(m_callers, m_channel, CLIENTAGENT_DONE_INTEREST_RESP);
+		resp->add_channel(m_channel);
+		resp->add_uint16(iop->m_interest_id);
+		route_datagram(resp);
 }
 
 /* ========================== *
