@@ -34,7 +34,8 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
     MessageDirector *m_message_director;
     std::shared_ptr<NetworkClient> m_client;
     std::shared_ptr<NetworkConnector> m_connector;
-    std::mutex m_message_lock;
+    std::mutex m_messages_lock;
     std::queue<DatagramHandle> m_messages;
     bool m_initialized = false;
+    bool m_is_sending = false;
 };

@@ -39,7 +39,7 @@ void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket
 void MDNetworkUpstream::send_datagram(DatagramHandle dg)
 {
     {
-        std::lock_guard<std::mutex> lock(m_message_lock);
+        std::lock_guard<std::mutex> lock(m_messages_lock);
         m_messages.push(dg);
     }
 
@@ -50,13 +50,22 @@ void MDNetworkUpstream::send_datagram(DatagramHandle dg)
 
 void MDNetworkUpstream::flush_send_queue()
 {
-    std::lock_guard<std::mutex> lock(m_message_lock);
-
-    while(!m_messages.empty()) {
-        DatagramHandle dg = m_messages.front();
-        m_messages.pop();
-        m_client->send_datagram(dg);
+    if(m_is_sending) {
+        return;
     }
+
+    m_is_sending = true;
+
+    {
+        std::unique_lock<std::mutex> lock(m_messages_lock);
+        while(!m_messages.empty()) {
+            DatagramHandle dg = m_messages.front();
+            m_messages.pop();
+            m_client->send_datagram(dg);
+        }
+    }
+
+    m_is_sending = false;
 }
 
 void MDNetworkUpstream::on_connect_error(const uvw::ErrorEvent& evt)
