@@ -6,7 +6,7 @@
 
 MDNetworkUpstream::MDNetworkUpstream(MessageDirector *md) :
     m_message_director(md), m_client(std::make_shared<NetworkClient>(this)),
-    m_connector(new NetworkConnector(g_loop))
+    m_connector(std::make_shared<NetworkConnector>(g_loop))
 {
 
 }
@@ -27,9 +27,36 @@ void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket
     }
 
     m_client->initialize(socket);
+    m_initialized = true;
+
+    // Flush any datagrams that we tried to send out before our connection to upstream was initialised.
+    flush_send_queue();
 
     m_connector->destroy();
     m_connector = nullptr;
+}
+
+void MDNetworkUpstream::send_datagram(DatagramHandle dg)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_message_lock);
+        m_messages.push(dg);
+    }
+
+    if(m_initialized) {
+        flush_send_queue();
+    }
+}
+
+void MDNetworkUpstream::flush_send_queue()
+{
+    std::lock_guard<std::mutex> lock(m_message_lock);
+
+    while(!m_messages.empty()) {
+        DatagramHandle dg = m_messages.front();
+        m_messages.pop();
+        m_client->send_datagram(dg);
+    }
 }
 
 void MDNetworkUpstream::on_connect_error(const uvw::ErrorEvent& evt)
@@ -41,14 +68,14 @@ void MDNetworkUpstream::subscribe_channel(channel_t c)
 {
     DatagramPtr dg = Datagram::create(CONTROL_ADD_CHANNEL);
     dg->add_channel(c);
-    m_client->send_datagram(dg);
+    send_datagram(dg);
 }
 
 void MDNetworkUpstream::unsubscribe_channel(channel_t c)
 {
     DatagramPtr dg = Datagram::create(CONTROL_REMOVE_CHANNEL);
     dg->add_channel(c);
-    m_client->send_datagram(dg);
+    send_datagram(dg);
 }
 
 void MDNetworkUpstream::subscribe_range(channel_t lo, channel_t hi)
@@ -56,7 +83,7 @@ void MDNetworkUpstream::subscribe_range(channel_t lo, channel_t hi)
     DatagramPtr dg = Datagram::create(CONTROL_ADD_RANGE);
     dg->add_channel(lo);
     dg->add_channel(hi);
-    m_client->send_datagram(dg);
+    send_datagram(dg);
 }
 
 void MDNetworkUpstream::unsubscribe_range(channel_t lo, channel_t hi)
@@ -64,12 +91,12 @@ void MDNetworkUpstream::unsubscribe_range(channel_t lo, channel_t hi)
     DatagramPtr dg = Datagram::create(CONTROL_REMOVE_RANGE);
     dg->add_channel(lo);
     dg->add_channel(hi);
-    m_client->send_datagram(dg);
+    send_datagram(dg);
 }
 
 void MDNetworkUpstream::handle_datagram(DatagramHandle dg)
 {
-    m_client->send_datagram(dg);
+    send_datagram(dg);
 }
 
 void MDNetworkUpstream::receive_datagram(DatagramHandle dg)

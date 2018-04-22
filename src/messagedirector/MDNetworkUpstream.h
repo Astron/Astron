@@ -15,6 +15,10 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
     void on_connect(const std::shared_ptr<uvw::TcpHandle> &socket);
     void on_connect_error(const uvw::ErrorEvent& evt);
 
+    // Queueing interfaces for datagrams pending being sent upstream.
+    void send_datagram(DatagramHandle dg);
+    void flush_send_queue();
+
     // Interfaces that MDUpstream needs us to implement:
     virtual void subscribe_channel(channel_t c);
     virtual void unsubscribe_channel(channel_t c);
@@ -30,4 +34,7 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
     MessageDirector *m_message_director;
     std::shared_ptr<NetworkClient> m_client;
     std::shared_ptr<NetworkConnector> m_connector;
+    std::mutex m_message_lock;
+    std::queue<DatagramHandle> m_messages;
+    bool m_initialized = false;
 };
