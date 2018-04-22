@@ -123,7 +123,7 @@ void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
         // Enough data to know the expected length of the datagram.
         dgsize_t data_size = *reinterpret_cast<dgsize_t*>(&m_data_buf[0]);
         if(m_data_buf.size() >= data_size + sizeof(dgsize_t)) {
-            dgsize_t overread_size = (m_data_buf.size() - data_size - sizeof(dgsize_t));
+            auto overread_size = (m_data_buf.size() - data_size - sizeof(dgsize_t));
             DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf[sizeof(dgsize_t)]), data_size);
             if(0 < overread_size) {
                 // Splice leftover data to new m_data_buf based on expected datagram length.
@@ -139,7 +139,7 @@ void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
             lock.lock();
         }
         else {
-            break;
+            return;
         }
     }
 }
