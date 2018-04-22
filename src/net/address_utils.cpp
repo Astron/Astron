@@ -111,7 +111,7 @@ static bool validate_hostname(const std::string &hostname)
 bool is_valid_address(const std::string &hostspec)
 {
     std::string host = hostspec;
-    uint16_t port;
+    uint16_t port = 0;
 
     if(!split_port(host, port)) {
         return false;
