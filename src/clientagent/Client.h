@@ -266,4 +266,5 @@ class Client : public MDParticipantInterface
     // interest operation's caller, if one has been set.
     void notify_interest_done(uint16_t interest_id, channel_t caller);
     void notify_interest_done(const InterestOperation* iop);
+    bool m_is_generating_timeouts = false;
 };

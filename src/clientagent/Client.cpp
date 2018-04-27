@@ -106,14 +106,25 @@ void Client::generate_timeouts()
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
-    std::lock_guard<std::mutex> lock(m_timeout_mutex);
-
-    while(!m_pending_timeouts.empty()) {
-        TimeoutSetCallback timeout_set_callback = m_pending_timeouts.front();
-        m_pending_timeouts.pop();
-        std::shared_ptr<Timeout> timeout = std::make_shared<Timeout>();
-        timeout_set_callback(timeout);
+    if(m_is_generating_timeouts) {
+        // Already in the middle of another generate_timeouts invocation.
+        return;
     }
+
+    m_is_generating_timeouts = true;
+
+    {
+        std::lock_guard<std::mutex> lock(m_timeout_mutex);
+
+        while(!m_pending_timeouts.empty()) {
+            TimeoutSetCallback timeout_set_callback = m_pending_timeouts.front();
+            m_pending_timeouts.pop();
+            std::shared_ptr<Timeout> timeout = std::make_shared<Timeout>();
+            timeout_set_callback(timeout);
+        }
+    }
+
+    m_is_generating_timeouts = false;
 }
 
 // lookup_object returns the class of the object with a do_id.
