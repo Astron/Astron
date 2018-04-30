@@ -51,6 +51,8 @@ class NumericType : public DistributedType
   private:
     unsigned int m_divisor;
 
+    std::pair<bool, Number> data_to_number(const std::vector<uint8_t>* data) const;
+
     // These are the original range and modulus values from the file, unscaled by the divisor.
     double m_orig_modulus;
     NumericRange m_orig_range;

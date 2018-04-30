@@ -200,43 +200,68 @@ bool NumericType::set_range(const NumericRange &range)
     return true;
 }
 
+std::pair<bool, Number> NumericType::data_to_number(const std::vector<uint8_t>* data) const
+{
+    if(m_size != data->size()) {
+        return std::make_pair(false, Number(0));
+    }
+
+    switch(m_type) {
+        case T_INT8: {
+            int64_t val = *(int8_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT16: {
+            int64_t val = *(int16_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT32: {
+            int64_t val = *(int32_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT64: {
+            return std::make_pair(true, Number(*(int64_t*)&data[0]));
+        }
+        case T_UINT8: {
+            uint64_t val = *(uint8_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT16: {
+            uint64_t val = *(uint16_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT32: {
+            uint64_t val = *(uint32_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT64: {
+            return std::make_pair(true, Number(*(uint64_t*)&data[0]));
+        }
+        case T_FLOAT32: {
+            double val = *(float*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_FLOAT64: {
+            return std::make_pair(true, Number(*(double*)&data[0]));
+        }
+        default: {
+            break;
+        }
+    }
+
+    return std::make_pair(false, Number(0));
+}
+
 bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length) const
 {
     (void) length;
-    if(m_size != data->size()) {
-        // Somehow we got passed a short read for this field...
+
+    auto result = data_to_number(data);
+    if(!result.first) {
         return false;
     }
-
-    // We use val as a 'scratch value' for any further operations so we have an assurance as to size.
-    // We always assume 64-bit values for casts.
-    char val[sizeof(uint64_t)];
-    memset(&val, 0, sizeof(uint64_t));
-    memcpy(&val, &data->front(), m_size);
-
-    switch(m_type) {
-        case T_INT8:
-        case T_INT16:
-        case T_INT32:
-        case T_INT64: {
-            return m_range.contains(Number(*(int64_t*)&val));
-        }
-        case T_CHAR:
-        case T_UINT8:
-        case T_UINT16:
-        case T_UINT32:
-        case T_UINT64: {
-            return m_range.contains(Number(*(uint64_t*)&val));
-        }
-        case T_FLOAT32:
-        case T_FLOAT64: {
-            return m_range.contains(Number(*(double*)&val));
-        }
-        default:
-            break;
-    }
-
-    return false;
+  
+    return m_range.contains(result.second);
 }
 
 // generate_hash accumulates the properties of this type into the hash.
