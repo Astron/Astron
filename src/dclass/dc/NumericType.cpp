@@ -220,7 +220,7 @@ std::pair<bool, Number> NumericType::data_to_number(const std::vector<uint8_t>* 
             return std::make_pair(true, Number(val));
         }
         case T_INT64: {
-            return std::make_pair(true, Number(*(int64_t*)&data[0]));
+            return std::make_pair(true, Number(*(int64_t*)&data->front()));
         }
         case T_UINT8: {
             uint64_t val = *(uint8_t*)&data->front();
@@ -235,14 +235,14 @@ std::pair<bool, Number> NumericType::data_to_number(const std::vector<uint8_t>* 
             return std::make_pair(true, Number(val));
         }
         case T_UINT64: {
-            return std::make_pair(true, Number(*(uint64_t*)&data[0]));
+            return std::make_pair(true, Number(*(uint64_t*)&data->front()));
         }
         case T_FLOAT32: {
             double val = *(float*)&data->front();
             return std::make_pair(true, Number(val));
         }
         case T_FLOAT64: {
-            return std::make_pair(true, Number(*(double*)&data[0]));
+            return std::make_pair(true, Number(*(double*)&data->front()));
         }
         default: {
             break;
