@@ -222,6 +222,7 @@ std::pair<bool, Number> NumericType::data_to_number(const std::vector<uint8_t>* 
         case T_INT64: {
             return std::make_pair(true, Number(*(int64_t*)&data->front()));
         }
+        case T_CHAR:
         case T_UINT8: {
             uint64_t val = *(uint8_t*)&data->front();
             return std::make_pair(true, Number(val));
