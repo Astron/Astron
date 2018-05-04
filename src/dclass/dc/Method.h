@@ -35,12 +35,15 @@ class Method final : public DistributedType
     //     Returns false if the parameter could not be added to the method.
     bool add_parameter(Parameter *param);
 
+    virtual bool has_range() const;
+
     // generate_hash accumulates the properties of this field into the hash
     void generate_hash(HashGenerator &hashgen) const;
 
   private:
     std::vector<Parameter*> m_parameters; // the "arguments" or parameters of the method
     std::unordered_map<std::string, Parameter*> m_parameters_by_name;
+    bool m_has_constraint;
 };
 
 

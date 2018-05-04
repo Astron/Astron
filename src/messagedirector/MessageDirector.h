@@ -8,7 +8,6 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include <boost/asio.hpp>
 #include <boost/icl/interval_map.hpp>
 #include "ChannelMap.h"
 #include "core/global.h"
@@ -45,7 +44,7 @@ class MessageDirector final : public ChannelMap
 
     // For MDUpstream (and subclasses) to call.
     void receive_datagram(DatagramHandle dg);
-    void receive_disconnect(const boost::system::error_code &ec);
+    void receive_disconnect(const uvw::ErrorEvent &evt);
 
   protected:
     void on_add_channel(channel_t c);
@@ -67,13 +66,16 @@ class MessageDirector final : public ChannelMap
 
     // Threading stuff:
     bool m_shutdown;
+    bool m_main_is_routing;
     std::unique_ptr<std::thread> m_thread;
     std::mutex m_participants_lock;
     std::mutex m_terminated_lock;
     std::mutex m_messages_lock;
     std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
     std::condition_variable m_cv;
-    std::thread::id m_main_thread;
+    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
+
+    void flush_queue();
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
     void process_terminates();
     void routing_thread();
@@ -88,7 +90,8 @@ class MessageDirector final : public ChannelMap
     void recall_post_removes(channel_t sender);
 
     // I/O OPERATIONS
-    void handle_connection(boost::asio::ip::tcp::socket *socket);
+    void handle_connection(const std::shared_ptr<uvw::TcpHandle> &socket);
+    void handle_error(const uvw::ErrorEvent& evt);
 };
 
 

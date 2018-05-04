@@ -57,6 +57,19 @@ ArrayType::ArrayType(DistributedType* element_type, const NumericRange& size) :
     }
 }
 
+// within_range checks whether the provided array size is within the size constraints for the given type.
+bool ArrayType::within_range(const std::vector<uint8_t>* data, uint64_t array_size) const
+{
+    (void) data;
+
+    if(m_array_size > 0) {
+        // Fixed-size array expected. Compare against m_array_size instead of the range.
+        return m_array_size == array_size;
+    }
+
+    return (m_array_range.min.uinteger <= array_size) && (m_array_range.max.uinteger >= array_size);
+}
+
 // as_array returns this as an ArrayType if it is an array, or nullptr otherwise.
 ArrayType* ArrayType::as_array()
 {

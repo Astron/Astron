@@ -62,6 +62,7 @@ void DBOperation::announce_fields(const FieldValues& fields)
         m_dbserver->route_datagram(update);
     }
 }
+
 bool DBOperation::verify_fields(const dclass::Class *dclass, const FieldSet& fields)
 {
     bool valid = true;
@@ -104,19 +105,29 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
         }
 
         if(field->has_keyword("db")) {
-            // Get criteria value
-            if(check_values) {
-                dgi.unpack_field(field, m_criteria_fields[field]);
-            }
+            try {
+                // Get criteria value
+                if(check_values) {
+                    dgi.unpack_field(field, m_criteria_fields[field]);
+                }
 
-            // Get update value
-            if(!delete_values) {
-                dgi.unpack_field(field, m_set_fields[field]);
-            } else if(field->has_default_value()) {
-                string val = field->get_default_value();
-                m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
-            } else {
-                m_set_fields[field]; // Force insertion of blank vector
+                // Get update value
+                if(!delete_values) {
+                    dgi.unpack_field(field, m_set_fields[field]);
+                } else if(field->has_default_value()) {
+                    string val = field->get_default_value();
+                    m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
+                } else {
+                    m_set_fields[field]; // Force insertion of blank vector
+                }
+            } catch(const FieldConstraintViolation& violation) {
+                m_dbserver->m_log->warning() << "Field constraint violation while setting field " << field->get_name()
+                                             << " on object " << this->doid() << ": " << violation.what() << "\n";
+                return false;
+            } catch(const DatagramIteratorEOF&) {
+                m_dbserver->m_log->warning() << "Short read from database while trying to set field " << field->get_name()
+                                             << " on object " << this->doid() << "\n";
+                return false;
             }
         } else {
             m_dbserver->m_log->warning() << "Create/modify field request included non-DB field "
@@ -371,6 +382,30 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
             if(it2 != snapshot->m_fields.end()) {
                 response_fields[it2->first] = it2->second;
             }
+        }
+    }
+
+    // First, validate whether our response fields fall within our dclass' constraints.
+    for(const auto& it : response_fields) {
+        std::vector<uint8_t> buffer;
+        try {
+            // Try and unpack the field contents using a DatagramIterator.
+            // If we get a FieldConstraintViolation, the field in this object (as serialised in the DB) is invalid.
+            // If we get a DatagramIteratorEOF, we have a short read for this field.
+            DatagramPtr dg = Datagram::create();
+            dg->add_data(it.second);
+            DatagramIterator dgi(dg);
+            dgi.unpack_field(it.first, buffer);
+        } catch(const FieldConstraintViolation& violation) {
+            m_dbserver->m_log->warning() << "Field constraint violation while retrieving field " << it.first->get_name()
+                                         << " on object " << this->doid() << ": " << violation.what() << "\n";
+            on_failure();
+            return;
+        } catch(const DatagramIteratorEOF&) {
+            m_dbserver->m_log->warning() << "Short read from database while trying to validate field " << it.first->get_name()
+                                         << " on object " << this->doid() << "\n";
+            on_failure();
+            return;
         }
     }
 

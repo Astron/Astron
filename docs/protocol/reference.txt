@@ -47,6 +47,8 @@
 | CLIENTAGENT_ADD_SESSION_OBJECT       |    1012 | `uint32 do_id`                                                                                     |
 | CLIENTAGENT_REMOVE_SESSION_OBJECT    |    1013 | `uint32 do_id`                                                                                     |
 | CLIENTAGENT_SET_FIELDS_SENDABLE      |    1014 | `uint32 do_id`, `[uint16 field_id]`, `[...]`                                                       |
+| CLIENTAGENT_GET_TLVS                 |    1015 | `uint32 context`                                                                                   |
+| CLIENTAGENT_GET_TLVS_RESP            |    1016 | `uint32 context`, `blob tlvs`                                                                      |
 | CLIENTAGENT_OPEN_CHANNNEL            |    1100 | `uint64 channel`                                                                                   |
 | CLIENTAGENT_CLOSE_CHANNEL            |    1101 | `uint64 channel`                                                                                   |
 | CLIENTAGENT_ADD_POST_REMOVE          |    1110 | `blob datagram`                                                                                    |

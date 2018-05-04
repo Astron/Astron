@@ -24,23 +24,27 @@ EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
 
     LoggedEvent event("log-opened", "EventLogger");
     event.add("msg", "Log opened upon Event Logger startup.");
-    process_packet(event.make_datagram());
-
-    start_receive();
+    process_packet(event.make_datagram(), m_local);
 }
 
 void EventLogger::bind(const std::string &addr)
 {
+    // We have to make sure our bind happens within the context of the main thread.
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_log.info() << "Opening UDP socket..." << std::endl;
-    boost::system::error_code ec;
-    auto addresses = resolve_address(addr, 7197, io_service, ec);
-    if(ec.value() != 0) {
-        m_log.fatal() << "Couldn't resolve " << addr << std::endl;
+    auto addresses = resolve_address(addr, 7197, g_loop);
+
+    if(addresses.size() == 0) {
+        m_log.fatal() << "Failed to bind to EventLogger address " << addr << "\n";
         exit(1);
     }
 
-    m_socket.reset((new udp::socket(io_service,
-                        udp::endpoint(addresses[0].address(), addresses[0].port()))));
+    m_local = addresses.front();
+
+    m_socket = g_loop->resource<uvw::UDPHandle>();
+    m_socket->bind(m_local);
+    start_receive();
 }
 
 void EventLogger::open_log()
@@ -67,10 +71,10 @@ void EventLogger::cycle_log()
 
     LoggedEvent event("log-opened", "EventLogger");
     event.add("msg", "Log cycled.");
-    process_packet(event.make_datagram());
+    process_packet(event.make_datagram(), m_local);
 }
 
-void EventLogger::process_packet(DatagramHandle dg)
+void EventLogger::process_packet(DatagramHandle dg, const uvw::Addr& sender)
 {
     DatagramIterator dgi(dg);
     std::stringstream stream;
@@ -79,13 +83,13 @@ void EventLogger::process_packet(DatagramHandle dg)
         msgpack_decode(stream, dgi);
     } catch(DatagramIteratorEOF&) {
         m_log.error() << "Received truncated packet from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+                      << sender.ip << ":" << sender.port << std::endl;
         return;
     }
 
     if(dgi.tell() != dg->size()) {
         m_log.error() << "Received packet with extraneous data from "
-                      << m_remote.address() << ":" << m_remote.port() << std::endl;
+                      << sender.ip << ":" << sender.port << std::endl;
         return;
     }
 
@@ -98,7 +102,7 @@ void EventLogger::process_packet(DatagramHandle dg)
     // begins with {
     if(data[0] != '{') {
         m_log.error() << "Received non-map event log from "
-                      << m_remote.address() << ":" << m_remote.port()
+                      << sender.ip << ":" << sender.port
                       << ": " << data << std::endl;
         return;
     }
@@ -115,29 +119,15 @@ void EventLogger::process_packet(DatagramHandle dg)
 
 void EventLogger::start_receive()
 {
-    m_socket->async_receive_from(boost::asio::buffer(m_buffer, EVENTLOG_BUFSIZE),
-                                 m_remote, boost::bind(&EventLogger::handle_receive, this,
-                                         boost::asio::placeholders::error,
-                                         boost::asio::placeholders::bytes_transferred));
-}
+    m_socket->on<uvw::UDPDataEvent>([this](const uvw::UDPDataEvent &event, uvw::UDPHandle &) {
+        m_log.trace() << "Got packet from " << event.sender.ip
+                      << ":" << event.sender.port << ".\n";
 
-void EventLogger::handle_receive(const boost::system::error_code &ec, std::size_t bytes)
-{
-    if(ec.value()) {
-        m_log.warning() << "While receiving packet from "
-                        << m_remote.address() << ":" << m_remote.port()
-                        << ", an error occurred: "
-                        << ec.value() << std::endl;
-        return;
-    }
+        DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(event.data.get()), event.length);
+        process_packet(dg, event.sender);
+    });
 
-    m_log.trace() << "Got packet from "
-                  << m_remote.address() << ":" << m_remote.port() << std::endl;
-
-    DatagramPtr dg = Datagram::create(m_buffer, bytes);
-    process_packet(dg);
-
-    start_receive();
+    m_socket->recv();
 }
 
 static RoleFactoryItem<EventLogger> el_fact("eventlogger");

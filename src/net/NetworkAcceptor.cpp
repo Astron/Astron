@@ -1,70 +1,59 @@
+#include "core/global.h"
 #include "NetworkAcceptor.h"
 #include "address_utils.h"
-#include <boost/bind.hpp>
 
-NetworkAcceptor::NetworkAcceptor(boost::asio::io_service& io_service) :
-    m_io_service(io_service),
-    m_acceptor(io_service),
-    m_started(false)
+
+NetworkAcceptor::NetworkAcceptor(AcceptorErrorCallback err_callback) :
+    m_loop(g_loop),
+    m_acceptor(nullptr),
+    m_started(false),
+    m_haproxy_mode(false),
+    m_err_callback(err_callback)
 {
 }
 
-boost::system::error_code NetworkAcceptor::bind(const std::string &address,
+void NetworkAcceptor::bind(const std::string &address,
         unsigned int default_port)
 {
-    boost::system::error_code ec;
+    assert(std::this_thread::get_id() == g_main_thread_id);
 
-    auto addresses = resolve_address(address, default_port, m_io_service, ec);
-    if(ec.value() != 0) {
-        return ec;
+    m_acceptor = m_loop->resource<uvw::TcpHandle>();
+    m_acceptor->simultaneousAccepts(true);
+
+    std::vector<uvw::Addr> addresses = resolve_address(address, default_port, m_loop);
+
+    if(addresses.size() == 0) {
+        this->m_err_callback(uvw::ErrorEvent{(int)UV_EADDRNOTAVAIL});
+        return;
     }
 
-    for(const auto& it : addresses) {
-        if(m_acceptor.is_open()) {
-            m_acceptor.close();
-        }
+    // Setup listen/error event handlers.
+    start_accept();
 
-        m_acceptor.open(it.protocol(), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
-        if(ec.value() != 0) {
-            continue;
-        }
-
-        m_acceptor.bind(it, ec);
-        if(ec.value() == 0) {
-            break;
-        }
+    for (uvw::Addr& addr : addresses) {
+        m_acceptor->bind(addr);
     }
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    m_acceptor.listen(tcp::socket::max_connections, ec);
-    if(ec.value() != 0) {
-        return ec;
-    }
-
-    return ec;
 }
 
 void NetworkAcceptor::start()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(m_started) {
         // Already started, start() was called twice!
         return;
     }
 
     m_started = true;
-
-    start_accept();
+    
+    // Queue listener for loop.
+    m_acceptor->listen();
 }
 
 void NetworkAcceptor::stop()
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     if(!m_started) {
         // Already stopped, stop() was called twice!
         return;
@@ -72,5 +61,5 @@ void NetworkAcceptor::stop()
 
     m_started = false;
 
-    m_acceptor.cancel();
+    m_acceptor->close();
 }

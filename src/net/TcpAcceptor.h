@@ -2,20 +2,18 @@
 #include "NetworkAcceptor.h"
 #include <functional>
 
-typedef std::function<void(tcp::socket*, tcp::endpoint, tcp::endpoint)> TcpAcceptorCallback;
+typedef std::function<void(const std::shared_ptr<uvw::TcpHandle>&, const uvw::Addr& remote, const uvw::Addr& local, const bool haproxy_mode)> TcpAcceptorCallback;
 
 class TcpAcceptor : public NetworkAcceptor
 {
   public:
-    TcpAcceptor(boost::asio::io_service &io_service,
-                TcpAcceptorCallback &callback);
+    TcpAcceptor(TcpAcceptorCallback &callback, AcceptorErrorCallback &err_callback);
     virtual ~TcpAcceptor() {}
 
   private:
     TcpAcceptorCallback m_callback;
 
     virtual void start_accept();
-    void handle_accept(tcp::socket *socket, const boost::system::error_code &ec);
-    void handle_endpoints(tcp::socket *socket, const boost::system::error_code &ec,
-                          const tcp::endpoint &remote, const tcp::endpoint &local);
+    void handle_accept(const std::shared_ptr<uvw::TcpHandle>& socket);
+    void handle_endpoints(const std::shared_ptr<uvw::TcpHandle>& socket, const uvw::Addr& remote, const uvw::Addr& local);
 };

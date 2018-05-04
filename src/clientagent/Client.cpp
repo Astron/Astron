@@ -9,12 +9,15 @@ using dclass::Class;
 Client::Client(ConfigNode, ClientAgent* client_agent) :
     m_client_agent(client_agent)
 {
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
     m_channel = m_client_agent->m_ct.alloc_channel();
     if(!m_channel) {
         m_log = m_client_agent->log();
         send_disconnect(CLIENT_DISCONNECT_GENERIC, "Client capacity reached");
         return;
     }
+
     m_allocated_channel = m_channel;
 
     stringstream name;
@@ -25,6 +28,8 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
     m_log = m_log_owner.get();
 
     set_con_name(name.str());
+
+    m_timeout_generator_handle = g_loop->resource<uvw::AsyncHandle>();
 
     subscribe_channel(m_channel);
     subscribe_channel(BCHAN_CLIENTS);
@@ -80,6 +85,46 @@ void Client::log_event(LoggedEvent &event)
     event.add("sender", ss.str());
 
     g_eventsender.send(event);
+}
+
+void Client::generate_timeout(TimeoutSetCallback timeout_set_callback)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_timeout_mutex);
+        m_pending_timeouts.push(timeout_set_callback);
+    }
+
+    if(std::this_thread::get_id() != g_main_thread_id) {
+        m_timeout_generator_handle->send();
+        return;
+    }
+
+    generate_timeouts();
+}
+
+void Client::generate_timeouts()
+{
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
+    if(m_is_generating_timeouts) {
+        // Already in the middle of another generate_timeouts invocation.
+        return;
+    }
+
+    m_is_generating_timeouts = true;
+
+    {
+        std::lock_guard<std::mutex> lock(m_timeout_mutex);
+
+        while(!m_pending_timeouts.empty()) {
+            TimeoutSetCallback timeout_set_callback = m_pending_timeouts.front();
+            m_pending_timeouts.pop();
+            std::shared_ptr<Timeout> timeout = std::make_shared<Timeout>();
+            timeout_set_callback(timeout);
+        }
+    }
+
+    m_is_generating_timeouts = false;
 }
 
 // lookup_object returns the class of the object with a do_id.
@@ -457,6 +502,13 @@ void Client::handle_datagram(DatagramHandle in_dg, DatagramIterator &dgi)
         m_session_objects.erase(do_id);
     }
     break;
+    case CLIENTAGENT_GET_TLVS: {
+        DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_TLVS_RESP);
+        resp->add_uint32(dgi.read_uint32()); // Context
+        resp->add_blob(get_tlvs());
+        route_datagram(resp);
+    }
+    break;
     case CLIENTAGENT_GET_NETWORK_ADDRESS: {
         DatagramPtr resp = Datagram::create(sender, m_channel, CLIENTAGENT_GET_NETWORK_ADDRESS_RESP);
         resp->add_uint32(dgi.read_uint32()); // Context
@@ -823,15 +875,25 @@ InterestOperation::InterestOperation(
     m_client_context(client_context),
     m_request_context(request_context),
     m_parent(parent), m_zones(zones),
-    m_timeout(std::make_shared<Timeout>(timeout, bind(&InterestOperation::timeout, this)))
+    m_timeout_interval(timeout)
 {
     m_callers.insert(m_callers.end(), caller);
-    m_timeout->start();
+    m_client->generate_timeout(bind(&InterestOperation::on_timeout_generate, this, 
+                               std::placeholders::_1));
 }
 
 InterestOperation::~InterestOperation()
 {
     assert(m_finished);
+}
+
+void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& timeout)
+{
+    assert(std::this_thread::get_id() == g_main_thread_id);
+
+    m_timeout = timeout;
+    m_timeout->initialize(m_timeout_interval, bind(&InterestOperation::timeout, this));
+    m_timeout->start();
 }
 
 void InterestOperation::timeout()
@@ -843,7 +905,7 @@ void InterestOperation::timeout()
 
 void InterestOperation::finish(bool is_timeout)
 {
-    if(!is_timeout && !m_timeout->cancel()) {
+    if(!is_timeout && m_timeout && !m_timeout->cancel()) {
         // The timeout is already running; let it clean up instead.
         return;
     }

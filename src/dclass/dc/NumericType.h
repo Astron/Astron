@@ -29,7 +29,7 @@ class NumericType : public DistributedType
     inline double get_modulus() const;
 
     // has_range returns true if the numeric is constrained by a range.
-    inline bool has_range() const;
+    virtual bool has_range() const;
     // get_range returns the NumericRange that constrains the type's values.
     inline NumericRange get_range() const;
 
@@ -43,11 +43,15 @@ class NumericType : public DistributedType
     //     Returns false if the range is not valid for this type.
     bool set_range(const NumericRange &range);
 
+    virtual bool within_range(const std::vector<uint8_t>* data, uint64_t length) const;
+
     // generate_hash accumulates the properties of this type into the hash.
     virtual void generate_hash(HashGenerator &hashgen) const;
 
   private:
     unsigned int m_divisor;
+
+    std::pair<bool, Number> data_to_number(const std::vector<uint8_t>* data) const;
 
     // These are the original range and modulus values from the file, unscaled by the divisor.
     double m_orig_modulus;

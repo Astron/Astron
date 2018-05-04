@@ -40,6 +40,8 @@ class Daemon(object):
         time.sleep(1.0) # Allow some time for daemon to finish up...
         if self.daemon is not None:
             self.daemon.kill()
+            # In Windows, kill() is an alias for terminate(), which isn't guaranteed to be instantaneous like SIGKILL signals are on UNIX systems.
+            self.daemon.wait()
         if self.config_file is not None:
             os.remove(self.config_file)
 
@@ -185,6 +187,8 @@ CONSTANTS = {
     'CLIENTAGENT_ADD_SESSION_OBJECT':               1012,
     'CLIENTAGENT_REMOVE_SESSION_OBJECT':            1013,
     'CLIENTAGENT_SET_FIELDS_SENDABLE':              1014,
+    'CLIENTAGENT_GET_TLVS':                         1015,
+    'CLIENTAGENT_GET_TLVS_RESP':                    1016,
     'CLIENTAGENT_OPEN_CHANNEL':                     1100,
     'CLIENTAGENT_CLOSE_CHANNEL':                    1101,
     'CLIENTAGENT_ADD_POST_REMOVE':                  1110,
@@ -225,6 +229,7 @@ CONSTANTS = {
     'CLIENT_DISCONNECT_FORBIDDEN_RELOCATE': 119,
     'CLIENT_DISCONNECT_BAD_VERSION': 124,
     'CLIENT_DISCONNECT_BAD_DCHASH': 125,
+    'CLIENT_DISCONNECT_FIELD_CONSTRAINT': 127,
     'CLIENT_DISCONNECT_SESSION_OBJECT_DELETED': 153,
     'CLIENT_DISCONNECT_NO_HEARTBEAT': 345,
     'CLIENT_DISCONNECT_NETWORK_WRITE_ERROR': 347,

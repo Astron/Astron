@@ -62,34 +62,12 @@ roles:
           max: 220699
 
     - type: clientagent
-      bind: 127.0.0.1:57214
-      version: "Sword Art Online v5.1"
-      channels:
-          min: 330600
-          max: 330699
-      tls:
-          certificate: %r
-          key_file: %r
-          handshake_timeout: 200
-
-    - type: clientagent
       bind: 127.0.0.1:57223
       version: "Sword Art Online v5.1"
       haproxy: true
       channels:
           min: 440600
           max: 440649
-
-    - type: clientagent
-      bind: 127.0.0.1:57224
-      version: "Sword Art Online v5.1"
-      haproxy: true
-      channels:
-          min: 440650
-          max: 440699
-      tls:
-          certificate: %r
-          key_file: %r
 
     - type: clientagent
       bind: 127.0.0.1:51201
@@ -100,7 +78,7 @@ roles:
       client:
           heartbeat_timeout: 1000
 
-""" % (USE_THREADING, test_dc, server_crt, server_key, server_crt, server_key)
+""" % (USE_THREADING, test_dc)
 VERSION = 'Sword Art Online v5.1'
 
 class TestClientAgent(ProtocolTest):
@@ -3334,28 +3312,6 @@ class TestClientAgent(ProtocolTest):
         self.server.send(Datagram.create_remove_channel(10052))
         self.server.send(Datagram.create_remove_channel(10053))
 
-    def test_ssl_tls(self):
-        self.server.flush()
-
-        # Declare a client
-        tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
-        client = self.connect(port = 57214, tls_opts = tls_context)
-        id = self.identify(client, min = 330600, max = 330699)
-
-    def test_ssl_tls_timeout(self):
-        client = self.connect(port = 57214, do_hello=False)
-        self.expectNone(client)
-        time.sleep(0.2)
-
-        # Client should now be dropped. It will either socket.error or return
-        # '' when we try to recv from it (depending on platform):
-        try:
-            r = client.s.recv(1024)
-        except socket_error as e:
-            self.assertEqual(e.errno, 10054)
-        else:
-            self.assertEqual(r, '')
-
     def test_get_network_address(self):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10052))
@@ -3387,10 +3343,10 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         self.server.send(Datagram.create_add_channel(10010))
 
-        for test_id in xrange(8):
+        for test_id in xrange(4):
             proto_v2 = bool(test_id&1)
             ipv6 = bool(test_id&2)
-            tls = bool(test_id&4)
+            spoof_tlv = 'The higher we soar, the smaller we appear to those who cannot fly.'
 
             if ipv6:
                 source_ip = '2001:db8::1'
@@ -3408,7 +3364,8 @@ class TestClientAgent(ProtocolTest):
 
             if proto_v2:
                 body = (source_ip_bin + dest_ip_bin +
-                        struct.pack('>HH', source_port, dest_port))
+                        struct.pack('>HH', source_port, dest_port) +
+                        spoof_tlv)
                 header = ('\r\n\r\n\0\r\nQUIT\n\x21' +
                           struct.pack('>BH', 0x21 if ipv6 else 0x11, len(body)) +
                           body)
@@ -3416,11 +3373,7 @@ class TestClientAgent(ProtocolTest):
                 header = 'PROXY TCP{} {} {} {} {}\r\n'.format(
                     6 if ipv6 else 4, source_ip, dest_ip, source_port, dest_port)
 
-            if tls:
-                tls_context = {'ssl_version': ssl.PROTOCOL_TLSv1}
-                client = self.connect(port=57224, proxy_header=header, tls_opts=tls_context)
-            else:
-                client = self.connect(port=57223, proxy_header=header)
+            client = self.connect(port=57223, proxy_header=header)
 
             id = self.identify(client, min=440600, max=440699)
             dg = Datagram.create([id], 10010, CLIENTAGENT_GET_NETWORK_ADDRESS)
@@ -3440,6 +3393,22 @@ class TestClientAgent(ProtocolTest):
             self.assertEqual(dgi.read_uint16(), source_port)
             self.assertEqual(dgi.read_string(), dest_ip)
             self.assertEqual(dgi.read_uint16(), dest_port)
+
+            if proto_v2:
+                dg = Datagram.create([id], 10010, CLIENTAGENT_GET_TLVS)
+                dg.add_uint32(test_id)
+                self.server.send(dg)
+
+                dg = self.server.recv_maybe()
+                self.assertTrue(dg is not None, "The server didn't receive a datagram. Expecting CLIENTAGENT_GET_TLVS_RESP")
+
+                dgi = DatagramIterator(dg)
+                self.assertEqual(dgi.read_uint8(), 1)
+                self.assertEqual(dgi.read_channel(), 10010)
+                self.assertEqual(dgi.read_channel(), id)
+                self.assertEqual(dgi.read_uint16(), CLIENTAGENT_GET_TLVS_RESP)
+                self.assertEqual(dgi.read_uint32(), test_id)
+                self.assertEqual(dgi.read_string(), spoof_tlv)
 
         self.server.send(Datagram.create_remove_channel(10010))
 
@@ -3656,6 +3625,147 @@ class TestClientAgent(ProtocolTest):
         self.server.flush()
         client.close()
 
+    def test_length_constraints(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # Declare a client
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Exceed maximum length for sendMessageConstraint's string field.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('A damaged Dream of Arcadia.')
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # OK, reconnect...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Go under the minimum length for sendMessageConstraint
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('Ikiru')
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # One more time...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Now for something within the field length bounds.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('Tainai nai ba...')
+        client.send(dg)
+
+        self.expectNone(client)
+
+    def test_value_constraints(self):
+        self.server.flush()
+        self.server.send(Datagram.create_add_channel(10000))
+
+        # New client:
+        client = self.connect()
+        id = self.identify(client)
+
+        # Ok declare on object for the client
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Put the client in the ESTABLISHED state.
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Go above the maximum value constraint for setColorConstraint's "r" field.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setColorConstraint)
+        dg.add_uint8(128)
+        dg.add_uint8(55)
+        dg.add_uint8(66)
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
+        # OK, reconnect...
+        client = self.connect()
+        id = self.identify(client)
+
+        # Declare the object for our client again.
+        dg = Datagram.create([id], 1, CLIENTAGENT_DECLARE_OBJECT)
+        dg.add_doid(10000) # doid
+        dg.add_uint16(DistributedClientTestObject) # dclass
+        self.server.send(dg)
+
+        # Mitigate race condition with declare_object
+        time.sleep(0.1)
+
+        # Client needs to be outside of the sandbox for this:
+        self.set_state(client, CLIENT_STATE_ESTABLISHED)
+
+        # Now for a valid in-range update.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(setColorConstraint)
+        dg.add_uint8(54)
+        dg.add_uint8(51) 
+        dg.add_uint8(65)
+        client.send(dg) 
+
+        self.expectNone(client)
 
     def send_heartbeat(self, client):
         # Construct heartbeat datagram

@@ -34,11 +34,18 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
         for(int i = 0; i < count; ++i) {
             uint16_t field_id = dgi.read_uint16();
             const Field *field = m_dclass->get_field_by_id(field_id);
+            if(!field) {
+                m_log->error() << "Received unknown field with ID " << field_id 
+                               << " within an OTHER section.\n";
+                break;
+            }
+
             if(field->has_keyword("ram")) {
                 dgi.unpack_field(field, m_ram_fields[field]);
             } else {
                 m_log->error() << "Received non-RAM field " << field->get_name()
                                << " within an OTHER section.\n";
+                dgi.skip_field(field);
             }
         }
     }

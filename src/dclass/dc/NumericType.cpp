@@ -7,6 +7,7 @@
 
 #include <stdint.h> // fixed-width integer limits
 #include <math.h>
+#include <memory.h>
 #include "util/HashGenerator.h"
 
 #include "NumericType.h"
@@ -197,6 +198,71 @@ bool NumericType::set_range(const NumericRange &range)
     }
 
     return true;
+}
+
+std::pair<bool, Number> NumericType::data_to_number(const std::vector<uint8_t>* data) const
+{
+    if(m_size != data->size()) {
+        return std::make_pair(false, Number(0));
+    }
+
+    switch(m_type) {
+        case T_INT8: {
+            int64_t val = *(int8_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT16: {
+            int64_t val = *(int16_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT32: {
+            int64_t val = *(int32_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_INT64: {
+            return std::make_pair(true, Number(*(int64_t*)&data->front()));
+        }
+        case T_CHAR:
+        case T_UINT8: {
+            uint64_t val = *(uint8_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT16: {
+            uint64_t val = *(uint16_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT32: {
+            uint64_t val = *(uint32_t*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_UINT64: {
+            return std::make_pair(true, Number(*(uint64_t*)&data->front()));
+        }
+        case T_FLOAT32: {
+            double val = *(float*)&data->front();
+            return std::make_pair(true, Number(val));
+        }
+        case T_FLOAT64: {
+            return std::make_pair(true, Number(*(double*)&data->front()));
+        }
+        default: {
+            break;
+        }
+    }
+
+    return std::make_pair(false, Number(0));
+}
+
+bool NumericType::within_range(const std::vector<uint8_t>* data, uint64_t length) const
+{
+    (void) length;
+
+    auto result = data_to_number(data);
+    if(!result.first) {
+        return false;
+    }
+  
+    return m_range.contains(result.second);
 }
 
 // generate_hash accumulates the properties of this type into the hash.

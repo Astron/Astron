@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR) # Required for FindBoost
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR) # Required for FindBoost
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(Astron)
 
@@ -61,25 +63,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 endif()
 
-if(CMAKE_GENERATOR STREQUAL Xcode)
-	add_definitions(-std=c++0x -stdlib=libc++)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_definitions(-std=c++11)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	execute_process(COMMAND "${CMAKE_C_COMPILER}" -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	message(STATUS "GCC Version: ${GCC_VERSION}")
-	if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-		add_definitions(-std=c++11) # Enable the new C++ standard
-	else()
-		add_definitions(-std=c++0x) # Enable the new C++ standard
-	endif()
-endif()
-
-
 ### Debug Flags -- compile in spam/debug log messages ###
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
@@ -106,7 +89,14 @@ if(BUILD_YAML)
 	add_definitions(-DASTRON_WITH_YAML)
 endif()
 
-### BOOST Dependency -- required by yaml-cpp and networking ###
+# libuv dependency -- required by networking
+find_package(libuv REQUIRED)
+include_directories(${LIBUV_INCLUDE_DIR})
+link_directories(${LIBUV_LIBRARY_DIR})
+message(STATUS "Found the libuv library:")
+message("   ${LIBUV_LIBRARY}\n")
+
+### BOOST Dependency -- required by yaml-cpp ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
 find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
 include_directories(${Boost_INCLUDE_DIR})
@@ -116,6 +106,16 @@ add_definitions(
 	-DBOOST_ALL_NO_LIB
 	-D_SCL_SECURE_NO_WARNINGS
 )
+
+if(APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
+    # Use Homebrew's version of OpenSSL by default
+    if(EXISTS /usr/local/opt/openssl)
+        set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+        message(STATUS "Using Homebrew OpenSSL")
+    else()
+        message(WARNING "Could not find Homebrew version of OpenSSL, please consider installing OpenSSL via Homebrew [#385]")
+    endif()
+endif()
 
 ### SSL Dependency -- required by Boost::ASIO's SSL library
 find_package(OpenSSL REQUIRED)
@@ -391,8 +391,6 @@ set(NET_FILES
 	src/net/NetworkConnector.h
 	src/net/TcpAcceptor.cpp
 	src/net/TcpAcceptor.h
-	src/net/SslAcceptor.cpp
-	src/net/SslAcceptor.h
 )
 
 include_directories(src)
@@ -449,7 +447,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

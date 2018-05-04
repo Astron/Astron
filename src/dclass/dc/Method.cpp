@@ -9,7 +9,7 @@ namespace dclass   // open namespace
 
 
 // constructor
-Method::Method()
+Method::Method() : m_has_constraint(false)
 {
     m_type = T_METHOD;
 }
@@ -65,7 +65,16 @@ bool Method::add_parameter(Parameter *param)
         }
     }
 
+    if(!m_has_constraint && param->get_type()->has_range()) {
+        m_has_constraint = true;
+    }
+
     return true;
+}
+
+bool Method::has_range() const
+{
+    return m_has_constraint;
 }
 
 // generate_hash accumulates the properties of this method into the hash

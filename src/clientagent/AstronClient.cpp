@@ -13,8 +13,6 @@
 using namespace std;
 using dclass::Class;
 using dclass::Field;
-using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
 
 
 static ConfigGroup astronclient_config("libastron", ca_client_config);
@@ -61,8 +59,8 @@ class AstronClient : public Client, public NetworkHandler
     std::shared_ptr<Timeout> m_heartbeat_timer = nullptr;
 
   public:
-    AstronClient(ConfigNode config, ClientAgent* client_agent, tcp::socket *socket,
-                 const tcp::endpoint &remote, const tcp::endpoint &local) :
+    AstronClient(ConfigNode config, ClientAgent* client_agent, const std::shared_ptr<uvw::TcpHandle> &socket,
+                 const uvw::Addr &remote, const uvw::Addr &local, const bool haproxy_mode) :
         Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
         m_config(config),
         m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
@@ -70,22 +68,7 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
-        m_client->initialize(socket, remote, local);
-
-        initialize();
-    }
-
-    AstronClient(ConfigNode config, ClientAgent* client_agent,
-                 ssl::stream<tcp::socket> *stream,
-                 const tcp::endpoint &remote, const tcp::endpoint &local) :
-        Client(config, client_agent), m_client(std::make_shared<NetworkClient>(this)),
-        m_config(config),
-        m_clean_disconnect(false), m_relocate_owned(relocate_owned.get_rval(config)),
-        m_send_hash(send_hash_to_client.get_rval(config)),
-        m_send_version(send_version_to_client.get_rval(config)),
-        m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
-    {
-        m_client->initialize(stream, remote, local);
+        m_client->initialize(socket, remote, local, haproxy_mode);
 
         initialize();
     }
@@ -122,8 +105,8 @@ class AstronClient : public Client, public NetworkHandler
         m_client->set_write_buffer(write_buffer_size.get_rval(m_config));
 
         stringstream ss;
-        ss << "Client (" << m_client->get_remote().address().to_string()
-           << ":" << m_client->get_remote().port() << ", " << m_channel << ")";
+        ss << "Client (" << m_client->get_remote().ip
+           << ":" << m_client->get_remote().port << ", " << m_channel << ")";
         m_log->set_name(ss.str());
         set_con_name(ss.str());
 
@@ -132,14 +115,14 @@ class AstronClient : public Client, public NetworkHandler
 
         // Add remote endpoint to log
         ss.str(""); // empty the stream
-        ss << m_client->get_remote().address().to_string()
-           << ":" << m_client->get_remote().port();
+        ss << m_client->get_remote().ip
+           << ":" << m_client->get_remote().port;
         event.add("remote_address", ss.str());
 
         // Add local endpoint to log
         ss.str(""); // empty the stream
-        ss << m_client->get_local().address().to_string()
-           << ":" << m_client->get_local().port();
+        ss << m_client->get_local().ip
+           << ":" << m_client->get_local().port;
         event.add("local_address", ss.str());
 
         // Log created event
@@ -212,13 +195,13 @@ class AstronClient : public Client, public NetworkHandler
     //     connection or otherwise when the tcp connection is lost.
     // Note: In the Astron client protocol, the server is normally
     //       responsible for terminating the connection.
-    virtual void receive_disconnect(const boost::system::error_code &ec)
+    virtual void receive_disconnect(const uvw::ErrorEvent &evt)
     {
         lock_guard<recursive_mutex> lock(m_client_lock);
 
         if(!m_clean_disconnect) {
             LoggedEvent event("client-lost");
-            event.add("reason", ec.message());
+            event.add("reason", evt.what());
             log_event(event);
         }
 
@@ -553,10 +536,22 @@ class AstronClient : public Client, public NetworkHandler
             }
         }
 
-        // If an exception occurs while unpacking data it will be handled by
+        // If a datagram read-related exception occurs while unpacking data it will be handled by
         // receive_datagram and the client will be dc'd with "truncated datagram".
         vector<uint8_t> data;
-        dgi.unpack_field(field, data);
+
+        try {
+            dgi.unpack_field(field, data);
+        } catch(const FieldConstraintViolation& violation) {
+            // The field that was being updated has constraints.
+            // One of its attributes (either length or value) violates the type constraints specified in our dclass.
+            std::stringstream ss;
+;           ss << "Client tried to send update that violates the constraints for field "
+               << dcc->get_name() << "(" << do_id << ")." << field->get_name()
+               << ": " << violation.what();
+            send_disconnect(CLIENT_DISCONNECT_FIELD_CONSTRAINT, ss.str(), true);
+            return;
+        }
 
         // If an exception occurs while packing data it will be handled by
         // receive_datagram and the client will be dc'd with "oversized datagram".
@@ -652,7 +647,7 @@ class AstronClient : public Client, public NetworkHandler
 
         // check the interest actually exists to be removed
         if(m_interests.find(id) == m_interests.end()) {
-            send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing intrest", true);
+            send_disconnect(CLIENT_DISCONNECT_GENERIC, "Tried to remove a non-existing interest.", true);
             return;
         }
 
@@ -669,23 +664,29 @@ class AstronClient : public Client, public NetworkHandler
 
     virtual const std::string get_remote_address()
     {
-        return m_client->get_remote().address().to_string();
+        return m_client->get_remote().ip;
     }
 
     virtual uint16_t get_remote_port()
     {
-        return m_client->get_remote().port();
+        return m_client->get_remote().port;
     }
 
     virtual const std::string get_local_address()
     {
-        return m_client->get_local().address().to_string();
+        return m_client->get_local().ip;
     }
 
     virtual uint16_t get_local_port()
     {
-        return m_client->get_local().port();
+        return m_client->get_local().port;
     }
+
+    virtual const std::vector<uint8_t>& get_tlvs() const
+    {
+        return m_client->get_tlvs();
+    }
+
 };
 
 static ClientType<AstronClient> astron_client_fact("libastron");

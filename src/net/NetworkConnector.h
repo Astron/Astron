@@ -1,27 +1,25 @@
 #pragma once
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
+#include <deps/uvw/uvw.hpp>
 
-using boost::asio::ip::tcp;
-namespace ssl = boost::asio::ssl;
+typedef std::function<void(const std::shared_ptr<uvw::TcpHandle> &)> ConnectCallback;
+typedef std::function<void(const uvw::ErrorEvent& evt)> ConnectErrorCallback;
 
-class NetworkConnector
+class NetworkConnector : public std::enable_shared_from_this<NetworkConnector>
 {
   public:
-    NetworkConnector(boost::asio::io_service &io_service);
-
     // Parses the string "address" and connects to it. If no port is specified
     // as part of the address, it will use default_port.
-    // The return value will either be a freshly-allocated socket, or nullptr.
-    // If the return value is nullptr, the error code will be set to indicate
-    // the reason that the connect failed.
-    tcp::socket *connect(const std::string &address, unsigned int default_port,
-                         boost::system::error_code &ec);
-    ssl::stream<tcp::socket> *connect(const std::string &address, unsigned int default_port,
-                                      ssl::context *ctx, boost::system::error_code &ec);
-  private:
-    boost::asio::io_service &m_io_service;
+    // The provided callback will be invoked with the created socket post-connection.
 
-    void do_connect(tcp::socket &socket, const std::string &address,
-                    uint16_t port, boost::system::error_code &ec);
+    NetworkConnector(const std::shared_ptr<uvw::Loop> &loop);
+    void destroy();
+    void connect(const std::string &address, unsigned int default_port,
+                 ConnectCallback callback, ConnectErrorCallback err_callback);
+  private:
+    std::shared_ptr<uvw::TcpHandle> m_socket;
+    std::shared_ptr<uvw::Loop> m_loop;
+    ConnectCallback m_connect_callback;
+    ConnectErrorCallback m_err_callback;
+
+    void do_connect(const std::string &address, uint16_t port);
 };

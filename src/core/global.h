@@ -3,8 +3,11 @@
 #include "config/ConfigVariable.h"
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
-#include <boost/asio.hpp>
+#include <deps/uvw/uvw.hpp>
 #include <unordered_map>
+#include <thread>
+#include <cassert>
+#include <climits>
 
 // An Uberdog represents a global DistributedObject that manages itself, instead of being managed by
 //     a StateServer or DatabaseServer.  Uberdogs are typically used for RPC calls, and typically
@@ -19,6 +22,7 @@ struct Uberdog {
 extern const dclass::File *g_dcf;
 extern std::unique_ptr<Logger> g_logger;
 extern std::unique_ptr<ConfigFile> g_config;
-extern boost::asio::io_service io_service;
 extern EventSender g_eventsender;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;
+extern std::thread::id g_main_thread_id;
+extern std::shared_ptr<uvw::Loop> g_loop;
