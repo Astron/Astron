@@ -42,15 +42,15 @@ int main(int argc, char *argv[])
     bool prettyPrint = true;
 #endif
 
-#if defined(__linux__) && defined(pthread_setattr_default_np)
+#if defined(__linux__)
     // This is a bit of a kludge, but it's necessary so that we don't exceed the default thread-local storage threshold with standard libraries such as musl.
-    pthread_attr_t attr = NULL;
+    pthread_attr_t attr;
 
     if(pthread_attr_init(&attr))
         return 1;
 
     // 2 << 20 is the glibc default (page aligned).
-    if(pthread_attr_setstacksize(attr, 2 << 20))
+    if(pthread_attr_setstacksize(&attr, 2 << 20))
         return 1;
 
     if(pthread_setattr_default_np(&attr))
