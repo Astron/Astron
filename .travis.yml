@@ -48,7 +48,7 @@ install:
 - cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.9.3/mongo-c-driver-1.9.3.tar.gz && tar xzf mongo-c-driver-1.9.3.tar.gz && cd mongo-c-driver-1.9.3 && ./configure && make && sudo make install
 - cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
 - cd ~/build && git clone -b v1.x https://github.com/libuv/libuv && cd libuv && sh autogen.sh && ./configure && make && sudo make install
-- cd ~/build && wget https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.tar.gz && tar xzf yaml-cpp-0.6.2.tar.gz && cd yaml-cpp-yaml-cpp-0.6.2 && cmake . && make && make install
+- cd ~/build && wget https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.tar.gz && tar xzf yaml-cpp-0.6.2.tar.gz && cd yaml-cpp-yaml-cpp-0.6.2 && cmake . && make && sudo make install
 - cd $OLD_PWD
 
 # Workaround for https://svn.boost.org/trac/boost/ticket/7473
