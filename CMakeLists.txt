@@ -177,33 +177,35 @@ if(BUILD_DBSERVER)
 	### Check for the presence of the MongoDB client library ###
 	find_package(libmongocxx QUIET)
 	find_package(libbsoncxx QUIET)
-		find_package(libmongocxx-static QUIET)
-		find_package(libbsoncxx-static QUIET)
+	find_package(libmongocxx-static QUIET)
+	find_package(libbsoncxx-static QUIET)
 
-		if(LIBMONGOCXX_LIBRARIES OR LIBMONGOCXX_STATIC_LIBRARIES)
-				set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
-				message(STATUS "MongoDB client library found")
+	if(LIBMONGOCXX_LIBRARIES OR LIBMONGOCXX_STATIC_LIBRARIES)
+		set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
+		message(STATUS "MongoDB client library found")
+	else()
+		unset(BUILD_DB_MONGO CACHE)
+		message(STATUS "MongoDB client library not found")
+	endif()
+	if(BUILD_DB_MONGO)
+		list(APPEND DBSERVER_FILES
+			src/database/MongoDatabase.cpp)
+		if(LIBMONGOCXX_LIBRARIES)
+			include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
+			link_directories(${LIBMONGOCXX_LIBRARY_DIRS} ${LIBBSONCXX_LIBRARY_DIRS})
+			list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
+		elseif(LIBMONGOCXX_STATIC_LIBRARIES)
+			include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS})
+			link_directories(${LIBMONGOCXX_STATIC_LIBRARY_DIRS} ${LIBBSONCXX_STATIC_LIBRARY_DIRS})
+			list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_STATIC_LIBRARIES} ${LIBBSONCXX_STATIC_LIBRARIES})
 		else()
-				unset(BUILD_DB_MONGO CACHE)
-				message(STATUS "MongoDB client library not found")
+			message(FATAL_ERROR "BUILD_DB_MONGO is set but no libraries were found, this is never supposed to happen!")	
 		endif()
-		if(BUILD_DB_MONGO)
-				list(APPEND DBSERVER_FILES
-					 src/database/MongoDatabase.cpp)
-				if(LIBMONGOCXX_LIBRARIES)
-						include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
-						link_directories(${LIBMONGOCXX_LIBRARY_DIRS} ${LIBBSONCXX_LIBRARY_DIRS})
-						list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
-				else()
-						include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS})
-						link_directories(${LIBMONGOCXX_STATIC_LIBRARY_DIRS} ${LIBBSONCXX_STATIC_LIBRARY_DIRS})
-						list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_STATIC_LIBRARIES} ${LIBBSONCXX_STATIC_LIBRARIES})
-				endif()
-				add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
-				add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
-				# TODO: Config validation test
-				list(APPEND PYTHON_TESTS db_mongo)
-		endif()
+		add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
+		add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
+		# TODO: Config validation test
+		list(APPEND PYTHON_TESTS db_mongo)
+	endif()
 
 	### Check for soci and if available, compile SQL database support ###
 	find_package(Soci COMPONENTS postgresql mysql sqlite3)
@@ -257,12 +259,14 @@ if(BUILD_DBSERVER)
 				${DBSERVER_FILES}
 				src/database/SociSQLDatabase.cpp
 			)
-	list(APPEND DB_LIBRARY_NAMES soci_core dl)
+
+			list(APPEND DB_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
-		list(APPEND DB_LIBRARY_NAMES pq)
-				add_test(db_pgsql "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
+				list(APPEND DB_LIBRARY_NAMES pq)
+				add_test(db_pgsql 
+					"${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
 				add_test(validate_config_dbpostgres
-					 "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
+					"${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
 				set(PYTHON_TESTS ${PYTHON_TESTS} db_pgsql validate_config_dbpostgres)
 			endif()
 		endif()
@@ -409,7 +413,7 @@ add_executable(astrond
 	${CONFIG_FILES}
 	${MESSAGEDIRECTOR_FILES}
 	${UTIL_FILES}
-  ${NET_FILES}
+	${NET_FILES}
 	${STATESERVER_FILES}
 	${EVENTLOGGER_FILES}
 	${CLIENTAGENT_FILES}
