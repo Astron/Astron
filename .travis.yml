@@ -38,8 +38,6 @@ before_install:
     brew upgrade python;
     brew update;
     brew outdated boost || brew upgrade boost;
-    brew upgrade openssl
-    export OPENSSL_ROOT_DIR=`brew --prefix openssl`
     brew install yaml-cpp;
     brew install mongodb;
   fi

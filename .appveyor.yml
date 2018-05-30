@@ -48,14 +48,13 @@ install:
 
 build_script:
 - cd build
-- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DCMAKE_PREFIX_PATH=C:\libraries\libbson;C:\libraries\mongoc;C:\projects\astron\dependencies\libuv;C:\projects\astron\dependencies\libuv\Release -DCMAKE_BUILD_TYPE=Release -DOPENSSL_USE_STATIC_LIBS=NO ..
+- cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DCMAKE_PREFIX_PATH=C:\libraries\libbson;C:\libraries\mongoc;C:\projects\astron\dependencies\libuv;C:\projects\astron\dependencies\libuv\Release -DCMAKE_BUILD_TYPE=Release ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - cd Release
 - copy /Y C:\projects\astron\dependencies\libuv\Release\*.dll .
 - copy /Y C:\libraries\libbson\bin\*.dll .
 - copy /Y C:\libraries\mongoc\bin\*.dll .
 - copy /Y C:\libraries\mongo-cxx-driver\bin\*.dll .
-- copy /Y C:\OpenSSL-Win64\*eay32.dll .
 - 7z a astron.zip *
 - cd ..
 

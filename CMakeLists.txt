@@ -107,20 +107,6 @@ add_definitions(
 	-D_SCL_SECURE_NO_WARNINGS
 )
 
-if(APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
-	# Use Homebrew's version of OpenSSL by default
-	if(EXISTS /usr/local/opt/openssl)
-		set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
-		message(STATUS "Using Homebrew OpenSSL")
-	else()
-		message(WARNING "Could not find Homebrew version of OpenSSL, please consider installing OpenSSL via Homebrew [#385]")
-	endif()
-endif()
-
-### SSL Dependency -- required by Boost::ASIO's SSL library
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
-
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
@@ -458,7 +444,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${OPENSSL_LIBRARIES} ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${Boost_LIBRARIES} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
