@@ -68,7 +68,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
 
 
 ### OS Specific Settings ###
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")  ### Windows requires winsock
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")	### Windows requires winsock
 	list(APPEND EXTRA_LIBS wsock32 ws2_32)
 endif()
 
@@ -94,7 +94,7 @@ find_package(libuv REQUIRED)
 include_directories(${LIBUV_INCLUDE_DIR})
 link_directories(${LIBUV_LIBRARY_DIR})
 message(STATUS "Found the libuv library:")
-message("   ${LIBUV_LIBRARY}\n")
+message("	${LIBUV_LIBRARY}\n")
 
 ### BOOST Dependency -- required by yaml-cpp ###
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
@@ -108,13 +108,13 @@ add_definitions(
 )
 
 if(APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
-    # Use Homebrew's version of OpenSSL by default
-    if(EXISTS /usr/local/opt/openssl)
-        set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
-        message(STATUS "Using Homebrew OpenSSL")
-    else()
-        message(WARNING "Could not find Homebrew version of OpenSSL, please consider installing OpenSSL via Homebrew [#385]")
-    endif()
+	# Use Homebrew's version of OpenSSL by default
+	if(EXISTS /usr/local/opt/openssl)
+		set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+		message(STATUS "Using Homebrew OpenSSL")
+	else()
+		message(WARNING "Could not find Homebrew version of OpenSSL, please consider installing OpenSSL via Homebrew [#385]")
+	endif()
 endif()
 
 ### SSL Dependency -- required by Boost::ASIO's SSL library
@@ -177,33 +177,33 @@ if(BUILD_DBSERVER)
 	### Check for the presence of the MongoDB client library ###
 	find_package(libmongocxx QUIET)
 	find_package(libbsoncxx QUIET)
-        find_package(libmongocxx-static QUIET)
-        find_package(libbsoncxx-static QUIET)
+		find_package(libmongocxx-static QUIET)
+		find_package(libbsoncxx-static QUIET)
 
-        if(LIBMONGOCXX_LIBRARIES OR LIBMONGOCXX_STATIC_LIBRARIES)
-                set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
-                message(STATUS "MongoDB client library found")
-        else()
-                unset(BUILD_DB_MONGO CACHE)
-                message(STATUS "MongoDB client library not found")
-        endif()
-        if(BUILD_DB_MONGO)
-                list(APPEND DBSERVER_FILES
-                     src/database/MongoDatabase.cpp)
-                if(LIBMONGOCXX_LIBRARIES)
-                        include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
-                        link_directories(${LIBMONGOCXX_LIBRARY_DIRS} ${LIBBSONCXX_LIBRARY_DIRS})
-                        list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
-                else()
-                        include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS})
-                        link_directories(${LIBMONGOCXX_STATIC_LIBRARY_DIRS} ${LIBBSONCXX_STATIC_LIBRARY_DIRS})
-                        list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_STATIC_LIBRARIES} ${LIBBSONCXX_STATIC_LIBRARIES})
-                endif()
-                add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
-                add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
-                # TODO: Config validation test
-                list(APPEND PYTHON_TESTS db_mongo)
-        endif()
+		if(LIBMONGOCXX_LIBRARIES OR LIBMONGOCXX_STATIC_LIBRARIES)
+				set(BUILD_DB_MONGO ON CACHE BOOL "If on, will support MongoDB.")
+				message(STATUS "MongoDB client library found")
+		else()
+				unset(BUILD_DB_MONGO CACHE)
+				message(STATUS "MongoDB client library not found")
+		endif()
+		if(BUILD_DB_MONGO)
+				list(APPEND DBSERVER_FILES
+					 src/database/MongoDatabase.cpp)
+				if(LIBMONGOCXX_LIBRARIES)
+						include_directories(${LIBMONGOCXX_INCLUDE_DIRS} ${LIBBSONCXX_INCLUDE_DIRS})
+						link_directories(${LIBMONGOCXX_LIBRARY_DIRS} ${LIBBSONCXX_LIBRARY_DIRS})
+						list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_LIBRARIES} ${LIBBSONCXX_LIBRARIES})
+				else()
+						include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS} ${LIBBSONCXX_STATIC_INCLUDE_DIRS})
+						link_directories(${LIBMONGOCXX_STATIC_LIBRARY_DIRS} ${LIBBSONCXX_STATIC_LIBRARY_DIRS})
+						list(APPEND DB_LIBRARY_NAMES ${LIBMONGOCXX_STATIC_LIBRARIES} ${LIBBSONCXX_STATIC_LIBRARIES})
+				endif()
+				add_test(db_mongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_mongodb.py")
+				add_test(validate_config_dbmongo "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbmongo.py")
+				# TODO: Config validation test
+				list(APPEND PYTHON_TESTS db_mongo)
+		endif()
 
 	### Check for soci and if available, compile SQL database support ###
 	find_package(Soci COMPONENTS postgresql mysql sqlite3)
@@ -217,33 +217,33 @@ if(BUILD_DBSERVER)
 		if(SOCI_postgresql_FOUND)
 			set(BUILD_DB_POSTGRESQL ON CACHE BOOL "If on, will support PostgreSQL.")
 			message(STATUS "  PostgreSQL found")
-			message("    ${SOCI_postgresql_PLUGIN}")
+			message("	 ${SOCI_postgresql_PLUGIN}")
 		else()
 			unset(BUILD_DB_POSTGRESQL CACHE)
 			message(STATUS "  PostgreSQL not found")
-			message("    won't add PostgreSQl support")
+			message("	 won't add PostgreSQl support")
 		endif()
 
 		### MySQL support ###
 		if(SOCI_mysql_FOUND)
 			set(BUILD_DB_MYSQL ON CACHE BOOL "If on, will support MySQL.")
 			message(STATUS "  MySQL found")
-			message("    ${SOCI_mysql_PLUGIN}")
+			message("	 ${SOCI_mysql_PLUGIN}")
 		else()
 			unset(BUILD_DB_MYSQL CACHE)
 			message(STATUS "  MySQL not found")
-			message("    won't add MySQL support")
+			message("	 won't add MySQL support")
 		endif()
 
 		### SQLite3 support ###
 		if(SOCI_sqlite3_FOUND)
 			set(BUILD_DB_SQLITE ON CACHE BOOL "If on, will support SQLite3.")
 			message(STATUS "  SQLite3 found")
-			message("    ${SOCI_sqlite3_PLUGIN}")
+			message("	 ${SOCI_sqlite3_PLUGIN}")
 		else()
 			unset(BUILD_DB_SQLITE CACHE)
 			message(STATUS "  SQLite3 not found")
-			message("    won't add SQLite3 support")
+			message("	 won't add SQLite3 support")
 		endif()
 
 		message("")
@@ -257,9 +257,9 @@ if(BUILD_DBSERVER)
 				${DBSERVER_FILES}
 				src/database/SociSQLDatabase.cpp
 			)
-    list(APPEND DB_LIBRARY_NAMES soci_core dl)
+	list(APPEND DB_LIBRARY_NAMES soci_core dl)
 			if(BUILD_DB_POSTGRESQL)
-        list(APPEND DB_LIBRARY_NAMES pq)
+		list(APPEND DB_LIBRARY_NAMES pq)
 				add_test(db_pgsql "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_dbserver_postgres.py")
 				add_test(validate_config_dbpostgres
 					 "${PYTHON2_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/test/test_config_dbpostgres.py")
