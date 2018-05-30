@@ -22,6 +22,7 @@ addons:
     packages:
     - cmake
     - libssl-dev
+    - libboost-dev
     - mongodb-org-server
     - clang-5.0
     - g++-6
