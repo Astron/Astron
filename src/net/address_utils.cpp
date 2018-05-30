@@ -31,7 +31,7 @@ static bool split_port(std::string &ip, uint16_t &port)
     try {
         port = std::stoi(ip.substr(last_colon + 1));
         ip = ip.substr(0, last_colon);
-    } catch(std::invalid_argument) {
+    } catch(const std::invalid_argument&) {
         return false;
     }
 
