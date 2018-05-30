@@ -32,6 +32,21 @@ if(WIN32)
 	if(MSVC)
 		add_definitions("/wd4267") # 64-bit size_t complaints
 	endif()
+else()
+	option(STATIC_ASTRON "Builds a self-contained Astron binary (Non-Win32 only)" OFF)
+endif()
+
+if(STATIC_ASTRON)
+	# !!! DO NOT SET THIS UNLESS YOU KNOW WHAT YOU'RE DOING !!!
+	# Static Astron builds are still *very* experimental, and there are still issues with linking the C++ Mongo driver in some instances.
+	set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)
+	set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+	set(CMAKE_SHARED_LIBRARY_C_FLAGS)
+	set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
+	set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+	set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
 ### Set build type to Release with Debug Info by default ###
