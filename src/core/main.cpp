@@ -6,12 +6,13 @@
 #include "dclass/dc/Class.h"
 using dclass::Class;
 
-#include <boost/filesystem.hpp>
 #include <cstring>
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
-#include <pthread.h>
+#include <experimental/filesystem> // std::experimental::filesystem
+#include <pthread.h> // for setting thread-local storage size
+
 using namespace std;
 
 static LogCategory mainlog("main", "Main");
@@ -136,16 +137,16 @@ int main(int argc, char *argv[])
 
         try {
             // seperate path
-            boost::filesystem::path p(cfg_file);
-            boost::filesystem::path dir = p.parent_path();
+            experimental::filesystem::path p(cfg_file);
+            experimental::filesystem::path dir = p.parent_path();
             filename = p.filename().string();
             string dir_str = dir.string();
 
             // change directory
             if(!dir_str.empty()) {
-                boost::filesystem::current_path(dir_str);
+                experimental::filesystem::current_path(dir_str);
             }
-        } catch(const boost::filesystem::filesystem_error&) {
+        } catch(const experimental::filesystem::filesystem_error&) {
             mainlog.fatal() << "Could not change working directory to config directory.\n";
             return 1;
         }

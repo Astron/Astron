@@ -2,7 +2,7 @@
 #include <list>
 #include <queue>
 #include <mutex>
-#include <deps/uvw/uvw.hpp>
+#include "deps/uvw/uvw.hpp"
 #include "util/Datagram.h"
 #include "HAProxyHandler.h"
 

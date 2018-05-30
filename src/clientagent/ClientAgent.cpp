@@ -1,7 +1,6 @@
 #include "ClientAgent.h"
 #include "ClientFactory.h"
 
-#include <boost/filesystem.hpp>
 #include "core/global.h"
 #include "core/shutdown.h"
 #include "core/RoleFactory.h"
@@ -9,7 +8,6 @@
 #include "dclass/file/hash.h"
 #include "net/TcpAcceptor.h"
 using namespace std;
-namespace filesystem = boost::filesystem;
 
 RoleConfigGroup clientagent_config("clientagent");
 static ConfigVariable<string> bind_addr("bind", "0.0.0.0:7198", clientagent_config);

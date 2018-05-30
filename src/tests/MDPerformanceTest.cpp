@@ -1,7 +1,7 @@
 #include "core/global.h"
 #include "messagedirector/MessageDirector.h"
-#include <boost/random.hpp>
 #include <ctime>
+#incude <random>
 
 LogCategory mdperf_log("PerfTestMD", "Performance Test - MessageDirector");
 
@@ -12,14 +12,14 @@ LogCategory mdperf_log("PerfTestMD", "Performance Test - MessageDirector");
 #define MD_PERF_DATASIZE 70 //must be atleast 1+(MD_PERF_NUM_DEST_CHANNELS*sizeof(channel_t))
 uint8_t *data = nullptr;
 
-boost::random::mt19937_64 gen;
+std::mt19937_64 gen;
 
 class MDPerformanceParticipant : public MDParticipantInterface
 {
   public:
     MDPerformanceParticipant() : MDParticipantInterface(), num_messages(0)
     {
-        boost::random::uniform_int_distribution<uint64_t> dist(0, 0xFFFFFFFFFFFFFFFF);
+        std::uniform_int_distribution<uint64_t> dist(0, 0xFFFFFFFFFFFFFFFF);
         for(uint32_t i = 0; i < MD_PERF_NUM_CHANNELS; ++i) {
             subscribe_channel(dist(gen));
         }

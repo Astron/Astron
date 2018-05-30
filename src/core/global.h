@@ -3,7 +3,7 @@
 #include "config/ConfigVariable.h"
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
-#include <deps/uvw/uvw.hpp>
+#include "deps/uvw/uvw.hpp"
 #include <unordered_map>
 #include <thread>
 #include <cassert>

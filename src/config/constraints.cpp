@@ -1,8 +1,7 @@
 #include "constraints.h"
 #include <algorithm>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 using namespace std;
-namespace filesystem = boost::filesystem;
 
 bool is_not_invalid_doid(const doid_t& c)
 {
@@ -31,7 +30,6 @@ bool is_boolean_keyword(const string& str)
 
 bool is_existing_and_readable_file(const std::string& file)
 {
-    return filesystem::exists(file);
-
+    return experimental::filesystem::exists(file);
     // TODO: Check whether readable
 }

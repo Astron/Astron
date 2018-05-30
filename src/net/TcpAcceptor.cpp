@@ -1,5 +1,4 @@
 #include "TcpAcceptor.h"
-#include <boost/bind.hpp>
 
 TcpAcceptor::TcpAcceptor(TcpAcceptorCallback &callback, AcceptorErrorCallback& err_callback) :
     NetworkAcceptor(err_callback),

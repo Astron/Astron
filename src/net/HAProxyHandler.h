@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
-#include <deps/uvw/uvw.hpp>
+#include "deps/uvw/uvw.hpp"
 
 // Maximum size of the HAProxy header, per documentation:
 #define HAPROXY_HEADER_MAX 107

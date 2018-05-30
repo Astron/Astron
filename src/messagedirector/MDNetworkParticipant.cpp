@@ -1,7 +1,6 @@
 #include "MDNetworkParticipant.h"
 #include "core/global.h"
 #include "core/msgtypes.h"
-#include <boost/bind.hpp>
 
 MDNetworkParticipant::MDNetworkParticipant(const std::shared_ptr<uvw::TcpHandle> &socket)
     : MDParticipantInterface(), m_client(std::make_shared<NetworkClient>(this))

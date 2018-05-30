@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR) # Required for FindBoost
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -21,7 +21,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 ### Define extra windows defines ###
 if(WIN32)
-	add_definitions(-DBOOST_USE_WINDOWS_H)
 	add_definitions(-DWIN32_LEAN_AND_MEAN)
 
 	add_definitions(-D_WIN32_WINDOWS)
@@ -91,6 +90,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	list(APPEND EXTRA_LIBS pthread rt)
 endif()
 
+# Needed for std::filesystem and friends.
+list(APPEND EXTRA_LIBS stdc++fs)
+
 ### YAML Depedency -- required by config, used by yaml database ###
 set(YAMLCPP_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
 find_package(YamlCpp REQUIRED)
@@ -110,17 +112,6 @@ include_directories(${LIBUV_INCLUDE_DIR})
 link_directories(${LIBUV_LIBRARY_DIR})
 message(STATUS "Found the libuv library:")
 message("	${LIBUV_LIBRARY}\n")
-
-### BOOST Dependency -- required by yaml-cpp ###
-set(Boost_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static Boost first instead of dynamic.")
-find_package(Boost REQUIRED COMPONENTS system filesystem thread regex)
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
-
-add_definitions(
-	-DBOOST_ALL_NO_LIB
-	-D_SCL_SECURE_NO_WARNINGS
-)
 
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
@@ -459,7 +450,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${Boost_LIBRARIES} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

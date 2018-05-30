@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <utility>
 
-#include <deps/uvw/uvw.hpp>
-#include <deps/uvw/uvw/util.hpp>
+#include "deps/uvw/uvw.hpp"
+#include "deps/uvw/uvw/util.hpp"
 #include <uv.h>
 
 static bool split_port(std::string &ip, uint16_t &port)

@@ -1,8 +1,6 @@
 #include "Timeout.h"
 #include "core/global.h"
 
-#include <boost/bind.hpp>
-
 Timeout::Timeout(unsigned long ms, std::function<void()> f) :
     m_loop(g_loop),
     m_timer(nullptr),
