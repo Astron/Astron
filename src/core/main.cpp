@@ -11,6 +11,7 @@ using dclass::Class;
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
+#include <pthread.h>
 using namespace std;
 
 static LogCategory mainlog("main", "Main");
@@ -41,6 +42,19 @@ int main(int argc, char *argv[])
     bool prettyPrint = true;
 #endif
 
+#if defined(__linux__) && defined(pthread_set_attr_default_np)
+    // This is a bit of a kludge, but it's necessary so that we don't exceed the default thread-local storage threshold with standard libraries such as musl.
+    pthread_attr_t attr = NULL;
+
+    if(pthread_attr_init(&attr))
+        return 1;
+
+    // 2 << 20 is the glibc default (page aligned).
+    if(pthread_attr_setstacksize(attr, 2 << 20))
+        return 1;
+
+#endif
+ 
     int config_arg_index = -1;
     cfg_file = "astrond.yml";
     LogSeverity sev = g_logger->get_min_severity();
