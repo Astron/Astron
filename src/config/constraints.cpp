@@ -1,6 +1,6 @@
 #include "constraints.h"
+#include "util/filesystem.h"
 #include <algorithm>
-#include <experimental/filesystem>
 using namespace std;
 
 bool is_not_invalid_doid(const doid_t& c)
@@ -30,6 +30,5 @@ bool is_boolean_keyword(const string& str)
 
 bool is_existing_and_readable_file(const std::string& file)
 {
-    return experimental::filesystem::exists(file);
-    // TODO: Check whether readable
+    return fs::file_exists(file) && fs::is_readable(file);
 }

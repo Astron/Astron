@@ -10,8 +10,8 @@ using dclass::Class;
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
-#include <experimental/filesystem> // std::experimental::filesystem
 #include <pthread.h> // for setting thread-local storage size
+#include "util/filesystem.h"
 
 using namespace std;
 
@@ -44,7 +44,8 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(__linux__)
-    // This is a bit of a kludge, but it's necessary so that we don't exceed the default thread-local storage threshold with standard libraries such as musl.
+    // This is a bit of a kludge, but it's necessary:
+    // We need to make sure that we don't exceed the default TLS threshold with stdlibs such as musl.
     pthread_attr_t attr;
 
     if(pthread_attr_init(&attr))
@@ -116,7 +117,7 @@ int main(int argc, char *argv[])
             return 1;
         } else {
             if(config_arg_index != -1) {
-                cerr << "Recieved additional positional argument \""
+                cerr << "Received additional positional argument \""
                      << string(argv[i]) << "\" but can only accept one."
                      << "\n  First positional: \""
                      << string(argv[config_arg_index]) << "\".\n";
@@ -132,30 +133,37 @@ int main(int argc, char *argv[])
     g_logger->set_color_enabled(prettyPrint);
 
     if(config_arg_index != -1) {
-        string filename = "";
         cfg_file = argv[config_arg_index];
 
-        try {
-            // seperate path
-            experimental::filesystem::path p(cfg_file);
-            experimental::filesystem::path dir = p.parent_path();
-            filename = p.filename().string();
-            string dir_str = dir.string();
+        // seperate path
+        string filename = fs::filename(cfg_file);
+        string dir_str = fs::parent_of(cfg_file);
 
-            // change directory
-            if(!dir_str.empty()) {
-                experimental::filesystem::current_path(dir_str);
+        std::cout << dir_str << std::endl;
+        std::cout << fs::current_path() << std::endl;
+
+        if(dir_str == fs::current_path()) {
+            // we're already in the directory that the configuration is under.
+            dir_str = "";
+        }
+
+        // change directory
+        if(!dir_str.empty()) {
+            if(!fs::current_path(dir_str)) {
+                mainlog.fatal() << "Could not change working directory to config directory.\n";
+                return 1;
             }
-        } catch(const experimental::filesystem::filesystem_error&) {
-            mainlog.fatal() << "Could not change working directory to config directory.\n";
-            return 1;
         }
 
         cfg_file = filename;
     }
 
-    mainlog.info() << "Loading configuration file...\n";
+    if(!fs::file_exists(cfg_file) || !fs::is_readable(cfg_file)) {
+        mainlog.fatal() << "Config file " << cfg_file << " does not exist or isn't readable.\n";
+        return 1;
+    }
 
+    mainlog.info() << "Loading configuration file...\n";
 
     ifstream file(cfg_file.c_str());
     if(!file.is_open()) {

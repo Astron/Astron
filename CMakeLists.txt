@@ -90,9 +90,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")		### Linux requires pthreads
 	list(APPEND EXTRA_LIBS pthread rt)
 endif()
 
-# Needed for std::filesystem and friends.
-list(APPEND EXTRA_LIBS stdc++fs)
-
 ### YAML Depedency -- required by config, used by yaml database ###
 set(YAMLCPP_USE_STATIC_LIBS ON CACHE BOOL "If true, will try to find static YamlCpp first instead of dynamic.")
 find_package(YamlCpp REQUIRED)
