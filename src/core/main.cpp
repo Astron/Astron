@@ -10,7 +10,9 @@ using dclass::Class;
 #include <string>  // std::string
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
+#ifdef __linux__
 #include <pthread.h> // for setting thread-local storage size
+#endif
 #include "util/filesystem.h"
 
 using namespace std;
@@ -43,7 +45,7 @@ int main(int argc, char *argv[])
     bool prettyPrint = true;
 #endif
 
-#if defined(__linux__)
+#ifdef __linux__
     // This is a bit of a kludge, but it's necessary:
     // We need to make sure that we don't exceed the default TLS threshold with stdlibs such as musl.
     pthread_attr_t attr;

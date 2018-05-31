@@ -2,7 +2,12 @@
 
 #ifdef _WIN32
     #include <Windows.h>
+    #include <io.h>
     #include <stdio.h>
+    #include <stdlib.h>
+    // The POSIX-compliant access(2) API is deprecated on Windows
+    // We use the ISO C++-conformant function _access in this case.
+    #define access _access
 #else
     #include <sys/types.h>
     #include <sys/stat.h>
