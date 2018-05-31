@@ -92,6 +92,11 @@ void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
 
+    // If we aren't connected, stop here.
+    if(!is_connected(lock)) {
+        return;
+    }
+
     // Put the packet in our outgoing send queue
     m_send_queue.push_back(dg);
 
