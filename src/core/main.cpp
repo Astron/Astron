@@ -139,9 +139,6 @@ int main(int argc, char *argv[])
         string filename = fs::filename(cfg_file);
         string dir_str = fs::parent_of(cfg_file);
 
-        std::cout << dir_str << std::endl;
-        std::cout << fs::current_path() << std::endl;
-
         if(dir_str == fs::current_path()) {
             // we're already in the directory that the configuration is under.
             dir_str = "";
