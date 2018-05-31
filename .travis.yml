@@ -21,7 +21,6 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - cmake
-    - libssl-dev
     - libboost-dev
     - mongodb-org-server
     - clang-5.0
@@ -45,15 +44,10 @@ before_install:
 
 install:
 - OLD_PWD=$PWD
-- cd ~/build && wget https://github.com/mongodb/libbson/releases/download/1.9.3/libbson-1.9.3.tar.gz && tar xzf libbson-1.9.3.tar.gz && cd libbson-1.9.3 && ./configure && make && sudo make install
-- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.9.3/mongo-c-driver-1.9.3.tar.gz && tar xzf mongo-c-driver-1.9.3.tar.gz && cd mongo-c-driver-1.9.3 && ./configure && make && sudo make install
+- cd ~/build && wget https://github.com/mongodb/mongo-c-driver/releases/download/1.10.1/mongo-c-driver-1.10.1.tar.gz && tar xzf mongo-c-driver-1.10.1.tar.gz && cd mongo-c-driver-1.10.1 && cmake -DENABLE_ZLIB=BUNDLED -DENABLE_SSL=OFF . && make && sudo make install
 - cd ~/build && git clone https://github.com/mongodb/mongo-cxx-driver && cd mongo-cxx-driver/build && git checkout releases/stable && cmake .. && make && make install && sudo cp -r install/* /usr/local
 - cd ~/build && git clone -b v1.x https://github.com/libuv/libuv && cd libuv && sh autogen.sh && ./configure && make && sudo make install
 - cd ~/build && wget https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.tar.gz && tar xzf yaml-cpp-0.6.2.tar.gz && cd yaml-cpp-yaml-cpp-0.6.2 && cmake . && make && sudo make install
 - cd $OLD_PWD
-
-# Workaround for https://svn.boost.org/trac/boost/ticket/7473
-before_script:
-- 'if [[ "$CXX" == "clang++" && "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget && sudo wget -O /usr/include/boost/config/stdlib/libstdcpp3.hpp https://raw.githubusercontent.com/boostorg/config/b36566fe04a89103b7ef5569c03e3a26eb77af36/include/boost/config/stdlib/libstdcpp3.hpp; fi'
 
 script: cd build && cmake .. && make && env CTEST_OUTPUT_ON_FAILURE=1 make test
