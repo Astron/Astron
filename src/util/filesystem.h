@@ -9,6 +9,7 @@
     // We use the ISO C++-conformant function _access in this case.
     #define access _access
 #else
+    #include <limits.h>
     #include <sys/types.h>
     #include <sys/stat.h>
     #include <unistd.h>
