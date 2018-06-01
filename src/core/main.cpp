@@ -11,6 +11,7 @@ using dclass::Class;
 #include <vector>  // std::vector
 #include <fstream> // std::ifstream
 #ifdef __linux__
+#include <signal.h>
 #include <pthread.h> // for setting thread-local storage size
 #endif
 #include "util/filesystem.h"
@@ -59,6 +60,9 @@ int main(int argc, char *argv[])
 
     if(pthread_setattr_default_np(&attr))
         return 1;
+
+    // We need to ignore SIGPIPE issues ourselves for Linux (libuv issue #1254)
+    signal(SIGPIPE, SIG_IGN);
 #endif
  
     int config_arg_index = -1;
