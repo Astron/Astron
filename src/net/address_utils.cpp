@@ -128,6 +128,15 @@ bool is_valid_address(const std::string &hostspec)
 
 std::vector<uvw::Addr> resolve_address(const std::string &hostspec, uint16_t port, const std::shared_ptr<uvw::Loop> &loop)
 {
+    #ifdef _WIN32
+        // Windows seems to consistently do the wrong thing here:
+        // For nodeAddrInfoSync requests, libuv always returns an ai_socktype of 0.
+        // Ergo, this hack is necessary for DNS resolutions on Windows.
+        const int socktype = 0;
+    #else
+        const int socktype = SOCK_STREAM;
+    #endif
+
     std::vector<uvw::Addr> ret;
 
     std::string host = hostspec;
@@ -145,13 +154,13 @@ std::vector<uvw::Addr> resolve_address(const std::string &hostspec, uint16_t por
         if (results.first) {
             addrinfo* addrinfo = results.second.get();
             while (addrinfo != nullptr) {
-                if (addrinfo->ai_family == AF_INET && addrinfo->ai_socktype == SOCK_STREAM) {
+                if (addrinfo->ai_family == AF_INET && addrinfo->ai_socktype == socktype) {
                     sockaddr_in* sockaddr = reinterpret_cast<sockaddr_in*>(addrinfo->ai_addr);
                     uvw::Addr addr = uvw::details::address<uvw::IPv4>(sockaddr);
                     addr.port = port;
                     ret.push_back(addr);
                 }
-                else if (addrinfo->ai_family == AF_INET6 && addrinfo->ai_socktype == SOCK_STREAM) {
+                else if (addrinfo->ai_family == AF_INET6 && addrinfo->ai_socktype == socktype) {
                     sockaddr_in6* sockaddr = reinterpret_cast<sockaddr_in6*>(addrinfo->ai_addr);
                     uvw::Addr addr = uvw::details::address<uvw::IPv6>(sockaddr);
                     addr.port = port;
