@@ -114,6 +114,14 @@ message("	${LIBUV_LIBRARY}\n")
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
+# For now, prometheus-cpp is a required dependency.
+# TODO: 
+# In the future, we will be creating mocks for its functionality in order to support builds without metrics.
+find_package(prometheus-cpp REQUIRED)
+include_directories(prometheus-cpp_INCLUDE_DIR)
+message(STATUS "Found the prometheus-cpp library:")
+message("   ${prometheus-cpp_LIBRARY}\n")
+
 set(USE_32BIT_DATAGRAMS OFF CACHE BOOL
 	"If on, datagrams and dclass fields will use 32-bit length tags instead of 16-bit.")
 if(USE_32BIT_DATAGRAMS)
@@ -451,7 +459,7 @@ endif()
 add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
-target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${EXTRA_LIBS})
+target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${prometheus-cpp_LIBRARY} ${EXTRA_LIBS})
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
