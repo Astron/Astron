@@ -59,6 +59,7 @@ class DistributedObject : public MDParticipantInterface
 
     void append_required_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);
     void append_other_data(DatagramPtr dg, bool client_only = false, bool also_owner = false);
+    size_t size() const;
 
     void send_interest_entry(channel_t location, uint32_t context);
     void send_location_entry(channel_t location);

@@ -17,6 +17,8 @@ static ReservedChannelConstraint control_not_reserved(control_channel);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
+    init_metrics();
+
     channel_t channel = control_channel.get_rval(m_roleconfig);
     if(channel != INVALID_CHANNEL) {
         subscribe_channel(channel);
@@ -27,6 +29,19 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
         m_log = std::unique_ptr<LogCategory>(new LogCategory("stateserver", name.str()));
         set_con_name(name.str());
     }
+}
+
+void StateServer::init_metrics()
+{
+    m_ss_objs_builder = &prometheus::BuildGauge()
+            .Name("ss_objects")
+            .Register(*g_registry);
+    m_ss_objs_gauge = &m_ss_objs_builder->Add({});
+    m_ss_obj_size_builder = &prometheus::BuildHistogram()
+            .Name("ss_object_size")
+            .Register(*g_registry);
+    m_ss_obj_size_hist = &m_ss_obj_size_builder->Add({},
+            prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
 }
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
@@ -50,7 +65,7 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
     }
 
     // Create the object
-    DistributedObject *obj;
+    DistributedObject *obj = nullptr;
     try {
         obj = new DistributedObject(this, do_id, parent_id, zone_id, dc_class, dgi, has_other);
     } catch(const DatagramIteratorEOF&) {
@@ -58,7 +73,13 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
                        << dc_class->get_name() << "(" << do_id << ")" << std::endl;
         return;
     }
+
     m_objs[do_id] = obj;
+    if(m_ss_objs_gauge)
+        m_ss_objs_gauge->Set(m_objs.size());
+
+    if(m_ss_obj_size_hist)
+        m_ss_obj_size_hist->Observe(obj->size());
 }
 
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)

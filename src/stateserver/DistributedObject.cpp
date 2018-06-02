@@ -127,7 +127,19 @@ void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool
     }
 }
 
+size_t DistributedObject::size() const
+{
+    size_t obj_size = 0;
+    for(const auto& KV : m_required_fields) {
+        obj_size += KV.second.size();
+    }
 
+    for(const auto& KV : m_ram_fields) {
+        obj_size += KV.second.size();
+    }
+
+    return obj_size;
+}
 
 void DistributedObject::send_interest_entry(channel_t location, uint32_t context)
 {
