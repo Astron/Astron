@@ -12,6 +12,7 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
     assert(std::this_thread::get_id() == g_main_thread_id);
 
     m_channel = m_client_agent->m_ct.alloc_channel();
+
     if(!m_channel) {
         m_log = m_client_agent->log();
         send_disconnect(CLIENT_DISCONNECT_GENERIC, "Client capacity reached");
@@ -30,6 +31,8 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
     set_con_name(name.str());
 
     m_timeout_generator_handle = g_loop->resource<uvw::AsyncHandle>();
+
+    m_client_agent->add_client(m_allocated_channel, this);
 
     subscribe_channel(m_channel);
     subscribe_channel(BCHAN_CLIENTS);
@@ -50,6 +53,8 @@ void Client::annihilate()
     if(is_terminated()) {
         return;
     }
+
+    m_client_agent->remove_client(m_allocated_channel);
 
     // Unsubscribe from all channels first so the DELETE messages aren't sent back to us.
     unsubscribe_all();
@@ -891,6 +896,7 @@ void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& time
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
+    m_start_time = g_loop->now();
     m_timeout = timeout;
     m_timeout->initialize(m_timeout_interval, bind(&InterestOperation::timeout, this));
     m_timeout->start();
@@ -900,6 +906,7 @@ void InterestOperation::timeout()
 {
     lock_guard<recursive_mutex> lock(m_client->m_client_lock);
     m_client->m_log->warning() << "Interest operation timed out; forcing.\n";
+    m_client->m_client_agent->report_interest_timeout();
     finish(true);
 }
 
@@ -940,6 +947,10 @@ void InterestOperation::finish(bool is_timeout)
         DatagramIterator dgi(it);
         dgi.seek_payload();
         m_client->handle_datagram(it, dgi);
+    }
+
+    if(m_start_time.count() > 0 && !is_timeout) {
+        m_client->m_client_agent->report_interest_time(g_loop->now() - m_start_time);
     }
 
     m_finished = true;

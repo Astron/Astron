@@ -55,6 +55,9 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     // ... then store a copy of the client config.
     m_clientconfig = clientagent_config.get_child_node(ca_client_config, roleconfig);
 
+    // Let's set up our metrics here.
+    init_metrics();
+
     // Calculate the DC hash
     const uint32_t config_hash = override_hash.get_rval(roleconfig);
     if(config_hash > 0x0) {
@@ -82,6 +85,23 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
     // Begin listening for new Clients
     m_net_acceptor->bind(bind_addr.get_rval(m_roleconfig), 7198);
     m_net_acceptor->start();
+}
+
+void ClientAgent::init_metrics()
+{
+    m_client_count_builder = &prometheus::BuildGauge()
+            .Name("ca_clients")
+            .Register(*g_registry);
+    m_client_count_gauge = &m_client_count_builder->Add({});
+    m_interest_time_builder = &prometheus::BuildHistogram()
+            .Name("ca_interest_time")
+            .Register(*g_registry);
+    m_interest_time_histogram = &m_interest_time_builder->Add({},
+            prometheus::Histogram::BucketBoundaries{0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000});;
+    m_interest_timeout_builder = &prometheus::BuildCounter()
+            .Name("ca_interest_timeouts")
+            .Register(*g_registry);
+    m_interest_timeout_ctr = &m_interest_timeout_builder->Add({});
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.

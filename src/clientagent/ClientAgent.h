@@ -1,7 +1,9 @@
 #pragma once
 #include "core/Role.h"
+#include "core/global.h"
 #include "Client.h"
 
+#include <unordered_map>
 #include <memory>
 
 extern RoleConfigGroup clientagent_config;
@@ -32,6 +34,8 @@ class ClientAgent final : public Role
   public:
     ClientAgent(RoleConfig rolconfig);
 
+    void init_metrics();
+
     // handle_tcp generates a new Client object from a raw tcp connection.
     void handle_tcp(const std::shared_ptr<uvw::TcpHandle> &socket,
                     const uvw::Addr &remote,
@@ -60,7 +64,36 @@ class ClientAgent final : public Role
         return m_log.get();
     }
 
-  private:
+    void add_client(channel_t channel, Client* client)
+    {
+        m_clients[channel] = client;
+        update_client_gauge();
+    }
+
+    void remove_client(channel_t channel)
+    {
+        m_clients.erase(channel);
+        update_client_gauge();
+    }
+
+    void update_client_gauge()
+    {
+        if(m_client_count_gauge)
+            m_client_count_gauge->Set(m_clients.size());
+    }
+
+    void report_interest_timeout()
+    {
+        if(m_interest_timeout_ctr)
+            m_interest_timeout_ctr->Increment();
+    }
+
+    void report_interest_time(uvw::TimerHandle::Time time)
+    {
+        if(m_interest_time_histogram)
+            m_interest_time_histogram->Observe(time.count());
+    }
+private:
     std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     std::string m_client_type;
     std::string m_server_version;
@@ -68,6 +101,14 @@ class ClientAgent final : public Role
     ConfigNode m_clientconfig;
     std::unique_ptr<LogCategory> m_log;
     uint32_t m_hash;
-
+    std::unordered_map<channel_t, Client*> m_clients;
     unsigned long m_interest_timeout;
+
+    // Our Prometheus metrics:
+    prometheus::Family<prometheus::Gauge>* m_client_count_builder = nullptr;
+    prometheus::Gauge* m_client_count_gauge = nullptr;
+    prometheus::Family<prometheus::Histogram>* m_interest_time_builder = nullptr;
+    prometheus::Histogram* m_interest_time_histogram = nullptr;
+    prometheus::Family<prometheus::Counter>* m_interest_timeout_builder = nullptr;
+    prometheus::Counter* m_interest_timeout_ctr = nullptr;
 };
