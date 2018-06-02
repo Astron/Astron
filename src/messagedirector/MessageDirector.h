@@ -26,6 +26,8 @@ class MessageDirector final : public ChannelMap
   public:
     ~MessageDirector();
 
+    // Initialize our Prometheus metrics here.
+    void init_metrics();
     // init_network causes the MessageDirector to start listening for
     //     messages if it hasn't already been initialized.
     void init_network();
@@ -75,6 +77,16 @@ class MessageDirector final : public ChannelMap
     std::condition_variable m_cv;
     std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
 
+    // Counters for Prometheus:
+    prometheus::Family<prometheus::Counter>* m_datagrams_processed_builder = nullptr;
+    prometheus::Counter* m_datagrams_processed_ctr = nullptr;
+    prometheus::Family<prometheus::Gauge>* m_network_participants_builder = nullptr;
+    prometheus::Gauge* m_network_participants_gauge = nullptr;
+    prometheus::Family<prometheus::Histogram>* m_datagram_size_builder = nullptr;
+    prometheus::Histogram* m_datagram_size_histogram = nullptr;
+    prometheus::Family<prometheus::Histogram>* m_datagram_recipient_builder = nullptr;
+    prometheus::Histogram* m_datagram_recipient_histogram = nullptr;
+
     void flush_queue();
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
     void process_terminates();
@@ -82,6 +94,12 @@ class MessageDirector final : public ChannelMap
     void shutdown_threading();
 
     LogCategory m_log;
+
+    inline void update_participant_gauge(std::unique_lock<std::mutex>& )
+    {
+        if(m_network_participants_gauge)
+            m_network_participants_gauge->Set(m_participants.size());
+    }
 
     friend class MDParticipantInterface;
     void add_participant(MDParticipantInterface* participant);

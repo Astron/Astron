@@ -26,7 +26,8 @@ MessageDirector MessageDirector::singleton;
 
 
 MessageDirector::MessageDirector() :  m_initialized(false), m_net_acceptor(nullptr), m_upstream(nullptr),
-    m_shutdown(false), m_main_is_routing(false), m_thread(nullptr), m_log("msgdir", "Message Director")
+    m_shutdown(false), m_main_is_routing(false), m_thread(nullptr),
+                                      m_log("msgdir", "Message Director")
 {
 }
 
@@ -38,6 +39,28 @@ MessageDirector::~MessageDirector()
     m_participants.clear();
 
     process_terminates();
+}
+
+void MessageDirector::init_metrics()
+{
+    m_datagrams_processed_builder = &prometheus::BuildCounter()
+                                         .Name("md_datagrams_processed")
+                                         .Register(*g_registry);
+    m_datagrams_processed_ctr = &m_datagrams_processed_builder->Add({});
+    m_network_participants_builder = &prometheus::BuildGauge()
+            .Name("md_network_participants")
+            .Register(*g_registry);
+    m_network_participants_gauge = &m_network_participants_builder->Add({});
+    m_datagram_size_builder = &prometheus::BuildHistogram()
+            .Name("md_datagram_by_size")
+            .Register(*g_registry);
+    m_datagram_size_histogram = &m_datagram_size_builder->Add({},
+            prometheus::Histogram::BucketBoundaries{1, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
+    m_datagram_recipient_builder = &prometheus::BuildHistogram()
+            .Name("md_datagram_by_recipients")
+            .Register(*g_registry);
+    m_datagram_recipient_histogram = &m_datagram_recipient_builder->Add({},
+                                                                        prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
 }
 
 void MessageDirector::init_network()
@@ -250,6 +273,15 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
         m_log.trace() << "...not routing upstream: There is none." << std::endl;
     }
 
+    if(m_datagram_size_histogram)
+        m_datagram_size_histogram->Observe(dg->size());
+
+    if(m_datagram_recipient_histogram)
+        m_datagram_recipient_histogram->Observe(receiving_participants.size());
+
+    if(m_datagrams_processed_ctr)
+        m_datagrams_processed_ctr->Increment();
+
     // N.B. Participants may reach end-of-life after receiving a datagram, or may
     // be terminated in another thread (for example if a network socket closes);
     // either way, process any received terminates after processing a datagram.
@@ -321,8 +353,9 @@ void MessageDirector::handle_error(const uvw::ErrorEvent& evt)
 
 void MessageDirector::add_participant(MDParticipantInterface* p)
 {
-    std::lock_guard<std::mutex> lock(m_participants_lock);
+    std::unique_lock<std::mutex> lock(m_participants_lock);
     m_participants.insert(p);
+    update_participant_gauge(lock);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
@@ -332,8 +365,9 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 
     // Stop tracking participant
     {
-        std::lock_guard<std::mutex> lock(m_participants_lock);
+        std::unique_lock<std::mutex> lock(m_participants_lock);
         m_participants.erase(p);
+        update_participant_gauge(lock);
     }
 
     // Send out any post-remove messages the participant may have added.

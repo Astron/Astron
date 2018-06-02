@@ -25,6 +25,10 @@ static ConfigVariable<vector<string> > dc_files("dc_files", vector<string>(), ge
 static ConfigVariable<string> eventlogger_addr("eventlogger", "", general_config);
 static ValidAddressConstraint valid_eventlogger_addr(eventlogger_addr);
 
+static ConfigGroup prometheus_config("prometheus", general_config);
+static ConfigVariable<string> prometheus_bind_addr("bind", "", prometheus_config);
+static ValidAddressConstraint valid_prometheus_bind_addr(prometheus_bind_addr);
+
 static ConfigList uberdogs_config("uberdogs");
 static ConfigVariable<doid_t> uberdog_id("id", INVALID_DO_ID, uberdogs_config);
 static ConfigVariable<string> uberdog_class("class", "", uberdogs_config);
@@ -209,9 +213,13 @@ int main(int argc, char *argv[])
     astron_handle_signals();
 
     try {
-        // Initialize configured MessageDirector
-        MessageDirector::singleton.init_network();
+        g_registry = std::make_shared<prometheus::Registry>();
+        g_exposer = std::make_unique<prometheus::Exposer>(prometheus_bind_addr.get_val());
+        g_exposer->RegisterCollectable(g_registry);
         g_eventsender.init(eventlogger_addr.get_val());
+        // Initialize configured MessageDirector
+        MessageDirector::singleton.init_metrics();
+        MessageDirector::singleton.init_network();
 
         // Load uberdog metadata from configuration
         ConfigNode udnodes = g_config->copy_node()["uberdogs"];

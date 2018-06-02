@@ -4,6 +4,8 @@
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
 #include "deps/uvw/uvw.hpp"
+#include <prometheus/exposer.h>
+#include <prometheus/registry.h>
 #include <unordered_map>
 #include <thread>
 #include <cassert>
@@ -26,3 +28,5 @@ extern EventSender g_eventsender;
 extern std::unordered_map<doid_t, Uberdog> g_uberdogs;
 extern std::thread::id g_main_thread_id;
 extern std::shared_ptr<uvw::Loop> g_loop;
+extern std::unique_ptr<prometheus::Exposer> g_exposer;
+extern std::shared_ptr<prometheus::Registry> g_registry;

@@ -10,3 +10,5 @@ EventSender g_eventsender;
 std::unordered_map<doid_t, Uberdog> g_uberdogs;
 std::thread::id g_main_thread_id;
 std::shared_ptr<uvw::Loop> g_loop;
+std::unique_ptr<prometheus::Exposer> g_exposer;
+std::shared_ptr<prometheus::Registry> g_registry {};
