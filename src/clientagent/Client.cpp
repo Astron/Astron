@@ -880,7 +880,8 @@ InterestOperation::InterestOperation(
     m_client_context(client_context),
     m_request_context(request_context),
     m_parent(parent), m_zones(zones),
-    m_timeout_interval(timeout)
+    m_timeout_interval(timeout),
+    m_start_time(g_loop->now())
 {
     m_callers.insert(m_callers.end(), caller);
     m_client->generate_timeout(bind(&InterestOperation::on_timeout_generate, this, 
@@ -896,7 +897,6 @@ void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& time
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
-    m_start_time = g_loop->now();
     m_timeout = timeout;
     m_timeout->initialize(m_timeout_interval, bind(&InterestOperation::timeout, this));
     m_timeout->start();
@@ -949,7 +949,7 @@ void InterestOperation::finish(bool is_timeout)
         m_client->handle_datagram(it, dgi);
     }
 
-    if(m_start_time.count() > 0 && !is_timeout) {
+    if(!is_timeout) {
         m_client->m_client_agent->report_interest_time(g_loop->now() - m_start_time);
     }
 

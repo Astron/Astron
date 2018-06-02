@@ -92,7 +92,7 @@ class InterestOperation
 
   private:
     bool m_finished = false;
-    uvw::TimerHandle::Time m_start_time {0};
+    uvw::TimerHandle::Time m_start_time;
 };
 
 class Client : public MDParticipantInterface

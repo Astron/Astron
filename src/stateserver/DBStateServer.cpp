@@ -29,6 +29,8 @@ static ReservedDoidConstraint max_not_reserved(range_max);
 DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
     m_db_channel(database_channel.get_rval(m_roleconfig)), m_next_context(0)
 {
+    init_metrics();
+
     ConfigNode ranges = dbss_config.get_child_node(ranges_config, roleconfig);
     for(const auto& it : ranges) {
         channel_t min = range_min.get_rval(it);
@@ -40,6 +42,15 @@ DBStateServer::DBStateServer(RoleConfig roleconfig) : StateServer(roleconfig),
     name << "DBSS(Database: " << m_db_channel << ")";
     m_log = std::unique_ptr<LogCategory>(new LogCategory("dbss", name.str()));
     set_con_name(name.str());
+}
+
+void DBStateServer::init_metrics()
+{
+        m_activate_time_builder = &prometheus::BuildHistogram()
+                .Name("dbss_activate_time")
+                .Register(*g_registry);
+         m_activate_time_hist = &m_activate_time_builder->Add({},
+                                                             prometheus::Histogram::BucketBoundaries{0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000});
 }
 
 void DBStateServer::handle_datagram(DatagramHandle, DatagramIterator &dgi)
@@ -588,6 +599,11 @@ bool DBStateServer::is_activated_object(doid_t do_id)
     return m_objs.find(do_id) != m_objs.end() || m_loading.find(do_id) != m_loading.end();
 }
 
+void DBStateServer::report_activate_time(uvw::TimerHandle::Time time)
+{
+    if(m_activate_time_hist)
+        m_activate_time_hist->Observe(time.count());
+}
 
 bool unpack_db_fields(DatagramIterator &dgi, const Class* dc_class,
                       UnorderedFieldValues &required, FieldValues &ram)

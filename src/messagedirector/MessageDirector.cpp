@@ -54,12 +54,12 @@ void MessageDirector::init_metrics()
     m_datagram_size_builder = &prometheus::BuildHistogram()
             .Name("md_datagram_by_size")
             .Register(*g_registry);
-    m_datagram_size_histogram = &m_datagram_size_builder->Add({},
+    m_datagram_size_hist = &m_datagram_size_builder->Add({},
             prometheus::Histogram::BucketBoundaries{1, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
     m_datagram_recipient_builder = &prometheus::BuildHistogram()
             .Name("md_datagram_by_recipients")
             .Register(*g_registry);
-    m_datagram_recipient_histogram = &m_datagram_recipient_builder->Add({},
+    m_datagram_recipient_hist = &m_datagram_recipient_builder->Add({},
                                                                         prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
 }
 
@@ -273,11 +273,11 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
         m_log.trace() << "...not routing upstream: There is none." << std::endl;
     }
 
-    if(m_datagram_size_histogram)
-        m_datagram_size_histogram->Observe(dg->size());
+    if(m_datagram_size_hist)
+        m_datagram_size_hist->Observe(dg->size());
 
-    if(m_datagram_recipient_histogram)
-        m_datagram_recipient_histogram->Observe(receiving_participants.size());
+    if(m_datagram_recipient_hist)
+        m_datagram_recipient_hist->Observe(receiving_participants.size());
 
     if(m_datagrams_processed_ctr)
         m_datagrams_processed_ctr->Increment();

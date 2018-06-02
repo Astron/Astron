@@ -90,8 +90,8 @@ class ClientAgent final : public Role
 
     void report_interest_time(uvw::TimerHandle::Time time)
     {
-        if(m_interest_time_histogram)
-            m_interest_time_histogram->Observe(time.count());
+        if(m_interest_time_hist)
+            m_interest_time_hist->Observe(time.count());
     }
 private:
     std::unique_ptr<NetworkAcceptor> m_net_acceptor;
@@ -108,7 +108,7 @@ private:
     prometheus::Family<prometheus::Gauge>* m_client_count_builder = nullptr;
     prometheus::Gauge* m_client_count_gauge = nullptr;
     prometheus::Family<prometheus::Histogram>* m_interest_time_builder = nullptr;
-    prometheus::Histogram* m_interest_time_histogram = nullptr;
+    prometheus::Histogram* m_interest_time_hist = nullptr;
     prometheus::Family<prometheus::Counter>* m_interest_timeout_builder = nullptr;
     prometheus::Counter* m_interest_timeout_ctr = nullptr;
 };

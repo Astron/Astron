@@ -32,8 +32,14 @@ class DBStateServer final : public StateServer
     // back to the caller. It stores the data used to correctly route the response while the
     // dbss is waiting on the db.
     std::unordered_map<uint32_t, DatagramPtr> m_context_datagrams;
-
     std::unordered_map<doid_t, std::unordered_set<uint32_t> > m_inactive_loads;
+
+    // Our SS Prometheus metrics:
+    prometheus::Family<prometheus::Histogram>* m_activate_time_builder = nullptr;
+    prometheus::Histogram* m_activate_time_hist = nullptr;
+
+    // Initialize our DBSS metrics here.
+    void init_metrics();
 
     // handle_activate accepts an activate message and spawns a LoadingObject to handle it.
     void handle_activate(DatagramIterator &dgi, bool has_other);
@@ -58,4 +64,6 @@ class DBStateServer final : public StateServer
     inline bool is_expected_context(uint32_t context);
     // is_activated_object returns true if the doid is an active or loading object.
     inline bool is_activated_object(doid_t);
+
+    void report_activate_time(uvw::TimerHandle::Time time);
 };

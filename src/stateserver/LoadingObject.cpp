@@ -13,7 +13,7 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
                              const std::unordered_set<uint32_t> &contexts) :
     m_dbss(stateserver), m_do_id(do_id), m_parent_id(parent_id), m_zone_id(zone_id),
     m_context(stateserver->m_next_context++), m_dclass(nullptr), m_valid_contexts(contexts),
-    m_is_loaded(false)
+    m_is_loaded(false), m_start_time(g_loop->now())
 {
     std::stringstream name;
     name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
@@ -113,6 +113,7 @@ void LoadingObject::forward_datagrams()
 
 void LoadingObject::finalize()
 {
+    m_dbss->report_activate_time(m_start_time - g_loop->now());
     m_dbss->discard_loader(m_do_id);
     forward_datagrams();
     terminate();

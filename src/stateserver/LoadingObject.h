@@ -34,6 +34,7 @@ class LoadingObject final : public MDParticipantInterface
     // Received datagrams while waiting for reply
     std::list<DatagramHandle> m_datagram_queue;
     bool m_is_loaded;
+    uvw::TimerHandle::Time m_start_time;
 
     // send_get_object makes the initial request to the database for the object data
     void inline send_get_object(doid_t do_id);

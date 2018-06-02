@@ -83,9 +83,9 @@ class MessageDirector final : public ChannelMap
     prometheus::Family<prometheus::Gauge>* m_network_participants_builder = nullptr;
     prometheus::Gauge* m_network_participants_gauge = nullptr;
     prometheus::Family<prometheus::Histogram>* m_datagram_size_builder = nullptr;
-    prometheus::Histogram* m_datagram_size_histogram = nullptr;
+    prometheus::Histogram* m_datagram_size_hist = nullptr;
     prometheus::Family<prometheus::Histogram>* m_datagram_recipient_builder = nullptr;
-    prometheus::Histogram* m_datagram_recipient_histogram = nullptr;
+    prometheus::Histogram* m_datagram_recipient_hist = nullptr;
 
     void flush_queue();
     void process_datagram(MDParticipantInterface *p, DatagramHandle dg);
