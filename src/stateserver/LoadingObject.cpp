@@ -113,7 +113,7 @@ void LoadingObject::forward_datagrams()
 
 void LoadingObject::finalize()
 {
-    m_dbss->report_activate_time(m_start_time - g_loop->now());
+    m_dbss->report_activate_time(g_loop->now() - m_start_time);
     m_dbss->discard_loader(m_do_id);
     forward_datagrams();
     terminate();
