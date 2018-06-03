@@ -77,7 +77,7 @@ void DatabaseServer::init_metrics()
 
     for (const auto &op_type : operation_types)
     {
-        m_ops_completed[op_type.first] = &m_ops_completed_builder->Add({{"op_type", op_type.second});
+        m_ops_completed[op_type.first] = &m_ops_completed_builder->Add({{"op_type", op_type.second}});
 	m_ops_failed[op_type.first] = &m_ops_failed_builder->Add({{"op_type", op_type.second}});
 	m_completion_time[op_type.first] = &m_completion_time_builder->Add(
 	                 {{"op_type", op_type.second}},
