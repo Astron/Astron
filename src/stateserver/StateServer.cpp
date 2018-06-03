@@ -36,12 +36,9 @@ void StateServer::init_metrics()
     m_ss_objs_builder = &prometheus::BuildGauge()
             .Name("ss_objects")
             .Register(*g_registry);
-    m_ss_objs_gauge = &m_ss_objs_builder->Add({});
     m_ss_obj_size_builder = &prometheus::BuildHistogram()
             .Name("ss_object_size")
             .Register(*g_registry);
-    m_ss_obj_size_hist = &m_ss_obj_size_builder->Add({},
-            prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
 }
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
@@ -75,11 +72,38 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
     }
 
     m_objs[do_id] = obj;
-    if(m_ss_objs_gauge)
-        m_ss_objs_gauge->Set(m_objs.size());
 
-    if(m_ss_obj_size_hist)
-        m_ss_obj_size_hist->Observe(obj->size());
+    prometheus::Gauge* gauge = nullptr;
+    prometheus::Histogram* hist = nullptr;
+
+    auto gauge_iter = m_ss_objs_gauges.find(dc_id);
+    if (gauge_iter != m_ss_objs_gauges.end()) {
+        gauge = gauge_iter->second;
+    }
+    else {
+        gauge = &m_ss_objs_builder->Add( {{"dclass", dc_class->get_name()}});
+        m_ss_objs_gauges[dc_id] = gauge;
+
+	if (gauge) {
+	    gauge->Set(0);
+	}
+    }
+    auto hist_iter = m_ss_obj_size_hist.find(dc_id);
+    if (hist_iter != m_ss_obj_size_hist.end())
+    {
+        hist = hist_iter->second;
+    }
+    else {
+        hist = &m_ss_obj_size_builder->Add({{"dclass", dc_class->get_name()}},
+            prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
+	m_ss_obj_size_hist[dc_id] = hist;
+    }
+
+    if(gauge)
+        gauge->Increment();
+
+    if(hist)
+        hist->Observe(obj->size());
 }
 
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)

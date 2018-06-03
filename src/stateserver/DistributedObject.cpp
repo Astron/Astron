@@ -328,6 +328,11 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
 
     delete_children(sender);
 
+    // Decrement the gauge containing the count of existing objects of this dclass, if it exists.
+    auto gauge = m_stateserver->m_ss_objs_gauges[m_dclass->get_id()];
+    if (gauge)
+        gauge->Decrement();
+
     m_stateserver->m_objs.erase(m_do_id);
     m_log->debug() << "Deleted.\n";
 
