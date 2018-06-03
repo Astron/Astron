@@ -2,6 +2,7 @@
 #include <set>
 #include <map>
 
+#include "core/global.h"
 #include "core/types.h"
 #include "core/objtypes.h"
 #include "util/DatagramIterator.h"
@@ -26,7 +27,7 @@ class DBObjectSnapshot
 class DBOperation
 {
   public:
-    DBOperation(DatabaseServer *db) : m_dbserver(db) { }
+    DBOperation(DatabaseServer *db) : m_dbserver(db), m_start_time(g_loop->now()) { }
     virtual ~DBOperation() { }
     virtual bool initialize(channel_t sender, uint16_t msg_type, DatagramIterator &dgi) = 0;
 
@@ -102,6 +103,12 @@ class DBOperation
     const FieldValues& criteria_fields() const
     {
         return m_criteria_fields;
+    }
+
+    // start_time returns the timestamp this database operation was started at.
+    uvw::TimerHandle::Time start_time() const
+    {
+        return m_start_time;
     }
 
     // === CONVENIENCE FUNCTIONS ===
@@ -197,6 +204,9 @@ class DBOperation
     FieldValues m_set_fields;
     // The fields that must be equal (or absent) for the change to complete atomically.
     FieldValues m_criteria_fields;
+
+    // The time this operation was started (i.e., submitted to the backend)
+    uvw::TimerHandle::Time m_start_time;
 
     void cleanup();
     bool verify_fields(const dclass::Class *dclass, const FieldSet& fields);

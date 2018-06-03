@@ -227,6 +227,13 @@ bool DBOperationCreate::initialize(channel_t sender, uint16_t, DatagramIterator 
 
 void DBOperationCreate::on_complete(doid_t doid)
 {
+
+    // If an object was created, report a successful operation.
+    if (doid != INVALID_DO_ID)
+    {
+        m_dbserver->report_success(this);
+    }
+
     DatagramPtr resp = Datagram::create();
     resp->add_server_header(m_sender, m_dbserver->m_control_channel,
                             DBSERVER_CREATE_OBJECT_RESP);
@@ -239,6 +246,8 @@ void DBOperationCreate::on_complete(doid_t doid)
 
 void DBOperationCreate::on_failure()
 {
+    m_dbserver->report_failure(this);
+
     // We just send back an invalid response...
     on_complete(INVALID_DO_ID);
 }
@@ -255,11 +264,15 @@ bool DBOperationDelete::initialize(channel_t sender, uint16_t, DatagramIterator 
 
 void DBOperationDelete::on_failure()
 {
+    m_dbserver->report_failure(this);
+
     cleanup();
 }
 
 void DBOperationDelete::on_complete()
 {
+    m_dbserver->report_success(this);
+
     // Broadcast update to object's channel
     if(m_dbserver->m_broadcast) {
         DatagramPtr update = Datagram::create();
@@ -352,6 +365,8 @@ bool DBOperationGet::is_independent_of(const DBOperation *other) const
 
 void DBOperationGet::on_failure()
 {
+    m_dbserver->report_failure(this);
+
     DatagramPtr resp = Datagram::create();
     resp->add_server_header(m_sender, m_dbserver->m_control_channel,
                             m_resp_msgtype);
@@ -408,6 +423,9 @@ void DBOperationGet::on_complete(DBObjectSnapshot *snapshot)
             return;
         }
     }
+
+    // This makes sense, report a successful operation!
+    m_dbserver->report_success(this);
 
     // WHAT we send depends on our m_resp_msgtype, so:
     if(m_resp_msgtype == DBSERVER_OBJECT_GET_FIELD_RESP) {
@@ -528,6 +546,8 @@ bool DBOperationSet::is_independent_of(const DBOperation *other) const
 
 void DBOperationSet::on_complete()
 {
+    m_dbserver->report_success(this);
+
     // Broadcast update to object's channel
     if(m_dbserver->m_broadcast) {
         announce_fields(m_set_fields);
@@ -538,6 +558,8 @@ void DBOperationSet::on_complete()
 
 void DBOperationSet::on_failure()
 {
+    m_dbserver->report_failure(this);
+
     cleanup();
 }
 
@@ -641,6 +663,8 @@ bool DBOperationUpdate::is_independent_of(const DBOperation *other) const
 
 void DBOperationUpdate::on_complete()
 {
+    m_dbserver->report_success(this);
+
     // Broadcast update to object's channel
     if(m_dbserver->m_broadcast) {
         announce_fields(m_set_fields);
@@ -659,6 +683,8 @@ void DBOperationUpdate::on_complete()
 
 void DBOperationUpdate::on_failure()
 {
+    m_dbserver->report_failure(this);
+
     DatagramPtr resp = Datagram::create();
     resp->add_server_header(m_sender, m_dbserver->m_control_channel,
                             m_resp_msgtype);
