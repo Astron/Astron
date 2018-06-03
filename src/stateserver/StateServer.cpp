@@ -39,6 +39,19 @@ void StateServer::init_metrics()
     m_ss_obj_size_builder = &prometheus::BuildHistogram()
             .Name("ss_object_size")
             .Register(*g_registry);
+
+
+    // Register gauges and histograms for each class in our dc file.
+    for (unsigned int i = 0; i < g_dcf->get_num_classes(); i++) {
+        auto dc_class = g_dcf->get_class(i);
+	auto dc_id = dc_class->get_id();
+	auto dc_name = dc_class->get_name();
+
+	m_ss_objs_gauges[dc_id] = &m_ss_objs_builder->Add({{"dclass", dc_name}});
+
+	m_ss_obj_size_hist[dc_id] = &m_ss_obj_size_builder->Add({{"dclass", dc_name}},
+	        prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
+    }
 }
 
 void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
@@ -73,35 +86,12 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
 
     m_objs[do_id] = obj;
 
-    prometheus::Gauge* gauge = nullptr;
-    prometheus::Histogram* hist = nullptr;
-
-    auto gauge_iter = m_ss_objs_gauges.find(dc_id);
-    if (gauge_iter != m_ss_objs_gauges.end()) {
-        gauge = gauge_iter->second;
-    }
-    else {
-        gauge = &m_ss_objs_builder->Add( {{"dclass", dc_class->get_name()}});
-        m_ss_objs_gauges[dc_id] = gauge;
-
-	if (gauge) {
-	    gauge->Set(0);
-	}
-    }
-    auto hist_iter = m_ss_obj_size_hist.find(dc_id);
-    if (hist_iter != m_ss_obj_size_hist.end())
-    {
-        hist = hist_iter->second;
-    }
-    else {
-        hist = &m_ss_obj_size_builder->Add({{"dclass", dc_class->get_name()}},
-            prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
-	m_ss_obj_size_hist[dc_id] = hist;
-    }
+    // Log statistics about the new object to Prometheus.
+    auto gauge = m_ss_objs_gauges[dc_id];
+    auto hist = m_ss_obj_size_hist[dc_id];
 
     if(gauge)
         gauge->Increment();
-
     if(hist)
         hist->Observe(obj->size());
 }
