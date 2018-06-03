@@ -118,7 +118,7 @@ include_directories(${Boost_INCLUDE_DIR})
 # TODO: 
 # In the future, we will be creating mocks for its functionality in order to support builds without metrics.
 find_package(prometheus-cpp REQUIRED)
-include_directories(prometheus-cpp_INCLUDE_DIR)
+include_directories(${prometheus-cpp_INCLUDE_DIR})
 message(STATUS "Found the prometheus-cpp library:")
 message("   ${prometheus-cpp_LIBRARY}\n")
 
