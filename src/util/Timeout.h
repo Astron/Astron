@@ -47,6 +47,7 @@ class Timeout : public std::enable_shared_from_this<Timeout>
 
     std::atomic<bool> m_callback_disabled;
 
+    void setup();
     void destroy_timer();
     void timer_callback();
 };
