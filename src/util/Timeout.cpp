@@ -31,12 +31,13 @@ void Timeout::setup()
     m_timer = m_loop->resource<uvw::TimerHandle>();
     m_cancel_handle = m_loop->resource<uvw::AsyncHandle>();
 
-    m_timer->on<uvw::TimerEvent>([self = weak_from_this()](const uvw::TimerEvent&, uvw::TimerHandle&) {
+    std::weak_ptr<Timeout> lambda_handle = std::weak_ptr<Timeout>(shared_from_this());
+    m_timer->on<uvw::TimerEvent>([self = lambda_handle](const uvw::TimerEvent&, uvw::TimerHandle&) {
         if(auto timer = self.lock())
             timer->timer_callback();
     });
 
-    m_cancel_handle->on<uvw::AsyncEvent>([self = weak_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
+    m_cancel_handle->on<uvw::AsyncEvent>([self = lambda_handle](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
         if(auto timer = self.lock())
             timer->cancel();
     });
