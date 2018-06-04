@@ -30,24 +30,32 @@ void Timeout::setup()
 
     m_timer = m_loop->resource<uvw::TimerHandle>();
     m_cancel_handle = m_loop->resource<uvw::AsyncHandle>();
-
-    std::weak_ptr<Timeout> lambda_handle = std::weak_ptr<Timeout>(shared_from_this());
-    m_timer->on<uvw::TimerEvent>([self = lambda_handle](const uvw::TimerEvent&, uvw::TimerHandle&) {
-        if(auto timer = self.lock())
-            timer->timer_callback();
+    
+    m_timer->on<uvw::TimerEvent>([self = this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+        self->timer_callback();
     });
 
-    m_cancel_handle->on<uvw::AsyncEvent>([self = lambda_handle](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
-        if(auto timer = self.lock())
-            timer->cancel();
+    m_cancel_handle->on<uvw::AsyncEvent>([self = this](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
+        self->cancel();
     });
 }
 
 void Timeout::destroy_timer()
 {
     m_callback = nullptr;
-    m_cancel_handle = nullptr;
-    m_timer = nullptr;
+
+    if(m_cancel_handle) {
+        m_cancel_handle->close();
+        m_cancel_handle = nullptr;
+    }
+
+    if(m_timer) {
+        m_timer->stop();
+        m_timer->close();
+        m_timer = nullptr;
+    }
+
+    delete this;
 }
 
 void Timeout::timer_callback()
@@ -85,7 +93,6 @@ bool Timeout::cancel()
     }
 
     if(m_timer != nullptr) {
-        m_timer->stop();
         destroy_timer();
     }
 

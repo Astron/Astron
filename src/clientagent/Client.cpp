@@ -119,7 +119,7 @@ void Client::generate_timeouts()
         while(!m_pending_timeouts.empty()) {
             TimeoutSetCallback timeout_set_callback = m_pending_timeouts.front();
             m_pending_timeouts.pop();
-            std::shared_ptr<Timeout> timeout = std::make_shared<Timeout>();
+            Timeout* timeout = new Timeout();
             timeout_set_callback(timeout);
         }
     }
@@ -887,7 +887,7 @@ InterestOperation::~InterestOperation()
     assert(m_finished);
 }
 
-void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& timeout)
+void InterestOperation::on_timeout_generate(Timeout* timeout)
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
@@ -905,9 +905,15 @@ void InterestOperation::timeout()
 
 void InterestOperation::finish(bool is_timeout)
 {
-    if(!is_timeout && m_timeout && !m_timeout->cancel()) {
-        // The timeout is already running; let it clean up instead.
-        return;
+    if(!is_timeout && m_timeout != nullptr) {
+        if(!m_timeout->cancel()) {
+            // The timeout is already running; let it clean up instead.
+            return;
+        }
+
+        // We've already invoked cancel on the m_timeout object:
+        // It's gonna get around to deleting itself as soon as the async operation runs, so it's not safe to hold onto its pointer.
+        m_timeout = nullptr;
     }
 
     // Send objects in the initial snapshot

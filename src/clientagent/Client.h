@@ -69,7 +69,7 @@ class InterestOperation
     std::unordered_set<channel_t> m_callers;
 
     unsigned long m_timeout_interval;
-    std::shared_ptr<Timeout> m_timeout;
+    Timeout* m_timeout = nullptr;
 
     bool m_has_total = false;
     doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
@@ -87,7 +87,7 @@ class InterestOperation
     void queue_expected(DatagramHandle dg);
     void queue_datagram(DatagramHandle dg);
     void finish(bool is_timeout = false);
-    void on_timeout_generate(const std::shared_ptr<Timeout>& timeout);
+    void on_timeout_generate(Timeout* timeout);
     void timeout();
 
   private:

@@ -16,7 +16,7 @@
 
 typedef std::function<void()> TimeoutCallback;
 
-class Timeout : public std::enable_shared_from_this<Timeout>
+class Timeout
 {
   public:
     Timeout(unsigned long ms, std::function<void()> f);
@@ -52,5 +52,5 @@ class Timeout : public std::enable_shared_from_this<Timeout>
     void timer_callback();
 };
 
-typedef std::function<void(const std::shared_ptr<Timeout>&)> TimeoutSetCallback;
+typedef std::function<void(Timeout*)> TimeoutSetCallback;
 
