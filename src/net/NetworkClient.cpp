@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include "core/global.h"
 #include "config/ConfigVariable.h"
+#include <signal.h>
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
                                                         m_async_timer(), m_send_queue(),
@@ -23,16 +24,25 @@ NetworkClient::~NetworkClient()
     }
 }
 
-void NetworkClient::shutdown(std::unique_lock<std::mutex> &)
+void NetworkClient::shutdown(std::unique_lock<std::mutex> &lock)
 {
-    if(m_shutdown_handle != nullptr) {
-        m_shutdown_handle->send();
+    if(m_socket == nullptr || m_async_timer == nullptr) {
+        return;
     }
+
+    auto socket = m_socket;
+    auto async_timer = m_async_timer;
+
+    lock.unlock();
+    EventQueue::singleton.enqueue_task([=]() {
+        socket->close();
+        async_timer->stop();
+        async_timer->close();
+    });
+    lock.lock();
 
     m_socket = nullptr;
     m_async_timer = nullptr;
-    m_flush_handle = nullptr;
-    m_shutdown_handle = nullptr;
     m_haproxy_handler = nullptr;
 }
 
@@ -60,8 +70,6 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
     m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
     m_async_timer = g_loop->resource<uvw::TimerHandle>();
-    m_flush_handle = g_loop->resource<uvw::AsyncHandle>();
-    m_shutdown_handle = g_loop->resource<uvw::AsyncHandle>();
 
     m_remote = remote;
     m_local = local;
@@ -110,7 +118,11 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     // Poke the main thread to flush its buffer (it's fine if this is called
     // twice, it checks if it's already sending)
     if(g_main_thread_id != std::this_thread::get_id()) {
-        m_flush_handle->send();
+        lock.unlock();
+        EventQueue::singleton.enqueue_task([self = shared_from_this()] () {
+            std::unique_lock<std::mutex> lock(self->m_mutex);
+            self->flush_send_queue(lock);
+        });
     } else {
         flush_send_queue(lock);
     }
@@ -229,24 +241,6 @@ void NetworkClient::start_receive()
         self->send_expired();
     });
 
-    m_flush_handle->on<uvw::AsyncEvent>([self = shared_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
-        std::unique_lock<std::mutex> lock(self->m_mutex);
-        self->flush_send_queue(lock);
-    });
-
-    auto socket = m_socket;
-    auto async_timer = m_async_timer;
-    auto flush_handle = m_flush_handle;
-    auto shutdown_handle = m_shutdown_handle;
-    m_shutdown_handle->once<uvw::AsyncEvent>(
-            [socket, async_timer, flush_handle, shutdown_handle](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
-        socket->close();
-        async_timer->stop();
-        async_timer->close();
-        flush_handle->close();
-        shutdown_handle->close();
-    });
-
     m_socket->read();
 }
 
@@ -267,7 +261,11 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock
         // Let flush_send_queue execute first:
         // The send_finished callback is responsible for closing the socket at the end of the flush.
         if(g_main_thread_id != std::this_thread::get_id()) {
-            m_flush_handle->send();
+            lock.unlock();
+            EventQueue::singleton.enqueue_task([self = shared_from_this()] () {
+                std::unique_lock<std::mutex> lock(self->m_mutex);
+                self->flush_send_queue(lock);
+            });
         } else {
             flush_send_queue(lock);
         }

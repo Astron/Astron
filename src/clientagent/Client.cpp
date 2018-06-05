@@ -29,8 +29,6 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
 
     set_con_name(name.str());
 
-    m_timeout_generator_handle = g_loop->resource<uvw::AsyncHandle>();
-
     subscribe_channel(m_channel);
     subscribe_channel(BCHAN_CLIENTS);
 }
@@ -95,11 +93,12 @@ void Client::generate_timeout(TimeoutSetCallback timeout_set_callback)
     }
 
     if(std::this_thread::get_id() != g_main_thread_id) {
-        m_timeout_generator_handle->send();
-        return;
+        EventQueue::singleton.enqueue_task([self = this]() {
+            self->generate_timeouts();
+        });
+    } else {
+        generate_timeouts();
     }
-
-    generate_timeouts();
 }
 
 void Client::generate_timeouts()

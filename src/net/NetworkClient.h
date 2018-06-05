@@ -4,6 +4,7 @@
 #include <mutex>
 #include "deps/uvw/uvw.hpp"
 #include "util/Datagram.h"
+#include "util/EventQueue.h"
 #include "HAProxyHandler.h"
 
 // NOTES:
@@ -136,8 +137,6 @@ private:
     NetworkHandler *m_handler;
     std::shared_ptr<uvw::TcpHandle> m_socket;
     std::shared_ptr<uvw::TimerHandle> m_async_timer;
-    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
-    std::shared_ptr<uvw::AsyncHandle> m_shutdown_handle;
     std::unique_ptr<HAProxyHandler> m_haproxy_handler;
     uvw::Addr m_remote;
     uvw::Addr m_local;

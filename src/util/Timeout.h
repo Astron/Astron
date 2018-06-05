@@ -3,6 +3,7 @@
 #include <atomic>
 #include <memory>
 #include "deps/uvw/uvw.hpp"
+#include "util/EventQueue.h"
 
 // This class abstracts the uvw::TimerHandle timer in order to provide a generic
 // facility for timeouts. Once constructed, this class will wait a certain
@@ -41,7 +42,6 @@ class Timeout
   private:
     std::shared_ptr<uvw::Loop> m_loop;
     std::shared_ptr<uvw::TimerHandle> m_timer;
-    std::shared_ptr<uvw::AsyncHandle> m_cancel_handle;
     TimeoutCallback m_callback;
     unsigned long m_timeout_interval;
 

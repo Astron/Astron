@@ -143,7 +143,6 @@ class Client : public MDParticipantInterface
     // new LogCategory, incase we did not receive one from the Client Agent
     std::unique_ptr<LogCategory> m_log_owner;
 
-    std::shared_ptr<uvw::AsyncHandle> m_timeout_generator_handle;
     std::mutex m_timeout_mutex;
     std::queue<TimeoutSetCallback> m_pending_timeouts;
 
