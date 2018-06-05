@@ -380,8 +380,8 @@ set(UTIL_FILES
 	src/util/password_prompt.h
 	src/util/Timeout.cpp
 	src/util/Timeout.h
-    src/util/EventQueue.cpp
-    src/util/EventQueue.h
+	src/util/EventQueue.cpp
+	src/util/EventQueue.h
 )
 
 set(NET_FILES

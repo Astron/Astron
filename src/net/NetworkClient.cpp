@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include "core/global.h"
 #include "config/ConfigVariable.h"
-#include <signal.h>
 
 NetworkClient::NetworkClient(NetworkHandler *handler) : m_handler(handler), m_socket(nullptr),
                                                         m_async_timer(), m_send_queue(),
