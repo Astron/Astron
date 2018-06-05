@@ -14,6 +14,10 @@
 //
 // NOTE: The thread that calls the function is undefined. Ensure that your
 // callback is thread-safe.
+// NOTE 2: The Timeout deletes itself under 2 different conditions:
+// a) The timeout has been reached
+// b) cancel() has been invoked on the Timeout object.
+// In both cases, make SURE that your reference to the Timeout object is set to nullptr and that no further invocations occur.
 
 typedef std::function<void()> TimeoutCallback;
 

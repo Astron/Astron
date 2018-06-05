@@ -76,6 +76,9 @@ class AstronClient : public Client, public NetworkHandler
     void heartbeat_timeout()
     {
         lock_guard<recursive_mutex> lock(m_client_lock);
+        // The heartbeat timer has already deleted itself at this point
+        // Holding on to it means receive_disconnect will try to invoke cancel() on it, and we can't have that.
+        m_heartbeat_timer = nullptr;
         send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
                         "Server timed out while waiting for heartbeat.");
     }
