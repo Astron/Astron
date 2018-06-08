@@ -474,7 +474,9 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             break; // Not my AI!
         }
         annihilate(sender);
-
+        // The object is not deleted until after handle_datagram returns, so
+        // the object is still valid at this point`
+        report_delete_operation();
         break;
     }
     case STATESERVER_OBJECT_DELETE_RAM: {
@@ -484,7 +486,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 
         // Delete object
         annihilate(sender);
-
+        report_delete_operation();
         break;
     }
     case STATESERVER_OBJECT_DELETE_CHILDREN: {
@@ -494,6 +496,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         } else if(r_do_id == m_parent_id) {
             annihilate(sender, false);
         }
+        report_delete_operation();
         break;
     }
     case STATESERVER_OBJECT_SET_FIELD: {
@@ -501,7 +504,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             break;    // Not meant for me!
         }
         handle_one_update(dgi, sender);
-
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_SET_FIELDS: {
@@ -514,6 +517,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                 break;
             }
         }
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_CHANGING_AI: {
@@ -529,14 +533,14 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             break;
         }
         handle_ai_change(new_channel, sender, false);
-
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_SET_AI: {
         channel_t new_channel = dgi.read_channel();
         m_log->trace() << "Updating AI to " << new_channel << ".\n";
         handle_ai_change(new_channel, sender, true);
-
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_AI: {
@@ -546,7 +550,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         dg->add_doid(m_do_id);
         dg->add_channel(m_ai_channel);
         route_datagram(dg);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_AI_RESP: {
@@ -564,7 +568,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             break;
         }
         handle_ai_change(new_ai, sender, false);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_CHANGING_LOCATION: {
@@ -602,7 +606,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             m_log->warning() << "Received changing location from " << child_id
                              << " for " << r_do_id << ", but my id is " << m_do_id << ".\n";
         }
-
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_LOCATION_ACK: {
@@ -627,7 +631,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                        << ", Zone: " << new_zone << ".\n";
 
         handle_location_change(new_parent, new_zone, sender);
-
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_LOCATION: {
@@ -638,7 +642,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         dg->add_doid(m_do_id);
         dg->add_location(m_parent_id, m_zone_id);
         route_datagram(dg);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_LOCATION_RESP: {
@@ -663,6 +667,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         if(r_parent == m_do_id) {
             m_zone_objects[r_zone].insert(doid);
         }
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_ALL: {
@@ -675,7 +680,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         append_required_data(dg);
         append_other_data(dg);
         route_datagram(dg);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_FIELD: {
@@ -695,7 +700,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             dg->add_data(raw_field);
         }
         route_datagram(dg);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_FIELDS: {
@@ -744,7 +749,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             dg->add_data(raw_fields);
         }
         route_datagram(dg);
-
+      report_query_operation();
         break;
     }
     case STATESERVER_OBJECT_SET_OWNER: {
@@ -772,6 +777,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         }
 
         m_log->trace() << "... updated owner.\n";
+      report_change_operation();
         break;
     }
     case STATESERVER_OBJECT_GET_ZONE_OBJECTS:
@@ -839,7 +845,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
                 route_datagram(child_dg);
             }
         }
-
+      report_query_operation();
         break;
     }
 
@@ -870,6 +876,7 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         }
 
         route_datagram(dg);
+      report_query_operation();
         break;
     }
     default:
@@ -879,4 +886,22 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
             m_log->trace() << "Ignoring stateserver message of type " << msgtype << ".\n";
         }
     }
+}
+
+void DistributedObject::report_delete_operation() {
+    auto deletion_cnt = m_stateserver->m_ss_obj_deletion_cnt;
+    if (deletion_cnt)
+        deletion_cnt->Increment();
+}
+
+void DistributedObject::report_change_operation() {
+    auto change_cnt = m_stateserver->m_ss_obj_change_cnt;
+    if (change_cnt)
+        change_cnt->Increment();
+}
+
+void DistributedObject::report_query_operation() {
+    auto query_cnt = m_stateserver->m_ss_obj_query_cnt;
+    if (query_cnt)
+        query_cnt->Increment();
 }

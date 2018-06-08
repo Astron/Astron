@@ -39,6 +39,22 @@ void StateServer::init_metrics()
     m_ss_obj_size_builder = &prometheus::BuildHistogram()
             .Name("ss_object_size")
             .Register(*g_registry);
+    m_ss_obj_creation_builder = &prometheus::BuildCounter()
+            .Name("ss_creation_ctr")
+            .Register(*g_registry);
+    m_ss_obj_creation_ctr = &m_ss_obj_creation_builder->Add({});
+    m_ss_obj_deletion_builder = &prometheus::BuildCounter()
+            .Name("ss_deletion_ctr")
+            .Register(*g_registry);
+    m_ss_obj_deletion_cnt = &m_ss_obj_deletion_builder->Add({});
+    m_ss_obj_query_builder = &prometheus::BuildCounter()
+            .Name("ss_query_ctr")
+            .Register(*g_registry);
+    m_ss_obj_query_cnt = &m_ss_obj_query_builder->Add({});
+    m_ss_obj_change_builder = &prometheus::BuildCounter()
+            .Name("ss_change_ctr")
+            .Register(*g_registry);
+    m_ss_obj_change_cnt = &m_ss_obj_change_builder->Add({});
 
 
     // Register gauges and histograms for each class in our dc file.
@@ -94,6 +110,8 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
         gauge->Increment();
     if(hist)
         hist->Observe(obj->size());
+    if (m_ss_obj_creation_ctr)
+        m_ss_obj_creation_ctr->Increment();
 }
 
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)

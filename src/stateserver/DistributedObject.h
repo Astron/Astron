@@ -78,4 +78,8 @@ class DistributedObject : public MDParticipantInterface
     bool handle_one_update(DatagramIterator &dgi, channel_t sender);
     bool handle_one_get(DatagramPtr out, uint16_t field_id,
                         bool succeed_if_unset = false, bool is_subfield = false);
+
+    inline void report_delete_operation();
+    inline void report_change_operation();
+    inline void report_query_operation();
 };
