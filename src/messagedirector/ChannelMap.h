@@ -57,7 +57,10 @@ class ChannelMap
     void unsubscribe_all(ChannelSubscriber *p);
 
     // remove_subscriber removes the given subscriber from the multi-map for a given channel.
-    void remove_subscriber(ChannelSubscriber *p, channel_t c);
+    // Returns true only if:
+    // a) There are subscribers for the given channel and
+    // b) The provided subscriber was the last one for the channel, and was removed successfully.
+    bool remove_subscriber(ChannelSubscriber *p, channel_t c);
 
     // is_subscribed tests if a given object has a subscription on a channel.
     bool is_subscribed(ChannelSubscriber *p, channel_t c);

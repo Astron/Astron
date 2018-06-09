@@ -12,8 +12,8 @@
 //
 // You must start the timeout with start().
 //
-// NOTE: The thread that calls the function is undefined. Ensure that your
-// callback is thread-safe.
+// NOTE: The thread that calls the function is the main thread.
+// Make sure that your callback doesn't have unintended consequences on performance.
 // NOTE 2: The Timeout deletes itself under 2 different conditions:
 // a) The timeout has been reached
 // b) cancel() has been invoked on the Timeout object.

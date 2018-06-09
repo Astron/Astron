@@ -41,11 +41,11 @@ void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
     m_channel_subscriptions.insert(std::make_pair(c, p));
 }
 
-void ChannelMap::remove_subscriber(ChannelSubscriber *p, channel_t c)
+bool ChannelMap::remove_subscriber(ChannelSubscriber *p, channel_t c)
 {
     auto sub_cnt = m_channel_subscriptions.count(c);
     if(sub_cnt == 0) {
-        return;
+        return false;
     }
 
     auto subs = m_channel_subscriptions.equal_range(c);
@@ -58,9 +58,7 @@ void ChannelMap::remove_subscriber(ChannelSubscriber *p, channel_t c)
         }
     }
 
-    if(sub_cnt == 0) {
-        on_remove_channel(c);
-    }
+    return (sub_cnt == 0);
 }
 
 void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
@@ -72,7 +70,10 @@ void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
     }
 
     p->channels().erase(c);
-    remove_subscriber(p, c);
+
+    if(remove_subscriber(p, c)) {
+        on_remove_channel(c);
+    }
 }
 
 void ChannelMap::subscribe_range(ChannelSubscriber *p, channel_t lo, channel_t hi)
