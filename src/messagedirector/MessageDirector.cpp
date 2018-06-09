@@ -185,7 +185,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 {
     m_log.trace() << "Processing datagram...." << std::endl;
 
-    std::list<channel_t> channels;
+    std::vector<channel_t> channels;
     DatagramIterator dgi(dg);
     try {
         // Unpack channels to send messages to

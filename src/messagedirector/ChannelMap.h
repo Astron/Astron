@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
@@ -56,6 +56,9 @@ class ChannelMap
     // unsubscribe_all removes all channel and range subscriptions from a subscriber.
     void unsubscribe_all(ChannelSubscriber *p);
 
+    // remove_subscriber removes the given subscriber from the multi-map for a given channel.
+    void remove_subscriber(ChannelSubscriber *p, channel_t c);
+
     // is_subscribed tests if a given object has a subscription on a channel.
     bool is_subscribed(ChannelSubscriber *p, channel_t c);
 
@@ -63,7 +66,7 @@ class ChannelMap
     void lookup_channel(channel_t c, std::unordered_set<ChannelSubscriber *> &ps);
 
     // lookup_channels is the same, but it works on a list of channels.
-    void lookup_channels(const std::list<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps);
+    void lookup_channels(const std::vector<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps);
 
   protected:
     virtual void on_add_channel(channel_t) { }
@@ -76,7 +79,7 @@ class ChannelMap
 
   private:
     // Single channel subscriptions
-    std::unordered_map<channel_t, std::unordered_set<ChannelSubscriber *> > m_channel_subscriptions;
+    std::unordered_multimap<channel_t, ChannelSubscriber *> m_channel_subscriptions;
 
     // Range channel subscriptions
     boost::icl::interval_map<channel_t, std::unordered_set<ChannelSubscriber *> > m_range_subscriptions;
