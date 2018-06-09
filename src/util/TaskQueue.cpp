@@ -46,12 +46,17 @@ void TaskQueue::flush_tasks()
     }
 
     m_in_flush = true;
+    std::queue<TaskCallback> pending_tasks;
 
     {
         std::lock_guard<std::mutex> lock(m_queue_mutex);
-        while(!m_task_queue.empty()) {
-            TaskCallback task = m_task_queue.front();
-            m_task_queue.pop();
+        pending_tasks = std::move(m_task_queue);
+    }
+
+    {
+        while(!pending_tasks.empty()) {
+            TaskCallback task = pending_tasks.front();
+            pending_tasks.pop();
             task();
         }
     }
