@@ -370,6 +370,7 @@ void NetworkClient::send_finished()
     m_is_sending = false;
 
     // Discard the buffer we just used:
+    assert(m_send_buf != nullptr);
     delete [] m_send_buf;
     m_send_buf = nullptr;
 
@@ -397,6 +398,18 @@ void NetworkClient::send_expired()
 
     // This function should ONLY run in the main thread. It's a libuv event.
     assert(std::this_thread::get_id() == g_main_thread_id);
+
+    // We need to clean up after ourselves before invoking disconnect:
+    // Otherwise we might inadvertedly end up hitting flush_send_queue, and we don't want to do that here.
+    assert(m_is_sending);
+    m_is_sending = false;
+
+    assert(m_send_buf != nullptr);
+    delete[] m_send_buf;
+    m_send_buf = nullptr;
+
+    m_total_queue_size = 0;
+    m_send_queue.clear();
 
     disconnect(UV_ETIMEDOUT, lock);
 }
