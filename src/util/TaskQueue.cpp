@@ -1,8 +1,8 @@
-#include "EventQueue.h"
+#include "TaskQueue.h"
 
-EventQueue EventQueue::singleton;
+TaskQueue TaskQueue::singleton;
 
-EventQueue::~EventQueue()
+TaskQueue::~TaskQueue()
 {
     assert(m_task_queue.empty());
     if(m_flush_handle) {
@@ -11,7 +11,7 @@ EventQueue::~EventQueue()
     }
 }
 
-void EventQueue::init_queue()
+void TaskQueue::init_queue()
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
@@ -21,7 +21,7 @@ void EventQueue::init_queue()
     });
 }
 
-void EventQueue::enqueue_task(TaskCallback task)
+void TaskQueue::enqueue_task(TaskCallback task)
 {
     {
         std::lock_guard<std::mutex> lock(m_queue_mutex);
@@ -35,7 +35,7 @@ void EventQueue::enqueue_task(TaskCallback task)
     }
 }
 
-void EventQueue::flush_tasks()
+void TaskQueue::flush_tasks()
 {
     // We need to make absolutely certain this is running within the main (loop's) thread.
     assert(std::this_thread::get_id() == g_main_thread_id);

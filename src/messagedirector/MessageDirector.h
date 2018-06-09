@@ -13,7 +13,7 @@
 #include "core/global.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
-#include "util/EventQueue.h"
+#include "util/TaskQueue.h"
 #include "net/NetworkAcceptor.h"
 
 class MDParticipantInterface;

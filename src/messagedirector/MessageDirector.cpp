@@ -116,7 +116,7 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
     if(std::this_thread::get_id() != g_main_thread_id) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        EventQueue::singleton.enqueue_task([self = this]() {
+        TaskQueue::singleton.enqueue_task([self = this]() {
             self->flush_queue();
         });
     } else {

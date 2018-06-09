@@ -33,7 +33,7 @@ void NetworkClient::shutdown(std::unique_lock<std::mutex> &lock)
     auto async_timer = m_async_timer;
 
     lock.unlock();
-    EventQueue::singleton.enqueue_task([=]() {
+    TaskQueue::singleton.enqueue_task([=]() {
         socket->close();
         async_timer->stop();
         async_timer->close();
@@ -118,7 +118,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     // twice, it checks if it's already sending)
     if(g_main_thread_id != std::this_thread::get_id()) {
         lock.unlock();
-        EventQueue::singleton.enqueue_task([self = shared_from_this()] () {
+        TaskQueue::singleton.enqueue_task([self = shared_from_this()] () {
             std::unique_lock<std::mutex> lock(self->m_mutex);
             self->flush_send_queue(lock);
         });
@@ -261,7 +261,7 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock
         // The send_finished callback is responsible for closing the socket at the end of the flush.
         if(g_main_thread_id != std::this_thread::get_id()) {
             lock.unlock();
-            EventQueue::singleton.enqueue_task([self = shared_from_this()] () {
+            TaskQueue::singleton.enqueue_task([self = shared_from_this()] () {
                 std::unique_lock<std::mutex> lock(self->m_mutex);
                 self->flush_send_queue(lock);
             });

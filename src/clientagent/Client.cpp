@@ -93,7 +93,7 @@ void Client::generate_timeout(TimeoutSetCallback timeout_set_callback)
     }
 
     if(std::this_thread::get_id() != g_main_thread_id) {
-        EventQueue::singleton.enqueue_task([self = this]() {
+        TaskQueue::singleton.enqueue_task([self = this]() {
             self->generate_timeouts();
         });
     } else {

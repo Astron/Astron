@@ -3,7 +3,7 @@
 #include <atomic>
 #include <memory>
 #include "deps/uvw/uvw.hpp"
-#include "util/EventQueue.h"
+#include "util/TaskQueue.h"
 
 // This class abstracts the uvw::TimerHandle timer in order to provide a generic
 // facility for timeouts. Once constructed, this class will wait a certain

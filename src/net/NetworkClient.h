@@ -4,7 +4,7 @@
 #include <mutex>
 #include "deps/uvw/uvw.hpp"
 #include "util/Datagram.h"
-#include "util/EventQueue.h"
+#include "util/TaskQueue.h"
 #include "HAProxyHandler.h"
 
 // NOTES:

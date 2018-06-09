@@ -8,7 +8,7 @@
 
 typedef std::function<void()> TaskCallback;
 
-class EventQueue
+class TaskQueue
 {
     private:
         std::mutex m_queue_mutex;
@@ -16,8 +16,8 @@ class EventQueue
         std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
         bool m_in_flush = false;
     public:
-        ~EventQueue();
-        static EventQueue singleton;
+        ~TaskQueue();
+        static TaskQueue singleton;
         void init_queue();
         void enqueue_task(TaskCallback task);
         void flush_tasks();

@@ -76,7 +76,7 @@ bool Timeout::cancel()
     const bool already_cancelled = !m_callback_disabled.exchange(true);
 
     if(std::this_thread::get_id() != g_main_thread_id) {
-        EventQueue::singleton.enqueue_task([self = this]() {
+        TaskQueue::singleton.enqueue_task([self = this]() {
             self->cancel();
         });
 

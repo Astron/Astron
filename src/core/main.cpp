@@ -14,7 +14,7 @@ using dclass::Class;
 #include <signal.h>
 #include <pthread.h> // for setting thread-local storage size
 #endif
-#include "util/EventQueue.h"
+#include "util/TaskQueue.h"
 #include "util/filesystem.h"
 
 using namespace std;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
     astron_handle_signals();
 
     try {
-        EventQueue::singleton.init_queue();
+        TaskQueue::singleton.init_queue();
         // Initialize configured MessageDirector
         MessageDirector::singleton.init_network();
         g_eventsender.init(eventlogger_addr.get_val());
