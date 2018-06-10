@@ -194,17 +194,6 @@ bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
     return false;
 }
 
-void ChannelMap::lookup_channel(channel_t c, std::unordered_set<ChannelSubscriber *> &ps)
-{
-    std::lock_guard<std::recursive_mutex> guard(m_lock);
-
-    // TODO: Faster implementation.
-    std::vector<channel_t> channels;
-    channels.push_back(c);
-
-    lookup_channels(channels, ps);
-}
-
 void ChannelMap::lookup_channels(const std::vector<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps)
 {
     std::lock_guard<std::recursive_mutex> guard(m_lock);

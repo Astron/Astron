@@ -65,9 +65,6 @@ class ChannelMap
     // is_subscribed tests if a given object has a subscription on a channel.
     bool is_subscribed(ChannelSubscriber *p, channel_t c);
 
-    // lookup_channel populates a set with the subscribers for a channel.
-    void lookup_channel(channel_t c, std::unordered_set<ChannelSubscriber *> &ps);
-
     // lookup_channels is the same, but it works on a list of channels.
     void lookup_channels(const std::vector<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps);
 
