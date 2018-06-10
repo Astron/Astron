@@ -4,6 +4,7 @@
 #include "util/EventSender.h"
 #include "util/Timeout.h"
 
+#include <vector>
 #include <queue>
 #include <memory>
 #include <unordered_set>
@@ -74,8 +75,8 @@ class InterestOperation
     bool m_has_total = false;
     doid_t m_total = 0; // as doid_t because <max_objs_in_zones> == <max_total_objs>
 
-    std::list<DatagramHandle> m_pending_generates;
-    std::list<DatagramHandle> m_pending_datagrams;
+    std::vector<DatagramHandle> m_pending_generates;
+    std::vector<DatagramHandle> m_pending_datagrams;
 
     InterestOperation(Client *client, unsigned long timeout,
                       uint16_t interest_id, uint32_t client_context, uint32_t request_context,
@@ -159,7 +160,7 @@ class Client : public MDParticipantInterface
     const dclass::Class* lookup_object(doid_t do_id);
 
     // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
-    std::list<Interest> lookup_interests(doid_t parent_id, zone_t zone_id);
+    std::vector<Interest> lookup_interests(doid_t parent_id, zone_t zone_id);
 
     // build_interest will build an interest from a datagram. It is expected that the datagram
     // iterator is positioned such that next item to be read is the interest_id.

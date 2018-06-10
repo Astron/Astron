@@ -157,9 +157,9 @@ const Class *Client::lookup_object(doid_t do_id)
 }
 
 // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
-list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
+vector<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 {
-    list<Interest> interests;
+    vector<Interest> interests;
     for(const auto& it : m_interests) {
         if(parent_id == it.second.parent && (it.second.zones.find(zone_id) != it.second.zones.end())) {
             interests.push_back(it.second);
@@ -290,7 +290,7 @@ void Client::close_zones(doid_t parent, const unordered_set<zone_t> &killed_zone
 {
     // Kill off all objects that are in the matched parent/zones:
 
-    list<doid_t> to_remove;
+    vector<doid_t> to_remove;
     for(const auto& it : m_visible_objects) {
         const VisibleObject& visible_object = it.second;
         if(visible_object.parent != parent) {
@@ -935,7 +935,7 @@ void InterestOperation::finish(bool is_timeout)
     // N. B. We need to delete the pending interest before we send queued
     //       datagrams, so that they aren't just re-added to the queue.
     //       Move the queued datagrams to the stack so it is safe to delete the Operation.
-    list<DatagramHandle> dispatch = move(m_pending_datagrams);
+    vector<DatagramHandle> dispatch = move(m_pending_datagrams);
 
     // Delete the Interest Operation
     m_client->m_pending_interests.erase(m_request_context);

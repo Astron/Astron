@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <queue>
 #include <mutex>
 #include "deps/uvw/uvw.hpp"
@@ -146,7 +146,7 @@ private:
     uint64_t m_total_queue_size = 0;
     uint64_t m_max_queue_size = 0;
     unsigned int m_write_timeout = 0;
-    std::list<DatagramHandle> m_send_queue;
+    std::vector<DatagramHandle> m_send_queue;
 
     std::mutex m_mutex;
 

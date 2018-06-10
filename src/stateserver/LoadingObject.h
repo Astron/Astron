@@ -32,7 +32,7 @@ class LoadingObject final : public MDParticipantInterface
     std::unordered_set<uint32_t> m_valid_contexts;
 
     // Received datagrams while waiting for reply
-    std::list<DatagramHandle> m_datagram_queue;
+    std::vector<DatagramHandle> m_datagram_queue;
     bool m_is_loaded;
 
     // send_get_object makes the initial request to the database for the object data

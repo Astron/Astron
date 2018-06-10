@@ -360,8 +360,8 @@ void DBStateServer::handle_get_fields(channel_t sender, DatagramIterator &dgi)
     m_log->trace() << "Received GetFields for inactive object with id " << r_do_id << std::endl;
 
     // Read requested fields from datagram
-    std::list<const Field*> db_fields; // Ram|required db fields in request
-    std::list<const Field*> ram_fields; // Ram|required but not-db fields in request
+    std::vector<const Field*> db_fields; // Ram|required db fields in request
+    std::vector<const Field*> ram_fields; // Ram|required but not-db fields in request
     for(uint16_t i = 0; i < field_count; ++i) {
         uint16_t field_id = dgi.read_uint16();
         const Field* field = g_dcf->get_field_by_id(field_id);

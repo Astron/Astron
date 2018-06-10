@@ -105,7 +105,7 @@ void DistributedObject::append_required_data(DatagramPtr dg, bool client_only, b
 void DistributedObject::append_other_data(DatagramPtr dg, bool client_only, bool also_owner)
 {
     if(client_only) {
-        list<const Field*> broadcast_fields;
+        vector<const Field*> broadcast_fields;
         for(auto it = m_ram_fields.begin(); it != m_ram_fields.end(); ++it) {
             if(it->first->has_keyword("broadcast") || it->first->has_keyword("clrecv")
                || (also_owner && it->first->has_keyword("ownrecv"))) {

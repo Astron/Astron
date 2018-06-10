@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <unordered_set>
 #include <string>
 #include <queue>

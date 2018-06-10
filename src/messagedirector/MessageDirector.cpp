@@ -136,7 +136,7 @@ void MessageDirector::flush_queue()
     }
 
     m_main_is_routing = true;
-
+    
     {
         std::unique_lock<std::mutex> lock(m_messages_lock);
 
