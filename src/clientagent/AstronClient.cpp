@@ -68,7 +68,26 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
+        pre_initialize();
+
         m_client->initialize(socket, remote, local, haproxy_mode);
+    }
+
+    inline void pre_initialize()
+    {
+        // Set interest permissions
+        string permission_level = interest_permissions.get_rval(m_config);
+        if(permission_level == "enabled") {
+            m_interests_allowed = INTERESTS_ENABLED;
+        } else if(permission_level == "visible") {
+            m_interests_allowed = INTERESTS_VISIBLE;
+        } else {
+            m_interests_allowed = INTERESTS_DISABLED;
+        }
+
+        // Set NetworkClient configuration.
+        m_client->set_write_timeout(write_timeout_ms.get_rval(m_config));
+        m_client->set_write_buffer(write_buffer_size.get_rval(m_config));
     }
 
     void heartbeat_timeout()
@@ -90,20 +109,6 @@ class AstronClient : public Client, public NetworkHandler
                                           this));
             m_heartbeat_timer->start();
         }
-
-        // Set interest permissions
-        string permission_level = interest_permissions.get_rval(m_config);
-        if(permission_level == "enabled") {
-            m_interests_allowed = INTERESTS_ENABLED;
-        } else if(permission_level == "visible") {
-            m_interests_allowed = INTERESTS_VISIBLE;
-        } else {
-            m_interests_allowed = INTERESTS_DISABLED;
-        }
-
-        // Set NetworkClient config
-        m_client->set_write_timeout(write_timeout_ms.get_rval(m_config));
-        m_client->set_write_buffer(write_buffer_size.get_rval(m_config));
 
         stringstream ss;
         ss << "Client (" << m_client->get_remote().ip
