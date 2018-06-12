@@ -22,6 +22,9 @@ class NetworkClient;
 class NetworkHandler
 {
 protected:
+    // initialize is called upon the instantiation of the NetworkHandler in question.
+    // In certain instances, the invocation is up to the NetworkClient (e.g. for AstronClient objects).
+    virtual void initialize() = 0;
     // receive_datagram is called when both a datagram's size and its data
     //     have been received asynchronously from the network.
     virtual void receive_datagram(DatagramHandle dg) = 0;

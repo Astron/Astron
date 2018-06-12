@@ -69,8 +69,6 @@ class AstronClient : public Client, public NetworkHandler
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
         m_client->initialize(socket, remote, local, haproxy_mode);
-
-        initialize();
     }
 
     void heartbeat_timeout()
@@ -83,7 +81,7 @@ class AstronClient : public Client, public NetworkHandler
                         "Server timed out while waiting for heartbeat.");
     }
 
-    void initialize()
+    virtual void initialize()
     {
         //If heartbeat, start the heartbeat timer now.
         if(m_heartbeat_timeout != 0) {

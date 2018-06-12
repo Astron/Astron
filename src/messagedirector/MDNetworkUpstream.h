@@ -27,6 +27,11 @@ class MDNetworkUpstream : public NetworkHandler, public MDUpstream
     virtual void handle_datagram(DatagramHandle dg);
 
     // Interfaces that NetworkClient needs us to implement:
+    virtual void initialize()
+    {
+        // Stub method for NetworkClient.
+    }
+
     virtual void receive_datagram(DatagramHandle dg);
     virtual void receive_disconnect(const uvw::ErrorEvent &evt);
 

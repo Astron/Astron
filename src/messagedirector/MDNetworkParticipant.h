@@ -7,6 +7,11 @@ class MDNetworkParticipant : public MDParticipantInterface, public NetworkHandle
   public:
     MDNetworkParticipant(const std::shared_ptr<uvw::TcpHandle> &socket);
     ~MDNetworkParticipant();
+    virtual void initialize()
+    {
+        // Stub method for NetworkClient.
+    }
+
     virtual void handle_datagram(DatagramHandle dg, DatagramIterator &dgi);
   private:
     virtual void receive_datagram(DatagramHandle dg);

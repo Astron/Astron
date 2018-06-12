@@ -70,8 +70,13 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
 
     m_haproxy_mode = haproxy_mode;
 
+    // Slight deviation between behaviour in HAProxy mode and "regular" CA mode:
+    // In HAProxy mode, we want to wait for HAProxyHandler to execute before running the NetworkHandler's initialize().
     if(m_haproxy_mode) {
         m_haproxy_handler = std::make_unique<HAProxyHandler>();
+    }
+    else {
+        m_handler->initialize();
     }
 
     // NOT protected by a lock, make sure it runs in main!
@@ -194,6 +199,7 @@ void NetworkClient::start_receive()
                 }
 
                 self->m_haproxy_handler = nullptr;
+                self->m_handler->initialize();
             }
         } else {
             self->process_datagram(event.data, event.length);
