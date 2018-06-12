@@ -49,7 +49,7 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                                const uvw::Addr &remote,
                                const uvw::Addr &local,
                                const bool haproxy_mode,
-                               std::unique_lock<std::mutex> &)
+                               std::unique_lock<std::mutex> &lock)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
@@ -76,7 +76,9 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
         m_haproxy_handler = std::make_unique<HAProxyHandler>();
     }
     else {
+        lock.unlock();
         m_handler->initialize();
+        lock.lock();
     }
 
     // NOT protected by a lock, make sure it runs in main!
