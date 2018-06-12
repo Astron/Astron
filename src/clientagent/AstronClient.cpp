@@ -113,23 +113,26 @@ class AstronClient : public Client, public NetworkHandler
         m_log->set_name(ss.str());
         set_con_name(ss.str());
 
-        // Create event for EventLogger
-        LoggedEvent event("client-connected");
+        // We only log client-connected events for non-LOCAL (HAProxy L4 checks et al) NetworkClient objects.
+        if(!m_client->is_local()) {
+            // Create event for EventLogger
+            LoggedEvent event("client-connected");
 
-        // Add remote endpoint to log
-        ss.str(""); // empty the stream
-        ss << m_client->get_remote().ip
-           << ":" << m_client->get_remote().port;
-        event.add("remote_address", ss.str());
+            // Add remote endpoint to log
+            ss.str(""); // empty the stream
+            ss << m_client->get_remote().ip
+               << ":" << m_client->get_remote().port;
+            event.add("remote_address", ss.str());
 
-        // Add local endpoint to log
-        ss.str(""); // empty the stream
-        ss << m_client->get_local().ip
-           << ":" << m_client->get_local().port;
-        event.add("local_address", ss.str());
+            // Add local endpoint to log
+            ss.str(""); // empty the stream
+            ss << m_client->get_local().ip
+               << ":" << m_client->get_local().port;
+            event.add("local_address", ss.str());
 
-        // Log created event
-        log_event(event);
+            // Log created event
+            log_event(event);
+        }
     }
 
     // send_disconnect must close any connections with a connected client; the given reason and

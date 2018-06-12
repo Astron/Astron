@@ -98,6 +98,7 @@ size_t HAProxyHandler::parse_v2_block()
 
     if(command == 0x0) {
         // LOCAL, ignore the body:
+        m_is_local = true;
         return total_len;
     }
 
@@ -254,6 +255,11 @@ const std::vector<uint8_t>& HAProxyHandler::get_tlvs() const
 bool HAProxyHandler::has_tlvs() const
 {
     return m_tlv_buf.size() > 0;
+}
+
+bool HAProxyHandler::is_local() const
+{
+    return m_is_local;
 }
 
 bool HAProxyHandler::has_error() const

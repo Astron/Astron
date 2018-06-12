@@ -127,7 +127,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     }
 }
 
-bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
+bool NetworkClient::is_connected(std::unique_lock<std::mutex> &) const
 {
     // We always set m_socket to nullptr on disconnect, so:
     return m_socket != nullptr;
@@ -201,9 +201,12 @@ void NetworkClient::start_receive()
                     return;
                 }
 
-                self->m_local = self->m_haproxy_handler->get_local();
-                self->m_remote = self->m_haproxy_handler->get_remote();
-                self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
+                self->m_is_local = self->m_haproxy_handler->is_local();
+                if(!self->m_is_local) {
+                    self->m_local = self->m_haproxy_handler->get_local();
+                    self->m_remote = self->m_haproxy_handler->get_remote();
+                    self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
+                }
 
                 ssize_t bytes_left = event.length - bytes_consumed;
                 if(0 < bytes_left) {

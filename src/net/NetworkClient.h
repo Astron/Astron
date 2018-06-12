@@ -85,14 +85,21 @@ public:
         return is_connected(lock);
     }
 
-    inline uvw::Addr get_remote()
+    inline uvw::Addr get_remote() const
     {
         return m_remote;
     }
 
-    inline uvw::Addr get_local()
+    inline uvw::Addr get_local() const
     {
         return m_local;
+    }
+
+    inline bool is_local() const
+    {
+        // NOTE: This signifies whether our peer originates from a LOCAL HAProxy connection.
+        // This is typically used by HAProxy for L4 health checks.
+        return m_is_local;
     }
 
     inline const std::vector<uint8_t>& get_tlvs() const
@@ -110,7 +117,7 @@ private:
                     const bool haproxy_mode,
                     std::unique_lock<std::mutex> &lock);
     void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
-    bool is_connected(std::unique_lock<std::mutex> &lock);
+    bool is_connected(std::unique_lock<std::mutex> &lock) const;
 
     /* This cleans up all libuv handles */
     void shutdown(std::unique_lock<std::mutex> &lock);
@@ -141,7 +148,10 @@ private:
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;
+
+    // HAProxy specific:
     std::vector<uint8_t> m_tlv_buf;
+    bool m_is_local = false;
 
     uint64_t m_total_queue_size = 0;
     uint64_t m_max_queue_size = 0;

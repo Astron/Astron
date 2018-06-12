@@ -18,6 +18,8 @@ class HAProxyHandler
         uvw::Addr m_local;
         uvw::Addr m_remote;
 
+        bool m_is_local = false;
+
         bool m_has_error = false;
         uv_errno_t m_error_code;
 
@@ -32,6 +34,7 @@ class HAProxyHandler
         uvw::Addr get_remote() const;
         const std::vector<uint8_t>& get_tlvs() const;
         bool has_tlvs() const;
+        bool is_local() const;
         bool has_error() const;
         uv_errno_t get_error() const;
 };
