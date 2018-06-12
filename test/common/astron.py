@@ -524,24 +524,30 @@ class MDConnection(object):
     def flush(self):
         while self._read(): pass
 
+    def _recv(self, length):
+        if hasattr(socket, 'MSG_WAITALL'):
+            return self.s.recv(length, socket.MSG_WAITALL)
+
+        return self.s.recv(length)
+
     def _read(self):
         try:
             length = DGSIZE_SIZE_BYTES
             result = ''
             while len(result) < length:
-                data = self.s.recv(length - len(result))
-                if data == '':
+                data = self._recv(length - len(result))
+                if not data:
                     raise EOFError('Remote socket closed connection')
                 result += data
-            length = struct.unpack(DATATYPES['size'], result)[0]
+            length, = struct.unpack(DATATYPES['size'], result)
         except socket.error:
             return None
 
         result = ''
         while len(result) < length:
-            data = self.s.recv(length - len(result))
-            if data == '':
-                    raise EOFError('Remote socket closed connection')
+            data = self._recv(length - len(result))
+            if not data:
+                raise EOFError('Remote socket closed connection')
             result += data
 
         return result

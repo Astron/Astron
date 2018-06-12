@@ -1,5 +1,5 @@
 import unittest, subprocess, tempfile, os, threading
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, SOL_TCP, TCP_NODELAY
 from astron import *
 
 class ConfigTest(unittest.TestCase):
@@ -52,6 +52,7 @@ class ProtocolTest(unittest.TestCase):
     @classmethod
     def connectToServer(cls, addr = '127.0.0.1', port = 57123):
         sock = socket(AF_INET, SOCK_STREAM)
+        sock.setsockopt(SOL_TCP, TCP_NODELAY, 1)
         sock.connect((addr, port))
         return MDConnection(sock)
 
