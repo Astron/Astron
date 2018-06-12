@@ -53,8 +53,17 @@ public:
         initialize(socket, remote, local, haproxy_mode, lock);
     }
 
-    void set_write_timeout(unsigned int timeout);
-    void set_write_buffer(uint64_t max_bytes);
+    inline void set_write_timeout(unsigned int timeout)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_write_timeout = timeout;
+    }
+
+    inline void set_write_buffer(uint64_t max_bytes)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_max_queue_size = max_bytes;
+    }
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
@@ -85,39 +94,45 @@ public:
         return is_connected(lock);
     }
 
-    inline uvw::Addr get_remote() const
+    inline uvw::Addr get_remote()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_remote;
     }
 
-    inline uvw::Addr get_local() const
+    inline uvw::Addr get_local()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_local;
     }
 
-    inline bool is_local() const
+    inline bool is_local()
     {
         // NOTE: This signifies whether our peer originates from a LOCAL HAProxy connection.
         // This is typically used by HAProxy for L4 health checks.
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_is_local;
     }
 
-    inline const std::vector<uint8_t>& get_tlvs() const
+    inline const std::vector<uint8_t>& get_tlvs()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_tlv_buf;
     }
 
 private:
     // Locked versions of public functions:
-    void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
-                    std::unique_lock<std::mutex> &lock);
+    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
+    {
+        initialize(socket, socket->peer(), socket->sock(), false, lock);
+    }
+
     void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     const uvw::Addr &remote,
                     const uvw::Addr &local,
                     const bool haproxy_mode,
                     std::unique_lock<std::mutex> &lock);
     void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
-    bool is_connected(std::unique_lock<std::mutex> &lock) const;
 
     /* This cleans up all libuv handles */
     void shutdown(std::unique_lock<std::mutex> &lock);
@@ -137,6 +152,11 @@ private:
 
     void defragment_input(std::unique_lock<std::mutex> &lock);
     void process_datagram(const std::unique_ptr<char[]>& data, size_t length);
+
+    inline bool is_connected(std::unique_lock<std::mutex>&)
+    {   
+        return m_socket != nullptr;
+    }
 
     bool m_is_sending = false;
     char *m_send_buf = nullptr;

@@ -45,11 +45,6 @@ void NetworkClient::shutdown(std::unique_lock<std::mutex> &lock)
     m_haproxy_handler = nullptr;
 }
 
-void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
-{
-    initialize(socket, socket->peer(), socket->sock(), false, lock);
-}
-
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                                const uvw::Addr &remote,
                                const uvw::Addr &local,
@@ -83,18 +78,6 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
     start_receive();
 }
 
-void NetworkClient::set_write_timeout(unsigned int timeout)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_write_timeout = timeout;
-}
-
-void NetworkClient::set_write_buffer(uint64_t max_bytes)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_max_queue_size = max_bytes;
-}
-
 void NetworkClient::send_datagram(DatagramHandle dg)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
@@ -125,12 +108,6 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     } else {
         flush_send_queue(lock);
     }
-}
-
-bool NetworkClient::is_connected(std::unique_lock<std::mutex> &) const
-{
-    // We always set m_socket to nullptr on disconnect, so:
-    return m_socket != nullptr;
 }
 
 void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
