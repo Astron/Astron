@@ -3426,7 +3426,9 @@ class TestClientAgent(ProtocolTest):
         #setup our testing DG that will go test(server) -> MD -> CA -> Test(Client)
         #A successful receival of this DG on the Test(client) side will denote an
         #active socket.
-        raw_dg = Datagram("Hello World")
+        raw_dg = Datagram()
+        raw_dg.add_uint16(65413) # Datagram opcode
+        raw_dg.add_string('And you don\'t seem to understand...')
         dg = Datagram.create([id], 1, CLIENTAGENT_SEND_DATAGRAM)
         dg.add_string(raw_dg.get_data())
 
@@ -3434,16 +3436,18 @@ class TestClientAgent(ProtocolTest):
         self.server.send(dg)
         self.expect(client, raw_dg, isClient = True)
 
+        # First heartbeat:
+        self.send_heartbeat(client)
 
-        #sleep for 3/4 of a second, still should be connected after this.
-        time.sleep(0.75)
+        #sleep for 2/4 of a second, still should be connected after this.
+        time.sleep(0.50)
 
         #Check for connection and send heartbeat
         self.server.send(dg)
         self.expect(client, raw_dg, isClient = True)
         self.send_heartbeat(client)
 
-        time.sleep(1.1)
+        time.sleep(1.25)
 
         # We should be disconnected now...
         self.assertDisconnect(client,CLIENT_DISCONNECT_NO_HEARTBEAT)
