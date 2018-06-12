@@ -454,6 +454,7 @@ add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
 target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${EXTRA_LIBS})
+install(TARGETS astrond DESTINATION bin)
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)
