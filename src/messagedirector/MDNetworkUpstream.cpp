@@ -39,8 +39,7 @@ void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket
 
 void MDNetworkUpstream::send_datagram(DatagramHandle dg)
 {
-    if(!m_initialized)
-    {
+    if(!m_initialized) {
         std::lock_guard<std::mutex> lock(m_messages_lock);
         m_messages.push(dg);
     }
