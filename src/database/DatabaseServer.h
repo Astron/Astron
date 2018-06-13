@@ -33,11 +33,8 @@ class DatabaseServer : public Role
     bool m_broadcast;
 
     // Prometheus metrics.
-    prometheus::Family<prometheus::Counter>* m_ops_completed_builder = nullptr;
     std::unordered_map<DBOperation::OperationType, prometheus::Counter*> m_ops_completed;
-    prometheus::Family<prometheus::Counter>* m_ops_failed_builder = nullptr;
     std::unordered_map<DBOperation::OperationType, prometheus::Counter*> m_ops_failed;
-    prometheus::Family<prometheus::Histogram>* m_completion_time_builder;
     std::unordered_map<DBOperation::OperationType, prometheus::Histogram*> m_completion_time;
 
     void report_failure(DBOperation *op);

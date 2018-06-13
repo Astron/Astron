@@ -26,7 +26,7 @@ static ConfigVariable<string> eventlogger_addr("eventlogger", "", general_config
 static ValidAddressConstraint valid_eventlogger_addr(eventlogger_addr);
 
 static ConfigGroup prometheus_config("prometheus", general_config);
-static ConfigVariable<string> prometheus_bind_addr("bind", "", prometheus_config);
+static ConfigVariable<string> prometheus_bind_addr("bind", "127.0.0.1:8080", prometheus_config);
 static ValidAddressConstraint valid_prometheus_bind_addr(prometheus_bind_addr);
 
 static ConfigList uberdogs_config("uberdogs");

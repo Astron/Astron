@@ -89,19 +89,19 @@ ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_accept
 
 void ClientAgent::init_metrics()
 {
-    m_client_count_builder = &prometheus::BuildGauge()
+    auto client_count_builder = &prometheus::BuildGauge()
             .Name("ca_clients")
             .Register(*g_registry);
-    m_client_count_gauge = &m_client_count_builder->Add({});
-    m_interest_time_builder = &prometheus::BuildHistogram()
+    m_client_count_gauge = &client_count_builder->Add({});
+    auto interest_time_builder = &prometheus::BuildHistogram()
             .Name("ca_interest_time")
             .Register(*g_registry);
-    m_interest_time_hist = &m_interest_time_builder->Add({},
+    m_interest_time_hist = &interest_time_builder->Add({},
             prometheus::Histogram::BucketBoundaries{0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000});
-    m_interest_timeout_builder = &prometheus::BuildCounter()
+    auto interest_timeout_builder = &prometheus::BuildCounter()
             .Name("ca_interest_timeouts")
             .Register(*g_registry);
-    m_interest_timeout_ctr = &m_interest_timeout_builder->Add({});
+    m_interest_timeout_ctr = &interest_timeout_builder->Add({});
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.

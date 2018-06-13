@@ -33,40 +33,40 @@ StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 
 void StateServer::init_metrics()
 {
-    m_ss_objs_builder = &prometheus::BuildGauge()
-            .Name("ss_objects")
+    auto objs_builder = &prometheus::BuildGauge()
+            .Name("objects")
             .Register(*g_registry);
-    m_ss_obj_size_builder = &prometheus::BuildHistogram()
-            .Name("ss_object_size")
+    auto obj_size_builder = &prometheus::BuildHistogram()
+            .Name("object_size")
             .Register(*g_registry);
-    m_ss_obj_creation_builder = &prometheus::BuildCounter()
+    auto obj_creation_builder = &prometheus::BuildCounter()
             .Name("ss_creation_ctr")
             .Register(*g_registry);
-    m_ss_obj_creation_ctr = &m_ss_obj_creation_builder->Add({});
-    m_ss_obj_deletion_builder = &prometheus::BuildCounter()
+    m_obj_creation_ctr = &obj_creation_builder->Add({});
+    auto obj_deletion_builder = &prometheus::BuildCounter()
             .Name("ss_deletion_ctr")
             .Register(*g_registry);
-    m_ss_obj_deletion_cnt = &m_ss_obj_deletion_builder->Add({});
-    m_ss_obj_query_builder = &prometheus::BuildCounter()
+    m_obj_deletion_ctr = &obj_deletion_builder->Add({});
+    auto obj_query_builder = &prometheus::BuildCounter()
             .Name("ss_query_ctr")
             .Register(*g_registry);
-    m_ss_obj_query_cnt = &m_ss_obj_query_builder->Add({});
-    m_ss_obj_change_builder = &prometheus::BuildCounter()
+    m_obj_query_ctr = &obj_query_builder->Add({});
+    auto obj_change_builder = &prometheus::BuildCounter()
             .Name("ss_change_ctr")
             .Register(*g_registry);
-    m_ss_obj_change_cnt = &m_ss_obj_change_builder->Add({});
+    m_obj_change_ctr = &obj_change_builder->Add({});
 
 
     // Register gauges and histograms for each class in our dc file.
     for (unsigned int i = 0; i < g_dcf->get_num_classes(); i++) {
         auto dc_class = g_dcf->get_class(i);
-	auto dc_id = dc_class->get_id();
-	auto dc_name = dc_class->get_name();
+        auto dc_id = dc_class->get_id();
+        auto dc_name = dc_class->get_name();
 
-	m_ss_objs_gauges[dc_id] = &m_ss_objs_builder->Add({{"dclass", dc_name}});
+        m_objs_gauges[dc_id] = &objs_builder->Add({{"dclass", dc_name}});
 
-	m_ss_obj_size_hist[dc_id] = &m_ss_obj_size_builder->Add({{"dclass", dc_name}},
-	        prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
+        m_obj_size_hist[dc_id] = &obj_size_builder->Add({{"dclass", dc_name}},
+                                                                prometheus::Histogram::BucketBoundaries{0, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
     }
 }
 
@@ -103,15 +103,15 @@ void StateServer::handle_generate(DatagramIterator &dgi, bool has_other)
     m_objs[do_id] = obj;
 
     // Log statistics about the new object to Prometheus.
-    auto gauge = m_ss_objs_gauges[dc_id];
-    auto hist = m_ss_obj_size_hist[dc_id];
+    auto gauge = m_objs_gauges[dc_id];
+    auto hist = m_obj_size_hist[dc_id];
 
     if(gauge)
         gauge->Increment();
     if(hist)
         hist->Observe(obj->size());
-    if (m_ss_obj_creation_ctr)
-        m_ss_obj_creation_ctr->Increment();
+    if (m_obj_creation_ctr)
+        m_obj_creation_ctr->Increment();
 }
 
 void StateServer::handle_delete_ai(DatagramIterator& dgi, channel_t sender)

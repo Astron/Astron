@@ -329,7 +329,7 @@ void DistributedObject::annihilate(channel_t sender, bool notify_parent)
     delete_children(sender);
 
     // Decrement the gauge containing the count of existing objects of this dclass, if it exists.
-    auto gauge = m_stateserver->m_ss_objs_gauges[m_dclass->get_id()];
+    auto gauge = m_stateserver->m_objs_gauges[m_dclass->get_id()];
     if (gauge)
         gauge->Decrement();
 
@@ -889,19 +889,19 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
 }
 
 void DistributedObject::report_delete_operation() {
-    auto deletion_cnt = m_stateserver->m_ss_obj_deletion_cnt;
-    if (deletion_cnt)
-        deletion_cnt->Increment();
+    auto deletion_ctr = m_stateserver->m_obj_deletion_ctr;
+    if (deletion_ctr)
+        deletion_ctr->Increment();
 }
 
 void DistributedObject::report_change_operation() {
-    auto change_cnt = m_stateserver->m_ss_obj_change_cnt;
-    if (change_cnt)
-        change_cnt->Increment();
+    auto change_ctr = m_stateserver->m_obj_change_ctr;
+    if (change_ctr)
+        change_ctr->Increment();
 }
 
 void DistributedObject::report_query_operation() {
-    auto query_cnt = m_stateserver->m_ss_obj_query_cnt;
-    if (query_cnt)
-        query_cnt->Increment();
+    auto query_ctr = m_stateserver->m_obj_query_ctr;
+    if (query_ctr)
+        query_ctr->Increment();
 }

@@ -64,24 +64,24 @@ void DatabaseServer::init_metrics()
     const std::vector<std::pair<DBOperation::OperationType, std::string>> operation_types = {{DBOperation::OperationType::CREATE_OBJECT, "create_object"}, {DBOperation::OperationType::DELETE_OBJECT, "delete_object"},
                                                                                           {DBOperation::OperationType::GET_OBJECT, "get_object"}, {DBOperation::OperationType::GET_FIELDS, "get_fields"},
 											  {DBOperation::OperationType::SET_FIELDS, "set_fields"}, {DBOperation::OperationType::UPDATE_FIELDS, "update_fields"}};
-    m_ops_completed_builder = &prometheus::BuildCounter()
+    auto ops_completed_builder = &prometheus::BuildCounter()
                               .Name("db_ops_completed")
 			      .Register(*g_registry);
-    m_ops_failed_builder = &prometheus::BuildCounter()
+    auto ops_failed_builder = &prometheus::BuildCounter()
                            .Name("db_ops_failed")
 			   .Register(*g_registry);
 
-    m_completion_time_builder = &prometheus::BuildHistogram()
+    auto completion_time_builder = &prometheus::BuildHistogram()
                                 .Name("db_completion_times")
 				.Register(*g_registry);
 
     for (const auto &op_type : operation_types)
     {
-        m_ops_completed[op_type.first] = &m_ops_completed_builder->Add({{"op_type", op_type.second}});
-	m_ops_failed[op_type.first] = &m_ops_failed_builder->Add({{"op_type", op_type.second}});
-	m_completion_time[op_type.first] = &m_completion_time_builder->Add(
-	                 {{"op_type", op_type.second}},
-	                 prometheus::Histogram::BucketBoundaries{0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000});
+        m_ops_completed[op_type.first] = &ops_completed_builder->Add({{"op_type", op_type.second}});
+        m_ops_failed[op_type.first] = &ops_failed_builder->Add({{"op_type", op_type.second}});
+        m_completion_time[op_type.first] = &completion_time_builder->Add(
+                                                                           {{"op_type", op_type.second}},
+                                                                           prometheus::Histogram::BucketBoundaries{0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000});
     }
 }
 

@@ -43,24 +43,24 @@ MessageDirector::~MessageDirector()
 
 void MessageDirector::init_metrics()
 {
-    m_datagrams_processed_builder = &prometheus::BuildCounter()
+    auto datagrams_processed_builder = &prometheus::BuildCounter()
                                          .Name("md_datagrams_processed")
                                          .Register(*g_registry);
-    m_datagrams_processed_ctr = &m_datagrams_processed_builder->Add({});
-    m_network_participants_builder = &prometheus::BuildGauge()
+    m_datagrams_processed_ctr = &datagrams_processed_builder->Add({});
+    auto network_participants_builder = &prometheus::BuildGauge()
             .Name("md_network_participants")
             .Register(*g_registry);
-    m_network_participants_gauge = &m_network_participants_builder->Add({});
-    m_datagram_size_builder = &prometheus::BuildHistogram()
-            .Name("md_datagram_by_size")
+    m_network_participants_gauge = &network_participants_builder->Add({});
+    auto datagram_size_builder = &prometheus::BuildHistogram()
+            .Name("md_datagram_size")
             .Register(*g_registry);
-    m_datagram_size_hist = &m_datagram_size_builder->Add({},
-            prometheus::Histogram::BucketBoundaries{1, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
-    m_datagram_recipient_builder = &prometheus::BuildHistogram()
-            .Name("md_datagram_by_recipients")
+    m_datagram_size_hist = &datagram_size_builder->Add({},
+                                                       prometheus::Histogram::BucketBoundaries{1, 4, 16, 64, 256, 1024, 4096, 16384, 65536});
+    auto datagram_recipient_builder = &prometheus::BuildHistogram()
+            .Name("md_datagram_recipients")
             .Register(*g_registry);
-    m_datagram_recipient_hist = &m_datagram_recipient_builder->Add({},
-                                                                        prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    m_datagram_recipient_hist = &datagram_recipient_builder->Add({},
+                                                                prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
 }
 
 void MessageDirector::init_network()
