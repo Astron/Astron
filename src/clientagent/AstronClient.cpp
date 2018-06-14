@@ -56,7 +56,7 @@ class AstronClient : public Client, public NetworkHandler
 
     //Heartbeat
     long m_heartbeat_timeout;
-    std::shared_ptr<Timeout> m_heartbeat_timer = nullptr;
+    Timeout* m_heartbeat_timer = nullptr;
 
   public:
     AstronClient(ConfigNode config, ClientAgent* client_agent, const std::shared_ptr<uvw::TcpHandle> &socket,
@@ -68,30 +68,17 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
+<<<<<<< HEAD
         register_participant("AstronClient");
+=======
+        pre_initialize();
+>>>>>>> master
 
         m_client->initialize(socket, remote, local, haproxy_mode);
-
-        initialize();
     }
 
-    void heartbeat_timeout()
+    inline void pre_initialize()
     {
-        lock_guard<recursive_mutex> lock(m_client_lock);
-        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
-                        "Server timed out while waiting for heartbeat.");
-    }
-
-    void initialize()
-    {
-        //If heartbeat, start the heartbeat timer now.
-        if(m_heartbeat_timeout != 0) {
-            m_heartbeat_timer = std::make_shared<Timeout>(m_heartbeat_timeout,
-                                std::bind(&AstronClient::heartbeat_timeout,
-                                          this));
-            m_heartbeat_timer->start();
-        }
-
         // Set interest permissions
         string permission_level = interest_permissions.get_rval(m_config);
         if(permission_level == "enabled") {
@@ -102,9 +89,30 @@ class AstronClient : public Client, public NetworkHandler
             m_interests_allowed = INTERESTS_DISABLED;
         }
 
-        // Set NetworkClient config
+        // Set NetworkClient configuration.
         m_client->set_write_timeout(write_timeout_ms.get_rval(m_config));
         m_client->set_write_buffer(write_buffer_size.get_rval(m_config));
+    }
+
+    void heartbeat_timeout()
+    {
+        lock_guard<recursive_mutex> lock(m_client_lock);
+        // The heartbeat timer has already deleted itself at this point
+        // Holding on to it means receive_disconnect will try to invoke cancel() on it, and we can't have that.
+        m_heartbeat_timer = nullptr;
+        send_disconnect(CLIENT_DISCONNECT_NO_HEARTBEAT,
+                        "Server timed out while waiting for heartbeat.");
+    }
+
+    virtual void initialize()
+    {
+        //If heartbeat, start the heartbeat timer now.
+        if(m_heartbeat_timeout != 0) {
+            m_heartbeat_timer = new Timeout(m_heartbeat_timeout,
+                                std::bind(&AstronClient::heartbeat_timeout,
+                                          this));
+            m_heartbeat_timer->start();
+        }
 
         stringstream ss;
         ss << "Client (" << m_client->get_remote().ip
@@ -112,23 +120,26 @@ class AstronClient : public Client, public NetworkHandler
         m_log->set_name(ss.str());
         set_con_name(ss.str());
 
-        // Create event for EventLogger
-        LoggedEvent event("client-connected");
+        // We only log client-connected events for non-LOCAL (HAProxy L4 checks et al) NetworkClient objects.
+        if(!m_client->is_local()) {
+            // Create event for EventLogger
+            LoggedEvent event("client-connected");
 
-        // Add remote endpoint to log
-        ss.str(""); // empty the stream
-        ss << m_client->get_remote().ip
-           << ":" << m_client->get_remote().port;
-        event.add("remote_address", ss.str());
+            // Add remote endpoint to log
+            ss.str(""); // empty the stream
+            ss << m_client->get_remote().ip
+               << ":" << m_client->get_remote().port;
+            event.add("remote_address", ss.str());
 
-        // Add local endpoint to log
-        ss.str(""); // empty the stream
-        ss << m_client->get_local().ip
-           << ":" << m_client->get_local().port;
-        event.add("local_address", ss.str());
+            // Add local endpoint to log
+            ss.str(""); // empty the stream
+            ss << m_client->get_local().ip
+               << ":" << m_client->get_local().port;
+            event.add("local_address", ss.str());
 
-        // Log created event
-        log_event(event);
+            // Log created event
+            log_event(event);
+        }
     }
 
     // send_disconnect must close any connections with a connected client; the given reason and
@@ -209,6 +220,7 @@ class AstronClient : public Client, public NetworkHandler
 
         if(m_heartbeat_timer != nullptr) {
             m_heartbeat_timer->cancel();
+            m_heartbeat_timer = nullptr;
         }
 
         annihilate();

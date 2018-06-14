@@ -1,9 +1,10 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <queue>
 #include <mutex>
 #include "deps/uvw/uvw.hpp"
 #include "util/Datagram.h"
+#include "util/TaskQueue.h"
 #include "HAProxyHandler.h"
 
 // NOTES:
@@ -21,6 +22,9 @@ class NetworkClient;
 class NetworkHandler
 {
 protected:
+    // initialize is called upon the instantiation of the NetworkHandler in question.
+    // In certain instances, the invocation is up to the NetworkClient (e.g. for AstronClient objects).
+    virtual void initialize() = 0;
     // receive_datagram is called when both a datagram's size and its data
     //     have been received asynchronously from the network.
     virtual void receive_datagram(DatagramHandle dg) = 0;
@@ -52,8 +56,17 @@ public:
         initialize(socket, remote, local, haproxy_mode, lock);
     }
 
-    void set_write_timeout(unsigned int timeout);
-    void set_write_buffer(uint64_t max_bytes);
+    inline void set_write_timeout(unsigned int timeout)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_write_timeout = timeout;
+    }
+
+    inline void set_write_buffer(uint64_t max_bytes)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_max_queue_size = max_bytes;
+    }
 
     // send_datagram immediately sends the datagram over TCP (blocking).
     void send_datagram(DatagramHandle dg);
@@ -86,30 +99,43 @@ public:
 
     inline uvw::Addr get_remote()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_remote;
     }
 
     inline uvw::Addr get_local()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_local;
     }
 
-    inline const std::vector<uint8_t>& get_tlvs() const
+    inline bool is_local()
     {
+        // NOTE: This signifies whether our peer originates from a LOCAL HAProxy connection.
+        // This is typically used by HAProxy for L4 health checks.
+        std::unique_lock<std::mutex> lock(m_mutex);
+        return m_is_local;
+    }
+
+    inline const std::vector<uint8_t>& get_tlvs()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
         return m_tlv_buf;
     }
 
 private:
     // Locked versions of public functions:
-    void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
-                    std::unique_lock<std::mutex> &lock);
+    inline void initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
+    {
+        initialize(socket, socket->peer(), socket->sock(), false, lock);
+    }
+
     void initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                     const uvw::Addr &remote,
                     const uvw::Addr &local,
                     const bool haproxy_mode,
                     std::unique_lock<std::mutex> &lock);
     void disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock);
-    bool is_connected(std::unique_lock<std::mutex> &lock);
 
     /* This cleans up all libuv handles */
     void shutdown(std::unique_lock<std::mutex> &lock);
@@ -130,24 +156,30 @@ private:
     void defragment_input(std::unique_lock<std::mutex> &lock);
     void process_datagram(const std::unique_ptr<char[]>& data, size_t length);
 
+    inline bool is_connected(std::unique_lock<std::mutex>&)
+    {   
+        return m_socket != nullptr;
+    }
+
     bool m_is_sending = false;
     char *m_send_buf = nullptr;
 
     NetworkHandler *m_handler;
     std::shared_ptr<uvw::TcpHandle> m_socket;
     std::shared_ptr<uvw::TimerHandle> m_async_timer;
-    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
-    std::shared_ptr<uvw::AsyncHandle> m_shutdown_handle;
     std::unique_ptr<HAProxyHandler> m_haproxy_handler;
     uvw::Addr m_remote;
     uvw::Addr m_local;
     std::vector<unsigned char> m_data_buf;
+
+    // HAProxy specific:
     std::vector<uint8_t> m_tlv_buf;
+    bool m_is_local = false;
 
     uint64_t m_total_queue_size = 0;
     uint64_t m_max_queue_size = 0;
     unsigned int m_write_timeout = 0;
-    std::list<DatagramHandle> m_send_queue;
+    std::vector<DatagramHandle> m_send_queue;
 
     std::mutex m_mutex;
 

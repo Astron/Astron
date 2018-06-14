@@ -32,13 +32,33 @@ void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
     }
 
     p->channels().insert(p->channels().end(), c);
-    auto &subs = m_channel_subscriptions[c];
+    bool has_subs = (m_channel_subscriptions.find(c) != m_channel_subscriptions.end());
 
-    if(subs.empty()) {
+    if(!has_subs) {
         on_add_channel(c);
     }
 
-    subs.insert(p);
+    m_channel_subscriptions.insert(std::make_pair(c, p));
+}
+
+bool ChannelMap::remove_subscriber(ChannelSubscriber *p, channel_t c)
+{
+    auto sub_cnt = m_channel_subscriptions.count(c);
+    if(sub_cnt == 0) {
+        return false;
+    }
+
+    auto subs = m_channel_subscriptions.equal_range(c);
+
+    for(auto it = subs.first; it != subs.second; ++it) {
+        if(it->second == p) {
+            m_channel_subscriptions.erase(it);
+            --sub_cnt;
+            break;
+        }
+    }
+
+    return (sub_cnt == 0);
 }
 
 void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
@@ -50,11 +70,8 @@ void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
     }
 
     p->channels().erase(c);
-    auto &subs = m_channel_subscriptions[c];
 
-    subs.erase(p);
-
-    if(subs.empty()) {
+    if(remove_subscriber(p, c)) {
         on_remove_channel(c);
     }
 }
@@ -126,7 +143,7 @@ void ChannelMap::unsubscribe_range(ChannelSubscriber *p, channel_t lo, channel_t
         if(lo <= c && c <= hi) {
             // N.B. we do NOT call unsubscribe_channel, because that might send
             // off an on_remove_channel event. Instead, we just manually update:
-            m_channel_subscriptions[c].erase(p);
+            remove_subscriber(p, c);
             p->channels().erase(prev);
         }
     }
@@ -177,24 +194,15 @@ bool ChannelMap::is_subscribed(ChannelSubscriber *p, channel_t c)
     return false;
 }
 
-void ChannelMap::lookup_channel(channel_t c, std::unordered_set<ChannelSubscriber *> &ps)
-{
-    std::lock_guard<std::recursive_mutex> guard(m_lock);
-
-    // TODO: Faster implementation.
-    std::list<channel_t> channels;
-    channels.push_back(c);
-
-    lookup_channels(channels, ps);
-}
-
-void ChannelMap::lookup_channels(const std::list<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps)
+void ChannelMap::lookup_channels(const std::vector<channel_t> &cl, std::unordered_set<ChannelSubscriber *> &ps)
 {
     std::lock_guard<std::recursive_mutex> guard(m_lock);
 
     for(auto it = cl.begin(); it != cl.end(); ++it) {
-        auto &subscriptions = m_channel_subscriptions[*it];
-        ps.insert(subscriptions.begin(), subscriptions.end());
+        auto subs = m_channel_subscriptions.equal_range(*it);
+        for(auto it2 = subs.first; it2 != subs.second; ++it2) {
+            ps.insert(it2->second);
+        }
 
         auto range = boost::icl::find(m_range_subscriptions, *it);
         if(range != m_range_subscriptions.end()) {

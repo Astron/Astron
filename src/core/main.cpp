@@ -14,6 +14,7 @@ using dclass::Class;
 #include <signal.h>
 #include <pthread.h> // for setting thread-local storage size
 #endif
+#include "util/TaskQueue.h"
 #include "util/filesystem.h"
 
 using namespace std;
@@ -217,6 +218,8 @@ int main(int argc, char *argv[])
         g_exposer = std::make_unique<prometheus::Exposer>(prometheus_bind_addr.get_val());
         g_exposer->RegisterCollectable(g_registry);
         g_eventsender.init(eventlogger_addr.get_val());
+        TaskQueue::singleton.init_queue();
+
         // Initialize configured MessageDirector
         MessageDirector::singleton.init_metrics();
         MessageDirector::singleton.init_network();

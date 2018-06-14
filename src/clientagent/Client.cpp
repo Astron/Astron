@@ -30,10 +30,8 @@ Client::Client(ConfigNode, ClientAgent* client_agent) :
 
     set_con_name(name.str());
 
-    m_timeout_generator_handle = g_loop->resource<uvw::AsyncHandle>();
-
     m_client_agent->add_client(m_allocated_channel, this);
-
+    
     subscribe_channel(m_channel);
     subscribe_channel(BCHAN_CLIENTS);
 }
@@ -100,11 +98,12 @@ void Client::generate_timeout(TimeoutSetCallback timeout_set_callback)
     }
 
     if(std::this_thread::get_id() != g_main_thread_id) {
-        m_timeout_generator_handle->send();
-        return;
+        TaskQueue::singleton.enqueue_task([self = this]() {
+            self->generate_timeouts();
+        });
+    } else {
+        generate_timeouts();
     }
-
-    generate_timeouts();
 }
 
 void Client::generate_timeouts()
@@ -124,7 +123,7 @@ void Client::generate_timeouts()
         while(!m_pending_timeouts.empty()) {
             TimeoutSetCallback timeout_set_callback = m_pending_timeouts.front();
             m_pending_timeouts.pop();
-            std::shared_ptr<Timeout> timeout = std::make_shared<Timeout>();
+            Timeout* timeout = new Timeout();
             timeout_set_callback(timeout);
         }
     }
@@ -163,9 +162,9 @@ const Class *Client::lookup_object(doid_t do_id)
 }
 
 // lookup_interests returns a list of all the interests that a parent-zone pair is visible to.
-list<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
+vector<Interest> Client::lookup_interests(doid_t parent_id, zone_t zone_id)
 {
-    list<Interest> interests;
+    vector<Interest> interests;
     for(const auto& it : m_interests) {
         if(parent_id == it.second.parent && (it.second.zones.find(zone_id) != it.second.zones.end())) {
             interests.push_back(it.second);
@@ -296,7 +295,7 @@ void Client::close_zones(doid_t parent, const unordered_set<zone_t> &killed_zone
 {
     // Kill off all objects that are in the matched parent/zones:
 
-    list<doid_t> to_remove;
+    vector<doid_t> to_remove;
     for(const auto& it : m_visible_objects) {
         const VisibleObject& visible_object = it.second;
         if(visible_object.parent != parent) {
@@ -893,7 +892,7 @@ InterestOperation::~InterestOperation()
     assert(m_finished);
 }
 
-void InterestOperation::on_timeout_generate(const std::shared_ptr<Timeout>& timeout)
+void InterestOperation::on_timeout_generate(Timeout* timeout)
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
@@ -912,9 +911,15 @@ void InterestOperation::timeout()
 
 void InterestOperation::finish(bool is_timeout)
 {
-    if(!is_timeout && m_timeout && !m_timeout->cancel()) {
-        // The timeout is already running; let it clean up instead.
-        return;
+    if(!is_timeout && m_timeout != nullptr) {
+        if(!m_timeout->cancel()) {
+            // The timeout is already running; let it clean up instead.
+            return;
+        }
+
+        // We've already invoked cancel on the m_timeout object:
+        // It's gonna get around to deleting itself as soon as the async operation runs, so it's not safe to hold onto its pointer.
+        m_timeout = nullptr;
     }
 
     // Send objects in the initial snapshot
@@ -937,7 +942,7 @@ void InterestOperation::finish(bool is_timeout)
     // N. B. We need to delete the pending interest before we send queued
     //       datagrams, so that they aren't just re-added to the queue.
     //       Move the queued datagrams to the stack so it is safe to delete the Operation.
-    list<DatagramHandle> dispatch = move(m_pending_datagrams);
+    vector<DatagramHandle> dispatch = move(m_pending_datagrams);
 
     // Delete the Interest Operation
     m_client->m_pending_interests.erase(m_request_context);

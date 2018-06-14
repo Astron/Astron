@@ -18,6 +18,8 @@ class HAProxyHandler
         uvw::Addr m_local;
         uvw::Addr m_remote;
 
+        bool m_is_local = false;
+
         bool m_has_error = false;
         uv_errno_t m_error_code;
 
@@ -28,10 +30,39 @@ class HAProxyHandler
         size_t parse_v2_block();
     public:
         size_t consume(const uint8_t* buffer, size_t length); 
-        uvw::Addr get_local() const;
-        uvw::Addr get_remote() const;
-        const std::vector<uint8_t>& get_tlvs() const;
-        bool has_tlvs() const;
-        bool has_error() const;
-        uv_errno_t get_error() const;
+        
+        inline uvw::Addr get_local() const
+        {
+            return m_local;
+        }
+
+        inline uvw::Addr get_remote() const
+        {
+            return m_remote;
+        }
+
+        inline const std::vector<uint8_t>& get_tlvs() const
+        {
+            return m_tlv_buf;
+        }
+
+        inline bool has_tlvs() const
+        {
+            return m_tlv_buf.size() > 0;
+        }
+
+        inline bool is_local() const
+        {
+            return m_is_local;
+        }
+
+        inline bool has_error() const
+        {
+            return m_has_error;
+        }
+
+        inline uv_errno_t get_error() const
+        {
+            return m_error_code;
+        }
 };

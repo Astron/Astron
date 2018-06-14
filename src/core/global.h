@@ -3,6 +3,7 @@
 #include "config/ConfigVariable.h"
 #include "dclass/dc/File.h"
 #include "util/EventSender.h"
+#include "util/TaskQueue.h"
 #include "deps/uvw/uvw.hpp"
 #include <prometheus/exposer.h>
 #include <prometheus/registry.h>

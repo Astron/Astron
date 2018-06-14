@@ -30,6 +30,7 @@ void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket
     m_initialized = true;
 
     // Flush any datagrams that we tried to send out before our connection to upstream was initialised.
+    assert(!m_is_sending);
     flush_send_queue();
 
     m_connector->destroy();
@@ -38,13 +39,12 @@ void MDNetworkUpstream::on_connect(const std::shared_ptr<uvw::TcpHandle> &socket
 
 void MDNetworkUpstream::send_datagram(DatagramHandle dg)
 {
-    {
+    if(!m_initialized) {
         std::lock_guard<std::mutex> lock(m_messages_lock);
         m_messages.push(dg);
     }
-
-    if(m_initialized) {
-        flush_send_queue();
+    else {
+        m_client->send_datagram(dg);
     }
 }
 

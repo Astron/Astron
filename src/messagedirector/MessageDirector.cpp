@@ -89,12 +89,6 @@ void MessageDirector::init_network()
     assert(std::this_thread::get_id() == g_main_thread_id);
 
     if(!m_initialized) {
-        m_flush_handle = g_loop->resource<uvw::AsyncHandle>();
-
-        m_flush_handle->on<uvw::AsyncEvent>([this](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
-            this->flush_queue();
-        });
-
         // Bind to port and listen for downstream servers
         if(bind_addr.get_val() != "unspecified") {
             m_log.info() << "Opening listening socket..." << std::endl;
@@ -166,9 +160,9 @@ void MessageDirector::route_datagram(MDParticipantInterface *p, DatagramHandle d
     if(std::this_thread::get_id() != g_main_thread_id) {
         // We aren't working in threaded mode, but we aren't in the main thread
         // either. For safety, we should post this down to the main thread.
-        if(m_flush_handle != nullptr) {
-            m_flush_handle->send();
-        }
+        TaskQueue::singleton.enqueue_task([self = this]() {
+            self->flush_queue();
+        });
     } else {
         // Main thread: Invoke flush_queue directly.
         flush_queue();
@@ -186,7 +180,7 @@ void MessageDirector::flush_queue()
     }
 
     m_main_is_routing = true;
-
+    
     {
         std::unique_lock<std::mutex> lock(m_messages_lock);
 
@@ -235,7 +229,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 {
     m_log.trace() << "Processing datagram...." << std::endl;
 
-    std::list<channel_t> channels;
+    std::vector<channel_t> channels;
     DatagramIterator dgi(dg);
     try {
         // Unpack channels to send messages to

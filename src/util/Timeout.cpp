@@ -22,16 +22,30 @@ void Timeout::initialize(unsigned long ms, TimeoutCallback callback)
 
     m_timeout_interval = ms;
     m_callback = callback;
+}
 
-    m_cancel_handle = m_loop->resource<uvw::AsyncHandle>();
+void Timeout::setup()
+{
+    assert(m_timer == nullptr);
+
     m_timer = m_loop->resource<uvw::TimerHandle>();
+
+    m_timer->on<uvw::TimerEvent>([self = this](const uvw::TimerEvent&, uvw::TimerHandle&) {
+        self->timer_callback();
+    });
 }
 
 void Timeout::destroy_timer()
 {
     m_callback = nullptr;
-    m_cancel_handle = nullptr;
-    m_timer = nullptr;
+
+    if(m_timer) {
+        m_timer->stop();
+        m_timer->close();
+        m_timer = nullptr;
+    }
+
+    delete this;
 }
 
 void Timeout::timer_callback()
@@ -49,13 +63,9 @@ void Timeout::reset()
 {
     assert(std::this_thread::get_id() == g_main_thread_id);
 
-    m_timer->once<uvw::TimerEvent>([self = shared_from_this()](const uvw::TimerEvent&, uvw::TimerHandle&) {
-        self->timer_callback();
-    });
-
-    m_cancel_handle->once<uvw::AsyncEvent>([self = shared_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle&) {
-        self->cancel();
-    });
+    if(m_timer == nullptr) {
+        setup();
+    }
 
     m_timer->stop();
     m_timer->start(uvw::TimerHandle::Time{m_timeout_interval}, uvw::TimerHandle::Time{0});
@@ -66,14 +76,14 @@ bool Timeout::cancel()
     const bool already_cancelled = !m_callback_disabled.exchange(true);
 
     if(std::this_thread::get_id() != g_main_thread_id) {
-        if(m_cancel_handle != nullptr)
-            m_cancel_handle->send();
+        TaskQueue::singleton.enqueue_task([self = this]() {
+            self->cancel();
+        });
 
         return already_cancelled;
     }
 
     if(m_timer != nullptr) {
-        m_timer->stop();
         destroy_timer();
     }
 

@@ -98,6 +98,7 @@ size_t HAProxyHandler::parse_v2_block()
 
     if(command == 0x0) {
         // LOCAL, ignore the body:
+        m_is_local = true;
         return total_len;
     }
 
@@ -236,32 +237,3 @@ size_t HAProxyHandler::parse_v1_block()
     return hdr_size;
 }
 
-uvw::Addr HAProxyHandler::get_remote() const
-{
-    return m_remote;
-}
-
-uvw::Addr HAProxyHandler::get_local() const
-{
-    return m_local;
-}
-
-const std::vector<uint8_t>& HAProxyHandler::get_tlvs() const
-{
-    return m_tlv_buf;
-}
-
-bool HAProxyHandler::has_tlvs() const
-{
-    return m_tlv_buf.size() > 0;
-}
-
-bool HAProxyHandler::has_error() const
-{
-    return m_has_error;
-}
-
-uv_errno_t HAProxyHandler::get_error() const
-{
-    return m_error_code;
-}

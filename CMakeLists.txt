@@ -384,10 +384,10 @@ set(UTIL_FILES
 	src/util/DatagramIterator.h
 	src/util/EventSender.cpp
 	src/util/EventSender.h
-	src/util/password_prompt.cpp
-	src/util/password_prompt.h
 	src/util/Timeout.cpp
 	src/util/Timeout.h
+	src/util/TaskQueue.cpp
+	src/util/TaskQueue.h
 )
 
 set(NET_FILES
@@ -460,6 +460,7 @@ add_subdirectory(src/dclass)
 
 add_dependencies(astrond dclass)
 target_link_libraries(astrond dclass ${YAMLCPP_LIBRARY} ${DB_LIBRARY_NAMES} ${LIBUV_LIBRARY} ${prometheus-cpp_LIBRARY} ${EXTRA_LIBS})
+install(TARGETS astrond DESTINATION bin)
 
 ### Handle some final testing configuration ###
 if(USE_32BIT_DATAGRAMS)

@@ -23,29 +23,33 @@ NetworkClient::~NetworkClient()
     }
 }
 
-void NetworkClient::shutdown(std::unique_lock<std::mutex> &)
+void NetworkClient::shutdown(std::unique_lock<std::mutex> &lock)
 {
-    if(m_shutdown_handle != nullptr) {
-        m_shutdown_handle->send();
+    if(m_socket == nullptr || m_async_timer == nullptr) {
+        return;
     }
+
+    auto socket = m_socket;
+    auto async_timer = m_async_timer;
+
+    lock.unlock();
+    TaskQueue::singleton.enqueue_task([=]() {
+        socket->close();
+        async_timer->stop();
+        async_timer->close();
+    });
+    lock.lock();
 
     m_socket = nullptr;
     m_async_timer = nullptr;
-    m_flush_handle = nullptr;
-    m_shutdown_handle = nullptr;
     m_haproxy_handler = nullptr;
-}
-
-void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket, std::unique_lock<std::mutex> &lock)
-{
-    initialize(socket, socket->peer(), socket->sock(), false, lock);
 }
 
 void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
                                const uvw::Addr &remote,
                                const uvw::Addr &local,
                                const bool haproxy_mode,
-                               std::unique_lock<std::mutex> &)
+                               std::unique_lock<std::mutex> &lock)
 {
     if(m_socket) {
         throw std::logic_error("Trying to set a socket of a network client whose socket was already set.");
@@ -60,32 +64,25 @@ void NetworkClient::initialize(const std::shared_ptr<uvw::TcpHandle>& socket,
     m_socket->keepAlive(true, uvw::TcpHandle::Time{60});
 
     m_async_timer = g_loop->resource<uvw::TimerHandle>();
-    m_flush_handle = g_loop->resource<uvw::AsyncHandle>();
-    m_shutdown_handle = g_loop->resource<uvw::AsyncHandle>();
 
     m_remote = remote;
     m_local = local;
 
     m_haproxy_mode = haproxy_mode;
 
+    // Slight deviation between behaviour in HAProxy mode and "regular" CA mode:
+    // In HAProxy mode, we want to wait for HAProxyHandler to execute before running the NetworkHandler's initialize().
     if(m_haproxy_mode) {
         m_haproxy_handler = std::make_unique<HAProxyHandler>();
+    }
+    else {
+        lock.unlock();
+        m_handler->initialize();
+        lock.lock();
     }
 
     // NOT protected by a lock, make sure it runs in main!
     start_receive();
-}
-
-void NetworkClient::set_write_timeout(unsigned int timeout)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_write_timeout = timeout;
-}
-
-void NetworkClient::set_write_buffer(uint64_t max_bytes)
-{
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_max_queue_size = max_bytes;
 }
 
 void NetworkClient::send_datagram(DatagramHandle dg)
@@ -110,16 +107,14 @@ void NetworkClient::send_datagram(DatagramHandle dg)
     // Poke the main thread to flush its buffer (it's fine if this is called
     // twice, it checks if it's already sending)
     if(g_main_thread_id != std::this_thread::get_id()) {
-        m_flush_handle->send();
+        lock.unlock();
+        TaskQueue::singleton.enqueue_task([self = shared_from_this()] () {
+            std::unique_lock<std::mutex> lock(self->m_mutex);
+            self->flush_send_queue(lock);
+        });
     } else {
         flush_send_queue(lock);
     }
-}
-
-bool NetworkClient::is_connected(std::unique_lock<std::mutex> &)
-{
-    // We always set m_socket to nullptr on disconnect, so:
-    return m_socket != nullptr;
 }
 
 void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
@@ -190,9 +185,12 @@ void NetworkClient::start_receive()
                     return;
                 }
 
-                self->m_local = self->m_haproxy_handler->get_local();
-                self->m_remote = self->m_haproxy_handler->get_remote();
-                self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
+                self->m_is_local = self->m_haproxy_handler->is_local();
+                if(!self->m_is_local) {
+                    self->m_local = self->m_haproxy_handler->get_local();
+                    self->m_remote = self->m_haproxy_handler->get_remote();
+                    self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
+                }
 
                 ssize_t bytes_left = event.length - bytes_consumed;
                 if(0 < bytes_left) {
@@ -203,6 +201,7 @@ void NetworkClient::start_receive()
                 }
 
                 self->m_haproxy_handler = nullptr;
+                self->m_handler->initialize();
             }
         } else {
             self->process_datagram(event.data, event.length);
@@ -229,24 +228,6 @@ void NetworkClient::start_receive()
         self->send_expired();
     });
 
-    m_flush_handle->on<uvw::AsyncEvent>([self = shared_from_this()](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
-        std::unique_lock<std::mutex> lock(self->m_mutex);
-        self->flush_send_queue(lock);
-    });
-
-    auto socket = m_socket;
-    auto async_timer = m_async_timer;
-    auto flush_handle = m_flush_handle;
-    auto shutdown_handle = m_shutdown_handle;
-    m_shutdown_handle->once<uvw::AsyncEvent>(
-            [socket, async_timer, flush_handle, shutdown_handle](const uvw::AsyncEvent&, uvw::AsyncHandle &) {
-        socket->close();
-        async_timer->stop();
-        async_timer->close();
-        flush_handle->close();
-        shutdown_handle->close();
-    });
-
     m_socket->read();
 }
 
@@ -267,7 +248,12 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock
         // Let flush_send_queue execute first:
         // The send_finished callback is responsible for closing the socket at the end of the flush.
         if(g_main_thread_id != std::this_thread::get_id()) {
-            m_flush_handle->send();
+            lock.unlock();
+            TaskQueue::singleton.enqueue_task([self = shared_from_this()] () {
+                std::unique_lock<std::mutex> lock(self->m_mutex);
+                self->flush_send_queue(lock);
+            });
+            lock.lock();
         } else {
             flush_send_queue(lock);
         }
@@ -372,6 +358,7 @@ void NetworkClient::send_finished()
     m_is_sending = false;
 
     // Discard the buffer we just used:
+    assert(m_send_buf != nullptr);
     delete [] m_send_buf;
     m_send_buf = nullptr;
 
@@ -399,6 +386,18 @@ void NetworkClient::send_expired()
 
     // This function should ONLY run in the main thread. It's a libuv event.
     assert(std::this_thread::get_id() == g_main_thread_id);
+
+    // We need to clean up after ourselves before invoking disconnect:
+    // Otherwise we might inadvertedly end up hitting flush_send_queue, and we don't want to do that here.
+    assert(m_is_sending);
+    m_is_sending = false;
+
+    assert(m_send_buf != nullptr);
+    delete[] m_send_buf;
+    m_send_buf = nullptr;
+
+    m_total_queue_size = 0;
+    m_send_queue.clear();
 
     disconnect(UV_ETIMEDOUT, lock);
 }

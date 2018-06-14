@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <unordered_set>
 #include <string>
 #include <queue>
@@ -13,6 +13,7 @@
 #include "core/global.h"
 #include "util/Datagram.h"
 #include "util/DatagramIterator.h"
+#include "util/TaskQueue.h"
 #include "net/NetworkAcceptor.h"
 
 class MDParticipantInterface;
@@ -75,7 +76,6 @@ class MessageDirector final : public ChannelMap
     std::mutex m_messages_lock;
     std::queue<std::pair<MDParticipantInterface *, DatagramHandle>> m_messages;
     std::condition_variable m_cv;
-    std::shared_ptr<uvw::AsyncHandle> m_flush_handle;
 
     // Counters for Prometheus:
     prometheus::Counter* m_datagrams_processed_ctr = nullptr;
