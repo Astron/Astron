@@ -47,10 +47,9 @@ void MessageDirector::init_metrics()
                                          .Name("md_datagrams_processed")
                                          .Register(*g_registry);
     m_datagrams_processed_ctr = &datagrams_processed_builder->Add({});
-    auto network_participants_builder = &prometheus::BuildGauge()
-            .Name("md_network_participants")
+    m_participants_builder = &prometheus::BuildGauge()
+            .Name("md_participants")
             .Register(*g_registry);
-    m_network_participants_gauge = &network_participants_builder->Add({});
     auto datagram_size_builder = &prometheus::BuildHistogram()
             .Name("md_datagram_size")
             .Register(*g_registry);
@@ -61,6 +60,28 @@ void MessageDirector::init_metrics()
             .Register(*g_registry);
     m_datagram_recipient_hist = &datagram_recipient_builder->Add({},
                                                                 prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+}
+
+void MessageDirector::increment_participant_gauge(MDParticipantInterface* participant)
+{
+    if(participant->m_type.empty())
+        return;
+
+    if(m_participant_gauges.find(participant->m_type) == m_participant_gauges.end())
+        m_participant_gauges[participant->m_type] = &m_participants_builder->Add({{"type", participant->m_type}});
+
+    m_participant_gauges[participant->m_type]->Increment();
+}
+
+void MessageDirector::decrement_participant_gauge(MDParticipantInterface* participant)
+{
+    if(participant->m_type.empty())
+        return;
+
+    if(m_participant_gauges.find(participant->m_type) == m_participant_gauges.end())
+        return;
+
+    m_participant_gauges[participant->m_type]->Decrement();
 }
 
 void MessageDirector::init_network()
@@ -355,7 +376,6 @@ void MessageDirector::add_participant(MDParticipantInterface* p)
 {
     std::unique_lock<std::mutex> lock(m_participants_lock);
     m_participants.insert(p);
-    update_participant_gauge(lock);
 }
 
 void MessageDirector::remove_participant(MDParticipantInterface* p)
@@ -365,9 +385,8 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
 
     // Stop tracking participant
     {
-        std::unique_lock<std::mutex> lock(m_participants_lock);
+        std::lock_guard<std::mutex> lock(m_participants_lock);
         m_participants.erase(p);
-        update_participant_gauge(lock);
     }
 
     // Send out any post-remove messages the participant may have added.
@@ -376,6 +395,7 @@ void MessageDirector::remove_participant(MDParticipantInterface* p)
     // certain data structures may not have their invariants satisfied
     // during that time.
     p->post_remove();
+    decrement_participant_gauge(p);
 
     // Mark the participant for deletion
     {

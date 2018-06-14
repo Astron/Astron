@@ -39,6 +39,7 @@ static ConfigVariable<unsigned long> interest_timeout("interest_timeout", 500, t
 ClientAgent::ClientAgent(RoleConfig roleconfig) : Role(roleconfig), m_net_acceptor(nullptr),
     m_server_version(server_version.get_rval(roleconfig))
 {
+    register_participant("ClientAgent");
 
     stringstream ss;
     ss << "Client Agent (" << bind_addr.get_rval(roleconfig) << ")";

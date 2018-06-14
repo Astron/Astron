@@ -68,6 +68,8 @@ class AstronClient : public Client, public NetworkHandler
         m_send_version(send_version_to_client.get_rval(config)),
         m_heartbeat_timeout(heartbeat_timeout_config.get_rval(config))
     {
+        register_participant("AstronClient");
+
         m_client->initialize(socket, remote, local, haproxy_mode);
 
         initialize();

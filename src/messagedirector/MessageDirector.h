@@ -79,7 +79,8 @@ class MessageDirector final : public ChannelMap
 
     // Counters for Prometheus:
     prometheus::Counter* m_datagrams_processed_ctr = nullptr;
-    prometheus::Gauge* m_network_participants_gauge = nullptr;
+    prometheus::Family<prometheus::Gauge>* m_participants_builder = nullptr;
+    std::unordered_map<std::string, prometheus::Gauge*> m_participant_gauges;
     prometheus::Histogram* m_datagram_size_hist = nullptr;
     prometheus::Histogram* m_datagram_recipient_hist = nullptr;
 
@@ -91,13 +92,9 @@ class MessageDirector final : public ChannelMap
 
     LogCategory m_log;
 
-    inline void update_participant_gauge(std::unique_lock<std::mutex>& )
-    {
-        if(m_network_participants_gauge)
-            m_network_participants_gauge->Set(m_participants.size());
-    }
-
     friend class MDParticipantInterface;
+    void increment_participant_gauge(MDParticipantInterface* participant);
+    void decrement_participant_gauge(MDParticipantInterface* participant);
     void add_participant(MDParticipantInterface* participant);
     void remove_participant(MDParticipantInterface* participant);
     void preroute_post_remove(channel_t sender, DatagramHandle dg);
@@ -211,6 +208,11 @@ class MDParticipantInterface : public ChannelSubscriber
     {
         m_url = url;
     }
+    inline void register_participant(const std::string &type)
+    {
+        m_type = type;
+        MessageDirector::singleton.increment_participant_gauge(this);
+    }
     inline void log_message(std::vector<uint8_t> message)
     {
         g_eventsender.send(Datagram::create(message));
@@ -225,6 +227,7 @@ class MDParticipantInterface : public ChannelSubscriber
     std::unordered_map<channel_t, std::vector<DatagramHandle> > m_post_removes;
     std::atomic<bool> m_is_terminated {false};
     std::string m_name;
+    std::string m_type;
     std::string m_url;
 };
 

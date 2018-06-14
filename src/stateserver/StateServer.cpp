@@ -17,6 +17,7 @@ static ReservedChannelConstraint control_not_reserved(control_channel);
 
 StateServer::StateServer(RoleConfig roleconfig) : Role(roleconfig)
 {
+    register_participant("StateServer");
     init_metrics();
 
     channel_t channel = control_channel.get_rval(m_roleconfig);

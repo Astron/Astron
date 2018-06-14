@@ -32,6 +32,8 @@ DatabaseServer::DatabaseServer(RoleConfig roleconfig) : Role(roleconfig),
     m_max_id(max_id.get_rval(roleconfig)),
     m_broadcast(broadcast_updates.get_rval(roleconfig))
 {
+    register_participant("DatabaseServer");
+
     ConfigNode generate = dbserver_config.get_child_node(generate_config, roleconfig);
     ConfigNode backend = dbserver_config.get_child_node(db_backend_config, roleconfig);
     m_db_backend = DBBackendFactory::singleton().instantiate_backend(

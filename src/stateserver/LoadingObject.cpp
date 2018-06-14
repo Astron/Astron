@@ -15,6 +15,8 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id,
     m_context(stateserver->m_next_context++), m_dclass(nullptr), m_valid_contexts(contexts),
     m_is_loaded(false), m_start_time(g_loop->now())
 {
+    register_participant("LoadingObject");
+
     std::stringstream name;
     name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
     m_log = std::unique_ptr<LogCategory>(new LogCategory("dbobject", name.str()));
@@ -30,6 +32,8 @@ LoadingObject::LoadingObject(DBStateServer *stateserver, doid_t do_id, doid_t pa
     m_context(stateserver->m_next_context++), m_dclass(dclass), m_valid_contexts(contexts),
     m_is_loaded(false)
 {
+    register_participant("LoadingObject");
+
     std::stringstream name;
     name << "LoadingObject(doid: " << do_id << ", db: " << m_dbss->m_db_channel << ")";
     m_log = std::unique_ptr<LogCategory>(new LogCategory("dbobject", name.str()));

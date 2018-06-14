@@ -17,6 +17,7 @@ static ValidAddressConstraint valid_bind_addr(bind_addr);
 EventLogger::EventLogger(RoleConfig roleconfig) : Role(roleconfig),
     m_log("eventlogger", "Event Logger"), m_file(nullptr)
 {
+    register_participant("EventLogger");
     bind(bind_addr.get_rval(roleconfig));
 
     m_file_format = output_format.get_rval(roleconfig);

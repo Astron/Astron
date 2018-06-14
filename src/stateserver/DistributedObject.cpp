@@ -17,6 +17,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, doid_t do_id, doi
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
     m_ai_explicitly_set(false), m_parent_synchronized(false), m_next_context(0)
 {
+    register_participant("DistributedObject");
+
     stringstream name;
     name << dclass->get_name() << "(" << do_id << ")";
     m_log = new LogCategory("object", name.str());
@@ -66,6 +68,8 @@ DistributedObject::DistributedObject(StateServer *stateserver, channel_t sender,
     m_dclass(dclass), m_ai_channel(INVALID_CHANNEL), m_owner_channel(INVALID_CHANNEL),
     m_ai_explicitly_set(false), m_next_context(0)
 {
+    register_participant("DistributedObject");
+
     stringstream name;
     name << dclass->get_name() << "(" << do_id << ")";
     m_log = new LogCategory("object", name.str());

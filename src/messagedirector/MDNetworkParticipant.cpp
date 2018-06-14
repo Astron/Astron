@@ -5,6 +5,7 @@
 MDNetworkParticipant::MDNetworkParticipant(const std::shared_ptr<uvw::TcpHandle> &socket)
     : MDParticipantInterface(), m_client(std::make_shared<NetworkClient>(this))
 {
+    register_participant("MDNetworkParticipant");
     set_con_name("Network Participant");
 
     m_client->initialize(socket);
