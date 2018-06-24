@@ -93,6 +93,16 @@ class ClientAgent final : public Role
         if(m_interest_time_hist)
             m_interest_time_hist->Observe(time.count());
     }
+
+    void report_add_interests(size_t amount = 1)
+    {
+        m_interest_handles_gauge->Increment(amount);
+    }
+
+    void report_remove_interests(size_t amount = 1)
+    {
+        m_interest_handles_gauge->Decrement(amount);
+    }
 private:
     std::unique_ptr<NetworkAcceptor> m_net_acceptor;
     std::string m_client_type;
@@ -108,4 +118,6 @@ private:
     prometheus::Gauge* m_client_count_gauge = nullptr;
     prometheus::Histogram* m_interest_time_hist = nullptr;
     prometheus::Counter* m_interest_timeout_ctr = nullptr;
+    prometheus::Gauge* m_interest_handles_gauge = nullptr;
+    prometheus::Gauge* m_interested_zones_gauge = nullptr;
 };

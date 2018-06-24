@@ -76,6 +76,10 @@ void Client::annihilate()
         (it++)->second->finish();
     }
 
+    if (!m_interests.empty()) {
+        m_client_agent->report_remove_interests(m_interests.size());
+    }
+
     // Tell the MD this client is gone
     terminate();
 }
@@ -235,6 +239,8 @@ void Client::add_interest(Interest &i, uint32_t context, channel_t caller)
 
         // Now that we know what zones to kill, let's get to it:
         close_zones(previous_interest.parent, killed_zones);
+    } else {
+        m_client_agent->report_add_interests();
     }
     m_interests[i.id] = i;
 
@@ -285,8 +291,10 @@ void Client::remove_interest(Interest &i, uint32_t context, channel_t caller)
 
     notify_interest_done(i.id, caller);
     handle_interest_done(i.id, context);
-
-    m_interests.erase(i.id);
+    
+    if (m_interests.erase(i.id) != 0) {
+        m_client_agent->report_remove_interests();
+    }
 }
 
 // cloze_zones removes objects visible through the zones from the client and unsubscribes

@@ -103,6 +103,10 @@ void ClientAgent::init_metrics()
             .Name("ca_interest_timeouts")
             .Register(*g_registry);
     m_interest_timeout_ctr = &interest_timeout_builder->Add({});
+    auto interest_handles_builder = &prometheus::BuildGauge()
+            .Name("ca_interest_handles")
+            .Register(*g_registry);
+    m_interest_handles_gauge = &interest_handles_builder->Add({});
 }
 
 // handle_tcp generates a new Client object from a raw tcp connection.
