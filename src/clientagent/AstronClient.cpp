@@ -208,7 +208,7 @@ class AstronClient : public Client, public NetworkHandler
     {
         lock_guard<recursive_mutex> lock(m_client_lock);
 
-        if(!m_clean_disconnect) {
+        if(!m_clean_disconnect && !m_client->is_local()) {
             LoggedEvent event("client-lost");
             event.add("reason", evt.what());
             log_event(event);
