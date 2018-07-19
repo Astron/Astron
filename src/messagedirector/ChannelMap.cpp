@@ -46,7 +46,7 @@ void ChannelMap::init_metrics()
     
     // For now, until there is a reason to otherwise, declaring gauges here
     m_valid_channel_gauge = &m_valid_channels_builder->Add({});
-    m_channel_subscription_gauge = &m_channels_subscriptions_builder->Add({});
+    m_channel_subscription_gauge = &m_channel_subscriptions_builder->Add({});
     m_valid_range_gauge = &m_valid_ranges_builder->Add({});
     m_range_subscription_gauge = &m_range_subscriptions_builder->Add({});
 }
