@@ -60,6 +60,7 @@ void MessageDirector::init_metrics()
             .Register(*g_registry);
     m_datagram_recipient_hist = &datagram_recipient_builder->Add({},
                                                                 prometheus::Histogram::BucketBoundaries{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    ChannelMap::init_metrics();
 }
 
 void MessageDirector::increment_participant_gauge(MDParticipantInterface* participant)

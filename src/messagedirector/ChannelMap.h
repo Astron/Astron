@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include "core/types.h"
+#include "core/global.h"
 #include <boost/icl/interval_map.hpp>
 
 class ChannelSubscriber
@@ -32,6 +33,9 @@ class ChannelMap
 {
   public:
     ChannelMap();
+    
+    // init_metrics initializes prometheus metrics
+    void init_metrics();
 
     // subscribe_channel adds a single channel to the mapping.
     // (Args) "c": the channel to be added.
@@ -86,4 +90,26 @@ class ChannelMap
 
     // In order to make this object thread-safe...
     std::recursive_mutex m_lock;
+
+    // Counters for Prometheus, made families in case labels need to happen
+    prometheus::Family<prometheus::Gauge>* m_valid_channels_builder = nullptr;
+    prometheus::Family<prometheus::Gauge>* m_channel_subscriptions_builder = nullptr;
+    prometheus::Family<prometheus::Gauge>* m_valid_ranges_builder = nullptr;
+    prometheus::Family<prometheus::Gauge>* m_range_subscriptions_builder = nullptr;
+
+    // Right now, these are gauges, but can easily be made maps or whatever
+    prometheus::Gauge* m_valid_channel_gauge;
+    prometheus::Gauge* m_channel_subscription_gauge;
+    prometheus::Gauge* m_valid_range_gauge;
+    prometheus::Gauge* m_range_subscription_gauge;
+
+    //Incrementors for Prometheus, given seperate methods in case something more needs to be done with them
+    void increment_valid_channel_gauge();
+    void decrement_valid_channel_gauge();
+    void increment_channel_subscription_gauge();
+    void decrement_channel_subscription_gauge();
+    void increment_valid_range_gauge();
+    void decrement_valid_range_gauge();
+    void increment_range_subscription_gauge();
+    void decrement_range_subscription_gauge();
 };

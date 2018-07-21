@@ -23,6 +23,34 @@ ChannelMap::ChannelMap()
     m_range_subscriptions += std::make_pair(interval_t::closed(0, CHANNEL_MAX), empty_set);
 }
 
+void ChannelMap::init_metrics()
+{
+    // Gauges in MessageDirector.cpp aren't given help variables, but I think they are worth considering if there
+    // ends up being a large number of gauges
+    m_valid_channels_builder = &prometheus::BuildGauge()
+            .Name("md_valid_channels")
+            .Help("Number of unique channels")
+            .Register(*g_registry);
+    m_channel_subscriptions_builder = &prometheus::BuildGauge()
+            .Name("md_channel_subscriptions")
+            .Help("Total number of subscriptions")
+            .Register(*g_registry);
+    m_valid_ranges_builder = &prometheus::BuildGauge()
+            .Name("md_valid_ranges")
+            .Help("Number of unique ranges")
+            .Register(*g_registry);
+    m_range_subscriptions_builder = &prometheus::BuildGauge()
+            .Name("md_range_subscriptions")
+            .Help("Total number of range subscriptions")
+            .Register(*g_registry);
+    
+    // For now, until there is a reason to otherwise, declaring gauges here
+    m_valid_channel_gauge = &m_valid_channels_builder->Add({});
+    m_channel_subscription_gauge = &m_channel_subscriptions_builder->Add({});
+    m_valid_range_gauge = &m_valid_ranges_builder->Add({});
+    m_range_subscription_gauge = &m_range_subscriptions_builder->Add({});
+}
+
 void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
 {
     std::lock_guard<std::recursive_mutex> guard(m_lock);
@@ -36,9 +64,11 @@ void ChannelMap::subscribe_channel(ChannelSubscriber *p, channel_t c)
 
     if(!has_subs) {
         on_add_channel(c);
+        increment_valid_channel_gauge();
     }
 
     m_channel_subscriptions.insert(std::make_pair(c, p));
+    increment_channel_subscription_gauge();
 }
 
 bool ChannelMap::remove_subscriber(ChannelSubscriber *p, channel_t c)
@@ -70,9 +100,11 @@ void ChannelMap::unsubscribe_channel(ChannelSubscriber *p, channel_t c)
     }
 
     p->channels().erase(c);
+    decrement_channel_subscription_gauge();
 
     if(remove_subscriber(p, c)) {
         on_remove_channel(c);
+        decrement_valid_channel_gauge();
     }
 }
 
@@ -89,6 +121,8 @@ void ChannelMap::subscribe_range(ChannelSubscriber *p, channel_t lo, channel_t h
     // Update range mappings
     p->ranges() += interval;
     m_range_subscriptions += std::make_pair(interval, participant_set);
+    // Is this supposed to increase by one or by the interval?
+    increment_range_subscription_gauge();
 
     // Now, check if anything along this interval is *new*:
     auto interval_range = m_range_subscriptions.equal_range(interval);
@@ -98,6 +132,7 @@ void ChannelMap::subscribe_range(ChannelSubscriber *p, channel_t lo, channel_t h
             // (our newly added participant!) and thus, we should upstream the
             // range addition.
             on_add_range(lo, hi);
+            increment_valid_range_gauge();
             break;
         }
     }
@@ -134,6 +169,8 @@ void ChannelMap::unsubscribe_range(ChannelSubscriber *p, channel_t lo, channel_t
     // Update range mappings
     p->ranges() -= interval;
     m_range_subscriptions -= std::make_pair(interval, participant_set);
+    // This begs the same question as subscrive
+    decrement_range_subscription_gauge();
 
     // Clobber *channel* subscriptions that fall within the range.
     for(auto it = p->channels().begin(); it != p->channels().end();) {
@@ -155,6 +192,7 @@ void ChannelMap::unsubscribe_range(ChannelSubscriber *p, channel_t lo, channel_t
         // Okay, this part of the interval is dead, better request it be
         // sliced off:
         on_remove_range(lower, upper);
+        decrement_valid_channel_gauge();
     }
 }
 
@@ -209,4 +247,44 @@ void ChannelMap::lookup_channels(const std::vector<channel_t> &cl, std::unordere
             ps.insert(range->second.begin(), range->second.end());
         }
     }
+}
+
+void ChannelMap::increment_valid_channel_gauge()
+{
+    m_valid_channel_gauge->Increment();
+}
+
+void ChannelMap::decrement_valid_channel_gauge()
+{
+    m_valid_channel_gauge->Decrement();
+}
+
+void ChannelMap::increment_channel_subscription_gauge()
+{
+    m_channel_subscription_gauge->Increment();
+}
+
+void ChannelMap::decrement_channel_subscription_gauge()
+{
+    m_channel_subscription_gauge->Decrement();
+}
+
+void ChannelMap::increment_valid_range_gauge()
+{
+    m_valid_range_gauge->Increment();
+}
+
+void ChannelMap::decrement_valid_range_gauge()
+{
+    m_valid_range_gauge->Decrement();
+}
+
+void ChannelMap::increment_range_subscription_gauge()
+{
+    m_range_subscription_gauge->Increment();
+}
+
+void ChannelMap::decrement_range_subscription_gauge()
+{
+    m_range_subscription_gauge->Decrement();
 }
