@@ -182,6 +182,7 @@ Video lectures from Disney:
  - [DistributedObjects](http://www.youtube.com/watch?v=JsgCFVpXQtQ)
  - [DistributedObjects and the OTP Server](http://www.youtube.com/watch?v=r_ZP9SInPcs)
  - [OTP Server Internals](http://www.youtube.com/watch?v=SzybRdxjYoA)
+ - [(GDC Online) MMO 101 - Building Disney's Server System](https://www.gdcvault.com/play/1013776/MMO-101-Building-Disney-s)
  
 Video lectures from the community:
  - [Introduction to Astron (TheCheapestPixels)](https://www.youtube.com/playlist?list=PL45FKyuwQjYsPhiGtky2WMCtm0k9EZW5E)
