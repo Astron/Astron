@@ -290,6 +290,8 @@ void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
     // thread.
     assert(std::this_thread::get_id() == g_main_thread_id);
 
+    auto socket = m_socket;
+
     // If we aren't connected, stop here
     if(!is_connected(lock)) {
         return;
@@ -343,7 +345,9 @@ void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
 
     // Bombs away!
     m_is_sending = true;
-    m_socket->write(m_send_buf, buffer_size);
+    lock.unlock();
+    socket->write(m_send_buf, buffer_size);
+    lock.lock();
 }
 
 void NetworkClient::send_finished()
