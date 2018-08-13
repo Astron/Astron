@@ -112,7 +112,6 @@ void NetworkClient::send_datagram(DatagramHandle dg)
             std::unique_lock<std::mutex> lock(self->m_mutex);
             self->flush_send_queue(lock);
         });
-        lock.lock();
     } else {
         flush_send_queue(lock);
     }
@@ -254,7 +253,6 @@ void NetworkClient::disconnect(uv_errno_t ec, std::unique_lock<std::mutex> &lock
                 std::unique_lock<std::mutex> lock(self->m_mutex);
                 self->flush_send_queue(lock);
             });
-            lock.lock();
         } else {
             flush_send_queue(lock);
         }
