@@ -112,6 +112,7 @@ void NetworkClient::send_datagram(DatagramHandle dg)
             std::unique_lock<std::mutex> lock(self->m_mutex);
             self->flush_send_queue(lock);
         });
+        lock.lock();
     } else {
         flush_send_queue(lock);
     }
@@ -282,6 +283,8 @@ void NetworkClient::handle_disconnect(uv_errno_t ec, std::unique_lock<std::mutex
     } else {
         m_handler->receive_disconnect(uvw::ErrorEvent{(int)ec});
     }
+
+    lock.lock();
 }
 
 void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
@@ -289,8 +292,6 @@ void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
     // libuv is NOT thread-safe. This function must ONLY be called in the main
     // thread.
     assert(std::this_thread::get_id() == g_main_thread_id);
-
-    auto socket = m_socket;
 
     // If we aren't connected, stop here
     if(!is_connected(lock)) {
@@ -307,6 +308,8 @@ void NetworkClient::flush_send_queue(std::unique_lock<std::mutex> &lock)
         assert(m_total_queue_size == 0);
         return;
     }
+
+    auto socket = m_socket;
 
     // Figure out how big of a send buffer we need
     size_t buffer_size = 0;
