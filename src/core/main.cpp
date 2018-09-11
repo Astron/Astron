@@ -145,8 +145,14 @@ int main(int argc, char *argv[])
         // seperate path
         string filename = fs::filename(cfg_file);
         string dir_str = fs::parent_of(cfg_file);
+        string cur_dir = fs::current_path();
 
-        if(dir_str == fs::current_path()) {
+        if(cur_dir == "") {
+            mainlog.fatal() << "Failed to get current working directory.\n";
+            return 1;
+        }
+
+        if(dir_str == cur_dir) {
             // we're already in the directory that the configuration is under.
             dir_str = "";
         }

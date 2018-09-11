@@ -88,12 +88,16 @@ namespace fs
     {
         #ifdef _WIN32
             TCHAR path[MAX_PATH];
-            GetCurrentDirectory(MAX_PATH, path);
+            if(!GetCurrentDirectory(MAX_PATH, path))
+                return "";
+
             path[MAX_PATH - 1] = '\0';
             return std::string(path);
         #else
             char path[PATH_MAX];
-            getcwd(path, PATH_MAX - 1);
+            if(!getcwd(path, PATH_MAX - 1))
+                return "";
+
             path[PATH_MAX - 1] = '\0';
             return std::string(path);
         #endif
