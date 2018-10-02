@@ -35,9 +35,13 @@ size_t HAProxyHandler::consume(const uint8_t* buffer, size_t length)
         return 0;
     }
 
-    if(hdr_size <= m_data_buf.size()) {
-        // Returns how many bytes we consumed if the proxy block is now full. 
+    if(hdr_size < m_data_buf.size()) {
+        // Returns how many bytes we consumed if the proxy block is over capacity. 
         return hdr_size - prev_size;
+    }
+    else if(hdr_size == m_data_buf.size()) {
+        // Consumed exactly as many bytes as we were given in the call for the header.
+        return 0;
     }
 
     return length;
