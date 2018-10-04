@@ -209,7 +209,18 @@ class AstronClient : public Client, public NetworkHandler
         lock_guard<recursive_mutex> lock(m_client_lock);
 
         if(!m_clean_disconnect && !m_client->is_local()) {
+            stringstream ss;
             LoggedEvent event("client-lost");
+            // Remote address:
+            ss << m_client->get_remote().ip
+               << ":" << m_client->get_remote().port;
+            event.add("remote_address", ss.str());
+            // Clear the stream.
+            ss.str("");
+            // Local address:
+            ss << m_client->get_local().ip
+               << ":" << m_client->get_local().port;
+            event.add("local_address", ss.str());
             event.add("reason", evt.what());
             log_event(event);
         }
