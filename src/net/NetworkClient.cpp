@@ -192,16 +192,16 @@ void NetworkClient::start_receive()
                     self->m_tlv_buf = self->m_haproxy_handler->get_tlvs();
                 }
 
+                self->m_haproxy_handler = nullptr;
+                self->m_handler->initialize();
+
                 ssize_t bytes_left = bytes_consumed > 0 ? event.length - bytes_consumed : 0;
                 if(0 < bytes_left) {
                     // Feed any left-over bytes (if any) back to process_datagram.
                     std::unique_ptr<char[]> overread_bytes = std::make_unique<char[]>(bytes_left);
                     memcpy(overread_bytes.get(), event.data.get() + bytes_consumed, bytes_left);
                     self->process_datagram(overread_bytes, bytes_left);
-                }
-
-                self->m_haproxy_handler = nullptr;
-                self->m_handler->initialize();
+                } 
             }
         } else {
             self->process_datagram(event.data, event.length);
