@@ -34,7 +34,8 @@ enum class UVStdIOFlags: std::underlying_type_t<uv_stdio_flags> {
     INHERIT_FD = UV_INHERIT_FD,
     INHERIT_STREAM = UV_INHERIT_STREAM,
     READABLE_PIPE = UV_READABLE_PIPE,
-    WRITABLE_PIPE = UV_WRITABLE_PIPE
+    WRITABLE_PIPE = UV_WRITABLE_PIPE,
+    OVERLAPPED_PIPE = UV_OVERLAPPED_PIPE
 };
 
 
@@ -72,11 +73,8 @@ public:
     using StdIO = details::UVStdIOFlags;
 
     ProcessHandle(ConstructorAccess ca, std::shared_ptr<Loop> ref)
-        : Handle{ca, std::move(ref)}, poFdStdio{1}
-    {
-        // stdin container default initialization
-        poFdStdio[0].flags = static_cast<uv_stdio_flags>(StdIO::IGNORE_STREAM);
-    }
+        : Handle{ca, std::move(ref)}
+    {}
 
     /**
      * @brief Disables inheritance for file descriptors/handles.
@@ -134,7 +132,6 @@ public:
         uv_process_options_t po;
 
         po.exit_cb = &exitCallback;
-
         po.file = file;
         po.args = args;
         po.env = env;
@@ -143,16 +140,11 @@ public:
         po.uid = poUid;
         po.gid = poGid;
 
-        /**
-         * See the constructor, poFdStdio[0] is stdin. It must be poStdio[0] by
-         * convention. From the official documentation:
-         *
-         * > The convention is that stdio[0] points to stdin, fd 1 is used
-         * > for stdout, and fd 2 is stderr.
-         */
-        std::vector<uv_stdio_container_t> poStdio{poFdStdio.size() + poStreamStdio.size()};
-        poStdio.insert(poStdio.begin(), poStreamStdio.cbegin(), poStreamStdio.cend());
+        std::vector<uv_stdio_container_t> poStdio;
+        poStdio.reserve(poFdStdio.size() + poStreamStdio.size());
         poStdio.insert(poStdio.begin(), poFdStdio.cbegin(), poFdStdio.cend());
+        poStdio.insert(poStdio.end(), poStreamStdio.cbegin(), poStreamStdio.cend());
+       
         po.stdio_count = static_cast<decltype(po.stdio_count)>(poStdio.size());
         po.stdio = poStdio.data();
 
@@ -226,6 +218,7 @@ public:
      * * `ProcessHandle::StdIO::INHERIT_STREAM`
      * * `ProcessHandle::StdIO::READABLE_PIPE`
      * * `ProcessHandle::StdIO::WRITABLE_PIPE`
+     * * `ProcessHandle::StdIO::OVERLAPPED_PIPE`
      *
      * See the official
      * [documentation](http://docs.libuv.org/en/v1.x/process.html#c.uv_stdio_flags)
@@ -256,6 +249,7 @@ public:
      * * `ProcessHandle::StdIO::INHERIT_STREAM`
      * * `ProcessHandle::StdIO::READABLE_PIPE`
      * * `ProcessHandle::StdIO::WRITABLE_PIPE`
+     * * `ProcessHandle::StdIO::OVERLAPPED_PIPE`
      *
      * Default file descriptors are:
      *     * `uvw::StdIN` for `stdin`
@@ -275,22 +269,18 @@ public:
 
         auto actual = FileHandle::Type{fd};
 
-        if(actual == FileHandle::Type{StdIN}) {
-            poFdStdio[0].flags = fgs;
-        } else {
-            auto it = std::find_if(poFdStdio.begin(), poFdStdio.end(), [actual](auto &&container){
-                return container.data.fd == actual;
-            });
+        auto it = std::find_if(poFdStdio.begin(), poFdStdio.end(), [actual](auto &&container){
+            return container.data.fd == actual;
+        });
 
-            if(it == poFdStdio.cend()) {
-                uv_stdio_container_t container;
-                container.flags = fgs;
-                container.data.fd = actual;
-                poFdStdio.push_back(std::move(container));
-            } else {
-                it->flags = fgs;
-                it->data.fd = actual;
-            }
+        if(it == poFdStdio.cend()) {
+            uv_stdio_container_t container;
+            container.flags = fgs;
+            container.data.fd = actual;
+            poFdStdio.push_back(std::move(container));
+        } else {
+            it->flags = fgs;
+            it->data.fd = actual;
         }
 
         return *this;

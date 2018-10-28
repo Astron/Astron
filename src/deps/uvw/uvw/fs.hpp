@@ -48,7 +48,8 @@ enum class UVFsType: std::underlying_type_t<uv_fs_type> {
     CHOWN = UV_FS_CHOWN,
     FCHOWN = UV_FS_FCHOWN,
     REALPATH = UV_FS_REALPATH,
-    COPYFILE = UV_FS_COPYFILE
+    COPYFILE = UV_FS_COPYFILE,
+    LCHOWN = UV_FS_LCHOWN
 };
 
 
@@ -90,7 +91,9 @@ enum class UVFileOpenFlags: int {
 
 
 enum class UVCopyFileFlags: int {
-    EXCL = UV_FS_COPYFILE_EXCL
+    EXCL = UV_FS_COPYFILE_EXCL,
+    FICLONE = UV_FS_COPYFILE_FICLONE,
+    FICLONE_FORCE = UV_FS_COPYFILE_FICLONE_FORCE
 };
 
 
@@ -139,6 +142,7 @@ enum class UVSymLinkFlags: int {
  * * `FsRequest::Type::FCHOWN`
  * * `FsRequest::Type::REALPATH`
  * * `FsRequest::Type::COPYFILE`
+ * * `FsRequest::Type::LCHOWN`
  *
  * It will be emitted by FsReq and/or FileReq according with their
  * functionalities.
@@ -794,20 +798,6 @@ public:
     }
 
     /**
-     * @brief Gets the OS dependent handle.
-     *
-     * For a file descriptor in the C runtime, get the OS-dependent handle. On
-     * UNIX, returns the file descriptor as-is. On Windows, this calls a system
-     * function.<br/>
-     * Note that the return value is still owned by the C runtime, any attempts
-     * to close it or to use it after closing the file descriptor may lead to
-     * malfunction.
-     */
-    OSFileDescriptor handle() const noexcept {
-        return uv_get_osfhandle(file);
-    }
-
-    /**
      * @brief Cast operator to FileHandle.
      *
      * Cast operator to an internal representation of the underlying file
@@ -1115,7 +1105,14 @@ public:
      * * `FsReq::CopyFile::EXCL`: it fails if the destination path
      * already exists (the default behavior is to overwrite the destination if
      * it exists).
+     * * `FsReq::CopyFile::FICLONE`: If present, it will attempt to create a
+     * copy-on-write reflink. If the underlying platform does not support
+     * copy-on-write, then a fallback copy mechanism is used.
+     * * `FsReq::CopyFile::FICLONE_FORCE`: If present, it will attempt to create
+     * a copy-on-write reflink. If the underlying platform does not support
+     * copy-on-write, then an error is returned.
      *
+     * @warning
      * If the destination path is created, but an error occurs while copying the
      * data, then the destination path is removed. There is a brief window of
      * time between closing and removing the file where another process could
@@ -1385,6 +1382,65 @@ public:
         auto req = get();
         cleanupAndInvokeSync(&uv_fs_chown, parent(), req, path.data(), uid, gid);
         return !(req->result < 0);
+    }
+
+    /**
+     * @brief Async [lchown](https://linux.die.net/man/2/lchown).
+     *
+     * Emit a `FsEvent<FsReq::Type::LCHOWN>` event when completed.<br/>
+     * Emit an ErrorEvent event in case of errors.
+     *
+     * @param path Path, as described in the official documentation.
+     * @param uid UID, as described in the official documentation.
+     * @param gid GID, as described in the official documentation.
+     */
+    void lchown(std::string path, Uid uid, Gid gid) {
+        cleanupAndInvoke(&uv_fs_lchown, parent(), get(), path.data(), uid, gid, &fsGenericCallback<Type::LCHOWN>);
+    }
+
+    /**
+     * @brief Sync [lchown](https://linux.die.net/man/2/lchown).
+     * @param path Path, as described in the official documentation.
+     * @param uid UID, as described in the official documentation.
+     * @param gid GID, as described in the official documentation.
+     * @return True in case of success, false otherwise.
+     */
+    bool lchownSync(std::string path, Uid uid, Gid gid) {
+        auto req = get();
+        cleanupAndInvokeSync(&uv_fs_lchown, parent(), req, path.data(), uid, gid);
+        return !(req->result < 0);
+    }
+};
+
+
+/*! @brief Helper functions. */
+struct FsHelper {
+    /**
+     * @brief Gets the OS dependent handle.
+     *
+     * For a file descriptor in the C runtime, get the OS-dependent handle. On
+     * UNIX, returns the file descriptor as-is. On Windows, this calls a system
+     * function.<br/>
+     * Note that the return value is still owned by the C runtime, any attempts
+     * to close it or to use it after closing the file descriptor may lead to
+     * malfunction.
+     */
+    static OSFileDescriptor handle(FileHandle file) noexcept {
+        return uv_get_osfhandle(file);
+    }
+
+    /**
+     * @brief Gets the file descriptor.
+     *
+     * For a OS-dependent handle, get the file descriptor in the C runtime. On
+     * UNIX, returns the file descriptor as-is. On Windows, this calls a system
+     * function.<br/>
+     * Note that the return value is still owned by the C runtime, any attempts
+     * to close it or to use it after closing the handle may lead to
+     * malfunction.
+     */
+    static FileHandle open(OSFileDescriptor descriptor) noexcept {
+        return uv_open_osfhandle(descriptor);
     }
 };
 
