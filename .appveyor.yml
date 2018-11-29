@@ -17,22 +17,24 @@ install:
 - set CMAKE_INCLUDE_PATH=%CMAKE_INCLUDE_PATH%;%CD%
 - cd ..
 # build mongoc
-- appveyor DownloadFile https://github.com/mongodb/mongo-c-driver/archive/1.10.2.zip -FileName mongo-c-driver-1.10.2.zip
-- 7z x mongo-c-driver-1.10.2.zip
-- cd mongo-c-driver-1.10.2
+- appveyor DownloadFile https://github.com/mongodb/mongo-c-driver/archive/1.13.0.zip -FileName mongo-c-driver.zip
+- 7z x mongo-c-driver.zip
+- cd mongo-c-driver-1.13.0
 - cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongoc -DENABLE_SSL=OFF -DENABLE_TESTS=OFF
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
 - cd ..
 # build mongo-cxx-driver
-- git clone --branch releases/stable https://github.com/mongodb/mongo-cxx-driver
-- cd mongo-cxx-driver\build
+- appveyor DownloadFile https://github.com/mongodb/mongo-cxx-driver/archive/r3.4.0.zip -FileName mongo-cxx-driver.zip
+- 7z x mongo-cxx-driver.zip
+- cd mongo-cxx-driver-r3.4.0\build
 - cmake -G"Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=C:\libraries\mongo-cxx-driver -DCMAKE_PREFIX_PATH=C:\libraries\mongoc -DLIBMONGOC_DIR=C:\libraries\mongoc ..
 - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
 - msbuild /p:Configuration=Release INSTALL.vcxproj
 - cd ..\..\
 # build libuv
-- git clone -b v1.x https://github.com/libuv/libuv
+- appveyor DownloadFile https://github.com/libuv/libuv/archive/v1.24.0.zip -FileName libuv.zip
+- 7z x libuv.zip
 - cd libuv
 - vcbuild release shared x64
 - cd ..\..\
