@@ -35,7 +35,7 @@ install:
 # build libuv
 - appveyor DownloadFile https://github.com/libuv/libuv/archive/v1.24.0.zip -FileName libuv.zip
 - 7z x libuv.zip
-- cd libuv
+- cd libuv-1.24.0
 - vcbuild release shared x64
 - cd ..\..\
 - set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;C:\libraries\mongo-cxx-driver
