@@ -127,11 +127,11 @@ void NetworkClient::defragment_input(std::unique_lock<std::mutex>& lock)
             DatagramPtr dg = Datagram::create(reinterpret_cast<const uint8_t*>(&m_data_buf[sizeof(dgsize_t)]), data_size);
             if(0 < overread_size) {
                 // Splice leftover data to new m_data_buf based on expected datagram length.
-                m_data_buf = std::vector<unsigned char>(reinterpret_cast<char*>(&m_data_buf[sizeof(dgsize_t) + data_size]),
-                                                        reinterpret_cast<char*>(&m_data_buf[sizeof(dgsize_t) + data_size + overread_size]));
+                m_data_buf = std::vector<uint8_t>(reinterpret_cast<uint8_t*>(&m_data_buf[sizeof(dgsize_t) + data_size]),
+                                                  reinterpret_cast<uint8_t*>(&m_data_buf[sizeof(dgsize_t) + data_size + overread_size]));
             } else {
                 // No overread, buffer is empty.
-                m_data_buf = std::vector<unsigned char>();
+                m_data_buf = std::vector<uint8_t>();
             }
 
             lock.unlock();

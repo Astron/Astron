@@ -170,7 +170,7 @@ private:
     std::unique_ptr<HAProxyHandler> m_haproxy_handler;
     uvw::Addr m_remote;
     uvw::Addr m_local;
-    std::vector<unsigned char> m_data_buf;
+    std::vector<uint8_t> m_data_buf;
 
     // HAProxy specific:
     std::vector<uint8_t> m_tlv_buf;
