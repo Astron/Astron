@@ -81,7 +81,7 @@ void EventLogger::process_packet(DatagramHandle dg, const uvw::Addr& sender)
 
     try {
         msgpack_decode(stream, dgi);
-    } catch(DatagramIteratorEOF&) {
+    } catch(const DatagramIteratorEOF&) {
         m_log.error() << "Received truncated packet from "
                       << sender.ip << ":" << sender.port << std::endl;
         return;

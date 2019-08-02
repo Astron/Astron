@@ -198,7 +198,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
             channels.push_back(channel);
         }
         receive_log << "\n";
-    } catch(DatagramIteratorEOF &) {
+    } catch(const DatagramIteratorEOF &) {
         // Log error with receivers output
         if(p) {
             m_log.error() << "Detected truncated datagram reading header from '"
@@ -224,7 +224,7 @@ void MessageDirector::process_datagram(MDParticipantInterface *p, DatagramHandle
 
         try {
             participant->handle_datagram(dg, msg_dgi);
-        } catch(DatagramIteratorEOF &) {
+        } catch(const DatagramIteratorEOF &) {
             // Log error with receivers output
             if(p) {
                 m_log.error() << "Detected truncated datagram in handle_datagram for '"
