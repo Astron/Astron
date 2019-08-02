@@ -31,7 +31,7 @@ class DatagramIterator
 {
   protected:
     DatagramHandle m_dg;
-    dgsize_t m_offset;
+    size_t m_offset;
 
     void check_read_length(dgsize_t length)
     {

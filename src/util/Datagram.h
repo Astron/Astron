@@ -39,7 +39,7 @@ class Datagram
   protected:
     uint8_t* buf;
     size_t buf_cap; // Can be larger than buf_offset, so use a size_t
-    dgsize_t buf_offset;
+    size_t buf_offset;
 
     void check_add_length(dgsize_t len)
     {
