@@ -453,7 +453,7 @@ static void bson2bamboo(const dclass::DistributedType *type,
             assert(false);
             break;
         }
-    } catch(const ConversionException &e) {
+    } catch(ConversionException &e) {
         e.push_name(field_name);
         throw;
     }

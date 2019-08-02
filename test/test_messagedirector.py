@@ -645,7 +645,7 @@ class TestMessageDirector(ProtocolTest):
         # The MD should drop this packet completely.
         self.expectNone(self.l1)
         # The MD should drop the misbehaving participant.
-        self.assertRaises(self.c1.recv_maybe(), EOFError)
+        self.assertRaises(EOFError, self.c1.recv_maybe())
 
         # Cleanup
         self.c1.close()
@@ -660,7 +660,7 @@ class TestMessageDirector(ProtocolTest):
         # The MD should drop this packet completely.
         self.expectNone(self.l1)
         # The MD should drop the misbehaving participant.
-        self.assertRaises(self.c1.recv_maybe(), EOFError)
+        self.assertRaises(EOFError, self.c1.recv_maybe())
 
         # Cleanup
         self.c1.close()
