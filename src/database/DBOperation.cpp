@@ -118,7 +118,7 @@ bool DBOperation::populate_set_fields(DatagramIterator &dgi, uint16_t field_coun
                     string val = field->get_default_value();
                     m_set_fields[field] = vector<uint8_t>(val.begin(), val.end());
                 } else {
-                    m_set_fields[field]; // Force insertion of blank vector
+                    m_set_fields[field] = vector<uint8_t>(); // Force insertion of blank vector
                 }
             } catch(const FieldConstraintViolation& violation) {
                 m_dbserver->m_log->warning() << "Field constraint violation while setting field " << field->get_name()
