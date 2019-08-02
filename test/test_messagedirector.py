@@ -634,5 +634,38 @@ class TestMessageDirector(ProtocolTest):
         self.__class__.c2 = self.connectToServer()
         self.l1.flush()
 
+    def test_malformed_control(self):
+        dg = Datagram()
+        dg.add_uint16(0) # Datagram length
+        dg.add_uint8(1) # Number of channels
+        dg.add_channel(CONTROL_CHANNEL)
+        dg.add_uint16(CONTROL_ADD_CHANNEL)
+        dg.add_channel(0x1CEDC0FF)
+        self.c1.s.send(dg.get_data())
+        # The MD should drop this packet completely.
+        self.expectNone(self.l1)
+        # The MD should drop the misbehaving participant.
+        self.assertRaises(self.c1.recv_maybe(), EOFError)
+
+        # Cleanup
+        self.c1.close()
+        self.__class__.c1 = self.connectToServer()
+        self.l1.flush()
+
+    def test_malformed_single(self):
+        dg = Datagram()
+        dg.add_uint16(0) # Datagram length
+        dg.add_string('Ex nihilo, alea iacta est. Tohuvabohu!')
+        self.c1.s.send(dg.get_data())
+        # The MD should drop this packet completely.
+        self.expectNone(self.l1)
+        # The MD should drop the misbehaving participant.
+        self.assertRaises(self.c1.recv_maybe(), EOFError)
+
+        # Cleanup
+        self.c1.close()
+        self.__class__.c1 = self.connectToServer()
+        self.l1.flush()
+
 if __name__ == '__main__':
     unittest.main()
