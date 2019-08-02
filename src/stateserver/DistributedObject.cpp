@@ -483,10 +483,8 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         if(m_do_id != dgi.read_doid()) {
             break;    // Not meant for me!
         }
-        if(!handle_one_update(dgi, sender)) {
-            annihilate(sender);
-            break;
-        }
+        handle_one_update(dgi, sender);
+
         break;
     }
     case STATESERVER_OBJECT_SET_FIELDS: {
@@ -496,7 +494,6 @@ void DistributedObject::handle_datagram(DatagramHandle, DatagramIterator &dgi)
         uint16_t field_count = dgi.read_uint16();
         for(int16_t i = 0; i < field_count; ++i) {
             if(!handle_one_update(dgi, sender)) {
-                annihilate(sender);
                 break;
             }
         }
