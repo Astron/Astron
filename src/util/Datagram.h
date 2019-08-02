@@ -43,14 +43,15 @@ class Datagram
 
     void check_add_length(dgsize_t len)
     {
-        if(buf_offset + len > DGSIZE_MAX) {
+        size_t new_offset = buf_offset + len;
+        if(new_offset > DGSIZE_MAX) {
             std::stringstream err_str;
             err_str << "dg tried to add data past max datagram size, buf_offset+len("
-                    << buf_offset + len << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
+                    << new_offset << ")" << " max_size(" << DGSIZE_MAX << ")" << std::endl;
             throw DatagramOverflow(err_str.str());
         }
 
-        if(buf_offset + len > buf_cap) {
+        if(new_offset > buf_cap) {
             uint8_t *tmp_buf = new uint8_t[buf_cap + len + 64];
             memcpy(tmp_buf, buf, buf_cap);
             delete [] buf;

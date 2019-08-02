@@ -35,7 +35,8 @@ class DatagramIterator
 
     void check_read_length(dgsize_t length)
     {
-        if(m_offset + length > m_dg->size()) {
+        size_t new_offset = m_offset + length;
+        if(new_offset > m_dg->size()) {
             std::stringstream error;
             error << "dgi tried to read past dg end, offset+length(" << m_offset + length << ")"
                   << " buf_size(" << m_dg->size() << ")" << std::endl;
