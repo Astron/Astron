@@ -637,8 +637,9 @@ class TestMessageDirector(ProtocolTest):
     def test_malformed_control(self):
         dg = Datagram()
         dg.add_uint16(0) # Datagram length
-        dg.add_uint8(1) # Number of channels
-        dg.add_channel(CONTROL_CHANNEL)
+        dg.add_uint8(1) # Number of recipients
+        dg.add_channel(CONTROL_CHANNEL) # Recipient
+        dg.add_channel(0) # Sender
         dg.add_uint16(CONTROL_ADD_CHANNEL)
         dg.add_channel(0x1CEDC0FF)
         self.c1.s.send(dg.get_data())
@@ -655,6 +656,10 @@ class TestMessageDirector(ProtocolTest):
     def test_malformed_single(self):
         dg = Datagram()
         dg.add_uint16(0) # Datagram length
+        dg.add_uint8(1) # Number of recipients
+        dg.add_channel(12341234) # Recipient
+        dg.add_channel(0) # Sender
+        dg.add_uint16(1111)
         dg.add_string('Ex nihilo, alea iacta est. Tohuvabohu!')
         self.c1.s.send(dg.get_data())
         # The MD should drop this packet completely.
