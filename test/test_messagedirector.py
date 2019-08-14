@@ -659,7 +659,6 @@ class TestMessageDirector(ProtocolTest):
         dg.add_uint8(1) # Number of recipients
         dg.add_channel(12341234) # Recipient
         dg.add_channel(0) # Sender
-        dg.add_uint16(1111)
         dg.add_string('Ex nihilo, alea iacta est. Tohuvabohu!')
         self.c1.s.send(dg.get_data())
         # The MD should drop this packet completely.
