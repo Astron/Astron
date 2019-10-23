@@ -281,17 +281,6 @@ class DatagramIterator
             const NumericType* num = dtype->as_numeric();
 
             std::vector<uint8_t> data = read_data(dtype->get_size());
-            if(dtype->get_type() == T_STRING) {
-                for(size_t i = 0; i < dtype->get_size(); ++i) {
-                    // TODO: Move this to an utility function, account for UTF-8 encoding.
-                    if(*(signed char*)&data[i] < 0) {
-                        std::stringstream error;
-                        error << "Failed to unpack string-type field of type " << dtype->get_alias()
-                              << " due to string encoding type violation";
-                        throw FieldConstraintViolation(error.str());
-                    }
-                }
-            }
 
             // Check for any value range constraints applying to fixed-size numerical types:
             if(num && num->has_range()) {
@@ -304,8 +293,19 @@ class DatagramIterator
                 }
             }
 
-            buffer.insert(buffer.end(), data.begin(), data.end());
+            if(dtype->get_type() == T_STRING) {
+                for(size_t i = 0; i < dtype->get_size(); ++i) {
+                    // TODO: Move this to an utility function, account for UTF-8 encoding.
+                    if(*(signed char*)&data[i] < 0) {
+                        std::stringstream error;
+                        error << "Failed to unpack fixed-length string field of type " << dtype->get_alias()
+                              << " due to string encoding type violation";
+                        throw FieldConstraintViolation(error.str());
+                    }
+                }
+            }
 
+            buffer.insert(buffer.end(), data.begin(), data.end());
             return;
         }
 
