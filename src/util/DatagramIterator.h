@@ -281,6 +281,17 @@ class DatagramIterator
             const NumericType* num = dtype->as_numeric();
 
             std::vector<uint8_t> data = read_data(dtype->get_size());
+            if(dtype->get_type() == T_STRING) {
+                for(size_t i = 0; i < dtype->get_size(); ++i) {
+                    // TODO: Move this to an utility function, account for UTF-8 encoding.
+                    if(*(signed char*)&data[i] < 0) {
+                        std::stringstream error;
+                        error << "Failed to unpack string-type field of type " << dtype->get_alias()
+                              << " due to string encoding type violation";
+                        throw FieldConstraintViolation(error.str());
+                    }
+                }
+            }
 
             // Check for any value range constraints applying to fixed-size numerical types:
             if(num && num->has_range()) {
@@ -319,8 +330,24 @@ class DatagramIterator
                     unpack_dtype(array->get_element_type(), buffer);
                     ++elem_cnt;
                 }
+            } else if(dtype->get_type() == T_VARSTRING) {
+                // We're dealing with a string, so elem_cnt == len (and we need to validate it is truly a string).
+                std::vector<uint8_t> data = read_data(len);
+
+                for(size_t i = 0; i < len; ++i) {
+                    // TODO: Move this to an utility function, account for UTF-8 encoding.
+                    if(*(signed char*)&data[i] < 0) {
+                        std::stringstream error;
+                        error << "Failed to unpack variable-length string field of type "
+                              << dtype->get_alias() << " due to string encoding type violation";
+                        throw FieldConstraintViolation(error.str());
+                    }
+                }
+
+                buffer.insert(buffer.end(), data.begin(), data.end());
+                elem_cnt = len;
             } else {
-                // We're dealing with a blob or a string, ergo elem_cnt == len
+                // We're dealing with a blob, ergo elem_cnt == len
                 std::vector<uint8_t> data = read_data(len);
                 buffer.insert(buffer.end(), data.begin(), data.end());
                 elem_cnt = len;

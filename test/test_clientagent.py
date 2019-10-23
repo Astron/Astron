@@ -3771,6 +3771,16 @@ class TestClientAgent(ProtocolTest):
 
         self.expectNone(client)
 
+        # Violate the ASCII constraint for T_STRING/T_VARSTRING.
+        dg = Datagram()
+        dg.add_uint16(CLIENT_OBJECT_SET_FIELD)
+        dg.add_doid(10000)
+        dg.add_uint16(sendMessageConstraint)
+        dg.add_string('Tainai nai ba\xff\xff\xff')
+        client.send(dg)
+
+        self.assertDisconnect(client, CLIENT_DISCONNECT_FIELD_CONSTRAINT)
+
     def send_heartbeat(self, client):
         # Construct heartbeat datagram
         heartbeat_dg = Datagram()
