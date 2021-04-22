@@ -1,5 +1,7 @@
 Astron Project
 --------------
+![image](https://user-images.githubusercontent.com/735098/115663653-73a11580-a306-11eb-8d74-624911f983a3.png)
+
 _A Server Technology for Realtime Object Networking_
 
 Astron is an open-source, distributed server suite particularly well-suited for powering MMO games.
