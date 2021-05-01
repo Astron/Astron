@@ -4,6 +4,15 @@
 
 #include "Logger.h"
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+CONSOLE_SCREEN_BUFFER_INFO old_colors;
+#endif
+
 NullStream null_stream; // used to print nothing by compiling out the unwanted messages
 NullBuffer null_buffer; // used to print nothing by ignoring the unwanted messages
 
@@ -20,48 +29,51 @@ Logger::Logger() : m_buf(), m_severity(LSEVERITY_INFO), m_output(&m_buf), m_colo
 {
 }
 
-/* Reset code */
-static const char* ANSI_RESET = "\x1b[0m";
+#ifdef _WIN32
+#define STDOUT GetStdHandle(STD_OUTPUT_HANDLE)
+#define WINCOLOR(x) (SetConsoleTextAttribute(STDOUT, x) ? "" : "")
+#define RESET WINCOLOR(old_colors.wAttributes)
 
-/* Normal Colors */
-static const char* ANSI_RED = "\x1b[31m";
-static const char* ANSI_GREEN = "\x1b[32m";
-static const char* ANSI_ORANGE = "\x1b[33m";
-static const char* ANSI_YELLOW = "\x1b[33;2m";
-//static const char* ANSI_BLUE = "\x1b[34m";
-//static const char* ANSI_CYAN = "\x1b[36m";
-static const char* ANSI_GREY = "\x1b[37m";
+#define RED WINCOLOR(FOREGROUND_RED)
+#define GREEN WINCOLOR(FOREGROUND_GREEN)
+#define ORANGE WINCOLOR(FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY) // This is actually light magenta; there's no orange.
+#define YELLOW WINCOLOR(FOREGROUND_RED | FOREGROUND_GREEN)
+#define GREY WINCOLOR(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE)
+#define CYAN WINCOLOR(FOREGROUND_GREEN | FOREGROUND_BLUE)
 
-/* Bold Colors */
-//static const char* ANSI_BOLD_RED = "\x1b[31;1m";
-//static const char* ANSI_BOLD_GREEN = "\x1b[32:1m";
-//static const char* ANSI_BOLD_YELLOW = "\x1b[33:1m";
-//static const char* ANSI_BOLD_WHITE = "\x1b[37;1m";
+#define DARK_GREY WINCOLOR(FOREGROUND_INTENSITY)
+#else
+#define RESET "\x1b[0m"
 
-/* Dark Colors */
-//static const char* ANSI_DARK_RED = "\x1b[31;2m";
-//static const char* ANSI_DARK_GREEN = "\x1b[32;2m";
-static const char* ANSI_DARK_CYAN = "\x1b[36;2m";
-static const char* ANSI_DARK_GREY = "\x1b[37;2m";
+#define RED "\x1b[31m"
+#define GREEN "\x1b[32m"
+#define ORANGE "\x1b[33m"
+#define YELLOW "\x1b[33;2m"
+#define GREY "\x1b[37m"
+#define CYAN "\x1b[36;2m"
+
+#define DARK_GREY "\x1b[37;2m"
+#endif
 
 const char* Logger::get_severity_color(LogSeverity sev)
 {
+
     switch(sev) {
     case LSEVERITY_FATAL:
     case LSEVERITY_ERROR:
-        return ANSI_RED;
+        return RED;
     case LSEVERITY_SECURITY:
-        return ANSI_ORANGE;
+        return ORANGE;
     case LSEVERITY_WARNING:
-        return ANSI_YELLOW;
+        return YELLOW;
     case LSEVERITY_DEBUG:
     case LSEVERITY_PACKET:
     case LSEVERITY_TRACE:
-        return ANSI_DARK_CYAN;
+        return CYAN;
     case LSEVERITY_INFO:
-        return ANSI_GREEN;
+        return GREEN;
     default:
-        return ANSI_GREY;
+        return GREY;
     }
 }
 
@@ -110,12 +122,16 @@ LockedLogOutput Logger::log(LogSeverity sev)
     LockedLogOutput out(&m_output, &m_lock);
 
     if(m_color_enabled) {
-        out << ANSI_DARK_GREY
-            << "[" << timetext << "] "
-            << get_severity_color(sev)
+#ifdef _WIN32
+        GetConsoleScreenBufferInfo(STDOUT, &old_colors);
+#endif
+        out << DARK_GREY
+            << "[" << timetext << "] ";
+        out << get_severity_color(sev)
             << sevtext
-            << ": "
-            << ANSI_RESET;
+            << ": ";
+        out << RESET;
+
     } else {
         out << "[" << timetext << "] "
             << sevtext
