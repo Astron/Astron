@@ -1,0 +1,37 @@
+# Primary workflow for building, testing, and deploying the Astron server application. This
+# file responds to push request and pull requests on the master repository branch.
+name: CI on Push and Pull Request
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # Builds the Docker image for Github Packages
+  build-and-publish-latest-package:
+    name: Build and publish Github Package (Latest)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' # Running this job only for master branch
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and Publish latest Docker image
+        uses: VaultVulp/gp-docker-action@1.1.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }} # Provide GITHUB_TOKEN to login into the GitHub Packages
+          image-name: astron
+          image-tag: latest
+
+  # Builds the Docker image for Github Packages based on git tags
+  build-and-publish-tag-package:
+    name: Build and publish Github Package (Version)
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') # Running this job only for tags
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and Publish Tag Docker image
+        uses: VaultVulp/gp-docker-action@1.1.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }} # Provide GITHUB_TOKEN to login into the GitHub Packages
+          image-name: astron
+          extract-git-tag: true # Provide flag to extract Docker image tag from git reference
