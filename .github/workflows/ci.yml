@@ -8,6 +8,7 @@ on:
 jobs:
   # Builds the Docker image for DockerHub
   build-and-publish-latest-dockerhub:
+    name: Build and publish DockerHub image (Latest)
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
