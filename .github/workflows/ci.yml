@@ -2,8 +2,6 @@
 # file responds to push request on the main repository branch.
 name: Publish Docker image
 on:
-  push:
-    branches: [master]
   release:
     types: [published]
 
