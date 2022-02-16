@@ -23,6 +23,14 @@ jobs:
       
     - name: Docker Push
       run: docker push thetestgame/astron
+      
+    - name: Sync Github README
+      uses: ms-jpq/sync-dockerhub-readme@v1
+      with:
+        username: ${{secrets.DOCKER_USER}}
+        password: ${{secrets.DOCKER_PASSWORD}}
+        repository: thetestgame/astron
+        readme: "./README.md"
 
   # Builds the Docker image for Github Packages
   build-and-publish-latest-package:
