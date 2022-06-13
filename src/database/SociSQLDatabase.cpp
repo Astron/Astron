@@ -10,14 +10,10 @@
 #include "dclass/dc/Field.h"
 
 #include <soci.h>
-#include <boost/icl/interval_set.hpp>
 
 using namespace std;
 using namespace soci;
 using namespace dclass;
-
-typedef boost::icl::discrete_interval<doid_t> interval_t;
-typedef boost::icl::interval_set<doid_t> set_t;
 
 static ConfigGroup soci_backend_config("soci", db_backend_config);
 static ConfigVariable<string> database_driver("driver", "mysql", soci_backend_config);
@@ -53,7 +49,6 @@ class SociSQLDatabase : public OldDatabaseBackend
         connect();
         check_tables();
         check_classes();
-        check_ids();
     }
 
     virtual doid_t create_object(const ObjectData& dbo)
@@ -62,14 +57,22 @@ class SociSQLDatabase : public OldDatabaseBackend
         vector<uint8_t> field_value;
         const Class *dcc = g_dcf->get_class_by_id(dbo.dc_id);
         bool storable = is_storable(dbo.dc_id);
-
-        doid_t do_id = pop_next_id();
-        if(!do_id) {
-            return 0;
-        }
+        doid_t do_id;
 
         try {
             m_sql.begin(); // Start transaction
+
+            // Find next available id
+            m_sql << "SELECT COALESCE(MIN(t.id) + 1, :minId) FROM objects t LEFT OUTER JOIN"
+                  " objects t2 ON t.id = t2.id - 1 WHERE t2.id IS NULL AND t.id >= :minId;",
+                  into(do_id), use(m_min_id, "minId");
+
+            // Check if next available id is within range
+            if(do_id > m_max_id) {
+                m_sql.rollback(); // Revert transaction
+                return INVALID_DO_ID;
+            }
+
             m_sql << "INSERT INTO objects VALUES (" << do_id << "," << dbo.dc_id << ");";
 
             if(storable) {
@@ -83,7 +86,7 @@ class SociSQLDatabase : public OldDatabaseBackend
             m_sql.commit(); // End transaction
         } catch(const soci_error &e) {
             m_sql.rollback(); // Revert transaction
-            return 0;
+            return INVALID_DO_ID;
         }
 
         return do_id;
@@ -105,8 +108,6 @@ class SociSQLDatabase : public OldDatabaseBackend
             m_log->trace() << "... object has stored field, also deleted." << endl;
             m_sql << "DELETE FROM fields_" << dcc->get_name() << " WHERE object_id=:id;", use(do_id);
         }
-
-        push_id(do_id);
     }
     virtual bool get_object(doid_t do_id, ObjectData& dbo)
     {
@@ -526,60 +527,12 @@ class SociSQLDatabase : public OldDatabaseBackend
             }
         }
     }
-    void check_ids()
-    {
-        // Set all ids as free ids
-        m_free_ids = set_t();
-        m_free_ids += interval_t::closed(m_min_id, m_max_id);
-
-        doid_t id;
-
-        // Get all ids from the database at once
-        statement st = (m_sql.prepare << "SELECT id FROM objects;", into(id));
-        st.execute();
-
-        // Iterate through the result set, removing used ids from the free ids
-        while(st.fetch()) {
-            m_free_ids -= interval_t::closed(id, id);
-        }
-    }
-
-    doid_t pop_next_id()
-    {
-        // Check to make sure any free ids exist
-        if(!m_free_ids.size()) {
-            return INVALID_DO_ID;
-        }
-
-        // Get next available id from m_free_ids set
-        interval_t first = *m_free_ids.begin();
-        doid_t id = first.lower();
-        if(!(first.bounds().bits() & 2)) {
-            id += 1;
-        }
-
-        // Check if its within range
-        if(id > m_max_id) {
-            return INVALID_DO_ID;
-        }
-
-        // Remove it from the free ids
-        m_free_ids -= interval_t::closed(id, id);
-
-        return id;
-    }
-
-    void push_id(doid_t id)
-    {
-        m_free_ids += interval_t::closed(id, id);
-    }
   private:
     doid_t m_min_id, m_max_id;
     string m_backend, m_db_name, m_db_host;
     uint16_t m_db_port;
     string m_sess_user, m_sess_passwd;
     session m_sql;
-    set_t m_free_ids;
     LogCategory* m_log;
 
     void check_class(uint16_t id, string name)
