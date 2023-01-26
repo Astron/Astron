@@ -97,8 +97,11 @@ LockedLogOutput Logger::log(LogSeverity sev)
     case LSEVERITY_ERROR:
         severity_label = "ERROR";
         break;
-    default:
+    case LSEVERITY_FATAL:
         severity_label = "FATAL";
+        break;
+    default:
+        severity_label = "UNKNOWN";
         break;
     }
 
