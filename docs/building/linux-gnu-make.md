@@ -21,23 +21,3 @@ After setting up your environment you can compile with any of the following:
 **For development (without Trace and Debug messages):**
 
 	cmake . && make
-
-
-### Handling Build Artifacts ###
-When contributing to the Astron repository or a branch you should not add build
-artifacts to your commit.  Because build artifacts vary wildly between all the
-operating systems and compilers that Astron will compile with, they are not
-included in the `.gitignore` file.
-
-Instead, edit the `.git/info/exclude` file for your local clone.
-
-The following should be added for GNU Make on Linux:  
-```
-## Compilation Artifacts ##
-astrond
-*.[oa]
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-```
