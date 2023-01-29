@@ -68,7 +68,7 @@ const char* Logger::get_severity_color(LogSeverity sev)
 // log returns an output stream for C++ style stream operations.
 LockedLogOutput Logger::log(LogSeverity sev)
 {
-    const char *sevtext;
+    const char *severity_label;
 
     if(sev < m_severity) {
         LockedLogOutput null_out(nullptr, nullptr);
@@ -77,28 +77,31 @@ LockedLogOutput Logger::log(LogSeverity sev)
 
     switch(sev) {
     case LSEVERITY_PACKET:
-        sevtext = "PACKET";
+        severity_label = "PACKET";
         break;
     case LSEVERITY_TRACE:
-        sevtext = "TRACE";
+        severity_label = "TRACE";
         break;
     case LSEVERITY_DEBUG:
-        sevtext = "DEBUG";
+        severity_label = "DEBUG";
         break;
     case LSEVERITY_INFO:
-        sevtext = "INFO";
+        severity_label = "INFO";
         break;
     case LSEVERITY_WARNING:
-        sevtext = "WARNING";
+        severity_label = "WARNING";
         break;
     case LSEVERITY_SECURITY:
-        sevtext = "SECURITY";
+        severity_label = "SECURITY";
         break;
     case LSEVERITY_ERROR:
-        sevtext = "ERROR";
+        severity_label = "ERROR";
         break;
     case LSEVERITY_FATAL:
-        sevtext = "FATAL";
+        severity_label = "FATAL";
+        break;
+    default:
+        severity_label = "UNKNOWN";
         break;
     }
 
@@ -113,12 +116,12 @@ LockedLogOutput Logger::log(LogSeverity sev)
         out << ANSI_DARK_GREY
             << "[" << timetext << "] "
             << get_severity_color(sev)
-            << sevtext
+            << severity_label
             << ": "
             << ANSI_RESET;
     } else {
         out << "[" << timetext << "] "
-            << sevtext
+            << severity_label
             << ": ";
     }
 
