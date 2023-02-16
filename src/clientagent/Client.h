@@ -135,7 +135,7 @@ class Client : public MDParticipantInterface
     // m_pending_interests is a map of contexts to in-progress interests.
     std::unordered_map<uint32_t, InterestOperation*> m_pending_interests;
     // m_fields_sendable is a map of DoIds to sendable field sets.
-    std::unordered_map<uint16_t, std::unordered_set<uint16_t> > m_fields_sendable;
+    std::unordered_map<doid_t, std::unordered_set<uint16_t>> m_fields_sendable;
     // If we did not receive a pointer from the Client Agent, we create one ourselves
     // in m_log_owner and have m_log point to that. This way, we are guarenteed that
     // the instance will always be freed, no matter if we are using the logger from
