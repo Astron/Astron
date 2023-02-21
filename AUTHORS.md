@@ -13,5 +13,6 @@ Harvir <harvir14@gmail.com>
 Jeremy Koletar <jjkoletar@gmail.com>  
 Kevin Stenerson <kestred@riotcave.com>  
 Maverick Mosher <MMavipc@hostedyou.com>  
+Max Rodríguez <max@vulkray.com>   
 Nacib <12ksit@gmail.com>  
 Sam Edwards <cfsworks@gmail.com>  
