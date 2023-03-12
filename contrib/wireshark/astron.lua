@@ -1,5 +1,3 @@
-require ("bit")
-
 p_astron = Proto ("astron", "Astron (MD)")
 
 local f_length = ProtoField.uint16("astron.length", "Message length", base.DEC)
