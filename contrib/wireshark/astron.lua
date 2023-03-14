@@ -1,23 +1,31 @@
-p_astron = Proto ("astron", "Astron (MD)")
+p_astron_internal = Proto ("astron_internal", "Astron Internal Protocol (MD)")
+p_astron_client = Proto ("astron_client", "Astron Client Protocol (CA)")
 
-local f_length = ProtoField.uint16("astron.length", "Message length", base.DEC)
-local f_recipient = ProtoField.uint64("astron.recipient", "Recipient channel", base.HEX)
-local f_sender = ProtoField.uint64("astron.sender", "Sender channel", base.HEX)
-local f_msgtype = ProtoField.uint16("astron.msgtype", "Message type", base.DEC)
+astron_md_port = 7199
+astron_ca_port = 6667
 
-local f_doid = ProtoField.uint32("astron.doid", "DistributedObject ID", base.DEC)
-local f_field = ProtoField.uint16("astron.field", "Field ID", base.DEC)
-local f_field_count = ProtoField.uint16("astron.field_count", "Field count", base.DEC)
+-- Astron Internal protocol fields
 
-local f_object_count = ProtoField.uint32("astron.object_count", "Object count", base.DEC)
+local f_length = ProtoField.uint16("astron_internal.length", "Message length", base.DEC)
 
-local f_parent = ProtoField.uint32("astron.parent", "Parent ID", base.DEC)
-local f_zone = ProtoField.uint32("astron.zone", "Zone ID", base.DEC)
-local f_zone_count = ProtoField.uint16("astron.zone_count", "Zone count", base.DEC)
+local f_recipient = ProtoField.uint64("astron_internal.recipient", "Recipient channel", base.HEX)
+local f_sender = ProtoField.uint64("astron_internal.sender", "Sender channel", base.HEX)
 
-local f_context = ProtoField.uint32("astron.context", "Request context", base.DEC)
+local f_msgtype = ProtoField.uint16("astron_internal.msgtype", "Message type", base.DEC)
 
-p_astron.fields = {
+local f_doid = ProtoField.uint32("astron_internal.doid", "DistributedObject ID", base.DEC)
+local f_field = ProtoField.uint16("astron_internal.field", "Field ID", base.DEC)
+local f_field_count = ProtoField.uint16("astron_internal.field_count", "Field count", base.DEC)
+
+local f_object_count = ProtoField.uint32("astron_internal.object_count", "Object count", base.DEC)
+
+local f_parent = ProtoField.uint32("astron_internal.parent", "Parent ID", base.DEC)
+local f_zone = ProtoField.uint32("astron_internal.zone", "Zone ID", base.DEC)
+local f_zone_count = ProtoField.uint16("astron_internal.zone_count", "Zone count", base.DEC)
+
+local f_context = ProtoField.uint32("astron_internal.context", "Request context", base.DEC)
+
+p_astron_internal.fields = {
 	f_length, f_recipient, f_sender, f_msgtype,
 
 	f_doid, f_field, f_field_count,
@@ -27,6 +35,15 @@ p_astron.fields = {
 	f_parent, f_zone, f_zone_count,
 
 	f_context,
+}
+
+-- Astron Client protocol fields
+
+local f_length_client = ProtoField.uint16("astron_client.length", "Message length", base.DEC)
+local f_msgtype_client = ProtoField.uint16("astron_client.msgtype", "Message type", base.DEC)
+
+p_astron_client.fields = {
+	f_length_client, f_msgtype_client
 }
 
 -- Helpers that, maybe someday, will actually get info from a .dc file?
@@ -47,6 +64,108 @@ function decode_field (index, buf)
 end
 
 local message_table = {
+	[1] = {
+		name="CLIENT_HELLO",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2] = {
+		name="CLIENT_HELLO_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3] = {
+		name="CLIENT_DISCONNECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[4] = {
+		name="CLIENT_EJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[5] = {
+		name="CLIENT_HEARTBEAT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[120] = {
+		name="CLIENT_OBJECT_SET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[121] = {
+		name="CLIENT_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[132] = {
+		name="CLIENT_OBJECT_LEAVING",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[140] = {
+		name="CLIENT_OBJECT_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[142] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[143] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[172] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[173] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[200] = {
+		name="CLIENT_ADD_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[201] = {
+		name="CLIENT_ADD_INTEREST_MULTIPLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[203] = {
+		name="CLIENT_REMOVE_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[204] = {
+		name="CLIENT_DONE_INTEREST_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[1011] = {
 		name="CLIENTAGENT_UNDECLARE_OBJECT",
 		dissector=function(buf, root)
@@ -289,10 +408,12 @@ function dissect_one (buf, root, packet_descriptions)
 	return length + 2
 end
 
-function p_astron.dissector (buf, pinfo, root)
+-- ASTRON_INTERNAL protocol
+
+function p_astron_internal.dissector (buf, pinfo, root)
 	if buf:len() < 2 then return end
 
-	local root = root:add(p_astron, buf)
+	local root = root:add(p_astron_internal, buf())
 
 	local descriptions = {}
 	local message_count = 0
@@ -313,15 +434,40 @@ function p_astron.dissector (buf, pinfo, root)
 	end
 
 	if message_count > 0 then
-		pinfo.cols.protocol = p_astron.name
+		pinfo.cols.protocol = "ASTRON (Internal)"
 		pinfo.cols.info = table.concat(descriptions, "; ")
 	end
 
 	return offset
 end
 
-function p_astron.init()
+function p_astron_internal.init()
 	local tcp_dissector_table = DissectorTable.get("tcp.port")
 
-	tcp_dissector_table:add(7199, p_astron)
+	tcp_dissector_table:add(astron_md_port, p_astron_internal)
+end
+
+-- ASTRON_CLIENT protocol
+
+function p_astron_client.dissector (buf, pinfo, root)
+	if buf:len() < 2 then return end
+
+	local subtree = root:add(p_astron_client, buf())
+
+	local len = buf(0, 2):le_uint()
+	local type = buf(2, 2):le_uint()
+	
+	subtree:add_le(f_length_client, buf(0, 2), len)
+	subtree:add_le(f_msgtype_client, buf(2, 2), type, "Message type: " .. pretty_msgtype(type))
+
+	if len > 2 then subtree:add(buf(4), "Payload") end -- TODO: Dissect message payload
+
+	pinfo.cols.protocol = "ASTRON (Client)"
+	pinfo.cols.info = pretty_msgtype(type)
+end
+
+function p_astron_client.init()
+	local tcp_dissector_table = DissectorTable.get("tcp.port")
+
+	tcp_dissector_table:add(astron_ca_port, p_astron_client)
 end
