@@ -325,6 +325,42 @@ local message_table = {
 			return "" -- TODO: Dissect
 		end
 	},
+	[2010] = {
+		name="STATESERVER_OBJECT_GET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2011] = {
+		name="STATESERVER_OBJECT_GET_FIELD_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2012] = {
+		name="STATESERVER_OBJECT_GET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2013] = {
+		name="STATESERVER_OBJECT_GET_FIELDS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2014] = {
+		name="STATESERVER_OBJECT_GET_ALL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2015] = {
+		name="STATESERVER_OBJECT_GET_ALL_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[2020] = {
 		name="STATESERVER_OBJECT_SET_FIELD",
 		dissector=function(buf, root)
@@ -347,6 +383,72 @@ local message_table = {
 			                     field_by_index(field), decoded)
 		end
 	},
+	[2021] = {
+		name="STATESERVER_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2030] = {
+		name="STATESERVER_OBJECT_DELETE_FIELD_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2031] = {
+		name="STATESERVER_OBJECT_DELETE_FIELDS_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2032] = {
+		name="STATESERVER_OBJECT_DELETE_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2040] = {
+		name="STATESERVER_OBJECT_SET_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2041] = {
+		name="STATESERVER_OBJECT_CHANGING_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2042] = {
+		name="STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2043] = {
+		name="STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2044] = {
+		name="STATESERVER_OBJECT_GET_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2045] = {
+		name="STATESERVER_OBJECT_GET_LOCATION_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2046] = {
+		name="STATESERVER_OBJECT_LOCATION_ACK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[2050] = {
 		name="STATESERVER_OBJECT_SET_AI",
 		dissector=function(buf, root)
@@ -367,6 +469,54 @@ local message_table = {
 	},
 	[2053] = {
 		name="STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2054] = {
+		name="STATESERVER_OBJECT_GET_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2055] = {
+		name="STATESERVER_OBJECT_GET_AI_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2060] = {
+		name="STATESERVER_OBJECT_SET_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2061] = {
+		name="STATESERVER_OBJECT_CHANGING_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2062] = {
+		name="STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2063] = {
+		name="STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2066] = {
+		name="STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2067] = {
+		name="STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER",
 		dissector=function(buf, root)
 			return "" -- TODO: Dissect
 		end
@@ -407,6 +557,12 @@ local message_table = {
 
 			return string.format("%d: %d(%s)", context, parent,
 			                     table.concat(zone_strings, "&"))
+		end
+	},
+	[2104] = {
+		name="STATESERVER_OBJECT_GET_CHILDREN",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2110] = {
@@ -471,6 +627,48 @@ local message_table = {
 			return string.format("%d: %d", context, object_count)
 		end
 	},
+	[2114] = {
+		name="STATESERVER_OBJECT_GET_CHILD_COUNT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2115] = {
+		name="STATESERVER_OBJECT_GET_CHILD_COUNT_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2120] = {
+		name="STATESERVER_OBJECT_DELETE_ZONE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2122] = {
+		name="STATESERVER_OBJECT_DELETE_ZONES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2124] = {
+		name="STATESERVER_OBJECT_DELETE_CHILDREN",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2125] = {
+		name="STATESERVER_GET_ACTIVE_ZONES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2126] = {
+		name="STATESERVER_GET_ACTIVE_ZONES_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[2200] = {
 		name="DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS",
 		dissector=function(buf, root)
@@ -483,6 +681,36 @@ local message_table = {
 			return "" -- TODO: Dissect
 		end
 	},
+	[2207] = {
+		name="DBSS_OBJECT_GET_ACTIVATED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2208] = {
+		name="DBSS_OBJECT_GET_ACTIVATED_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2230] = {
+		name="DBSS_OBJECT_DELETE_FIELD_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2231] = {
+		name="DBSS_OBJECT_DELETE_FIELDS_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2232] = {
+		name="DBSS_OBJECT_DELETE_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[3000] = {
 		name="DBSERVER_CREATE_OBJECT",
 		dissector=function(buf, root)
@@ -491,6 +719,18 @@ local message_table = {
 	},
 	[3001] = {
 		name="DBSERVER_CREATE_OBJECT_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3010] = {
+		name="DBSERVER_OBJECT_GET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3011] = {
+		name="DBSERVER_OBJECT_GET_FIELD_RESP",
 		dissector=function(buf, root)
 			return "" -- TODO: Dissect
 		end
@@ -519,6 +759,90 @@ local message_table = {
 
 			return string.format("%d[%s]", doid,
 			                     table.concat(field_names, "&"))
+		end
+	},
+	[3013] = {
+		name="DBSERVER_OBJECT_GET_FIELDS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3014] = {
+		name="DBSERVER_OBJECT_GET_ALL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3015] = {
+		name="DBSERVER_OBJECT_GET_ALL_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3020] = {
+		name="DBSERVER_OBJECT_SET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3021] = {
+		name="DBSERVER_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3022] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EQUALS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3023] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3024] = {
+		name="DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3025] = {
+		name="DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3026] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EMPTY",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3027] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3030] = {
+		name="DBSERVER_OBJECT_DELETE_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3031] = {
+		name="DBSERVER_OBJECT_DELETE_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3032] = {
+		name="DBSERVER_OBJECT_DELETE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[9000] = {
