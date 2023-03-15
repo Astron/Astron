@@ -73,13 +73,13 @@ local message_table = {
 	[2] = {
 		name="CLIENT_HELLO_RESP",
 		dissector=function(buf, root)
-			return "" -- TODO: Dissect
+			return "" -- No arguments
 		end
 	},
 	[3] = {
 		name="CLIENT_DISCONNECT",
 		dissector=function(buf, root)
-			return "" -- TODO: Dissect
+			return "" -- No arguments
 		end
 	},
 	[4] = {
@@ -91,7 +91,7 @@ local message_table = {
 	[5] = {
 		name="CLIENT_HEARTBEAT",
 		dissector=function(buf, root)
-			return "" -- TODO: Dissect
+			return "" -- No arguments
 		end
 	},
 	[120] = {
@@ -166,6 +166,54 @@ local message_table = {
 			return "" -- TODO: Dissect
 		end
 	},
+	[1000] = {
+		name="CLIENTAGENT_SET_STATE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1001] = {
+		name="CLIENTAGENT_SET_CLIENT_ID",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1002] = {
+		name="CLIENTAGENT_SEND_DATAGRAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1004] = {
+		name="CLIENTAGENT_EJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1005] = {
+		name="CLIENTAGENT_DROP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1006] = {
+		name="CLIENTAGENT_GET_NETWORK_ADDRESS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1007] = {
+		name="CLIENTAGENT_GET_NETWORK_ADDRESS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1010] = {
+		name="CLIENTAGENT_DECLARE_OBJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[1011] = {
 		name="CLIENTAGENT_UNDECLARE_OBJECT",
 		dissector=function(buf, root)
@@ -173,6 +221,108 @@ local message_table = {
 			root:add_le(f_doid, buf(0,4))
 
 			return tostring(doid)
+		end
+	},
+	[1012] = {
+		name="CLIENTAGENT_ADD_SESSION_OBJECT",
+		dissector=function(buf, root)
+			local doid = buf(0,4):le_uint()
+			root:add_le(f_doid, buf(0,4))
+			
+			return tostring(doid)
+		end
+	},
+	[1013] = {
+		name="CLIENTAGENT_REMOVE_SESSION_OBJECT",
+		dissector=function(buf, root)
+			local doid = buf(0,4):le_uint()
+			root:add_le(f_doid, buf(0,4))
+
+			return tostring(doid)
+		end
+	},
+	[1014] = {
+		name="CLIENTAGENT_SET_FIELDS_SENDABLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1015] = {
+		name="CLIENTAGENT_GET_TLVS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1016] = {
+		name="CLIENTAGENT_GET_TLVS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1100] = {
+		name="CLIENTAGENT_OPEN_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1101] = {
+		name="CLIENTAGENT_CLOSE_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1110] = {
+		name="CLIENTAGENT_ADD_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1111] = {
+		name="CLIENTAGENT_CLEAR_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1200] = {
+		name="CLIENTAGENT_ADD_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1201] = {
+		name="CLIENTAGENT_ADD_INTEREST_MULTIPLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1203] = {
+		name="CLIENTAGENT_REMOVE_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1204] = {
+		name="CLIENTAGENT_DONE_INTEREST_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2000] = {
+		name="STATESERVER_CREATE_OBJECT_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2001] = {
+		name="STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2009] = {
+		name="STATESERVER_DELETE_AI_OBJECTS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2020] = {
@@ -195,6 +345,30 @@ local message_table = {
 			return string.format("%s(%d).%s(%s)",
 			                     dclass_by_field(field), doid,
 			                     field_by_index(field), decoded)
+		end
+	},
+	[2050] = {
+		name="STATESERVER_OBJECT_SET_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2051] = {
+		name="STATESERVER_OBJECT_CHANGING_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2052] = {
+		name="STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2053] = {
+		name="STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2100] = {
@@ -297,6 +471,30 @@ local message_table = {
 			return string.format("%d: %d", context, object_count)
 		end
 	},
+	[2200] = {
+		name="DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2201] = {
+		name="DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3000] = {
+		name="DBSERVER_CREATE_OBJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3001] = {
+		name="DBSERVER_CREATE_OBJECT_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[3012] = {
 		name="DBSERVER_OBJECT_GET_FIELDS",
 		dissector=function(buf, root)
@@ -321,6 +519,60 @@ local message_table = {
 
 			return string.format("%d[%s]", doid,
 			                     table.concat(field_names, "&"))
+		end
+	},
+	[9000] = {
+		name="CONTROL_ADD_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9001] = {
+		name="CONTROL_REMOVE_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9002] = {
+		name="CONTROL_ADD_RANGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9003] = {
+		name="CONTROL_REMOVE_RANGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9010] = {
+		name="CONTROL_ADD_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9011] = {
+		name="CONTROL_CLEAR_POST_REMOVES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9012] = {
+		name="CONTROL_SET_CON_NAME",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9013] = {
+		name="CONTROL_SET_CON_URL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9014] = {
+		name="CONTROL_LOG_MESSAGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 }
