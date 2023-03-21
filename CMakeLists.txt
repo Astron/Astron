@@ -84,7 +84,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ### Debug Flags -- compile in spam/debug log messages ###
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DASTRON_DEBUG_MESSAGES")
+# Note: Ignoring 'free-nonheap-object' warns due to Bison issue in the generated parser.cpp file.
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -O0 -DASTRON_DEBUG_MESSAGES -Wno-error=free-nonheap-object")
 
 
 ### OS Specific Settings ###
