@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key>
+  <string>dcfile</string>
+  <key>description</key>
+	<string>Support for the DistributedClass language, also known as the DC file.</string>
+  <key>uuid</key>
+  <string>d1f2f8a6-6b73-4d16-9a5d-9d6e2c88fa10</string>
+  <key>grammars</key>
+  <array>
+    <dict>
+      <key>fileTypes</key>
+      <array>
+        <string>dc</string>
+      </array>
+      <key>name</key>
+      <string>Distributed Class (DC)</string>
+      <key>scopeName</key>
+      <string>source.dc</string>
+      <key>path</key>
+      <string>Syntaxes/DC.tmLanguage.json</string>
+    </dict>
+  </array>
+</dict>
+</plist>
+

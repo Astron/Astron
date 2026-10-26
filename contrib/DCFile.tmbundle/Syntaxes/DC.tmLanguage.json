@@ -1,0 +1,228 @@
+{
+  "name": "Distributed Class (DC)",
+  "uuid": "d1f2f8a6-6b73-4d16-9a5d-9d6e2c88fa10",
+  "injectionSelector": "L:source.dc",
+  "scopeName": "source.dc",
+  "fileTypes": ["dc"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#dclass" },
+    { "include": "#typedef" },
+    { "include": "#imports" },
+    { "include": "#dcfield" },
+    { "include": "#dckeywords" },
+    { "include": "#keywords" },
+    { "include": "#view-suffix" },
+    { "include": "#types" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.double-slash.dc", "match": "\/\/.*$" },
+        {
+          "name": "comment.block.dc",
+          "begin": "\/\\*",
+          "end": "\\*\/",
+          "captures": {
+            "1": { "name": "punctuation.definition.comment.begin.dc" },
+            "2": { "name": "punctuation.definition.comment.end.dc" }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.dc",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }],
+          "captures": {
+            "1": { "name": "punctuation.definition.string.begin.dc" },
+            "2": { "name": "punctuation.definition.string.end.dc" }
+          }
+        },
+        {
+          "name": "string.quoted.single.dc",
+          "begin": "'",
+          "end": "'",
+          "beginCaptures": { "1": { "name": "punctuation.definition.string.begin.dc" } },
+          "endCaptures": { "2": { "name": "punctuation.definition.string.end.dc" } },
+          "patterns": [{ "name": "constant.character.escape.dc", "match": "\\\\." }],
+          "captures": {
+            "1": { "name": "punctuation.definition.string.begin.dc" },
+            "2": { "name": "punctuation.definition.string.end.dc" }
+          }
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        { "name": "constant.numeric.integer.dc", "match": "\\b0|([1-9][0-9]*)\\b" },
+        { "name": "constant.numeric.float.dc", "match": "\\b([0-9]?)+\\.[0-9]+\\b" }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.other.dc",
+          "match": "\\b(?:dclass|typedef|import|from|switch|case|default)\\b"
+        },
+        {
+          "name": "punctuation.section.block.dc",
+          "match": "[\\{\\}]"
+        },
+        {
+          "name": "punctuation.terminator.statement.dc",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.key-value.dc",
+          "match": ":"
+        }
+      ]
+    },
+    "dckeywords": {
+      "patterns": [
+        {
+          "name": "constant.language.dc",
+          "match": "\\b(?:required|ram|broadcast|ownrecv|clrecv|airecv|clsend|ownsend|db)\\b"
+        }
+      ]
+    },
+    "view-suffix": {
+      "patterns": [
+        {
+          "name": "constant.language.dc",
+          "match": "\\b(?:AI|UD|OV)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.dc",
+          "match": "\\b(?:char|int8|uint8|int16|uint16|int32|uint32|int64|uint64|float32|float64|string|blob|blob32|uint8array|uint16array|uint32array|int8array|int16array|int32array|uint32uint8array|bool)\\b"
+        },
+        {
+          "name": "storage.type.composite.dc",
+          "match": "\\b(?:struct)\\b"
+        },
+        {
+          "name": "support.type.identifier.dc",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "imports": {
+      "patterns": [
+        {
+          "name": "meta.import.dc",
+          "match": "^\\s*(?:from\\s+([A-Za-z_][A-Za-z0-9_\\.]*?)\\s+)?(import)\\s+([A-Za-z_][A-Za-z0-9_\\*,\\s]*)\\s*;",
+          "captures": {
+            "1": { "name": "support.other.module.dc" },
+            "2": { "name": "keyword.control.import.dc" },
+            "3": { "name": "entity.name.import.dc" }
+          }
+        }
+      ]
+    },
+    "typedef": {
+      "patterns": [
+        {
+          "name": "meta.typedef.dc",
+          "begin": "^\\s*(typedef)\\b",
+          "beginCaptures": { "1": { "name": "keyword.declaration.typedef.dc" } },
+          "end": ";",
+          "patterns": [
+            { "include": "#types" },
+            { "name": "entity.name.type.alias.dc", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b" }
+          ]
+        }
+      ]
+    },
+    "dcfield": {
+      "patterns": [
+        {
+          "name": "meta.field.dc",
+          "begin": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+          "beginCaptures": { "1": { "name": "entity.name.function.field.dc" } },
+          "end": ";",
+          "endCaptures": {
+            "1": { "name": "punctuation.terminator.statement.dc" }
+          },
+          "patterns": [
+            { "include": "#dckeywords" },
+            { "include": "#types" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            {
+              "name": "variable.parameter.dc",
+              "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+            },
+            {
+              "name": "punctuation.separator.parameter.dc",
+              "match": "[,]"
+            }
+          ]
+        },
+        {
+          "name": "meta.molecular.dc",
+          "begin": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*\\ :",
+          "beginCaptures": { "1": { "name": "entity.name.function.field.dc" } },
+          "end": ";",
+          "endCaptures": {
+            "1": { "name": "punctuation.terminator.statement.dc" }
+          },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#dcfield" },
+            { "include": "#dckeywords" }
+          ]
+        },
+        {
+          "name": "meta.switch.dc",
+          "begin": "^\\s*(switch)\\s*\\(",
+          "beginCaptures": { "1": { "name": "keyword.control.switch.dc" } },
+          "end": "\\)",
+          "patterns": [
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#types" }
+          ]
+        },
+        {
+          "name": "keyword.control.case.dc",
+          "match": "^\\s*(case)\\b"
+        }
+      ]
+    },
+    "dclass": {
+      "patterns": [
+        {
+          "name": "meta.class.dc",
+          "begin": "^\\s*(dclass)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?::\\s*([A-Za-z_][A-Za-z0-9_]*))?\\s*\\{",
+          "beginCaptures": {
+            "1": { "name": "storage.type.class.dc keyword.declaration.class.dc" },
+            "2": { "name": "entity.name.type.class.dc" },
+            "3": { "name": "entity.other.inherited-class.dc" }
+          },
+          "end": "\\}",
+          "endCaptures": { "0": { "name": "punctuation.section.class.end.dc" } },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#dcfield" },
+            { "include": "#dckeywords" },
+            { "include": "#types" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#keywords" }
+          ]
+        }
+      ]
+    }
+  }
+}
+
