@@ -1,12 +1,17 @@
 ## GNU Make/Linux Build Artifacts ##
 astrond
 *.[oa]
+Makefile
+## CMake Artifacts ##
 CMakeCache.txt
 CMakeFiles/
 CTestTestfile.cmake
 cmake_install.cmake
-Makefile
+.cmake/
 ## Ignore Mac's directory info ##
 .DS_Store
 build/
 !build/.keep
+## Astron Development ##
+astrond.yml
+*.dc
