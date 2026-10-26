@@ -154,14 +154,13 @@ void Class::add_inherited_field(Class* parent, Field* field)
     // If another superclass provides a field with that name, the first parent takes precedence
     auto prev_field = m_fields_by_name.find(field->get_name());
     if(prev_field != m_fields_by_name.end()) {
-        Struct* parentB = prev_field->second->get_struct();
         for(auto it = m_parents.begin(); it != m_parents.end(); ++it) {
-            if((*it) == parentB) {
+            if ((*it) == parent) {
+                 // This parent was added before the later parents, so shadow its field
+                shadow_field(prev_field->second);
+            } else {
                 // The early parent's field takes precedence over the new field
                 return;
-            } else if((*it) == parent) {
-                // This parent was added before the later parent, so shadow its field
-                shadow_field(prev_field->second);
             }
         }
     }
