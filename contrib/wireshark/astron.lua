@@ -1,25 +1,31 @@
-require ("bit")
+p_astron_internal = Proto ("astron_internal", "Astron Internal Protocol (MD)")
+p_astron_client = Proto ("astron_client", "Astron Client Protocol (CA)")
 
-p_astron = Proto ("astron", "Astron (MD)")
+astron_md_port = 7199
+astron_ca_port = 6667
 
-local f_length = ProtoField.uint16("astron.length", "Message length", base.DEC)
-local f_recipient = ProtoField.uint64("astron.recipient", "Recipient channel", base.HEX)
-local f_sender = ProtoField.uint64("astron.sender", "Sender channel", base.HEX)
-local f_msgtype = ProtoField.uint16("astron.msgtype", "Message type", base.DEC)
+-- Astron Internal protocol fields
 
-local f_doid = ProtoField.uint32("astron.doid", "DistributedObject ID", base.DEC)
-local f_field = ProtoField.uint16("astron.field", "Field ID", base.DEC)
-local f_field_count = ProtoField.uint16("astron.field_count", "Field count", base.DEC)
+local f_length = ProtoField.uint16("astron_internal.length", "Message length", base.DEC)
 
-local f_object_count = ProtoField.uint32("astron.object_count", "Object count", base.DEC)
+local f_recipient = ProtoField.uint64("astron_internal.recipient", "Recipient channel", base.HEX)
+local f_sender = ProtoField.uint64("astron_internal.sender", "Sender channel", base.HEX)
 
-local f_parent = ProtoField.uint32("astron.parent", "Parent ID", base.DEC)
-local f_zone = ProtoField.uint32("astron.zone", "Zone ID", base.DEC)
-local f_zone_count = ProtoField.uint16("astron.zone_count", "Zone count", base.DEC)
+local f_msgtype = ProtoField.uint16("astron_internal.msgtype", "Message type", base.DEC)
 
-local f_context = ProtoField.uint32("astron.context", "Request context", base.DEC)
+local f_doid = ProtoField.uint32("astron_internal.doid", "DistributedObject ID", base.DEC)
+local f_field = ProtoField.uint16("astron_internal.field", "Field ID", base.DEC)
+local f_field_count = ProtoField.uint16("astron_internal.field_count", "Field count", base.DEC)
 
-p_astron.fields = {
+local f_object_count = ProtoField.uint32("astron_internal.object_count", "Object count", base.DEC)
+
+local f_parent = ProtoField.uint32("astron_internal.parent", "Parent ID", base.DEC)
+local f_zone = ProtoField.uint32("astron_internal.zone", "Zone ID", base.DEC)
+local f_zone_count = ProtoField.uint16("astron_internal.zone_count", "Zone count", base.DEC)
+
+local f_context = ProtoField.uint32("astron_internal.context", "Request context", base.DEC)
+
+p_astron_internal.fields = {
 	f_length, f_recipient, f_sender, f_msgtype,
 
 	f_doid, f_field, f_field_count,
@@ -29,6 +35,15 @@ p_astron.fields = {
 	f_parent, f_zone, f_zone_count,
 
 	f_context,
+}
+
+-- Astron Client protocol fields
+
+local f_length_client = ProtoField.uint16("astron_client.length", "Message length", base.DEC)
+local f_msgtype_client = ProtoField.uint16("astron_client.msgtype", "Message type", base.DEC)
+
+p_astron_client.fields = {
+	f_length_client, f_msgtype_client
 }
 
 -- Helpers that, maybe someday, will actually get info from a .dc file?
@@ -49,6 +64,156 @@ function decode_field (index, buf)
 end
 
 local message_table = {
+	[1] = {
+		name="CLIENT_HELLO",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2] = {
+		name="CLIENT_HELLO_RESP",
+		dissector=function(buf, root)
+			return "" -- No arguments
+		end
+	},
+	[3] = {
+		name="CLIENT_DISCONNECT",
+		dissector=function(buf, root)
+			return "" -- No arguments
+		end
+	},
+	[4] = {
+		name="CLIENT_EJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[5] = {
+		name="CLIENT_HEARTBEAT",
+		dissector=function(buf, root)
+			return "" -- No arguments
+		end
+	},
+	[120] = {
+		name="CLIENT_OBJECT_SET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[121] = {
+		name="CLIENT_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[132] = {
+		name="CLIENT_OBJECT_LEAVING",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[140] = {
+		name="CLIENT_OBJECT_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[142] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[143] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[172] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[173] = {
+		name="CLIENT_ENTER_OBJECT_REQUIRED_OTHER_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[200] = {
+		name="CLIENT_ADD_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[201] = {
+		name="CLIENT_ADD_INTEREST_MULTIPLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[203] = {
+		name="CLIENT_REMOVE_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[204] = {
+		name="CLIENT_DONE_INTEREST_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1000] = {
+		name="CLIENTAGENT_SET_STATE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1001] = {
+		name="CLIENTAGENT_SET_CLIENT_ID",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1002] = {
+		name="CLIENTAGENT_SEND_DATAGRAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1004] = {
+		name="CLIENTAGENT_EJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1005] = {
+		name="CLIENTAGENT_DROP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1006] = {
+		name="CLIENTAGENT_GET_NETWORK_ADDRESS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1007] = {
+		name="CLIENTAGENT_GET_NETWORK_ADDRESS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1010] = {
+		name="CLIENTAGENT_DECLARE_OBJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[1011] = {
 		name="CLIENTAGENT_UNDECLARE_OBJECT",
 		dissector=function(buf, root)
@@ -56,6 +221,144 @@ local message_table = {
 			root:add_le(f_doid, buf(0,4))
 
 			return tostring(doid)
+		end
+	},
+	[1012] = {
+		name="CLIENTAGENT_ADD_SESSION_OBJECT",
+		dissector=function(buf, root)
+			local doid = buf(0,4):le_uint()
+			root:add_le(f_doid, buf(0,4))
+			
+			return tostring(doid)
+		end
+	},
+	[1013] = {
+		name="CLIENTAGENT_REMOVE_SESSION_OBJECT",
+		dissector=function(buf, root)
+			local doid = buf(0,4):le_uint()
+			root:add_le(f_doid, buf(0,4))
+
+			return tostring(doid)
+		end
+	},
+	[1014] = {
+		name="CLIENTAGENT_SET_FIELDS_SENDABLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1015] = {
+		name="CLIENTAGENT_GET_TLVS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1016] = {
+		name="CLIENTAGENT_GET_TLVS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1100] = {
+		name="CLIENTAGENT_OPEN_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1101] = {
+		name="CLIENTAGENT_CLOSE_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1110] = {
+		name="CLIENTAGENT_ADD_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1111] = {
+		name="CLIENTAGENT_CLEAR_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1200] = {
+		name="CLIENTAGENT_ADD_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1201] = {
+		name="CLIENTAGENT_ADD_INTEREST_MULTIPLE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1203] = {
+		name="CLIENTAGENT_REMOVE_INTEREST",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[1204] = {
+		name="CLIENTAGENT_DONE_INTEREST_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2000] = {
+		name="STATESERVER_CREATE_OBJECT_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2001] = {
+		name="STATESERVER_CREATE_OBJECT_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2009] = {
+		name="STATESERVER_DELETE_AI_OBJECTS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2010] = {
+		name="STATESERVER_OBJECT_GET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2011] = {
+		name="STATESERVER_OBJECT_GET_FIELD_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2012] = {
+		name="STATESERVER_OBJECT_GET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2013] = {
+		name="STATESERVER_OBJECT_GET_FIELDS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2014] = {
+		name="STATESERVER_OBJECT_GET_ALL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2015] = {
+		name="STATESERVER_OBJECT_GET_ALL_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2020] = {
@@ -78,6 +381,144 @@ local message_table = {
 			return string.format("%s(%d).%s(%s)",
 			                     dclass_by_field(field), doid,
 			                     field_by_index(field), decoded)
+		end
+	},
+	[2021] = {
+		name="STATESERVER_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2030] = {
+		name="STATESERVER_OBJECT_DELETE_FIELD_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2031] = {
+		name="STATESERVER_OBJECT_DELETE_FIELDS_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2032] = {
+		name="STATESERVER_OBJECT_DELETE_RAM",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2040] = {
+		name="STATESERVER_OBJECT_SET_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2041] = {
+		name="STATESERVER_OBJECT_CHANGING_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2042] = {
+		name="STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2043] = {
+		name="STATESERVER_OBJECT_ENTER_LOCATION_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2044] = {
+		name="STATESERVER_OBJECT_GET_LOCATION",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2045] = {
+		name="STATESERVER_OBJECT_GET_LOCATION_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2046] = {
+		name="STATESERVER_OBJECT_LOCATION_ACK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2050] = {
+		name="STATESERVER_OBJECT_SET_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2051] = {
+		name="STATESERVER_OBJECT_CHANGING_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2052] = {
+		name="STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2053] = {
+		name="STATESERVER_OBJECT_ENTER_AI_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2054] = {
+		name="STATESERVER_OBJECT_GET_AI",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2055] = {
+		name="STATESERVER_OBJECT_GET_AI_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2060] = {
+		name="STATESERVER_OBJECT_SET_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2061] = {
+		name="STATESERVER_OBJECT_CHANGING_OWNER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2062] = {
+		name="STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2063] = {
+		name="STATESERVER_OBJECT_ENTER_OWNER_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2066] = {
+		name="STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2067] = {
+		name="STATESERVER_OBJECT_ENTER_INTEREST_WITH_REQUIRED_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2100] = {
@@ -116,6 +557,12 @@ local message_table = {
 
 			return string.format("%d: %d(%s)", context, parent,
 			                     table.concat(zone_strings, "&"))
+		end
+	},
+	[2104] = {
+		name="STATESERVER_OBJECT_GET_CHILDREN",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 	[2110] = {
@@ -180,6 +627,114 @@ local message_table = {
 			return string.format("%d: %d", context, object_count)
 		end
 	},
+	[2114] = {
+		name="STATESERVER_OBJECT_GET_CHILD_COUNT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2115] = {
+		name="STATESERVER_OBJECT_GET_CHILD_COUNT_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2120] = {
+		name="STATESERVER_OBJECT_DELETE_ZONE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2122] = {
+		name="STATESERVER_OBJECT_DELETE_ZONES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2124] = {
+		name="STATESERVER_OBJECT_DELETE_CHILDREN",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2125] = {
+		name="STATESERVER_GET_ACTIVE_ZONES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2126] = {
+		name="STATESERVER_GET_ACTIVE_ZONES_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2200] = {
+		name="DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2201] = {
+		name="DBSS_OBJECT_ACTIVATE_WITH_DEFAULTS_OTHER",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2207] = {
+		name="DBSS_OBJECT_GET_ACTIVATED",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2208] = {
+		name="DBSS_OBJECT_GET_ACTIVATED_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2230] = {
+		name="DBSS_OBJECT_DELETE_FIELD_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2231] = {
+		name="DBSS_OBJECT_DELETE_FIELDS_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[2232] = {
+		name="DBSS_OBJECT_DELETE_DISK",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3000] = {
+		name="DBSERVER_CREATE_OBJECT",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3001] = {
+		name="DBSERVER_CREATE_OBJECT_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3010] = {
+		name="DBSERVER_OBJECT_GET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3011] = {
+		name="DBSERVER_OBJECT_GET_FIELD_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
 	[3012] = {
 		name="DBSERVER_OBJECT_GET_FIELDS",
 		dissector=function(buf, root)
@@ -204,6 +759,144 @@ local message_table = {
 
 			return string.format("%d[%s]", doid,
 			                     table.concat(field_names, "&"))
+		end
+	},
+	[3013] = {
+		name="DBSERVER_OBJECT_GET_FIELDS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3014] = {
+		name="DBSERVER_OBJECT_GET_ALL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3015] = {
+		name="DBSERVER_OBJECT_GET_ALL_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3020] = {
+		name="DBSERVER_OBJECT_SET_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3021] = {
+		name="DBSERVER_OBJECT_SET_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3022] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EQUALS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3023] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EQUALS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3024] = {
+		name="DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3025] = {
+		name="DBSERVER_OBJECT_SET_FIELDS_IF_EQUALS_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3026] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EMPTY",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3027] = {
+		name="DBSERVER_OBJECT_SET_FIELD_IF_EMPTY_RESP",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3030] = {
+		name="DBSERVER_OBJECT_DELETE_FIELD",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3031] = {
+		name="DBSERVER_OBJECT_DELETE_FIELDS",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[3032] = {
+		name="DBSERVER_OBJECT_DELETE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9000] = {
+		name="CONTROL_ADD_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9001] = {
+		name="CONTROL_REMOVE_CHANNEL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9002] = {
+		name="CONTROL_ADD_RANGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9003] = {
+		name="CONTROL_REMOVE_RANGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9010] = {
+		name="CONTROL_ADD_POST_REMOVE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9011] = {
+		name="CONTROL_CLEAR_POST_REMOVES",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9012] = {
+		name="CONTROL_SET_CON_NAME",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9013] = {
+		name="CONTROL_SET_CON_URL",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
+		end
+	},
+	[9014] = {
+		name="CONTROL_LOG_MESSAGE",
+		dissector=function(buf, root)
+			return "" -- TODO: Dissect
 		end
 	},
 }
@@ -291,10 +984,12 @@ function dissect_one (buf, root, packet_descriptions)
 	return length + 2
 end
 
-function p_astron.dissector (buf, pinfo, root)
+-- ASTRON_INTERNAL protocol
+
+function p_astron_internal.dissector (buf, pinfo, root)
 	if buf:len() < 2 then return end
 
-	local root = root:add(p_astron, buf)
+	local root = root:add(p_astron_internal, buf())
 
 	local descriptions = {}
 	local message_count = 0
@@ -315,15 +1010,40 @@ function p_astron.dissector (buf, pinfo, root)
 	end
 
 	if message_count > 0 then
-		pinfo.cols.protocol = p_astron.name
+		pinfo.cols.protocol = "ASTRON (Internal)"
 		pinfo.cols.info = table.concat(descriptions, "; ")
 	end
 
 	return offset
 end
 
-function p_astron.init()
+function p_astron_internal.init()
 	local tcp_dissector_table = DissectorTable.get("tcp.port")
 
-	tcp_dissector_table:add(7199, p_astron)
+	tcp_dissector_table:add(astron_md_port, p_astron_internal)
+end
+
+-- ASTRON_CLIENT protocol
+
+function p_astron_client.dissector (buf, pinfo, root)
+	if buf:len() < 2 then return end
+
+	local subtree = root:add(p_astron_client, buf())
+
+	local len = buf(0, 2):le_uint()
+	local type = buf(2, 2):le_uint()
+	
+	subtree:add_le(f_length_client, buf(0, 2), len)
+	subtree:add_le(f_msgtype_client, buf(2, 2), type, "Message type: " .. pretty_msgtype(type))
+
+	if len > 2 then subtree:add(buf(4), "Payload") end -- TODO: Dissect message payload
+
+	pinfo.cols.protocol = "ASTRON (Client)"
+	pinfo.cols.info = pretty_msgtype(type)
+end
+
+function p_astron_client.init()
+	local tcp_dissector_table = DissectorTable.get("tcp.port")
+
+	tcp_dissector_table:add(astron_ca_port, p_astron_client)
 end
