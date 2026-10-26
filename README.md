@@ -1,3 +1,5 @@
+## Development on Astron has been discontinued. It is not recommended to use this on a production server. ##
+
 Astron Project
 --------------
 ![image](https://user-images.githubusercontent.com/735098/115663653-73a11580-a306-11eb-8d74-624911f983a3.png)
